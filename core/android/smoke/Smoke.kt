@@ -36,7 +36,7 @@ fun main() {
          "context": {"part": "Solo Cornet", "bar": 12}, "settings": {"lang": "nb"}}
     """.trimIndent()
     check(talkingAnnounceJson(request) == "slag 4, 4. av 4: H 4, sekstendedelsnote") { talkingAnnounceJson(request) }
-    val ts = TalkingScore(xml, composition)
+    val ts = TalkingScore(xml, composition, Target.BRASS)
     val solo = ts.partNames().indexOf("Solo Cornet").toUInt()
     val line = ts.announce(TalkingCursor(solo, 0u, 0u), TalkingContext(), talkingSettingsDefault(), false)
     check(line.startsWith("bar 1, ")) { line }

@@ -41,7 +41,7 @@ public class EngineClientTests
         var (c, h) = Make((r, i) => r.RequestUri!.AbsolutePath switch
         {
             "/v1/pair" => FakeHandler.Json("""{"token":"tok-123"}"""),
-            _ => FakeHandler.Json("""[{"name":"solo","pipeline":"A-solo","description":"One brass line","validated":false,"stages":["f0"]}]"""),
+            _ => FakeHandler.Json("""[{"name":"solo","target":"brass","pipeline":"A-solo","description":"One brass line","validated":false,"stages":["f0"]}]"""),
         });
         await c.PairAsync("4821", "Kari-PC");
         var profiles = await c.ListProfilesAsync();
@@ -51,7 +51,7 @@ public class EngineClientTests
         Assert.Null(h.Requests[0].Request.Headers.Authorization);
         Assert.Equal("Bearer", h.Requests[1].Request.Headers.Authorization!.Scheme);
         Assert.Equal("tok-123", h.Requests[1].Request.Headers.Authorization!.Parameter);
-        Assert.Equal("solo", profiles.Single().Name);
+        Assert.Equal(("solo", "brass"), (profiles.Single().Name, profiles.Single().Target));
     }
 
     [Fact]

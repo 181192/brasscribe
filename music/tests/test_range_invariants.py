@@ -16,7 +16,7 @@ from scribe_music.difficulty import MODES, mode_range
 from scribe_music.instruments import LINEUPS
 from scribe_music.score_model import Composition
 
-GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
+GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band.layer-hits" / "composition.json"
 
 
 @pytest.fixture(scope="module")

@@ -15,6 +15,7 @@ import no.fretscribe.design.FretscribeTheme
 import no.scribe.design.ScribeTheme
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Profile
+import no.brasscribe.play.engine.Target
 import no.brasscribe.play.fret.CheckTheSongScreen
 import no.brasscribe.play.fret.ComputerProfiles
 import no.brasscribe.play.fret.PracticeRecordings
@@ -128,8 +129,11 @@ object Product {
     @Composable
     fun instrumentValue(vm: PlayViewModel): String = yourInstrumentValue()
 
-    /** The computer's scores this app opens: tabs, also a bass tab made before there were other instruments. A band score is Brasscribe's. */
-    fun makes(profile: String): Boolean = Profile.writesTab(profile)
+    /** What this app is for: of the engine's profiles, the ones of this target are its own. */
+    val target = Target.FRETTED
+
+    /** The computer's scores this app opens: the ones of its target's profiles, tabs, also a bass tab made before there were other instruments. A band score is Brasscribe's. */
+    fun makes(profile: String): Boolean = Profile.of(profile)?.target == target
 
     /** Brasscribe's Check the notes and output choices write for a band: never offered here. */
     @Suppress("UNUSED_PARAMETER")

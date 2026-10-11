@@ -1849,6 +1849,7 @@
   "body": [
    {
     "name": "solo",
+    "target": "brass",
     "pipeline": "layered-solo",
     "description": "One brass line, no separation; SwiftF0 spine confirmed by MuScriptor or Basic Pitch, layered arranger (the on-device path), minimal band",
     "validated": true,
@@ -1864,6 +1865,7 @@
    },
    {
     "name": "brass-band",
+    "target": "brass",
     "pipeline": "A",
     "description": "Brass-only ensemble; MuScriptor medium + Basic Pitch on the mix, minimal band",
     "validated": false,
@@ -1877,6 +1879,7 @@
    },
    {
     "name": "pop-rock",
+    "target": "brass",
     "pipeline": "B",
     "description": "Full band; BS-RoFormer SW stems, per-stem transcription, minimal band",
     "validated": false,
@@ -1895,6 +1898,7 @@
    },
    {
     "name": "orchestra-with-soloist",
+    "target": "brass",
     "pipeline": "layered",
     "description": "Soloist with orchestra; Mega-53 solo/bass/drums + orchestra residual, 18-part brass band",
     "validated": true,
@@ -1915,6 +1919,7 @@
    },
    {
     "name": "tab",
+    "target": "fretted",
     "pipeline": "tab",
     "description": "One fretted instrument as tablature: bass, guitar, ukulele or mandolin (instrument); its BS-RoFormer SW stem (or the recording itself), Basic Pitch with SwiftF0 as a second opinion, a string and fret per note",
     "validated": false,
@@ -1930,6 +1935,7 @@
    },
    {
     "name": "bass-tab",
+    "target": "fretted",
     "pipeline": "tab",
     "description": "The bass line as tablature; BS-RoFormer SW bass stem (or the recording itself), Basic Pitch, a string and fret per note. Kept for older apps: it is the tab profile with a bass",
     "validated": false,

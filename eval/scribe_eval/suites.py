@@ -44,14 +44,17 @@ class Suite:
     cpu: bool = True
     tools: tuple[str, ...] = field(default=())
     ci: bool = False  # gates in CI on the redistributable data built by ci_data (ChoraleBricks + our outputs)
+    target: str = "brass"  # the target the suite gates (TARGETS): its baselines and its verdict are that target's
 
 
 HEAVY = {"muscriptor", "beat-this", "mega53", "separator"}
+# The targets a suite can gate, in the order they are reported.
+TARGETS = ("brass", "fretted")
 
 
 # The Mikkel golden output (data/golden), and the on-device reference clip's layered output.
-MIKKEL_GOLDEN = "golden/mikkel-arranged-band"
-ONDEVICE_REF = "runs/apple/entertainer-ref"
+MIKKEL_GOLDEN = "golden/mikkel-arranged-band.layer-hits"
+ONDEVICE_REF = "runs/apple/entertainer-ref.layer-hits"
 
 def _run_adapter(tool: str, src: Path, dst: Path) -> None:
     """Live mode: run an adapter; heavy models wait for the machine-wide GPU mutex."""
@@ -836,19 +839,19 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           "and ChoraleBricks: onset and written-position F1, bar position and metre per checkpoint (cached beats and "
           "transcriptions)", _solo_beat_model, ("runs/music-core/solo-beats",)),
     Suite("bass-tab", "the bass-tab profile on Slakh bass lines, from a full song and from the bass alone: notes, octave, "
-          "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",)),
+          "range, playability, tempo and meter, hand travel (cached model outputs)", _bass_tab, ("eval/slakh-bass",), target="fretted"),
     Suite("guitar-tab", "the tab profile with a guitar on GuitarSet (the guitar alone; single lines and comping, tuning and "
           "reporting players apart) and on Slakh's guitars in a song: notes, chords, string agreement, playability "
-          "(cached model outputs)", _guitar_tab, ("eval/guitarset",)),
+          "(cached model outputs)", _guitar_tab, ("eval/guitarset",), target="fretted"),
     Suite("ukulele-tab", "the tab profile with a ukulele (high G, low G, baritone) on rendered passages, alone and separated "
           "from a mix: notes, chords, the string of each note, playability (cached model outputs)", _small_tab("ukulele"),
-          ("eval/small-tab",)),
+          ("eval/small-tab",), target="fretted"),
     Suite("mandolin-tab", "the tab profile with a mandolin on rendered passages, alone and separated from a mix (cached model "
-          "outputs)", _small_tab("mandolin"), ("eval/small-tab",)),
+          "outputs)", _small_tab("mandolin"), ("eval/small-tab",), target="fretted"),
     Suite("guitar-rendered-tab", "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two "
-          "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",)),
+          "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",), target="fretted"),
     Suite("meter-tab", "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, "
-          "the beats in a bar as tracked and as written (cached model outputs)", _meter_tab, ("eval/meter-tab",)),
+          "the beats in a bar as tracked and as written (cached model outputs)", _meter_tab, ("eval/meter-tab",), target="fretted"),
     Suite("musescore-roundtrip", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",
           _musescore, ("mikkel/repro/layers", MIKKEL_GOLDEN), tools=("mscore",)),
 ]}
@@ -857,6 +860,7 @@ GROUPS = {
     "cpu": [n for n, s in SUITES.items() if s.cpu],
     "ci": [n for n, s in SUITES.items() if s.ci],
     "all": list(SUITES),
+    **{t: [n for n, s in SUITES.items() if s.target == t] for t in TARGETS},  # one target's suites
 }
 
 
@@ -889,14 +893,28 @@ def load_baselines(path: Path = BASELINES) -> dict:
     return json.loads(path.read_text())
 
 
+def baseline(baselines: dict, suite: str) -> dict:
+    """The stored baseline of `suite` ({"source", "metrics"}), under whichever target holds it; {} when none does."""
+    return next((t["suites"][suite] for t in baselines["targets"].values() if suite in t["suites"]), {})
+
+
+def target_of(baselines: dict, suite: str) -> str:
+    """The target `suite` gates: the one it is registered for, or for a suite that is not registered, the one
+    whose baselines hold it."""
+    if suite in SUITES:
+        return SUITES[suite].target
+    return next((name for name, t in baselines["targets"].items() if suite in t["suites"]), TARGETS[0])
+
+
 def gate(results: list[dict], baselines: dict | None = None, allow_improved: bool = False,
          require_data: bool = False) -> dict:
-    """Compare results with baselines; fills per-suite status and checks."""
+    """Compare results with baselines; fills per-suite status and checks. The verdict is given per target
+    ("targets": {target: {"passed"}}, for the targets that had a suite in `results`) and for all of them."""
     b = baselines or load_baselines()
     default_tol = b.get("tolerance", 0.01)
     suites_out, passed = [], True
     for r in results:
-        base = b["suites"].get(r["suite"], {})
+        base = baseline(b, r["suite"])
         checks = []
         if r["status"] == "ran":
             for metric, spec in base.get("metrics", {}).items():
@@ -922,9 +940,12 @@ def gate(results: list[dict], baselines: dict | None = None, allow_improved: boo
         else:
             status = "error"
         passed &= status in ("pass", "skipped")
-        suites_out.append({**r, "status": status, "checks": checks,
+        suites_out.append({**r, "target": target_of(b, r["suite"]), "status": status, "checks": checks,
                            "metrics": {k: round(float(v), 4) for k, v in r["metrics"].items()}})
-    return {"passed": passed, "suites": suites_out}
+    ok = ("pass", "skipped")
+    by_target = {t: {"passed": all(s["status"] in ok for s in suites_out if s["target"] == t)}
+                 for t in dict.fromkeys(s["target"] for s in suites_out)}
+    return {"passed": passed, "targets": by_target, "suites": suites_out}
 
 
 # A baseline is stored to this many decimals.
@@ -964,9 +985,9 @@ def rebaseline(results: list[dict], baselines: dict) -> tuple[dict, list[dict]]:
     default_tol = out.get("tolerance", 0.01)
     changes = []
     for r in results:
-        if r["status"] != "ran" or r["suite"] not in out["suites"]:
+        if r["status"] != "ran" or not baseline(out, r["suite"]):
             continue
-        metrics = out["suites"][r["suite"]].get("metrics", {})
+        metrics = baseline(out, r["suite"]).get("metrics", {})
         skipped = r.get("skipped_parts", [])
         for metric, spec in metrics.items():
             v = r["metrics"].get(metric)
@@ -990,25 +1011,33 @@ def write_baselines(baselines: dict, path: Path = BASELINES) -> None:
     path.write_text(json.dumps(baselines, indent=2, ensure_ascii=False) + "\n")
 
 
+def _verdict(suites: list[dict], passed: bool) -> str:
+    counts: dict[str, int] = {}
+    for s in suites:
+        counts[s["status"]] = counts.get(s["status"], 0) + 1
+    verdict = "FAILED" if not passed else ("PASSED" if counts.get("pass") else "NOTHING GATED (no data)")
+    return verdict + "  " + ", ".join(f"{v} {k}" for k, v in sorted(counts.items()))
+
+
 def format_report(report: dict) -> str:
+    """The suites under the target they gate, a verdict per target, and the verdict of the whole run last."""
     lines = []
-    for s in report["suites"]:
-        head = f"{s['suite']:22s} {s['status'].upper():8s} {s['seconds']:6.1f}s"
-        if s.get("reason"):
-            head += f"  ({s['reason']})"
-        if s.get("skipped_parts"):
-            head += f"  (no data for: {', '.join(s['skipped_parts'])})"
-        lines.append(head)
-        for c in s["checks"]:
-            if c["status"] != "pass" or True:
+    for target, verdict in report["targets"].items():
+        mine = [s for s in report["suites"] if s["target"] == target]
+        lines.append(f"[{target}]")
+        for s in mine:
+            head = f"{s['suite']:22s} {s['status'].upper():8s} {s['seconds']:6.1f}s"
+            if s.get("reason"):
+                head += f"  ({s['reason']})"
+            if s.get("skipped_parts"):
+                head += f"  (no data for: {', '.join(s['skipped_parts'])})"
+            lines.append(head)
+            for c in s["checks"]:
                 if c["status"] == "skipped":
                     continue
                 mark = {"pass": " ", "improved": "+", "regressed": "!", "missing": "?"}.get(c["status"], " ")
                 val = "-" if c["value"] is None else f"{c['value']:.3f}"
                 lines.append(f"   {mark} {c['metric']:38s} {val:>7s}  baseline {c['baseline']:.3f} ±{c['tolerance']}  {c['status']}")
-    counts = {}
-    for s in report["suites"]:
-        counts[s["status"]] = counts.get(s["status"], 0) + 1
-    verdict = "FAILED" if not report["passed"] else ("PASSED" if counts.get("pass") else "NOTHING GATED (no data)")
-    lines.append(verdict + "  " +", ".join(f"{v} {k}" for k, v in sorted(counts.items())))
+        lines.append(f"{target}: {_verdict(mine, verdict['passed'])}")
+    lines.append(_verdict(report["suites"], report["passed"]))
     return "\n".join(lines)

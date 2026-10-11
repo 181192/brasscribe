@@ -10,6 +10,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from . import targets
 from .config import Settings
 from .names import valid_id
 
@@ -135,11 +136,11 @@ def roundtrip(outputs: Path) -> dict:
     if not mscore:
         return {"status": "not_run", "musescore": None, "detail": "mscore (MuseScore CLI) not installed"}
     with tempfile.TemporaryDirectory() as tmp:
-        for f in ("brass-band.musicxml", "composition.json"):
+        for f in (targets.BRASS.musicxml, "composition.json"):
             shutil.copy(outputs / f, Path(tmp) / f)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            ok = check(Path(tmp) / "brass-band.musicxml", Path(tmp) / "composition.json")
+            ok = check(Path(tmp) / targets.BRASS.musicxml, Path(tmp) / "composition.json")
         from scribe_music.arranger import arrange, arrange_layers
         from scribe_music.score_model import Composition
 

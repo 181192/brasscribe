@@ -108,11 +108,14 @@ describe("a tab in the MusicXML reader", () => {
 
 describe("which runs are tab runs", () => {
   const job = (profile: string, outputs: string[]) => ({ id: "x", profile, outputs }) as unknown as Job;
-  const profiles = [{ name: "tab", pipeline: "tab" }, { name: "bass-tab", pipeline: "tab" }, { name: "solo", pipeline: "layered-solo" }] as unknown as ProfileInfo[];
+  const profiles = [{ name: "tab", target: "fretted", pipeline: "tab" }, { name: "bass-tab", target: "fretted", pipeline: "tab" },
+    { name: "solo", target: "brass", pipeline: "layered-solo" }] as unknown as ProfileInfo[];
 
-  it("goes by the profile's pipeline, so a tab run that has written nothing yet is one", () => {
+  it("goes by the target of the run's profile, so a tab run that has written nothing yet is one", () => {
     expect(isTabRun(job("bass-tab", []), null, profiles)).toBe(true);
     expect(isTabRun(job("solo", []), null, profiles)).toBe(false);
+    expect(isTabRun(job("solo", ["tab.musicxml"]), { pipeline: "tab" } as unknown as Manifest, profiles)).toBe(false);
+    // A profile the engine no longer lists: the pipeline its manifest names.
     expect(isTabRun(job("renamed", []), { pipeline: "tab" } as unknown as Manifest, profiles)).toBe(true);
     expect(isTabRun(job("renamed", ["tab.musicxml"]), { pipeline: "A" } as unknown as Manifest, profiles)).toBe(false);
   });

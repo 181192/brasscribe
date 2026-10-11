@@ -70,7 +70,7 @@ public class AppFlowTests
         return (r.Method.Method, path) switch
         {
             ("GET", "/v1/health") => FakeHandler.Json("""{"version":"0.1.0","device":"mps","auth_required":false}"""),
-            ("GET", "/v1/profiles") => FakeHandler.Json("""[{"name":"solo","pipeline":"A-solo","description":"d","validated":false,"stages":[]},{"name":"brass-band","pipeline":"A","description":"d","validated":false,"stages":[]}]"""),
+            ("GET", "/v1/profiles") => FakeHandler.Json("""[{"name":"solo","target":"brass","pipeline":"A-solo","description":"d","validated":false,"stages":[]},{"name":"brass-band","target":"brass","pipeline":"A","description":"d","validated":false,"stages":[]},{"name":"pop-rock","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]}]"""),
             ("POST", "/v1/audio") => FakeHandler.Json("""{"audio_id":"a1","sha256":"00","filename":"take.wav","bytes":4}""", HttpStatusCode.Created),
             ("POST", "/v1/jobs") => FakeHandler.Json(JobRunning, HttpStatusCode.Accepted),
             ("GET", "/v1/jobs/j1/events") => FakeHandler.Sse(
@@ -255,7 +255,7 @@ public class AppFlowTests
         Assert.StartsWith("take-", main.Kind.SourceLine);
         Assert.Equal("Made on this PC. The recording is not sent online.", main.Kind.WhereText);
         Assert.False(main.Kind.ContinueCommand.CanExecute(null)); // nothing chosen yet: the app never guesses
-        await Until(() => !main.Kind.Options.Single(o => o.Kind == SourceKind.PopRock).IsAvailable); // engine lists no pop-rock
+        await Until(() => !main.Kind.Options.Single(o => o.Kind == SourceKind.PopRock).IsAvailable); // the engine lists no pop-rock among the band's profiles
 
         main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
         Assert.True(main.Kind.ContinueCommand.CanExecute(null));

@@ -33,6 +33,7 @@ import uniffi.scribe_ffi.LayerStems
 import uniffi.scribe_ffi.Performance
 import uniffi.scribe_ffi.SoloContour
 import uniffi.scribe_ffi.TalkingSettings
+import uniffi.scribe_ffi.Target
 import uniffi.scribe_ffi.SongArrangeOptions
 import uniffi.scribe_ffi.arrangeLayersBand
 import uniffi.scribe_ffi.arrangeSongWith
@@ -169,7 +170,9 @@ class RustCoreBridge private constructor(val version: String) : CoreBridge {
         return talkingAnnounceJson(request.toString())
     }
 
-    override fun talkingScore(musicXml: String, compositionJson: String?): TalkingScoreDoc = Doc(CoreTalkingScore(musicXml, compositionJson))
+    // The scores read aloud are band scores: the band's target names their parts and instruments.
+    override fun talkingScore(musicXml: String, compositionJson: String?): TalkingScoreDoc =
+        Doc(CoreTalkingScore(musicXml, compositionJson, Target.BRASS))
 
     private class Doc(private val ts: CoreTalkingScore) : TalkingScoreDoc {
         override val partNames: List<String> = ts.partNames()

@@ -13,7 +13,7 @@ struct LiveEngineTests {
         let h = try await svc.health()
         #expect(h.status == "ok")
         let names = Set(try await svc.profiles().map(\.name))
-        #expect(names.isSuperset(of: Set(SourceProfile.allCases.map(\.rawValue))))
+        #expect(names == Set(SourceProfile.allCases.map(\.rawValue)))
         await #expect(throws: TranscriptionError.pairingRejected) { try await svc.pair(code: "000000", deviceName: "test", platform: "macos") }
     }
 

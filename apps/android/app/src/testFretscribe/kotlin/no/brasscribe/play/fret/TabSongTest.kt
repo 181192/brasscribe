@@ -19,6 +19,7 @@ import no.brasscribe.play.engine.Refusal
 import no.brasscribe.play.engine.Tab
 import no.brasscribe.play.engine.TabLayout
 import no.brasscribe.play.engine.TabOptions
+import no.brasscribe.play.engine.Target
 import no.brasscribe.play.model.BrasscribeJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -204,6 +205,7 @@ class TabSongTest {
         assertEquals(Screen.REVIEW, Product.afterTranscription(result(Profile.SOLO)))
         // After Check the notes, the output choices for every take, a solo too (Brasscribe opens a solo's score).
         for (p in Profile.entries) assertEquals(p.id, Screen.OUTPUT, Product.afterReview(result(p)))
+        assertEquals(Target.FRETTED, Product.target)
         assertTrue(Product.makes("tab"))
         assertTrue(Product.makes("bass-tab"))
         val band = listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK)

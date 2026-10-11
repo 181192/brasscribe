@@ -13,6 +13,7 @@ import { maxOf, minOf } from "../lib/extent";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
 import { stageTime, waitNote } from "../lib/stagetime";
+import { hasScore, scoreFile } from "../lib/targets";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
 import { pitchName, validateScore } from "../lib/validate";
 import { t } from "../i18n";
@@ -283,21 +284,22 @@ function stageFiles(ctx: Ctx, pred: (s: StageFiles) => boolean): { stage: StageF
 // ---------------------------------------------------------------- tabs
 
 /**
- * Whether the run wrote its score in this format. A band run names its files brass-band.*, a
- * tablature run tab.*; the engine serves either at the same address (/v1/jobs/{id}/musicxml, /pdf, /midi).
+ * Whether the run wrote its score in this format. Each target names its own files (brass-band.*, tab.*);
+ * the engine serves either at the same address (/v1/jobs/{id}/musicxml, /pdf, /midi).
  */
 export function hasScoreFile(job: Job, ext: "musicxml" | "pdf" | "mid"): boolean {
-  return !!job.outputs?.some((o) => o === `brass-band.${ext}` || o === `tab.${ext}`);
+  return hasScore(job.outputs, ext);
 }
 
 /**
- * The run is of a tablature pipeline, not a band score: by its profile's pipeline (so a run that has
- * written nothing yet is known too), from the manifest or the engine's profiles; without either, by
- * what it wrote.
+ * The run is a tab, not a band score: its profile belongs to the fretted target (so a run that has
+ * written nothing yet is known too). For a profile the engine no longer lists, by the pipeline its
+ * manifest names; without either, by what it wrote.
  */
 export function isTabRun(job: Job, m?: Manifest | null, profiles: ProfileInfo[] = []): boolean {
-  const pipeline = m?.pipeline ?? profiles.find((p) => p.name === job.profile)?.pipeline;
-  return pipeline ? pipeline === "tab" : !!job.outputs?.includes("tab.musicxml");
+  const profile = profiles.find((p) => p.name === job.profile);
+  if (profile) return profile.target === "fretted";
+  return m?.pipeline ? m.pipeline === "tab" : !!job.outputs?.includes(scoreFile("fretted", "musicxml"));
 }
 
 /** The link that opens a run's score in the viewer, where a tablature is shown as well as a score. */
@@ -451,7 +453,7 @@ async function renderChecks(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: Sco
 
 function audioTab(p: HTMLElement, ctx: Ctx): void {
   const sources: AudioSource[] = [];
-  if (ctx.job.outputs?.includes("brass-band.mp3")) sources.push({ label: t("audio.rendered"), url: api.renderedAudioUrl(ctx.id) });
+  if (hasScore(ctx.job.outputs, "mp3")) sources.push({ label: t("audio.rendered"), url: api.renderedAudioUrl(ctx.id) });
   for (const { stage, file } of stageFiles(ctx, (s) => s.kind === "layers" || s.kind === "stems" || s.kind === "separate")) {
     if (AUDIO.test(file.name)) sources.push({ label: `${stage.stage}/${file.name}`, url: file.url });
   }
@@ -551,7 +553,7 @@ async function rollTab(p: HTMLElement, ctx: Ctx): Promise<void> {
 }
 
 function layerGroup(layer: string): string {
-  return ["strings", "brass", "keys", "orchestra"].includes(layer) ? "orchestra" : layer;
+  return ["strings", "hits", "keys", "orchestra"].includes(layer) ? "orchestra" : layer;
 }
 
 async function beatsTab(p: HTMLElement, ctx: Ctx): Promise<void> {

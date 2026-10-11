@@ -1,6 +1,7 @@
 package no.brasscribe.play
 
 import no.brasscribe.play.engine.Profile
+import no.brasscribe.play.engine.Target
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -25,8 +26,9 @@ class BrasscribeProductTest {
         }
         assertFalse(Product.makes("tab"))
         assertFalse(Product.makes("bass-tab"))
-        // A profile a newer computer has and this app has never heard of is listed as a score, as before.
-        assertTrue(Product.makes("big-band"))
+        // A profile this app has never heard of belongs to no target it knows: not its to open.
+        assertFalse(Product.makes("big-band"))
+        assertEquals(Target.BRASS, Product.target)
     }
 
     @Test

@@ -7,7 +7,7 @@ func goldenDir() -> URL? {
     if let env = ProcessInfo.processInfo.environment["BRASSCRIBE_FIXTURES"] { return URL(fileURLWithPath: env) }
     var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     for _ in 0..<10 {
-        let c = dir.appending(path: "data/golden/mikkel-arranged-band")
+        let c = dir.appending(path: "data/golden/mikkel-arranged-band.layer-hits")
         if FileManager.default.fileExists(atPath: c.appending(path: "brass-band.musicxml").path) { return c }
         dir = dir.deletingLastPathComponent()
     }
@@ -36,6 +36,19 @@ func goldenDir() -> URL? {
     let now = q.feed(line: #"data: {"id":7,"type":"stage","status":"ran","stage":"arrange","fraction":0.9}"#)
     #expect(now.map(\.id) == [7])
     #expect(q.feed(line: ": keepalive").isEmpty)
+}
+
+@Test func theAppSeesOnlyItsOwnTargetsProfiles() throws {
+    let answer = #"""
+    [{"name":"solo","target":"brass","pipeline":"layered-solo","description":"d","validated":true,"stages":[]},
+     {"name":"tab","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]},
+     {"name":"brass-band","target":"brass","pipeline":"A","description":"d","validated":false,"stages":[]}]
+    """#
+    let own = try CompanionService.ownProfiles(Data(answer.utf8))
+    #expect(own.map(\.name) == ["solo", "brass-band"])
+    #expect(own.allSatisfy { $0.target == SourceProfile.target })
+    // An answer without a target is not this engine's: it is refused, not shown whole.
+    #expect(throws: (any Error).self) { try CompanionService.ownProfiles(Data(#"[{"name":"solo","description":"d","validated":true}]"#.utf8)) }
 }
 
 @Test func stagesReadAsPlainSteps() {

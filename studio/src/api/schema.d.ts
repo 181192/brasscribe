@@ -1868,6 +1868,12 @@ export interface components {
             /** Stages */
             stages: string[];
             /**
+             * Target
+             * @description the target the profile belongs to: what it makes (a brass-band score, a tab for a fretted instrument). An app offers the profiles of its own target
+             * @enum {string}
+             */
+            target: "brass" | "fretted";
+            /**
              * Validated
              * @description checked end to end against a golden output
              */
@@ -3703,7 +3709,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description tab.json as written by the tab profile (and bass-tab). The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts */
+            /** @description tab.json as written by the fretted target's profiles. The tab as plain text (tab.txt) and as playing instructions in words (tab-instructions.en.txt, tab-instructions.nb.txt) are among the job's artifacts */
             200: {
                 headers: {
                     [name: string]: unknown;

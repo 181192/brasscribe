@@ -5,7 +5,7 @@ use target_brass::arranger::{part_footers, part_sources, ARRANGED, EMPTY, RECORD
 use scribe_core::model::Composition;
 use target_brass::pipeline::arrange_composition;
 
-/// A layered take: solo, bass, strings and brass, drums optional; the solo ff over strings f in the
+/// A layered take: solo, bass, strings and hits, drums optional; the solo ff over strings f in the
 /// second bar (a climax the Soprano Cornet doubles unless faithful).
 fn comp(drums: bool, difficulty: &str) -> Composition {
     let notes = |p: i32| (0..8).map(|i| format!(r#"{{"pitch": {}, "start": {}, "dur": 24}}"#, p + (i % 3), i * 24)).collect::<Vec<_>>().join(",");
@@ -20,7 +20,7 @@ fn comp(drums: bool, difficulty: &str) -> Composition {
         voice("solo", "melody", 67, true),
         voice("bass", "bass", 40, true),
         voice("strings", "harmony", 60, true),
-        voice("brass", "harmony", 55, true),
+        voice("hits", "harmony", 55, true),
         voice("drums", "rhythm", 38, drums),
     );
     Composition::from_json_str(&json).unwrap()

@@ -26,6 +26,6 @@ def test_each_passage_is_in_its_meter_and_the_same_every_time():
 def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     r = suites.run_suite("meter-tab", data=tmp_path)
     assert r["status"] == "skipped" and "eval/meter-tab" in r["reason"]
-    base = suites.load_baselines()["suites"]["meter-tab"]["metrics"]
+    base = suites.baseline(suites.load_baselines(), "meter-tab")["metrics"]
     assert base["right_became_wrong"]["tolerance"] == 0 and base["right_became_wrong"]["higher_is_better"] is False
     assert {"tracked_ok", "meter_ok", "excerpts"} <= set(base)

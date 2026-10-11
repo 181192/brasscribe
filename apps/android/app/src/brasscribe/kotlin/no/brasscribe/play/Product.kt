@@ -8,6 +8,7 @@ import no.brasscribe.design.BrasscribeScore
 import no.brasscribe.design.BrasscribeTheme
 import no.brasscribe.play.engine.JobCreate
 import no.brasscribe.play.engine.Profile
+import no.brasscribe.play.engine.Target
 import no.brasscribe.play.ui.theme.LocalProductColors
 import no.brasscribe.play.ui.theme.ProductColors
 
@@ -70,8 +71,11 @@ object Product {
     @Composable
     fun instrumentValue(vm: PlayViewModel): String = no.brasscribe.play.ui.seatValue(vm.container.seat, vm.container.seats)
 
-    /** The computer's scores this app opens: every band score. A tab is Fretscribe's. */
-    fun makes(profile: String): Boolean = !Profile.writesTab(profile)
+    /** What this app is for: of the engine's profiles, the ones of this target are its own. */
+    val target = Target.BRASS
+
+    /** The computer's scores this app opens: the ones of its target's profiles, every band score. A tab is Fretscribe's. */
+    fun makes(profile: String): Boolean = Profile.of(profile)?.target == target
 
     /** Check the notes and the output choices are offered for this profile's scores. */
     fun arranges(profile: Profile): Boolean = makes(profile.id)

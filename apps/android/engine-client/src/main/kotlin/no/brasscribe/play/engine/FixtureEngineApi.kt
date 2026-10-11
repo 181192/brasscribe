@@ -52,7 +52,7 @@ class FixtureEngineApi(
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
     override suspend fun profiles(): List<ProfileInfo> = known().map {
-        ProfileInfo(it.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+        ProfileInfo(it.id, it.target.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
     }
 
     /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */

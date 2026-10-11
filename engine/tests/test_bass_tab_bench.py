@@ -102,9 +102,9 @@ def test_each_group_of_the_low_register_set_is_scored_apart_with_its_own_instrum
 
 def test_without_the_low_register_set_its_metrics_are_skipped_not_missing():
     base = suites.load_baselines()
-    gated = {m for m in base["suites"]["bass-tab"]["metrics"]}
+    gated = {m for m in suites.baseline(base, "bass-tab")["metrics"]}
     assert any(m.startswith("low_e.") for m in gated) and any(m.startswith("low_b.") for m in gated)
-    slakh_only = {m: (v["value"] if isinstance(v, dict) else v) for m, v in base["suites"]["bass-tab"]["metrics"].items()
+    slakh_only = {m: (v["value"] if isinstance(v, dict) else v) for m, v in suites.baseline(base, "bass-tab")["metrics"].items()
                   if not m.startswith("low_")}
     report = suites.gate([{"suite": "bass-tab", "status": "ran", "metrics": slakh_only, "skipped_parts": ["low_e", "low_b"],
                            "seconds": 0.0}], base)
@@ -114,7 +114,7 @@ def test_without_the_low_register_set_its_metrics_are_skipped_not_missing():
 def test_the_suite_skips_without_its_data_and_is_gated(tmp_path):
     r = suites.run_suite("bass-tab", data=tmp_path)
     assert r["status"] == "skipped" and "eval/slakh-bass" in r["reason"]
-    base = suites.load_baselines()["suites"]["bass-tab"]["metrics"]
+    base = suites.baseline(suites.load_baselines(), "bass-tab")["metrics"]
     for mode in B.MODES:
         assert base[f"{mode}.violations"] == {"value": 0, "tolerance": 0, "higher_is_better": False}
         assert f"{mode}.onset_f1" in base and f"{mode}.hand_travel" in base

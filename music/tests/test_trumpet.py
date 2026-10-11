@@ -14,7 +14,7 @@ from scribe_music.instruments import (INSTRUMENTS, LINEUPS, SeatPart, lead_lineu
                                           seat_part, with_seat)
 from scribe_music.score_model import Composition
 
-GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band" / "composition.json"
+GOLDEN = Path(__file__).resolve().parents[2] / "data" / "golden" / "mikkel-arranged-band.layer-hits" / "composition.json"
 
 
 def test_the_trumpet_is_musescores_bb_trumpet():

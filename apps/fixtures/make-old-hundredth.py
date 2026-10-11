@@ -188,7 +188,7 @@ def main():
             subprocess.run([a.cli, *args], check=True)
 
         run("arrange-layers", "--layers", str(layers), "--beats", str(beats), "--out", str(OUT), "--title", TITLE, "--no-free-time", "--single-key")
-        run("talking-score", "--musicxml", str(OUT / "brass-band.musicxml"), "--composition", str(OUT / "composition.json"),
+        run("talking-score", "--target", "brass", "--musicxml", str(OUT / "brass-band.musicxml"), "--composition", str(OUT / "composition.json"),
             "--json", str(OUT / "talking-score.json"), "--text", str(OUT / "talking-score.txt"), "--html", str(OUT / "talking-score.html"))
     print(f"wrote {OUT.relative_to(ROOT)}")
 

@@ -145,6 +145,9 @@ class PairRequestResult(BaseModel):
 
 class ProfileInfo(BaseModel):
     name: str
+    target: Literal["brass", "fretted"] = Field(description="the target the profile belongs to: what it makes (a brass-band "
+                                                            "score, a tab for a fretted instrument). An app offers the "
+                                                            "profiles of its own target")
     pipeline: str
     description: str
     validated: bool = Field(description="checked end to end against a golden output")

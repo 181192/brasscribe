@@ -231,7 +231,7 @@ public class ScribeCoreTests
     public void TalkingScoreNavigatesAnArrangedScore()
     {
         var xml = ScribeCore.ArrangeMusicXml(Composition);
-        using var ts = new TalkingScore(xml, Composition);
+        using var ts = new TalkingScore(xml, ScoreTarget.Brass, Composition);
         Assert.Contains("\"total_bars\"", ts.Json);
         var start = new TalkingCursor(0, 0, 0);
         var (text, ctx) = ts.Announce(start);
@@ -244,7 +244,7 @@ public class ScribeCoreTests
     [Fact]
     public void TalkingScoreDisposesOnceAndRefusesUseAfterwards()
     {
-        var ts = new TalkingScore(ScribeCore.ArrangeMusicXml(Composition), Composition);
+        var ts = new TalkingScore(ScribeCore.ArrangeMusicXml(Composition), ScoreTarget.Brass, Composition);
         ts.Dispose();
         ts.Dispose();
         Assert.Throws<ObjectDisposedException>(() => ts.Json);
@@ -258,7 +258,7 @@ public class ScribeCoreTests
         var xml = ScribeCore.ArrangeMusicXml(Composition);
         for (var round = 0; round < 20; round++)
         {
-            var ts = new TalkingScore(xml, Composition);
+            var ts = new TalkingScore(xml, ScoreTarget.Brass, Composition);
             using var go = new ManualResetEventSlim();
             var users = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
             {

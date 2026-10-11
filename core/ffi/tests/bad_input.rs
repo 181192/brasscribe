@@ -7,9 +7,9 @@ use std::os::raw::c_char;
 
 use scribe_ffi::c_api::{
     sc_arrange_layers_band, sc_arrange_musicxml, sc_arrange_with, sc_humanize_json, sc_spell_json, sc_string_free, sc_talking_score_free,
-    sc_talking_score_navigate, sc_talking_score_new, ScTalkingScore, SC_INVALID, SC_OK,
+    sc_talking_score_navigate, sc_talking_score_new, ScTalkingScore, SC_INVALID, SC_OK, SC_TARGET_BRASS, SC_TARGET_FRETTED,
 };
-use scribe_ffi::talking::{talking_settings_default, TalkingScore};
+use scribe_ffi::talking::{talking_settings_default, TalkingScore, Target};
 use scribe_ffi::{
     arrange_layers_band, arrange_musicxml, arrange_musicxml_with, arrange_song, choose_metrical_level, quantize_notes, spell_pitches, ArrangeOptions,
     CoreError, LayerMidi, LayerStems, LayersSongOptions, PerformedNote, SoloContour,
@@ -197,7 +197,7 @@ fn a_title_with_control_characters_gives_readable_musicxml() {
     let xml = arrange_musicxml(comp(|v| v["title"] = "bell\u{1}".into()), "auto".into()).unwrap();
     assert!(xml.contains(">bell<"));
     // The talking score parses the MusicXML strictly.
-    assert!(TalkingScore::new(xml, None).is_ok());
+    assert!(TalkingScore::new(xml, None, Target::Brass).is_ok());
 }
 
 // ---- beat tables ----
@@ -367,27 +367,27 @@ fn musicxml(attributes: &str, note_extra: &str) -> String {
 
 #[test]
 fn talking_score_of_odd_musicxml() {
-    let ok = TalkingScore::new(musicxml("<divisions>1</divisions>", ""), None).unwrap();
+    let ok = TalkingScore::new(musicxml("<divisions>1</divisions>", ""), None, Target::Brass).unwrap();
     assert!(ok.to_text(talking_settings_default(), None).contains("Solo Cornet"));
     // Zero divisions or a tuplet of zero notes would divide by zero; the reference raises too.
-    assert!(reason(TalkingScore::new(musicxml("<divisions>0</divisions>", ""), None).map(|_| ())).contains("divisions"));
+    assert!(reason(TalkingScore::new(musicxml("<divisions>0</divisions>", ""), None, Target::Brass).map(|_| ())).contains("divisions"));
     let zero_tuplet = "<time-modification><actual-notes>0</actual-notes><normal-notes>2</normal-notes></time-modification>";
-    assert!(reason(TalkingScore::new(musicxml("<divisions>1</divisions>", zero_tuplet), None).map(|_| ())).contains("tuplet"));
+    assert!(reason(TalkingScore::new(musicxml("<divisions>1</divisions>", zero_tuplet), None, Target::Brass).map(|_| ())).contains("tuplet"));
     let (xml, none) = (cs(&musicxml("<divisions>0</divisions>", "")), std::ptr::null());
     let mut ts: *mut ScTalkingScore = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
-    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), none, &mut ts, &mut err) }, SC_INVALID);
+    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), none, SC_TARGET_BRASS, &mut ts, &mut err) }, SC_INVALID);
     unsafe { sc_string_free(err) };
     // A key signature of i64::MIN fifths flattens all seven steps, as in the reference: its B is a B flat,
     // so a written B is announced as B natural.
-    let flats = TalkingScore::new(musicxml("<divisions>1</divisions><key><fifths>-9223372036854775808</fifths></key>", ""), None).unwrap();
+    let flats = TalkingScore::new(musicxml("<divisions>1</divisions><key><fifths>-9223372036854775808</fifths></key>", ""), None, Target::Brass).unwrap();
     let text = flats.to_text(talking_settings_default(), None);
     assert!(text.contains("B-natural 4"), "{text}");
 }
 
 #[test]
 fn talking_score_parts_and_cursors_out_of_range() {
-    let ts = TalkingScore::new(musicxml("<divisions>1</divisions>", ""), None).unwrap();
+    let ts = TalkingScore::new(musicxml("<divisions>1</divisions>", ""), None, Target::Brass).unwrap();
     let s = talking_settings_default;
     assert_eq!(ts.to_text(s(), Some(vec![99])), ts.to_text(s(), Some(vec![])));
     assert!(ts.to_html(s(), Some(vec![0, 99, u32::MAX])).contains("Solo Cornet"));
@@ -395,10 +395,31 @@ fn talking_score_parts_and_cursors_out_of_range() {
     let xml = cs(&musicxml("<divisions>1</divisions>", ""));
     let mut h: *mut ScTalkingScore = std::ptr::null_mut();
     let mut err: *mut c_char = std::ptr::null_mut();
-    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), std::ptr::null(), &mut h, &mut err) }, SC_OK);
+    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), std::ptr::null(), SC_TARGET_BRASS, &mut h, &mut err) }, SC_OK);
     for unit in ["part", "bar"] {
         let req = cs(&format!(r#"{{"cursor": {{"part": 18446744073709551615, "bar": 18446744073709551615, "event": 0}}, "unit": "{unit}", "forward": true}}"#));
         assert_eq!(c_call(|out, err| unsafe { sc_talking_score_navigate(h, req.as_ptr(), out, err) }), (SC_OK, "null".into()), "{unit}");
     }
     unsafe { sc_talking_score_free(h) };
+}
+
+#[test]
+fn the_target_that_wrote_the_score_names_its_parts() {
+    let xml = musicxml("<divisions>1</divisions>", "");
+    let nb = || {
+        let mut s = talking_settings_default();
+        s.lang = "nb".into();
+        s
+    };
+    // The band has its own Norwegian for a part; a tab says the name the score gives.
+    assert!(TalkingScore::new(xml.clone(), None, Target::Brass).unwrap().to_text(nb(), None).contains("Solokornett"));
+    let tab = TalkingScore::new(xml.clone(), None, Target::Fretted).unwrap().to_text(nb(), None);
+    assert!(tab.contains("Solo Cornet") && !tab.contains("Solokornett"));
+    // Through the C ABI a target is a number, and one that is no target is invalid input.
+    let (xml, mut h, mut err) = (cs(&xml), std::ptr::null_mut::<ScTalkingScore>(), std::ptr::null_mut::<c_char>());
+    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), std::ptr::null(), SC_TARGET_FRETTED, &mut h, &mut err) }, SC_OK);
+    unsafe { sc_talking_score_free(h) };
+    assert_eq!(unsafe { sc_talking_score_new(xml.as_ptr(), std::ptr::null(), 7, &mut h, &mut err) }, SC_INVALID);
+    assert!(unsafe { CStr::from_ptr(err) }.to_str().unwrap().contains("unknown target 7"));
+    unsafe { sc_string_free(err) };
 }

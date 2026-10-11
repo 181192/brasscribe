@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from . import profiles, runner
+from . import profiles, runner, targets
 from .names import valid_id
 from .config import Settings
 
@@ -277,10 +277,10 @@ class JobManager:
             c = json.loads(comp.read_text())
             c["title"] = title
             _write(comp, json.dumps(c))
-        for xml in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
+        for xml in [out / targets.BRASS.musicxml, *sorted((out / "parts").glob("*.musicxml"))]:
             if xml.exists():
                 _write(xml, _retitle_musicxml(xml.read_text(), title))
-        tab = out / "tab.musicxml"
+        tab = out / targets.FRETTED.musicxml
         if tab.exists():  # its header holds the title cut to the page's width, as when it was written
             from . import bass_tab
 
@@ -362,14 +362,14 @@ class JobManager:
         return job
 
 
-# What MuseScore renders from a run's MusicXML (the export stages): the band score, its parts and a tab.
-RENDERED = {"brass-band.musicxml": ("brass-band.pdf", "brass-band.mid"), "tab.musicxml": ("tab.pdf", "tab.mid")}
+# What MuseScore renders from a run's MusicXML (the export stages): each target's score, and the band's parts.
+RENDERED = {t.musicxml: t.rendered for t in targets.TARGETS.values()}
 
 
 def _rendered(out: Path) -> bool:
     """Whether the run has a rendered file that holds its title."""
     return (any((out / name).exists() for names in RENDERED.values() for name in names)
-            or (out / "brass-band.brf").exists() or any((out / "parts").glob("*.pdf")) or any((out / "parts").glob("*.brf")))
+            or (out / targets.BRASS.file("brf")).exists() or any((out / "parts").glob("*.pdf")) or any((out / "parts").glob("*.brf")))
 
 
 def _render(out: Path, into: Path, cancel: threading.Event) -> list[str]:
@@ -394,7 +394,7 @@ def _render(out: Path, into: Path, cancel: threading.Event) -> list[str]:
                                       style=PART_STYLE if PART_STYLE.exists() else None, cancel=cancel):
                 raise RuntimeError("MuseScore did not render every part")
             made += [f"parts/{p.with_suffix('.pdf').name}" for p in parts]
-    for src in [out / "brass-band.musicxml", *sorted((out / "parts").glob("*.musicxml"))]:
+    for src in [out / targets.BRASS.musicxml, *sorted((out / "parts").glob("*.musicxml"))]:
         brf = src.with_suffix(".brf")
         if cancel.is_set():
             break

@@ -63,7 +63,7 @@ final class ScribeCoreTests: XCTestCase {
 
     func testTalkingScoreNavigation() throws {
         let xml = try arrangeMusicxml(compositionJson: composition, arranger: "auto")
-        let ts = try TalkingScore(musicxml: xml, compositionJson: composition)
+        let ts = try TalkingScore(musicxml: xml, compositionJson: composition, target: .brass)
         let solo = UInt32(ts.partNames().firstIndex(of: "Solo Cornet")!)
         let start = TalkingCursor(part: solo, bar: 0, event: 0)
         let first = try ts.announce(cursor: start, context: TalkingContext(), settings: talkingSettingsDefault(), byBar: false)
