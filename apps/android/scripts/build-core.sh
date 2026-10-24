@@ -11,7 +11,7 @@ if [ -z "${CI:-}" ] && [ -z "${SCRIBE_NO_ARTIFACT_CACHE:-}" ]; then exec "$here/
 export PATH=/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin:$PATH
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 export ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/28.2.13676358}"
-out="$here/core-bridge/src/main/jniLibs"
+out="$here/services/core-bridge/src/main/jniLibs"
 mkdir -p "$out"
 # API 35 is the newest this NDK builds for; the apps' floor is 36.
 (cd "$core" && cargo ndk -t arm64-v8a -t x86_64 -P 35 -o "$out" build --release -q -p scribe-ffi)
