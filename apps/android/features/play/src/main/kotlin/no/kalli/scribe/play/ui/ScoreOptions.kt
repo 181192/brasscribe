@@ -1,0 +1,200 @@
+package no.kalli.scribe.play.ui
+
+import no.kalli.scribe.play.R
+
+import no.kalli.scribe.design.R as DesignR
+
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.unit.dp
+import no.kalli.scribe.design.ScribeTheme
+import no.kalli.scribe.play.PlayViewModel
+import no.kalli.scribe.play.ScoreEntry
+
+/** The "more" icon on a score row: Edit title, Open on the music stand, Check the notes, Delete. */
+@Composable
+fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
+    var menu by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+    var draft by remember { mutableStateOf(entry.title) }
+    val c = ScribeTheme.colors
+
+    Box {
+        IconButton({ menu = true }, Modifier.size(48.dp).semantics { testTag = "score-options" }) {
+            BcIcon(DesignR.drawable.ic_bc_more, stringResource(R.string.score_options, entry.title), tint = c.textMuted)
+        }
+        // The other app's score is not opened here: its row keeps only what is about the row itself.
+        val opensHere = !entry.onComputer || vm.container.product.makes(entry.target)
+        DropdownMenu(menu, { menu = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.edit_title)) },
+                leadingIcon = { BcIcon(DesignR.drawable.ic_bc_text_size, null) },
+                onClick = { menu = false; draft = entry.title; renaming = true },
+            )
+            if (opensHere) DropdownMenuItem(
+                text = { Text(stringResource(R.string.stand_open_from_library)) },
+                leadingIcon = { BcIcon(R.drawable.ic_stand_music_stand, null) },
+                onClick = { menu = false; vm.openEntry(entry, stand = true) },
+                modifier = Modifier.semantics { testTag = "open-on-stand" },
+            )
+            if (opensHere) DropdownMenuItem(
+                text = { Text(stringResource(R.string.check_notes)) },
+                leadingIcon = { BcIcon(DesignR.drawable.ic_bc_next_uncertain, null) },
+                onClick = { menu = false; vm.openEntry(entry, review = true) },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete), color = c.error) },
+                leadingIcon = { BcIcon(DesignR.drawable.ic_bc_delete, null, tint = c.error) },
+                onClick = { menu = false; deleting = true },
+                modifier = Modifier.semantics { testTag = "score-delete" },
+            )
+        }
+    }
+
+    if (renaming) {
+        AlertDialog(
+            onDismissRequest = { renaming = false },
+            title = { Text(stringResource(R.string.edit_title)) },
+            text = {
+                OutlinedTextField(draft, { draft = it }, label = { Text(stringResource(R.string.score_title)) }, singleLine = true)
+            },
+            confirmButton = {
+                TextButton({ vm.renameEntry(entry, draft); renaming = false }, enabled = draft.isNotBlank()) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton({ renaming = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    if (deleting) {
+        AlertDialog(
+            onDismissRequest = { deleting = false },
+            title = { Text(stringResource(R.string.delete_score_title, entry.title)) },
+            text = { Text(stringResource(if (entry.onComputer) R.string.delete_score_computer else R.string.delete_score_phone)) },
+            confirmButton = {
+                TextButton({ vm.deleteEntry(entry); deleting = false }) { Text(stringResource(R.string.delete), color = c.error) }
+            },
+            dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+}
+
+/**
+ * A recording kept in Your scores before it has a score: its name, its length and "Not written down yet". A tap
+ * opens What is this? with it; its only option is Delete, which removes the recording from the phone.
+ */
+@Composable
+fun KeptRecordingRow(vm: PlayViewModel, k: no.kalli.scribe.play.KeptRecording, enabled: Boolean) {
+    var menu by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf(false) }
+    val c = ScribeTheme.colors
+    // The recording's name as Your scores shows names: without its file's extension.
+    val name = no.kalli.scribe.library.ScoreTitles.display(k.title, k.updated)
+    ListRow(
+        name, { vm.openKept(k) },
+        Modifier.semantics { testTag = "kept-${k.id}" },
+        subtitle = stringResource(R.string.kept_row_subtitle, clock(k.seconds)),
+        icon = DesignR.drawable.ic_bc_record_mic,
+        chevron = false,
+        enabled = enabled,
+        trailing = {
+            Box {
+                IconButton({ menu = true }, Modifier.size(48.dp).semantics { testTag = "kept-options" }) {
+                    BcIcon(DesignR.drawable.ic_bc_more, stringResource(R.string.score_options, name), tint = c.textMuted)
+                }
+                DropdownMenu(menu, { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.delete), color = c.error) },
+                        leadingIcon = { BcIcon(DesignR.drawable.ic_bc_delete, null, tint = c.error) },
+                        onClick = { menu = false; deleting = true },
+                        modifier = Modifier.semantics { testTag = "kept-delete" },
+                    )
+                }
+            }
+        },
+    )
+    if (deleting) {
+        AlertDialog(
+            onDismissRequest = { deleting = false },
+            title = { Text(stringResource(R.string.delete_score_title, name)) },
+            text = { Text(stringResource(R.string.kept_delete_text)) },
+            confirmButton = {
+                TextButton({ vm.deleteKept(k); deleting = false }, Modifier.semantics { testTag = "kept-delete-confirm" }) {
+                    Text(stringResource(R.string.delete), color = c.error)
+                }
+            },
+            dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+}
+
+@Composable
+fun scoreSubtitle(entry: ScoreEntry, product: no.kalli.scribe.play.Product): String {
+    // The product's own line for what it lists differently: its own kind of score, or the other app's.
+    product.rowSubtitle(entry)?.let { return it }
+    val profile = when (entry.profile) {
+        "solo" -> stringResource(R.string.profile_solo)
+        "brass-band" -> stringResource(R.string.profile_brass_band)
+        "orchestra-with-soloist" -> stringResource(R.string.profile_orchestra)
+        "pop-rock" -> stringResource(R.string.profile_pop)
+        else -> entry.profile
+    }
+    val date = android.text.format.DateUtils.getRelativeTimeSpanString(entry.updated, System.currentTimeMillis(),
+        android.text.format.DateUtils.DAY_IN_MILLIS).toString()
+    // "Full band · 132 bars · Today · 83 to check" for the phone's scores (review 3).
+    val container = androidx.compose.ui.platform.LocalContext.current.let { (it.applicationContext as no.kalli.scribe.play.PlayApplication).container }
+    val saved = entry.saved
+    // Worked out off the main thread: reading, decoding and grouping a full band takes a moment per score.
+    val facts by androidx.compose.runtime.produceState<ScoreFacts?>(null, saved?.id, saved?.updated) {
+        saved ?: return@produceState
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            container.scoreLibrary.content(saved.id)?.let { factsOf(saved, it, container.core) }
+        }
+    }
+    // The label comes from the lineup the score was arranged for; the part count only tells a band from a solo.
+    val band = facts?.let { f ->
+        when (f.lineup) {
+            no.kalli.scribe.play.Lineup.QUARTET -> stringResource(R.string.lineup_quartet)
+            no.kalli.scribe.play.Lineup.MINIMAL -> stringResource(R.string.lineup_minimal)
+            no.kalli.scribe.play.Lineup.FULL -> stringResource(R.string.home_full_band)
+            null -> if (f.parts > 1) stringResource(R.string.home_full_band) else stringResource(R.string.lineup_solo)
+        }
+    } ?: profile
+    val bars = facts?.bars?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_bars, it, it) }
+    val left = facts?.left?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
+    val draft = if (entry.saved?.draft == true) stringResource(R.string.draft_label) else null
+    return listOfNotNull(band, draft, bars, date, left, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
+}
+
+/** Parts, bars, review items left and the recorded lineup of a saved score. */
+private data class ScoreFacts(val parts: Int, val bars: Int, val left: Int?, val lineup: no.kalli.scribe.play.Lineup?)
+
+private fun factsOf(saved: no.kalli.scribe.library.SavedScore, content: no.kalli.scribe.library.SavedScoreContent, core: no.kalli.scribe.model.CoreBridge): ScoreFacts {
+    run {
+        val parts = no.kalli.scribe.model.MusicXmlParts.names(content.musicXml)
+        val bars = Regex("""<part\s+id="[^"]+"\s*>(.*?)</part>""", RegexOption.DOT_MATCHES_ALL).find(content.musicXml)
+            ?.groupValues?.get(1)?.let { Regex("<measure\\b").findAll(it).count() } ?: 0
+        val checked = saved.checked.mapNotNull { k -> k.substringBefore(':').let { v -> k.substringAfter(':').toIntOrNull()?.let { v to it } } }
+            .groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
+        val composition = content.compositionJson?.let { j -> runCatching { core.decodeComposition(j) }.getOrNull() }
+        val left = composition?.let { runCatching { itemsToCheck(it, checked, core) }.getOrNull() }
+        val lineup = no.kalli.scribe.play.Lineup.recorded(composition) ?: no.kalli.scribe.play.Lineup.ofParts(parts)
+        return ScoreFacts(parts.size, bars, left, lineup)
+    }
+}

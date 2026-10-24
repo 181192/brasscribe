@@ -81,7 +81,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, e2e |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
-| android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
+| android | `./gradlew testDebugUnitTest -Pscribe.fast` (every module and both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Scribe.Core.Tests && dotnet test` | nothing (seconds) |
 | bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
@@ -109,7 +109,7 @@ build for testing again.
   ([studio/README.md](../../studio/README.md#test))
 - the Swift packages (BrasscribeKit, NotationKit, ScreenCatalogue, `capture`) and the macOS app unit tests, then
   `apps/apple/scripts/screenshots.sh record`: the Mac screen catalogue with its checks
-- `./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint assembleDebug` (both apps' tests on the JVM, lint
+- `./gradlew testDebugUnitTest :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug` (both apps' tests on the JVM, lint
   for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh record`: the
   screen catalogues with their checks ([apps/android/README.md](../../apps/android/README.md#testing))
 - `apps/windows/tools/check-macos.sh`

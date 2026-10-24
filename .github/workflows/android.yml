@@ -78,12 +78,12 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.m2/repository/org/robolectric
-          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/features/play/src/appTest/resources/robolectric.properties') }}
           restore-keys: gradle-${{ runner.os }}-android-tests-
 
       - name: Unit tests, lint and debug APK
         if: ${{ !inputs.release }}
-        run: ./gradlew testDebugUnitTest lint assembleDebug --stacktrace
+        run: ./gradlew testDebugUnitTest :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug --stacktrace
 
       - uses: actions/upload-artifact@v7
         if: ${{ !inputs.release && failure() }}
@@ -130,7 +130,7 @@ jobs:
             "-Pfretscribe.versionName=$FRETSCRIBE_VERSION_NAME" "-Pfretscribe.versionCode=$FRETSCRIBE_VERSION_CODE"
           mkdir -p "$RUNNER_TEMP/unsigned"
           for a in arm64-v8a universal; do
-            apk="app/build/outputs/apk/brasscribe/release/app-brasscribe-$a-release-unsigned.apk"
+            apk="products/brasscribe/build/outputs/apk/release/brasscribe-$a-release-unsigned.apk"
             unzip -l "$apk" | grep -q "assets/sounds/brasscribe-band-mobile.sf2" || { echo "$apk has no band SoundFont" >&2; exit 1; }
             cp "$apk" "$RUNNER_TEMP/unsigned/app-$a-release-unsigned.apk"
           done
@@ -141,9 +141,9 @@ jobs:
           badge() { "$aapt2" dump badging "$1"; }
           version() { badge "$2" | sed -nE "s/^package: name='[^']*' .*version$1='([^']*)'.*/\\1/p"; }
           for a in arm64-v8a universal; do
-            apk="app/build/outputs/apk/fretscribe/release/app-fretscribe-$a-release-unsigned.apk"
+            apk="products/fretscribe/build/outputs/apk/release/fretscribe-$a-release-unsigned.apk"
             fail() { echo "$apk: $1" >&2; exit 1; }
-            badge "$apk" | grep -q "^package: name='no.fretscribe.play' " || fail "is not no.fretscribe.play"
+            badge "$apk" | grep -q "^package: name='no.kalli.fretscribe' " || fail "is not no.kalli.fretscribe"
             if badge "$apk" | grep -qE "^(application-debuggable|testOnly)"; then fail "is debuggable or test-only"; fi
             for v in Name Code; do
               given=FRETSCRIBE_VERSION_$(tr '[:lower:]' '[:upper:]' <<<"$v")
@@ -201,7 +201,7 @@ jobs:
           BT="$ANDROID_HOME/build-tools/35.0.0"
           [ "$(ls unsigned | wc -l)" -eq 4 ] || { echo "expected four unsigned APKs:" >&2; ls unsigned >&2; exit 1; }
           for a in arm64-v8a universal; do
-            for app in "app-$a=no.brasscribe.play" "fretscribe-$a=no.fretscribe.play"; do
+            for app in "app-$a=no.kalli.brasscribe" "fretscribe-$a=no.kalli.fretscribe"; do
               apk="unsigned/${app%%=*}-release-unsigned.apk"
               "$BT/aapt2" dump badging "$apk" | grep -q "^package: name='${app#*=}' " \
                 || { echo "$apk is not ${app#*=}" >&2; exit 1; }
@@ -259,7 +259,7 @@ jobs:
           BT="$ANDROID_HOME/build-tools/35.0.0"
           [ "$(ls "$RUNNER_TEMP/out" | wc -l)" -eq 4 ] || { echo "expected four signed APKs:" >&2; ls "$RUNNER_TEMP/out" >&2; exit 1; }
           for a in arm64-v8a universal; do
-            for app in "brasscribe-play-android-$a=no.brasscribe.play=$RELEASE_CERT_SHA256" "fretscribe-android-$a=no.fretscribe.play=$PROTOTYPES_CERT_SHA256"; do
+            for app in "brasscribe-play-android-$a=no.kalli.brasscribe=$RELEASE_CERT_SHA256" "fretscribe-android-$a=no.kalli.fretscribe=$PROTOTYPES_CERT_SHA256"; do
               IFS== read -r name package cert <<<"$app"
               apk="$RUNNER_TEMP/out/$name.apk"
               "$BT/aapt2" dump badging "$apk" | grep -q "^package: name='$package' " || { echo "$name.apk is not $package" >&2; exit 1; }

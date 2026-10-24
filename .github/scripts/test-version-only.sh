@@ -13,16 +13,21 @@ expect() { # expect 0|1 WHAT BASE HEAD   (in the current directory's repository)
   if [ "$got" = "$1" ]; then echo "ok: $2"; else echo "FAILED: $2 (exit $got, expected $1)"; failed=1; fi
 }
 
-# ---- the real release commits
+# The files release.sh writes the version into.
+files="apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts apps/apple/project.yml apps/bandroom/macos/project.yml apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
+
+# ---- the real release commits (one that wrote a version file under an earlier path is skipped: the list is release.sh's)
 cd "$root"
 releases="$(git log --format=%H -E --grep='^chore\(release\): [0-9]+\.[0-9]+\.[0-9]+' -5 HEAD)"
 [ "$(wc -l <<< "$releases" | tr -d ' ')" = 5 ] || { echo "FAILED: fewer than five release commits in this checkout's history (a shallow checkout?)"; exit 1; }
+written=(-e CHANGELOG.md); for f in $files; do written+=(-e "$f"); done
 while IFS= read -r commit; do
+  moved="$(git diff --name-only --no-renames "$commit^" "$commit" | grep -vxF "${written[@]}" || true)"
+  if [ -n "$moved" ]; then echo "skipped: $(git log -1 --format=%s "$commit") (wrote $moved)"; continue; fi
   expect 0 "$(git log -1 --format=%s "$commit")" "$commit^" "$commit"
 done <<< "$releases"
 
 # ---- made-up changes, in a repository of their own that holds the version files as they are here
-files="apps/android/app/build.gradle.kts apps/apple/project.yml apps/bandroom/macos/project.yml apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 git init -q "$work"
@@ -33,7 +38,7 @@ git add -A; git commit -q -m base
 base="$(git rev-parse HEAD)"
 
 bump() { # what release.sh writes, in every file
-  sed -i.bak -E 's/^( *versionCode = )[0-9]+/\19999/; s/^( *versionName = )"[^"]*"/\1"99.0.0"/' apps/android/app/build.gradle.kts
+  sed -i.bak -E 's/^( *versionCode = )[0-9]+/\19999/; s/^( *versionName = )"[^"]*"/\1"99.0.0"/' apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts
   sed -i.bak -E 's/^( *MARKETING_VERSION: )"[^"]*"/\1"99.0.0"/; s/^( *CURRENT_PROJECT_VERSION: )"[^"]*"/\1"9999"/' apps/apple/project.yml apps/bandroom/macos/project.yml
   sed -i.bak -E 's#<Version>[^<]*</Version>#<Version>99.0.0</Version>#' apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props
   echo "## 99.0.0" >> CHANGELOG.md
@@ -56,8 +61,8 @@ for f in $files; do
   check 1 "3000 other lines added to $f"
 done
 bump; echo "# one more line" >> apps/apple/project.yml; check 1 "the version, and one more line in project.yml"
-bump; sed -i.bak -E 's/^( *minSdk = )[0-9]+/\11/' apps/android/app/build.gradle.kts; rm -f apps/android/app/build.gradle.kts.bak
-grep -q 'minSdk = 1$' apps/android/app/build.gradle.kts || { echo "FAILED: build.gradle.kts has no minSdk line to change"; failed=1; }
+bump; sed -i.bak -E 's/^( *minSdk = )[0-9]+/\11/' apps/android/products/brasscribe/build.gradle.kts; rm -f apps/android/products/brasscribe/build.gradle.kts.bak
+grep -q 'minSdk = 1$' apps/android/products/brasscribe/build.gradle.kts || { echo "FAILED: build.gradle.kts has no minSdk line to change"; failed=1; }
 check 1 "the version, and minSdk"
 bump; echo "++ a line that looks like a file header" >> apps/apple/project.yml; check 1 "the version, and an added line that starts with '++ '"
 printf -- '-- a line that looks like a file header\n' >> apps/apple/project.yml; git add -A; git commit -q -m "with a '-- ' line"

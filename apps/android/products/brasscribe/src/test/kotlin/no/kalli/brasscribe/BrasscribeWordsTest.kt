@@ -1,0 +1,85 @@
+package no.kalli.brasscribe
+
+import no.kalli.scribe.play.*
+import no.kalli.scribe.play.ui.*
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
+import org.junit.Before
+import org.junit.Test
+import java.io.File
+
+/**
+ * What Brasscribe says, in English and bokmål, is true and in the band room's words (design/brand/brand.md): no
+ * developer command, no "transcribe", no "output", and nb «opptak» for a recording.
+ */
+class BrasscribeWordsTest {
+    private val src = System.getProperty("scribe.repo")?.let(::File)?.resolve("apps/android/products/brasscribe/src")
+
+    private fun strings(dir: String): Map<String, String> =
+        Regex("""<string name="([a-z0-9_]+)"[^>]*>(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)
+            .findAll(File(src, "main/res/$dir/strings.xml").readText())
+            .associate { it.groupValues[1] to it.groupValues[2].replace("\\'", "'") }
+
+    private val en by lazy { strings("values") }
+    private val nb by lazy { strings("values-nb") }
+
+    @Before
+    fun sources() = assertTrue("the app's sources are where this test reads them", src?.resolve("main/res/values/strings.xml")?.isFile == true)
+
+    private fun matching(words: Map<String, String>, pattern: Regex) = words.filterValues { pattern.containsMatchIn(it) }.map { "${it.key}: ${it.value}" }
+
+    @Test
+    fun noDeveloperCommandAndNoTranscriberIsShown() {
+        val wrong = Regex("pixi|serve-lan|transcrib|transkrib", RegexOption.IGNORE_CASE)
+        assertEquals(emptyList<String>(), matching(en, wrong))
+        assertEquals(emptyList<String>(), matching(nb, wrong))
+        // The pairing screen's tech details still say where the address is.
+        assertTrue(en.getValue("companion_tech_details").contains("Details for the band's tech person"))
+        assertTrue(nb.getValue("companion_tech_details").contains("Detaljer for den tekniske i bandet"))
+    }
+
+    @Test
+    fun theButtonAfterCheckingSaysWhatComesNext() {
+        // Not "Choose output" / «Velg resultat»: it names the next screen (a solo take is not asked for a band there).
+        assertTrue(en.getValue("review_continue"), !Regex("output|choose", RegexOption.IGNORE_CASE).containsMatchIn(en.getValue("review_continue")))
+        assertTrue(nb.getValue("review_continue"), !Regex("resultat|velg", RegexOption.IGNORE_CASE).containsMatchIn(nb.getValue("review_continue")))
+        assertTrue(en.getValue("review_continue").endsWith(en.getValue("output_title")))
+        assertTrue(nb.getValue("review_continue").endsWith(nb.getValue("output_title")))
+    }
+
+    @Test
+    fun bokmalRecordsAnOpptak() {
+        // A recording is an «opptak» everywhere, as on the rest of the screens.
+        assertEquals(emptyList<String>(), matching(nb, Regex("innspilling", RegexOption.IGNORE_CASE)))
+        assertEquals("Opptaket er i gang", nb["record_started"])
+        assertEquals("Stopp opptaket", nb["record_stop"])
+    }
+
+    @Test
+    fun helpSaysWhatThePhoneMakesAndWhenThereIsPaper() {
+        // A brass band can be made on the phone, as a draft; the full score is the computer's.
+        assertTrue(en.getValue("help_5_text"), en.getValue("help_5_text").contains("draft"))
+        assertTrue(nb.getValue("help_5_text"), nb.getValue("help_5_text").contains("utkast"))
+        assertTrue(!en.getValue("help_5_title").contains("needs your computer"))
+        assertTrue(!nb.getValue("help_5_title").contains("trenger datamaskinen"))
+        // Paper always: the computer's PDF while no note was changed since it made the score, else the phone's own.
+        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("your computer"))
+        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("datamaskinen"))
+        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("no note was changed since"))
+        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("ingen toner er endret siden"))
+        assertTrue(en.getValue("help_4_text"), en.getValue("help_4_text").contains("the phone lays out the pages itself"))
+        assertTrue(nb.getValue("help_4_text"), nb.getValue("help_4_text").contains("setter telefonen opp sidene selv"))
+    }
+
+    @Test
+    fun notSureNamesBothAnswersByTheirCards() {
+        // "Choose Brass band" alone is wrong for a take of yourself: every note of a draft is marked.
+        for (words in listOf(en, nb)) {
+            val line = words.getValue("profile_not_sure")
+            assertTrue(line, line.contains(words.getValue("profile_brass_band")))
+            assertTrue(line, line.contains(words.getValue("profile_solo")))
+        }
+    }
+}

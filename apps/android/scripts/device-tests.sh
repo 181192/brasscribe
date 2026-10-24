@@ -29,8 +29,8 @@ apps="${1:-brasscribe fretscribe}"
 tasks=()
 for app in $apps; do
   case "$app" in
-    brasscribe) tasks+=(":app:connectedBrasscribeDebugAndroidTest") ;;
-    fretscribe) tasks+=(":app:connectedFretscribeDebugAndroidTest") ;;
+    brasscribe) tasks+=(":products:brasscribe:connectedDebugAndroidTest") ;;
+    fretscribe) tasks+=(":products:fretscribe:connectedDebugAndroidTest") ;;
     *) echo "device-tests: no app $app (brasscribe, fretscribe)" >&2; exit 2 ;;
   esac
 done

@@ -22,9 +22,17 @@ dependencyResolutionManagement {
 
 rootProject.name = "scribe-android"
 
-include(":app")
 include(":services:model")
 include(":services:engine-client")
 include(":features:score:pitch")
 include(":services:audio")
 include(":services:core-bridge")
+include(":services:connection")
+include(":services:library")
+include(":features:play")
+include(":features:score")
+include(":features:tab")
+include(":design:brasscribe")
+include(":design:fretscribe")
+include(":products:brasscribe")
+include(":products:fretscribe")

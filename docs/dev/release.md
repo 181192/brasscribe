@@ -74,7 +74,7 @@ python3 sounds/tools/band_sounds.py verify # the pinned band pack is in data/sou
 Bump the version in its own commit and push it to main **before** building, because Bandroom's
 workspace stamp records the commit it was built from:
 
-- `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe takes them too, unless a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
+- `apps/android/products/brasscribe/build.gradle.kts` and `apps/android/products/fretscribe/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe has its own only when a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
 - `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
 - Leave the core's Cargo version alone: the fixtures embed `scribe-core 0.1.0` in their MusicXML.
@@ -90,7 +90,7 @@ full macOS UI suite in the VM: `MAC_VM_FULL=1 scripts/mac-vm.sh test-ui` ([macos
 cd apps/android && ./gradlew assembleRelease assembleDebug -q   # the debug APK is for the phone (§7)
 ```
 
-This writes `app/build/outputs/apk/brasscribe/release/app-brasscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
+This writes `products/brasscribe/build/outputs/apk/release/brasscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
 (one APK per ABI plus a universal one; the x86_64 one is not shipped). Signing is not in Gradle. It is
 done by hand with the build tools and the key in `~/.brasscribe/release-keys`
 (`brasscribe-release.jks`, alias `brasscribe`, and `keystore-password.txt`). **Every release must use
@@ -100,7 +100,7 @@ password, and pass it as `file:`, not `pass:`, so it stays out of the process li
 ```sh
 BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1); K=~/.brasscribe/release-keys
 for a in arm64-v8a universal; do
-  "$BT/zipalign" -f -p 4 "app/build/outputs/apk/brasscribe/release/app-brasscribe-$a-release-unsigned.apk" "$S/tmp.apk"
+  "$BT/zipalign" -f -p 4 "products/brasscribe/build/outputs/apk/release/brasscribe-$a-release-unsigned.apk" "$S/tmp.apk"
   "$BT/apksigner" sign --ks "$K/brasscribe-release.jks" --ks-pass "file:$K/keystore-password.txt" \
     --out "$OUT/brasscribe-play-android-$a.apk" "$S/tmp.apk"
   "$BT/apksigner" verify "$OUT/brasscribe-play-android-$a.apk"
@@ -112,8 +112,8 @@ Check each APK: `apksigner verify --print-certs` shows the same certificate SHA-
 release's APK, `aapt2 dump badging` shows the new `versionCode`/`versionName`, and `unzip -l` lists
 `brasscribe-band-mobile.sf2`.
 
-`assembleRelease` also writes Fretscribe's APKs, to `app/build/outputs/apk/fretscribe/release/`
-(`app-fretscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`). They are signed the same way with
+`assembleRelease` also writes Fretscribe's APKs, to `products/fretscribe/build/outputs/apk/release/`
+(`fretscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`). They are signed the same way with
 the prototypes key (alias `prototypes`), never with Brasscribe's, and are named
 `fretscribe-android-{arm64-v8a,universal}.apk`. `.github/workflows/android.yml` has the certificate
 digest of each key and what a Fretscribe APK must not carry (the band SoundFont, the models, sfizz).
@@ -245,8 +245,11 @@ Hugging Face key). See `gh release view v0.2.0` for the shape.
   listing of `~/Library/Containers/no.brasscribe.play` and `~/Library/Application Support/Brasscribe`
   (without `envs/` and `logs/`) before and after, to show the user's data is untouched.
 - **The phone.** It carries the **debug**-signed app, so it gets the debug APK
-  (`adb install -r app/build/outputs/apk/brasscribe/debug/app-brasscribe-arm64-v8a-debug.apk`). A release APK would need an
-  uninstall first. **Never uninstall the app**: that deletes the user's scores.
+  (`adb install -r products/brasscribe/build/outputs/apk/debug/brasscribe-debug.apk`; Fretscribe's is
+  `products/fretscribe/build/outputs/apk/debug/fretscribe-debug.apk`). A release APK would need an
+  uninstall first. **Never uninstall the app**: that deletes the user's scores. The apps' ids are `no.kalli.brasscribe`
+  and `no.kalli.fretscribe`: a phone that still has an app under its old id (`no.brasscribe.play`, `no.fretscribe.play`)
+  gets the new one installed beside it, not over it, and the old one keeps its scores until it is uninstalled.
 
 ## 8. The site
 
