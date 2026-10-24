@@ -380,16 +380,16 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.m2/repository/org/robolectric
-          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/features/play/src/appTest/resources/robolectric.properties') }}
           restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-tests-', runner.os) || '' }}
 
       # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
       # threads, and lint beside them on a two-core runner would take that time from them.
       - name: Unit tests and the screens' tests (both apps, without the screen catalogues)
-        run: ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pscribe.withoutCatalogues --stacktrace
+        run: ./gradlew testDebugUnitTest -Pscribe.withoutCatalogues --stacktrace
 
       - name: Lint and the debug builds (both apps)
-        run: ./gradlew lint lintFretscribeDebug assembleDebug --stacktrace
+        run: ./gradlew :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug --stacktrace
 
       # Stopped first, so the daemon isn't writing to the directories while they are packed.
       - name: Stop the Gradle daemon
@@ -473,7 +473,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.m2/repository/org/robolectric
-          key: gradle-${{ runner.os }}-android-screens-${{ matrix.app }}-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          key: gradle-${{ runner.os }}-android-screens-${{ matrix.app }}-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/features/play/src/appTest/resources/robolectric.properties') }}
           restore-keys: ${{ github.ref != 'refs/heads/main' && format('gradle-{0}-android-screens-{1}-', runner.os, matrix.app) || '' }}
 
       - name: Screen catalogue
@@ -501,7 +501,7 @@ jobs:
         working-directory: .
         env:
           CATALOGUE: android-${{ matrix.app }}
-          DIR: apps/android/app/build/outputs/roborazzi
+          DIR: apps/android/products/${{ matrix.app }}/build/outputs/roborazzi
         run: |
           jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
             --arg toolchain "$(java -version 2>&1 | head -1)" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
@@ -513,7 +513,7 @@ jobs:
         if: always()
         with:
           name: ${{ github.event_name == 'pull_request' && format('android-screenshots-{0}', matrix.app) || format('screens-android-{0}-{1}', matrix.app, github.sha) }}
-          path: apps/android/app/build/outputs/roborazzi
+          path: apps/android/products/${{ matrix.app }}/build/outputs/roborazzi
           if-no-files-found: ignore
           retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
@@ -522,9 +522,9 @@ jobs:
         with:
           name: android-screen-reports-${{ matrix.app }}
           path: |
-            apps/android/app/build/reports/tests
-            apps/android/app/build/test-results
-            apps/android/app/build/outputs/screen-pictures
+            apps/android/products/${{ matrix.app }}/build/reports/tests
+            apps/android/products/${{ matrix.app }}/build/test-results
+            apps/android/products/${{ matrix.app }}/build/outputs/screen-pictures
           if-no-files-found: ignore
 
   # Play and Bandroom for Windows (windows.yml): core tests, the WinUI builds, start-up smoke tests, the Bandroom

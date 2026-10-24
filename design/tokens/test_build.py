@@ -698,12 +698,12 @@ def test_the_display_font_needs_its_android_name(tmp_path):
 def test_android_window_colours_are_the_token_backgrounds():
     # The window behind Compose (apps/android, each product's res/values/themes.xml) is the token bg.
     import re
-    app = build.ROOT / "apps" / "android" / "app" / "src"
+    app = build.ROOT / "apps" / "android" / "products"
     fs = fretscribe()
     contrast = ("high-contrast-light", "high-contrast")
     for product, tokens, modes in (("brasscribe", build, ("light", "dark", "pink", "pink-dark") + contrast),
                                    ("fretscribe", fs, ("light", "dark", "light", "dark") + contrast)):
-        xml = (app / product / "res" / "values" / "themes.xml").read_text()
+        xml = (app / product / "src" / "main" / "res" / "values" / "themes.xml").read_text()
         found = dict(re.findall(r'<color name="(window_\w+)">#FF([0-9A-F]{6})</color>', xml))
         want = dict(zip(("window_light", "window_dark", "window_pink", "window_pink_dark", "window_contrast_light",
                          "window_contrast_dark"),

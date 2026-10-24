@@ -157,7 +157,7 @@ object MediaImport {
             onProgress(1.0)
             return samples > 0 || run { out.delete(); false }
         } catch (e: Exception) {
-            android.util.Log.w("BrasscribePlay", "AAC remux failed; decoding to WAV instead", e)
+            android.util.Log.w("ScribePlay", "AAC remux failed; decoding to WAV instead", e)
             runCatching { if (started) muxer?.stop() }
             out.delete()
             return false

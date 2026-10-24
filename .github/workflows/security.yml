@@ -117,7 +117,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             ~/.m2/repository/org/robolectric
-          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/app/src/test/resources/robolectric.properties') }}
+          key: gradle-${{ runner.os }}-android-tests-${{ hashFiles('apps/android/gradle/wrapper/gradle-wrapper.properties', 'apps/android/gradle/libs.versions.toml', 'apps/android/**/*.gradle.kts', 'apps/android/features/play/src/appTest/resources/robolectric.properties') }}
           restore-keys: gradle-${{ runner.os }}-android-tests-
 
       - name: Build the Android app (debug)

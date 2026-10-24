@@ -74,7 +74,7 @@ python3 sounds/tools/band_sounds.py verify # the pinned band pack is in data/sou
 Bump the version in its own commit and push it to main **before** building, because Bandroom's
 workspace stamp records the commit it was built from:
 
-- `apps/android/app/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe takes them too, unless a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
+- `apps/android/products/brasscribe/build.gradle.kts` and `apps/android/products/fretscribe/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe has its own only when a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
 - `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
 - `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
 - Leave the core's Cargo version alone: the fixtures embed `scribe-core 0.1.0` in their MusicXML.

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The words of the screens Fretscribe shares with Brasscribe, where Fretscribe says them the same way
+         (its own are in strings.xml). Every string of features/play is here or there. -->
+    <string name="conn_offline">Ikke tilkoblet. Du kan fortsatt lage partitur på dette nettbrettet.</string>
+    <string name="conn_needs_pairing">Datamaskinen kjenner ikke igjen dette nettbrettet lenger.</string>
+    <string name="conn_pair_again">Koble til nettbrettet på nytt</string>
+    <string name="pair_forgotten">Nettbrettet kobler ikke lenger til datamaskinen.</string>
+</resources>

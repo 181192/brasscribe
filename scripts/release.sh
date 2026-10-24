@@ -82,8 +82,9 @@ Set this repository's email (git config user.email ...), or RELEASE_NEW_IDENTITY
 done
 
 # The new version must be higher than the current one.
-gradle=apps/android/app/build.gradle.kts
-# The version in defaultConfig is Brasscribe's, and Fretscribe's while it is released with it.
+# Each Android app has the version in its defaultConfig; Fretscribe's is Brasscribe's while it is released with it.
+gradle=apps/android/products/brasscribe/build.gradle.kts
+gradles="$gradle apps/android/products/fretscribe/build.gradle.kts"
 default_config='/^ *defaultConfig \{/,/^ *\}/'
 current=$(sed -nE "$default_config"' s/^ *versionName = "([^"]+)".*/\1/p' "$gradle")
 [[ $current =~ $semver ]] || die "can't read the current version from $gradle (got '$current')"
@@ -101,17 +102,19 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 build=$(( $(sed -nE "$default_config"' s/^ *versionCode = ([0-9]+).*/\1/p' "$gradle") + 1 ))
 apple="apps/apple/project.yml apps/bandroom/macos/project.yml"
 windows="apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
-sed -i.bak -E "$default_config { s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\"]*\"/\1\"$version\"/; }" "$gradle"
+for g in $gradles; do
+  sed -i.bak -E "$default_config { s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\"]*\"/\1\"$version\"/; }" "$g"
+done
 for y in $apple; do
   sed -i.bak -E "s/^( *MARKETING_VERSION: )\"[^\"]*\"/\1\"$version\"/; s/^( *CURRENT_PROJECT_VERSION: )\"[^\"]*\"/\1\"$build\"/" "$y"
 done
 for x in $windows; do
   sed -i.bak -E "s#<Version>[^<]*</Version>#<Version>$version</Version>#" "$x"
 done
-for f in $gradle $apple $windows; do rm -f "$f.bak"; done
+for f in $gradles $apple $windows; do rm -f "$f.bak"; done
 
 # A sed that matches nothing still succeeds: check every file really has the new version.
-{ grep -q "versionName = \"$version\"" "$gradle" && grep -q "versionCode = $build" "$gradle"; } || die "$gradle was not bumped"
+for g in $gradles; do { grep -q "versionName = \"$version\"" "$g" && grep -q "versionCode = $build" "$g"; } || die "$g was not bumped"; done
 for y in $apple; do
   { grep -q "MARKETING_VERSION: \"$version\"" "$y" && grep -q "CURRENT_PROJECT_VERSION: \"$build\"" "$y"; } || die "$y was not bumped"
 done
@@ -119,7 +122,7 @@ for x in $windows; do grep -q "<Version>$version</Version>" "$x" || die "$x was 
 
 mv "$tmp/CHANGELOG.md" CHANGELOG.md
 git switch -q -c "$branch"
-git add $gradle $apple $windows CHANGELOG.md
+git add $gradles $apple $windows CHANGELOG.md
 git diff --cached --stat
 git commit -q -m "chore(release): $version"
 git push -q -u origin "$branch"

@@ -42,7 +42,7 @@ Fretscribe's Android files ([`../dist/android`](../dist/android)) are the neutra
 metrics) and `FretscribeTheme`. The tokens no longer say how Fretscribe passes for Brasscribe.
 
 The Fretscribe app still has screens from Brasscribe that draw a score. What they need of a product's
-own, the app gives them (`Product.Theme` in `apps/android/app/src/fretscribe`): the one doubt colour
+own, the app gives them (`Fretscribe.Theme` in `apps/android/products/fretscribe`): the one doubt colour
 where a score has a very doubtful one, the repeat's band where it has a band for freely played bars.
 
 `fonts.display` names the title face, Atkinson Hyperlegible Next, and its name in `res/font`

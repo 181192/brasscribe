@@ -14,7 +14,7 @@ files="$(git diff --name-only --no-renames "$base" "$head")"
 while IFS= read -r file; do
   case "$file" in
     CHANGELOG.md) continue ;;
-    apps/android/app/build.gradle.kts) line='^[+-] *(versionCode = [0-9]+|versionName = "[0-9A-Za-z.+-]+")$' ;;
+    apps/android/products/brasscribe/build.gradle.kts | apps/android/products/fretscribe/build.gradle.kts) line='^[+-] *(versionCode = [0-9]+|versionName = "[0-9A-Za-z.+-]+")$' ;;
     apps/apple/project.yml | apps/bandroom/macos/project.yml) line='^[+-] *(MARKETING_VERSION|CURRENT_PROJECT_VERSION): "[0-9A-Za-z.+-]+"$' ;;
     apps/windows/Directory.Build.props | apps/bandroom/windows/Directory.Build.props) line='^[+-] *<Version>[0-9A-Za-z.+-]+</Version>$' ;;
     *) exit 1 ;;

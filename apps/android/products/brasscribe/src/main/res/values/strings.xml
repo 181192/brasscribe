@@ -1,0 +1,772 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Voice: design/brand/brand.md (a good section leader: calm, specific, on your side), with the
+         replacements of design/reviews/usability-review.md §2. No "transcribe", "engine" or "model". -->
+    <string name="app_name" translatable="false">Brasscribe Play</string>
+    <string name="brand_name" translatable="false">Brasscribe</string>
+    <string name="share_target_label">Make a score with Brasscribe</string>
+    <string name="back">Back</string>
+    <string name="home">Home</string>
+    <string name="back_home">Back to Home</string>
+    <string name="cancel">Cancel</string>
+    <string name="continue_label">Continue</string>
+    <string name="more">More</string>
+    <string name="controls_hidden">Controls</string>
+    <string name="settings">Settings</string>
+    <string name="change">Change</string>
+    <string name="retry">Try again</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="details_show">Details for the band\'s tech person</string>
+    <string name="details_hide">Hide the details</string>
+
+    <!-- First run -->
+    <string name="first_run_hero_start">"Scores for your band, from "</string>
+    <string name="first_run_hero_end">any recording.</string>
+    <string name="first_run_1_title">Record or open a file</string>
+    <string name="first_run_1_text">Play the piece, record a rehearsal, or open a file you have.</string>
+    <string name="first_run_2_title">Check the marked notes</string>
+    <string name="first_run_2_text">Notes Brasscribe isn\'t sure about get a “?”. You decide.</string>
+    <string name="first_run_3_title">Practise with the band</string>
+    <string name="first_run_3_text">Mute your part, slow it down, repeat the hard bars.</string>
+    <string name="first_run_privacy">Recordings stay on your phone and your own computer.</string>
+    <string name="first_run_start">Get started</string>
+
+    <!-- Home -->
+    <string name="home_hero_start">"Turn a recording into "</string>
+    <string name="home_hero_end">a score.</string>
+    <string name="home_tagline">Play it, record it, or open a file. Brasscribe writes the parts for your band.</string>
+    <string name="home_import">Open a recording</string>
+    <string name="home_record_mic">Record with the microphone</string>
+    <string name="home_record_mic_desc">Play or record a rehearsal</string>
+    <string name="home_record_device">Record what\'s playing</string>
+    <string name="home_record_device_desc">From another app on this phone</string>
+    <string name="home_links_tip">Links can\'t be downloaded. Record what\'s playing, or open a file you have.</string>
+    <string name="home_scores_empty">Your scores appear here after the first recording.</string>
+    <string name="home_your_scores">Your scores</string>
+    <string name="edit_title">Edit title</string>
+    <string name="save">Save</string>
+    <string name="pitch_down">Down a semitone</string>
+    <string name="pitch_up">Up a semitone</string>
+    <string name="review_changed_from">Changed to %1$s (was %2$s)</string>
+    <string name="review_change_undone">Back to %1$s, as Brasscribe wrote it</string>
+    <string name="review_undo_change">Undo change</string>
+    <string name="score_options">Options for %1$s</string>
+    <string name="check_notes">Check the notes</string>
+    <string name="delete">Delete</string>
+    <string name="delete_score_title">Delete “%1$s”?</string>
+    <string name="delete_score_phone">The score is removed from this phone.</string>
+    <string name="delete_score_computer">The score is removed from your computer.</string>
+    <string name="kept_row_subtitle">%1$s · Not written down yet</string>
+    <string name="kept_delete_text">The recording is removed from this phone.</string>
+    <string name="kept_storage">Recordings kept in Your scores use %1$s.</string>
+    <string name="on_your_computer">On your computer</string>
+    <string name="opening_score">Opening…</string>
+    <string name="evidence_how_sure">How sure Brasscribe is</string>
+    <string name="evidence_percent">%1$d%%</string>
+    <string name="evidence_heard">What Brasscribe heard each time</string>
+    <string name="evidence_same">Same, %1$s</string>
+    <string name="evidence_no_note">No note</string>
+    <string name="review_could_also_be">%1$s: it could also be %2$s.</string>
+    <string name="review_listen_side_by_side">%1$s. Listen to the original and the score side by side.</string>
+    <string name="change_note">Change note…</string>
+    <string name="change_note_title">Change note</string>
+    <string name="change_note_preview">Play the bar with this note</string>
+    <plurals name="notes_to_check">
+        <item quantity="one">%d note to check</item>
+        <item quantity="other">%d notes to check</item>
+    </plurals>
+    <string name="imported">Opened %1$s, %2$s</string>
+    <string name="imported_video">Opened %1$s, %2$s. The sound is used.</string>
+    <string name="reading_file">Opening %1$s</string>
+    <string name="extracting_sound">Taking the sound out of %1$s</string>
+
+    <plurals name="duration_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="duration_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+
+    <!-- Recording -->
+    <string name="record_title_mic">Recording</string>
+    <string name="record_title_device">Recording what\'s playing</string>
+    <string name="record_started">Recording started</string>
+    <string name="record_stopped">Recording stopped, %1$s</string>
+    <string name="record_stop">Stop recording</string>
+    <string name="record_discard_title">Throw away this recording?</string>
+    <string name="record_discard_text">It is deleted from the phone. To keep it, choose Stop recording.</string>
+    <string name="record_discard_confirm">Throw away</string>
+    <string name="record_discard_keep">Keep recording</string>
+    <string name="record_level">Sound level</string>
+    <plurals name="record_limit">
+        <item quantity="one">Recordings stop at %d hour.</item>
+        <item quantity="other">Recordings stop at %d hours.</item>
+    </plurals>
+    <plurals name="record_past_phone_limit">
+        <item quantity="one">Longer than %d minute: the score will be made on your computer, not on the phone.</item>
+        <item quantity="other">Longer than %d minutes: the score will be made on your computer, not on the phone.</item>
+    </plurals>
+    <string name="level_silent">Silent</string>
+    <string name="level_low">Quiet</string>
+    <string name="level_good">Good</string>
+    <string name="level_loud">Too loud</string>
+    <string name="record_permission_needed">Brasscribe needs the microphone to record. You can allow it in Settings.</string>
+    <string name="device_notice_title">Before you record</string>
+    <string name="device_notice">Brasscribe records what other apps play. Streaming apps usually block recording; then Brasscribe hears nothing and tells you. Links can\'t be downloaded.</string>
+    <string name="device_start">Start recording</string>
+    <string name="device_silent">Nothing is coming through. This app probably blocks recording.</string>
+    <string name="device_consent_denied">Recording wasn\'t allowed.</string>
+    <string name="notif_channel">Recording</string>
+    <string name="notif_recording_mic">Recording with the microphone</string>
+    <string name="notif_recording_device">Recording what\'s playing on this phone</string>
+
+    <!-- What is this? -->
+    <string name="profile_title">What is this?</string>
+    <string name="profile_hint">Your answer decides how Brasscribe listens. It never guesses.</string>
+    <string name="profile_solo">One instrument</string>
+    <string name="profile_solo_desc">One player on their own, like you practising the cornet.</string>
+    <string name="profile_brass_band">Brass band</string>
+    <string name="profile_brass_band_desc">A whole band playing together, with no other instruments.</string>
+    <string name="profile_orchestra">Soloist with orchestra or band</string>
+    <string name="profile_orchestra_desc">You get the solo part, plus the accompaniment arranged for brass band.</string>
+    <string name="profile_pop">Pop or rock</string>
+    <string name="profile_pop_desc">Singing, guitars, keys, bass and drums.</string>
+    <string name="profile_not_sure">Not sure? Choose Brass band for a group, or One instrument for a recording of just you. You can change it later.</string>
+    <string name="profile_choose_one">Choose one to continue.</string>
+    <string name="where_title">Where the score is made</string>
+    <string name="where_device">On this phone</string>
+    <string name="where_device_desc">One instrument only. The recording stays on the phone.</string>
+    <string name="where_device_solo_only">Only for one instrument or a brass band.</string>
+    <string name="where_device_draft">On this phone: a quick draft</string>
+    <string name="where_device_draft_desc">Your computer makes a better score.</string>
+    <string name="where_device_draft_card">A quick draft. The recording stays on the phone.</string>
+    <string name="where_companion">On your computer</string>
+    <string name="where_companion_desc">%1$s · the recording is not sent online</string>
+    <string name="where_device_unavailable">This version can\'t make scores on the phone.</string>
+    <plurals name="where_device_too_long">
+        <item quantity="one">Only for recordings up to %d minute.</item>
+        <item quantity="other">Only for recordings up to %d minutes.</item>
+    </plurals>
+    <string name="where_companion_missing">Connect Brasscribe Bandroom on your computer first.</string>
+    <string name="problem_connect_computer">Connect your computer</string>
+
+    <!-- Making the score -->
+    <string name="stage_queued">Getting ready</string>
+    <string name="stage_upload">Sending the recording to your computer</string>
+    <string name="stage_beats">Finding the beat</string>
+    <string name="stage_stems">Separating the instruments</string>
+    <string name="stage_layers">Separating the soloist from the band</string>
+    <string name="stage_transcribe">Writing down the notes</string>
+    <string name="stage_arrange">Arranging for brass band</string>
+    <string name="stage_export">Laying out the pages</string>
+    <string name="stage_decode">Getting the recording ready</string>
+    <string name="stage_pitch">Listening for the notes</string>
+    <string name="stage_confirm">Listening again to check</string>
+    <string name="stage_quantize">Placing the notes in bars</string>
+    <plurals name="eta_minutes">
+        <item quantity="one">About %d minute left</item>
+        <item quantity="other">About %d minutes left</item>
+    </plurals>
+    <string name="eta_under_minute">Less than a minute left</string>
+    <string name="eta_unknown">Working out how long this takes</string>
+    <string name="progress_percent">%1$d%%</string>
+    <string name="step_of">Step %1$d of %2$d</string>
+    <string name="step_done">done</string>
+    <string name="step_now">now</string>
+    <string name="step_waiting">to do</string>
+    <string name="transcribe_leave">%1$s. Keep Brasscribe open until the score is ready.</string>
+    <!-- A job on the computer: the app follows it while the player is away, and says when it is ready (with notifications
+         allowed), or the score is in Your scores. -->
+    <string name="transcribe_leave_computer">%1$s. You can switch to another app: Brasscribe tells you when the score is ready, or soon after if the phone is asleep.</string>
+    <string name="transcribe_leave_computer_quiet">%1$s. You can switch to another app: when the score is ready, it is in Your scores while your phone is connected to your computer.</string>
+    <string name="transcribe_leave_draft">%1$s. You can switch to another app: the draft goes on, and it is on the screen when you come back.</string>
+    <string name="transcribe_cancel_title">Stop making this score?</string>
+    <string name="transcribe_cancel_text">The recording is kept. You can start again from it.</string>
+    <string name="transcribe_cancel_text_kept">The recording stays in Your scores. You can start again from it.</string>
+    <string name="transcribe_cancel_confirm">Stop</string>
+    <string name="transcribe_cancel_keep">Keep going</string>
+    <string name="transcribe_cancelled">Stopped. The recording is kept.</string>
+    <string name="transcribe_cancelled_kept">Stopped. The recording is in Your scores.</string>
+    <string name="transcribe_failed">The score couldn\'t be made: %1$s</string>
+    <string name="transcribe_done">Score ready</string>
+    <string name="transcribe_where_device">On this phone</string>
+    <string name="transcribe_where_device_draft">On this phone, as a draft</string>
+    <string name="draft_notice">A quick draft made on this phone. Your computer makes a better score, and results on the phone can differ slightly from the computer\'s.</string>
+    <string name="draft_notice_short">A quick draft made on this phone.</string>
+    <string name="draft_make_full">Make the full score</string>
+    <string name="draft_no_computer">Open Brasscribe Bandroom on your computer to make the full score from the same recording.</string>
+    <string name="draft_label">Draft</string>
+    <string name="draft_too_long_title">Too long for a draft on this phone</string>
+    <string name="draft_too_long_body">Your computer can make the score from this recording.</string>
+    <string name="draft_too_long_body_away">Open Brasscribe Bandroom on your computer to make the score from this recording, or choose a shorter one.</string>
+    <string name="draft_too_long_body_unpaired">Your computer can make the score from this recording. Open Brasscribe Bandroom there and choose Pair a phone, then connect it here with Connect your computer. Or choose a shorter recording.</string>
+    <string name="draft_refused_title">The draft can\'t be made right now</string>
+    <string name="draft_refused_body">The phone has stopped Brasscribe from working on it. Your computer can make the score, or try again later.</string>
+    <string name="draft_refused_body_away">The phone has stopped Brasscribe from working on it. Try again later.</string>
+    <string name="draft_too_long_kept">Your recording is kept until you choose another.</string>
+    <string name="draft_too_long_kept_scores">Your recording is kept in Your scores.</string>
+    <string name="draft_make_on_computer">Make it on your computer</string>
+    <string name="problem_choose_another_recording">Choose another recording</string>
+    <string name="notif_draft_channel">Band drafts</string>
+    <string name="notif_draft">Making a band draft</string>
+    <!-- A job on the computer: followed while the player is away from the app, and a notification when it is done. -->
+    <string name="notif_job_channel">Scores on your computer</string>
+    <string name="notif_job_working">Your computer is making the score</string>
+    <string name="notif_ready_channel">Scores ready</string>
+    <string name="notif_ready">Your score is ready</string>
+    <string name="notif_failed">The score couldn\'t be made</string>
+    <!-- The computer didn't answer for ten minutes: the job goes on there, and is listed once the phone reaches it again. -->
+    <string name="notif_away">The score will be in Your scores when your computer is back</string>
+    <string name="notif_update_app">Update this app to get the score from your computer</string>
+    <string name="notif_update_computer">Update Bandroom on your computer to get the score</string>
+    <!-- A tap on "ready" when the score is not on the phone and the computer can't be reached. -->
+    <string name="ready_not_here">This score is on your computer. Connect to it to open the score.</string>
+    <string name="transcribe_where_companion">On %1$s</string>
+    <string name="transcribe_progress_label">Progress</string>
+
+    <!-- Check the notes -->
+    <plurals name="review_title">
+        <item quantity="one">Check %d note</item>
+        <item quantity="other">Check %d notes</item>
+    </plurals>
+    <string name="review_all_checked">All notes checked</string>
+    <string name="review_lead">Brasscribe wasn\'t sure about these. Listen, then keep or change each one.</string>
+    <string name="review_card_title">Bar %1$d · %2$s</string>
+    <string name="review_position">%1$d of %2$d</string>
+    <string name="review_note_line">Written %1$s, %2$s</string>
+    <string name="level_uncertain">Uncertain</string>
+    <string name="level_very_uncertain">Very uncertain</string>
+    <string name="review_keep_next">Keep, go to next</string>
+    <string name="review_skip">Skip</string>
+    <string name="review_finish_later">Finish later (%1$d left)</string>
+    <string name="review_finish_later_title">Finish checking later?</string>
+    <plurals name="review_finish_later_text">
+        <item quantity="one">%d note keeps its ? mark. You can check it any time from the score: tap “Check them”.</item>
+        <item quantity="other">%d notes keep their ? marks. You can check them any time from the score: tap “Check them”.</item>
+    </plurals>
+    <string name="review_finish_later_confirm">Finish later</string>
+    <string name="review_keep_checking">Keep checking</string>
+    <string name="review_still_to_check">Still to check</string>
+    <string name="review_more">+ %1$d more</string>
+    <string name="review_all_notes">Every note in %1$s</string>
+    <string name="legend_uncertain">Uncertain</string>
+    <string name="legend_very_uncertain">Very uncertain</string>
+    <string name="review_next_uncertain">Next uncertain note</string>
+    <string name="review_no_uncertain">No uncertain notes left</string>
+    <string name="action_listen_bar">Listen to this bar</string>
+    <string name="action_mark_checked">Keep</string>
+    <string name="checked_left">Kept. %1$d left</string>
+    <string name="playing_bar_original">Playing bar %1$d, the recording</string>
+    <string name="playing_bar_score">Playing bar %1$d, the score</string>
+    <string name="listen_unavailable">There\'s no recording to play for this bar.</string>
+    <string name="bar_heading">Bar %1$d</string>
+    <string name="bar_rest_heading">Bars %1$d to %2$d</string>
+    <string name="pickup_heading">Pickup</string>
+    <string name="pickup_rest_one_heading">Pickup and bar 1</string>
+    <string name="pickup_rest_heading">Pickup and bars 1–%1$d</string>
+    <string name="review_continue">Next: How should the score be?</string>
+    <string name="dur_whole">semibreve</string>
+    <string name="dur_half">minim</string>
+    <string name="dur_quarter">crotchet</string>
+    <string name="dur_eighth">quaver</string>
+    <string name="dur_16th">semiquaver</string>
+    <string name="dur_32nd">demisemiquaver</string>
+    <string name="dur_note">note</string>
+    <string name="dur_dotted">dotted %1$s</string>
+
+    <!-- Choose output -->
+    <string name="output_title">How should the score be?</string>
+    <string name="lineup">Which band?</string>
+    <string name="lineup_full">Full brass band</string>
+    <string name="lineup_full_desc">About 25 players</string>
+    <string name="lineup_minimal">Small band</string>
+    <string name="lineup_minimal_desc">10–15 players, parts doubled up</string>
+    <string name="lineup_solo">Solo part only</string>
+    <string name="lineup_solo_desc">Just the tune, for one player.</string>
+    <string name="lineup_quartet">Quartet</string>
+    <string name="lineup_quartet_desc">4 players, one on each part</string>
+    <string name="profile_solo_percussion">Not for percussion yet</string>
+    <string name="percussion_solo_refused">Brasscribe can\'t write down percussion from a solo take yet. Record the band: you get a percussion part when the recording has drums.</string>
+    <string name="change_what_i_play">Change what I play</string>
+    <string name="error_generic">Something went wrong. Try again.</string>
+    <string name="error_unreachable">Can\'t reach Brasscribe Bandroom on your computer. Check that it is running and on the same network.</string>
+    <string name="error_pair_again">Your computer no longer knows this phone. Connect them again in Settings.</string>
+    <string name="error_timeout">Your computer took too long to answer. Try again.</string>
+    <string name="error_engine_failed">Bandroom on your computer couldn\'t finish the score. Try again.</string>
+    <string name="error_reads_not_offered">Your instrument isn\'t written in that clef. Choose again under What you play.</string>
+    <string name="error_invalid_options">Bandroom on your computer didn\'t accept these choices. It may need an update.</string>
+    <string name="error_core_missing">Bandroom on your computer needs an update to write tabs. Update it there, then try again.</string>
+    <!-- Writing a song down again from the recording the computer holds, when it no longer has it. -->
+    <string name="recording_sent_again">Your computer no longer had the recording, so the phone is sending its copy.</string>
+    <string name="error_recording_gone">Your computer no longer has this recording, and the phone has no copy of it. Open the recording again from Home.</string>
+    <!-- A recording in which no note was found. -->
+    <string name="problem_no_notes_title">No notes found</string>
+    <string name="problem_no_notes_body">Very low or very quiet notes can be missed.</string>
+    <string name="problem_record_again">Record again</string>
+    <!-- A score in the computer's list that the other app made (a tab is Fretscribe's). -->
+    <string name="other_product_row">Tab · opens in Fretscribe</string>
+    <string name="other_product_opens">This is a tab. Open it in Fretscribe.</string>
+    <string name="lineup_full_not_yet">Not yet for whole-band recordings</string>
+    <string name="lineup_quartet_needs_group">Needs a recording of the whole group</string>
+    <string name="difficulty">How hard?</string>
+    <string name="difficulty_faithful">As played</string>
+    <string name="difficulty_standard">A bit easier</string>
+    <string name="difficulty_easier">Easier</string>
+    <string name="difficulty_tip">Easier keeps the tune but avoids high notes and fast runs.</string>
+    <string name="difficulty_unsupported">This score is written as played. Connect Brasscribe Bandroom on your computer for the other choices.</string>
+    <string name="key_label">Key</string>
+    <string name="key_as_recorded">As recorded</string>
+    <plurals name="key_shift">
+        <item quantity="one">%d semitone</item>
+        <item quantity="other">%d semitones</item>
+    </plurals>
+    <string name="output_apply">Show the score</string>
+    <string name="arrangement_ready">Score ready</string>
+
+    <!-- Score and practice -->
+    <string name="score_title">Score</string>
+    <string name="score_summary">Score of %1$s. %2$s. Bar %3$d of %4$d.</string>
+    <string name="show_all_parts">All parts</string>
+    <string name="show_one_part">My part</string>
+    <string name="written_pitch">As written</string>
+    <string name="concert_pitch">Concert pitch</string>
+    <string name="read_aloud">Read aloud</string>
+    <plurals name="score_marked">
+        <item quantity="one">%d note marked ?</item>
+        <item quantity="other">%d notes marked ?</item>
+    </plurals>
+    <string name="check_them">Check them</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="bar_of">Bar %1$d of %2$d</string>
+    <string name="beat_of">Beat %1$d of %2$d</string>
+    <string name="speed">Speed</string>
+    <string name="speed_value">%1$d%%</string>
+    <string name="speed_chip">Speed %1$d%%</string>
+    <string name="loop">Repeat</string>
+    <string name="loop_chip_on">Repeating %1$d–%2$d</string>
+    <string name="loop_title">Repeat bars</string>
+    <string name="loop_tip">Plays these bars over and over.</string>
+    <string name="loop_from">From bar</string>
+    <string name="loop_to">To bar</string>
+    <string name="loop_set">Repeat these bars</string>
+    <string name="loop_clear">Stop repeating</string>
+    <string name="loop_set_announce">Repeating bars %1$d to %2$d</string>
+    <string name="loop_cleared">Stopped repeating</string>
+    <string name="loop_invalid">Enter bars between 1 and %1$d, the first one first.</string>
+    <string name="count_in">Count-in</string>
+    <string name="metronome">Metronome</string>
+    <string name="mute_my_part">Mute my part</string>
+    <string name="mute">Mute</string>
+    <string name="only_this">Only this</string>
+    <string name="mute_part">Mute %1$s</string>
+    <string name="solo_part">Only %1$s</string>
+    <string name="parts">Parts</string>
+    <string name="zoom_in">Zoom in</string>
+    <string name="zoom_out">Zoom out</string>
+    <string name="sound">Sound</string>
+    <string name="sound_baseline">Standard</string>
+    <string name="sound_realistic">Realistic</string>
+    <string name="sound_realistic_unavailable">Not in this version of the app.</string>
+    <string name="sound_realistic_loading">Loading the instruments…</string>
+    <string name="sound_realistic_test_tone">No realistic instruments installed yet: you hear the band sounds.</string>
+    <plurals name="sound_pack_parts">
+        <item quantity="one">%d part plays a real instrument.</item>
+        <item quantity="other">%d parts play real instruments.</item>
+    </plurals>
+    <string name="sound_humanized">Played with human timing and dynamics.</string>
+    <string name="sound_band_soundfont">Brass-band sounds.</string>
+    <string name="sound_note">The metronome and count-in always use the standard sound.</string>
+    <string name="action_next_bar">Next bar</string>
+    <string name="action_prev_bar">Previous bar</string>
+    <string name="action_next_part">Next part</string>
+    <string name="action_prev_part">Previous part</string>
+    <string name="action_read_bar">Read bar</string>
+    <string name="action_play_bar">Play this bar</string>
+    <string name="action_check_marks">Check the ? notes in this bar</string>
+    <string name="player_loading">Opening the score</string>
+    <string name="player_playing">Playing</string>
+    <string name="player_paused">Paused</string>
+    <string name="score_error">The score can\'t be shown: %1$s</string>
+    <string name="part_of">%1$s, %2$d of %3$d</string>
+
+    <!-- Share or print -->
+    <string name="export">Share or print</string>
+    <string name="export_title">Share or print</string>
+    <string name="export_formats">Formats</string>
+    <string name="export_pdf">PDF</string>
+    <string name="export_pdf_desc">For printing and the music stand</string>
+    <!-- Share or print, under PDF: which PDF it is. -->
+    <string name="export_pdf_computer">For printing and the music stand. From Bandroom on your computer.</string>
+    <string name="export_pdf_phone">For printing and the music stand. Laid out on this phone.</string>
+    <string name="export_pdf_phone_changed">Laid out on this phone, with your changes. The pages may look different from your computer\'s.</string>
+    <!-- Share or print, while the phone lays out the PDFs: the part it is at, of how many. -->
+    <string name="export_laying_out">Laying out the pages: %1$d of %2$d</string>
+    <string name="export_musicxml_score">MusicXML</string>
+    <string name="export_musicxml_desc">Edit in MuseScore, Sibelius or Dorico</string>
+    <string name="export_audio">Audio</string>
+    <string name="export_audio_desc">MP3 of the score, to practise with</string>
+    <string name="export_midi">MIDI</string>
+    <string name="export_midi_desc">For other music apps</string>
+    <string name="export_talking">Talking score</string>
+    <string name="export_talking_desc">Text a screen reader can read aloud</string>
+    <string name="export_braille">Braille music</string>
+    <string name="export_braille_desc">BRF file for a braille display or embosser</string>
+    <string name="export_braille_unavailable">Made by Bandroom on your computer.</string>
+    <string name="export_needs_engine">Needs Bandroom on your computer.</string>
+    <string name="export_print">Print</string>
+    <string name="export_share">Share…</string>
+    <string name="export_save">Save to Files</string>
+    <plurals name="export_count">
+        <item quantity="one">%d file · uncertain notes keep their “?” marks</item>
+        <item quantity="other">%d files · uncertain notes keep their “?” marks</item>
+    </plurals>
+    <string name="export_marks_note">“?” means Brasscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
+    <string name="exported">Ready: %1$s</string>
+    <string name="exported_files">Saved %1$d files</string>
+    <string name="export_failed">That didn\'t work: %1$s</string>
+
+    <!-- Problems -->
+    <string name="problem_file_title">This file can\'t be opened</string>
+    <string name="problem_file_body">Brasscribe couldn\'t read the sound in it.</string>
+    <string name="problem_file_reason">Try an MP3, WAV, M4A or MP4 file.</string>
+    <string name="problem_no_sound_title">This file has no sound</string>
+    <string name="problem_no_sound_body">It has pictures but no sound track, so there is nothing to listen to.</string>
+    <string name="problem_silent_title">Nothing was heard</string>
+    <string name="problem_silent_body">The recording is silent. This usually means one of these:</string>
+    <string name="problem_silent_reason_blocked">The music app blocks recording. Streaming apps usually do.</string>
+    <string name="problem_silent_reason_nothing">Nothing was playing while you recorded.</string>
+    <string name="problem_silent_note">A file you own, or a recording with the microphone, always works.</string>
+    <string name="problem_record_title">Recording didn\'t start</string>
+    <string name="problem_record_body">The phone didn\'t let Brasscribe record.</string>
+    <string name="problem_record_reason">Another app may be using the microphone. Close it and try again.</string>
+    <string name="problem_score_title">The score couldn\'t be made</string>
+    <string name="problem_score_body">Something went wrong while Brasscribe was working on it.</string>
+    <string name="problem_score_body_unpaired">This recording needs your computer, and none is connected to this phone.</string>
+    <string name="problem_score_kept">Your recording is kept. You can try again now or later.</string>
+    <string name="problem_score_kept_scores">Your recording is kept in Your scores. You can try again now or later.</string>
+    <string name="problem_open_title">This score couldn\'t be opened</string>
+    <string name="problem_open_body">Brasscribe couldn\'t get it from your computer.</string>
+    <string name="problem_too_large_title">This file is too big for the phone</string>
+    <string name="problem_too_large_body">The phone ran out of memory while working on it.</string>
+    <string name="problem_too_large_reason">Try a shorter recording, or split the video into parts.</string>
+    <string name="problem_import_instead">Open a file instead</string>
+    <string name="problem_choose_another">Choose another file</string>
+    <string name="problem_record_instead">Record instead</string>
+
+    <!-- Brasscribe Bandroom, the program on the computer (Bandroom for short), and where to get it -->
+    <string name="bandroom_get_title">Get Brasscribe Bandroom</string>
+    <string name="bandroom_get_text">It is free for Mac (Apple silicon) and Windows. On your computer, download it from this address:</string>
+    <string name="bandroom_open">Open the download page</string>
+    <string name="bandroom_no_browser">This phone has no browser to open it. Type the address on your computer.</string>
+    <string name="companion_title">Brasscribe Bandroom</string>
+    <string name="companion_explain">Open Brasscribe Bandroom on your computer and choose Pair a phone. Type the six digits it shows.</string>
+    <string name="companion_address">Computer address</string>
+    <string name="companion_searching">Looking for Bandroom on your network… You can also type the address below.</string>
+    <string name="companion_chosen">Chosen</string>
+    <string name="companion_code">Six-digit code</string>
+    <string name="companion_connect">Connect</string>
+    <string name="companion_connecting">Connecting</string>
+    <string name="companion_tech_details">Bandroom shows the address under Details for the band\'s tech person.</string>
+    <string name="companion_allow_heavy">Let the computer do the heavy work</string>
+    <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
+
+    <!-- About -->
+    <string name="about_title">About and licences</string>
+    <string name="about_text">Brasscribe Play is a non-commercial project. It uses alphaTab (MPL-2.0) for notation and playback with the Sonivox SoundFont (Apache-2.0), sfizz (BSD-2-Clause) for realistic sound, Oboe (Apache-2.0) for audio, JNA (Apache-2.0) to reach its own shared code, and ONNX Runtime (MIT) with SwiftF0, Basic Pitch and Beat This! (MIT) to listen on the phone. ONNX Runtime is Microsoft\'s, and sends usage data and a device identifier to Microsoft, never the recording. A full band on your computer uses MuScriptor (CC BY-NC 4.0), downloaded with your own Hugging Face account.</string>
+    <string name="about_font">Headings are set in Instrument Serif (SIL Open Font License 1.1).</string>
+    <!-- Music stand (design/music-stand.md §9) -->
+    <string name="stand_enter">Music stand</string>
+    <string name="stand_enter_tip">The music alone, for playing from the stand (F)</string>
+    <string name="stand_open_from_library">Open on the music stand</string>
+    <string name="stand_leave">Leave</string>
+    <string name="stand_leave_name">Leave the music stand</string>
+    <string name="stand_part_yours">%1$s (you)</string>
+    <string name="stand_position">Bar %1$d · page %2$d of %3$d</string>
+    <string name="stand_position_line">%1$s · bar %2$d · page %3$d of %4$d</string>
+    <string name="stand_position_tablet">%1$s · %2$s · bar %3$d · page %4$d of %5$d</string>
+    <string name="stand_prev_page">Previous page</string>
+    <string name="stand_next_page">Next page</string>
+    <string name="stand_slower">Slower</string>
+    <string name="stand_faster">Faster</string>
+    <string name="stand_repeat">Repeat</string>
+    <string name="stand_repeat_on">Repeat %1$d–%2$d</string>
+    <!-- Music stand, under Repeat while a repeat is set: what a page pedal does then. -->
+    <string name="stand_pedals_repeat">Pedals: right plays and pauses, left goes back to bar %1$d.</string>
+    <!-- Said when a pedal goes back to the start of the repeat. -->
+    <string name="stand_back_to_repeat">Back to bar %1$d.</string>
+    <string name="stand_only_mine">Only my part</string>
+    <string name="stand_lock">Lock rotation</string>
+    <string name="stand_lock_on">Rotation locked</string>
+    <string name="stand_turn">Turn the music</string>
+    <string name="stand_turn_name">Turn the music to fit the phone</string>
+    <string name="stand_hint">Tap the music to show the controls.</string>
+    <string name="stand_entered">Music stand. %1$s, bar %2$d of %3$d.</string>
+    <string name="stand_score_summary">%1$s, bar %2$d of %3$d, page %4$d of %5$d</string>
+    <string name="stand_first_page">First page.</string>
+    <string name="stand_last_page">Last page.</string>
+    <string name="stand_page_turned">Page %1$d of %2$d, bars %3$d to %4$d.</string>
+    <string name="stand_locked">Rotation locked. The music stays this way up.</string>
+    <string name="stand_unlocked">The music turns with the phone again.</string>
+    <string name="stand_left">Music stand closed.</string>
+    <string name="settings_stand_controls">Keep the stand controls visible</string>
+    <string name="settings_stand_follow">Turn the pages while playing</string>
+    <!-- Help: the heading over the page turners and keys. -->
+    <string name="help_stand_title">Music stand</string>
+    <string name="help_stand_pedal">Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music. While a repeat is set, the pedals don\'t turn pages: right (Page Down) plays and pauses, and left (Page Up) goes back to the start of the repeat.</string>
+    <string name="help_stand_tablet_lock">To keep a tablet one way up, use the rotation lock in Control Centre (iPad) or Quick Settings (Android).</string>
+    <string name="opened_score">Opened %1$s.</string>
+    <string name="home_open_score">Open a score</string>
+    <!-- A MusicXML file opened in an app that opens no sheet music (Product.opensScores): a problem screen. -->
+    <string name="problem_sheet_music_title">This app can\'t open sheet music yet</string>
+    <string name="problem_sheet_music_body">It works from recordings. Open a recording, or record what you play.</string>
+    <string name="home_open_score_desc">MusicXML from MuseScore, Sibelius or Dorico</string>
+    <string name="talking_score_unavailable">Read aloud isn\'t available in this version of the app.</string>
+    <string name="output_lead">You can change this later. Nothing is lost.</string>
+    <string name="key_major">%1$s major</string>
+    <string name="key_minor">%1$s minor</string>
+    <string name="key_shifted">%1$s from the recording</string>
+    <string name="view_menu">View</string>
+    <string name="export_what">What</string>
+    <string name="export_scope_my_part">%1$s (you)</string>
+    <string name="export_scope_every_part">Every part</string>
+    <string name="export_scope_every_part_tip">One PDF per player.</string>
+    <string name="export_scope_conductor">Conductor\'s score</string>
+    <string name="export_scope_score_quartet">Score (all 4 parts)</string>
+    <string name="export_whole_score_only">%1$s · the whole score</string>
+    <string name="export_made_before_change">Made before your changes. Bandroom on your computer makes it again.</string>
+    <string name="review_your_part_first">Check your part first</string>
+    <string name="review_accompaniment">Accompaniment (%1$d)</string>
+    <plurals name="review_your_part_count">
+        <item quantity="one">%1$d note in %2$s.</item>
+        <item quantity="other">%1$d notes in %2$s.</item>
+    </plurals>
+    <plurals name="review_very_first">
+        <item quantity="one">The %d very unsure one comes first.</item>
+        <item quantity="other">The %d very unsure ones come first.</item>
+    </plurals>
+    <string name="key_concert">%1$s (concert)</string>
+    <string name="key_for_bflat">%1$s for B♭ instruments</string>
+    <string name="key_lower">− Lower</string>
+    <string name="key_higher">Higher +</string>
+    <string name="key_semitone_hint">one semitone</string>
+    <string name="written_pitch_for">As written for %1$s</string>
+    <string name="written_tip">Written is what you read on your part. Concert is how it sounds on a piano.</string>
+    <string name="practice">Practice</string>
+    <string name="written_tip_label">What written and concert mean</string>
+    <string name="help">Help</string>
+    <string name="settings_sound_standard">Clear, light sounds that start at once.</string>
+    <string name="settings_sound_realistic">Real brass instruments, played with human timing.</string>
+    <string name="settings_display">Display</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">English or Norsk (bokmål), in the phone\'s settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="appearance_system">Match system</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
+    <string name="appearance_pink_light">Pink light</string>
+    <string name="appearance_pink_dark">Pink dark</string>
+    <string name="pink_unlocked">🎺 Pink unlocked</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="appearance_contrast_note">Your contrast setting is on, so Brasscribe uses its high-contrast colours.</string>
+    <string name="settings_text_motion">Text size and reduced motion</string>
+    <string name="settings_text_motion_desc">Brasscribe follows the phone\'s text size, contrast and animation settings</string>
+    <string name="help_1_title">Make a score</string>
+    <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Brasscribe writes down the notes and arranges them for brass band.</string>
+    <string name="help_2_title">The “?” marks</string>
+    <string name="help_2_text">A “?” above a note means Brasscribe wasn\'t sure. A boxed “?” means very unsure. Listen to the bar, then keep the note or change it.</string>
+    <string name="help_3_title">Practise</string>
+    <string name="help_3_text">Slow the music down with Speed, repeat the hard bars, and mute your part to play along with the band.</string>
+    <string name="help_4_title">Share or print</string>
+    <string name="help_4_text">Share the score as a file, or print it: your part, every part or the conductor\'s score. The PDF comes from Bandroom on your computer when it made the score and no note was changed since; otherwise the phone lays out the pages itself, and they may look different.</string>
+    <string name="help_5_title">The phone and your computer</string>
+    <string name="help_5_text">On the phone: one instrument, or a quick draft of a brass band. For the full band score, a soloist with a band, or pop and rock, open Brasscribe Bandroom on your computer and connect in Settings.</string>
+    <string name="help_6_title">Links and streaming apps</string>
+    <string name="help_6_text">Links can\'t be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</string>
+    <string name="octave_down">Octave down</string>
+    <string name="octave_up">Octave up</string>
+    <string name="review_most_right">Most of these are probably right. Listen to a few, then keep the rest bar by bar.</string>
+    <plurals name="review_keep_bar">
+        <item quantity="one">Keep this bar</item>
+        <item quantity="other">Keep the rest of this bar (%d)</item>
+    </plurals>
+    <plurals name="review_most_right_start_very">
+        <item quantity="one">Most of these are probably right. Start with the %d very unsure one.</item>
+        <item quantity="other">Most of these are probably right. Start with the %d very unsure ones.</item>
+    </plurals>
+    <string name="review_card_title_bars">Bars %1$d–%2$d · %3$s</string>
+    <plurals name="review_title_places">
+        <item quantity="one">Check %d place</item>
+        <item quantity="other">Check %d places</item>
+    </plurals>
+    <plurals name="review_your_part_places">
+        <item quantity="one">%1$d place in %2$s.</item>
+        <item quantity="other">%1$d places in %2$s.</item>
+    </plurals>
+    <plurals name="review_group_notes">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
+    <string name="home_full_band">Full band</string>
+    <plurals name="home_bars">
+        <item quantity="one">%d bar</item>
+        <item quantity="other">%d bars</item>
+    </plurals>
+    <plurals name="home_to_check">
+        <item quantity="one">%d to check</item>
+        <item quantity="other">%d to check</item>
+    </plurals>
+    <plurals name="score_marked_places">
+        <item quantity="one">%d place marked ?</item>
+        <item quantity="other">%d places marked ?</item>
+    </plurals>
+    <plurals name="review_start_very">
+        <item quantity="one">Start with the %d very unsure one.</item>
+        <item quantity="other">Start with the %d very unsure ones.</item>
+    </plurals>
+
+    <!-- Connection to the computer, pairing, and listening to a bar. -->
+    <string name="conn_connected">Connected to %1$s</string>
+    <string name="conn_reconnecting">Looking for %1$s …</string>
+    <string name="conn_offline">Not connected. You can still make scores on this phone.</string>
+    <string name="conn_needs_pairing">The computer no longer recognises this phone.</string>
+    <string name="conn_network_closed">The app isn\'t allowed on your network, so it can\'t reach your computer.</string>
+    <!-- The computer answers, and its interface version is not this app's: which of the two to update. The same
+         sentence in the connection row, on the pairing screen and as the reason a score was not made. -->
+    <string name="conn_update_app">Update this app. Bandroom on your computer is newer than this app, and they only work together when both are up to date.</string>
+    <string name="conn_get_app_update">Get the latest version</string>
+    <string name="conn_update_computer">Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date.</string>
+    <string name="conn_allow">Allow</string>
+    <string name="conn_pair_again">Pair this phone again</string>
+    <string name="server_name_format">Brasscribe on %1$s</string>
+    <string name="listen_stop">Stop</string>
+    <string name="listen_stopped">Stopped</string>
+    <string name="listen_ended">End of bar %1$d</string>
+    <string name="pair_scan">Scan the code on the computer</string>
+    <string name="pair_scan_unavailable">This phone can\'t scan codes here. Type the code from the computer instead.</string>
+    <string name="pair_scan_title">Point the camera at the code on the computer</string>
+    <string name="pair_scan_on_phone">The code is read on this phone. Nothing is recorded or sent.</string>
+    <string name="pair_scan_camera">Camera view for the code</string>
+    <string name="pair_camera_refused">The camera isn\'t allowed, so the code can\'t be scanned. Type the code instead, or allow the camera in the phone\'s settings.</string>
+    <string name="pair_camera_settings">Open the phone\'s settings for this app</string>
+    <string name="pair_network_refused">The app isn\'t allowed to reach devices on your network, so it can\'t find or connect to your computer. Allow nearby devices in the phone\'s settings.</string>
+    <string name="pair_link_invalid">That code isn\'t from Brasscribe Bandroom.</string>
+    <string name="pair_link_title">Connect to %1$s?</string>
+    <string name="pair_link_address">Address on your network: %1$s</string>
+    <string name="pair_link_address_by_name">Brasscribe looks for it on your network by name.</string>
+    <string name="pair_link_unreachable">Couldn\'t find %1$s. Check that the phone and the computer are on the same Wi-Fi.</string>
+    <string name="pair_needs_update">Update Brasscribe Play to connect to this computer.</string>
+    <string name="pair_code_needed">Type the code the computer shows, or ask on the computer instead.</string>
+    <string name="pair_code_wrong">That code didn\'t work. Check the code on the computer and try again.</string>
+    <string name="pair_code_locked">Too many wrong codes. Wait a moment, or ask on the computer instead.</string>
+    <string name="companion_failed_plain">Couldn\'t connect. Check that Bandroom on the computer says Running, and that both are on the same Wi-Fi.</string>
+    <string name="pair_ask">Ask on the computer instead</string>
+    <string name="pair_ask_again">Ask again</string>
+    <string name="pair_ask_waiting">On the computer, choose Allow when it shows this number:</string>
+    <string name="pair_ask_waiting_spoken">On the computer, choose Allow when it shows %1$s</string>
+    <string name="pair_ask_denied">The computer said no. Ask again, or type the code.</string>
+    <string name="pair_ask_expired">Nobody answered on the computer. Ask again.</string>
+    <string name="pair_forget">Forget this computer</string>
+    <string name="pair_forgotten">This phone no longer connects to the computer.</string>
+    <string name="conn_detail_address">Address: %1$s</string>
+    <string name="conn_detail_server_id">Server id: %1$s</string>
+    <string name="conn_detail_last_seen">Last answered: %1$s</string>
+    <string name="conn_detail_last_error">Last error: %1$s</string>
+    <string name="band_sounds_missing">The band sounds are missing. Reinstall Brasscribe Play to hear the band.</string>
+    <!-- What do you play? (docs/plan/my-instrument.md §3.8) -->
+    <string name="seat_title">What do you play?</string>
+    <string name="seat_body">Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.</string>
+    <string name="seat_instrument">Instrument</string>
+    <string name="seat_which_part">Which part?</string>
+    <string name="seat_reads">You read</string>
+    <string name="seat_reads_treble_bflat">Treble clef in B♭</string>
+    <string name="seat_reads_treble_eflat">Treble clef in E♭</string>
+    <string name="seat_reads_bass">Bass clef, as it sounds</string>
+    <string name="seat_reads_treble_bflat_spoken">Treble clef in B flat</string>
+    <string name="seat_reads_treble_eflat_spoken">Treble clef in E flat</string>
+    <string name="seat_continue_hint">Choose your instrument, or “I conduct or listen”.</string>
+    <string name="seat_part_hint">Choose which part you play.</string>
+    <string name="seat_none">I conduct or listen</string>
+    <string name="seat_skip">Not now</string>
+    <string name="inst_cornet">Cornet</string>
+    <string name="inst_trumpet">Trumpet</string>
+    <string name="inst_trumpet_sub">in B♭</string>
+    <string name="inst_trumpet_sub_spoken">in B flat</string>
+    <string name="inst_soprano">Soprano</string>
+    <string name="inst_soprano_sub">E♭ cornet</string>
+    <string name="inst_soprano_sub_spoken">E flat cornet</string>
+    <string name="inst_flugelhorn">Flugelhorn</string>
+    <string name="inst_tenor_horn">Tenor Horn</string>
+    <string name="inst_tenor_horn_sub">in E♭</string>
+    <string name="inst_tenor_horn_sub_spoken">in E flat</string>
+    <string name="inst_baritone">Baritone</string>
+    <string name="inst_euphonium">Euphonium</string>
+    <string name="inst_trombone">Trombone</string>
+    <string name="inst_bass_trombone">Bass Trombone</string>
+    <string name="inst_eb_bass">E♭ Bass</string>
+    <string name="inst_eb_bass_spoken">E flat Bass</string>
+    <string name="inst_bb_bass">B♭ Bass</string>
+    <string name="inst_bb_bass_spoken">B flat Bass</string>
+    <string name="inst_percussion">Percussion</string>
+    <string name="settings_you">Your instrument</string>
+    <string name="settings_seat">What you play</string>
+    <string name="settings_seat_not_set">Not set</string>
+    <string name="settings_seat_value">%1$s · %2$s</string>
+    <string name="settings_reads_treble_bflat">treble clef in B♭</string>
+    <string name="settings_reads_treble_eflat">treble clef in E♭</string>
+    <string name="settings_reads_bass">bass clef, as it sounds</string>
+    <string name="settings_seat_caption">New scores open on your part. Scores you already have keep the part you chose for them.</string>
+    <string name="my_part_make">Make this my part</string>
+    <string name="my_part_made">%1$s is your part in this score.</string>
+    <string name="who_played">Who played this?</string>
+    <string name="who_plays_tune">Who plays the tune?</string>
+    <string name="tune_lineup">%1$s (as usual)</string>
+    <string name="tune_seat">You: %1$s</string>
+    <string name="solo_one_part">A solo recording gives one part: yours.</string>
+    <string name="change_output">Band, difficulty and key…</string>
+    <string name="write_for_another">Write for another instrument…</string>
+    <string name="source_yours">From your recording</string>
+    <string name="source_recording">From the recording</string>
+    <string name="source_arranged">Arranged from the band\'s harmony</string>
+    <string name="source_empty">Nothing to play in this arrangement</string>
+    <string name="explain_recording">Brasscribe wrote down the notes it heard for this part.</string>
+    <string name="explain_empty">Nothing in the recording gave this part any notes, so it is left empty.</string>
+    <string name="explain_arranged">Nobody played this part on its own in the recording. Brasscribe wrote it from the chords it heard, so it can differ from your printed part.</string>
+    <string name="review_empty_title">Your part is empty</string>
+    <string name="review_empty_body">Nothing in the recording gave the %1$s part any notes, so there is nothing of yours to check.</string>
+    <string name="review_arranged_title">Your part is arranged</string>
+    <string name="review_arranged_body">Nobody played the %1$s part on its own in the recording, so Brasscribe wrote it from the chords it heard. There are no notes of yours to check.</string>
+    <string name="review_check_others">Check the other parts</string>
+    <string name="review_show_mine">Show my part</string>
+    <string name="mapped_same_full">The full brass band has no %1$s. Your part here is %2$s, the closest: the same key and clef.</string>
+    <string name="mapped_other_full">The full brass band has no %1$s. Your part here is %2$s, written for %3$s.</string>
+    <string name="mapped_takes_full">The full brass band has no %1$s part. You get the %2$s part, written for %1$s.</string>
+    <string name="mapped_takes_minimal">The small band has no %1$s part. You get the %2$s part, written for %1$s.</string>
+    <string name="mapped_same_minimal">This small band has no %1$s. Your part here is %2$s, the closest: the same key and clef.</string>
+    <string name="mapped_same_quartet">This quartet has no %1$s. Your part here is %2$s, the closest: the same key and clef.</string>
+    <string name="mapped_other_minimal">The small band has no %1$s. Your part here is %2$s, written for %3$s.</string>
+    <string name="mapped_other_quartet">The quartet has no %1$s. Your part here is %2$s, written for %3$s.</string>
+    <string name="mapped_none_minimal">The small band has no percussion part. Brasscribe opens every part.</string>
+    <string name="mapped_none_quartet">The quartet has no percussion part. Brasscribe opens every part.</string>
+    <string name="key_bflat">B♭</string>
+    <string name="key_eflat">E♭</string>
+    <string name="key_on_your_part">%1$s on your part</string>
+    <string name="key_as_it_sounds">%1$s, as it sounds</string>
+    <string name="written_for_treble">Written for %1$s in %2$s, treble clef</string>
+    <string name="written_for_bass">Written for %1$s, bass clef, as it sounds</string>
+    <string name="lineup_your_part">%1$s · your part: %2$s</string>
+    <string name="engine_too_old_seat">Bandroom on your computer is too old to write for your instrument. Update it to use this.</string>
+    <string name="lead_seat_refused">The tune can\'t go on your part in this band. Under Who plays the tune?, choose the band\'s usual part.</string>
+    <string name="mapped_short_full">The full brass band has no %1$s — showing %2$s</string>
+    <string name="mapped_short_takes_full">The full brass band has no %1$s part — %2$s, written for %1$s</string>
+    <string name="mapped_short_takes_minimal">The small band has no %1$s part — %2$s, written for %1$s</string>
+    <string name="mapped_short_minimal">The small band has no %1$s — showing %2$s</string>
+    <string name="mapped_short_quartet">The quartet has no %1$s — showing %2$s</string>
+    <string name="mapped_short_none_minimal">The small band has no percussion part — showing every part</string>
+    <string name="mapped_short_none_quartet">The quartet has no percussion part — showing every part</string>
+    <string name="mapped_close">Close the notice</string>
+    <string name="written_tip_full">%1$s: what you read on your part. Concert pitch: how it sounds on a piano.</string>
+</resources>
