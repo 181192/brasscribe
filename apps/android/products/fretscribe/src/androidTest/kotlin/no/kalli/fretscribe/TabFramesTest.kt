@@ -33,7 +33,7 @@ class TabFramesTest : TabScreenTest() {
 
     /** Frames the app has drawn since it started, as the system counts them. */
     private fun framesDrawn(): Int {
-        val out = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $PACKAGE")).use { it.readBytes().decodeToString() }
+        val out = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $packageName")).use { it.readBytes().decodeToString() }
         return Regex("""Total frames rendered: (\d+)""").find(out)!!.groupValues[1].toInt()
     }
 
@@ -79,7 +79,7 @@ class TabFramesTest : TabScreenTest() {
         results["back in portrait"] = still("back in portrait")
         shell("input keyevent KEYCODE_HOME")
         Thread.sleep(1500)
-        shell("am start -n $PACKAGE/no.kalli.scribe.play.MainActivity")
+        shell("am start -n $packageName/no.kalli.scribe.play.MainActivity")
         Thread.sleep(2500)
         results["after leaving the app and coming back"] = still("after leaving the app and coming back")
         shell("input swipe 540 900 540 1900 100")
@@ -108,10 +108,10 @@ class TabFramesTest : TabScreenTest() {
         assertEquals(224, e.barsPerLine.sum())
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("28 notes marked ? · Check them")
         // Flings down the page, counted by the system: frames drawn, and how many of them were late.
-        shell("dumpsys gfxinfo $PACKAGE reset")
+        shell("dumpsys gfxinfo $packageName reset")
         repeat(12) { shell("input swipe 540 1900 540 500 60") }
         settle()
-        val stats = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $PACKAGE")).use { it.readBytes().decodeToString() }
+        val stats = android.os.ParcelFileDescriptor.AutoCloseInputStream(instrumentation.uiAutomation.executeShellCommand("dumpsys gfxinfo $packageName")).use { it.readBytes().decodeToString() }
         fun stat(label: String) = Regex("""$label: ([^\n]+)""").find(stats)?.groupValues?.get(1)?.trim().orEmpty()
         val frames = stat("Total frames rendered").toInt()
         val janky = Regex("""Janky frames: (\d+)""").find(stats)!!.groupValues[1].toInt()
@@ -123,7 +123,6 @@ class TabFramesTest : TabScreenTest() {
         assertTrue("still at the end of a long song", framesWhileStill() <= 2)
     }
 
-    private companion object {
-        const val PACKAGE = "no.fretscribe.play"
-    }
+    /** The app under test, as `am start` and `dumpsys gfxinfo` name it. */
+    private val packageName: String get() = instrumentation.targetContext.packageName
 }

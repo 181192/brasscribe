@@ -344,7 +344,6 @@
         <item quantity="one">%d fil · usikre toner beholder «?»-merkene</item>
         <item quantity="other">%d filer · usikre toner beholder «?»-merkene</item>
     </plurals>
-    <string name="export_marks_note">«?» betyr at Brasscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
     <string name="exported">Klar: %1$s</string>
     <string name="exported_files">Lagret %1$d filer</string>
     <string name="export_failed">Det gikk ikke: %1$s</string>

@@ -288,4 +288,6 @@
     <string name="fs_practice_no_beats">Fretscribe kan ikke følge opptaket i denne tabben. Du kan fortsatt lese den.</string>
     <string name="fs_practice_no_room">Det er ikke plass til opptaket på denne telefonen. Du kan fortsatt lese tabben.</string>
     <string name="fs_practice_too_large">Opptaket er for stort til å ligge på denne telefonen. Du kan fortsatt lese tabben.</string>
+    <!-- Under a page of a tab's PDF with a doubtful note. -->
+    <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
 </resources>

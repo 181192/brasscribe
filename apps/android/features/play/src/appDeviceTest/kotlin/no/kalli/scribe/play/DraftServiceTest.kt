@@ -87,7 +87,7 @@ class DraftServiceTest {
 
     /**
      * A whole draft on this device, from a band recording put there by hand (not in git):
-     * `adb push mix.wav /sdcard/Android/data/no.brasscribe.play/files/band-mix.wav`. Skipped without it. The draft it saves is
+     * `adb push mix.wav /sdcard/Android/data/no.kalli.brasscribe/files/band-mix.wav`. Skipped without it. The draft it saves is
      * removed again, so Your scores is left as it was.
      */
     @Test
