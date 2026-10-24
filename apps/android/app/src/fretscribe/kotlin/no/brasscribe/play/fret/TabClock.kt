@@ -1,7 +1,7 @@
 package no.brasscribe.play.fret
 
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.model.Composition
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.model.Composition
 import kotlin.math.floor
 
 /** A place in the tab: the bar (counted from 0, as written) and how far into it, in [TabIndex.TICKS] to a quarter note. */

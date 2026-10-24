@@ -37,7 +37,7 @@ licence texts. No Apple or Windows app uses these files yet.
 ## The Android theme
 
 Fretscribe's Android files ([`../dist/android`](../dist/android)) are the neutral theme,
-`no.scribe.design` with Fretscribe's values, and Fretscribe's own in `no.fretscribe.design`:
+`no.kalli.scribe.design` with Fretscribe's values, and Fretscribe's own in `no.kalli.fretscribe.design`:
 `FretscribeColors` (`uncertainTint`, the cursor, loop and selection colours), `FretscribeTab` (the tab's
 metrics) and `FretscribeTheme`. The tokens no longer say how Fretscribe passes for Brasscribe.
 

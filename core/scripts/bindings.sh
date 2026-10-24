@@ -18,7 +18,7 @@ mkdir -p bindings/c
 cbindgen --config ffi/cbindgen.toml --crate scribe-ffi --output bindings/c/scribe.h ffi
 
 # Wrappers consume the generated sources
-mkdir -p swift/ScribeCore/Sources/ScribeCore android/scribe-core/src/main/kotlin/uniffi/scribe_ffi
+mkdir -p swift/ScribeCore/Sources/ScribeCore android/scribe-core/src/main/kotlin/no/kalli/scribe/core
 cp bindings/swift/scribe_ffi.swift swift/ScribeCore/Sources/ScribeCore/
-cp bindings/kotlin/uniffi/scribe_ffi/scribe_ffi.kt android/scribe-core/src/main/kotlin/uniffi/scribe_ffi/
+cp bindings/kotlin/no/kalli/scribe/core/scribe_ffi.kt android/scribe-core/src/main/kotlin/no/kalli/scribe/core/
 ls -R bindings

@@ -72,10 +72,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import no.brasscribe.play.ui.theme.productColors
-import no.scribe.design.ScribeButtonShape
-import no.scribe.design.ScribeSize
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeButtonShape
+import no.kalli.scribe.design.ScribeSize
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.R
 import no.brasscribe.play.Status
 

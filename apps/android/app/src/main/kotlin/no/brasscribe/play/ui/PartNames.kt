@@ -1,6 +1,6 @@
 package no.brasscribe.play.ui
 
-import no.brasscribe.play.model.Lang
+import no.kalli.scribe.model.Lang
 
 /**
  * Part names as the band room says them. The scores are written with English part names; in bokmål

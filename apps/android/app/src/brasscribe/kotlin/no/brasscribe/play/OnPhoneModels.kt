@@ -1,15 +1,15 @@
 package no.brasscribe.play
 
 import android.content.Context
-import no.brasscribe.play.model.ArrangeOptions
-import no.brasscribe.play.model.BandTake
-import no.brasscribe.play.model.CoreBridge
-import no.brasscribe.play.model.SoloTake
-import no.brasscribe.play.pitch.BandDraftPipeline
-import no.brasscribe.play.pitch.BasicPitch
-import no.brasscribe.play.pitch.BeatThis
-import no.brasscribe.play.pitch.SoloPipeline
-import no.brasscribe.play.pitch.SwiftF0
+import no.kalli.scribe.model.ArrangeOptions
+import no.kalli.scribe.model.BandTake
+import no.kalli.scribe.model.CoreBridge
+import no.kalli.scribe.model.SoloTake
+import no.kalli.scribe.score.pitch.BandDraftPipeline
+import no.kalli.scribe.score.pitch.BasicPitch
+import no.kalli.scribe.score.pitch.BeatThis
+import no.kalli.scribe.score.pitch.SoloPipeline
+import no.kalli.scribe.score.pitch.SwiftF0
 
 /**
  * Brasscribe on the phone: SwiftF0, Basic Pitch and Beat This! small on ONNX Runtime (the `pitch` module), from

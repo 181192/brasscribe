@@ -2,7 +2,7 @@ package no.brasscribe.play
 
 import androidx.annotation.StringRes
 import no.brasscribe.play.connection.ConnectionState
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 
 /**
  * Where a recording is written down, and the words for it (design/system.md §3, "A band draft on the

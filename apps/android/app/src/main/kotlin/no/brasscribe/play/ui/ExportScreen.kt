@@ -30,8 +30,8 @@ import androidx.compose.foundation.selection.toggleable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.Lineup
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.lineup
@@ -73,7 +73,7 @@ fun ExportScreen(vm: PlayViewModel) {
     val formats = order.filter { it.name in chosen && it in available }
     var pendingSave by remember { mutableStateOf<List<ExportFile>>(emptyList()) }
     // What: the player's own part first (the part on screen), every part, or the conductor's score.
-    val partNames = remember(r.musicXml) { no.brasscribe.play.model.MusicXmlParts.names(r.musicXml) }
+    val partNames = remember(r.musicXml) { no.kalli.scribe.model.MusicXmlParts.names(r.musicXml) }
     // The labels follow the recorded lineup: a quartet has no conductor, so its third choice is the score.
     val lineup = r.lineup ?: Lineup.ofParts(partNames)
     // Your part: this score's pick, else the seat's part. With none of your own, Every part is the default.

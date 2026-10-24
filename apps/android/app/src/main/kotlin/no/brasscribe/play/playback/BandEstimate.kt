@@ -4,8 +4,8 @@ import alphaTab.model.AccentuationType
 import alphaTab.model.GraceType
 import alphaTab.model.Note
 import alphaTab.model.Score
-import no.brasscribe.play.audio.BandNote
-import no.brasscribe.play.audio.PlaybackLevels
+import no.kalli.scribe.audio.BandNote
+import no.kalli.scribe.audio.PlaybackLevels
 import no.brasscribe.play.score.AlphaTabMusicXml
 
 /**

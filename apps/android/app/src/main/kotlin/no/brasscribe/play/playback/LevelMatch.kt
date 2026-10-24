@@ -1,9 +1,9 @@
 package no.brasscribe.play.playback
 
-import no.brasscribe.play.audio.LoudnessMeter
-import no.brasscribe.play.audio.PcmAudio
-import no.brasscribe.play.audio.PlaybackLevels
-import no.brasscribe.play.audio.leveled
+import no.kalli.scribe.audio.LoudnessMeter
+import no.kalli.scribe.audio.PcmAudio
+import no.kalli.scribe.audio.PlaybackLevels
+import no.kalli.scribe.audio.leveled
 
 /**
  * Brings a whole recording to the loudness the band plays the score at (sounds/playback-levels.json):

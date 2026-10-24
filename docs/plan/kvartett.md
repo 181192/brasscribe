@@ -323,7 +323,7 @@ Other branches are changing the apps' connection and pairing UI and the engine's
 | File | Branch | Likelihood |
 |---|---|---|
 | `apps/apple/Packages/BrasscribeKit/Sources/TranscriptionKit/CompanionService.swift` | `feat/apple-listen-stop-connection` (diff seen: +119 lines) | certain |
-| `engine/openapi.json`, `apps/android/engine-client/openapi.json`, `apps/windows/tests/.../Fixtures/openapi.json`, `studio/src/api/schema.d.ts` | `feat/engine-presence-status`, `feat/engine-device-pairing` | high: all regenerated. Regenerate after rebasing, don't merge them by hand. |
+| `engine/openapi.json`, `apps/android/services/engine-client/openapi.json`, `apps/windows/tests/.../Fixtures/openapi.json`, `studio/src/api/schema.d.ts` | `feat/engine-presence-status`, `feat/engine-device-pairing` | high: all regenerated. Regenerate after rebasing, don't merge them by hand. |
 | `engine/src/scribe_engine/api.py`, `schemas.py` | engine presence and pairing | medium (the quartet change to them is one line) |
 | `apps/android/.../PlayViewModel.kt` | `feat/android-listen-stop-connection` | high |
 | `apps/windows/.../MainViewModel.cs`, `MainWindow.xaml.cs` | `feat/windows-listen-stop-connection`, `feat/bandroom-windows` | high |

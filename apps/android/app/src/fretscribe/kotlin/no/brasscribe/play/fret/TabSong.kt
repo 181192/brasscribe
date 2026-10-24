@@ -5,17 +5,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.neverEqualPolicy
 import androidx.compose.runtime.setValue
 import no.brasscribe.play.Source
-import no.brasscribe.play.engine.FrettedInstrument
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.Octave
-import no.brasscribe.play.engine.OctaveSource
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Recording
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.engine.TabLayout
-import no.brasscribe.play.engine.TabNote
-import no.brasscribe.play.engine.TabOptions
-import no.brasscribe.play.model.CompositionJson
+import no.kalli.scribe.engine.FrettedInstrument
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.Octave
+import no.kalli.scribe.engine.OctaveSource
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Recording
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.engine.TabLayout
+import no.kalli.scribe.engine.TabNote
+import no.kalli.scribe.engine.TabOptions
+import no.kalli.scribe.model.CompositionJson
 
 /**
  * What the player answered for one recording: What is this? ([recording], null until it is answered), and
@@ -225,7 +225,7 @@ object SongCheck {
             val cents = Math.round(r.cents).toInt()
             if (kotlin.math.abs(r.cents) > REFERENCE_CENTS) add(SongRow.ReferencePitch(cents, r.retuned))
         }
-        add(SongRow.KeyAndTempo(tab.key.fifths, tab.key.mode == no.brasscribe.play.engine.KeyMode.MINOR, Math.round(tab.tempoBpm).toInt(),
+        add(SongRow.KeyAndTempo(tab.key.fifths, tab.key.mode == no.kalli.scribe.engine.KeyMode.MINOR, Math.round(tab.tempoBpm).toInt(),
             tab.meter.beats, tab.meter.beatUnit))
         val doubtful = tab.notes.count { it.doubtful }
         if (doubtful > 0) add(SongRow.Doubtful(doubtful))

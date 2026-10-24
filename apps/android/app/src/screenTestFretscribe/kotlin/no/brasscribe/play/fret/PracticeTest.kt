@@ -36,18 +36,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.scribe.design.ScribeColors
-import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeHighContrastLightColors
-import no.scribe.design.ScribeLightColors
+import no.kalli.scribe.design.ScribeColors
+import no.kalli.scribe.design.ScribeDarkColors
+import no.kalli.scribe.design.ScribeHighContrastLightColors
+import no.kalli.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
 import no.brasscribe.play.PlayApplication
 import no.brasscribe.play.PlayViewModel
-import no.brasscribe.play.engine.FixtureEngineApi
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.model.BrasscribeJson
+import no.kalli.scribe.engine.FixtureEngineApi
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.model.BrasscribeJson
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -60,14 +60,14 @@ import org.junit.Rule
 import org.junit.Test
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
-import no.brasscribe.play.test.Slow
+import no.kalli.scribe.test.Slow
 import org.junit.experimental.categories.Category
 import org.junit.runner.RunWith
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * Practice, on a fixture computer (apps/fixtures/bass-line-marks): the recording plays under the tab, the

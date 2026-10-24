@@ -11,7 +11,7 @@ import java.io.File
  * computer is Bandroom, and is named in full (Brasscribe Bandroom) only where the player looks for it.
  */
 class PairingWordsTest {
-    private val src = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src")
+    private val src = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src")
 
     private fun strings(file: File): Map<String, String> =
         Regex("""<string name="([a-z0-9_]+)"[^>]*>(.*?)</string>""", RegexOption.DOT_MATCHES_ALL).findAll(file.readText())
@@ -48,7 +48,7 @@ class PairingWordsTest {
      */
     @Test
     fun aboutNamesEverythingTheAppCarries() {
-        val notices = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("THIRD_PARTY_NOTICES.md")
+        val notices = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("THIRD_PARTY_NOTICES.md")
         assumeTrue("the notices are not in this checkout", notices?.isFile == true)
         fun section(title: String) = notices!!.readText().substringAfter("## $title\n").substringBefore("\n## ")
         fun component(row: String): String {
@@ -62,7 +62,7 @@ class PairingWordsTest {
             val where = row.split("|").getOrNull(3).orEmpty()
             (where.contains("Android") || where.contains("Rust core")) && !where.contains("Brasscribe only")
         }
-        // The realistic sound is Brasscribe's: Fretscribe's audio library is built without sfizz (audio/build.gradle.kts).
+        // The realistic sound is Brasscribe's: Fretscribe's audio library is built without sfizz (services/audio/build.gradle.kts).
         assertTrue(section("Notation and playback libraries").lines().any { it.startsWith("| [sfizz]") })
         assertTrue(libraries.toString(), "sfizz" !in libraries)
         val fonts = rows("Fonts") { it.contains("Fretscribe") }

@@ -26,9 +26,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
-import no.scribe.design.systemHighContrast
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
+import no.kalli.scribe.design.systemHighContrast
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.AppearanceStore
 import no.brasscribe.play.PlayViewModel

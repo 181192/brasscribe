@@ -27,11 +27,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import no.brasscribe.play.R
-import no.brasscribe.play.audio.AudioCapture
-import no.brasscribe.play.audio.CaptureState
-import no.brasscribe.play.audio.CapturedTake
-import no.brasscribe.play.audio.MicRecorder
-import no.brasscribe.play.audio.PlaybackCaptureRecorder
+import no.kalli.scribe.audio.AudioCapture
+import no.kalli.scribe.audio.CaptureState
+import no.kalli.scribe.audio.CapturedTake
+import no.kalli.scribe.audio.MicRecorder
+import no.kalli.scribe.audio.PlaybackCaptureRecorder
 import java.io.File
 
 enum class CaptureKind { MICROPHONE, DEVICE }

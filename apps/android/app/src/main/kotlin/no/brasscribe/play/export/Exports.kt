@@ -5,13 +5,13 @@ import android.content.Intent
 import androidx.core.content.FileProvider
 import no.brasscribe.play.TranscriptionResult
 import no.brasscribe.play.compositionJsonFor
-import no.brasscribe.play.engine.EngineApi
-import no.brasscribe.play.model.CoreBridge
-import no.brasscribe.play.model.Lang
-import no.brasscribe.play.model.PICKUP_BAR
-import no.brasscribe.play.model.PartView
-import no.brasscribe.play.model.TsContext
-import no.brasscribe.play.model.TsSettings
+import no.kalli.scribe.engine.EngineApi
+import no.kalli.scribe.model.CoreBridge
+import no.kalli.scribe.model.Lang
+import no.kalli.scribe.model.PICKUP_BAR
+import no.kalli.scribe.model.PartView
+import no.kalli.scribe.model.TsContext
+import no.kalli.scribe.model.TsSettings
 import kotlinx.coroutines.ensureActive
 import java.io.File
 
@@ -95,7 +95,7 @@ class Exporter(private val context: Context, private val core: CoreBridge) {
         val bytes: ByteArray = when (format) {
             ExportFormat.PDF -> engine!!.artifact(r.jobId!!, partFile(r, index, "pdf") ?: error("no PDF for $name"))
             ExportFormat.BRAILLE -> engine!!.braille(r.jobId!!, (index + 1).toString())
-            ExportFormat.MUSICXML -> no.brasscribe.play.model.MusicXmlParts.single(r.musicXml, index).toByteArray()
+            ExportFormat.MUSICXML -> no.kalli.scribe.model.MusicXmlParts.single(r.musicXml, index).toByteArray()
             ExportFormat.TALKING_SCORE -> (runCatching {
                 core.talkingScore(r.musicXml, r.compositionJsonFor(core))?.use { it.toHtml(lang, listOf(index)) }
             }.getOrNull() ?: error("no talking score")).toByteArray()

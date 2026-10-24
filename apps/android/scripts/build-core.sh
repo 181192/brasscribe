@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds the Rust core's Android libraries (libscribe_ffi.so for arm64-v8a and x86_64) with
-# cargo-ndk into apps/android/core-bridge/src/main/jniLibs (git-ignored), and copies the UniFFI
+# cargo-ndk into apps/android/services/core-bridge/src/main/jniLibs (git-ignored), and copies the UniFFI
 # Kotlin bindings from core/android. Without the libraries the app runs on the Kotlin fallback.
 set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"

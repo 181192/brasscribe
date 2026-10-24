@@ -1,7 +1,7 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Job
-import no.brasscribe.play.engine.JobStatus
+import no.kalli.scribe.engine.Job
+import no.kalli.scribe.engine.JobStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -44,8 +44,8 @@ data class Credential(
  * never to another address, even one that answers with the same server id.
  */
 fun Credential.mayBeSentTo(url: String): Boolean {
-    val recorded = no.brasscribe.play.engine.LocalHosts.hostOf(lastAddress) ?: return false
-    return no.brasscribe.play.engine.LocalHosts.hostOf(url) == recorded
+    val recorded = no.kalli.scribe.engine.LocalHosts.hostOf(lastAddress) ?: return false
+    return no.kalli.scribe.engine.LocalHosts.hostOf(url) == recorded
 }
 
 /**

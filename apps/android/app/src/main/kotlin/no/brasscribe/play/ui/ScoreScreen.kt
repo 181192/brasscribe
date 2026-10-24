@@ -89,18 +89,18 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import no.brasscribe.play.score.StandPages
 import no.brasscribe.play.ui.theme.productColors
-import no.scribe.design.ScribeNumericStyle
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeNumericStyle
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
-import no.brasscribe.play.audio.RealisticSynth
+import no.kalli.scribe.audio.RealisticSynth
 import no.brasscribe.play.compositionJsonFor
 import no.brasscribe.play.lineup
 import no.brasscribe.play.isSoloTake
 import androidx.compose.ui.semantics.heading
-import no.brasscribe.play.model.Uncertainty
+import no.kalli.scribe.model.Uncertainty
 import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.score.ScorePalette
 import no.brasscribe.play.score.ScoreUiState
@@ -205,7 +205,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     // Mute my part mutes your part; with no part of your own ("I conduct or listen") it is not offered.
     val myPart = your.index
     // Asked of the core off the main thread: a full band's Composition takes a moment to encode and read.
-    val sources by androidx.compose.runtime.produceState(emptyMap<String, no.brasscribe.play.model.PartSource>(), r) {
+    val sources by androidx.compose.runtime.produceState(emptyMap<String, no.kalli.scribe.model.PartSource>(), r) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { vm.partSources(r) }
     }
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
@@ -982,7 +982,7 @@ private fun SoundChoice(realistic: Boolean, packParts: Int, humanized: Boolean, 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PartsSheet(
-    st: ScoreUiState, controller: ScoreController, yours: Int?, sources: Map<String, no.brasscribe.play.model.PartSource>,
+    st: ScoreUiState, controller: ScoreController, yours: Int?, sources: Map<String, no.kalli.scribe.model.PartSource>,
     onMakeMine: (Int) -> Unit, onWriteForAnother: (() -> Unit)?, outputLabel: Int = R.string.write_for_another, onDismiss: () -> Unit,
 ) {
     val c = ScribeTheme.colors
@@ -1048,26 +1048,26 @@ private fun PartsSheet(
 
 /** A part's source in the mixer: its icon and words, small, under the part name. */
 @Composable
-private fun SourceLine(source: no.brasscribe.play.model.PartSource) {
+private fun SourceLine(source: no.kalli.scribe.model.PartSource) {
     val c = ScribeTheme.colors
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
-        BcIcon(if (source == no.brasscribe.play.model.PartSource.ARRANGED || source == no.brasscribe.play.model.PartSource.EMPTY) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
+        BcIcon(if (source == no.kalli.scribe.model.PartSource.ARRANGED || source == no.kalli.scribe.model.PartSource.EMPTY) R.drawable.ic_bc_parts else R.drawable.ic_bc_record_mic, null,
             Modifier.size(16.dp), tint = c.textMuted)
         Text(stringResource(when (source) {
-            no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
-            no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
-            no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
-            no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty
+            no.kalli.scribe.model.PartSource.YOUR_RECORDING -> R.string.source_yours
+            no.kalli.scribe.model.PartSource.RECORDING -> R.string.source_recording
+            no.kalli.scribe.model.PartSource.ARRANGED -> R.string.source_arranged
+            no.kalli.scribe.model.PartSource.EMPTY -> R.string.source_empty
         }), style = MaterialTheme.typography.bodySmall, color = c.textMuted)
     }
 }
 
 /** The words of a source pill. */
-fun sourceWords(source: no.brasscribe.play.model.PartSource): Int = when (source) {
-    no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours
-    no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording
-    no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged
-    no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty
+fun sourceWords(source: no.kalli.scribe.model.PartSource): Int = when (source) {
+    no.kalli.scribe.model.PartSource.YOUR_RECORDING -> R.string.source_yours
+    no.kalli.scribe.model.PartSource.RECORDING -> R.string.source_recording
+    no.kalli.scribe.model.PartSource.ARRANGED -> R.string.source_arranged
+    no.kalli.scribe.model.PartSource.EMPTY -> R.string.source_empty
 }
 
 /** A one-line notice that opens its details and can be closed; both targets 48 dp. */

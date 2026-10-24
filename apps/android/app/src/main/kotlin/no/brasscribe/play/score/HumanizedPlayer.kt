@@ -1,10 +1,10 @@
 package no.brasscribe.play.score
 
 import alphaTab.model.Score
-import no.brasscribe.play.audio.RealisticSynth
-import no.brasscribe.play.model.CoreBridge
-import no.brasscribe.play.model.PlayedNote
-import no.brasscribe.play.model.ScoreNote
+import no.kalli.scribe.audio.RealisticSynth
+import no.kalli.scribe.model.CoreBridge
+import no.kalli.scribe.model.PlayedNote
+import no.kalli.scribe.model.ScoreNote
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit

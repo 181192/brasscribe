@@ -1,7 +1,7 @@
 package no.brasscribe.play.fret
 
 import no.brasscribe.play.connection.CredentialStoreTest.MemoryStore
-import no.brasscribe.play.engine.FrettedInstrument
+import no.kalli.scribe.engine.FrettedInstrument
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -92,7 +92,7 @@ class YourInstrumentTest {
     @Test
     fun theTuningsAreTheCratesPresets() {
         // The repository root is two up from the sounds folder the build passes in.
-        val source = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
+        val source = System.getProperty("scribe.sounds")?.let { File(it).parentFile }
             ?.resolve("core/targets/fretted/src/instrument.rs")
         assumeTrue("core/targets/fretted is not in this checkout", source?.isFile == true)
         val list = source!!.readText().substringAfter("pub const PRESET_IDS: &[&str] = &[").substringBefore("];")

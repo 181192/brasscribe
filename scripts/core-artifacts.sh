@@ -10,7 +10,7 @@
 #   host     core/target/release/libscribe_ffi.{dylib,a} and core/dist/macos/ (JVM, .NET and FFI tests),
 #            and the command line core/target/release/scribe-core (the engine's bass-tab profile)
 #   apple    core/swift/ScribeCore/ScribeFFI.xcframework (macOS, iOS, iOS simulator)
-#   android  apps/android/core-bridge/src/main/jniLibs/{arm64-v8a,x86_64}/libscribe_ffi.so
+#   android  apps/android/services/core-bridge/src/main/jniLibs/{arm64-v8a,x86_64}/libscribe_ffi.so
 #
 # The key is a hash of the core sources (tracked and untracked, not ignored), Cargo.lock, this
 # script, rustc -vV and the component's own toolchain (Xcode, NDK, cargo-ndk). An edit to the core
@@ -213,7 +213,7 @@ install() {
     android)
       local abi
       for abi in arm64-v8a x86_64; do
-        clone "$dir/jniLibs/$abi/libscribe_ffi.so" "$ROOT/apps/android/core-bridge/src/main/jniLibs/$abi/libscribe_ffi.so"
+        clone "$dir/jniLibs/$abi/libscribe_ffi.so" "$ROOT/apps/android/services/core-bridge/src/main/jniLibs/$abi/libscribe_ffi.so"
       done
       ;;
   esac
@@ -225,7 +225,7 @@ installed() {
   case "$1" in
     host) ls "$CORE"/target/release/libscribe_ffi.* >/dev/null 2>&1 && [ -x "$CORE/target/release/scribe-core" ] ;;
     apple) [ -d "$CORE/swift/ScribeCore/ScribeFFI.xcframework" ] ;;
-    android) [ -f "$ROOT/apps/android/core-bridge/src/main/jniLibs/arm64-v8a/libscribe_ffi.so" ] ;;
+    android) [ -f "$ROOT/apps/android/services/core-bridge/src/main/jniLibs/arm64-v8a/libscribe_ffi.so" ] ;;
   esac
 }
 

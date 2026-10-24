@@ -4,11 +4,11 @@ import android.graphics.Bitmap
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeHighContrastColors
-import no.scribe.design.ScribeHighContrastLightColors
-import no.scribe.design.ScribeLightColors
-import no.scribe.design.scribeTypography
+import no.kalli.scribe.design.ScribeDarkColors
+import no.kalli.scribe.design.ScribeHighContrastColors
+import no.kalli.scribe.design.ScribeHighContrastLightColors
+import no.kalli.scribe.design.ScribeLightColors
+import no.kalli.scribe.design.scribeTypography
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
 import org.junit.Assert.assertEquals
@@ -40,7 +40,7 @@ class FretscribeThemeTest : ScreenTest() {
         return pixels.count { it == want }
     }
 
-    private fun assertWears(shot: Bitmap, colours: no.scribe.design.ScribeColors, mode: String) {
+    private fun assertWears(shot: Bitmap, colours: no.kalli.scribe.design.ScribeColors, mode: String) {
         val all = shot.width * shot.height
         assertTrue("$mode: the ground is Fretscribe's paper", shot.count(colours.bg) > all / 3)
         // The mark beside the wordmark is drawn in the brand colour: blue ink, never brass.

@@ -1,7 +1,7 @@
 package no.brasscribe.play
 
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.engine.EngineException
+import no.kalli.scribe.engine.EngineException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test

@@ -31,9 +31,9 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.update
-import no.scribe.design.ScribeButtonShape
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeButtonShape
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.Difficulty
 import no.brasscribe.play.Lineup
 import no.brasscribe.play.fullBandMade
@@ -42,8 +42,8 @@ import no.brasscribe.play.madeFor
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
-import no.brasscribe.play.model.Lang
-import no.brasscribe.play.model.reading
+import no.kalli.scribe.model.Lang
+import no.kalli.scribe.model.reading
 
 /** Tonic names by pitch class, flats first as brass bands read them; nb has B for B♭ and H for B. */
 private val TONIC_EN = listOf("C", "D♭", "D", "E♭", "E", "F", "F♯", "G", "A♭", "A", "B♭", "B")
@@ -133,7 +133,7 @@ fun OutputScreen(vm: PlayViewModel) {
         // A seat that takes the lead part (a trumpet) has the tune already: nothing to choose.
         val takesLead = seat?.let { s -> vm.container.core.seatPart(options.lineup.core, s.id)?.takes } != null
         if (!soloTake && canArrange && seat != null && seat.tune && !takesLead && options.lineup != Lineup.QUARTET && yourBandPart != null &&
-            yourBandPart != options.lineup.lead && r?.profile in setOf(no.brasscribe.play.engine.Profile.ORCHESTRA_WITH_SOLOIST, no.brasscribe.play.engine.Profile.BRASS_BAND)) {
+            yourBandPart != options.lineup.lead && r?.profile in setOf(no.kalli.scribe.engine.Profile.ORCHESTRA_WITH_SOLOIST, no.kalli.scribe.engine.Profile.BRASS_BAND)) {
             SubHeading(stringResource(R.string.who_plays_tune))
             ChoiceGroup(2) {
                 ChoiceCard(stringResource(R.string.tune_lineup, PartNames.display(options.lineup.lead)), null, options.lead != "seat", true, 0) {

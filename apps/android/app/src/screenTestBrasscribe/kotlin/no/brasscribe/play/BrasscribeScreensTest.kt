@@ -6,7 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenCatalogue
 import no.brasscribe.play.screen.ScreenDevice
 import org.junit.After

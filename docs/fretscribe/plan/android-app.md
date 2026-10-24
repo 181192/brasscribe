@@ -23,9 +23,9 @@ from the repository root. alphaTab facts come from the 1.8.4 jar's class list; w
 
 Brasscribe's files stay in `src/main`; nothing moves. `MainActivity` calls `Product.Root(vm)`.
 
-**Tokens and theme.** Both apps read the neutral theme (`no.scribe.design`: `ScribeTheme`,
+**Tokens and theme.** Both apps read the neutral theme (`no.kalli.scribe.design`: `ScribeTheme`,
 `ScribeColors`, the scales), generated for each from its own tokens into its own dist
-(`design/tokens/README.md`). Fretscribe's own roles and tab metrics are `no.fretscribe.design`. The
+(`design/tokens/README.md`). Fretscribe's own roles and tab metrics are `no.kalli.fretscribe.design`. The
 screens Fretscribe still has from Brasscribe draw a score with colours a tab has no name for; the app
 hands them in (`Product.Theme`: the doubt colour for the very doubtful one, the repeat's band for the
 band behind freely played bars). The design

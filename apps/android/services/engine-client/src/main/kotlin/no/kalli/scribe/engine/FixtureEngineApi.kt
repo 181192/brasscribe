@@ -1,0 +1,267 @@
+package no.kalli.scribe.engine
+
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.CompositionJson
+import java.io.File
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+
+/** Where fixture files come from: a directory on the JVM, app assets on Android. */
+fun interface FixtureSource {
+    fun read(name: String): ByteArray?
+}
+
+class DirectoryFixtureSource(private val dir: File) : FixtureSource {
+    override fun read(name: String): ByteArray? = File(dir, name).takeIf { it.isFile }?.readBytes()
+}
+
+/**
+ * Plays the part of the engine from a folder laid out like its output (composition.json,
+ * brass-band.musicxml, parts/…, and the PDF, MP3 and braille when present; for a tab job
+ * tab.json, tab.musicxml, the tab as text (tab.txt) and as playing instructions (tab-instructions.en.txt and
+ * .nb.txt), and tab.pdf and tab.mid when present): every job walks the stages of its
+ * profile with timed progress events and then serves those files. A folder with a profiles.json (a list of
+ * profile ids) plays a computer that has only those: an older one, from before the tab profile. (The file is
+ * read each time the profiles are asked for, so a source may take its time over it, or fail.) Tests only: the JVM tests replay
+ * data/golden and the tab fixtures of apps/fixtures (bass-line, guitar-line, ukulele-line), the instrumented tests apps/fixtures/old-hundredth.
+ */
+class FixtureEngineApi(
+    private val source: FixtureSource,
+    /** Seconds each simulated stage takes. */
+    private val stageSeconds: Double = 0.6,
+) : EngineApi {
+    private val uploads = ConcurrentHashMap<String, AudioRef>()
+    private val jobs = ConcurrentHashMap<String, Job>()
+    private val cancelled = ConcurrentHashMap.newKeySet<String>()
+    private val counter = AtomicInteger()
+
+    override suspend fun health() = Health(version = "fixture", device = "cpu", authRequired = false, serverId = SERVER_ID, serverName = SERVER_NAME,
+        interfaceVersion = Wire.INTERFACE_VERSION)
+    override suspend fun pair(code: String, deviceName: String?, platform: String?) = PairResponse("fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
+    override suspend fun thisDevice() = DeviceSelf("fixture-device", "Phone", "android", "2026-01-01T00:00:00+00:00",
+        "2026-01-01T00:00:00+00:00", true, SERVER_ID, "2099-01-01T00:00:00+00:00", "2099-01-01T00:00:00+00:00",
+        interfaceVersion = Wire.INTERFACE_VERSION)
+    override suspend fun rotateToken() = RotateResponse("fixture-token", "fixture-device")
+    override suspend fun unpairThisDevice() = Unit
+    override suspend fun requestPairing(deviceName: String?, platform: String?) =
+        PairRequestInfo("fixture-request", deviceName ?: "Phone", platform ?: "android", "0000", "2026-01-01T00:00:00+00:00", "pending")
+    override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
+
+    override suspend fun profiles(): List<ProfileInfo> = known().map {
+        ProfileInfo(it.id, it.target.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+    }
+
+    /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */
+    private fun known(): List<Profile> {
+        val listed = source.read(PROFILES_FILE)?.let { no.kalli.scribe.model.BrasscribeJson.decodeFromString(ListSerializer(String.serializer()), String(it)) }
+        return Profile.entries.filter { listed == null || it.id in listed }
+    }
+
+    // Hashes the stream in chunks, as the engine does, so a fixture upload holds no more than a buffer.
+    override suspend fun uploadAudio(source: UploadSource, onProgress: UploadProgress): AudioRef {
+        val digest = MessageDigest.getInstance("SHA-256")
+        var size = 0L
+        source.open().use { input ->
+            val buf = ByteArray(1 shl 16)
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) break
+                digest.update(buf, 0, n)
+                size += n
+                onProgress(size, source.size)
+            }
+        }
+        val sha = digest.digest().joinToString("") { "%02x".format(it) }
+        return AudioRef(sha.take(16), sha, source.filename, size).also { uploads[it.audioId] = it }
+    }
+
+    override suspend fun createJob(request: JobCreate): Job {
+        // As the engine: a profile it does not have is refused without a code.
+        // (A source that cannot say which profiles there are is a computer with all of them.)
+        val has = runCatching { known() }.getOrDefault(Profile.entries)
+        val profile = Profile.of(request.profile)?.takeIf { it in has } ?: throw EngineException(422, "unknown profile ${request.profile}")
+        val id = "fixture-${counter.incrementAndGet()}"
+        if (!profile.writesTab && request.tabOptionsNamed()) throw EngineException(422, "only the tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
+        // As the engine: the older id is for a bass only, and an instrument takes its own tunings.
+        val instrument = request.instrument ?: if (profile == Profile.BASS_TAB) FrettedInstrument.BASS_4 else FrettedInstrument.GUITAR_6
+        if (profile.writesTab && (instrument.id == null || (profile == Profile.BASS_TAB && !instrument.isBass) ||
+                (request.tuning != null && request.tuning !in instrument.tunings) || (instrument.isBass && request.chords == TabChords.COMPLETED)))
+            throw EngineException(422, "not an instrument, a tuning or a chords choice of the ${profile.id} profile", Refusal.INVALID_OPTIONS.code)
+        val stages = stagesOf(profile, wholeRecording = (request.recording ?: instrument.defaultRecording) == Recording.INSTRUMENT, instrument = instrument)
+        val job = Job(id, profile.id, profile.target.id, JobStatus.QUEUED, now(), stages.map { StageState(it, StageStatus.PENDING, kindOf(it)) },
+            audioId = request.audioId, title = request.title)
+        jobs[id] = job
+        return job
+    }
+
+    override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress,
+                                             tab: TabOptions?): Job =
+        createJob(JobCreate(uploadAudio(source, onProgress).audioId, profile.id, renderAudio, title = title).withTab(tab ?: TabOptions()))
+
+    private fun JobCreate.tabOptionsNamed() = listOf(instrument, tuning, capo, style, recording, octave, layout, chords).any { it != null }
+
+    override suspend fun job(jobId: String): Job = jobs[jobId] ?: throw EngineException(404, "no job $jobId")
+    override suspend fun jobs(): List<Job> = jobs.values.sortedBy { it.created }
+
+    override suspend fun cancel(jobId: String): Job {
+        cancelled += jobId
+        val j = job(jobId).copy(status = JobStatus.CANCELLED, finished = now())
+        jobs[jobId] = j
+        return j
+    }
+
+    override fun events(jobId: String, after: Int): Flow<JobEvent> = flow {
+        val job = job(jobId)
+        val stages = job.stages.map { it.name }
+        var id = 0
+        suspend fun send(e: JobEvent) {
+            if (e.id > after) emit(e)
+        }
+        send(JobEvent(id++, "job", run = jobId, time = now(), status = "queued"))
+        jobs[jobId] = job.copy(status = JobStatus.RUNNING, started = now())
+        send(JobEvent(id++, "job", run = jobId, time = now(), status = "running"))
+        for ((i, stage) in stages.withIndex()) {
+            if (jobId in cancelled) {
+                jobs[jobId] = job(jobId).copy(status = JobStatus.CANCELLED, finished = now())
+                send(JobEvent(id++, "job", run = jobId, time = now(), status = "cancelled")); return@flow
+            }
+            send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "started"))
+            delay((stageSeconds * 1000).toLong())
+            if (jobId in cancelled) {
+                jobs[jobId] = job(jobId).copy(status = JobStatus.CANCELLED, finished = now())
+                send(JobEvent(id++, "job", run = jobId, time = now(), status = "cancelled")); return@flow
+            }
+            val fraction = (i + 1).toDouble() / stages.size
+            send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "cached",
+                seconds = stageSeconds, fraction = fraction, device = "cpu"))
+            jobs[jobId] = job(jobId).copy(progress = fraction)
+        }
+        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = outputsOf(jobId))
+        send(JobEvent(id, "job", run = jobId, time = now(), status = "succeeded"))
+    }
+
+    override suspend fun composition(jobId: String): Composition = CompositionJson.decode(String(file("composition.json")))
+    override suspend fun musicXml(jobId: String): String = String(file("${stem(jobId)}.musicxml"))
+    override suspend fun midi(jobId: String): ByteArray = file("${stem(jobId)}.mid")
+    override suspend fun pdf(jobId: String): ByteArray = file("${stem(jobId)}.pdf")
+    override suspend fun renderedAudio(jobId: String): ByteArray = file("brass-band.mp3")
+
+    /** The fixture's [INPUT_FILE], when it has one: a computer that still holds the recording. */
+    override suspend fun jobInput(jobId: String, into: File, maxBytes: Long) {
+        val sound = file(INPUT_FILE)
+        if (sound.size > maxBytes) throw EngineException(413, "the fixture's recording is larger than $maxBytes bytes")
+        into.writeBytes(sound)
+    }
+
+    override suspend fun tab(jobId: String): Tab {
+        if (!isTab(jobId)) throw EngineException(404, "job $jobId has no tab")
+        return no.kalli.scribe.model.BrasscribeJson.decodeFromString(Tab.serializer(), String(file("tab.json")))
+    }
+
+    override suspend fun artifacts(jobId: String): List<Artifact> = outputsOf(jobId).mapNotNull { name ->
+        source.read(name)?.let { Artifact(name, it.size.toLong(), mediaOf(name), "/v1/jobs/$jobId/artifacts/$name") }
+    }
+
+    private fun isTab(jobId: String) = jobs[jobId]?.profile?.let(Profile::writesTab) == true
+
+    /** The name the job's score files go by, as the engine's /musicxml, /pdf and /midi choose it. */
+    private fun stem(jobId: String) = if (isTab(jobId)) "tab" else "brass-band"
+
+    private fun outputsOf(jobId: String) = if (isTab(jobId)) tabOutputs else outputs
+
+    /** The score's files and per-part files (parts/NN-Name.pdf|brf|musicxml) the fixture has. */
+    private val outputs: List<String> by lazy {
+        (OUTPUTS + PART_NAMES.flatMapIndexed { i, n ->
+            listOf("pdf", "brf", "musicxml").map { "parts/%02d-%s.%s".format(i + 1, n, it) }
+        }).filter { source.read(it) != null }
+    }
+
+    private val tabOutputs: List<String> by lazy { TAB_OUTPUTS.filter { source.read(it) != null } }
+
+    override suspend fun artifact(jobId: String, name: String): ByteArray = file(name)
+    override suspend fun braille(jobId: String, part: String?): ByteArray =
+        file(if (part == null) "brass-band.brf" else part.toIntOrNull()?.let { n -> PART_NAMES.getOrNull(n - 1)?.let { "parts/%02d-%s.brf".format(n, it) } }
+            ?: throw EngineException(404, "no part $part"))
+
+    override suspend fun talkingScore(jobId: String, format: String, lang: String, part: String?, pitchMode: String?, verbosity: String): String =
+        throw EngineException(404, "the fixture has no talking score; the app builds it with the core")
+
+    override suspend fun manifest(jobId: String): String = """{"run":"$jobId","fixture":true}"""
+
+    override suspend fun evidence(jobId: String): Evidence = Evidence.EMPTY
+
+    override suspend fun renameRun(jobId: String, title: String): Job =
+        job(jobId).copy(title = title).also { jobs[jobId] = it }
+
+    override suspend fun deleteRun(jobId: String) {
+        jobs.remove(jobId) ?: throw EngineException(404, "no run $jobId")
+    }
+
+    private fun file(name: String): ByteArray = source.read(name) ?: throw EngineException(404, "fixture file $name is missing")
+    private fun now() = System.currentTimeMillis() / 1000.0
+
+    companion object {
+        const val SERVER_ID = "fixture"
+        const val SERVER_NAME = "Brasscribe (test fixture)"
+        /** A fixture file that is the recording the job was made from. */
+        const val INPUT_FILE = "input.wav"
+        /** A fixture file that lists the profile ids the computer has, when it has not all of them. */
+        const val PROFILES_FILE = "profiles.json"
+        val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
+        /** What a tab job leaves, in the engine's order; the PDF and the MIDI only on a computer with MuseScore. */
+        val TAB_OUTPUTS = listOf(
+            "composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.mid", "tab.musicxml", "tab.pdf", "tab.txt",
+        )
+        /** The brass band's parts in order, as the engine's file names spell them. */
+        val PART_NAMES = listOf(
+            "Soprano-Cornet", "Solo-Cornet", "Repiano-Cornet", "2nd-Cornet", "3rd-Cornet", "Flugelhorn", "Solo-Horn", "1st-Horn", "2nd-Horn",
+            "1st-Baritone", "2nd-Baritone", "1st-Trombone", "2nd-Trombone", "Bass-Trombone", "Euphonium", "Eb-Bass", "Bb-Bass", "Percussion",
+        )
+
+        fun mediaOf(name: String): String = MEDIA[name] ?: when (name.substringAfterLast('.')) {
+            "pdf" -> "application/pdf"; "brf" -> "text/plain"; "musicxml" -> "application/vnd.recordare.musicxml+xml"
+            "json" -> "application/json"; "mid" -> "audio/midi"; "txt" -> "text/plain; charset=utf-8"
+            else -> "application/octet-stream"
+        }
+
+        private val MEDIA = mapOf(
+            "composition.json" to "application/json", "brass-band.musicxml" to "application/vnd.recordare.musicxml+xml",
+            "brass-band.pdf" to "application/pdf", "brass-band.mp3" to "audio/mpeg", "brass-band.brf" to "text/plain",
+        )
+
+        /**
+         * Stage names per profile, as the engine's profiles define them. [wholeRecording]: a tab job for a
+         * recording of the instrument alone, which is not separated. [instrument]: the one a tab job is for,
+         * which names its transcription stages; a job that names none is for a guitar (bass-tab: a bass).
+         */
+        fun stagesOf(profile: Profile, wholeRecording: Boolean = false, instrument: FrettedInstrument? = null): List<String> = when (profile) {
+            Profile.TAB, Profile.BASS_TAB -> {
+                val kind = when (instrument ?: if (profile == Profile.BASS_TAB) FrettedInstrument.BASS_4 else FrettedInstrument.GUITAR_6) {
+                    FrettedInstrument.UKULELE, FrettedInstrument.UKULELE_BARITONE -> "ukulele"
+                    FrettedInstrument.MANDOLIN -> "mandolin"
+                    FrettedInstrument.GUITAR_6, FrettedInstrument.GUITAR_7, FrettedInstrument.GUITAR_8 -> "guitar"
+                    else -> "bass"
+                }
+                listOf("beats") + (if (wholeRecording) emptyList() else listOf("stems")) +
+                    listOf("transcribe.$kind.basic-pitch", "transcribe.$kind.swift-f0", "notes", "arrange", "export")
+            }
+            Profile.SOLO -> listOf("beats", "transcribe.mix.swift-f0", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
+            Profile.BRASS_BAND -> listOf("beats", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
+            Profile.POP_ROCK -> listOf("beats", "stems") + listOf("vocals", "other", "guitar", "piano").map { "transcribe.$it.muscriptor" } +
+                listOf("transcribe.vocals.basic-pitch", "transcribe.bass.basic-pitch", "arrange", "export")
+            Profile.ORCHESTRA_WITH_SOLOIST -> listOf("beats", "stems", "layers", "transcribe.solo.swift-f0", "transcribe.solo.muscriptor",
+                "transcribe.bass.muscriptor", "transcribe.drums.muscriptor", "transcribe.orchestra.muscriptor", "contour.solo.swift-f0", "arrange", "export")
+        }
+
+        fun kindOf(stage: String): String = when {
+            stage.startsWith("contour.") -> "transcribe"
+            else -> stage.substringBefore('.')
+        }
+    }
+}

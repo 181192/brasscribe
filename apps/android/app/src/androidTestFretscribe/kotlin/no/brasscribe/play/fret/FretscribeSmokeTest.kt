@@ -11,12 +11,12 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.scribe.design.ScribeLightColors
+import no.kalli.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.Screen
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
-import no.brasscribe.play.test.Smoke
+import no.kalli.scribe.test.Smoke
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,7 +54,7 @@ class FretscribeSmokeTest : ScreenTest() {
 
     @Test
     fun aRecordingBecomesATabWithInkOnTheScreenUprightAndOnItsSide() {
-        yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
+        yourInstrumentStore(rule.activity).save(YourInstrument(no.kalli.scribe.engine.FrettedInstrument.BASS_4))
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         computer("bass-line")
         val file = recording()

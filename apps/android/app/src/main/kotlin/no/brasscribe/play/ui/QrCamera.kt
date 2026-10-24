@@ -17,7 +17,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import no.brasscribe.play.connection.QrDecoder
-import no.brasscribe.play.engine.PairLink
+import no.kalli.scribe.engine.PairLink
 
 /**
  * The camera under the pairing scanner: what it sees, and the text of the first QR code in view. The

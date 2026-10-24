@@ -157,8 +157,8 @@ run_area() {
     # Both apps' unit tests and their screens on the JVM (apps/android/README.md, Testing); fast leaves out the
     # Slow ones (the screen catalogues, practice in real time), full adds them through scripts/screenshots.sh,
     # which runs every screen's own checks and takes its screenshot.
-    fast:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast --console=plain -q) ;;
-    full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pbrasscribe.withoutCatalogues --console=plain \
+    fast:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pscribe.fast --console=plain -q) ;;
+    full:android) (cd apps/android && ./gradlew testDebugUnitTest testFretscribeDebugUnitTest lint lintFretscribeDebug assembleDebug -Pscribe.withoutCatalogues --console=plain \
                      && scripts/screenshots.sh record) ;;
     fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;

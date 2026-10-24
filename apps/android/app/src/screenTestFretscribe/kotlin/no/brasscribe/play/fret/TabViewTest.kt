@@ -42,18 +42,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.scribe.design.ScribeColors
-import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeHighContrastLightColors
-import no.scribe.design.ScribeLightColors
+import no.kalli.scribe.design.ScribeColors
+import no.kalli.scribe.design.ScribeDarkColors
+import no.kalli.scribe.design.ScribeHighContrastLightColors
+import no.kalli.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
 import no.brasscribe.play.PlayApplication
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.TabLayout
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.TabLayout
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -76,7 +76,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * The tab view, on a fixture computer: Check the song, then Show the tab. The first fixture
@@ -554,7 +554,7 @@ class TabViewTest : TabScreenTest() {
         val said = ArrayList<String>()
         for ((name, want) in probes) for ((file, layout) in layouts) {
             val xml = asset("tab-probes/$name/$file.musicxml")
-            val data = no.brasscribe.play.model.BrasscribeJson.decodeFromString(no.brasscribe.play.engine.Tab.serializer(), asset("tab-probes/$name/tab.json")).copy(layout = layout)
+            val data = no.kalli.scribe.model.BrasscribeJson.decodeFromString(no.kalli.scribe.engine.Tab.serializer(), asset("tab-probes/$name/tab.json")).copy(layout = layout)
             val index = TabIndex.parse(xml)
             for ((source, tab) in listOf("the data" to data, "the page alone" to null)) {
                 val marks = TabMarks.of(index, tab)

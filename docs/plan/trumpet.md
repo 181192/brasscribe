@@ -134,7 +134,7 @@ This merges the earlier list, the review's §1.5 and a full audit. "Today with a
 | `core/.../talking_score.rs:810-834` `nb_part_name` | 20 nb part names. The FFI's `seats()` and `part_name_nb` read them | exact name | English name in the nb UI |
 | `talking_score.rs:836-858` `instrument_nb` | substring replaces (Cornet→kornett, " in B♭"→" i B") | contains | «trumpet i B» |
 | `engine/.../talking_score.py:440-458` `NB_PART_NAMES`, `instrument_nb` | a Python copy of the two above | name / contains | the same |
-| `engine/.../schemas.py:13-15` `Seat` Literal | 18 seat ids, and from there `engine/openapi.json`, `studio/src/api/schema.d.ts`, `apps/android/engine-client/openapi.json`, the Windows test fixture | id | 422 before `profiles.py:63` `_check_seat` runs |
+| `engine/.../schemas.py:13-15` `Seat` Literal | 18 seat ids, and from there `engine/openapi.json`, `studio/src/api/schema.d.ts`, `apps/android/services/engine-client/openapi.json`, the Windows test fixture | id | 422 before `profiles.py:63` `_check_seat` runs |
 | `engine/.../profiles.py:251` | "solo cornet & brass band (draft)" | literal | wrong title |
 | `studio/src/lib/validate.ts:11-31` `RANGES`, `:35-49` `CROSSING_PAIRS` | ranges per part name | name | no range check |
 | `studio/src/lib/talkingxml.ts:36-43` `NB_PARTS` | nb names | name | English name |
@@ -146,7 +146,7 @@ This merges the earlier list, the review's §1.5 and a full audit. "Today with a
 | `apps/apple/App/PracticeModel.swift:146-148`, `ScoreKit/CoreBridge.swift:66-71` | "Solo Cornet" / "1st Cornet" as the lead | literal | not "your part" when the soloist is the lead |
 | `apps/android/.../ui/WhatDoYouPlayScreen.kt:56-68` `TILES` and strings.xml:573-584 (nb :571-582) | tiles, order and labels | instrument id | **dropped**: `TILES.filter` at :158 hides it |
 | `apps/android/.../RustCoreBridge.kt:114` | drops the core's `tune` | – | "Who plays the tune?" wrong (being fixed on `fix/user-flow`) |
-| `apps/android/model/.../Pitch.kt:75-86` `Instrument` enum | en/nb names, key label, chromatic, program | enum | no entry |
+| `apps/android/services/model/.../Pitch.kt:75-86` `Instrument` enum | en/nb names, key label, chromatic, program | enum | no entry |
 | `apps/android/.../ui/ReviewScreen.kt:117` | instrument from chromatic, first match | chromatic | "Cornet in B-flat" |
 | `apps/android/.../MyInstrument.kt:112,139-144`, `Lineup.kt:14-16,36`, `PlayViewModel.kt:863,1224` | quartet aliases, leads, part → layer | name | the soloist is not the lead |
 | `apps/android/.../score/SoundPack.kt:25-35` | SFZ folder list, cornet siblings | target id | no `trumpet` folder |
@@ -344,7 +344,7 @@ own part: Part { name "Trumpet", instrument TRUMPET, players 1, short "Tpt.", mi
 
 - **`Seat::band_part`** (`instruments.rs:412`) becomes `Seat::own_part`. It is the band part for the 18 band seats, and `Trumpet` for the new one. Every caller changes to it, including `pipeline.rs:368`, the solo take's window, which becomes 52–85 for a trumpet.
 - **A solo take for the trumpet seat** is one part, "Trumpet", written as played (`seat_lineup`).
-- **The engine.** `schemas.py:13` `Seat` gets `"trumpet"`. The OpenAPI is regenerated into `engine/openapi.json`, `studio/src/api/schema.d.ts`, `apps/android/engine-client/openapi.json` and the Windows fixture.
+- **The engine.** `schemas.py:13` `Seat` gets `"trumpet"`. The OpenAPI is regenerated into `engine/openapi.json`, `studio/src/api/schema.d.ts`, `apps/android/services/engine-client/openapi.json` and the Windows fixture.
 
 ### 3.3 The trumpet takes the lead part: swap in place, not a 19th part
 

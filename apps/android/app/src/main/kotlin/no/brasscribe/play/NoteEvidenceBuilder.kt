@@ -1,12 +1,12 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Evidence
-import no.brasscribe.play.engine.ModelHeard
-import no.brasscribe.play.engine.ModelInfo
-import no.brasscribe.play.engine.NoteEvidence
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.TimedNote
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.engine.Evidence
+import no.kalli.scribe.engine.ModelHeard
+import no.kalli.scribe.engine.ModelInfo
+import no.kalli.scribe.engine.NoteEvidence
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.TimedNote
+import no.kalli.scribe.model.VoiceRole
 import kotlin.math.abs
 
 /** The engine's GET /v1/jobs/{id}/evidence, computed on the phone for its own transcriptions. */

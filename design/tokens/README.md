@@ -34,7 +34,7 @@ into the brand's folder. The files carry the brand's name and its short prefix (
 | Apple | `BrasscribeDesign.swift`, `BrasscribeDesign.xcassets`, `Fonts/` | `FretscribeDesign.swift`, `FretscribeDesign.xcassets`, `Fonts/` |
 | Windows | `BrasscribeTheme.xaml` (`Bc…` keys), `BrasscribePinkTheme.xaml`, `Assets/Fonts/` | `FretscribeTheme.xaml` (`Fs…` keys), `Assets/Fonts/` |
 | Web | `brasscribe.css` (`--scribe-…`, and `--bc-…` for its own), `fonts.css`, `icons.js`, `icons/`, `fonts/` | `fretscribe.css` (`--scribe-…`, and `--fs-…` for its own), `fonts.css`, `icons.js`, `icons/`, `fonts/` |
-| Android | `no/scribe/design/ScribeTheme.kt`, `no/brasscribe/design/BrasscribeTheme.kt` and `BrasscribeIcon.kt`, `res/` | `no/scribe/design/ScribeTheme.kt`, `no/fretscribe/design/FretscribeTheme.kt` and `FretscribeIcon.kt`, `res/` |
+| Android | `no/kalli/scribe/design/ScribeTheme.kt`, `no/kalli/brasscribe/design/BrasscribeTheme.kt` and `BrasscribeIcon.kt`, `res/` | `no/kalli/scribe/design/ScribeTheme.kt`, `no/kalli/fretscribe/design/FretscribeTheme.kt` and `FretscribeIcon.kt`, `res/` |
 
 The app icons in `dist/icons/` are not from this generator: each brand's `brand/build.py` renders them.
 
@@ -132,14 +132,14 @@ brand's own, so code cannot read a neutral role under a brand's name.
   takes its role's system colour. Code that looks a key up by name fails only when it runs, so the
   Windows tests check every such name in both apps against the theme.
 - **Android: done.** `ScribeColors`, `ScribeTheme` and the scales are the declarations, in
-  `no.scribe.design`; a brand's package holds only its own. See [Android](#android).
+  `no.kalli.scribe.design`; a brand's package holds only its own. See [Android](#android).
 
 ### Android
 
-The neutral theme is `no.scribe.design` (`ScribeTheme.kt`): the same declarations in every brand's
-folder, with that brand's values. A brand's own is in its own package: `no.brasscribe.design` has
+The neutral theme is `no.kalli.scribe.design` (`ScribeTheme.kt`): the same declarations in every brand's
+folder, with that brand's values. A brand's own is in its own package: `no.kalli.brasscribe.design` has
 `BrasscribeColors` (its own roles), `BrasscribeScore` and `BrasscribeTheme`, which wraps `ScribeTheme`
-and chooses Pink; `no.fretscribe.design` has `FretscribeColors` (with `uncertainTint`), `FretscribeTab`
+and chooses Pink; `no.kalli.fretscribe.design` has `FretscribeColors` (with `uncertainTint`), `FretscribeTab`
 and `FretscribeTheme`. An app is built with one brand's folder.
 
 The two Android apps still share screens that draw with a product's own colours (a score's cursor, the

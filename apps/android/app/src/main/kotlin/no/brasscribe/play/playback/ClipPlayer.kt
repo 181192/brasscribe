@@ -3,7 +3,7 @@ package no.brasscribe.play.playback
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
-import no.brasscribe.play.audio.PcmAudio
+import no.kalli.scribe.audio.PcmAudio
 
 /**
  * Plays short clips once ("Listen to this bar": the original bar, a short gap, then the score's bar) with

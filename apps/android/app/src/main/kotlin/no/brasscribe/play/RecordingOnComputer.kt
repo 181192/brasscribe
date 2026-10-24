@@ -1,6 +1,6 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.EngineException
+import no.kalli.scribe.engine.EngineException
 
 /** The computer no longer holds the recording to write down again, and the phone has no copy of it to send. */
 class RecordingGoneException : Exception("the computer no longer holds the recording, and the phone has no copy of it")

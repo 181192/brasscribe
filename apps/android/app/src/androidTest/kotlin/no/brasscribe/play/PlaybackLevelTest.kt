@@ -22,10 +22,10 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import no.brasscribe.play.audio.LoudnessMeter
-import no.brasscribe.play.audio.OutputStage
-import no.brasscribe.play.audio.PlaybackLevels
-import no.brasscribe.play.audio.RealisticSynth
+import no.kalli.scribe.audio.LoudnessMeter
+import no.kalli.scribe.audio.OutputStage
+import no.kalli.scribe.audio.PlaybackLevels
+import no.kalli.scribe.audio.RealisticSynth
 import no.brasscribe.play.score.BandSoundFontFile
 import no.brasscribe.play.score.BandSoundMap
 import no.brasscribe.play.score.ChannelPlan
@@ -39,7 +39,7 @@ import java.io.File
 import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.roundToInt
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * Playback loudness on the device (sounds/playback-levels.json): the full-band test phrase rendered

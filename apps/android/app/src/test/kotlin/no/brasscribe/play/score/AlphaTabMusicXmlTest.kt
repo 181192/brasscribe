@@ -17,7 +17,7 @@ import java.io.File
  * apps/fixtures/ties-and-trills.musicxml (make-ties-and-trills.py), at 60 bpm, a quarter a second.
  */
 class AlphaTabMusicXmlTest {
-    private val repo = File(System.getProperty("brasscribe.sounds") ?: "../../../sounds").absoluteFile.parentFile
+    private val repo = File(System.getProperty("scribe.sounds") ?: "../../../sounds").absoluteFile.parentFile
     private val fixture = File(repo, "apps/fixtures/ties-and-trills.musicxml")
     private val golden = File(repo, "data/golden/mikkel-arranged-band/brass-band.musicxml")
 

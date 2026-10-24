@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import no.brasscribe.play.audio.PcmAudio
+import no.kalli.scribe.audio.PcmAudio
 
 /** Plays clips one after the other, once. */
 interface ClipOutput {

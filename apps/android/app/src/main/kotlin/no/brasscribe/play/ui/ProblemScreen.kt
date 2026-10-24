@@ -28,8 +28,8 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Problem
 import no.brasscribe.play.R
@@ -212,7 +212,7 @@ fun SettingsScreen(vm: PlayViewModel) {
                     subtitle = value, icon = R.drawable.ic_bc_parts)
             }
             Text(stringResource(R.string.settings_seat_caption), style = MaterialTheme.typography.bodyMedium,
-                color = no.scribe.design.ScribeTheme.colors.textMuted, modifier = Modifier.padding(horizontal = ScribeSpace.s4))
+                color = no.kalli.scribe.design.ScribeTheme.colors.textMuted, modifier = Modifier.padding(horizontal = ScribeSpace.s4))
         }
         RowGroup {
             ListRow(
@@ -227,7 +227,7 @@ fun SettingsScreen(vm: PlayViewModel) {
                 realistic = false; vm.container.realisticByDefault = false
             }
             ChoiceCard(stringResource(R.string.sound_realistic), stringResource(R.string.settings_sound_realistic), realistic,
-                no.brasscribe.play.audio.RealisticSynth.available, 1) { realistic = true; vm.container.realisticByDefault = true }
+                no.kalli.scribe.audio.RealisticSynth.available, 1) { realistic = true; vm.container.realisticByDefault = true }
         }
         SectionLabel(stringResource(R.string.settings_display))
         RowGroup {

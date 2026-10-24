@@ -17,7 +17,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.Screen
 import no.brasscribe.play.Where
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenTest
 import org.junit.After
 import org.junit.Assert.assertEquals

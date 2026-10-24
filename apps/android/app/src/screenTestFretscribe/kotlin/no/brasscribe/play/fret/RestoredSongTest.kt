@@ -28,8 +28,8 @@ import no.brasscribe.play.Product
 import no.brasscribe.play.RestoredStack
 import no.brasscribe.play.SavedSource
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.Recording
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.Recording
 import no.brasscribe.play.ui.theme.PlayTheme
 import org.json.JSONArray
 import org.json.JSONObject
@@ -61,7 +61,7 @@ class RestoredSongTest : ScreenTest() {
 
     @Before
     fun setUp() {
-        yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
+        yourInstrumentStore(rule.activity).save(YourInstrument(no.kalli.scribe.engine.FrettedInstrument.BASS_4))
         // The computer answers as it did for the bass line, as if the line sounded like drop D: a change is on offer.
         computer("bass-line") { name, bytes ->
             if (name != "tab.json" || bytes == null) bytes else JSONObject(String(bytes)).also { tab ->
@@ -131,7 +131,7 @@ class RestoredSongTest : ScreenTest() {
         assertTrue(again.stages.none { it.name == "stems" })
         val sent = tabOptions(yourInstrumentStore(rule.activity).load(), SongAnswers.of(vm.source.value))
         assertEquals(listOf("drop-d", Recording.INSTRUMENT), listOf(sent.tuning, sent.recording))
-        assertEquals(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
+        assertEquals(YourInstrument(no.kalli.scribe.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
     }
 
     @Test

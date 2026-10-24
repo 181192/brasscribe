@@ -162,7 +162,7 @@ pixi run openapi       # rewrite openapi.json after an API change
 ```
 
 After an API change, also refresh the copies made from it: `npm run gen:api` in `studio/` (Studio's types),
-`./gradlew :engine-client:syncOpenApi` in `apps/android/`, and a copy into
+`./gradlew :services:engine-client:syncOpenApi` in `apps/android/`, and a copy into
 `apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/` (then the Windows DTOs, until `OpenApiContractTests` pass). The
 engine's tests fail while the Android or Windows copy is behind, and Studio's while its types are.
 

@@ -188,10 +188,10 @@ let out = try arrangeLayersSong(layers: LayerMidi(soloSwiftf0: sw, soloMuscripto
                                 beatsText: beats, title: "Mikkel", soloContour: nil, freeTime: true, freeTempo: nil)
 ```
 
-Kotlin (UniFFI, JNA):
+Kotlin (UniFFI, JNA; package `no.kalli.scribe.core`, set in `ffi/uniffi.toml`):
 
 ```kotlin
-import uniffi.scribe_ffi.*
+import no.kalli.scribe.core.*
 val xml = arrangeMusicxml(json, "auto")
 val spelled = spellPitches(listOf(0.0, 1.0), listOf(66, 69))
 ```

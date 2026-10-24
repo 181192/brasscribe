@@ -7,7 +7,7 @@ import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import no.brasscribe.play.engine.LocalHosts
+import no.kalli.scribe.engine.LocalHosts
 
 /**
  * The computer is reached over the local network. Android 17 keeps that network closed to an app until the

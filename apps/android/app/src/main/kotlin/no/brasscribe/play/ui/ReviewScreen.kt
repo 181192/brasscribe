@@ -75,28 +75,28 @@ import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import no.brasscribe.play.ui.theme.productColors
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.Lineup
 import no.brasscribe.play.fullBandMade
 import no.brasscribe.play.madeFor
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
-import no.brasscribe.play.engine.NoteEvidence
+import no.kalli.scribe.engine.NoteEvidence
 import no.brasscribe.play.noteAt
 import no.brasscribe.play.arrangementString
 import kotlin.math.roundToInt
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.Instrument
-import no.brasscribe.play.model.Lang
-import no.brasscribe.play.model.reading
-import no.brasscribe.play.model.PICKUP_BAR
-import no.brasscribe.play.model.PartEvent
-import no.brasscribe.play.model.PartView
-import no.brasscribe.play.model.TsContext
-import no.brasscribe.play.model.TsSettings
-import no.brasscribe.play.model.Uncertainty
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.Instrument
+import no.kalli.scribe.model.Lang
+import no.kalli.scribe.model.reading
+import no.kalli.scribe.model.PICKUP_BAR
+import no.kalli.scribe.model.PartEvent
+import no.kalli.scribe.model.PartView
+import no.kalli.scribe.model.TsContext
+import no.kalli.scribe.model.TsSettings
+import no.kalli.scribe.model.Uncertainty
+import no.kalli.scribe.model.VoiceRole
 import java.util.Locale
 
 fun currentLang(): Lang = if (Locale.getDefault().language in setOf("nb", "no", "nn")) Lang.NB else Lang.EN
@@ -112,7 +112,7 @@ private val LAYER_NAMES = mapOf(
  * the tune there (a solo take with a seat always does), else Solo Cornet in B♭. A bass-clef reader sees
  * it at concert pitch.
  */
-fun melodyPart(c: Composition, core: no.brasscribe.play.model.CoreBridge): Pair<String, Instrument> {
+fun melodyPart(c: Composition, core: no.kalli.scribe.model.CoreBridge): Pair<String, Instrument> {
     val seatId = c.arrangementString("seat")
     val seat = seatId?.let { id -> core.seats().firstOrNull { it.id == id } }
     if (seat == null || c.arrangementString("lead") != "seat") return no.brasscribe.play.PlayViewModel.SOLO_PART_NAME to Instrument.CORNET
@@ -124,7 +124,7 @@ fun melodyPart(c: Composition, core: no.brasscribe.play.model.CoreBridge): Pair<
 }
 
 /** Name and instrument for a Composition voice: the melody reads as the part that carries the tune. */
-fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>, core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge): PartView {
+fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>, core: no.kalli.scribe.model.CoreBridge = no.kalli.scribe.model.KotlinCoreBridge): PartView {
     val v = c.voice(voiceId) ?: c.voices.first()
     if (v.role == VoiceRole.MELODY) {
         val (part, instrument) = melodyPart(c, core)
@@ -135,7 +135,7 @@ fun partViewFor(c: Composition, voiceId: String, checked: Set<Int>, core: no.bra
 }
 
 /** Screen-reader text of every event, each spoken in the context of the one before (spec §4). */
-fun announcements(view: PartView, lang: Lang, bridge: no.brasscribe.play.model.CoreBridge): List<String> =
+fun announcements(view: PartView, lang: Lang, bridge: no.kalli.scribe.model.CoreBridge): List<String> =
     view.events.mapIndexed { i, e ->
         val prev = view.events.getOrNull(i - 1)
         bridge.announce(e.stop, TsContext(part = if (prev == null) null else view.partName, bar = prev?.bar), TsSettings(), lang)
@@ -288,7 +288,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                         else -> pluralStringResource(R.plurals.review_title, todo.size, todo.size)
                     })
                     val own = mine.voice ?: melodyVoice.takeIf { !mine.arranged }
-                    if (mine.arranged && mine.part != null) ArrangedNotice(mine.part, empty = mine.source == no.brasscribe.play.model.PartSource.EMPTY,
+                    if (mine.arranged && mine.part != null) ArrangedNotice(mine.part, empty = mine.source == no.kalli.scribe.model.PartSource.EMPTY,
                         checkOthers = { voices.firstOrNull { it.id != voiceId }?.let { voiceId = it.id } ?: vm.afterReview() },
                         showMine = { vm.showScore() })
                     if (voiceId == own && mine.source != null) {
@@ -320,9 +320,9 @@ fun ReviewScreen(vm: PlayViewModel) {
                     val written = current.stop.event.written
                     val label: (Int) -> String = { concert ->
                         // The note itself keeps its written spelling; other pitches are spelled by the key.
-                        if (note != null && concert == note.pitch && written != null) no.brasscribe.play.model.Announcer.pitchLabel(written, lang)
-                        else no.brasscribe.play.model.Announcer.pitchLabel(
-                            no.brasscribe.play.model.SpelledPitch.spell(view.instrument.writtenMidi(concert), fifths), lang)
+                        if (note != null && concert == note.pitch && written != null) no.kalli.scribe.model.Announcer.pitchLabel(written, lang)
+                        else no.kalli.scribe.model.Announcer.pitchLabel(
+                            no.kalli.scribe.model.SpelledPitch.spell(view.instrument.writtenMidi(concert), fifths), lang)
                     }
                     val group = groupOf[current.index]
                     val span = group?.bars ?: (current.bar..current.bar)
@@ -351,15 +351,15 @@ fun ReviewScreen(vm: PlayViewModel) {
                         snippet = {
                             // The bar on a staff: the arranged part when this is the solo, else the layer on its own.
                             val xml = remember(r.musicXml, voiceId) {
-                                val names = no.brasscribe.play.model.MusicXmlParts.names(r.musicXml)
+                                val names = no.kalli.scribe.model.MusicXmlParts.names(r.musicXml)
                                 // The part the tune is written on: the lineup's lead, or the seat's part when the tune went there.
                                 val lead = no.brasscribe.play.YourParts.leadPart(composition, names, vm.container.core::seatPart)
                                 val solo = lead?.let { l -> names.indexOfFirst { it.replace('\u00A0', ' ').trim().equals(l, true) } } ?: -1
                                 if (voiceId == composition.voices.firstOrNull { it.role == VoiceRole.MELODY }?.id && solo >= 0)
-                                    no.brasscribe.play.model.MusicXmlParts.single(r.musicXml, solo)
-                                else vm.container.core.toMusicXml(composition, listOf(no.brasscribe.play.model.PartSpec(voiceId, partName, view.instrument)))
+                                    no.kalli.scribe.model.MusicXmlParts.single(r.musicXml, solo)
+                                else vm.container.core.toMusicXml(composition, listOf(no.kalli.scribe.model.PartSpec(voiceId, partName, view.instrument)))
                             }
-                            val map = remember(composition) { no.brasscribe.play.model.TickMap(composition) }
+                            val map = remember(composition) { no.kalli.scribe.model.TickMap(composition) }
                             val offset = note?.let { (it.start - map.barStart(current.bar)).toDouble() / composition.ticksPerBeat } ?: 0.0
                             BarSnippetView(xml, current.bar, offset, span.last - span.first + 1)
                         },
@@ -434,7 +434,7 @@ fun ReviewScreen(vm: PlayViewModel) {
                                 listen = { vm.listenToBar(e.bar) }, playing = playingBar == e.bar,
                                 check = { vm.markChecked(voiceId, e.index, todo.count { it.index != e.index }) },
                                 next = { nextUncertain(e.index) },
-                                label = e.stop.event.written?.let { no.brasscribe.play.model.Announcer.pitchLabel(it, lang) } ?: "–",
+                                label = e.stop.event.written?.let { no.kalli.scribe.model.Announcer.pitchLabel(it, lang) } ?: "–",
                             )
                         }
                     }
@@ -465,7 +465,7 @@ fun ReviewScreen(vm: PlayViewModel) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PartChips(
-    voices: List<no.brasscribe.play.model.Voice>, voiceId: String, composition: Composition, checkedMap: Map<String, Set<Int>>,
+    voices: List<no.kalli.scribe.model.Voice>, voiceId: String, composition: Composition, checkedMap: Map<String, Set<Int>>,
     vm: PlayViewModel, lang: Lang, mine: ReviewYours, choose: (String) -> Unit,
 ) {
     val left = remember(composition, checkedMap) {
@@ -482,7 +482,7 @@ private fun PartChips(
     }
     val accompaniment = voices - own.toSet()
     var open by rememberSaveable { mutableStateOf(voiceId in accompaniment.map { it.id }) }
-    val name = { v: no.brasscribe.play.model.Voice -> partViewFor(composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName } }
+    val name = { v: no.kalli.scribe.model.Voice -> partViewFor(composition, v.id, emptySet(), vm.container.core).let { if (lang == Lang.NB) it.partNameNb else it.partName } }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
         val yoursLabel = mine.part?.let { stringResource(R.string.stand_part_yours, PartNames.display(it, lang)) }
         own.forEach { v -> PracticeChip("${yoursLabel ?: name(v)} (${left[v.id] ?: 0})", v.id == voiceId, { choose(v.id) }, role = Role.RadioButton) }
@@ -503,7 +503,7 @@ data class ReviewGroup(val head: PartEvent, val members: List<PartEvent>, val ve
  * when nothing in that bar is still to check.
  */
 fun itemAt(items: List<ReviewGroup>, composition: Composition, bar: Int, quarters: Double): ReviewGroup? {
-    val map = no.brasscribe.play.model.TickMap(composition)
+    val map = no.kalli.scribe.model.TickMap(composition)
     fun distance(e: PartEvent): Double =
         e.note?.let { kotlin.math.abs((it.start - map.barStart(bar)).toDouble() / composition.ticksPerBeat - quarters) } ?: Double.MAX_VALUE
     return items.mapNotNull { g -> g.members.filter { it.bar == bar }.minOfOrNull(::distance)?.let { g to it } }.minByOrNull { it.second }?.first
@@ -511,7 +511,7 @@ fun itemAt(items: List<ReviewGroup>, composition: Composition, bar: Int, quarter
 
 /** The recording layer that [part] (as the score names it) follows, for Check the notes; null for an arranged part. */
 private fun voiceOfPart(vm: PlayViewModel, r: no.brasscribe.play.TranscriptionResult, composition: Composition, part: String): String? {
-    val names = no.brasscribe.play.model.MusicXmlParts.names(r.musicXml).map { it.replace('\u00A0', ' ').trim() }
+    val names = no.kalli.scribe.model.MusicXmlParts.names(r.musicXml).map { it.replace('\u00A0', ' ').trim() }
     val clean = part.replace('\u00A0', ' ').trim()
     val lead = no.brasscribe.play.YourParts.leadPart(composition, names, vm.container.core::seatPart)
     return no.brasscribe.play.YourParts.voiceOf(clean, lead, vm.partSources(r)[clean], composition)
@@ -535,7 +535,7 @@ fun reviewGroups(composition: Composition, voiceId: String, view: PartView): Lis
 }
 
 /** Review items not yet kept, over every voice: the "N to check" of Home and the score. */
-fun itemsToCheck(composition: Composition, checked: Map<String, Set<Int>>, core: no.brasscribe.play.model.CoreBridge): Int =
+fun itemsToCheck(composition: Composition, checked: Map<String, Set<Int>>, core: no.kalli.scribe.model.CoreBridge): Int =
     composition.voices.filter { it.notes.isNotEmpty() }.sumOf { v ->
         val done = checked[v.id].orEmpty()
         reviewGroups(composition, v.id, partViewFor(composition, v.id, done, core)).count { g -> g.members.any { it.index !in done } }
@@ -551,7 +551,7 @@ private const val HEADER_ITEMS = 4
 @Composable
 private fun noteLine(e: PartEvent, lang: Lang): String {
     val ev = e.stop.event
-    val pitch = ev.written?.let { no.brasscribe.play.model.Announcer.pitchLabel(it, lang) } ?: "–"
+    val pitch = ev.written?.let { no.kalli.scribe.model.Announcer.pitchLabel(it, lang) } ?: "–"
     return stringResource(R.string.review_note_line, pitch, durationWord(ev.type, ev.dots))
 }
 
@@ -630,7 +630,7 @@ private fun EvidencePanel(evidence: NoteEvidence, pitchLabel: (Int) -> String) {
     ) {
         Row(Modifier.semantics(mergeDescendants = true) {}, verticalAlignment = Alignment.CenterVertically) {
             Text(howSure, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Text(percent, style = no.scribe.design.ScribeNumericStyle.copy(fontSize = MaterialTheme.typography.titleSmall.fontSize))
+            Text(percent, style = no.kalli.scribe.design.ScribeNumericStyle.copy(fontSize = MaterialTheme.typography.titleSmall.fontSize))
         }
         LinearProgressIndicator(
             progress = { evidence.confidence.toFloat().coerceIn(0f, 1f) },
@@ -816,7 +816,7 @@ fun ListenButton(
                 if (e.type == androidx.compose.ui.input.key.KeyEventType.KeyUp) { if (playing) stop() else listen() }
                 true
             },
-        shape = no.scribe.design.ScribeButtonShape,
+        shape = no.kalli.scribe.design.ScribeButtonShape,
     ) {
         androidx.compose.foundation.layout.Box(contentAlignment = Alignment.Center) {
             ListenLabel(listenText, R.drawable.ic_bc_listen_bar, Modifier.alpha(if (playing) 0f else 1f).then(if (playing) Modifier.clearAndSetSemantics { } else Modifier))

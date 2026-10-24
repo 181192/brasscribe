@@ -81,7 +81,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | studio | vitest, `npm run build`, then `npm run test:catalogue` (the screen catalogue's checks on every view, no engine; [studio/README.md](../../studio/README.md#test)) | the browser tests, e2e |
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
-| android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
+| android | `./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pscribe.fast` (both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
 | windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Scribe.Core.Tests && dotnet test` | nothing (seconds) |
 | bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
@@ -92,7 +92,7 @@ A test that takes seconds gets the slow marker of its framework:
 - Swift Testing: `.tags(.slow)`, plus its suite name in `APPLE_SLOW` in `apps/apple/Makefile`
   (`swift test` has no tag filter)
 - JUnit 4: `@Category(Slow::class)`, where each module with slow tests has its own
-  `no.brasscribe.play.test.Slow`
+  `no.kalli.scribe.test.Slow`
 - xUnit: `[Trait("Category", "Slow")]`
 
 `test-without-building` runs whatever `build-for-testing` last built. After an edit to the app,
@@ -216,14 +216,14 @@ fail instead of skipping.
 
   - Pool emulators run `-read-only` copies of the AVD (`bc36-pool`) on even ports from 5556. The
     copy's first boot saves a quick-boot snapshot, once.
-  - The default AVD, `bc36`, is Android 16, the oldest system the apps run on. `BRASSCRIBE_AVD=bc37`
+  - The default AVD, `bc36`, is Android 16, the oldest system the apps run on. `SCRIBE_AVD=bc37`
     hands out Android 17 (an AVD of that name on the `google_apis_ps16k` image, which also has 16 KB
     memory pages).
   - `acquire` returns your existing lease when you already hold one. `list` shows the leases.
   - Leases expire after `--ttl` minutes (default 120) and are reaped by the next `acquire`.
-  - At most four run at once (`BRASSCRIBE_EMULATORS_MAX`).
+  - At most four run at once (`SCRIBE_EMULATORS_MAX`).
   - `emulator-5554` is the interactive one. The pool never starts, stops or hands it out.
-- **The phone (Galaxy S25, adb serial in `BRASSCRIBE_PHONE_SERIAL`).** It may be used for device tests when it is connected.
+- **The phone (Galaxy S25, adb serial in `SCRIBE_PHONE_SERIAL`).** It may be used for device tests when it is connected.
   - `emulator-pool.sh acquire --phone` leases it when it is attached and free.
   - Afterwards, install the current debug build again (`./gradlew installDebug`).
   - Never uninstall the app: that deletes the user's scores.
@@ -267,7 +267,7 @@ All times are in seconds.
 | `swift test`, BrasscribeKit | 100 | 64 | 65 | 74 | `package-test-fast`, both packages: 115, then 30 |
 | `swift test`, NotationKit | 29 | 10 | 13 | 10 | |
 | macOS app unit tests | 100 | 15 | 22¹ | 14 | `build-for-testing` plus `test-mac-unit`: 69, then 9 |
-| `./gradlew test` | 23 | 4 | 24 | 3 | `testDebugUnitTest -Pbrasscribe.fast`: 14, then 4 |
+| `./gradlew test` | 23 | 4 | 24 | 3 | `testDebugUnitTest -Pscribe.fast`: 14, then 4 |
 | `./gradlew assembleDebug` | 19 | 1 | 30 | 2 | |
 | Windows `dotnet test` | 56 | 59 | 59 | 50 | `Category!=Slow`: 48, then 24 |
 | `check-macos.sh` | 54 | 59 | 63 | 54 | |

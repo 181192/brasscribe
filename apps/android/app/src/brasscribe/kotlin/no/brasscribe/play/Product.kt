@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import no.brasscribe.design.BrasscribeScore
-import no.brasscribe.design.BrasscribeTheme
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Target
+import no.kalli.brasscribe.design.BrasscribeScore
+import no.kalli.brasscribe.design.BrasscribeTheme
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Target
 import no.brasscribe.play.ui.theme.LocalProductColors
 import no.brasscribe.play.ui.theme.ProductColors
 
@@ -45,7 +45,7 @@ object Product {
     const val MAKES_SCORES_ON_THE_PHONE = true
 
     /** A solo and a band draft are written down on the phone, with the models this app carries. */
-    fun onPhone(context: android.content.Context, core: no.brasscribe.play.model.CoreBridge): OnPhone = OnPhoneModels(context, core)
+    fun onPhone(context: android.content.Context, core: no.kalli.scribe.model.CoreBridge): OnPhone = OnPhoneModels(context, core)
 
     @Composable
     fun Root(vm: PlayViewModel) = PlayRoot(vm)
@@ -73,7 +73,7 @@ object Product {
 
     /**
      * Whether a job on the computer is this app's: the engine says which target each job belongs to
-     * ([no.brasscribe.play.engine.Job.target]). A job of another target, or of none, is not.
+     * ([no.kalli.scribe.engine.Job.target]). A job of another target, or of none, is not.
      */
     fun makes(target: String?): Boolean = target == this.target.id
 
@@ -86,14 +86,14 @@ object Product {
 
     /** The recording as the computer already holds it, for a job that needs no upload: Brasscribe always sends it. */
     @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
-    suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? = null
+    suspend fun audioOnComputer(vm: PlayViewModel, engine: no.kalli.scribe.engine.EngineApi): String? = null
 
     /**
      * A copy of the recording kept apart from the one opened: Brasscribe has none. A recording kept in Your scores is
      * the one opened itself (`Source.file`), so it is sent as it is.
      */
     @Suppress("UNUSED_PARAMETER")
-    fun keptRecording(vm: PlayViewModel): no.brasscribe.play.engine.UploadSource? = null
+    fun keptRecording(vm: PlayViewModel): no.kalli.scribe.engine.UploadSource? = null
 
     /** The computer, as the transcribing screen names it. */
     fun computerName(vm: PlayViewModel): String = vm.container.engineLabel()

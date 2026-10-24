@@ -11,8 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.engine.JobStatus
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.JobStatus
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenTest
 import org.junit.After
 import org.junit.Before
@@ -233,7 +233,7 @@ class ReadyNotificationTest : ScreenTest() {
         val running = held().jobs.keys.single()
         val finished = runBlocking {
             val engine = container.engine()!!
-            engine.cancel(engine.createJob(no.brasscribe.play.engine.JobCreate("no-audio", profile.id)).id)
+            engine.cancel(engine.createJob(no.kalli.scribe.engine.JobCreate("no-audio", profile.id)).id)
         }
         leaveTheApp()
         // Another is given to it and ends: said, and the first is still followed.
@@ -360,12 +360,12 @@ class ReadyNotificationTest : ScreenTest() {
 
     @Test
     fun aJobIsFollowedThroughTheTimesTheComputerDoesNotAnswerAndNotForever() = runBlocking {
-        fun job(status: JobStatus) = no.brasscribe.play.engine.Job("j", "tab", "fretted", status, 0.0, emptyList())
+        fun job(status: JobStatus) = no.kalli.scribe.engine.Job("j", "tab", "fretted", status, 0.0, emptyList())
         // A clock the waits move: no real time passes.
         var now = 0L
         val pauses = mutableListOf<Long>()
         val sleep: suspend (Long) -> Unit = { pauses += it; now += it }
-        val answers = ArrayDeque(listOf<() -> no.brasscribe.play.engine.Job?>(
+        val answers = ArrayDeque(listOf<() -> no.kalli.scribe.engine.Job?>(
             { job(JobStatus.RUNNING) }, { throw java.io.IOException("no route") }, { null }, { job(JobStatus.SUCCEEDED) },
         ))
         assertEquals(JobStatus.SUCCEEDED, JobFollow.untilEnded({ answers.removeFirst()() }, clock = { now }, sleep = sleep)?.status)

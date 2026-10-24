@@ -54,13 +54,13 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Step
 import no.brasscribe.play.Where
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 
 private data class Choice(val profile: Profile, val title: Int, val desc: Int)
 
@@ -293,7 +293,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
             },
         )
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text(percentText, style = no.scribe.design.ScribeNumericStyle, color = c.textMuted)
+            Text(percentText, style = no.kalli.scribe.design.ScribeNumericStyle, color = c.textMuted)
             if (eta != null) Text(eta, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
         Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {

@@ -11,9 +11,9 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.audio.MediaImport
-import no.brasscribe.play.engine.FixtureEngineApi
-import no.brasscribe.play.engine.UploadSource
+import no.kalli.scribe.audio.MediaImport
+import no.kalli.scribe.engine.FixtureEngineApi
+import no.kalli.scribe.engine.UploadSource
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -27,7 +27,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.PI
 import kotlin.math.sin
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * A video larger than the app's whole heap goes through import (its AAC track remuxed to .m4a,
@@ -126,7 +126,7 @@ class LargeVideoImportTest {
         val (hasAudio, hasVideo) = MediaImport.probe(activity, Uri.fromFile(out))
         assertTrue(hasAudio)
         assertTrue("no picture in the .m4a", !hasVideo)
-        val decoded = no.brasscribe.play.audio.AudioDecoder.decode(activity, Uri.fromFile(out))
+        val decoded = no.kalli.scribe.audio.AudioDecoder.decode(activity, Uri.fromFile(out))
         assertEquals(seconds, decoded.audio!!.seconds, 0.5)
         // A 440 Hz tone survives the copy: not silence.
         assertTrue(decoded.audio!!.peak() > 0.1f)
@@ -144,7 +144,7 @@ class LargeVideoImportTest {
         val pcm = assertNotNull(imported.audio).let { imported.audio!! }
         assertEquals(8000, pcm.sampleRate)
         assertEquals(seconds, pcm.seconds, 0.5)
-        val wav = no.brasscribe.play.audio.WavFile.read(imported.file)
+        val wav = no.kalli.scribe.audio.WavFile.read(imported.file)
         assertEquals(pcm.samples.size, wav.samples.size)
         assertTrue("the tone is there", wav.peak() > 0.1f)
         imported.file.delete()

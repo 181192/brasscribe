@@ -15,8 +15,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import no.brasscribe.play.PlayViewModel
-import no.brasscribe.play.engine.EngineApi
-import no.brasscribe.play.engine.EngineException
+import no.kalli.scribe.engine.EngineApi
+import no.kalli.scribe.engine.EngineException
 import java.io.File
 
 /** What is known of the recording of the song on screen. */
@@ -115,8 +115,8 @@ class PracticeRecordings(private val dir: File) {
          * update; or the computer was not reached.
          */
         fun whyNot(error: Throwable, room: Long): RecordingState = when {
-            error is no.brasscribe.play.engine.InterfaceMismatchException ->
-                if (error.update == no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) RecordingState.UPDATE_APP else RecordingState.UPDATE_COMPUTER
+            error is no.kalli.scribe.engine.InterfaceMismatchException ->
+                if (error.update == no.kalli.scribe.engine.InterfaceMatch.UPDATE_APP) RecordingState.UPDATE_APP else RecordingState.UPDATE_COMPUTER
             (error as? EngineException)?.status == 404 -> RecordingState.GONE
             (error as? EngineException)?.status == 413 -> RecordingState.TOO_LARGE
             error is EngineException -> RecordingState.NO_ANSWER

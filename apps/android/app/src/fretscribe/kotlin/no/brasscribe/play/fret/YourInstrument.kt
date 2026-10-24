@@ -1,7 +1,7 @@
 package no.brasscribe.play.fret
 
 import no.brasscribe.play.connection.KeyValueStore
-import no.brasscribe.play.engine.FrettedInstrument
+import no.kalli.scribe.engine.FrettedInstrument
 
 /**
  * The instruments of "Your instrument", in the order they are listed, each with the kinds of it that can be

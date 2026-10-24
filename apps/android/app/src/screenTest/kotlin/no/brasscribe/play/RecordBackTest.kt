@@ -6,9 +6,9 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import no.brasscribe.play.audio.AudioCapture
-import no.brasscribe.play.audio.CaptureState
-import no.brasscribe.play.audio.CapturedTake
+import no.kalli.scribe.audio.AudioCapture
+import no.kalli.scribe.audio.CaptureState
+import no.kalli.scribe.audio.CapturedTake
 import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.capture.CaptureKind
 import no.brasscribe.play.screen.ScreenDevice

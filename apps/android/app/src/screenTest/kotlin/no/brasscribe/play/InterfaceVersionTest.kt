@@ -5,10 +5,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import no.brasscribe.play.connection.Check
 import no.brasscribe.play.connection.ConnectionState
-import no.brasscribe.play.engine.InterfaceMatch
-import no.brasscribe.play.engine.InterfaceMismatchException
-import no.brasscribe.play.engine.PairLink
-import no.brasscribe.play.engine.Wire
+import no.kalli.scribe.engine.InterfaceMatch
+import no.kalli.scribe.engine.InterfaceMismatchException
+import no.kalli.scribe.engine.PairLink
+import no.kalli.scribe.engine.Wire
 import no.brasscribe.play.screen.ScreenTest
 import no.brasscribe.play.screen.StubEngine
 import org.junit.After
@@ -207,7 +207,7 @@ class InterfaceVersionTest : ScreenTest() {
         // Nothing the app asks next is sent to that engine or answered with "update": it is not the paired one.
         other.requests.clear()
         val next = runCatching { runBlocking { checkNotNull(container.engine()).jobs() } }.exceptionOrNull()
-        assertEquals("$next", 0, (next as? no.brasscribe.play.engine.EngineException)?.status)
+        assertEquals("$next", 0, (next as? no.kalli.scribe.engine.EngineException)?.status)
         assertEquals(listOf("GET /v1/health"), other.requests.toList())
         // On the screen: looking for the computer, never the update sentence.
         rule.runOnUiThread { vm.connection.retry(); vm.home() }
@@ -229,7 +229,7 @@ class InterfaceVersionTest : ScreenTest() {
         assertEquals(Check.Mismatch(InterfaceMatch.UPDATE_COMPUTER), check(engine))
         // Its health cannot be read, or it gives none: not there, never "pair again" and never "connected".
         engine.interfaceVersion = Wire.INTERFACE_VERSION.toString()
-        rule.runOnUiThread { (container.engine() as no.brasscribe.play.engine.KtorEngineApi).forget() }
+        rule.runOnUiThread { (container.engine() as no.kalli.scribe.engine.KtorEngineApi).forget() }
         for (body in listOf("<html>Sign in</html>", "{}")) {
             engine.healthBody = body
             assertEquals(body, Check.Unreachable, check(engine))
@@ -255,7 +255,7 @@ class InterfaceVersionTest : ScreenTest() {
         engine.interfaceVersion = null
         assertEquals(Check.Mismatch(InterfaceMatch.UPDATE_COMPUTER), check(engine))
         engine.interfaceVersion = Wire.INTERFACE_VERSION.toString()
-        rule.runOnUiThread { (container.engine() as no.brasscribe.play.engine.KtorEngineApi).forget() }
+        rule.runOnUiThread { (container.engine() as no.kalli.scribe.engine.KtorEngineApi).forget() }
         engine.deviceStatus = 500
         assertEquals(Check.Unreachable, check(engine))
     }

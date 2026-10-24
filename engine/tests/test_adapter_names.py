@@ -11,7 +11,7 @@ import pytest
 from scribe_engine import config
 
 SCRIPTS = sorted(
-    p for folder in ("ml/adapters", "convert", "eval/scribe_eval", "apps/android/pitch/src/test/python")
+    p for folder in ("ml/adapters", "convert", "eval/scribe_eval", "apps/android/features/score/pitch/src/test/python")
     for p in (config.REPO_ROOT / folder).rglob("*.py")
     if not {".venv", "__pycache__", "node_modules", "site-packages"} & set(p.parts)
 )

@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.scribe.design.scribeColors
+import no.kalli.scribe.design.scribeColors
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "no.brasscribe.core"
+    namespace = "no.kalli.scribe.core"
     compileSdk = 37
 
     defaultConfig {

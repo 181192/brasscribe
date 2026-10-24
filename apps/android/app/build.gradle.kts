@@ -96,7 +96,7 @@ android {
             // The screens run against the host build of the core (as core-bridge's tests do) and read the
             // fixtures the instrumented tests carry as assets.
             it.systemProperty("jna.library.path", File(repoRoot, "core/target/release").absolutePath)
-            it.systemProperty("brasscribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
+            it.systemProperty("scribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
             it.inputs.dir(File(repoRoot, "apps/fixtures")).withPropertyName("screenFixtures")
             // MuteWordingTest reads the design's glossary and icon labels.
             it.inputs.files(File(repoRoot, "design/brand/brand.md"), File(repoRoot, "design/system.md"), File(repoRoot, "design/README.md"),
@@ -106,18 +106,18 @@ android {
             it.jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
             it.systemProperty("robolectric.graphicsMode", "NATIVE")
             // For the message when a part of Robolectric the screen tests reach into has moved.
-            it.systemProperty("brasscribe.robolectric", libs.versions.robolectric.get())
+            it.systemProperty("scribe.robolectric", libs.versions.robolectric.get())
             it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
-            // -Pbrasscribe.withoutCatalogues: the screen catalogues are left to scripts/screenshots.sh (CI runs them there).
-            if (providers.gradleProperty("brasscribe.withoutCatalogues").isPresent) {
+            // -Pscribe.withoutCatalogues: the screen catalogues are left to scripts/screenshots.sh (CI runs them there).
+            if (providers.gradleProperty("scribe.withoutCatalogues").isPresent) {
                 it.filter.excludeTestsMatching("no.brasscribe.play.BrasscribeScreensTest")
                 it.filter.excludeTestsMatching("no.brasscribe.play.FretscribeScreensTest")
             }
             // Robolectric keeps one Android per SDK in memory, with native graphics beside it.
             it.maxHeapSize = "3g"
             // The shared resolver vectors (sounds/partsound-vectors.json) and part map.
-            it.systemProperty("brasscribe.sounds", System.getenv("BRASSCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
-            it.systemProperty("brasscribe.bandSounds", bandSoundsDir.absolutePath)
+            it.systemProperty("scribe.sounds", System.getenv("SCRIBE_SOUNDS_DIR") ?: File(repoRoot, "sounds").absolutePath)
+            it.systemProperty("scribe.bandSounds", bandSoundsDir.absolutePath)
             // Fretscribe's tests ask the engine's own option check about the jobs the app sends, and read the
             // tab fixtures and the crate's presets: a change to any of them runs the tests again.
             it.inputs.files(fileTree(File(repoRoot, "engine/src/scribe_engine")) { include("*.py") }).withPropertyName("engineOptionCheck")
@@ -188,7 +188,7 @@ val soundMap = tasks.register<Sync>("syncSoundMap") {
 
 /*
  * Each product's design system, generated from its tokens by design/tokens/build.py: Brasscribe's in
- * design/dist, Fretscribe's in design/fretscribe/dist. Both have the neutral theme (no.scribe.design)
+ * design/dist, Fretscribe's in design/fretscribe/dist. Both have the neutral theme (no.kalli.scribe.design)
  * under the same names, so the shared screens compile against either, and the product's own roles in its
  * own package. The Compose themes and icon enum are compiled from <dist>/android/kotlin as they are; the icon drawables, the display face (as res/font/display, whichever face it is) and the
  * launcher icons are synced into one generated res folder per product (res/font may hold only fonts, so
@@ -343,10 +343,10 @@ mapOf(
 ).forEach { (name, variantTask) -> tasks.register(name) { dependsOn(variantTask) } }
 
 dependencies {
-    implementation(project(":model"))
-    implementation(project(":engine-client"))
-    implementation(project(":audio"))
-    implementation(project(":core-bridge"))
+    implementation(project(":services:model"))
+    implementation(project(":services:engine-client"))
+    implementation(project(":services:audio"))
+    implementation(project(":services:core-bridge"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
@@ -373,7 +373,7 @@ dependencies {
     "fretscribeImplementation"(libs.media3.exoplayer)
     // Listening on the phone is Brasscribe's (src/brasscribe, OnPhoneModels): the models' code and ONNX Runtime
     // to run them. Fretscribe's tabs are written on the computer, so its app has neither.
-    "brasscribeImplementation"(project(":pitch"))
+    "brasscribeImplementation"(project(":features:score:pitch"))
     // The reduced-operator ONNX Runtime (scripts/ort/build-reduced-ort.sh) when it has been built:
     // 13.4 MB instead of 33.0 MB per arm64 APK. Otherwise the full Maven build.
     val reducedOrt = rootProject.file("third_party/onnxruntime/onnxruntime-android-reduced.aar")

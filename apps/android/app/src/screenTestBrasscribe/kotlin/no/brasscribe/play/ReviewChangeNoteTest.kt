@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.model.VoiceRole
 import no.brasscribe.play.score.BarAudio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

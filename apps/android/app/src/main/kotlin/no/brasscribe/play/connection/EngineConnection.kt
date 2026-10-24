@@ -1,12 +1,12 @@
 package no.brasscribe.play.connection
 
 import no.brasscribe.play.AppContainer
-import no.brasscribe.play.engine.EngineException
-import no.brasscribe.play.engine.Health
-import no.brasscribe.play.engine.InterfaceMatch
-import no.brasscribe.play.engine.InterfaceMismatchException
-import no.brasscribe.play.engine.KtorEngineApi
-import no.brasscribe.play.engine.LocalHosts
+import no.kalli.scribe.engine.EngineException
+import no.kalli.scribe.engine.Health
+import no.kalli.scribe.engine.InterfaceMatch
+import no.kalli.scribe.engine.InterfaceMismatchException
+import no.kalli.scribe.engine.KtorEngineApi
+import no.kalli.scribe.engine.LocalHosts
 
 /**
  * [ConnectionHost] over the app's settings, encrypted credentials and the engine API. The heartbeat

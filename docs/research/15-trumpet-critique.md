@@ -116,7 +116,7 @@ hardcoded, and each would miss or mislabel a trumpet:
 | `studio/src/lib/navigator.ts:225` | instrument name keyed by **transposition** (−2 → "Cornet in B♭" / «kornett i B») | be announced as "Cornet in B♭" (already true of Flugelhorn) |
 | `engine/src/scribe_engine/talking_score.py:442,452` | `NB_PART_NAMES`, `instrument_nb` string replacements | come out as «trumpet i B», half-translated |
 | `apps/windows/.../TalkingScore/MusicXmlTalkingScoreBuilder.cs:447` | its own nb part-name table (not the core's `nb_part_name`) | keep an English name in the Windows talking score |
-| `apps/android/model/.../Pitch.kt:76` | `Instrument` enum: en/nb names, transposition, program | have no entry (the enum decides written pitch and key names) |
+| `apps/android/services/model/.../Pitch.kt:76` | `Instrument` enum: en/nb names, transposition, program | have no entry (the enum decides written pitch and key names) |
 | `apps/android/.../MyInstrument.kt:112`, `Lineup.kt:14,36` | quartet aliases, lead names "Solo Cornet"/"1st Cornet" | not be recognised as the lead |
 | `apps/android/.../ui/WhatDoYouPlayScreen.kt`, `apps/apple/App/Seats.swift:133,143` | instrument picker order and titles by instrument id | not appear in "What do you play" |
 | `sounds/mapping.json` resolve (`keywords` "trumpet" → Solo Cornet; `instruments`), `sounds/partsound.py:73`, `partsound-vectors.json`, `seating.json` | the resolver every platform ports, plus its vectors and seat positions | play the cornet preset; «Trompet» misses the keyword (fallback only) |
@@ -174,7 +174,7 @@ It should apply to the band lineups' lead only, and the quartet goldens should c
   changing only `<instrument-name>`/`<instrument-sound>` avoids every old-app break. Renaming the part
   does not.
 - Contract: `engine/tests/test_api.py:126` checks that `engine/openapi.json` equals the rendered
-  schema. The Android client copies it at build time (`apps/android/engine-client/build.gradle.kts:59`),
+  schema. The Android client copies it at build time (`apps/android/services/engine-client/build.gradle.kts:59`),
   so a new seat literal is one `pixi run openapi` plus a rebuild. There is no check that the apps
   accept every seat id the engine lists.
 

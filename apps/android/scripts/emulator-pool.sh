@@ -10,12 +10,12 @@
 # Options for acquire:
 #   --owner NAME   who holds the lease (default: this checkout's directory name)
 #   --ttl MIN      lease length in minutes (default 120); acquire again to renew it
-#   --phone        hand out the attached phone ($BRASSCRIBE_PHONE_SERIAL) instead, if it is free
+#   --phone        hand out the attached phone ($SCRIBE_PHONE_SERIAL) instead, if it is free
 #
-# Each emulator runs a copy of the AVD ($BRASSCRIBE_AVD, default bc36, Android 16, the oldest the apps run on;
-# BRASSCRIBE_AVD=bc37 for Android 17; the copy is <avd>-pool) with -read-only, headless
+# Each emulator runs a copy of the AVD ($SCRIBE_AVD, default bc36, Android 16, the oldest the apps run on;
+# SCRIBE_AVD=bc37 for Android 17; the copy is <avd>-pool) with -read-only, headless
 # (-no-window -no-audio), on an even console port from 5556 up. emulator-5554 is never touched:
-# that is the interactive one. At most $BRASSCRIBE_EMULATORS_MAX (default 4) run at once; each
+# that is the interactive one. At most $SCRIBE_EMULATORS_MAX (default 4) run at once; each
 # takes about 4 GB. Leases live in ~/.cache/scribe/emulators/<serial>/ (mkdir is the lock).
 # A lease past its expiry, or whose emulator died, is reaped by the next acquire.
 #
@@ -26,12 +26,12 @@ set -euo pipefail
 SDK="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 ADB="$SDK/platform-tools/adb"
 EMULATOR="$SDK/emulator/emulator"
-AVD="${BRASSCRIBE_AVD:-bc36}"
+AVD="${SCRIBE_AVD:-bc36}"
 POOL_AVD="$AVD-pool"
-MAX="${BRASSCRIBE_EMULATORS_MAX:-4}"
-PHONE="${BRASSCRIBE_PHONE_SERIAL:-}"
+MAX="${SCRIBE_EMULATORS_MAX:-4}"
+PHONE="${SCRIBE_PHONE_SERIAL:-}"
 POOL="${SCRIBE_CACHE:-$HOME/.cache/scribe}/emulators"
-BOOT_TIMEOUT="${BRASSCRIBE_EMULATOR_BOOT_TIMEOUT:-300}"
+BOOT_TIMEOUT="${SCRIBE_EMULATOR_BOOT_TIMEOUT:-300}"
 mkdir -p "$POOL"
 
 log() { printf 'emulator-pool: %s\n' "$*" >&2; }
@@ -152,7 +152,7 @@ acquire() {
   done
 
   if [ $phone = 1 ]; then
-    [ -n "$PHONE" ] || die "set BRASSCRIBE_PHONE_SERIAL to the phone's adb serial"
+    [ -n "$PHONE" ] || die "set SCRIBE_PHONE_SERIAL to the phone's adb serial"
     "$ADB" devices | grep -q "^$PHONE[[:space:]]*device$" || die "phone $PHONE is not attached"
     mkdir "$POOL/$PHONE" 2>/dev/null || die "phone $PHONE is leased by $(field "$PHONE" owner)"
     lease "$PHONE" "$owner" "$ttl"
@@ -161,7 +161,7 @@ acquire() {
   fi
 
   local running; running=$(find "$POOL" -mindepth 1 -maxdepth 1 -type d -name 'emulator-*' | wc -l | tr -d ' ')
-  [ "$running" -lt "$MAX" ] || die "all $MAX emulators are leased (list, or raise BRASSCRIBE_EMULATORS_MAX)"
+  [ "$running" -lt "$MAX" ] || die "all $MAX emulators are leased (list, or raise SCRIBE_EMULATORS_MAX)"
   [ -x "$EMULATOR" ] || die "emulator not found under $SDK"
   ensure_pool_avd
 

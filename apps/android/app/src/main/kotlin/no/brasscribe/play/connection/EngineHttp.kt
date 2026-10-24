@@ -15,7 +15,7 @@ object EngineHttp {
      * after 10 s idle. A request sent in between went out on a connection the computer had closed: a recording sent
      * then failed with "unexpected end of stream", as OkHttp only sends a request again when it can read its body
      * again, and a streamed upload it cannot. Idle time stops counting while the phone is in deep sleep, so
-     * [no.brasscribe.play.engine.KtorEngineApi.uploadAudio] also sends a recording once more when that happens.
+     * [no.kalli.scribe.engine.KtorEngineApi.uploadAudio] also sends a recording once more when that happens.
      */
     const val KEEP_ALIVE_MS = 3_000L
 

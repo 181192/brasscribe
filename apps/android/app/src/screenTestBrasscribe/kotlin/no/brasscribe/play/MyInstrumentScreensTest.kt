@@ -18,7 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -96,7 +96,7 @@ class MyInstrumentScreensTest : ScreenTest() {
                 // The small band has no 1st Baritone: the score opens on Euphonium and says so.
                 val composition = container.core.decodeComposition(fixture("composition.json"))
                 val small = composition.arrangedFor(Lineup.MINIMAL, "faithful")
-                val xml = container.core.arrangeMusicXmlWith(composition, no.brasscribe.play.model.ArrangeOptions(lineup = "minimal"))!!
+                val xml = container.core.arrangeMusicXmlWith(composition, no.kalli.scribe.model.ArrangeOptions(lineup = "minimal"))!!
                 openResult(TranscriptionResult(small, xml, Profile.BRASS_BAND, onDevice = true, compositionJson = container.core.encodeComposition(small)), Screen.SCORE)
                 waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }
                 waitUntil(10_000) { rule.onAllNodesWithTag("mapped-notice").fetchSemanticsNodes().isNotEmpty() }

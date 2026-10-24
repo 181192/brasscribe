@@ -5,8 +5,8 @@ import no.brasscribe.play.ErrorWords
 import no.brasscribe.play.LocalNetwork
 import no.brasscribe.play.LocalNetworkClosedException
 import no.brasscribe.play.R
-import no.brasscribe.play.engine.EngineException
-import no.brasscribe.play.engine.KtorEngineApi
+import no.kalli.scribe.engine.EngineException
+import no.kalli.scribe.engine.KtorEngineApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

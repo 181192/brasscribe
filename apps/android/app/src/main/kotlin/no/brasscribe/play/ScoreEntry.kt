@@ -1,7 +1,7 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Job
-import no.brasscribe.play.engine.JobStatus
+import no.kalli.scribe.engine.Job
+import no.kalli.scribe.engine.JobStatus
 
 /** A row in "Your scores": a score on this phone, or a finished score on the paired computer. */
 data class ScoreEntry(

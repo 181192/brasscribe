@@ -18,8 +18,8 @@ set -euo pipefail
 android="$(cd "$(dirname "$0")/.." && pwd)"
 what="${1:-}"; shift || true
 case "$what" in
-  smoke) filter=("-Pandroid.testInstrumentationRunnerArguments.annotation=no.brasscribe.play.test.Smoke") ;;
-  device-only) filter=("-Pandroid.testInstrumentationRunnerArguments.annotation=no.brasscribe.play.test.DeviceOnly") ;;
+  smoke) filter=("-Pandroid.testInstrumentationRunnerArguments.annotation=no.kalli.scribe.test.Smoke") ;;
+  device-only) filter=("-Pandroid.testInstrumentationRunnerArguments.annotation=no.kalli.scribe.test.DeviceOnly") ;;
   class) filter=("-Pandroid.testInstrumentationRunnerArguments.class=${1:?a class}"); shift ;;
   *) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
@@ -35,6 +35,6 @@ for app in $apps; do
   esac
 done
 # The realistic sound's own test is in the audio module; it is a device's too.
-[ "$what" = device-only ] && tasks+=(":audio:connectedDebugAndroidTest")
+[ "$what" = device-only ] && tasks+=(":services:audio:connectedDebugAndroidTest")
 cd "$android"
 exec ./gradlew "${tasks[@]}" "${filter[@]}" --console=plain

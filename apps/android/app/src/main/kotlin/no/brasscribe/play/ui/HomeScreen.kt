@@ -36,7 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import no.brasscribe.play.audio.TakeSink
+import no.kalli.scribe.audio.TakeSink
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,8 +57,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import no.brasscribe.play.ui.theme.productColors
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Problem
 import no.brasscribe.play.R
@@ -66,7 +66,7 @@ import no.brasscribe.play.Screen
 import no.brasscribe.play.SourceKind
 import no.brasscribe.play.capture.CaptureController
 import no.brasscribe.play.capture.CaptureKind
-import no.brasscribe.play.model.Uncertainty
+import no.kalli.scribe.model.Uncertainty
 
 /**
  * The ways to record: the microphone, or other apps' playback (after the notice and MediaProjection
@@ -385,7 +385,7 @@ fun RecordScreen(vm: PlayViewModel) {
         ScreenTitle(stringResource(if (device) R.string.record_title_device else R.string.record_title_mic))
         Text(
             vm.durationText(state.seconds),
-            style = no.scribe.design.ScribeNumericStyle.copy(fontSize = MaterialTheme.typography.headlineMedium.fontSize),
+            style = no.kalli.scribe.design.ScribeNumericStyle.copy(fontSize = MaterialTheme.typography.headlineMedium.fontSize),
             modifier = Modifier.semantics { contentDescription = vm.durationText(state.seconds) },
         )
         val hours = (TakeSink.MAX_TAKE_SECONDS / 3600).toInt()
@@ -417,4 +417,4 @@ fun RecordScreen(vm: PlayViewModel) {
 }
 
 /** Whole minutes of a 48 kHz take the phone keeps in memory to make its score itself. */
-fun phoneMinutes(): Int = (no.brasscribe.play.audio.AudioDecoder.maxSamplesInMemory / (48_000L * 60)).toInt()
+fun phoneMinutes(): Int = (no.kalli.scribe.audio.AudioDecoder.maxSamplesInMemory / (48_000L * 60)).toInt()

@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import no.brasscribe.play.engine.InterfaceMatch
+import no.kalli.scribe.engine.InterfaceMatch
 import java.time.OffsetDateTime
 
 /** The connection states every Play app shows (the same words on all platforms). */

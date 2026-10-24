@@ -1,8 +1,8 @@
 package no.brasscribe.play
 
 import no.brasscribe.play.connection.ConnectionState
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.model.songLineup
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.model.songLineup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -22,8 +22,8 @@ class OnDeviceRoutingTest {
         assertFalse(R_.computerThere(ConnectionState.Offline(paired = false)))
         assertFalse(R_.computerThere(ConnectionState.NeedsPairing("Mac")))
         assertFalse(R_.computerThere(ConnectionState.NetworkClosed("Mac")))
-        assertFalse(R_.computerThere(ConnectionState.NeedsUpdate("Mac", no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP)))
-        assertFalse(R_.computerThere(ConnectionState.NeedsUpdate("Mac", no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER)))
+        assertFalse(R_.computerThere(ConnectionState.NeedsUpdate("Mac", no.kalli.scribe.engine.InterfaceMatch.UPDATE_APP)))
+        assertFalse(R_.computerThere(ConnectionState.NeedsUpdate("Mac", no.kalli.scribe.engine.InterfaceMatch.UPDATE_COMPUTER)))
     }
 
     @Test

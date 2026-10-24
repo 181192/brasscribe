@@ -2,9 +2,9 @@ package no.brasscribe.play.connection
 
 import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.engine.KtorEngineApi
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.createJobFromUpload
+import no.kalli.scribe.engine.KtorEngineApi
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.createJobFromUpload
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,7 +54,7 @@ class EngineHttpTest {
             val path = lines.first().split(" ")[1]
             val body = when {
                 path.startsWith("/v1/jobs/upload") -> """{"id":"j1","profile":"solo","target":"brass","status":"queued","created":1.0,"stages":[]}"""
-                else -> """{"version":"x","device":"cpu","auth_required":false,"server_id":"s","server_name":"Fixture","interface_version":${no.brasscribe.play.engine.Wire.INTERFACE_VERSION}}"""
+                else -> """{"version":"x","device":"cpu","auth_required":false,"server_id":"s","server_name":"Fixture","interface_version":${no.kalli.scribe.engine.Wire.INTERFACE_VERSION}}"""
             }
             out.write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\n\r\n$body".toByteArray())
             out.flush()

@@ -27,7 +27,7 @@ Inputs:  the brand's tokens.json (DTCG), design/tokens/neutral.json, design/toke
          design/brand/icons/**, and the fonts the token file names
 Outputs, for Brasscribe (another brand's have its own name and prefix, in its own folder):
          design/dist/apple/      BrasscribeDesign.xcassets, BrasscribeDesign.swift, Fonts/
-         design/dist/android/    kotlin/no/scribe/design/ScribeTheme.kt, kotlin/no/brasscribe/design/*.kt,
+         design/dist/android/    kotlin/no/kalli/scribe/design/ScribeTheme.kt, kotlin/no/kalli/brasscribe/design/*.kt,
                                  res/drawable/ic_bc_*.xml, res/font/
          design/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
          design/dist/web/        brasscribe.css, fonts.css, icons.js, icons/*.svg, fonts/
@@ -529,7 +529,7 @@ def argb(h: str, a: float = 1.0) -> str:
     return f"0x{round(a * 255):02X}{h[1:].upper()}"
 
 
-NEUTRAL_PACKAGE = "no.scribe.design"
+NEUTRAL_PACKAGE = "no.kalli.scribe.design"
 
 
 def android_palette(name: str, kind: str, mode: str, tokens: dict[str, str], comment: str = "") -> list[str]:
@@ -542,10 +542,10 @@ def android_palette(name: str, kind: str, mode: str, tokens: dict[str, str], com
 
 
 def android_outputs() -> dict[str, str | bytes]:
-    """The neutral theme in no.scribe.design, the same declarations for every brand with the brand's values,
+    """The neutral theme in no.kalli.scribe.design, the same declarations for every brand with the brand's values,
     and the brand's own roles, metrics and theme in its own package. A role has one name."""
     out: dict[str, str | bytes] = {}
-    brand_package = f"no.{PRODUCT.lower()}.design"
+    brand_package = f"no.kalli.{PRODUCT.lower()}.design"
     display = EXT["fonts"]["display"]
     resource = display["android-resource"]
     dist = rel(DIST)

@@ -37,7 +37,7 @@ import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.play.engine.FixtureSource
+import no.kalli.scribe.engine.FixtureSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue

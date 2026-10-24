@@ -1,12 +1,12 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.KeySig
-import no.brasscribe.play.model.Meter
-import no.brasscribe.play.model.Note
-import no.brasscribe.play.model.Voice
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.KeySig
+import no.kalli.scribe.model.Meter
+import no.kalli.scribe.model.Note
+import no.kalli.scribe.model.Voice
+import no.kalli.scribe.model.VoiceRole
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

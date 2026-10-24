@@ -12,7 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelProvider
 import no.brasscribe.play.R
-import no.brasscribe.play.engine.FixtureSource
+import no.kalli.scribe.engine.FixtureSource
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
 import org.json.JSONObject

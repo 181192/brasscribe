@@ -3,8 +3,8 @@ package no.brasscribe.play.score
 import alphaTab.AlphaTabApiBase
 import alphaTab.core.ecmaScript.Float32Array
 import alphaTab.synth.ISynthOutput
-import no.brasscribe.play.audio.OutputStage
-import no.brasscribe.play.audio.PlaybackLevels
+import no.kalli.scribe.audio.OutputStage
+import no.kalli.scribe.audio.PlaybackLevels
 
 /**
  * alphaTab's synth output with the shared output stage in front of it: every buffer the synth

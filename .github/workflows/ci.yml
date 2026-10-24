@@ -78,7 +78,7 @@ jobs:
         with:
           filters: |
             workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
-            python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
+            python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
             studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/scribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
             android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json']
@@ -386,7 +386,7 @@ jobs:
       # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
       # threads, and lint beside them on a two-core runner would take that time from them.
       - name: Unit tests and the screens' tests (both apps, without the screen catalogues)
-        run: ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pbrasscribe.withoutCatalogues --stacktrace
+        run: ./gradlew testDebugUnitTest testFretscribeDebugUnitTest -Pscribe.withoutCatalogues --stacktrace
 
       - name: Lint and the debug builds (both apps)
         run: ./gradlew lint lintFretscribeDebug assembleDebug --stacktrace

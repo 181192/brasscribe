@@ -5,10 +5,10 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
-import no.brasscribe.play.test.Smoke
+import no.kalli.scribe.test.Smoke
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
