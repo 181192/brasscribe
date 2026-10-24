@@ -7,10 +7,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import no.brasscribe.play.TranscriptionResult
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.model.KotlinCoreBridge
-import no.brasscribe.play.model.Lang
-import no.brasscribe.play.model.MusicXmlParts
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.model.KotlinCoreBridge
+import no.kalli.scribe.model.Lang
+import no.kalli.scribe.model.MusicXmlParts
 import no.brasscribe.play.screen.ScreenDevice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

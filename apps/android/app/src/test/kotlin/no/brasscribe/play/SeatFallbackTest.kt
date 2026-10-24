@@ -1,11 +1,11 @@
 package no.brasscribe.play
 
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.engine.EngineApi
-import no.brasscribe.play.engine.EngineException
-import no.brasscribe.play.engine.FixtureEngineApi
-import no.brasscribe.play.engine.Job
-import no.brasscribe.play.engine.JobCreate
+import no.kalli.scribe.engine.EngineApi
+import no.kalli.scribe.engine.EngineException
+import no.kalli.scribe.engine.FixtureEngineApi
+import no.kalli.scribe.engine.Job
+import no.kalli.scribe.engine.JobCreate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -16,7 +16,7 @@ private class OldEngine(private val known: Set<String>, val seen: MutableList<St
     override suspend fun createJob(request: JobCreate): Job {
         seen += request.seat
         if (request.seat != null && request.seat !in known) throw EngineException(422, "seat: input should be one of …")
-        return Job("j", request.profile, "brass", no.brasscribe.play.engine.JobStatus.QUEUED, 0.0, emptyList())
+        return Job("j", request.profile, "brass", no.kalli.scribe.engine.JobStatus.QUEUED, 0.0, emptyList())
     }
 }
 

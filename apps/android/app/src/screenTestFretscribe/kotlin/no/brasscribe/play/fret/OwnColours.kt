@@ -1,14 +1,14 @@
 package no.brasscribe.play.fret
 
-import no.fretscribe.design.FretscribeColors
-import no.fretscribe.design.FretscribeDarkColors
-import no.fretscribe.design.FretscribeHighContrastColors
-import no.fretscribe.design.FretscribeHighContrastLightColors
-import no.fretscribe.design.FretscribeLightColors
-import no.scribe.design.ScribeColors
-import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeHighContrastColors
-import no.scribe.design.ScribeHighContrastLightColors
+import no.kalli.fretscribe.design.FretscribeColors
+import no.kalli.fretscribe.design.FretscribeDarkColors
+import no.kalli.fretscribe.design.FretscribeHighContrastColors
+import no.kalli.fretscribe.design.FretscribeHighContrastLightColors
+import no.kalli.fretscribe.design.FretscribeLightColors
+import no.kalli.scribe.design.ScribeColors
+import no.kalli.scribe.design.ScribeDarkColors
+import no.kalli.scribe.design.ScribeHighContrastColors
+import no.kalli.scribe.design.ScribeHighContrastLightColors
 
 /** Fretscribe's own colours that go with a palette of the roles every product has: the same mode's. */
 internal fun own(colours: ScribeColors): FretscribeColors = when (colours) {

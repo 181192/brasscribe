@@ -11,7 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.play.engine.FrettedInstrument
+import no.kalli.scribe.engine.FrettedInstrument
 import no.brasscribe.play.fret.ComputerProfiles
 import no.brasscribe.play.fret.PracticeModel
 import no.brasscribe.play.fret.RecordingState

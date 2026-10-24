@@ -100,7 +100,7 @@ class ConnectionMonitorTest {
 
     @Test
     fun anotherInterfaceVersionSaysWhichToUpdateAndClearsOnceTheyMatch() = runTest {
-        val behind = no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER
+        val behind = no.kalli.scribe.engine.InterfaceMatch.UPDATE_COMPUTER
         val host = FakeHost(Target("s1", name, "http://a")) { Check.Mismatch(behind) }
         val m = monitor(host)
         m.start(); runCurrent()
@@ -118,9 +118,9 @@ class ConnectionMonitorTest {
         advanceTimeBy(20_001)
         assertEquals(ConnectionState.Connected(name), m.state.value)
         // And an app that fell behind while connected is told at the next heartbeat.
-        host.answer = { Check.Mismatch(no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) }
+        host.answer = { Check.Mismatch(no.kalli.scribe.engine.InterfaceMatch.UPDATE_APP) }
         advanceTimeBy(20_001)
-        assertEquals(ConnectionState.NeedsUpdate(name, no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP), m.state.value)
+        assertEquals(ConnectionState.NeedsUpdate(name, no.kalli.scribe.engine.InterfaceMatch.UPDATE_APP), m.state.value)
     }
 
     @Test

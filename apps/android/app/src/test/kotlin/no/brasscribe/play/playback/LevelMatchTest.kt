@@ -1,9 +1,9 @@
 package no.brasscribe.play.playback
 
-import no.brasscribe.play.audio.LoudnessMeter
-import no.brasscribe.play.audio.OutputStage
-import no.brasscribe.play.audio.PcmAudio
-import no.brasscribe.play.audio.PlaybackLevels
+import no.kalli.scribe.audio.LoudnessMeter
+import no.kalli.scribe.audio.OutputStage
+import no.kalli.scribe.audio.PcmAudio
+import no.kalli.scribe.audio.PlaybackLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

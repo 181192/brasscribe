@@ -116,5 +116,5 @@ small derived test data only:
 - `eval/fixtures/`: MIDI, beats and pitch contours computed from the ChoraleBricks v1.1.0 recordings
   (CC BY 4.0, Zenodo 10.5281/zenodo.20849469; see `eval/README.md`). Bandroom's bundled workspace
   includes this folder.
-- `apps/android/pitch/src/test/resources/`: Basic Pitch notes and Beat This! beats of 30 s of one URMP
+- `apps/android/features/score/pitch/src/test/resources/`: Basic Pitch notes and Beat This! beats of 30 s of one URMP
   track (URMP, University of Rochester; B. Li et al., IEEE Trans. Multimedia 2019).

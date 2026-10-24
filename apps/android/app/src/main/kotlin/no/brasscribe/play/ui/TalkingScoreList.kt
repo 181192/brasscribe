@@ -30,10 +30,10 @@ import kotlinx.coroutines.launch
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.TranscriptionResult
 import no.brasscribe.play.R
-import no.brasscribe.play.model.TsContext
-import no.brasscribe.play.model.TsSettings
-import no.brasscribe.play.model.Verbosity
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.model.TsContext
+import no.kalli.scribe.model.TsSettings
+import no.kalli.scribe.model.Verbosity
+import no.kalli.scribe.model.VoiceRole
 
 /**
  * The talking score: one list item per event of the melody part, in time order, each carrying its

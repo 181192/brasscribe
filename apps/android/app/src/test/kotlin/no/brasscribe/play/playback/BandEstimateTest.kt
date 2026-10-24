@@ -10,7 +10,7 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import no.brasscribe.play.audio.PlaybackLevels
+import no.kalli.scribe.audio.PlaybackLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -21,7 +21,7 @@ import java.io.File
  * (band_estimate_scores, whose notes sounds/playback_levels.py reads from the MusicXML itself).
  */
 class BandEstimateTest {
-    private val sounds: File? = System.getProperty("brasscribe.sounds")?.let(::File)?.takeIf { File(it, "output-stage-vectors.json").isFile }
+    private val sounds: File? = System.getProperty("scribe.sounds")?.let(::File)?.takeIf { File(it, "output-stage-vectors.json").isFile }
 
     @Test fun scoresGiveTheSharedEstimate() {
         assumeTrue("sounds/output-stage-vectors.json not found", sounds != null)

@@ -12,7 +12,7 @@ import java.io.File
  * developer command, no "transcribe", no "output", and nb «opptak» for a recording.
  */
 class BrasscribeWordsTest {
-    private val src = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src")
+    private val src = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src")
 
     private fun strings(dir: String): Map<String, String> =
         Regex("""<string name="([a-z0-9_]+)"[^>]*>(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)

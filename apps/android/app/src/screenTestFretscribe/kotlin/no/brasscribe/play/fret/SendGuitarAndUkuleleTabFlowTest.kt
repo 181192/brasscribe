@@ -39,11 +39,11 @@ import no.brasscribe.play.PlayApplication
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.FixtureEngineApi
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.FrettedInstrument
-import no.brasscribe.play.engine.Octave
-import no.brasscribe.play.engine.Recording
+import no.kalli.scribe.engine.FixtureEngineApi
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.FrettedInstrument
+import no.kalli.scribe.engine.Octave
+import no.kalli.scribe.engine.Recording
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals

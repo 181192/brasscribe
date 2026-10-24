@@ -8,13 +8,13 @@ import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import java.net.InetAddress
-import no.brasscribe.play.engine.EngineApi
-import no.brasscribe.play.engine.FixtureEngineApi
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.KtorEngineApi
-import no.brasscribe.play.model.CoreBridge
-import no.brasscribe.play.model.KotlinCoreBridge
-import no.brasscribe.play.core.RustCoreBridge
+import no.kalli.scribe.engine.EngineApi
+import no.kalli.scribe.engine.FixtureEngineApi
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.KtorEngineApi
+import no.kalli.scribe.model.CoreBridge
+import no.kalli.scribe.model.KotlinCoreBridge
+import no.kalli.scribe.core.bridge.RustCoreBridge
 import no.brasscribe.play.connection.Credential
 import no.brasscribe.play.connection.CredentialStore
 import no.brasscribe.play.connection.CredentialCipher
@@ -182,7 +182,7 @@ class AppContainer(private val context: Context) {
     val core: CoreBridge = (RustCoreBridge.load(Product.target.id) ?: KotlinCoreBridge).also { c -> no.brasscribe.play.ui.PartNames.nb = c::partNameNb }
 
     /** The contest band's seats, from the core; empty without it (then "What do you play?" is not asked). */
-    val seats: List<no.brasscribe.play.model.Seat> by lazy { runCatching { core.seats() }.getOrDefault(emptyList()) }
+    val seats: List<no.kalli.scribe.model.Seat> by lazy { runCatching { core.seats() }.getOrDefault(emptyList()) }
 
     /**
      * Instrumented tests only: a finished score served in place of a paired computer

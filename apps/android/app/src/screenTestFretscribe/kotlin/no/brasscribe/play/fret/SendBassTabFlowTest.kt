@@ -44,9 +44,9 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.ScoreEntry
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.Octave
-import no.brasscribe.play.engine.Recording
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.Octave
+import no.kalli.scribe.engine.Recording
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -74,7 +74,7 @@ class SendBassTabFlowTest : ScreenTest() {
     @Before
     fun setUp() {
         assertEquals("Fretscribe", Product.NAME)
-        yourInstrumentStore(rule.activity).save(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4))
+        yourInstrumentStore(rule.activity).save(YourInstrument(no.kalli.scribe.engine.FrettedInstrument.BASS_4))
     }
 
     /** The computer of the tests: what the engine answered for the bass line, with [tab] changed on the way when given. */
@@ -161,7 +161,7 @@ class SendBassTabFlowTest : ScreenTest() {
             val last = steps.getValue(lang).last()
             waitUntil(20_000) { rule.onAllNodesWithText(last).fetchSemanticsNodes().isNotEmpty() }
             // (The fixture computer has a name of its own; a real one shows its address there.)
-            val during = shown().replace(no.brasscribe.play.engine.FixtureEngineApi.SERVER_NAME, "")
+            val during = shown().replace(no.kalli.scribe.engine.FixtureEngineApi.SERVER_NAME, "")
             steps.getValue(lang).forEach { assertTrue("$it in: $during", during.contains(it)) }
             assertFalse(during, Regex("Brasscribe|brass band|brassband|score|partitur", RegexOption.IGNORE_CASE).containsMatchIn(during))
             assertEquals(whole, !during.contains(if (lang == "en-GB") "Picking out your instrument" else "Plukker ut instrumentet ditt"))
@@ -269,7 +269,7 @@ class SendBassTabFlowTest : ScreenTest() {
         assertEquals(listOf("drop-d", Recording.INSTRUMENT, Octave.AUTO), listOf(sent.tuning, sent.recording, sent.octave))
         assertEquals(2, runBlocking { container.engine()!!.jobs() }.size)
         // The player's usual tuning is as it was, and the song is saved once.
-        assertEquals(YourInstrument(no.brasscribe.play.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
+        assertEquals(YourInstrument(no.kalli.scribe.engine.FrettedInstrument.BASS_4), yourInstrumentStore(rule.activity).load())
         waitUntil(10_000) { vm.savedScores.value.size == 1 }
     }
 

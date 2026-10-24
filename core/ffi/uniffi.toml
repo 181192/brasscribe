@@ -1,0 +1,3 @@
+# The Kotlin bindings' package: the core's Android library is no.kalli.scribe.core.
+[bindings.kotlin]
+package_name = "no.kalli.scribe.core"

@@ -1,6 +1,6 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.EngineException
+import no.kalli.scribe.engine.EngineException
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -1,6 +1,6 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Wire
+import no.kalli.scribe.engine.Wire
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
@@ -35,7 +35,7 @@ import no.brasscribe.play.ui.ReviewScreen
 import no.brasscribe.play.ui.ScoreScreen
 import no.brasscribe.play.ui.TranscribeScreen
 import no.brasscribe.play.ui.theme.PlayTheme
-import no.scribe.design.systemHighContrast
+import no.kalli.scribe.design.systemHighContrast
 
 /**
  * The colour of the window behind Compose: the product's token bg of the palette the app draws in (its

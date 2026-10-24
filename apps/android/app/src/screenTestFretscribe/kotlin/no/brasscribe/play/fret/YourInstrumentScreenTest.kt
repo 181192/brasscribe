@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.scribe.design.ScribeDarkColors
-import no.scribe.design.ScribeLightColors
+import no.kalli.scribe.design.ScribeDarkColors
+import no.kalli.scribe.design.ScribeLightColors
 import no.brasscribe.play.Appearance
 import no.brasscribe.play.AppearanceStore
 import no.brasscribe.play.MainActivity
@@ -44,7 +44,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.FrettedInstrument
+import no.kalli.scribe.engine.FrettedInstrument
 import no.brasscribe.play.SeatChoice
 import no.brasscribe.play.SeatPickerMode
 import org.junit.After

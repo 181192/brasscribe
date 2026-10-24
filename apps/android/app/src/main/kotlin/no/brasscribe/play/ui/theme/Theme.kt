@@ -7,7 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import no.scribe.design.scribeTypography
+import no.kalli.scribe.design.scribeTypography
 import no.brasscribe.play.Product
 import no.brasscribe.play.R
 

@@ -20,11 +20,11 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "brasscribe-play"
+rootProject.name = "scribe-android"
 
 include(":app")
-include(":model")
-include(":engine-client")
-include(":pitch")
-include(":audio")
-include(":core-bridge")
+include(":services:model")
+include(":services:engine-client")
+include(":features:score:pitch")
+include(":services:audio")
+include(":services:core-bridge")

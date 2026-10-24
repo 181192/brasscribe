@@ -96,19 +96,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.scribe.design.ScribeButtonShape
-import no.scribe.design.ScribeColors
-import no.fretscribe.design.FretscribeColors
-import no.fretscribe.design.FretscribeTab
-import no.fretscribe.design.FretscribeTheme
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeButtonShape
+import no.kalli.scribe.design.ScribeColors
+import no.kalli.fretscribe.design.FretscribeColors
+import no.kalli.fretscribe.design.FretscribeTab
+import no.kalli.fretscribe.design.FretscribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.FrettedInstrument
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.engine.TabLayout
+import no.kalli.scribe.engine.FrettedInstrument
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.engine.TabLayout
 import no.brasscribe.play.ui.BcIcon
 import no.brasscribe.play.ui.InfoNote
 import no.brasscribe.play.ui.OutlineButton
@@ -305,7 +305,7 @@ fun TabScreen(vm: PlayViewModel) {
         // The note is read first, then what can be done about it, which is several keys away.
         val then = listOfNotNull(slowly.takeIf { canPlay }, nextName.takeIf { next != null }).takeIf { it.isNotEmpty() }
             ?.let { stringResource(R.string.fs_tab_note_actions, it.joinToString(", ")) }
-        val words = TabWords.describe(resources, column, currentLang() == no.brasscribe.play.model.Lang.NB)
+        val words = TabWords.describe(resources, column, currentLang() == no.kalli.scribe.model.Lang.NB)
         val note: @Composable (Modifier) -> Unit = { m ->
             // In one row the words are a size smaller: the tab keeps the room for a whole column of it.
             Text(words, style = if (noteInOneRow) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge, color = c.text,
@@ -636,7 +636,7 @@ fun TabScreen(vm: PlayViewModel) {
                                 val wide = maxOf(target, box.width)
                                 val top = if (tall >= target) box.top else box.top - (target - tall) / 2
                                 var focused by remember { mutableStateOf(false) }
-                                val words = TabWords.describe(resources, column, currentLang() == no.brasscribe.play.model.Lang.NB)
+                                val words = TabWords.describe(resources, column, currentLang() == no.kalli.scribe.model.Lang.NB)
                                 Box(
                                     Modifier.offset { IntOffset((box.centre - wide / 2).roundToInt(), top.roundToInt()) }
                                         .size(with(density) { wide.toDp() }, with(density) { maxOf(target, tall).toDp() })

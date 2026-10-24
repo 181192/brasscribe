@@ -173,7 +173,7 @@ In each walkthrough, "phone" means Android and iOS, which behave the same unless
 ### P1: wrong part, dead end, or false output
 
 **P1-1. Android offers "Who plays the tune?" to seats that can't carry it, then fails.**
-- **Where.** `apps/android/core-bridge/src/main/kotlin/no/brasscribe/play/core/RustCoreBridge.kt:114` builds `Seat(...)` without the FFI's `tune`. The default `tune = reads.isNotEmpty()` (`apps/android/model/src/main/kotlin/no/brasscribe/play/model/CoreBridge.kt:52`) makes every non-percussion seat tune-capable. The core says no for the baritones, Bass Trombone, E♭ Bass and B♭ Bass (`instruments.rs:418`).
+- **Where.** `apps/android/services/core-bridge/src/main/kotlin/no/brasscribe/play/core/RustCoreBridge.kt:114` builds `Seat(...)` without the FFI's `tune`. The default `tune = reads.isNotEmpty()` (`apps/android/services/model/src/main/kotlin/no/brasscribe/play/model/CoreBridge.kt:52`) makes every non-percussion seat tune-capable. The core says no for the baritones, Bass Trombone, E♭ Bass and B♭ Bass (`instruments.rs:418`).
 - **What goes wrong.** "Du: Ess-bass" is shown. After **Show the score** the player gets «Melodien kan ikke gå på stemmen din i dette bandet.» (`lead_seat_refused`), with no way forward.
 - **Fix.** Pass `it.tune` from `SeatInfo`, and remove the default. Also make the refusal line say what to do: «…Velg «Solokornett (som vanlig)».»
 

@@ -29,7 +29,7 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.TranscriptionResult
 import no.brasscribe.play.compositionJsonFor
-import no.brasscribe.play.model.PitchMode
+import no.kalli.scribe.model.PitchMode
 
 /** One row of the per-part talking score: a bar heading or one event line of that bar. */
 private data class Row(val bar: Int, val barIndex: Int, val text: String, val heading: Boolean)

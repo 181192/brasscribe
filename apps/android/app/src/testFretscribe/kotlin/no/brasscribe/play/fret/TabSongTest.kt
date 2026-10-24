@@ -7,20 +7,20 @@ import no.brasscribe.play.Screen
 import no.brasscribe.play.Source
 import no.brasscribe.play.SourceKind
 import no.brasscribe.play.TranscriptionResult
-import no.brasscribe.play.engine.EngineException
-import no.brasscribe.play.engine.FrettedInstrument
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.Octave
-import no.brasscribe.play.engine.OctaveSource
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Recording
-import no.brasscribe.play.engine.ReferencePitch
-import no.brasscribe.play.engine.Refusal
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.engine.TabLayout
-import no.brasscribe.play.engine.TabOptions
-import no.brasscribe.play.engine.Target
-import no.brasscribe.play.model.BrasscribeJson
+import no.kalli.scribe.engine.EngineException
+import no.kalli.scribe.engine.FrettedInstrument
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.Octave
+import no.kalli.scribe.engine.OctaveSource
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Recording
+import no.kalli.scribe.engine.ReferencePitch
+import no.kalli.scribe.engine.Refusal
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.engine.TabLayout
+import no.kalli.scribe.engine.TabOptions
+import no.kalli.scribe.engine.Target
+import no.kalli.scribe.model.BrasscribeJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -36,7 +36,7 @@ import java.io.File
  */
 class TabSongTest {
     // The repository root is two up from the sounds folder the build passes in.
-    private val fixture: File? = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/fixtures/bass-line")
+    private val fixture: File? = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("apps/fixtures/bass-line")
 
     private fun recorded(take: String = "bass-line"): Tab {
         val folder = fixture?.resolveSibling(take)
@@ -74,7 +74,7 @@ class TabSongTest {
         val alone = listOf("beats", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export")
         // Read back from the result and its job: nothing else has to remember the answers.
         val made = SongCheck.optionsOf(tab, alone)
-        assertEquals(TabOptions(FrettedInstrument.BASS_4, "standard", capo = 0, style = no.brasscribe.play.engine.FingeringStyle.AS_PLAYED,
+        assertEquals(TabOptions(FrettedInstrument.BASS_4, "standard", capo = 0, style = no.kalli.scribe.engine.FingeringStyle.AS_PLAYED,
             recording = Recording.INSTRUMENT, octave = Octave.AUTO, layout = TabLayout.TAB), made)
         // A full song was separated first.
         assertEquals(Recording.SONG, SongCheck.optionsOf(tab, listOf("beats", "stems") + alone.drop(1)).recording)
@@ -97,7 +97,7 @@ class TabSongTest {
     fun aGuitarOrAUkuleleSongIsWrittenDownAgainForTheSameInstrument() {
         fun alone(kind: String) = listOf("beats", "transcribe.$kind.basic-pitch", "transcribe.$kind.swift-f0", "notes", "arrange", "export")
         val guitar = SongCheck.optionsOf(recorded("guitar-line"), alone("guitar"))
-        assertEquals(TabOptions(FrettedInstrument.GUITAR_6, "standard", capo = 0, style = no.brasscribe.play.engine.FingeringStyle.AS_PLAYED,
+        assertEquals(TabOptions(FrettedInstrument.GUITAR_6, "standard", capo = 0, style = no.kalli.scribe.engine.FingeringStyle.AS_PLAYED,
             recording = Recording.INSTRUMENT, octave = Octave.AUTO, layout = TabLayout.TAB), guitar)
         val ukulele = SongCheck.optionsOf(recorded("ukulele-line"), alone("ukulele"))
         assertEquals(FrettedInstrument.UKULELE to "high-g", ukulele.instrument to ukulele.tuning)
@@ -324,7 +324,7 @@ class TabSongTest {
         assertEquals(Instrument.entries.flatMap { it.kinds }.flatMap { kind -> kind.tunings.map { kind.preset(it) } }, SongFacts.OPEN_STRINGS.keys.toList())
         // No two tunings share their strings, so a tab's staff names its instrument and its tuning.
         assertEquals(SongFacts.OPEN_STRINGS.size, SongFacts.OPEN_STRINGS.values.toSet().size)
-        val source = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("core/targets/fretted/src/instrument.rs")
+        val source = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("core/targets/fretted/src/instrument.rs")
         assumeTrue("core/targets/fretted is not in this checkout", source?.isFile == true)
         // The crate's own tests list the open strings, highest first.
         val listed = Regex("""assert_eq!\(open\("([^"]+)"\), vec!\[([0-9, ]+)]\);""").findAll(source!!.readText())
@@ -352,7 +352,7 @@ class TabSongTest {
 
     @Test
     fun fretscribesWordsForARefusalNameBandroomInBothLanguages() {
-        val res = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src/fretscribe/res")
+        val res = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("apps/android/app/src/fretscribe/res")
         assumeTrue("the app's sources are not in this checkout", res?.isDirectory == true)
         val want = mapOf(
             "values" to "Bandroom on your computer needs an update to write tabs. Update it there, then try again.",

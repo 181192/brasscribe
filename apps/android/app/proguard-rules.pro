@@ -9,6 +9,11 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 -keep,includedescriptorclasses class no.brasscribe.**$$serializer { *; }
+-keepclassmembers class no.kalli.** {
+    *** Companion;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class no.kalli.**$$serializer { *; }
 
 # Ktor and OkHttp reference optional platform classes.
 -dontwarn org.slf4j.**

@@ -1,6 +1,6 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Wire
+import no.kalli.scribe.engine.Wire
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo

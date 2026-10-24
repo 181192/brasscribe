@@ -10,8 +10,8 @@ import alphaTab.midi.MidiFileGenerator
 import alphaTab.synth.AlphaSynth
 import alphaTab.synth.ISynthOutput
 import alphaTab.synth.ISynthOutputDevice
-import no.brasscribe.play.audio.LoudnessMeter
-import no.brasscribe.play.audio.PcmAudio
+import no.kalli.scribe.audio.LoudnessMeter
+import no.kalli.scribe.audio.PcmAudio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -27,8 +27,8 @@ import kotlin.math.abs
  * and the golden arrangement (data/golden); skipped without them.
  */
 class BarAudioBandTest {
-    private val sounds = File(System.getProperty("brasscribe.sounds") ?: "../../../sounds")
-    private val sf2 = File(System.getProperty("brasscribe.bandSounds") ?: File(sounds.parentFile, "data/sounds/band").path, "brasscribe-band-mobile.sf2")
+    private val sounds = File(System.getProperty("scribe.sounds") ?: "../../../sounds")
+    private val sf2 = File(System.getProperty("scribe.bandSounds") ?: File(sounds.parentFile, "data/sounds/band").path, "brasscribe-band-mobile.sf2")
     private val golden = File(sounds.parentFile, "data/golden/mikkel-arranged-band/brass-band.musicxml")
     private val map = BandSoundMap.parse(File(sounds, "mapping.json").readText())
 

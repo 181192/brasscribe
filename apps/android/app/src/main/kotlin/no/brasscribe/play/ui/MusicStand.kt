@@ -97,9 +97,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import no.scribe.design.ScribeButtonShape
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeButtonShape
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.R
 import no.brasscribe.play.score.ScoreController
 import no.brasscribe.play.score.ScoreUiState

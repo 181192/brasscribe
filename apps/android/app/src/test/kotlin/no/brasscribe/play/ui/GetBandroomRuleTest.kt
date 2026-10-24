@@ -1,7 +1,7 @@
 package no.brasscribe.play.ui
 
 import no.brasscribe.play.connection.ConnectionState
-import no.brasscribe.play.engine.InterfaceMatch
+import no.kalli.scribe.engine.InterfaceMatch
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

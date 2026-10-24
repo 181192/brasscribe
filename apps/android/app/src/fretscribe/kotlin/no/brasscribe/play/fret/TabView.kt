@@ -27,7 +27,7 @@ import android.widget.RelativeLayout
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import no.brasscribe.play.PlayViewModel
-import no.brasscribe.play.engine.TabLayout
+import no.kalli.scribe.engine.TabLayout
 import no.brasscribe.play.score.AlphaTabMusicXml
 
 /** The tab's colours (Fretscribe's tokens, ARGB): ink numerals on paper, the lines in the string colour. */

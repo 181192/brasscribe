@@ -29,8 +29,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.ErrorWords
 import no.brasscribe.play.NoCompanionException
 import no.brasscribe.play.OnDeviceRouting
@@ -39,10 +39,10 @@ import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.ScoreEntry
 import no.brasscribe.play.Screen
-import no.brasscribe.play.engine.Octave
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.engine.TabOptions
+import no.kalli.scribe.engine.Octave
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.engine.TabOptions
 import no.brasscribe.play.ui.InfoNote
 import no.brasscribe.play.ui.Lead
 import no.brasscribe.play.ui.OutlineButton
@@ -229,7 +229,7 @@ private fun rowWords(row: SongRow): Triple<String, String, String> = when (row) 
         Triple(stringResource(R.string.fs_check_key_tempo),
             stringResource(R.string.fs_check_key_tempo_value, key, row.bpm, row.beats, row.beatUnit),
             stringResource(R.string.fs_check_key_tempo_spoken, key, row.bpm,
-                SongCheck.meterWords(row.beats, row.beatUnit, currentLang() == no.brasscribe.play.model.Lang.NB)))
+                SongCheck.meterWords(row.beats, row.beatUnit, currentLang() == no.kalli.scribe.model.Lang.NB)))
     }
     is SongRow.Doubtful -> pluralStringResource(R.plurals.fs_check_marked, row.count, row.count).let {
         Triple(stringResource(R.string.fs_check_notes), it, it)

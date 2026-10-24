@@ -1,11 +1,11 @@
 package no.brasscribe.play
 
 import no.brasscribe.play.connection.KeyValueStore
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.PartSource
-import no.brasscribe.play.model.Seat
-import no.brasscribe.play.model.SeatPart
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.PartSource
+import no.kalli.scribe.model.Seat
+import no.kalli.scribe.model.SeatPart
+import no.kalli.scribe.model.VoiceRole
 
 /**
  * The player's answer to "What do you play?" (docs/plan/my-instrument.md §2.1): not asked yet, "I
@@ -178,11 +178,11 @@ val SEAT_FALLBACK = mapOf("trumpet" to "solo-cornet")
  * [EngineApi.createJob], and for a seat an older engine refuses, once more with [SEAT_FALLBACK]'s seat.
  * The second value says it fell back, so the player hears that the computer is too old for their instrument.
  */
-suspend fun no.brasscribe.play.engine.EngineApi.createJobForSeat(
-    request: no.brasscribe.play.engine.JobCreate,
-): Pair<no.brasscribe.play.engine.Job, Boolean> = try {
+suspend fun no.kalli.scribe.engine.EngineApi.createJobForSeat(
+    request: no.kalli.scribe.engine.JobCreate,
+): Pair<no.kalli.scribe.engine.Job, Boolean> = try {
     createJob(request) to false
-} catch (e: no.brasscribe.play.engine.EngineException) {
+} catch (e: no.kalli.scribe.engine.EngineException) {
     val fallback = request.seat?.let { SEAT_FALLBACK[it] }
     if (e.status != 422 || e.code != null || fallback == null) throw e
     createJob(request.copy(seat = fallback, reads = null, lead = null)) to true

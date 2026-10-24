@@ -10,7 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenTest
 import no.brasscribe.play.ui.PartNames
 import org.junit.After

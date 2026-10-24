@@ -20,18 +20,18 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.SeatChoice
 import no.brasscribe.play.TranscriptionResult
 import no.brasscribe.play.YourParts
 import no.brasscribe.play.arrangementString
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.MusicXmlParts
-import no.brasscribe.play.model.PartSource
-import no.brasscribe.play.model.reading
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.MusicXmlParts
+import no.kalli.scribe.model.PartSource
+import no.kalli.scribe.model.reading
 
 /**
  * Review's "Yours": the player's part, where it came from, and the recording layer it follows. [voice]

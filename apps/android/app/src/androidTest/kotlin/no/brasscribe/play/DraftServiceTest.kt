@@ -10,7 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * The service that holds the app in front while a band draft is made. A service started with
@@ -103,7 +103,7 @@ class DraftServiceTest {
             instrumentation.runOnMainSync { vm.home(); vm.importUri(android.net.Uri.fromFile(mix)) }
             assertTrue("the recording is read", waitFor(60_000) { vm.screen.value.last() == Screen.PROFILE })
             instrumentation.runOnMainSync {
-                vm.chooseProfile(no.brasscribe.play.engine.Profile.BRASS_BAND)
+                vm.chooseProfile(no.kalli.scribe.engine.Profile.BRASS_BAND)
                 vm.where.value = Where.DEVICE
                 vm.startTranscription()
             }

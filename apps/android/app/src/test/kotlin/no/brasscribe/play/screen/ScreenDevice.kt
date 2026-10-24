@@ -94,7 +94,7 @@ object ScreenDevice {
         }
     }
 
-    private val fixtures = File(checkNotNull(System.getProperty("brasscribe.fixtures")) { "brasscribe.fixtures is not set (app/build.gradle.kts)" })
+    private val fixtures = File(checkNotNull(System.getProperty("scribe.fixtures")) { "scribe.fixtures is not set (app/build.gradle.kts)" })
 
     /** A file of apps/fixtures ("bass-line/tab.json"); null when it is not there. */
     fun fixture(path: String): ByteArray? = File(fixtures, path).takeIf { it.isFile }?.readBytes()
@@ -274,10 +274,10 @@ object ScreenDevice {
     private inline fun <T> internals(what: String, block: () -> T): T = try {
         block()
     } catch (e: ReflectiveOperationException) {
-        throw IllegalStateException("the screen tests could not reach $what in Robolectric ${System.getProperty("brasscribe.robolectric") ?: "(version unknown)"}: " +
+        throw IllegalStateException("the screen tests could not reach $what in Robolectric ${System.getProperty("scribe.robolectric") ?: "(version unknown)"}: " +
             "it is not public, and has moved or changed; ScreenDevice (src/test) has to follow it", e)
     } catch (e: NoSuchElementException) {
-        throw IllegalStateException("the screen tests could not reach $what in Robolectric ${System.getProperty("brasscribe.robolectric") ?: "(version unknown)"}: " +
+        throw IllegalStateException("the screen tests could not reach $what in Robolectric ${System.getProperty("scribe.robolectric") ?: "(version unknown)"}: " +
             "it is not public, and has moved or changed; ScreenDevice (src/test) has to follow it", e)
     }
 

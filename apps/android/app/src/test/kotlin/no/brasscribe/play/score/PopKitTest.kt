@@ -1,6 +1,6 @@
 package no.brasscribe.play.score
 
-import no.brasscribe.play.audio.PcmAudio
+import no.kalli.scribe.audio.PcmAudio
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -16,8 +16,8 @@ import kotlin.math.sqrt
  * whole file. Needs data/sounds/band/brasscribe-band-mobile.sf2 for the renders.
  */
 class PopKitTest {
-    private val sounds = File(System.getProperty("brasscribe.sounds") ?: "../../../sounds")
-    private val sf2 = File(System.getProperty("brasscribe.bandSounds") ?: File(sounds.parentFile, "data/sounds/band").path, "brasscribe-band-mobile.sf2")
+    private val sounds = File(System.getProperty("scribe.sounds") ?: "../../../sounds")
+    private val sf2 = File(System.getProperty("scribe.bandSounds") ?: File(sounds.parentFile, "data/sounds/band").path, "brasscribe-band-mobile.sf2")
     private val map = BandSoundMap.parse(File(sounds, "mapping.json").readText())
 
     private fun drums(program: Int?): String {

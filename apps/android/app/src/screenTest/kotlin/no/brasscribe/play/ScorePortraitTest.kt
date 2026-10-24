@@ -23,8 +23,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.model.ArrangeOptions
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.model.ArrangeOptions
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

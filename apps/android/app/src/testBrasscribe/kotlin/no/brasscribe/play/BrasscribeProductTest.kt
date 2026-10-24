@@ -1,7 +1,7 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Target
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Target
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -49,7 +49,7 @@ class BrasscribeProductTest {
 
     @Test
     fun aTabInTheComputersListOpensInFretscribeAndIsListedApartFromTheBandScoreOfTheSameRecording() {
-        fun job(id: String, profile: String, created: Double) = no.brasscribe.play.engine.Job(id, profile, Profile.of(profile)!!.target.id, no.brasscribe.play.engine.JobStatus.SUCCEEDED, created,
+        fun job(id: String, profile: String, created: Double) = no.kalli.scribe.engine.Job(id, profile, Profile.of(profile)!!.target.id, no.kalli.scribe.engine.JobStatus.SUCCEEDED, created,
             emptyList(), audioId = "audio-1", title = id, outputs = listOf(if (Profile.writesTab(profile)) "tab.musicxml" else "brass-band.musicxml"))
         val entries = ScoreEntry.merge(emptyList(), listOf(job("band", "brass-band", 1000.0), job("guitar", "tab", 2000.0), job("bass", "bass-tab", 3000.0)))
         // The two tab runs of the recording collapse to the latest; the band score is never hidden by them.
@@ -66,7 +66,7 @@ class BrasscribeProductTest {
 
     @Test
     fun theWordsForATabNameNoInstrumentInEitherLanguage() {
-        val res = System.getProperty("brasscribe.sounds")?.let { java.io.File(it).parentFile }?.resolve("apps/android/app/src/main/res")
+        val res = System.getProperty("scribe.sounds")?.let { java.io.File(it).parentFile }?.resolve("apps/android/app/src/main/res")
         org.junit.Assume.assumeTrue("the app's sources are not in this checkout", res?.isDirectory == true)
         val want = mapOf(
             "values" to listOf("Tab · opens in Fretscribe", "This is a tab. Open it in Fretscribe."),
@@ -85,7 +85,7 @@ class BrasscribeProductTest {
         // stays on. A draft (its service) and a job on the computer (followed by a service, with a notification when it is
         // done) say the player can switch to another app.
         assertTrue(Product.KEEP_OPEN_WHILE_WRITING)
-        val res = System.getProperty("brasscribe.sounds")?.let { java.io.File(it).parentFile }?.resolve("apps/android/app/src/main/res")
+        val res = System.getProperty("scribe.sounds")?.let { java.io.File(it).parentFile }?.resolve("apps/android/app/src/main/res")
         org.junit.Assume.assumeTrue("the app's sources are not in this checkout", res?.isDirectory == true)
         val want = mapOf(
             "values" to listOf("%1\$s. Keep Brasscribe open until the score is ready.",

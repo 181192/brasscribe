@@ -7,7 +7,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import no.brasscribe.play.Appearance
-import no.brasscribe.play.test.Slow
+import no.kalli.scribe.test.Slow
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Before

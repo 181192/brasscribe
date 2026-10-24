@@ -22,8 +22,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import no.brasscribe.play.engine.Job
-import no.brasscribe.play.engine.JobStatus
+import no.kalli.scribe.engine.Job
+import no.kalli.scribe.engine.JobStatus
 
 /**
  * Follows a job on the computer while the player is away from the app, and says when it is done.
@@ -74,7 +74,7 @@ class ComputerJobService : Service() {
         for ((jobId, title) in now.jobs) {
             if (jobId in follows) continue
             val follow = scope.launch(start = CoroutineStart.LAZY) {
-                var update: no.brasscribe.play.engine.InterfaceMatch? = null
+                var update: no.kalli.scribe.engine.InterfaceMatch? = null
                 val ended = JobFollow.untilEnded({ container.engine()?.job(jobId) }, refused = { update = it })
                 // Still its to say: the view model has not seen the end first, and the player has not stopped the job.
                 if (jobId !in held.value.jobs) return@launch
@@ -242,7 +242,7 @@ object JobFollow {
      */
     suspend fun untilEnded(
         ask: suspend () -> Job?,
-        refused: (no.brasscribe.play.engine.InterfaceMatch) -> Unit = {},
+        refused: (no.kalli.scribe.engine.InterfaceMatch) -> Unit = {},
         patience: Long = PATIENCE_MS,
         clock: () -> Long = { System.nanoTime() / 1_000_000 },
         sleep: suspend (Long) -> Unit = { delay(it) },
@@ -254,7 +254,7 @@ object JobFollow {
                 ask()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
-            } catch (e: no.brasscribe.play.engine.InterfaceMismatchException) {
+            } catch (e: no.kalli.scribe.engine.InterfaceMismatchException) {
                 // The computer answers with another interface version: it is not asked again, however long the job is.
                 refused(e.update)
                 return null
@@ -314,11 +314,11 @@ object JobNotices {
      * Your scores once the computer is back. Returns whether something was posted.
      */
     fun afterFollowing(context: Context, jobId: String, ended: Job?, title: String, inFront: Boolean,
-                       update: no.brasscribe.play.engine.InterfaceMatch? = null): Boolean = when {
+                       update: no.kalli.scribe.engine.InterfaceMatch? = null): Boolean = when {
         inFront -> false
         // Not "when your computer is back": it is there, and one of the two needs an update first.
         ended == null && update != null -> post(context, jobId, context.getString(
-            if (update == no.brasscribe.play.engine.InterfaceMatch.UPDATE_APP) R.string.notif_update_app else R.string.notif_update_computer), title, open = null)
+            if (update == no.kalli.scribe.engine.InterfaceMatch.UPDATE_APP) R.string.notif_update_app else R.string.notif_update_computer), title, open = null)
         ended == null -> post(context, jobId, context.getString(R.string.notif_away), title, open = null)
         else -> ended(context, ended, title)
     }

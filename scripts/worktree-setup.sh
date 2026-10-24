@@ -70,7 +70,7 @@ for old in .brasscribe-env core/swift/BrasscribeCore core/android/brasscribe-cor
   # Only what git does not track: build outputs and the file this script wrote.
   if [ -z "$(git -C "$ROOT" ls-files -- "$old")" ]; then rm -rf "${ROOT:?}/$old" && stale=1; fi
 done
-for old in "$ROOT"/apps/android/core-bridge/src/main/jniLibs/*/libbrasscribe_ffi.so "$ROOT"/core/dist/*/libbrasscribe_ffi.* \
+for old in "$ROOT"/apps/android/services/core-bridge/src/main/jniLibs/*/libbrasscribe_ffi.so "$ROOT"/core/dist/*/libbrasscribe_ffi.* \
            "$ROOT"/core/dist/*/brasscribe_ffi.dll; do
   [ -e "$old" ] && rm -f "$old" && stale=1
 done

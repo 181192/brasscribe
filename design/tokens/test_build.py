@@ -118,7 +118,7 @@ def test_every_platform_gets_the_pink_palette():
     css = (build.DIST / "web" / "brasscribe.css").read_text()
     assert ':root[data-palette="pink"] {\n    color-scheme: light;\n    --scribe-bg: #FFF6F9;' in css
     assert "(not (prefers-contrast: more))" in css
-    kt = (build.DIST / "android" / "kotlin" / "no" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
+    kt = (build.DIST / "android" / "kotlin" / "no" / "kalli" / "brasscribe" / "design" / "BrasscribeTheme.kt").read_text()
     # Android: Pink of Brasscribe's own roles and of the roles every brand has, and high contrast wins over both.
     assert "val BrasscribePinkColors = BrasscribeColors(" in kt and "pink && dark -> BrasscribePinkDarkColors" in kt
     assert "val BrasscribePinkScribeColors = ScribeColors(\n    bg = Color(0xFFFFF6F9)," in kt
@@ -138,12 +138,12 @@ def test_every_platform_gets_the_pink_palette():
 # ---------------------------------------------------------------- every brand, every platform
 
 FRETSCRIBE = build.ROOT / "design" / "fretscribe"
-NEUTRAL_KOTLIN = Path("android") / "kotlin" / "no" / "scribe" / "design" / "ScribeTheme.kt"
+NEUTRAL_KOTLIN = Path("android") / "kotlin" / "no" / "kalli" / "scribe" / "design" / "ScribeTheme.kt"
 
 
 def brand_kotlin(b) -> Path:
     """The brand's own Kotlin: its package under android/kotlin."""
-    return b.DIST / "android" / "kotlin" / "no" / b.PRODUCT.lower() / "design"
+    return b.DIST / "android" / "kotlin" / "no" / "kalli" / b.PRODUCT.lower() / "design"
 # Words that belong to one brand's idea of its product; no neutral name may carry them.
 BRAND_WORDS = ("brass", "staff", "score", "string", "tab", "fret", "pink", "adlib", "model")
 
@@ -230,7 +230,7 @@ def test_more_contrast_keeps_light_or_dark_on_every_platform():
                 assert by_appearance == {k: b.rgb_components(b.hexval(mode, role)) for k, mode in want.items()}, (name, namespace, role)
 
         # Android: the palette, the brand's own roles and Material's scheme all follow `dark`.
-        kotlin = b.DIST / "android" / "kotlin" / "no"
+        kotlin = b.DIST / "android" / "kotlin" / "no" / "kalli"
         neutral = (kotlin / "scribe" / "design" / "ScribeTheme.kt").read_text()
         assert ("    highContrast && dark -> ScribeHighContrastColors\n"
                 "    highContrast -> ScribeHighContrastLightColors\n") in neutral, name
@@ -632,11 +632,11 @@ def test_brasscribe_fonts_are_staged_as_before():
         assert sorted(p.name for p in (build.DIST / folder).iterdir()) == ["InstrumentSerif-Regular.ttf", "OFL.txt"], folder
 
 
-# Android: the neutral theme in no.scribe.design, the same declarations for every brand, and the brand's own in its package.
+# Android: the neutral theme in no.kalli.scribe.design, the same declarations for every brand, and the brand's own in its package.
 
 def test_android_has_the_same_neutral_theme_for_every_brand():
     ours = (build.DIST / NEUTRAL_KOTLIN).read_text()
-    assert len(declarations(ours)) > 60 and ours.startswith("// Generated") and "package no.scribe.design\n" in ours
+    assert len(declarations(ours)) > 60 and ours.startswith("// Generated") and "package no.kalli.scribe.design\n" in ours
     for name, b in brands().items():
         theirs = (b.DIST / NEUTRAL_KOTLIN).read_text()
         assert declarations(theirs) == declarations(ours), name
@@ -658,7 +658,7 @@ def test_android_has_each_brands_own_in_its_own_package():
         folder = brand_kotlin(b)
         assert sorted(p.name for p in folder.iterdir()) == [f"{b.PRODUCT}Icon.kt", f"{b.PRODUCT}Theme.kt"], name
         kt = (folder / f"{b.PRODUCT}Theme.kt").read_text()
-        assert f"package no.{b.PRODUCT.lower()}.design\n" in kt, name
+        assert f"package no.kalli.{b.PRODUCT.lower()}.design\n" in kt, name
         own = re.findall(r"^    val (\w+): Color,", kt.split(f"data class {b.PRODUCT}Colors(")[1].split("\n)\n")[0], re.M)
         assert own == [b.camel(r) for r in b.own_roles()] and own, name
         assert not set(own) & {b.camel(r) for r in build.NEUTRAL["roles"]}, name
@@ -668,8 +668,8 @@ def test_android_has_each_brands_own_in_its_own_package():
     # Only these two packages are generated; nothing is left under another brand's name.
     for name, b in brands().items():
         packages = sorted(p.relative_to(b.DIST / "android" / "kotlin").as_posix() for p in (b.DIST / "android" / "kotlin").rglob("*.kt"))
-        assert packages == sorted([f"no/{b.PRODUCT.lower()}/design/{b.PRODUCT}Icon.kt", f"no/{b.PRODUCT.lower()}/design/{b.PRODUCT}Theme.kt",
-                                   "no/scribe/design/ScribeTheme.kt"]), name
+        assert packages == sorted([f"no/kalli/{b.PRODUCT.lower()}/design/{b.PRODUCT}Icon.kt", f"no/kalli/{b.PRODUCT.lower()}/design/{b.PRODUCT}Theme.kt",
+                                   "no/kalli/scribe/design/ScribeTheme.kt"]), name
 
 
 def test_fretscribe_on_android_has_its_own_names_and_values():

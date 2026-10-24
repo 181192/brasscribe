@@ -627,7 +627,7 @@ This builds on `feat/kvartett`, and it must land after it. The files below are a
 |---|---|---|
 | `music/.../instruments.py`, `arranger.py`, `difficulty.py`, `musicxml.py`; `core/.../instruments.rs`, `arranger.rs`, `difficulty.rs`, `pipeline.rs`, `musicxml.rs`, `notation/score.rs`; `eval/.../arrange_layers_song.py`, `arrange_song.py` | `feat/kvartett` (all already changed there) | **certain**. Start from kvartett's lineup roles, don't merge by hand. |
 | `core/ffi/src/lib.rs`, `c_api.rs`, `ScribeCore.cs`, the generated bindings | kvartett (`ArrangeOptions`, `sc_arrange_with`) | high. Regenerate bindings after rebasing. |
-| `engine/openapi.json`, `apps/android/engine-client/openapi.json`, the Windows test fixture `openapi.json`, `studio/src/api/schema.d.ts` | engine presence and pairing, kvartett | high. Regenerate, don't merge. |
+| `engine/openapi.json`, `apps/android/services/engine-client/openapi.json`, the Windows test fixture `openapi.json`, `studio/src/api/schema.d.ts` | engine presence and pairing, kvartett | high. Regenerate, don't merge. |
 | `engine/.../schemas.py`, `api.py`, `profiles.py` | presence and pairing, kvartett | medium |
 | `apps/apple/.../CompanionService.swift`, `AppModel.swift`, `SettingsView.swift` | `feat/apple-listen-stop-connection`, pairing | high (Settings holds "Your computer") |
 | `apps/android/.../PlayViewModel.kt`, `AppContainer.kt`, `ui/ProblemScreen.kt` (Settings) | `feat/android-listen-stop-connection` | high |

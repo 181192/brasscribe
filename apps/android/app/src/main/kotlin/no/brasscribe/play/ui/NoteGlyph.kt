@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import no.brasscribe.play.ui.theme.productColors
-import no.scribe.design.ScribeTheme
-import no.brasscribe.play.model.Uncertainty
+import no.kalli.scribe.design.ScribeTheme
+import no.kalli.scribe.model.Uncertainty
 
 /**
  * A note drawn with the uncertainty encoding of docs/accessibility/visual-design-tokens.md §2, as in

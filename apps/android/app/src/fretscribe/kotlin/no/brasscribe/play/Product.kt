@@ -10,12 +10,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.font.FontFamily
-import no.fretscribe.design.FretscribeTab
-import no.fretscribe.design.FretscribeTheme
-import no.scribe.design.ScribeTheme
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Target
+import no.kalli.fretscribe.design.FretscribeTab
+import no.kalli.fretscribe.design.FretscribeTheme
+import no.kalli.scribe.design.ScribeTheme
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Target
 import no.brasscribe.play.fret.CheckTheSongScreen
 import no.brasscribe.play.fret.ComputerProfiles
 import no.brasscribe.play.fret.PracticeRecordings
@@ -70,7 +70,7 @@ object Product {
 
     /** So the app carries no models, and no ONNX Runtime to run them. */
     @Suppress("UNUSED_PARAMETER")
-    fun onPhone(context: android.content.Context, core: no.brasscribe.play.model.CoreBridge): OnPhone = OnPhone.None
+    fun onPhone(context: android.content.Context, core: no.kalli.scribe.model.CoreBridge): OnPhone = OnPhone.None
 
     /**
      * Fretscribe's theme. It has no Pink palette. The screens it has from Brasscribe draw a score with colours a tab
@@ -131,7 +131,7 @@ object Product {
 
     /**
      * Whether a job on the computer is this app's: the engine says which target each job belongs to
-     * ([no.brasscribe.play.engine.Job.target]). A job of another target, or of none, is not.
+     * ([no.kalli.scribe.engine.Job.target]). A job of another target, or of none, is not.
      */
     fun makes(target: String?): Boolean = target == this.target.id
 
@@ -152,7 +152,7 @@ object Product {
      * the new job is made on the same upload, so it also works for a song opened from Your songs and when
      * the phone's copy of the recording is gone. Null for a first job: the recording is sent.
      */
-    suspend fun audioOnComputer(vm: PlayViewModel, engine: no.brasscribe.play.engine.EngineApi): String? {
+    suspend fun audioOnComputer(vm: PlayViewModel, engine: no.kalli.scribe.engine.EngineApi): String? {
         if (vm.profile.value?.writesTab != true || SongAnswers.of(vm.source.value).again == null) return null
         val written = vm.result.value ?: return null
         return written.audioId ?: written.jobId?.let { engine.job(it).audioId }
@@ -162,13 +162,13 @@ object Product {
      * The song's recording as practice keeps it on the phone, for a song whose recording the computer no longer
      * has: it is sent again. Named by the song, with the kind of file it is (the copy has no name of its own).
      */
-    fun keptRecording(vm: PlayViewModel): no.brasscribe.play.engine.UploadSource? {
+    fun keptRecording(vm: PlayViewModel): no.kalli.scribe.engine.UploadSource? {
         // Only for the song on screen written down again: a first send is of the recording opened, never of another song's.
         if (vm.profile.value?.writesTab != true || SongAnswers.of(vm.source.value).again == null) return null
         val job = vm.result.value?.jobId ?: return null
         val file = PracticeRecordings.of(vm.getApplication()).find(job) ?: return null
         val name = (vm.source.value?.name ?: vm.result.value?.composition?.title).orEmpty().substringBeforeLast('.').ifBlank { "recording" }
-        return no.brasscribe.play.engine.UploadSource.of(file, "$name.${PracticeRecordings.extensionOf(file)}")
+        return no.kalli.scribe.engine.UploadSource.of(file, "$name.${PracticeRecordings.extensionOf(file)}")
     }
 
     /** The computer, as the transcribing screen names it: "Bandroom on Kari's Mac", never its address. */

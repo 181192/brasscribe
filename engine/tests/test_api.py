@@ -136,9 +136,9 @@ def test_committed_openapi_matches_app():
 
 def test_the_android_client_vendors_the_committed_openapi():
     """The Android engine client checks itself against its own copy (Studio's types have their own test)."""
-    vendored = ENGINE.parent / "apps" / "android" / "engine-client" / "openapi.json"
+    vendored = ENGINE.parent / "apps" / "android" / "services" / "engine-client" / "openapi.json"
     assert vendored.read_bytes() == (ENGINE / "openapi.json").read_bytes(), \
-        "apps/android/engine-client/openapi.json is stale: run `./gradlew :engine-client:syncOpenApi` in apps/android"
+        "apps/android/services/engine-client/openapi.json is stale: run `./gradlew :services:engine-client:syncOpenApi` in apps/android"
 
 
 def test_the_windows_contract_snapshot_is_the_committed_openapi():

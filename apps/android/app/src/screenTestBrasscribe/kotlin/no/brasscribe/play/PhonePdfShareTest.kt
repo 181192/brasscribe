@@ -60,7 +60,7 @@ class PhonePdfShareTest : ScreenTest() {
         every.assertIsSelected()
         val exports = rule.activity.cacheDir.resolve("exports").apply { deleteRecursively() }
         rule.onNodeWithTag("share").performClick()
-        val parts = no.brasscribe.play.model.MusicXmlParts.names(xml.decodeToString()).size
+        val parts = no.kalli.scribe.model.MusicXmlParts.names(xml.decodeToString()).size
         waitUntil(30_000) { exports.listFiles().orEmpty().count { it.name.endsWith(".pdf") && !it.name.endsWith(".parts.pdf") } == parts }
         waitUntil(10_000) { exports.listFiles().orEmpty().any { it.name.endsWith(".parts.pdf") } }
         ScreenDevice.closeSystemSheet(rule)

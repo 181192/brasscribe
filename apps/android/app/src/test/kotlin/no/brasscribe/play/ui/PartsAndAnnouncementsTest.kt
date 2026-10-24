@@ -1,13 +1,13 @@
 package no.brasscribe.play.ui
 
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.KeySig
-import no.brasscribe.play.model.KotlinCoreBridge
-import no.brasscribe.play.model.Lang
-import no.brasscribe.play.model.Meter
-import no.brasscribe.play.model.Note
-import no.brasscribe.play.model.Voice
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.KeySig
+import no.kalli.scribe.model.KotlinCoreBridge
+import no.kalli.scribe.model.Lang
+import no.kalli.scribe.model.Meter
+import no.kalli.scribe.model.Note
+import no.kalli.scribe.model.Voice
+import no.kalli.scribe.model.VoiceRole
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -25,7 +25,7 @@ class PartsAndAnnouncementsTest {
             listOf(Meter(0, 4)), listOf(KeySig(0, -2)),
         )
         // The Norwegian part name is the core's (part_name_nb); here a stand-in for it.
-        val core = object : no.brasscribe.play.model.CoreBridge by KotlinCoreBridge {
+        val core = object : no.kalli.scribe.model.CoreBridge by KotlinCoreBridge {
             override fun partNameNb(name: String) = if (name == "Solo Cornet") "Solokornett" else name
         }
         val view = partViewFor(c, "solo", emptySet(), core)
@@ -44,7 +44,7 @@ class PartsAndAnnouncementsTest {
     fun homeCountsTheSamePlacesAsReview() {
         val f = java.io.File("../../../data/golden/mikkel-arranged-band/composition.json")
         org.junit.Assume.assumeTrue(f.exists())
-        val c = no.brasscribe.play.model.CompositionJson.decode(f.readText())
+        val c = no.kalli.scribe.model.CompositionJson.decode(f.readText())
         val groups = c.review!!.size
         val solo = reviewGroups(c, "solo", partViewFor(c, "solo", emptySet(), KotlinCoreBridge)).size
         assertEquals(groups, solo)

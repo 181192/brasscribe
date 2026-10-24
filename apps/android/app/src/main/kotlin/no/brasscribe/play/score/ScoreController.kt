@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import no.brasscribe.play.audio.RealisticSynth
+import no.kalli.scribe.audio.RealisticSynth
 
 /** The part of the score the player sees and hears, in plain values for Compose. */
 data class ScoreUiState(
@@ -82,7 +82,7 @@ data class ScoreUiState(
 class ScoreController(
     context: Context,
     private val reducedMotion: Boolean,
-    private val core: no.brasscribe.play.model.CoreBridge = no.brasscribe.play.model.KotlinCoreBridge,
+    private val core: no.kalli.scribe.model.CoreBridge = no.kalli.scribe.model.KotlinCoreBridge,
     /** Band SoundFont part map (sounds/mapping.json); null keeps alphaTab's General MIDI programs. */
     private val soundMap: BandSoundMap? = null,
     /**
@@ -980,4 +980,4 @@ internal fun creditClip(engravedWidth: Double, musicBottom: Double, density: Flo
 }
 
 /** alphaTab's metronome and count-in volume: the click lands at the shared level through the output stage. */
-private val METRONOME_VOLUME = no.brasscribe.play.audio.PlaybackLevels.factor(no.brasscribe.play.audio.PlaybackLevels.METRONOME_GAIN_DB).toDouble()
+private val METRONOME_VOLUME = no.kalli.scribe.audio.PlaybackLevels.factor(no.kalli.scribe.audio.PlaybackLevels.METRONOME_GAIN_DB).toDouble()

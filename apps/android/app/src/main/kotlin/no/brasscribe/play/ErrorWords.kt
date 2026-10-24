@@ -1,9 +1,9 @@
 package no.brasscribe.play
 
 import androidx.annotation.StringRes
-import no.brasscribe.play.engine.EngineException
-import no.brasscribe.play.engine.InterfaceMatch
-import no.brasscribe.play.engine.InterfaceMismatchException
+import no.kalli.scribe.engine.EngineException
+import no.kalli.scribe.engine.InterfaceMatch
+import no.kalli.scribe.engine.InterfaceMismatchException
 
 /** A job on the computer ended without a score; [message] is the engine's own (English) words. */
 class EngineJobFailedException(message: String) : Exception(message)

@@ -21,7 +21,7 @@ import no.brasscribe.play.Appearance
 import no.brasscribe.play.MainActivity
 import no.brasscribe.play.PlayApplication
 import no.brasscribe.play.PlayViewModel
-import no.brasscribe.play.engine.FixtureSource
+import no.kalli.scribe.engine.FixtureSource
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -229,7 +229,7 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
      */
     protected fun aComputerWithAnotherVersion(newer: Boolean = false) {
         otherComputer?.close()
-        val engine = StubEngine(if (newer) no.brasscribe.play.engine.Wire.INTERFACE_VERSION + 1 else null).also { otherComputer = it }
+        val engine = StubEngine(if (newer) no.kalli.scribe.engine.Wire.INTERFACE_VERSION + 1 else null).also { otherComputer = it }
         pairedWith(engine.url)
         waitUntil(10_000) { vm.connection.state.value is no.brasscribe.play.connection.ConnectionState.NeedsUpdate }
         rule.waitForIdle()

@@ -8,8 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.audio.MicRecorder
-import no.brasscribe.play.audio.WavFile
+import no.kalli.scribe.audio.MicRecorder
+import no.kalli.scribe.audio.WavFile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -19,7 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /** The microphone recorder writes the take to its WAV as it records; stopping hands over the file and the samples. */
 @RunWith(AndroidJUnit4::class)

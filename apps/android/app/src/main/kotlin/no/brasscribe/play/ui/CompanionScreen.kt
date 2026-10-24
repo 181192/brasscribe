@@ -52,14 +52,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.LocalNetwork
 import no.brasscribe.play.PinkUnlock
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.connection.ConnectionState
-import no.brasscribe.play.engine.PairLink
+import no.kalli.scribe.engine.PairLink
 
 /**
  * Brasscribe on your computer: the connection status, then the ways to pair (scan the QR code, type
@@ -334,4 +334,4 @@ private fun VersionRow(vm: PlayViewModel) {
  * while its Bandroom is older than this app: the same address has the latest one.
  */
 internal fun showsGetBandroom(paired: Boolean, connection: ConnectionState): Boolean = !paired || connection is ConnectionState.Offline ||
-    (connection as? ConnectionState.NeedsUpdate)?.update == no.brasscribe.play.engine.InterfaceMatch.UPDATE_COMPUTER
+    (connection as? ConnectionState.NeedsUpdate)?.update == no.kalli.scribe.engine.InterfaceMatch.UPDATE_COMPUTER

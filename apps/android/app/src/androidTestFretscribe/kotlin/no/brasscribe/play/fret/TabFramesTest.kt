@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * What the tab view costs a phone, as its system counts the frames: a still screen draws none, and flings

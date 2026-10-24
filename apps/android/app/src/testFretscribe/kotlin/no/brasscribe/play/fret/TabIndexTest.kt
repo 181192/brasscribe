@@ -1,8 +1,8 @@
 package no.brasscribe.play.fret
 
 import androidx.compose.ui.graphics.toArgb
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.model.BrasscribeJson
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.model.BrasscribeJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -17,7 +17,7 @@ import java.io.File
  * and on small documents written here as the core writes them (core/targets/fretted/README.md).
  */
 class TabIndexTest {
-    private val root: File? = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
+    private val root: File? = System.getProperty("scribe.sounds")?.let { File(it).parentFile }
 
     private fun fixture(name: String): Pair<String, Tab> {
         val dir = root?.resolve("apps/fixtures/$name")
@@ -297,9 +297,9 @@ class TabIndexTest {
         assertEquals(1.7, TabSize.scale(base, 100, 1f, 890f, 300f, true, 99.0), 1e-9)
         assertEquals(3.4, TabSize.scale(base, 200, 2f, 890f, 300f, true, 99.0), 1e-9)
         // A line's height is reckoned from the strings and the layout: a four-string tab is about 99 units, a guitar's taller, a pair taller still.
-        assertEquals(99.0, TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB), 1e-9)
-        assertTrue(TabSize.lineUnits(6, no.brasscribe.play.engine.TabLayout.TAB) > TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB))
-        assertTrue(TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB_AND_NOTATION) > TabSize.lineUnits(4, no.brasscribe.play.engine.TabLayout.TAB))
+        assertEquals(99.0, TabSize.lineUnits(4, no.kalli.scribe.engine.TabLayout.TAB), 1e-9)
+        assertTrue(TabSize.lineUnits(6, no.kalli.scribe.engine.TabLayout.TAB) > TabSize.lineUnits(4, no.kalli.scribe.engine.TabLayout.TAB))
+        assertTrue(TabSize.lineUnits(4, no.kalli.scribe.engine.TabLayout.TAB_AND_NOTATION) > TabSize.lineUnits(4, no.kalli.scribe.engine.TabLayout.TAB))
     }
 
     @Test
@@ -355,9 +355,9 @@ class TabIndexTest {
         assertEquals(number("tab", "mark-size-line-spaces"), TabTokens.MARK_LINE_SPACES.toDouble(), 1e-6)
         assertEquals(number("tab", "uncertain-threshold-default"), TabTokens.UNCERTAIN_THRESHOLD, 0.0)
         // The wash behind a doubtful numeral is the generated theme's own role now.
-        assertEquals(hex("light"), "#%06X".format(no.fretscribe.design.FretscribeLightColors.uncertainTint.toArgb() and 0xFFFFFF))
-        assertEquals(hex("dark"), "#%06X".format(no.fretscribe.design.FretscribeDarkColors.uncertainTint.toArgb() and 0xFFFFFF))
+        assertEquals(hex("light"), "#%06X".format(no.kalli.fretscribe.design.FretscribeLightColors.uncertainTint.toArgb() and 0xFFFFFF))
+        assertEquals(hex("dark"), "#%06X".format(no.kalli.fretscribe.design.FretscribeDarkColors.uncertainTint.toArgb() and 0xFFFFFF))
         // The engine marks "?" at the same threshold the app reads the data with.
-        assertEquals(no.brasscribe.play.engine.TabNote.DOUBT, TabTokens.UNCERTAIN_THRESHOLD, 0.0)
+        assertEquals(no.kalli.scribe.engine.TabNote.DOUBT, TabTokens.UNCERTAIN_THRESHOLD, 0.0)
     }
 }

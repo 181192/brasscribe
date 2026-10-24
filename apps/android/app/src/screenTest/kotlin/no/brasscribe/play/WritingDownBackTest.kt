@@ -4,7 +4,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenDevice
 import no.brasscribe.play.screen.ScreenTest
 import org.junit.After

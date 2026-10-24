@@ -19,7 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * The music stand while the music plays, in real time. A Compose test rule drives Compose on a test

@@ -21,7 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import kotlin.concurrent.thread
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 
 /**
  * Peak memory while scores open, sampled every 10 ms: Java heap in use (what largeHeap raises) and the

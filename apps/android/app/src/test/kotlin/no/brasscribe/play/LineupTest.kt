@@ -2,14 +2,14 @@ package no.brasscribe.play
 
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.CompositionJson
-import no.brasscribe.play.model.KeySig
-import no.brasscribe.play.model.Lang
-import no.brasscribe.play.model.Meter
-import no.brasscribe.play.model.Note
-import no.brasscribe.play.model.Voice
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.CompositionJson
+import no.kalli.scribe.model.KeySig
+import no.kalli.scribe.model.Lang
+import no.kalli.scribe.model.Meter
+import no.kalli.scribe.model.Note
+import no.kalli.scribe.model.Voice
+import no.kalli.scribe.model.VoiceRole
 import no.brasscribe.play.ui.PartNames
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

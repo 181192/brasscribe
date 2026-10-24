@@ -6,16 +6,16 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import no.brasscribe.play.Product
-import no.brasscribe.play.engine.FrettedInstrument
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.Octave
-import no.brasscribe.play.engine.OctaveSource
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Recording
-import no.brasscribe.play.engine.TabLayout
-import no.brasscribe.play.engine.TabOptions
-import no.brasscribe.play.model.BrasscribeJson
+import no.kalli.scribe.engine.FrettedInstrument
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.Octave
+import no.kalli.scribe.engine.OctaveSource
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Recording
+import no.kalli.scribe.engine.TabLayout
+import no.kalli.scribe.engine.TabOptions
+import no.kalli.scribe.model.BrasscribeJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -63,7 +63,7 @@ class TabJobOptionsTest {
     }.distinctBy { it.body.toString() }
 
     /** The recorded guitar tab: what Check the song reads a song's options back from. */
-    private fun recorded(): Tab? = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }?.resolve("apps/fixtures/guitar-line/tab.json")
+    private fun recorded(): Tab? = System.getProperty("scribe.sounds")?.let { File(it).parentFile }?.resolve("apps/fixtures/guitar-line/tab.json")
         ?.takeIf { it.isFile }?.let { BrasscribeJson.decodeFromString(Tab.serializer(), it.readText()) }
 
     /**
@@ -206,7 +206,7 @@ class TabJobOptionsTest {
     @Test
     fun theComputersOwnOptionCheckTakesEveryJobAndReadsItAsMeant() {
         // The repository root is two up from the sounds folder the build passes in.
-        val root = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
+        val root = System.getProperty("scribe.sounds")?.let { File(it).parentFile }
         val script = root?.resolve("apps/android/scripts/check-tab-options.py")
         // Both are in git: a checkout without them means a path here has gone stale, which must not pass as a skip.
         assertTrue("apps/android/scripts/check-tab-options.py is not under $root", script?.isFile == true)

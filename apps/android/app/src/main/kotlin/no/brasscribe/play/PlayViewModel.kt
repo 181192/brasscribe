@@ -18,27 +18,27 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import no.brasscribe.play.audio.AudioDecoder
-import no.brasscribe.play.audio.MediaImport
-import no.brasscribe.play.audio.CapturedTake
-import no.brasscribe.play.audio.PcmAudio
-import no.brasscribe.play.audio.UnsupportedMediaException
-import no.brasscribe.play.engine.EngineApi
-import no.brasscribe.play.engine.FixtureEngineApi
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.JobStatus
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.ProgressTracker
-import no.brasscribe.play.engine.UploadSource
-import no.brasscribe.play.model.Composition
-import no.brasscribe.play.model.Instrument
-import no.brasscribe.play.model.MusicXmlTitleEditor
-import no.brasscribe.play.model.PartSpec
-import no.brasscribe.play.model.TickMap
-import no.brasscribe.play.model.ArrangeOptions
-import no.brasscribe.play.model.SoloTake
-import no.brasscribe.play.model.TempoEstimator
-import no.brasscribe.play.model.VoiceRole
+import no.kalli.scribe.audio.AudioDecoder
+import no.kalli.scribe.audio.MediaImport
+import no.kalli.scribe.audio.CapturedTake
+import no.kalli.scribe.audio.PcmAudio
+import no.kalli.scribe.audio.UnsupportedMediaException
+import no.kalli.scribe.engine.EngineApi
+import no.kalli.scribe.engine.FixtureEngineApi
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.JobStatus
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.ProgressTracker
+import no.kalli.scribe.engine.UploadSource
+import no.kalli.scribe.model.Composition
+import no.kalli.scribe.model.Instrument
+import no.kalli.scribe.model.MusicXmlTitleEditor
+import no.kalli.scribe.model.PartSpec
+import no.kalli.scribe.model.TickMap
+import no.kalli.scribe.model.ArrangeOptions
+import no.kalli.scribe.model.SoloTake
+import no.kalli.scribe.model.TempoEstimator
+import no.kalli.scribe.model.VoiceRole
 import no.brasscribe.play.playback.BarListening
 import no.brasscribe.play.playback.ClipPlayer
 import no.brasscribe.play.connection.ConnectionMonitor
@@ -49,11 +49,11 @@ import no.brasscribe.play.connection.EngineConnection
 import no.brasscribe.play.connection.mayBeSentTo
 import no.brasscribe.play.connection.ServerNames
 import no.brasscribe.play.capture.CaptureController
-import no.brasscribe.play.engine.EngineException
-import no.brasscribe.play.engine.KtorEngineApi
-import no.brasscribe.play.engine.PairLink
-import no.brasscribe.play.engine.InterfaceMatch
-import no.brasscribe.play.engine.InterfaceMismatchException
+import no.kalli.scribe.engine.EngineException
+import no.kalli.scribe.engine.KtorEngineApi
+import no.kalli.scribe.engine.PairLink
+import no.kalli.scribe.engine.InterfaceMatch
+import no.kalli.scribe.engine.InterfaceMismatchException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -145,7 +145,7 @@ data class TranscriptionResult(
     /** Semitones the arrangement itself is transposed by (the rest of a key shift is display-only in alphaTab). */
     val appliedTranspose: Int = 0,
     /** Confidence and what each transcriber heard at the uncertain notes. */
-    val evidence: no.brasscribe.play.engine.Evidence? = null,
+    val evidence: no.kalli.scribe.engine.Evidence? = null,
     /** A note was changed on the phone: the engine's PDF, braille and audio still show the old one. */
     val changedOnPhone: Boolean = false,
     /** A quick band draft made on the phone: the computer can make the full score from its recording. */
@@ -153,7 +153,7 @@ data class TranscriptionResult(
 )
 
 /** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
-fun TranscriptionResult.compositionJsonFor(core: no.brasscribe.play.model.CoreBridge): String? =
+fun TranscriptionResult.compositionJsonFor(core: no.kalli.scribe.model.CoreBridge): String? =
     compositionJson ?: composition?.let { runCatching { core.encodeComposition(it) }.getOrNull() }
 
 
@@ -186,7 +186,7 @@ data class OutputOptions(
     )
 
     /** With the seat and clef of [choice]: none for "Not now" or "I conduct or listen". */
-    fun withSeat(choice: SeatChoice, seats: List<no.brasscribe.play.model.Seat>): OutputOptions {
+    fun withSeat(choice: SeatChoice, seats: List<no.kalli.scribe.model.Seat>): OutputOptions {
         val seat = choice.seatId?.let { id -> seats.firstOrNull { it.id == id } }
         return copy(seat = seat?.id, reads = seat?.let { s -> choice.readsOrNull?.takeIf { it != s.reads.firstOrNull() } }, lead = null)
     }
@@ -237,7 +237,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private val storage = Dispatchers.IO.limitedParallelism(1)
     /** This phone's scores (their details only), read in the background. */
     val savedScores = MutableStateFlow<List<SavedScore>>(emptyList())
-    private val computerJobs = MutableStateFlow<List<no.brasscribe.play.engine.Job>>(emptyList())
+    private val computerJobs = MutableStateFlow<List<no.kalli.scribe.engine.Job>>(emptyList())
     /** "Your scores": this phone's scores and the computer's latest finished ones, newest first. */
     val scores: StateFlow<List<ScoreEntry>> = kotlinx.coroutines.flow.combine(savedScores, computerJobs) { local, jobs ->
         ScoreEntry.merge(local, jobs)
@@ -597,7 +597,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         YourParts.resolve(parts, r?.lineup ?: Lineup.ofParts(parts), container.seat, myPartOverride.value, container.seats, container.core::seatPart)
 
     /** Where each part of [r] came from, by part name (the core's part_sources); empty for an opened score. */
-    fun partSources(r: TranscriptionResult): Map<String, no.brasscribe.play.model.PartSource> =
+    fun partSources(r: TranscriptionResult): Map<String, no.kalli.scribe.model.PartSource> =
         r.compositionJsonFor(container.core)?.let { runCatching { container.core.partSources(it) }.getOrNull() }.orEmpty()
 
     /** Shows [p] full screen, replacing the step that failed (the recording is kept). */
@@ -1203,7 +1203,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 // Read where it is: it is the app's own file already, so nothing is copied.
                 val decoded = withContext(Dispatchers.IO) {
                     check(k.file.isFile) { "the recording is gone" }
-                    no.brasscribe.play.audio.AudioDecoder.decode(ctx, Uri.fromFile(k.file), {})
+                    no.kalli.scribe.audio.AudioDecoder.decode(ctx, Uri.fromFile(k.file), {})
                 }
                 setSource(Source(k.title, k.kind, decoded.durationS, decoded.audio, k.file))
                 say(R.string.imported, k.title, durationText(decoded.durationS))
@@ -1271,7 +1271,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val list = withContext(storage) {
                 runCatching {
                     scoreLibrary.save(id, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
-                        jobId = r.jobId, evidenceJson = r.evidence?.let { no.brasscribe.play.model.BrasscribeJson.encodeToString(no.brasscribe.play.engine.Evidence.serializer(), it) },
+                        jobId = r.jobId, evidenceJson = r.evidence?.let { no.kalli.scribe.model.BrasscribeJson.encodeToString(no.kalli.scribe.engine.Evidence.serializer(), it) },
                         checked = checkedNow, part = part, noticeSeen = noticeSeen, changedOnPhone = r.changedOnPhone, reviewChanges = changes,
                         draft = r.draft, recording = recording)
                 }.onFailure { android.util.Log.w(TAG, "score not saved", it) }
@@ -1452,7 +1452,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             jobId = saved.jobId,
             compositionJson = content.compositionJson,
             evidence = content.evidenceJson?.let {
-                runCatching { no.brasscribe.play.model.BrasscribeJson.decodeFromString(no.brasscribe.play.engine.Evidence.serializer(), it) }.getOrNull()
+                runCatching { no.kalli.scribe.model.BrasscribeJson.decodeFromString(no.kalli.scribe.engine.Evidence.serializer(), it) }.getOrNull()
             },
             changedOnPhone = saved.changedOnPhone,
             draft = saved.draft,
@@ -1788,14 +1788,14 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * Uses a credential this phone already holds for the engine, or pairs with [code]. False when there is
      * neither a valid credential nor a code.
      */
-    private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.brasscribe.play.engine.Health, code: String): Boolean {
+    private suspend fun connectTo(client: KtorEngineApi, url: String, health: no.kalli.scribe.engine.Health, code: String): Boolean {
         // The engine's own answer first: with another interface version it is not connected to, trusted address or
         // not, and it is "update", not "the code is needed".
         InterfaceMatch.of(health.interfaceVersion).takeIf { it != InterfaceMatch.MATCH }?.let { throw InterfaceMismatchException(it) }
         val store = container.credentials
         // Only this phone itself or the emulator's host is let in without pairing; any other address that
         // says so pairs all the same.
-        if (!health.authRequired && no.brasscribe.play.engine.LocalHosts.hostOf(url)?.let(no.brasscribe.play.engine.LocalHosts::isTrusted) == true) {
+        if (!health.authRequired && no.kalli.scribe.engine.LocalHosts.hostOf(url)?.let(no.kalli.scribe.engine.LocalHosts::isTrusted) == true) {
             connected(url, health.serverId, health.serverName)
             return true
         }

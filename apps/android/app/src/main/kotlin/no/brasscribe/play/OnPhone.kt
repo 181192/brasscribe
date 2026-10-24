@@ -1,9 +1,9 @@
 package no.brasscribe.play
 
-import no.brasscribe.play.model.ArrangeOptions
-import no.brasscribe.play.model.Arranged
-import no.brasscribe.play.model.BandTake
-import no.brasscribe.play.model.SoloTake
+import no.kalli.scribe.model.ArrangeOptions
+import no.kalli.scribe.model.Arranged
+import no.kalli.scribe.model.BandTake
+import no.kalli.scribe.model.SoloTake
 
 /**
  * What the phone writes down by itself, without the computer: a solo, and a draft of a band. Each app has its

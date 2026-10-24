@@ -6,10 +6,10 @@ import android.app.NotificationManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
-import no.brasscribe.play.engine.JobCreate
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.engine.JobCreate
+import no.kalli.scribe.engine.Profile
 import no.brasscribe.play.screen.ScreenTest
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

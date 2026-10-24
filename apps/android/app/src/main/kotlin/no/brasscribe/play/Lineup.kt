@@ -4,7 +4,7 @@ import androidx.annotation.StringRes
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import no.brasscribe.play.model.Composition
+import no.kalli.scribe.model.Composition
 
 /**
  * Who the score is arranged for. [engine] is the engine's `lineup` value, [core] the Rust core's; they

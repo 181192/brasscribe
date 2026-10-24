@@ -9,9 +9,9 @@ import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import no.brasscribe.play.audio.PcmAudio
-import no.brasscribe.play.engine.FixtureSource
-import no.brasscribe.play.engine.Profile
+import no.kalli.scribe.audio.PcmAudio
+import no.kalli.scribe.engine.FixtureSource
+import no.kalli.scribe.engine.Profile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue

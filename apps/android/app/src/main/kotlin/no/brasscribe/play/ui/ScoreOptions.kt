@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.ScoreEntry
@@ -181,9 +181,9 @@ fun scoreSubtitle(entry: ScoreEntry): String {
 /** Parts, bars, review items left and the recorded lineup of a saved score. */
 private data class ScoreFacts(val parts: Int, val bars: Int, val left: Int?, val lineup: no.brasscribe.play.Lineup?)
 
-private fun factsOf(saved: no.brasscribe.play.SavedScore, content: no.brasscribe.play.SavedScoreContent, core: no.brasscribe.play.model.CoreBridge): ScoreFacts {
+private fun factsOf(saved: no.brasscribe.play.SavedScore, content: no.brasscribe.play.SavedScoreContent, core: no.kalli.scribe.model.CoreBridge): ScoreFacts {
     run {
-        val parts = no.brasscribe.play.model.MusicXmlParts.names(content.musicXml)
+        val parts = no.kalli.scribe.model.MusicXmlParts.names(content.musicXml)
         val bars = Regex("""<part\s+id="[^"]+"\s*>(.*?)</part>""", RegexOption.DOT_MATCHES_ALL).find(content.musicXml)
             ?.groupValues?.get(1)?.let { Regex("<measure\\b").findAll(it).count() } ?: 0
         val checked = saved.checked.mapNotNull { k -> k.substringBefore(':').let { v -> k.substringAfter(':').toIntOrNull()?.let { v to it } } }

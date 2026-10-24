@@ -2,7 +2,7 @@ package no.brasscribe.play.fret
 
 import android.content.res.Resources
 import no.brasscribe.play.R
-import no.brasscribe.play.engine.Tab
+import no.kalli.scribe.engine.Tab
 
 /** What the tab view's numbers come from that the generated theme does not carry yet (design/fretscribe/tokens/tokens.json, `tab`). */
 object TabTokens {
@@ -38,11 +38,11 @@ object TabSize {
      * [strings] strings in [layout]: the staff's line spaces, the stems or the notation staff, and the space between
      * lines. It is reckoned, not measured, so the size is known before the page is engraved.
      */
-    fun lineUnits(strings: Int, layout: no.brasscribe.play.engine.TabLayout?): Double {
+    fun lineUnits(strings: Int, layout: no.kalli.scribe.engine.TabLayout?): Double {
         val tab = 60.0 + 13.0 * (strings - 1)
         return when (layout) {
-            no.brasscribe.play.engine.TabLayout.NOTATION -> 105.0
-            no.brasscribe.play.engine.TabLayout.TAB_AND_NOTATION -> tab + 110.0
+            no.kalli.scribe.engine.TabLayout.NOTATION -> 105.0
+            no.kalli.scribe.engine.TabLayout.TAB_AND_NOTATION -> tab + 110.0
             else -> tab
         }
     }

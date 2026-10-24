@@ -39,14 +39,14 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import no.scribe.design.ScribeButtonShape
-import no.scribe.design.ScribeSpace
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeButtonShape
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.R
 import no.brasscribe.play.SeatChoice
 import no.brasscribe.play.SeatPickerMode
-import no.brasscribe.play.model.Seat
+import no.kalli.scribe.model.Seat
 
 /** One instrument tile: the core's instrument id, its name, an optional second line, and both as spoken. */
 private data class InstrumentTile(val id: String, @StringRes val name: Int, @StringRes val sub: Int? = null,
@@ -250,14 +250,14 @@ private fun Choices(label: String, options: List<Pair<String, String>>, selected
  * button (48 dp) that opens one sentence of explanation.
  */
 @Composable
-fun SourceLabel(source: no.brasscribe.play.model.PartSource, modifier: Modifier = Modifier, compact: Boolean = false, onExplain: (() -> Unit)? = null) {
+fun SourceLabel(source: no.kalli.scribe.model.PartSource, modifier: Modifier = Modifier, compact: Boolean = false, onExplain: (() -> Unit)? = null) {
     val c = ScribeTheme.colors
     var open by rememberSaveable { mutableStateOf(false) }
     val (@StringRes text, @DrawableRes icon) = when (source) {
-        no.brasscribe.play.model.PartSource.YOUR_RECORDING -> R.string.source_yours to R.drawable.ic_bc_record_mic
-        no.brasscribe.play.model.PartSource.RECORDING -> R.string.source_recording to R.drawable.ic_bc_record_mic
-        no.brasscribe.play.model.PartSource.ARRANGED -> R.string.source_arranged to R.drawable.ic_bc_parts
-        no.brasscribe.play.model.PartSource.EMPTY -> R.string.source_empty to R.drawable.ic_bc_parts
+        no.kalli.scribe.model.PartSource.YOUR_RECORDING -> R.string.source_yours to R.drawable.ic_bc_record_mic
+        no.kalli.scribe.model.PartSource.RECORDING -> R.string.source_recording to R.drawable.ic_bc_record_mic
+        no.kalli.scribe.model.PartSource.ARRANGED -> R.string.source_arranged to R.drawable.ic_bc_parts
+        no.kalli.scribe.model.PartSource.EMPTY -> R.string.source_empty to R.drawable.ic_bc_parts
     }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
         Row(
@@ -317,8 +317,8 @@ fun mappedShort(m: no.brasscribe.play.MappedSeat): String {
 
 /** Where a part came from, in one sentence: what the source pill opens. */
 @StringRes
-fun explainOf(source: no.brasscribe.play.model.PartSource): Int = when (source) {
-    no.brasscribe.play.model.PartSource.ARRANGED -> R.string.explain_arranged
-    no.brasscribe.play.model.PartSource.EMPTY -> R.string.explain_empty
+fun explainOf(source: no.kalli.scribe.model.PartSource): Int = when (source) {
+    no.kalli.scribe.model.PartSource.ARRANGED -> R.string.explain_arranged
+    no.kalli.scribe.model.PartSource.EMPTY -> R.string.explain_empty
     else -> R.string.explain_recording
 }

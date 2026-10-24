@@ -1,8 +1,8 @@
 package no.brasscribe.play.fret
 
-import no.brasscribe.play.engine.Tab
-import no.brasscribe.play.model.BrasscribeJson
-import no.brasscribe.play.model.CompositionJson
+import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.model.BrasscribeJson
+import no.kalli.scribe.model.CompositionJson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -16,7 +16,7 @@ import java.io.File
  * hand-written probes (a pickup, six-eight).
  */
 class TabClockTest {
-    private val root: File? = System.getProperty("brasscribe.sounds")?.let { File(it).parentFile }
+    private val root: File? = System.getProperty("scribe.sounds")?.let { File(it).parentFile }
 
     private fun dir(name: String): File {
         val dir = root?.resolve("apps/fixtures/$name")

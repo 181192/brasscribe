@@ -9,7 +9,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import no.brasscribe.play.export.AndroidPdfPages
 import no.brasscribe.play.export.PhonePdf
 import no.brasscribe.play.screen.ScreenDevice
-import no.brasscribe.play.test.DeviceOnly
+import no.kalli.scribe.test.DeviceOnly
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

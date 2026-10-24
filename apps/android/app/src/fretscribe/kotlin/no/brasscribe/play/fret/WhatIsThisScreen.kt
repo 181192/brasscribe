@@ -14,7 +14,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import no.brasscribe.play.engine.FrettedInstrument
+import no.kalli.scribe.engine.FrettedInstrument
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -22,13 +22,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import no.scribe.design.ScribeTheme
+import no.kalli.scribe.design.ScribeTheme
 import no.brasscribe.play.OnDeviceRouting
 import no.brasscribe.play.PlayViewModel
 import no.brasscribe.play.Product
 import no.brasscribe.play.R
-import no.brasscribe.play.engine.Profile
-import no.brasscribe.play.engine.Recording
+import no.kalli.scribe.engine.Profile
+import no.kalli.scribe.engine.Recording
 import no.brasscribe.play.ui.ChoiceCard
 import no.brasscribe.play.ui.ChoiceGroup
 import no.brasscribe.play.ui.ConnectionStatusRow

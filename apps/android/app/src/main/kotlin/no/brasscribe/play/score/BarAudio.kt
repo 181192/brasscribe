@@ -13,8 +13,8 @@ import alphaTab.synth.AlphaSynthAudioExporter
 import alphaTab.synth.AudioExportOptions
 import alphaTab.synth.PlaybackRange
 import android.content.Context
-import no.brasscribe.play.audio.OutputStage
-import no.brasscribe.play.audio.PcmAudio
+import no.kalli.scribe.audio.OutputStage
+import no.kalli.scribe.audio.PcmAudio
 import java.io.File
 
 /**
