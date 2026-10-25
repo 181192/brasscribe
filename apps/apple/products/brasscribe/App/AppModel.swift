@@ -1,0 +1,639 @@
+import AVFoundation
+import OnDeviceKit
+import Foundation
+import Observation
+import ScoreKit
+import SwiftUI
+import TranscriptionKit
+import UniformTypeIdentifiers
+
+/// Something the user brought in, waiting for "What is this?".
+struct PendingSource: Identifiable, Hashable {
+    var id = UUID()
+    var audioURL: URL
+    var videoURL: URL?
+    var title: String
+    /// The file name shown above "What is this?" ("Band practice.m4a"); nil for a new recording.
+    var name: String?
+}
+
+enum Route: Hashable {
+    case source(PendingSource)
+    case transcribe(UUID)
+    case review(Piece)
+    case output(Piece)
+    case score(Piece)
+    case problem(Problem)
+}
+
+@Observable @MainActor
+final class AppModel {
+    var pieces: [Piece] = Piece.loadAll() { didSet { rebuildScores() } }
+    /// "Your scores": this device's pieces and the computer's latest finished scores.
+    private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
+    /// The computer's runs as it last listed them; empty whenever it is not connected (`connectionChanged`).
+    var computerJobs: [CompanionService.Job] = [] { didSet { rebuildScores() } }
+    var openingScore: String?
+    /// The part the next score opens on ("Show my part" in Review).
+    var showPartOnOpen: String?
+    var renameTarget: ScoreEntry?
+    var deleteTarget: ScoreEntry?
+    var path: [Route] = []
+    var jobs: [UUID: TranscriptionJob] = [:]
+    var showSettings = false
+    var showFirstRun = false
+    var showRecorder = false
+    var showCapture = false
+    var importing = false
+
+    // The music stand
+    /// "Open on the music stand": the score row the stand was asked for, until the score opens it.
+    var openOnStand: String?
+    /// The library row focus goes back to after a stand opened from the library.
+    var focusScoreRow: String?
+    /// A stand is open: the sidebar steps aside.
+    var standOpen = false
+
+    // Companion settings
+    /// The address typed under "Details for the band's tech person", used to pair by code. Once paired,
+    /// the engine's record (in the Keychain) holds its last address.
+    var companionURL: String = ProcessInfo.processInfo.environment["SCRIBE_COMPANION"] ?? UserDefaults.standard.string(forKey: "companionURL") ?? "http://localhost:8765" {
+        didSet { UserDefaults.standard.set(companionURL, forKey: "companionURL") }
+    }
+
+    /// Engine credentials: the Keychain, or memory for tests and screenshots (`-reset`), so those never
+    /// touch or show a real pairing.
+    static func makeCredentialStore() -> CredentialStore {
+        let env = ProcessInfo.processInfo.environment
+        if LaunchOptions.args.contains("-reset") || env["XCTestConfigurationFilePath"] != nil { return InMemoryCredentialStore() }
+        let store = KeychainCredentialStore()
+        // older versions kept the token in UserDefaults: move it once
+        _ = try? CredentialMigration.run(defaults: .standard, store: store)
+        return store
+    }
+
+    /// The paired computer and the connection to it.
+    @ObservationIgnored private(set) lazy var connection: ConnectionMonitor = {
+        let m = ConnectionMonitor(store: AppModel.makeCredentialStore())
+        #if os(macOS)
+        // Brasscribe on this Mac answers without pairing
+        if let url = URL(string: companionURL), ["localhost", "127.0.0.1", "::1"].contains(url.host() ?? "") { m.localAddress = url }
+        #endif
+        return m
+    }()
+
+    /// Where to send work: the paired engine's last address, or the typed one.
+    var engineURL: URL {
+        // a staged record (screenshots) is only for show
+        (connection.staged ? nil : connection.record?.baseURL) ?? URL(string: companionURL) ?? URL(string: "http://localhost:8765")!
+    }
+
+    /// Engine output folder served by the fixture service. Only UI tests and screenshots set it
+    /// (SCRIBE_FIXTURES); no build of the app carries one.
+    let fixtureDirectory: URL? = {
+        guard let d = ProcessInfo.processInfo.environment["SCRIBE_FIXTURES"], FileManager.default.fileExists(atPath: d) else { return nil }
+        return URL(fileURLWithPath: d)
+    }()
+
+    var originalForFixture: URL? {
+        guard let o = ProcessInfo.processInfo.environment["SCRIBE_ORIGINAL"], FileManager.default.fileExists(atPath: o) else { return nil }
+        return URL(fileURLWithPath: o)
+    }
+
+    var videoForFixture: URL? {
+        guard let v = ProcessInfo.processInfo.environment["SCRIBE_VIDEO"], FileManager.default.fileExists(atPath: v) else { return nil }
+        return URL(fileURLWithPath: v)
+    }
+
+    /// UI tests: transcriptions come from the fixture folder instead of a computer.
+    var useFixtureService: Bool {
+        fixtureDirectory != nil && ProcessInfo.processInfo.arguments.contains("-fixture-service")
+    }
+
+    func service() -> TranscriptionService {
+        if useFixtureService, let dir = fixtureDirectory {
+            return FixtureService(directory: dir, stepDelay: ProcessInfo.processInfo.arguments.contains("-fast") ? 0.05 : 0.6)
+        }
+        return CompanionService(baseURL: engineURL, token: connection.record?.token)
+    }
+
+    /// This device, as the computer lists it.
+    static var deviceName: String {
+        #if os(iOS)
+        UIDevice.current.name
+        #else
+        Host.current().localizedName ?? "Mac"
+        #endif
+    }
+
+    static var platform: String {
+        #if os(iOS)
+        "ios"
+        #else
+        "macos"
+        #endif
+    }
+
+    /// A `scribe://pair` link opened from outside the app (the camera, another app): Settings asks
+    /// before it pairs, or asks the computer to allow this device when the link has no code.
+    var pendingLink: PairingLink?
+
+    func openPairingLink(_ link: PairingLink) {
+        pendingLink = link
+        showSettings = true
+    }
+
+    /// Solos are transcribed on this device when the models are there (or can be fetched);
+    /// everything else goes to the paired computer.
+    var soloOnDevice: Bool = UserDefaults.standard.object(forKey: "soloOnDevice") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(soloOnDevice, forKey: "soloOnDevice") }
+    }
+    /// What the player plays (Settings › Your instrument, and the first run's second step).
+    var seat: SeatChoice = .stored {
+        didSet { if seat != oldValue { seat.save() } }
+    }
+
+    var modelDownloadURL: String = UserDefaults.standard.string(forKey: "modelDownloadURL") ?? "" {
+        didSet { UserDefaults.standard.set(modelDownloadURL, forKey: "modelDownloadURL"); ModelStore.shared.remoteBase = URL(string: modelDownloadURL) }
+    }
+
+    /// A brass band recording is made as a draft on this device even when the computer is there
+    /// (Settings › On this device).
+    var bandDraftOnDevice: Bool = UserDefaults.standard.object(forKey: "bandDraftOnDevice") as? Bool ?? false {
+        didSet { UserDefaults.standard.set(bandDraftOnDevice, forKey: "bandDraftOnDevice") }
+    }
+
+    /// Where a recording is written down.
+    enum Maker: Equatable { case soloOnDevice, bandDraft, computer }
+
+    /// Solos on this device when that is switched on; a brass band as a draft on this device when the
+    /// computer is not there or the player asked for drafts; everything else, and anything without the
+    /// listening files, on the computer (design/brands/brasscribe/system.md, "A band draft on the device").
+    nonisolated static func maker(for profile: SourceProfile, soloOnDevice: Bool, bandDraftOnDevice: Bool, computerThere: Bool,
+                      modelsReady: Bool) -> Maker {
+        guard modelsReady else { return .computer }
+        switch profile {
+        case .solo: return soloOnDevice ? .soloOnDevice : .computer
+        case .brassBand: return bandDraftOnDevice || !computerThere ? .bandDraft : .computer
+        case .orchestraWithSoloist, .popRock: return .computer
+        }
+    }
+
+    /// A computer is paired, or Brasscribe runs on this Mac.
+    var computerPaired: Bool { connection.record != nil || connection.localAddress != nil }
+
+    /// The computer counts as there when one is paired (or Brasscribe runs on this Mac) and its
+    /// connection is Connected or still Reconnecting; Offline, needs-pairing and "update …" do not count.
+    var computerThere: Bool {
+        guard computerPaired else { return false }
+        switch connection.state.kind {
+        case .connected, .reconnecting: return true
+        case .offline, .needsPairing, .mismatch: return false
+        }
+    }
+
+    /// Screenshot scenes only: the listening files count as there, so the draft's words show.
+    @ObservationIgnored var assumeModelsReady = false
+
+    func maker(for profile: SourceProfile) -> Maker {
+        if useFixtureService { return .computer }
+        ModelStore.shared.remoteBase = URL(string: modelDownloadURL)
+        let ready = assumeModelsReady || ModelStore.shared.missing.isEmpty || ModelStore.shared.remoteBase != nil
+        return Self.maker(for: profile, soloOnDevice: soloOnDevice, bandDraftOnDevice: bandDraftOnDevice,
+                          computerThere: computerThere, modelsReady: ready)
+    }
+
+    func service(for profile: SourceProfile) -> TranscriptionService {
+        switch maker(for: profile) {
+        case .soloOnDevice: return OnDeviceSoloService()
+        case .bandDraft: return OnDeviceBandDraftService()
+        case .computer: return service()
+        }
+    }
+
+    func refresh() { pieces = Piece.loadAll() }
+
+    private func rebuildScores() { scores = ScoreEntry.merge(pieces: pieces, jobs: computerJobs) }
+
+    /// Fetch the computer's finished scores. When they can't be had (the computer is not connected, or has another
+    /// interface version and is not asked), the ones listed from before go: they could not be opened. This device's
+    /// own scores are never touched.
+    func refreshComputerScores() async {
+        guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
+        let asked = connectionChanges
+        do {
+            let jobs = try await svc.jobs()
+            // the connection changed while the computer answered: that change fetched the scores again, or took them away.
+            // And a fetch begun while not connected (a pull to refresh, the moment after pairing) lists nothing under
+            // "Not connected": the change to Connected fetches them.
+            guard asked == connectionChanges, Self.scoresShow(connection: connection.state.kind) else { return }
+            computerJobs = jobs
+        } catch {
+            let update = refused(error)
+            guard asked == connectionChanges else { return }
+            if Self.scoresGo(refusedForUpdate: update != nil, connection: connection.state.kind) { computerJobs = [] }
+        }
+    }
+
+    /// Whether the scores listed from the computer go when they could not be fetched. While the connection row says
+    /// Connected, one request that did not get through takes nothing away: the heartbeat decides when the computer
+    /// is gone, and the scores go with that change.
+    nonisolated static func scoresGo(refusedForUpdate: Bool, connection: ConnectionState.Kind) -> Bool {
+        refusedForUpdate || connection != .connected
+    }
+
+    /// Whether the computer's scores are listed: only under a connection row that says Connected.
+    nonisolated static func scoresShow(connection: ConnectionState.Kind) -> Bool { connection == .connected }
+
+    /// How many times the connection has changed: an answer asked for before the last change is not about this
+    /// connection.
+    @ObservationIgnored private var connectionChanges = 0
+
+    /// The connection to the computer changed: its scores are fetched again when it is there, and go when it is not.
+    func connectionChanged() async {
+        connectionChanges += 1
+        if case .connected = connection.state { await refreshComputerScores() } else { computerJobs = [] }
+    }
+
+    /// The computer was asked for something and has another interface version than this app's (nothing was sent):
+    /// the connection row is checked at once, so it says which of the two to update. Returns which, nil for any
+    /// other error.
+    @discardableResult
+    func refused(_ error: Error) -> InterfaceMatch.Update? {
+        guard case TranscriptionError.interfaceMismatch(let which) = error else { return nil }
+        connection.poke()
+        return which
+    }
+
+    /// What went wrong with a score on the computer: the update words when its interface version is not this app's.
+    private func showComputerProblem(_ error: Error) {
+        if let which = refused(error) { show(.needsUpdate(which)) } else { show(.cantOpenFile(error.localizedDescription)) }
+    }
+
+    func open(_ entry: ScoreEntry, review: Bool = false) {
+        switch entry.location {
+        case .local(let p): path = [review ? .review(p) : .score(p)]
+        case .computer(let jobID): Task { await download(jobID: jobID, title: entry.title, profile: entry.profile, review: review) }
+        }
+    }
+
+    /// Copy a computer score into this device's library, then open it.
+    private func download(jobID: String, title: String, profile: SourceProfile?, review: Bool) async {
+        guard let svc = service() as? CompanionService else { return }
+        openingScore = "job:\(jobID)"
+        defer { openingScore = nil }
+        do {
+            let xml = try await svc.artifact(.musicXML, jobID: jobID)
+            let comp = try? Composition.decode(try await svc.artifact(.composition, jobID: jobID))
+            let evidence = try? await svc.evidence(jobID: jobID)
+            let names = Set(computerJobs.first { $0.id == jobID }?.outputs ?? [])
+            let result = TranscriptionResult(jobID: jobID, composition: comp, musicXML: xml,
+                                             available: Set(ArtifactKind.allCases.filter { names.contains($0.engineName) }), evidence: evidence)
+            let p = try Piece.create(title: title, profile: profile, result: result, original: nil, video: nil, fixtureDirectory: nil)
+            refresh()
+            path = [review ? .review(p) : .score(p)]
+        } catch {
+            showComputerProblem(error)
+        }
+    }
+
+    func rename(_ entry: ScoreEntry, to title: String) {
+        let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return }
+        switch entry.location {
+        case .local(let p): rename(p, to: cleaned)
+        case .computer(let jobID):
+            Task {
+                guard let svc = service() as? CompanionService else { return }
+                do { try await svc.rename(jobID: jobID, title: cleaned); await refreshComputerScores() }
+                catch { showComputerProblem(error) }
+            }
+        }
+    }
+
+    func delete(_ entry: ScoreEntry) {
+        switch entry.location {
+        case .local(let p): delete(p)
+        case .computer(let jobID):
+            Task {
+                guard let svc = service() as? CompanionService else { return }
+                do { try await svc.deleteRun(jobID: jobID) } catch { if let which = refused(error) { show(.needsUpdate(which)) } }
+                await refreshComputerScores()
+            }
+        }
+    }
+
+    func rename(_ piece: Piece, to title: String) {
+        let cleaned = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, let index = pieces.firstIndex(where: { $0.id == piece.id }) else { return }
+        var updated = pieces[index]
+        updated.title = cleaned
+        do {
+            try updated.saveMusicXML(MusicXMLNoteEditor.replacingTitle(in: updated.musicXML(), with: cleaned))
+            try updated.save()
+            pieces[index] = updated
+            if let jobID = updated.remoteJobID, let svc = service() as? CompanionService, !useFixtureService {
+                // the score is renamed on this device either way; the computer's copy follows when it can
+                Task {
+                    do { try await svc.rename(jobID: jobID, title: cleaned) } catch { refused(error) }
+                    await refreshComputerScores()
+                }
+            }
+        } catch {
+            show(.notAScore(error.localizedDescription))
+        }
+    }
+
+    /// Open "What is this?" for a new recording, closing any recorder sheet first.
+    func ask(_ src: PendingSource) {
+        showRecorder = false
+        showCapture = false
+        path.append(.source(src))
+    }
+
+    /// Show a problem with its way forward. The user's scores are never touched.
+    func show(_ p: Problem) {
+        showRecorder = false
+        showCapture = false
+        path.append(.problem(p))
+    }
+
+    func open(_ piece: Piece) { path = [.score(piece)] }
+    func goHome() { path = [] }
+
+    /// Where the listening happens, for "What is this?" and the transcribing screen.
+    func whereItRuns(for profile: SourceProfile?) -> String {
+        if let profile {
+            switch maker(for: profile) {
+            case .soloOnDevice: return String(localized: "On this device. Nothing goes online.")
+            case .bandDraft: return String(localized: "A quick draft on this device. Your computer makes a better score.")
+            case .computer: break
+            }
+        }
+        #if os(macOS)
+        if let host = engineURL.host(), ["localhost", "127.0.0.1"].contains(host) {
+            return String(localized: "Made on this Mac. The recording is not sent online.")
+        }
+        #endif
+        return String(localized: "On your computer. The recording is not sent online.")
+    }
+
+    /// Where a running job is being made: by its service, since a full score from a draft goes to the
+    /// computer whatever the settings say.
+    func whereItRuns(for job: TranscriptionJob) -> String {
+        switch job.service {
+        case is OnDeviceBandDraftService: return String(localized: "On this device, as a draft.")
+        case is OnDeviceSoloService: return String(localized: "On this device. Nothing goes online.")
+        default: return whereItRuns(for: Optional<SourceProfile>.none)
+        }
+    }
+
+    // MARK: sources
+
+    /// Accept an imported or shared file. Video keeps its picture for the synced view;
+    /// DRM-protected media is refused with an explanation instead of recording silence.
+    func accept(url: URL) async {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let title = url.deletingPathExtension().lastPathComponent
+        let type = UTType(filenameExtension: url.pathExtension)
+        if url.pathExtension.lowercased() == "json" {
+            do {
+                let comp = try core.composition(fromJSON: try Data(contentsOf: url))
+                try arrangeOnDevice(comp, title: title, lineup: .fullBand, original: nil, video: nil)
+            } catch {
+                show(.notAScore(error.localizedDescription))
+            }
+            return
+        }
+        if type?.conforms(to: .xml) == true || ["musicxml", "xml", "mxl"].contains(url.pathExtension.lowercased()) {
+            await openScoreFile(url, title: title)
+            return
+        }
+        // a PDF, an image, a document: not something to listen to
+        if let type, !type.conforms(to: .audiovisualContent) {
+            show(.cantOpenFile(String(localized: "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).")))
+            return
+        }
+        let asset = AVURLAsset(url: url)
+        if (try? await asset.load(.hasProtectedContent)) == true {
+            show(.copyProtected)
+            return
+        }
+        do {
+            let local = try copyToInbox(url)
+            let hasVideo = !((try? await asset.loadTracks(withMediaType: .video)) ?? []).isEmpty
+            if hasVideo {
+                let audio = try await MediaTools.extractAudio(from: local)
+                ask(PendingSource(audioURL: audio, videoURL: local, title: title, name: url.lastPathComponent))
+            } else {
+                ask(PendingSource(audioURL: local, title: title, name: url.lastPathComponent))
+            }
+        } catch {
+            show(.cantOpenFile(error.localizedDescription))
+        }
+    }
+
+    func acceptRecording(_ url: URL, title: String) {
+        ask(PendingSource(audioURL: url, title: title))
+    }
+
+    private func copyToInbox(_ url: URL) throws -> URL {
+        let inbox = FileManager.default.temporaryDirectory.appending(path: "Inbox", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: inbox, withIntermediateDirectories: true)
+        let dst = inbox.appending(path: UUID().uuidString + "." + url.pathExtension)
+        try FileManager.default.copyItem(at: url, to: dst)
+        return dst
+    }
+
+    private func openScoreFile(_ url: URL, title: String) async {
+        do {
+            // a score file is small; a huge one is refused before it is read
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            guard size <= CompressedMusicXML.defaultMaxBytes else { throw MusicXMLError.malformed("the file is too large") }
+            var xml = try Data(contentsOf: url)
+            // compressed MusicXML (.mxl): the score inside the archive is what is kept
+            if CompressedMusicXML.isZip(xml) { xml = try CompressedMusicXML.musicXML(from: xml) }
+            _ = try MusicXMLParser.parse(xml)
+            let result = TranscriptionResult(jobID: "import", composition: nil, musicXML: xml, available: [.musicXML])
+            let p = try Piece.create(title: title, profile: nil, result: result, original: nil, video: nil, fixtureDirectory: nil)
+            refresh()
+            path.append(.score(p))
+        } catch {
+            show(.notAScore(error.localizedDescription))
+        }
+    }
+
+    // MARK: transcription
+
+    /// "Make the full score": the draft's recording, sent to the computer as a Brass band score. The
+    /// result is a new score; the draft stays in Your scores.
+    func makeFullScore(from draft: Piece) {
+        guard let audio = draft.originalURL, FileManager.default.fileExists(atPath: audio.path) else { return }
+        startTranscription(PendingSource(audioURL: audio, videoURL: draft.videoURL, title: draft.title), profile: .brassBand,
+                           output: draft.output ?? OutputChoice(), onComputer: true)
+    }
+
+    /// "Try again" after a failure, where the player asked for it: a score asked of the computer is asked of
+    /// the computer again, also when a band would now be a draft on this device. `onComputer` moves it there.
+    func retry(_ job: TranscriptionJob, onComputer: Bool? = nil) {
+        startTranscription(job.source, profile: job.profile, output: job.output, onComputer: onComputer ?? job.onComputer)
+    }
+
+    /// Back to "What is this?" with the recording of a job that failed.
+    func backToSource(_ job: TranscriptionJob) {
+        if let i = path.firstIndex(of: .transcribe(job.id)) { path[i] = .source(job.source) } else { goHome() }
+        jobs[job.id] = nil
+    }
+
+    /// `onComputer`: the player asked for the computer ("Make the full score"), whatever the profile's own route.
+    func startTranscription(_ src: PendingSource, profile: SourceProfile, output chosen: OutputChoice, onComputer: Bool = false) {
+        // the player's seat goes along; a solo take is then written for their instrument
+        var output = chosen
+        if output.seat == nil, let id = seat.id {
+            output.seat = id
+            output.reads = seat.reads
+            if profile == .solo { output.lead = "seat" }
+        }
+        let job = TranscriptionJob(source: src, profile: profile, output: output,
+                                   service: onComputer ? service() : service(for: profile), onComputer: onComputer)
+        // a 401 from the computer turns the connection row into "pair again", another interface version into "update …"
+        job.onRefused = { [weak self] in self?.connection.poke() }
+        jobs[job.id] = job
+        // the transcribing screen takes the place of "What is this?"
+        if case .source = path.last { path[path.count - 1] = .transcribe(job.id) } else { path.append(.transcribe(job.id)) }
+        job.start { [weak self] result in
+            guard let self else { return }
+            do {
+                let p = try Piece.create(title: src.title, profile: profile, result: result, original: src.audioURL,
+                                         video: src.videoURL, fixtureDirectory: self.useFixtureService ? self.fixtureDirectory : nil,
+                                         output: output, draft: job.service is OnDeviceBandDraftService)
+                self.refresh()
+                if let i = self.path.firstIndex(of: .transcribe(job.id)) { self.path[i] = .review(p) } else { self.path.append(.review(p)) }
+                self.jobs[job.id] = nil
+            } catch {
+                job.failure = error.localizedDescription
+                job.failureWords = ErrorWords.specific(error)
+            }
+        }
+    }
+
+    let core: CoreBridge = RustCoreBridge()
+
+    /// Arrange a Composition with the shared core on this device (no computer needed) and open it.
+    func arrangeOnDevice(_ comp: Composition, title: String, lineup: Lineup, original: URL?, video: URL?) throws {
+        guard let xml = try core.arrange(comp, lineup: lineup, difficulty: .faithful, keyFifths: nil) else { return }
+        let result = TranscriptionResult(jobID: "on-device", composition: comp, musicXML: xml, available: [.musicXML, .composition])
+        let p = try Piece.create(title: title, profile: nil, result: result, original: original, video: video, fixtureDirectory: nil)
+        refresh()
+        path.append(.score(p))
+    }
+
+    /// Arrange a piece again on this device for another band, difficulty or key, and open it.
+    /// The engine's PDF and braille no longer match, so those are made on this device too.
+    @discardableResult
+    func rearrange(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) throws -> Piece {
+        try save(Self.arrange(comp, output: output, core: core), for: piece, composition: comp, output: output, open: andOpen)
+    }
+
+    /// `rearrange`, with the arranging off the main actor so the screen stays live and shows that it is busy.
+    @discardableResult
+    func rearrangeInBackground(_ piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool = true) async throws -> Piece {
+        let core = self.core
+        let xml = try await Task.detached(priority: .userInitiated) { try Self.arrange(comp, output: output, core: core) }.value
+        return try save(xml, for: piece, composition: comp, output: output, open: andOpen)
+    }
+
+    nonisolated private static func arrange(_ comp: Composition, output: OutputChoice, core: CoreBridge) throws -> Data {
+        guard let xml = try core.arrange(comp, lineup: output.lineup, difficulty: output.difficulty, keyFifths: output.keyFifths,
+                                         seat: output.seatOptions) else {
+            throw TranscriptionError.artifactUnavailable(.musicXML)
+        }
+        return xml
+    }
+
+    private func save(_ xml: Data, for piece: Piece, composition comp: Composition, output: OutputChoice, open andOpen: Bool) throws -> Piece {
+        try xml.write(to: piece.scoreURL)
+        var p = piece
+        p.output = output
+        p.fixtureDirectory = nil
+        p.remoteArtifacts = [.musicXML, .composition]
+        if let score = try? MusicXMLParser.parse(xml) {
+            p.bars = score.measures.count
+            let checked = piece.loadChecked()
+            p.toCheck = ReviewList.items(score: score, composition: comp, uncertainty: UncertaintyIndex(composition: comp))
+                .filter { !checked.contains($0.id) }.count
+        }
+        try p.save()
+        refresh()
+        if andOpen { open(p) }
+        return p
+    }
+
+    func delete(_ p: Piece) {
+        p.delete()
+        refresh()
+    }
+}
+
+/// A running transcription with plain-language progress.
+@Observable @MainActor
+final class TranscriptionJob: Identifiable {
+    let id = UUID()
+    let source: PendingSource
+    let profile: SourceProfile
+    let output: OutputChoice
+    let service: TranscriptionService
+    /// The player asked for the computer; "Try again" asks it again.
+    let onComputer: Bool
+    var progress = TranscriptionProgress(stage: .uploading, fraction: 0, etaSeconds: nil)
+    var failure: String?
+    /// What went wrong in the player's words, when more is known than "it failed" (ErrorWords).
+    var failureWords: String?
+    /// The failure's title when it is more specific than "The score couldn't be made".
+    var failureTitle: String?
+    /// The computer's interface version is not this app's: which of the two to update before the score can be made.
+    var needsUpdate: InterfaceMatch.Update?
+    /// The recording was too long for a draft on this device (DraftTooLong).
+    var tooLong = false
+    var cancelled = false
+    private var task: Task<Void, Never>?
+    /// The computer refused this device (401), or its interface version is not this app's and nothing was sent.
+    var onRefused: (@MainActor () -> Void)?
+
+    init(source: PendingSource, profile: SourceProfile, output: OutputChoice, service: TranscriptionService, onComputer: Bool = false) {
+        self.source = source; self.profile = profile; self.output = output; self.service = service; self.onComputer = onComputer
+    }
+
+    func start(onDone: @escaping @MainActor (TranscriptionResult) -> Void) {
+        let req = TranscriptionRequest(audioURL: source.audioURL, profile: profile, title: source.title, output: output)
+        let service = self.service
+        task = Task { [weak self] in
+            do {
+                for try await ev in service.transcribe(req) {
+                    switch ev {
+                    case .progress(let p): self?.progress = p
+                    case .finished(let r): onDone(r)
+                    }
+                }
+            } catch {
+                guard let self else { return }
+                if case TranscriptionError.notPaired = error { self.onRefused?() }
+                if case TranscriptionError.interfaceMismatch(let which) = error { self.needsUpdate = which; self.onRefused?() }
+                if case TranscriptionError.cancelled = error { self.cancelled = true } else if case TranscriptionError.needsWholeGroup = error {
+                    self.failure = String(localized: "Needs a recording of the whole group")
+                } else if !Task.isCancelled {
+                    self.failure = error.localizedDescription
+                    self.failureWords = ErrorWords.specific(error)
+                    self.failureTitle = ErrorWords.title(error)
+                    self.tooLong = error is DraftTooLong
+                }
+            }
+        }
+    }
+
+    func cancel() {
+        task?.cancel()
+        cancelled = true
+    }
+}

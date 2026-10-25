@@ -4,7 +4,7 @@
 usage: mac-vm-plan.py N ONLY DURATIONS SOURCES
   ONLY       comma-separated Class or Class/testName filters ("" for every test)
   DURATIONS  build/mac-vm/durations.json from earlier runs ({"Class/test": seconds}); may be missing
-  SOURCES    apps/apple/AppUITests
+  SOURCES    apps/apple/products/brasscribe/AppUITests
 
 Prints N lines, one per VM: space-separated Class/test ids (a line may be empty). The longest tests
 are placed first, each on the VM with the least work so far; a test without a timing counts 20 s.

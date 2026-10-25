@@ -84,7 +84,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | android | `./gradlew testDebugUnitTest -Pscribe.fast` (every module and both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
 | windows | `dotnet test tests/Kalli.Scribe.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Scribe.Core.Tests && dotnet test` | nothing (seconds) |
-| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
+| bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/testing/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
 
 A test that takes seconds gets the slow marker of its framework:
 
@@ -107,7 +107,7 @@ build for testing again.
 - conformance on every case
 - vitest, the Playwright browser tests, then `npm run test:catalogue`: Studio's screen catalogue with its checks
   ([studio/README.md](../../../studio/README.md#test))
-- the Swift packages (BrasscribeKit, NotationKit, ScreenCatalogue, `capture`) and the macOS app unit tests, then
+- the Swift packages (services, features/score, ScreenCatalogue, `capture`) and the macOS app unit tests, then
   `apps/apple/scripts/screenshots.sh record`: the Mac screen catalogue with its checks
 - `./gradlew testDebugUnitTest :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug` (both apps' tests on the JVM, lint
   for the Brasscribe app, the debug build of both), then `apps/android/scripts/screenshots.sh record`: the
@@ -234,7 +234,7 @@ fail instead of skipping.
     A branch may run only the named tests that confirm a fix the layout harness can't see
     (hit-testing, clicks, keyboard, the window delegate).
   - Layout and resize regressions are covered earlier, in tiers 1 and 2, by the off-screen layout
-    harness in the macOS app unit tests (`AppTests/LayoutHarness.swift`).
+    harness in the macOS app unit tests (`products/brasscribe/AppTests/LayoutHarness.swift`).
   - Run the classes a change touches: `scripts/mac-vm.sh test-ui WindowSizeUITests[,PlayUITests/testKeyboardShortcuts]`.
     That takes under a minute warm. The full suite (`MAC_VM_FULL=1 scripts/mac-vm.sh test-ui`) takes about 6 minutes over two VMs.
     Runs from different worktrees queue on a host-wide lock.
@@ -264,7 +264,7 @@ All times are in seconds.
 | vitest | 13 | 15 | 11 | 15 | 12, then 17 |
 | `test:browser` | 7 | 7 | 7 | 11 | |
 | Studio screen catalogue (`test:catalogue`, 6 workers) | | | | 52 | `fast studio` in all: 55 |
-| `swift test`, BrasscribeKit | 100 | 64 | 65 | 74 | `package-test-fast`, both packages: 115, then 30 |
+| `swift test`, services | 100 | 64 | 65 | 74 | `package-test-fast`, both packages: 115, then 30 |
 | `swift test`, NotationKit | 29 | 10 | 13 | 10 | |
 | macOS app unit tests | 100 | 15 | 22¹ | 14 | `build-for-testing` plus `test-mac-unit`: 69, then 9 |
 | `./gradlew test` | 23 | 4 | 24 | 3 | `testDebugUnitTest -Pscribe.fast`: 14, then 4 |

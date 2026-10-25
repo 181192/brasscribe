@@ -12,7 +12,7 @@ make verovio        # Frameworks/Verovio.xcframework (LGPL-3.0, unmodified, dyna
 scripts/build-core.sh   # core/swift/ScribeCore/ScribeFFI.xcframework (Rust core, UniFFI)
 make soundfont      # data/soundfonts/MuseScore_General.sf2 (MIT, 206 MB, not committed)
 pixi run fetch-sounds   # (repo root) the band SoundFonts into data/sounds/band: needs `gh auth login`
-make project        # BrasscribePlay.xcodeproj from project.yml (not committed); stages the band sounds
+make project        # products/brasscribe/BrasscribePlay.xcodeproj from its project.yml (not committed); stages the band sounds
 make build          # macOS, iPhone simulator, iPad simulator
 make test           # package tests, macOS app unit tests, then app unit and UI tests on the iPhone simulator
 ../../scripts/mac-vm.sh test-ui   # macOS UI tests (make test-mac-ui), only in the macOS VM or in CI
@@ -55,7 +55,7 @@ camera and the local network, every binary arm64 for iOS devices (not the simula
 or provisioning profile inside.
 
 The app is made so that such a signature is enough. It asks for no entitlements on iOS
-(`App/BrasscribePlay-iOS.entitlements` is empty): no app groups, push, iCloud or associated domains.
+(`products/brasscribe/App/BrasscribePlay-iOS.entitlements` is empty): no app groups, push, iCloud or associated domains.
 The paired computer is kept in the Keychain without an access group, so it lands in the group the
 signature gives the app. Scores are in the app's own Application Support folder and settings in its own
 defaults, and nothing reads the bundle id. Finding the computer on the local network, the `scribe:`
@@ -67,7 +67,7 @@ The macOS UI tests run only in a headless macOS VM, never on your desktop: see [
 
 UI tests, the app unit tests and the screenshots open `apps/fixtures/old-hundredth` (a public-domain
 hymn arranged by the core, with review marks; regenerate with `apps/fixtures/make-old-hundredth.py`),
-passed as `BRASSCRIBE_FIXTURES`. No build of the app carries a sample score or recording. The package
+passed as `SCRIBE_FIXTURES`. No build of the app carries a sample score or recording. The package
 tests also check the parser and playback against the engine's golden output in the local `data/` folder
 and skip themselves when it is missing.
 
@@ -75,21 +75,21 @@ and skip themselves when it is missing.
 
 | Path | What |
 |---|---|
-| `project.yml` | XcodeGen spec: one multiplatform app target, unit tests, UI tests |
-| `App/` | SwiftUI app: models (`AppModel`, `PracticeModel`, `Piece`), views, string catalogs (en, nb) |
-| `Packages/BrasscribeKit` | `ScoreKit` (Composition, MusicXML parser, talking score, MIDI, CoreBridge), `TranscriptionKit` (companion client and fixture service), `PlaybackKit` (AVAudioEngine), `SVGRender` (native SVG drawing) |
-| `Packages/NotationKit` | Verovio wrapper: engraving, part filtering, concert pitch, timemap |
+| `products/brasscribe/` | Brasscribe Play: `project.yml` (XcodeGen spec: one multiplatform app target, unit tests, UI tests), `App/` (SwiftUI app: models (`AppModel`, `PracticeModel`, `Piece`), views, string catalogs (en, nb)), `AppTests/`, `AppUITests/` |
+| `services/` | Swift package `ScribeServices`: `ScoreKit` (Composition, MusicXML parser, talking score, MIDI, CoreBridge), `TranscriptionKit` (companion client and fixture service), `PlaybackKit` (AVAudioEngine), `SVGRender` (native SVG drawing), `OnDeviceKit` |
+| `features/score/` | `NotationKit`: Verovio wrapper: engraving, part filtering, concert pitch, timemap |
+| `testing/ScreenCatalogue/` | The screen catalogues' checks, shared with Bandroom for Mac (test code only) |
 | `../../capture` | `AudioCapture` package (Core Audio process tap), used by the macOS app and the CLI |
 | `scripts/` | Verovio, core and sound-font builds, string catalog, fixture launchers, screenshots |
 | `docs/notation-spike.md` | Native vs WKWebView measurements and the decision |
 
 ## Mac window
 
-Every main window keeps a 900 × 600 minimum (`App/WindowMinimum.swift`), also for windows opened later
+Every main window keeps a 900 × 600 minimum (`products/brasscribe/App/WindowMinimum.swift`), also for windows opened later
 with New Window. Sheets are sized to their content and capped at the room between their top and the
 bottom of the visible frame, so Settings never reaches under the Dock, and zooming a window keeps it clear
 of the Dock. Controls drawn over the score (player bar, stand controls, video) come before the score in
-accessibility order, so VoiceOver and the UI tests reach them. `AppTests/ResponsiveLayoutTests.swift` checks
+accessibility order, so VoiceOver and the UI tests reach them. `products/brasscribe/AppTests/ResponsiveLayoutTests.swift` checks
 these sizes off screen.
 
 ## Keyboard (macOS, and iPad with a keyboard)
@@ -109,7 +109,7 @@ these sizes off screen.
 
 The Playback menu lists the same keys.
 
-In the music stand (`App/Views/MusicStandView.swift`, design/brands/brasscribe/music-stand.md): → ↓ Page Down turn to the
+In the music stand (`products/brasscribe/App/Views/MusicStandView.swift`, design/brands/brasscribe/music-stand.md): → ↓ Page Down turn to the
 next page and ← ↑ Page Up to the previous one (what Bluetooth page turners send; on the Mac Page Up, Page
 Down, Home and End are key equivalents, because AppKit turns them into scrolling first), Home and End go to the first
 and last page, Option-↓ ↑ move by bar, Space plays and pauses, and Esc or F leaves. Stand screenshots:
@@ -132,7 +132,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   platform; `make size` prints the iOS Release app's size with the phone build. Without
   the files (`pixi run fetch-sounds` was not run) the app builds, plays the basic tier and says the band
   sounds are missing. Release builds in CI fetch them first and stop if they cannot.
-- **Sound.** With `BRASSCRIBE_SOUNDS` set to the repository root, each part plays its preset from the
+- **Sound.** With `SCRIBE_SOUNDS` set to the repository root, each part plays its preset from the
   band SoundFont (`data/sounds/band/brasscribe-band-16bit.sf2`: bank MSB 0x79 + LSB = bank, drums
   0x78/0, gain `channel_gain_db`), placed at its audience-seat position from `sounds/seating.json` in an
   AVAudioEnvironmentNode. The room is a convolution of the OpenAIR central-hall IR (vDSP partitioned
@@ -151,7 +151,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
   whose Core ML returns zeros for the fp16 program), with the upstream frontends and decoders ported to
   Swift. The Rust core's solo-with-band path then writes the score. The models (about 6 MB) download on
-  demand from the address in Settings, or come from `BRASSCRIBE_MODELS` (a `models/converted/` folder)
+  demand from the address in Settings, or come from `SCRIBE_MODELS` (a `models/converted/` folder)
   during development. They are not in the app.
 - **Band drafts.** A brass band recording is made on the device as a draft when the computer is not
   there (no computer paired, or Offline / needs pairing) or when Settings › On this device › "Make band
@@ -182,10 +182,10 @@ See [docs/shared/dev/verify.md](../../docs/shared/dev/verify.md).
 
 ## Screen catalogue (Mac)
 
-`AppTests/PlayScreensTests.swift` draws every Mac screen and sheet off screen in the macOS app's unit-test bundle
+`products/brasscribe/AppTests/PlayScreensTests.swift` draws every Mac screen and sheet off screen in the macOS app's unit-test bundle
 (`UnitTestHost`: no window on the screen), at 1280 × 800, in light, dark and increased contrast (light and dark), and
 in bokmål (`xcodebuild -testLanguage nb`). It checks each with the Mac apps' shared checks
-(`Packages/ScreenCatalogue`, also used by Bandroom for Mac): every control has a name; Play's own buttons, menus
+(`testing/ScreenCatalogue`, also used by Bandroom for Mac): every control has a name; Play's own buttons, menus
 and links are at least 24 × 24 pt, and the system's standard controls follow WCAG 2.5.8's spacing exception; no
 single-line text is cut off; nothing is outside the window (except what a scroll area has out of view); and the
 controls come in reading order, in the order VoiceOver and the keyboard follow, within each column. The score and
@@ -193,7 +193,7 @@ the stand put the controls drawn over the score first (above), which `ownOrder` 
 not yet fixed, each with its issue; `unsteady` the screens checked without a screenshot because they do not yet draw
 the same twice, each with its issue. `ResponsiveLayoutTests` keeps the layout at every window size.
 
-**When a picture counts** (`Packages/ScreenCatalogue`, `ScreenTake`; the same rule as the Windows catalogues'). A
+**When a picture counts** (`testing/ScreenCatalogue`, `ScreenTake`; the same rule as the Windows catalogues'). A
 screenshot is taken only when all of this holds, read off the screen before and after the picture with the same
 answer both times:
 

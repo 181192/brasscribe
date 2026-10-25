@@ -257,7 +257,7 @@ sync_repo() {
     --exclude .git --exclude .claude/ --exclude node_modules/ --exclude '/build/' --exclude 'build/' \
     --exclude DerivedData/ --exclude .build/ --exclude .gradle/ --exclude .pixi/ --exclude .venv/ \
     --exclude __pycache__/ --exclude '/data/' --exclude '/models/' --exclude 'core/target/' --exclude 'core/dist/' \
-    --exclude 'bin/' --exclude 'obj/' --exclude '*.xcodeproj/' --exclude 'apps/apple/Sounds/' \
+    --exclude 'bin/' --exclude 'obj/' --exclude '*.xcodeproj/' --exclude 'apps/apple/products/brasscribe/Sounds/' \
     --exclude 'apps/apple/Frameworks/Verovio.xcframework/' --exclude 'apps/apple/Frameworks/VerovioResources/' \
     --exclude 'site/_site/' --exclude '.DS_Store' \
     -e "ssh ${SSH_OPTS[*]}" "$ROOT/" "admin@$ip:$REMOTE/"
@@ -307,7 +307,7 @@ build_host() {
   log "building for testing on the host"
   local blog="$OUT/host-build.log"; mkdir -p "$OUT"
   # a failed build must stop the run: the VMs would otherwise test the previous build's products
-  if ! (cd "$ROOT/apps/apple" && xcodegen generate >/dev/null \
+  if ! (cd "$ROOT/apps/apple/products/brasscribe" && xcodegen generate >/dev/null \
     && xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath "$HOST_DERIVED" -scheme BrasscribePlay-macOS-UITests \
          -destination platform=macOS build-for-testing -quiet >"$blog" 2>&1); then
     grep -E "error:|FAILED" "$blog" >&2 || tail -20 "$blog" >&2
@@ -332,7 +332,7 @@ run_shard() {
   for t in $ids; do args="$args -only-testing:BrasscribePlayUITests_macOS/$t"; done
   local result="results/$run.xcresult"
   vssh "$ip" "pkill -x xcodebuild; pkill -x BrasscribePlay; rm -rf results; mkdir -p results; \
-    TEST_RUNNER_BRASSCRIBE_FIXTURES=\$HOME/$REMOTE/apps/fixtures/old-hundredth TEST_RUNNER_BRASSCRIBE_SHOTS=${MAC_VM_SHOTS:-} \
+    TEST_RUNNER_SCRIBE_FIXTURES=\$HOME/$REMOTE/apps/fixtures/old-hundredth TEST_RUNNER_SCRIBE_SHOTS=${MAC_VM_SHOTS:-} \
     xcodebuild test-without-building -xctestrun products/$(basename "$XCTESTRUN") -destination platform=macOS \
       -resultBundlePath $result $args" >"$OUT/$run/$vm.log" 2>&1 || rc=$?
   fetch_results "$ip" "$result" "$OUT/$run/$vm" >"$OUT/$run/$vm.summary" 2>&1
@@ -347,7 +347,7 @@ test_ui() {
   # every test (or ONLY's), spread over the VMs by the durations of earlier runs
   local shards=() vms=() ips=() pids=()
   while IFS= read -r line; do shards+=("$line"); done \
-    < <(python3 "$ROOT/scripts/mac-vm-plan.py" "$PARALLEL" "$only" "$OUT/durations.json" "$ROOT/apps/apple/AppUITests")
+    < <(python3 "$ROOT/scripts/mac-vm-plan.py" "$PARALLEL" "$only" "$OUT/durations.json" "$ROOT/apps/apple/products/brasscribe/AppUITests")
   i=0
   for vm in $(vm_names); do
     if [ -n "${shards[$i]:-}" ]; then

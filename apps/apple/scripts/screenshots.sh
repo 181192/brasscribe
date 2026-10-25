@@ -29,8 +29,8 @@ LANGARGS+=(-connection "${CONNECTION:-connected}")
 shoot_mac() {   # screen appearance
   # through Launch Services: a child of this shell is refused activation and opens no window
   local app="$HERE/build/DerivedData/Build/Products/Debug/BrasscribePlay.app"
-  open -n -F "$app" --env BRASSCRIBE_FIXTURES="$FIXTURES" --env BRASSCRIBE_SOUNDFONT="$SF" \
-    --env BRASSCRIBE_COMPANION="http://127.0.0.1:1" --args -reset -skip-first-run -screen "$1" -appearance "$2" "${LANGARGS[@]}"
+  open -n -F "$app" --env SCRIBE_FIXTURES="$FIXTURES" --env SCRIBE_SOUNDFONT="$SF" \
+    --env SCRIBE_COMPANION="http://127.0.0.1:1" --args -reset -skip-first-run -screen "$1" -appearance "$2" "${LANGARGS[@]}"
   sleep "$WAIT"
   local pid
   pid=$(pgrep -n -f "$app/Contents/MacOS/BrasscribePlay")
@@ -52,7 +52,7 @@ shoot_sim() {   # device prefix screen appearance
   xcrun simctl ui "$dev" appearance "$look" 2>/dev/null || true
   xcrun simctl terminate "$dev" no.kalli.brasscribe 2>/dev/null || true
   xcrun simctl install "$dev" "$app"
-  SIMCTL_CHILD_BRASSCRIBE_FIXTURES="$FIXTURES" SIMCTL_CHILD_BRASSCRIBE_SOUNDFONT="$SF" SIMCTL_CHILD_BRASSCRIBE_COMPANION="http://127.0.0.1:1" \
+  SIMCTL_CHILD_SCRIBE_FIXTURES="$FIXTURES" SIMCTL_CHILD_SCRIBE_SOUNDFONT="$SF" SIMCTL_CHILD_SCRIBE_COMPANION="http://127.0.0.1:1" \
     xcrun simctl launch "$dev" no.kalli.brasscribe -reset -skip-first-run -screen "$screen" -appearance "$look" "${LANGARGS[@]}" >/dev/null
   # the score screens engrave first
   case "$screen" in score|part|export) sleep $((WAIT + 14)) ;; *) sleep "$WAIT" ;; esac

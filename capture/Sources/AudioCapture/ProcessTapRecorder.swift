@@ -51,7 +51,7 @@ public final class ProcessTapRecorder: @unchecked Sendable {
     private var aggID = AudioObjectID(kAudioObjectUnknown)
     private var procID: AudioDeviceIOProcID?
     private var file: AVAudioFile?
-    private let queue = DispatchQueue(label: "brasscribe.capture")
+    private let queue = DispatchQueue(label: "no.kalli.scribe.capture")
     private var framesWritten: AVAudioFramePosition = 0
     private var peakValue: Float = 0
     private var writeError: Error?
@@ -85,7 +85,7 @@ public final class ProcessTapRecorder: @unchecked Sendable {
             desc.bundleIDs = [bundleID]
             desc.isProcessRestoreEnabled = true
         }
-        desc.name = "brasscribe-tap"
+        desc.name = "scribe-tap"
         desc.isPrivate = true
         desc.muteBehavior = .unmuted
 
@@ -102,8 +102,8 @@ public final class ProcessTapRecorder: @unchecked Sendable {
             throw error
         }
         let aggDesc: [String: Any] = [
-            kAudioAggregateDeviceNameKey: "brasscribe-aggregate",
-            kAudioAggregateDeviceUIDKey: "brasscribe-aggregate-\(UUID().uuidString)",
+            kAudioAggregateDeviceNameKey: "scribe-aggregate",
+            kAudioAggregateDeviceUIDKey: "scribe-aggregate-\(UUID().uuidString)",
             kAudioAggregateDeviceMainSubDeviceKey: outputUID,
             kAudioAggregateDeviceIsPrivateKey: true,
             kAudioAggregateDeviceIsStackedKey: false,

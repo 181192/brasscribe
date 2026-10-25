@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stage the band sounds for the app bundles: apps/apple/Sounds/<platform>/Sounds/ (not committed)
+# Stage the band sounds for the app bundles: apps/apple/products/brasscribe/Sounds/<platform>/Sounds/ (not committed)
 # becomes each bundle's Sounds/ folder, where PlaybackKit looks for them first (BandSounds.locateBand).
 #   macOS  brasscribe-band-16bit.sf2  (191 MB; else the 24-bit brasscribe-band.sf2)
 #   iOS    brasscribe-band-mobile.sf2 (68 MB: smaller, for phone memory and download size)
@@ -12,11 +12,11 @@ HERE="$(cd "$(dirname "$0")/.." && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 BAND="$ROOT/data/sounds/band"
 # Earlier layouts put one SoundFont for every platform straight into Sounds/.
-rm -f "$HERE"/Sounds/*.sf2 "$HERE"/Sounds/*.json
+rm -f "$HERE"/products/brasscribe/Sounds/*.sf2 "$HERE"/products/brasscribe/Sounds/*.json
 
 stage() {  # <platform> <SoundFont file name...>, the first that exists wins
   local platform="$1"; shift
-  local out="$HERE/Sounds/$platform/Sounds" src=""
+  local out="$HERE/products/brasscribe/Sounds/$platform/Sounds" src=""
   for f in "$@"; do
     if [ -s "$BAND/$f" ]; then src="$BAND/$f"; break; fi
   done

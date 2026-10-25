@@ -64,7 +64,7 @@ changed_areas() {
                          { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       core/*) add core; { [ "$tier" = full ] || [ -d core/target/conformance/mikkel ]; } && add conformance ;;
       studio/*) add studio ;;
-      apps/apple/Packages/ScreenCatalogue/*) add apple; add bandroom-mac ;;
+      apps/apple/testing/ScreenCatalogue/*) add apple; add bandroom-mac ;;
       apps/apple/*|capture/*) add apple ;;
       apps/bandroom/macos/*|.pixi-version) add bandroom-mac ;;
       apps/android/*) add android ;;
@@ -149,9 +149,9 @@ run_area() {
     full:studio) need_node_modules && (cd studio && npx vitest run && npm run build \
                    && STUDIO_STATIC_PORT="$(free_port)" npm run test:browser && npm run test:catalogue) ;;
     fast:apple) make -C apps/apple package-test-fast ;;
-    full:apple) (cd apps/apple/Packages/BrasscribeKit && swift test --no-parallel) \
-                && (cd apps/apple/Packages/NotationKit && swift test --no-parallel) \
-                && (cd apps/apple/Packages/ScreenCatalogue && swift test) \
+    full:apple) (cd apps/apple/services && swift test --no-parallel) \
+                && (cd apps/apple/features/score && swift test --no-parallel) \
+                && (cd apps/apple/testing/ScreenCatalogue && swift test) \
                 && (cd capture && swift test --no-parallel) \
                 && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh record ;;
     # Both apps' unit tests and their screens on the JVM (apps/android/README.md, Testing); fast leaves out the
@@ -163,9 +163,9 @@ run_area() {
     fast:windows) (cd apps/windows && dotnet test tests/Kalli.Scribe.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Scribe.Core.Tests && dotnet test) ;;
-    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/Packages/ScreenCatalogue && swift test) ;;
+    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/testing/ScreenCatalogue && swift test) ;;
     # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen; its build is the app's build.
-    full:bandroom-mac) (cd apps/apple/Packages/ScreenCatalogue && swift test) \
+    full:bandroom-mac) (cd apps/apple/testing/ScreenCatalogue && swift test) \
                        && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh record) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac

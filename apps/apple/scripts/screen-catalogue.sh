@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Play for Mac's screen catalogue (AppTests/PlayScreensTests.swift): every screen in every variant with its checks
+# Play for Mac's screen catalogue (products/brasscribe/AppTests/PlayScreensTests.swift): every screen in every variant with its checks
 # (names, target sizes, cut-off text, reading order), and a screenshot of each. Run through scripts/screenshots.sh:
 #
 #   scripts/screenshots.sh record    build the macOS app's tests and run it: the screenshots and each screen's
@@ -29,7 +29,7 @@ case "${1:-}" in
     # Only what failed, and the totals: the rest of what the tests print is the app's own logging.
     for lang in en nb; do
       (cd "$app" && TEST_RUNNER_CATALOGUE_OUT="$shots" TEST_RUNNER_CATALOGUE_LANGUAGE="$lang" \
-        xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribePlay-macOS \
+        xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribePlay-macOS \
           -destination 'platform=macOS' -testLanguage "$lang" -only-testing:BrasscribePlayTests_macOS/PlayScreensTests \
           test-without-building 2>&1 | { grep -E "^(✘|↳|✔ Test run|Failing tests|Restarting)|^\t[A-Za-z].*\(\)$|: error:" || true; }) || status=1
     done

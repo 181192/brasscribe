@@ -6,7 +6,7 @@ import Testing
 
 // Bandroom's side of the screen catalogue: its variants, its models on canned engine answers, and the drawing off
 // screen (README, Testing). The accessibility tree, the checks and the hooks' guards are the Mac apps' shared
-// ScreenCatalogue package (apps/apple/Packages/ScreenCatalogue). Nothing here shows a window: the views are drawn by
+// ScreenCatalogue package (apps/apple/testing/ScreenCatalogue). Nothing here shows a window: the views are drawn by
 // an NSHostingView in a borderless window that is never ordered in, far off any screen.
 
 /// One way a screen is drawn: appearance, contrast and text size. The language is the run's own

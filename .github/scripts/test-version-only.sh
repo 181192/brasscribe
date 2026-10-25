@@ -14,7 +14,7 @@ expect() { # expect 0|1 WHAT BASE HEAD   (in the current directory's repository)
 }
 
 # The files release.sh writes the version into.
-files="apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts apps/apple/project.yml apps/bandroom/macos/project.yml apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
+files="apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts apps/apple/products/brasscribe/project.yml apps/bandroom/macos/project.yml apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
 
 # ---- the real release commits (one that wrote a version file under an earlier path is skipped: the list is release.sh's)
 cd "$root"
@@ -39,7 +39,7 @@ base="$(git rev-parse HEAD)"
 
 bump() { # what release.sh writes, in every file
   sed -i.bak -E 's/^( *versionCode = )[0-9]+/\19999/; s/^( *versionName = )"[^"]*"/\1"99.0.0"/' apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts
-  sed -i.bak -E 's/^( *MARKETING_VERSION: )"[^"]*"/\1"99.0.0"/; s/^( *CURRENT_PROJECT_VERSION: )"[^"]*"/\1"9999"/' apps/apple/project.yml apps/bandroom/macos/project.yml
+  sed -i.bak -E 's/^( *MARKETING_VERSION: )"[^"]*"/\1"99.0.0"/; s/^( *CURRENT_PROJECT_VERSION: )"[^"]*"/\1"9999"/' apps/apple/products/brasscribe/project.yml apps/bandroom/macos/project.yml
   sed -i.bak -E 's#<Version>[^<]*</Version>#<Version>99.0.0</Version>#' apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props
   echo "## 99.0.0" >> CHANGELOG.md
   find . -name '*.bak' -delete
@@ -60,19 +60,19 @@ for f in $files; do
   for _ in $(seq 1 3000); do echo "# a line that is not a version"; done >> "$f"
   check 1 "3000 other lines added to $f"
 done
-bump; echo "# one more line" >> apps/apple/project.yml; check 1 "the version, and one more line in project.yml"
+bump; echo "# one more line" >> apps/apple/products/brasscribe/project.yml; check 1 "the version, and one more line in project.yml"
 bump; sed -i.bak -E 's/^( *minSdk = )[0-9]+/\11/' apps/android/products/brasscribe/build.gradle.kts; rm -f apps/android/products/brasscribe/build.gradle.kts.bak
 grep -q 'minSdk = 1$' apps/android/products/brasscribe/build.gradle.kts || { echo "FAILED: build.gradle.kts has no minSdk line to change"; failed=1; }
 check 1 "the version, and minSdk"
-bump; echo "++ a line that looks like a file header" >> apps/apple/project.yml; check 1 "the version, and an added line that starts with '++ '"
-printf -- '-- a line that looks like a file header\n' >> apps/apple/project.yml; git add -A; git commit -q -m "with a '-- ' line"
-with="$(git rev-parse HEAD)"; sed -i.bak '$d' apps/apple/project.yml; rm -f apps/apple/project.yml.bak; git add -A; git commit -q -m removed
+bump; echo "++ a line that looks like a file header" >> apps/apple/products/brasscribe/project.yml; check 1 "the version, and an added line that starts with '++ '"
+printf -- '-- a line that looks like a file header\n' >> apps/apple/products/brasscribe/project.yml; git add -A; git commit -q -m "with a '-- ' line"
+with="$(git rev-parse HEAD)"; sed -i.bak '$d' apps/apple/products/brasscribe/project.yml; rm -f apps/apple/products/brasscribe/project.yml.bak; git add -A; git commit -q -m removed
 expect 1 "a removed line that starts with '-- '" "$with" HEAD
 git reset -q --hard "$base"
-chmod +x apps/apple/project.yml; check 1 "only the file's mode changed"
-rm apps/apple/project.yml; ln -s ../bandroom/macos/project.yml apps/apple/project.yml; check 1 "a version file swapped for a symbolic link"
-bump; echo "x" > apps/apple/extra.yml; check 1 "the version, and an added file"
-git mv apps/apple/project.yml apps/apple/project-renamed.yml; check 1 "a version file renamed"
+chmod +x apps/apple/products/brasscribe/project.yml; check 1 "only the file's mode changed"
+rm apps/apple/products/brasscribe/project.yml; ln -s ../../../bandroom/macos/project.yml apps/apple/products/brasscribe/project.yml; check 1 "a version file swapped for a symbolic link"
+bump; echo "x" > apps/apple/products/brasscribe/extra.yml; check 1 "the version, and an added file"
+git mv apps/apple/products/brasscribe/project.yml apps/apple/products/brasscribe/project-renamed.yml; check 1 "a version file renamed"
 bump; echo "x" >> README.md; check 1 "the version, and another file"
 
 exit "$failed"

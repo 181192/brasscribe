@@ -20,12 +20,12 @@ case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 cd "$HERE"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 WORK="$HERE/build/ipa"
-IOS_MIN=26.0   # the deployment target in project.yml
+IOS_MIN=26.0   # the deployment target in products/brasscribe/project.yml
 fail() { echo "error: $*" >&2; exit 1; }
 
-xcodegen generate
+(cd products/brasscribe && xcodegen generate)
 rm -rf "$WORK"; mkdir -p "$WORK/Payload" "$(dirname "$OUT")"
-xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
+xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
   -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' \
   -archivePath "$WORK/BrasscribePlay.xcarchive" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" archive

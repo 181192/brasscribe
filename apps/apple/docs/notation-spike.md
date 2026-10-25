@@ -1,7 +1,7 @@
 # Notation spike: Verovio SVG drawn natively vs WKWebView
 
 **Decision: draw Verovio's SVG natively** with the small renderer in
-`Packages/BrasscribeKit/Sources/SVGRender`, and expose the score to VoiceOver as one element per part per bar,
+`services/Sources/SVGRender`, and expose the score to VoiceOver as one element per part per bar,
 labelled with the talking-score text.
 
 Both options use the same engraving: Verovio 6.3.0 (commit `425dd7b`, unmodified, built as a dynamic
@@ -25,10 +25,10 @@ benchmark series.
 Commands:
 
 ```sh
-cd apps/apple/Packages/NotationKit && swift test          # measureNativeRendering prints "SPIKE native: …"
-cd apps/apple && make project && xcodebuild -project BrasscribePlay.xcodeproj -scheme BrasscribePlay-macOS \
+cd apps/apple/features/score && swift test          # measureNativeRendering prints "SPIKE native: …"
+cd apps/apple && make project && xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -scheme BrasscribePlay-macOS \
   -destination 'platform=macOS' test -only-testing:BrasscribePlayTests_macOS/NotationSpikeWebView   # "SPIKE webview: …"
-cd apps/apple/Packages/BrasscribeKit && swift test --filter SVGRenderTests   # renderer parse/draw of one page
+cd apps/apple/services && swift test --filter SVGRenderTests   # renderer parse/draw of one page
 ```
 
 Raw lines (2026-09-26):

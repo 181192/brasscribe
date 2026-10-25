@@ -117,7 +117,7 @@ jobs:
       - name: Build ScribeFFI.xcframework
         run: scripts/build-core.sh
 
-      # Fixture-dependent tests (BRASSCRIBE_FIXTURES / data/golden) skip themselves when absent.
+      # Fixture-dependent tests (SCRIBE_FIXTURES / data/golden) skip themselves when absent.
       - name: Test (packages, macOS app)
         run: make package-test test-mac-app
 
@@ -355,7 +355,7 @@ jobs:
         run: |
           scripts/test-pixi-spec.sh
           scripts/test-kit.sh
-          (cd ../../apple/Packages/ScreenCatalogue && swift test)
+          (cd ../../apple/testing/ScreenCatalogue && swift test)
 
       - name: Screen catalogue
         if: ${{ !inputs.noise_bandroom }}
@@ -491,7 +491,7 @@ jobs:
         if: ${{ inputs.release }}
         run: |
           make project
-          xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
+          xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
             -scheme BrasscribePlay-macOS -configuration Release -destination 'generic/platform=macOS' build
           app=$(find build/DerivedData/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
           [ -n "$app" ] || { echo "no .app under build/DerivedData/Build/Products/Release" >&2; exit 1; }

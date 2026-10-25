@@ -121,7 +121,7 @@ digest of each key and what a Fretscribe APK must not carry (the band SoundFont,
 ## 3. Play for Mac
 
 ```sh
-cd apps/apple && xcodegen generate
+cd apps/apple/products/brasscribe && xcodegen generate
 xcodebuild -project BrasscribePlay.xcodeproj -scheme BrasscribePlay-macOS -configuration Release \
   -destination 'generic/platform=macOS' -derivedDataPath "$S/dd-play" build
 P="$S/stage/Brasscribe Play.app"
@@ -147,7 +147,7 @@ codesign -d --entitlements - "$P" | grep -q app-sandbox
 
 `make -C apps/apple install-mac` does the same build locally (hardened runtime off) and checks that the
 installed app stays up. Without UI automation, a quick crash check is
-`swift test --no-parallel --filter 'engineBuildsInASandboxedProcess|OutputStageTests'` in `apps/apple/Packages/BrasscribeKit`
+`swift test --no-parallel --filter 'engineBuildsInASandboxedProcess|OutputStageTests'` in `apps/apple/services`
 (it starts the playback engine in a sandboxed process), then opening the app and looking for a new
 `BrasscribePlay-*.ips` in `~/Library/Logs/DiagnosticReports`.
 
