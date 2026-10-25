@@ -12,6 +12,7 @@
   <Folder Name="/features/">
     <Project Path="features/Kalli.Scribe.Score/Kalli.Scribe.Score.csproj" />
     <Project Path="features/Kalli.Scribe.Play/Kalli.Scribe.Play.csproj" />
+    <Project Path="features/Kalli.Scribe.Tab/Kalli.Scribe.Tab.csproj" />
     <Project Path="features/Kalli.Scribe.Controls/Kalli.Scribe.Controls.csproj" />
   </Folder>
   <Folder Name="/products/brasscribe/">
