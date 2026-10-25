@@ -164,7 +164,6 @@
     <string name="transcribe_cancelled_kept">Stopped. The recording is in Your songs.</string>
     <string name="transcribe_cancelled">Stopped. You can start again from the recording.</string>
     <string name="transcribe_done">Tab ready</string>
-    <string name="transcribe_failed">The tab couldn\'t be made: %1$s</string>
 
     <!-- Problems, with what to do next. -->
     <string name="problem_score_title">The tab couldn\'t be made</string>
