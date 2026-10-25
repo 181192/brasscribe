@@ -77,8 +77,18 @@ func save(_ image: CGImage, _ name: String) {
     }
 }
 
+/// Whether the page can be drawn here. A package's tests on the iPhone simulator run without a window scene, where a web
+/// view does not draw: there the app's own tests take the page's pictures.
+let pagesDraw: Bool = {
+    #if os(macOS)
+    true
+    #else
+    false
+    #endif
+}()
+
 @MainActor
-@Suite(.serialized) struct TabPageTests {
+@Suite(.serialized, .enabled(if: pagesDraw)) struct TabPageTests {
     @Test(.timeLimit(.minutes(2))) func engravesOfflineInBothAppearancesAndFollowsTheCursor() async throws {
         let page = TabPage()
         let window = hosted(page)

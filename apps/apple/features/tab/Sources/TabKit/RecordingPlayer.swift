@@ -73,7 +73,8 @@ public final class AVRecordingPlayer: RecordingPlayer {
         observations.append(player.observe(\.timeControlStatus) { [weak self] _, _ in
             Task { @MainActor in self?.tell() }
         })
-        observations.append(item.observe(\.status) { [weak self] item, _ in
+        // from its first value: a file that cannot be read may fail before this is set up
+        observations.append(item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             guard item.status == .failed else { return }
             Task { @MainActor in self?.fail() }
         })
