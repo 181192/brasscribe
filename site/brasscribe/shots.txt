@@ -1,5 +1,5 @@
-# Screenshots used on the site, one slot per line. `uv run --with pillow python site/make_shots.py`
-# turns them into site/shots/<slot>-<en|nb>-<light|dark>[-1x].<avif|webp> (plus a .png for light).
+# Screenshots used on the site, one slot per line. `uv run --with pillow python site/brasscribe/make_shots.py`
+# turns them into site/brasscribe/shots/<slot>-<en|nb>-<light|dark>[-1x].<avif|webp> (plus a .png for light).
 # Columns: slot  kind  en-light  en-dark  nb-light  nb-dark   ("-" = none).
 # Kinds: phone = iPhone portrait, 600 px wide at 2x; tablet = iPad portrait, 720 px; desktop = 16:10,
 # 1440 px (cropped from the top); mac = a macOS window with its own title bar, 1440 px at its own ratio.

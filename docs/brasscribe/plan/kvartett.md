@@ -237,9 +237,9 @@ Every table must resolve "1st Cornet" and "Tenor Horn". If one doesn't, the resu
 - `docs/shared/research/10-benchmark-results.md`: a "Quartet arrangement" section with the numbers
 - `music/README.md`, `core/README.md`, `eval/README.md`, `docs/brasscribe/plan/apps-plan.md`: mention the third lineup
 - `design/brands/brasscribe/mockups/choose-output.html:42-43,74-75` and `design/brands/brasscribe/mockups/png/choose-output-*.png`: third card
-- `site/guide/index.html:172`, `site/nb/guide/index.html:170`, `site/nb/index.html:132-136`, `site/shots/output-*.png`: "Full brass band, small band or quartet"
+- `site/brasscribe/guide/index.html:172`, `site/brasscribe/nb/guide/index.html:170`, `site/brasscribe/nb/index.html:132-136`, `site/brasscribe/shots/output-*.png`: "Full brass band, small band or quartet"
 
-This change also fixes an inconsistency in the picker strings. The small band is "Lite korps" on Apple (`make-string-catalog.py:143`, `:197`) and on the nb site (`site/nb/index.html:132,136`, `site/nb/guide/index.html:164`), but "Lite band" on Android, Windows and in the mockup. Every surface gets **«Lite band»**, because this change edits the same strings anyway. The new label is "Kvartett" everywhere.
+This change also fixes an inconsistency in the picker strings. The small band is "Lite korps" on Apple (`make-string-catalog.py:143`, `:197`) and on the nb site (`site/brasscribe/nb/index.html:132,136`, `site/brasscribe/nb/guide/index.html:164`), but "Lite band" on Android, Windows and in the mockup. Every surface gets **«Lite band»**, because this change edits the same strings anyway. The new label is "Kvartett" everywhere.
 
 ### 2.10 Share or print, and the disabled card
 
@@ -328,7 +328,7 @@ Other branches are changing the apps' connection and pairing UI and the engine's
 | `apps/android/.../PlayViewModel.kt` | `feat/android-listen-stop-connection` | high |
 | `apps/windows/.../MainViewModel.cs`, `MainWindow.xaml.cs` | `feat/windows-listen-stop-connection`, `feat/bandroom-windows` | high |
 | string catalogs: Android `values*/strings.xml`, Apple `make-string-catalog.py` + `Localizable.xcstrings`, Windows `gen_resw.py` + `Resources.resw` | every app UI branch | high. Add strings at the end of each block and regenerate after rebasing. |
-| screenshots under `apps/*/docs/screenshots`, `site/shots` | design branches | medium. Retake last. |
+| screenshots under `apps/*/docs/screenshots`, `site/brasscribe/shots` | design branches | medium. Retake last. |
 | `sounds/mapping.json`, `sounds/seating.json`, `sounds/render.py` | `feat/band-sound-per-instrument` (maps every part to a real-sample preset, with a check that fails on a GM fallback) | high. The quartet names and banks (§1.1) have been sent to that branch. Add the quartet rows on top of it once it lands, and make its GM-fallback check cover the quartet lineup. |
 | `design/brands/brasscribe/system.md` (Share or print labels) | design branches | medium |
 
@@ -399,7 +399,7 @@ pixi run bench-cpu                                                     # or: scr
 9. **Windows, then screenshots and docs.**
    - Apply the §2.7 Windows rows and §2.10, and run `gen_resw.py`.
    - Update `design/brands/brasscribe/system.md:116` with the quartet share labels.
-   - Retake the output screenshots on all three apps, the mockup PNGs and `site/shots`.
+   - Retake the output screenshots on all three apps, the mockup PNGs and `site/brasscribe/shots`.
    - Update the site guide text and the READMEs.
 
    *Done when:* `(cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests -c Release)` passes (on Windows CI; locally `tools/check-macos.sh`).

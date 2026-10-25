@@ -20,7 +20,7 @@ steps are scripted in `scripts/release.sh`. Read both before starting.
 5. After the merge: `git pull`, then `scripts/release.sh --tag X.Y.Z` tags the release commit and
    pushes the tag, which starts `.github/workflows/release.yml`.
 6. Watch it: `gh run list -w release -L 1`, then `gh run watch <id>`. When it finishes, check the
-   release page lists every file the site's download table links to (`site/guide/index.html`).
+   release page lists every file the site's download table links to (`site/brasscribe/guide/index.html`).
 7. If the workflow did not start from the tag, start it: `gh workflow run release.yml --ref vX.Y.Z`.
 
 Never move or delete a published tag, and never publish from a local build unless the doc's
