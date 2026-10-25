@@ -56,6 +56,16 @@ jobs:
     uses: ./.github/workflows/apple.yml
     with:
       release: true
+      skip_fretscribe: true
+
+  # Fretscribe for Mac, iPhone and iPad on its own: when it fails, the release still goes out, without its files.
+  apple-fretscribe:
+    needs: checks
+    uses: ./.github/workflows/apple.yml
+    with:
+      release: true
+      skip_play: true
+      skip_bandroom: true
 
   windows:
     needs: checks
@@ -75,7 +85,7 @@ jobs:
 
   github:
     name: publish GitHub release
-    needs: [core, android, apple, windows, windows-fretscribe]
+    needs: [core, android, apple, apple-fretscribe, windows, windows-fretscribe]
     if: >-
       ${{ !cancelled() && needs.core.result == 'success' && needs.android.result == 'success'
       && needs.apple.result == 'success' && needs.windows.result == 'success' }}

@@ -25,7 +25,9 @@ on:
       release:
         type: boolean
         default: false
-      # Set by ci.yml when a pull request does not reach that app. Unset (false), both apps are checked.
+      # Set by ci.yml when a pull request does not reach that app. Unset (false), every app is checked. With `release`,
+      # release.yml builds Fretscribe in a call of its own (skip_play and skip_bandroom) beside the others' (skip_fretscribe),
+      # so a Fretscribe failure does not hold back the release.
       skip_play:
         type: boolean
         default: false
@@ -64,7 +66,7 @@ permissions:
 # is the caller's name, so the nightly tests on main neither wait for ci's run there nor take the place of one
 # that is waiting. Each noise run is a group of its own: several are started on one branch, and all must run.
 concurrency:
-  group: apple-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}-${{ inputs.iphone_tests }}-${{ (inputs.noise_play || inputs.noise_bandroom) && github.run_id || '' }}
+  group: apple-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}${{ inputs.release && inputs.skip_play && '-fretscribe' || '' }}-${{ inputs.iphone_tests }}-${{ (inputs.noise_play || inputs.noise_bandroom) && github.run_id || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -512,7 +514,7 @@ jobs:
 
   build:
     name: release build
-    if: ${{ inputs.release }}
+    if: ${{ inputs.release && !inputs.skip_play }}
     # Newest GA macOS image (macos-latest points here too).
     runs-on: macos-26
     timeout-minutes: 60
@@ -644,7 +646,7 @@ jobs:
   # devices and not the simulator, nothing signed left inside, the band sounds).
   ios:
     name: release build for iPhone and iPad (unsigned)
-    if: ${{ inputs.release }}
+    if: ${{ inputs.release && !inputs.skip_play }}
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -706,12 +708,12 @@ jobs:
           path: ${{ runner.temp }}/out/*.ipa
           if-no-files-found: error
 
-  # Fretscribe's release builds, jobs of their own beside Play's and Bandroom's: one product's failure does not take the
-  # others' files away. The Mac app is re-signed ad hoc as Play's; it carries no band sounds and no Verovio, and the tab
+  # Fretscribe's release builds, jobs of their own beside Play's and Bandroom's, which release.yml calls apart from them
+  # (skip_play, skip_fretscribe): one product's failure does not hold back the others' release. The Mac app is re-signed ad hoc as Play's; it carries no band sounds and no Verovio, and the tab
   # page with alphaTab is what it must have. The IPA is built and checked by the same script as Play's.
   release-fretscribe-mac:
     name: release build of Fretscribe for Mac
-    if: ${{ inputs.release }}
+    if: ${{ inputs.release && !inputs.skip_fretscribe }}
     runs-on: macos-26
     timeout-minutes: 45
     steps:
@@ -757,7 +759,7 @@ jobs:
 
   release-fretscribe-ios:
     name: release build of Fretscribe for iPhone and iPad (unsigned)
-    if: ${{ inputs.release }}
+    if: ${{ inputs.release && !inputs.skip_fretscribe }}
     runs-on: macos-26
     timeout-minutes: 45
     steps:
