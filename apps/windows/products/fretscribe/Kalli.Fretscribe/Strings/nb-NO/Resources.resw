@@ -1368,6 +1368,12 @@
   <data name="Tab_What_Song_Desc_Ukulele" xml:space="preserve">
     <value>Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en ukulele fra en gitar.</value>
   </data>
+  <data name="Tab_Where_Computer" xml:space="preserve">
+    <value>Bandroom på {0}</value>
+  </data>
+  <data name="Tab_Where_YourComputer" xml:space="preserve">
+    <value>Bandroom på datamaskinen</value>
+  </data>
   <data name="Tab_Zoom" xml:space="preserve">
     <value>{0} %</value>
   </data>
@@ -1385,9 +1391,6 @@
   </data>
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Skriver ned tonene</value>
-  </data>
-  <data name="TranscribeWhere.Text" xml:space="preserve">
-    <value>På datamaskinen</value>
   </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
     <value>Slutte å skrive det ned? Opptaket blir liggende i Sangene dine i 30 dager.</value>

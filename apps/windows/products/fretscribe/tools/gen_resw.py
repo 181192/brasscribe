@@ -200,7 +200,8 @@ add("Tab_TooOld_Mandolin", "Bandroom on your computer is too old to write mandol
 
 # ---- writing down the notes ----
 name("TranscribeProgress", "Writing down the notes", "Skriver ned tonene")
-prop("TranscribeWhere", "Text", "On your computer", "På datamaskinen")
+add("Tab_Where_Computer", "Bandroom on {0}", "Bandroom på {0}")
+add("Tab_Where_YourComputer", "Bandroom on your computer", "Bandroom på datamaskinen")
 text_button("CancelTranscriptionButton", "Cancel", "Avbryt", "Stop writing it down (asks first)", "Slutt å skrive det ned (spør først)")
 prop("TranscribeLeaveNote", "Text", "The tab is in Your songs when it is ready.", "Tabben ligger i Sangene dine når den er klar.")
 add("CancelDialog_Title", "Stop writing it down?", "Slutte å skrive det ned?")

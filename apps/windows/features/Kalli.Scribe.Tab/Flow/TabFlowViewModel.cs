@@ -51,6 +51,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
         // the computer is asked which profiles it has. Before the library's own handler, which asks that engine too.
         Settings.Connection.PropertyChanged += (_, e) =>
         {
+            if (e.PropertyName == nameof(ConnectionMonitor.ServerName)) OnPropertyChanged(nameof(WhereText));
             if (e.PropertyName != nameof(ConnectionMonitor.State)) return;
             _engine = null;
             // A state shown as sample content has no computer behind it to ask.
@@ -218,6 +219,11 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     /// <summary>Settings' "Your instrument" row: "Guitar, 6 strings · Standard".</summary>
     public string InstrumentSummary => Instrument.Summary(Instrument.Stored);
+
+    /// <summary>Where the notes are written down, by the computer's name: "Bandroom on Studio PC", never its address.</summary>
+    public string WhereText => ServerNames.ComputerName(Settings.Connection.ServerName) is { Length: > 0 } name
+        ? _s.Format("Tab_Where_Computer", name)
+        : _s["Tab_Where_YourComputer"];
 
     /// <summary>The computer is connected (a state shown as sample content counts as there).</summary>
     public bool ComputerThere => Settings.Connection.IsConnected;

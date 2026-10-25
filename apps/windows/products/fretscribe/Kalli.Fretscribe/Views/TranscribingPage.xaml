@@ -51,7 +51,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                     <FontIcon Glyph="{StaticResource FsIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
-                    <TextBlock x:Uid="TranscribeWhere" Style="{StaticResource MutedStyle}" />
+                    <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind Main.WhereText, Mode=OneWay}" />
                 </StackPanel>
                 <Button x:Name="CancelButton" x:Uid="CancelTranscriptionButton" Grid.Column="1" Style="{StaticResource ActionButtonStyle}"
                         MinHeight="48" Padding="20,10" Click="OnCancelClick" AccessKey="X" IsEnabled="{x:Bind ViewModel.IsRunning, Mode=OneWay}" />

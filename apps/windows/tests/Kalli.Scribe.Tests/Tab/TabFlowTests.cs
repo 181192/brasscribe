@@ -291,6 +291,8 @@ public class TabFlowTests : TempFolderTest
             if (scene == "check-the-song") Assert.Contains(flow.Check.Rows, r => r.HasChange);
             if (scene == "what-is-this") Assert.Null(flow.WhatIsThis.Missing);
             if (scene == "what-is-this-offline") Assert.Equal("Tab_What_ConnectFirst", flow.WhatIsThis.Missing);
+            // The computer by its name, never its address.
+            if (scene == "transcribing") Assert.Equal("Tab_Where_Computer(Studio PC)", flow.WhereText);
             // The scenes never talk to a computer.
             Assert.Empty(computer.Requests);
         }

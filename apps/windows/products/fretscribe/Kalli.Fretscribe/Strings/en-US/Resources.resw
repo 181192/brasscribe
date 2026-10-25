@@ -1368,6 +1368,12 @@
   <data name="Tab_What_Song_Desc_Ukulele" xml:space="preserve">
     <value>A band or a record. This only works when no guitar is playing: in a song, Fretscribe can't tell a ukulele from a guitar.</value>
   </data>
+  <data name="Tab_Where_Computer" xml:space="preserve">
+    <value>Bandroom on {0}</value>
+  </data>
+  <data name="Tab_Where_YourComputer" xml:space="preserve">
+    <value>Bandroom on your computer</value>
+  </data>
   <data name="Tab_Zoom" xml:space="preserve">
     <value>{0}%</value>
   </data>
@@ -1385,9 +1391,6 @@
   </data>
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Writing down the notes</value>
-  </data>
-  <data name="TranscribeWhere.Text" xml:space="preserve">
-    <value>On your computer</value>
   </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
     <value>Stop writing it down? The recording stays in Your songs for 30 days.</value>
