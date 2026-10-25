@@ -59,6 +59,9 @@ struct RecordingPlayerTests {
         let player = AVRecordingPlayer(file: url, listener: heard, silent: true)
         defer { player.release() }
         await until(5) { heard.failed > 0 }
+        // the iPhone's player may read the file only once it is asked to play it
+        if heard.failed == 0 { player.play(); await until(5) { heard.failed > 0 } }
         #expect(heard.failed == 1)
+        #expect(!player.playing)
     }
 }
