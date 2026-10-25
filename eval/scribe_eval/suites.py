@@ -392,7 +392,7 @@ def _readability(data: Path, mode: str) -> dict[str, float]:
     import sys
 
     tool = ROOT / "qa" / "shared" / "tools" / "musicxml_readability.py"
-    baseline = ROOT / "qa" / "reports" / "mikkel-golden-readability.json"
+    baseline = ROOT / "qa" / "brasscribe" / "reports" / "mikkel-golden-readability.json"
     if not tool.exists() or not baseline.exists():
         raise SkipSuite("qa readability tool or its baseline is missing")
     out: dict[str, float] = {}
