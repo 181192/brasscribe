@@ -195,7 +195,7 @@ Studio has no lineup picker, so there is nothing else to change.
 | `app/src/main/res/values/strings.xml:219-225`, `values-nb/strings.xml:217-223` | `lineup_quartet` "Quartet" / "Kvartett", `lineup_quartet_desc` |
 | `engine-client/openapi.json` | `./gradlew :engine-client:syncOpenApi`. `EngineContractTest` compares the enums. |
 | `core-bridge/src/test/.../RustCoreBridgeTest.kt:84-86` | a quartet case |
-| `docs/screenshots/design/08-output-*.png` | retake |
+| `apps/android/docs/screenshots/brasscribe/design/08-output-*.png` | retake |
 
 **Windows**
 | File:line | Change |
