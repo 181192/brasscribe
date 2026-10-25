@@ -303,7 +303,7 @@ public class TabFlowTests : TempFolderTest
     public async Task Share_or_print_offers_what_the_job_wrote_and_saves_it()
     {
         var (flow, _, _) = Build(Computer());
-        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        flow.Settings.Connection.Show(ConnectionState.Connected, Wire.ServerNamePrefix + "Studio PC");
         await flow.Start.OpenPathAsync(await Take());
         await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
         flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.Single(c => c.Recording == Recording.Instrument));
@@ -330,7 +330,7 @@ public class TabFlowTests : TempFolderTest
         Assert.StartsWith("Tab_Export_Saved(", flow.Export.StatusText);
 
         // Without the computer, only this PC's MusicXML can be had.
-        flow.Settings.Connection.Show(ConnectionState.Offline, ServerNames.Prefix + "Studio PC");
+        flow.Settings.Connection.Show(ConnectionState.Offline, Wire.ServerNamePrefix + "Studio PC");
         flow.PrepareExport();
         Assert.Equal([TabExportFormat.MusicXml], flow.Export.Options.Where(o => o.IsAvailable).Select(o => o.Format));
         Assert.Equal("Tab_Export_NeedsComputer", flow.Export.Options.First(o => o.Format == TabExportFormat.TextTab).Reason);
@@ -340,7 +340,7 @@ public class TabFlowTests : TempFolderTest
     public async Task A_take_whose_tab_was_not_made_is_kept_in_Your_songs_and_opens_What_is_this_again()
     {
         var (flow, _, _) = Build(Failing());
-        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        flow.Settings.Connection.Show(ConnectionState.Connected, Wire.ServerNamePrefix + "Studio PC");
         await flow.Start.OpenPathAsync(await Take());
         await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
         flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.Single(c => c.Recording == Recording.Instrument));
