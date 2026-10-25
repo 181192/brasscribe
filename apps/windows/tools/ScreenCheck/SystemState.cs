@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>
 /// Windows settings of this user that a catalogue run is taken in: a contrast theme (SPI_SETHIGHCONTRAST, the

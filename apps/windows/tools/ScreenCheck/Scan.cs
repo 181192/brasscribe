@@ -7,7 +7,7 @@ using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using FlaUI.UIA3;
 
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>
 /// The checks that read a running window through UI Automation, from this process: the Axe.Windows rules, and a

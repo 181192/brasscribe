@@ -1,4 +1,4 @@
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>What a piece of text on screen is, for the contrast it needs (WCAG 1.4.3 and 1.4.11).</summary>
 public enum TextKind

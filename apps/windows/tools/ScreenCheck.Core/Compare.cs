@@ -1,4 +1,4 @@
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>
 /// What differs between two pictures of one screen taken in the same run (Home started in a theme against Home switched
