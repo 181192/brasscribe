@@ -152,6 +152,9 @@ final class FretscribeModel: PlayHost {
 
     // MARK: PlayHost
 
+    /// Fretscribe and Bandroom are downloaded from the repository's latest release.
+    let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
+
     func pairedWithComputer() async { await refreshComputerSongs() }
     func recorded(_ url: URL, title: String) { ask(PendingSource(audioURL: url, title: title)) }
     func recordedSilence() { show(.silence) }

@@ -41,7 +41,6 @@ import TabKit
         let page = TabPage()
         page.webView.frame = vc.view.bounds
         vc.view.addSubview(page.webView)
-        try await page.blockNetwork()
         let light = TabPalette(ink: "#1a1a1a", string: "#8a8a8a", uncertain: "#c0392b", cursor: "#2f6fde", cursorTint: nil)
         let e = try await page.show(musicXML: try Self.fixture("bass-line/tab.musicxml"), palette: light)
         #expect(e.bars.count == 15)

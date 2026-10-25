@@ -1700,13 +1700,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Bandroom on your computer (it is Brasscribe Bandroom in the list of programs) and choose Pair a phone."
+            "value": "Open Bandroom on your computer and choose Pair a phone."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Åpne Bandroom på datamaskinen (det heter Brasscribe Bandroom i listen over programmer), og velg Koble til en telefon."
+            "value": "Åpne Bandroom på datamaskinen, og velg Koble til en telefon."
           }
         }
       }
@@ -1716,13 +1716,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bandroom is free for Mac (Apple silicon) and Windows, and is called Brasscribe Bandroom when you install it. On your computer, download it from this address:"
+            "value": "Bandroom is free for Mac (Apple silicon) and Windows. On your computer, download it from this address:"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bandroom er gratis for Mac (Apple silicon) og Windows, og heter Brasscribe Bandroom når du installerer det. Last det ned på datamaskinen fra denne adressen:"
+            "value": "Bandroom er gratis for Mac (Apple silicon) og Windows. Last det ned på datamaskinen fra denne adressen:"
           }
         }
       }
