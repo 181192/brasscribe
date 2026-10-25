@@ -19,12 +19,6 @@ public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, E
 /// Owns the child view models and the engine client; the WinUI shell binds <see cref="Screen"/> to
 /// its navigation and moves keyboard focus to each screen's heading.
 /// </summary>
-/// <summary>A row of "Your scores": a score on this PC, or a finished score on the paired computer.</summary>
-public sealed record LibraryItem(string Id, string Title, string Subtitle, bool OnComputer = false, string? JobId = null)
-{
-    public bool OnThisPc => !OnComputer;
-}
-
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IAnnouncer _announcer;
@@ -79,6 +73,18 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Error = new ErrorViewModel(strings);
         Library = library;
+        // Every change of the connection: whichever engine answers next is asked for its interface version first. Before
+        // the library's own handler, which fetches the computer's scores again from that engine.
+        Settings.Connection.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConnectionMonitor.State)) _engine = null;
+        };
+        LibraryView = new LibraryViewModel(library, kind.Target, () => Engine, settings.Connection, announcer, strings, LibrarySubtitle);
+        LibraryView.ProblemNoticed += (_, text) => ProblemNoticed?.Invoke(this, text);
+        LibraryView.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LibraryViewModel.HasItems)) OnPropertyChanged(nameof(HasLibrary));
+        };
         Score.PersistEditedScore = (xml, compositionJson) =>
         {
             if (_libraryId is { } id) Keep(() => Library?.SaveMusicXml(id, xml, compositionJson, Output.Applied.Lineup));
@@ -91,8 +97,6 @@ public sealed partial class MainViewModel : ObservableObject
         {
             if (_libraryId is { } id) Library?.SaveReviewChanges(id, changes);
         };
-        RefreshLibrary();
-        if (library is not null) library.Changed += (_, _) => RefreshLibrary();
         Screen = settings.FirstRunDone ? Screen.Start : Screen.FirstRun;
 
         // After a new score: check the notes, then "How should the score be?", then the score.
@@ -144,20 +148,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (failure is TranscriptionFailure.UpdateApp or TranscriptionFailure.UpdateBandroom) Settings.Connection.Kick();
             Screen = Screen.Error;
         };
-        // Every change of the connection: whichever engine answers next is asked for its interface version first, and
-        // the computer's scores are fetched again when it is connected, and gone from the list when it is not.
-        Settings.Connection.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName != nameof(ConnectionMonitor.State)) return;
-            _engine = null;
-            if (!Settings.Connection.IsConnected)
-            {
-                _computerJobs = [];
-                RefreshLibrary();
-            }
-            // A state shown as sample content has no computer behind it to ask.
-            else if (!Settings.Connection.IsPreview) _ = RefreshComputerScoresAsync();
-        };
+
 
         Start.SourceReady += async (_, src) =>
         {
@@ -327,8 +318,11 @@ public sealed partial class MainViewModel : ObservableObject
     public ErrorViewModel Error { get; }
     public ScoreLibrary? Library { get; }
 
+    /// <summary>"Your scores" in the sidebar and on Home: this PC's and the computer's.</summary>
+    public LibraryViewModel LibraryView { get; }
+
     /// <summary>"Your scores" in the sidebar and on Home, newest first.</summary>
-    public System.Collections.ObjectModel.ObservableCollection<LibraryItem> LibraryItems { get; } = [];
+    public System.Collections.ObjectModel.ObservableCollection<LibraryItem> LibraryItems => LibraryView.Items;
 
     private (SourceAudio Source, SourceKindOption Kind)? _lastChoice;
     private string? _libraryId;
@@ -344,7 +338,7 @@ public sealed partial class MainViewModel : ObservableObject
             var entry = Library.Entries.FirstOrDefault(e => e.Id == id);
             if (entry is null) return false;
             Score.Load(File.ReadAllText(entry.MusicXmlPath), Score.Composition);
-            if (entry.JobId is { } jobId) _ = RenameOnComputerAsync(jobId, cleaned);
+            if (entry.JobId is { } jobId) _ = LibraryView.RenameOnComputerAsync(jobId, cleaned);
             return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Xml.XmlException or FormatException)
@@ -481,47 +475,17 @@ public sealed partial class MainViewModel : ObservableObject
         if (_libraryId is { } id) Keep(() => Library?.SetNotesToCheck(id, Score.UncertainLeft));
     }
 
-    /// <summary>
-    /// A write to "Your scores" that must not end what the player is doing: a full disk or a file another
-    /// app holds is said (and shown through <see cref="ProblemNoticed"/>), and the score on screen stays as it is.
-    /// </summary>
-    private void Keep(Action write)
-    {
-        try { write(); }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            string text = _s["Library_SaveFailed"];
-            _announcer.Announce(text, AnnouncementKind.Important);
-            ProblemNoticed?.Invoke(this, text);
-        }
-    }
+    /// <summary>A write to "Your scores" that must not end what the player is doing (see <see cref="LibraryViewModel.Keep"/>).</summary>
+    private void Keep(Action write) => LibraryView.Keep(write);
 
     /// <summary>Something went wrong that the player should see; the window shows it in its notice bar.</summary>
     public event EventHandler<string>? ProblemNoticed;
 
     /// <summary>"Your scores" has entries (else Home shows the empty state).</summary>
-    [ObservableProperty] public partial bool HasLibrary { get; set; }
+    public bool HasLibrary => LibraryView.HasItems;
 
-    private IReadOnlyList<Job> _computerJobs = [];
-
-    /// <summary>
-    /// Fetches the computer's finished scores of this app's target (the computer serves other apps too); only this
-    /// PC's are listed when the computer can't be reached or has another interface version (its client asks that
-    /// first, and then sends nothing more).
-    /// </summary>
-    public async Task RefreshComputerScoresAsync()
-    {
-        try
-        {
-            _computerJobs = [.. (await Engine.ListJobsAsync()).Where(j => Kind.Target.Makes(j.Target))];
-        }
-        catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException or TaskCanceledException
-                                   or System.Text.Json.JsonException)
-        {
-            _computerJobs = [];
-        }
-        RefreshLibrary();
-    }
+    /// <summary>Fetches the computer's finished scores of this app's target (see <see cref="LibraryViewModel.RefreshComputerAsync"/>).</summary>
+    public Task RefreshComputerScoresAsync() => LibraryView.RefreshComputerAsync();
 
     /// <summary>Opens any row: a computer score is downloaded into the library first. <paramref name="review"/> goes to "Check the notes".</summary>
     public async Task OpenLibraryItemAsync(LibraryItem item, bool review = false)
@@ -530,15 +494,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             try
             {
-                var job = await Engine.GetJobAsync(jobId);
-                var composition = await Engine.GetCompositionAsync(jobId);
-                string xml;
-                await using (var stream = await Engine.DownloadAsync(jobId, JobDownload.MusicXml))
-                using (var reader = new StreamReader(stream))
-                    xml = await reader.ReadToEndAsync();
-                Evidence? evidence = null;
-                try { evidence = await Engine.GetEvidenceAsync(jobId); }
-                catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
+                var (job, composition, xml, evidence) = await LibraryView.DownloadAsync(jobId);
                 _result = null;
                 _myPartOverride = Library?.Entries.FirstOrDefault(e => e.JobId == jobId)?.MyPart;
                 Output.HasEngineJob = false;
@@ -557,7 +513,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
             catch (EngineException e) when (e.Interface is { } answer)
             {
-                Start.ErrorText = SayUpdate(answer, notice: false);
+                Start.ErrorText = LibraryView.SayUpdate(answer, notice: false);
                 return;
             }
             catch (Exception e) when (e is EngineException or HttpRequestException or IOException or FormatException
@@ -579,114 +535,26 @@ public sealed partial class MainViewModel : ObservableObject
         if (cleaned.Length == 0) return false;
         if (item.OnComputer)
         {
-            if (item.JobId is not { } jobId || !await RenameOnComputerAsync(jobId, cleaned)) return false;
+            if (item.JobId is not { } jobId || !await LibraryView.RenameOnComputerAsync(jobId, cleaned)) return false;
             await RefreshComputerScoresAsync();
             return true;
         }
         if (_libraryId == item.Id) return RenameCurrentScore(cleaned);
         if (Library?.Entries.FirstOrDefault(e => e.Id == item.Id) is not { } entry) return false;
-        try
-        {
-            Library.Rename(item.Id, cleaned);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Xml.XmlException or FormatException)
-        {
-            _announcer.Announce(_s.Format("Score_RenameFailed", cleaned), AnnouncementKind.Important);
-            return false;
-        }
-        if (entry.JobId is { } job) _ = RenameOnComputerAsync(job, cleaned);
+        if (!LibraryView.RenameHere(item.Id, cleaned)) return false;
+        if (entry.JobId is { } job) _ = LibraryView.RenameOnComputerAsync(job, cleaned);
         return true;
     }
 
-    /// <summary>"Delete" on any row: this PC's copy, or the run on the computer.</summary>
+    /// <summary>"Delete" on any row: this PC's copy, or the run on the computer; the score on screen closes with its copy.</summary>
     public async Task<bool> DeleteLibraryItemAsync(LibraryItem item)
     {
-        if (item.OnComputer)
+        return await LibraryView.DeleteAsync(item, removedHere: () =>
         {
-            try
-            {
-                if (item.JobId is { } jobId) await Engine.DeleteRunAsync(jobId);
-            }
-            catch (EngineException e) when (e.Interface is { } answer)
-            {
-                SayUpdate(answer);
-                return false;
-            }
-            catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException)
-            {
-                _announcer.Announce(_s.Format("Library_DeleteFailed", item.Title), AnnouncementKind.Important);
-                return false;
-            }
-            await RefreshComputerScoresAsync();
-        }
-        else
-        {
-            Keep(() => Library?.Remove(item.Id));
-            if (_libraryId == item.Id)
-            {
-                _libraryId = null;
-                if (Screen is Screen.Score or Screen.Review or Screen.ChooseOutput) Screen = Screen.Start;
-            }
-        }
-        _announcer.Announce(_s.Format("Library_Deleted", item.Title));
-        return true;
-    }
-
-    private async Task<bool> RenameOnComputerAsync(string jobId, string title)
-    {
-        try
-        {
-            await Engine.RenameRunAsync(jobId, title);
-            return true;
-        }
-        catch (EngineException e) when (e.Interface is { } answer)
-        {
-            SayUpdate(answer);
-            return false;
-        }
-        catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException)
-        {
-            return false;
-        }
-    }
-
-    private void RefreshLibrary()
-    {
-        LibraryItems.Clear();
-        var rows = new List<(DateTimeOffset When, LibraryItem Item)>();
-        if (Library is not null)
-            rows.AddRange(Library.Entries.Select(e => (e.Updated, new LibraryItem(e.Id, ScoreTitles.Display(e.Title, e.Updated, _s), LibrarySubtitle(e)))));
-        // The computer's finished runs not already here; re-runs of one recording collapse to the latest.
-        var downloaded = Library?.Entries.Select(e => e.JobId).OfType<string>().ToHashSet() ?? [];
-        var seenAudio = new HashSet<string>();
-        foreach (var j in _computerJobs.OrderByDescending(j => j.Created))
-        {
-            if (j.Status != JobStatus.Succeeded || !(j.Outputs ?? []).Any(o => o.EndsWith(".musicxml", StringComparison.OrdinalIgnoreCase))) continue;
-            if (j.AudioId is { } audio && !seenAudio.Add(audio)) continue;
-            if (downloaded.Contains(j.Id)) continue;
-            var when = DateTimeOffset.FromUnixTimeMilliseconds((long)(j.Created * 1000)).ToLocalTime();
-            rows.Add((when, new LibraryItem("job:" + j.Id, ScoreTitles.Display(j.Title, when, _s), _s.Format("Library_OnComputer", WhenText(when)), true, j.Id)));
-        }
-        MarkDuplicateTimes(rows);
-        foreach (var (_, item) in rows.OrderByDescending(r => r.When).Take(20)) LibraryItems.Add(item);
-        HasLibrary = LibraryItems.Count > 0;
-    }
-
-    private string WhenText(DateTimeOffset when) => when.Date == DateTimeOffset.Now.Date ? _s["Library_Today"]
-        : when.Date == DateTimeOffset.Now.Date.AddDays(-1) ? _s["Library_Yesterday"]
-        : when.ToString(_s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase) ? "d. MMMM" : "d MMM", System.Globalization.CultureInfo.CurrentUICulture);
-
-    /// <summary>Same titles get the time as well ("Today 19:02"), so the recordings can be told apart.</summary>
-    private void MarkDuplicateTimes(List<(DateTimeOffset When, LibraryItem Item)> rows)
-    {
-        var dupes = ScoreTitles.Duplicates(rows.Select(r => r.Item.Title));
-        for (int i = 0; i < rows.Count; i++)
-            if (dupes.Contains(rows[i].Item.Title))
-                rows[i] = (rows[i].When, rows[i].Item with
-                {
-                    Subtitle = rows[i].Item.Subtitle.Replace(WhenText(rows[i].When),
-                        WhenText(rows[i].When) + " " + rows[i].When.ToLocalTime().ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)),
-                });
+            if (_libraryId != item.Id) return;
+            _libraryId = null;
+            if (Screen is Screen.Score or Screen.Review or Screen.ChooseOutput) Screen = Screen.Start;
+        });
     }
 
     /// <summary>
@@ -718,7 +586,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (!e.IsAvailable) return _s["Library_Unavailable"];
         string lineup = LineupLabel(Lineups.Parse(e.Lineup), e.Parts);
         string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
-        return _s.Format("Library_Subtitle", lineup, e.Bars, WhenText(e.Updated)) + check;
+        return _s.Format("Library_Subtitle", lineup, e.Bars, LibraryViewModel.WhenText(e.Updated, _s)) + check;
     }
 
     /// <summary>
@@ -736,20 +604,6 @@ public sealed partial class MainViewModel : ObservableObject
             }
             return _engine;
         }
-    }
-
-    /// <summary>
-    /// A request was refused because the engine has another interface version: says which of the two to update, in the
-    /// status row's words (also in the window's notice bar, unless the screen shows them itself), and the row checks
-    /// again at once.
-    /// </summary>
-    private string SayUpdate(InterfaceAnswer answer, bool notice = true)
-    {
-        string text = Settings.Connection.UpdateText(answer);
-        _announcer.Announce(text, AnnouncementKind.Important);
-        if (notice) ProblemNoticed?.Invoke(this, text);
-        Settings.Connection.Kick();
-        return text;
     }
 
     [ObservableProperty]
