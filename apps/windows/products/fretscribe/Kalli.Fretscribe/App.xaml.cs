@@ -123,10 +123,10 @@ public partial class App : Application
                 window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () => await window.OpenSettingsAsync(pairingLink));
         }
 
-        // --show NAME: one screen with sample content, for screenshots (see SampleScenes).
+        // --show NAME [--score DIR]: one screen with sample content, for screenshots (see TabSampleScenes); DIR is a tab fixture folder.
         if (Option("--show") is { } scene)
         {
-            if (await TabSampleScenes.ShowAsync(flow, scene == "settings" ? "home" : scene, Option("--fixture")) && scene == "settings")
+            if (await TabSampleScenes.ShowAsync(flow, scene == "settings" ? "home" : scene, Option("--score")) && scene == "settings")
                 window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
                 {
                     await Task.Delay(1500);

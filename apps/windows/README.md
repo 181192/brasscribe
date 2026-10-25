@@ -1,9 +1,10 @@
-# Brasscribe Play for Windows
+# Brasscribe Play and Fretscribe for Windows
 
-WinUI 3 app on .NET 10, unpackaged, x64. It reads the same `composition.json`
-as the other Play apps, renders and plays the score, and talks to the engine
-over the OpenAPI contract. The symbolic logic comes from the Rust core through
-a C ABI (`scribe_ffi.dll`).
+Two WinUI 3 apps on .NET 10, unpackaged, x64, on shared services and features. Brasscribe Play reads the same
+`composition.json` as the other Play apps, renders and plays the score, and talks to the engine over the OpenAPI
+contract; its symbolic logic comes from the Rust core through a C ABI (`scribe_ffi.dll`). Fretscribe sends a recording
+to the engine for a tab, checks the song with the player, and draws the tab with alphaTab, played from the recording at
+any speed; it loads no core, models or band sounds.
 
 ```
 services/Kalli.Scribe.Services/        no screens: score model, talking score, the core bridge,
@@ -19,11 +20,14 @@ features/Kalli.Scribe.Controls/        the notation view and Settings › Appear
 products/brasscribe/Kalli.Brasscribe/  Brasscribe Play: WinUI 3 app (XAML, words, composition root)
 products/brasscribe/Kalli.Brasscribe.Catalogue/  its screen catalogue: the app as its own test host (MSTest)
 products/brasscribe/tools/gen_resw.py  writes its words (Strings/*/Resources.resw)
+products/fretscribe/Kalli.Fretscribe/  Fretscribe: WinUI 3 app (XAML, the tab view, words, composition root)
+products/fretscribe/Kalli.Fretscribe.Catalogue/  its screen catalogue
+products/fretscribe/tools/gen_resw.py  writes its words
 tests/Kalli.Scribe.Tests/              xunit, for services and features
 tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, the verdict
 tools/ScreenCheck.Core/              its checks on pictures and the findings (any OS; tests in tools/ScreenCheck.Tests)
-tools/Screenshots/catalogue.ps1      runs the catalogue with its checks
-tools/CodeBehindCheck/               type-checks the app's C# without the XAML compiler
+tools/Screenshots/catalogue.ps1      runs an app's catalogue with its checks (-Product brasscribe|fretscribe)
+tools/CodeBehindCheck/               type-checks Brasscribe Play's C# without the XAML compiler (Fretscribe/: Fretscribe's)
 tools/check-macos.sh                 everything that builds off Windows
 ```
 
@@ -61,6 +65,19 @@ The band sounds are bundled as `SoundFonts\brasscribe-band.sf2` (the 16-bit buil
 `data/sounds/band/brasscribe-band-16bit.sf2` is there: run `pixi run fetch-sounds` at the repository root once
 (the pack pinned in `sounds/band-sounds.json`; needs `gh auth login`). Without it the app says the band sounds
 are missing. Release builds in CI fetch it first and stop if they cannot.
+
+Fretscribe needs no core:
+
+```powershell
+dotnet build products/fretscribe/Kalli.Fretscribe -c Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64
+```
+
+Its exe is `Fretscribe.exe` in the same place under `products/fretscribe/Kalli.Fretscribe/bin`. It keeps its settings,
+its pairing, its songs and its practice recordings in `%LOCALAPPDATA%\Fretscribe`, apart from Brasscribe Play's
+`%LOCALAPPDATA%\Brasscribe\Play`. It does not register the `scribe://` link: the link names the family, and the app
+that registered it last would take every link. Fretscribe is paired from its own Settings, with the code Bandroom
+shows or Ask on the computer. `--show NAME --score apps/fixtures/guitar-line` shows one screen with sample content
+(`TabSampleScenes`).
 
 ## Run
 
