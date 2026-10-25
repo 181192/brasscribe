@@ -53,7 +53,22 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import androidx.compose.material3.Text
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalConfiguration
@@ -291,11 +306,43 @@ fun TabScreen(vm: PlayViewModel) {
     var place by remember(song) { mutableStateOf<Pair<Int, Int>?>(null) }
     val reducedMotion = remember { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
     val canPlay = clock != null && practice.recording == RecordingState.HERE
+    // Full screen: the tab alone, the controls a tap away (TabFocus). Back leaves it first.
+    var focus by rememberSaveable(stateSaver = listSaver(save = { listOf(it.on, it.controls) }, restore = { TabFocus(it[0], it[1]) })) { mutableStateOf(TabFocus()) }
+    val inFocus = focus.on && s != null && s.index.bars > 0
+    var touches by remember { mutableIntStateOf(0) }
+    var canZoomIn by remember { mutableStateOf(true) }
+    ImmersiveBars(inFocus)
+    BackHandler(enabled = inFocus) { focus = focus.leave() }
+    // The controls over the tab step aside again while the recording plays, a few seconds after the last touch.
+    LaunchedEffect(focus, practice.playing, touches) {
+        if (focus.autoHides(practice.playing, readFromTheTop)) {
+            delay(TabFocus.HIDE_AFTER_MS)
+            focus = focus.tapped()
+        }
+    }
+    var announced by remember { mutableStateOf(inFocus) }
+    LaunchedEffect(inFocus) {
+        if (inFocus != announced) {
+            announced = inFocus
+            window.announceForAccessibility(resources.getString(if (inFocus) R.string.fs_tab_full_screen else R.string.fs_tab_full_screen_left))
+        }
+    }
+    val percent = stringResource(R.string.fs_tab_zoom, zoom)
+    val zoomButtons: @Composable () -> Unit = {
+        fun set(to: Int) { zoom = to; TabPlaces.zoom = to }
+        IconButton({ set((zoom - FretscribeTab.zoomStep).coerceAtLeast(FretscribeTab.zoomMin)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-out"),
+            enabled = zoom > FretscribeTab.zoomMin) {
+            BcIcon(DesignR.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out) + ". " + percent)
+        }
+        IconButton({ set((zoom + FretscribeTab.zoomStep).coerceAtMost(FretscribeTab.zoomMax)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-in"),
+            enabled = zoom < FretscribeTab.zoomMax && canZoomIn) {
+            BcIcon(DesignR.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in) + ". " + percent)
+        }
+    }
     var playerHeight by remember { mutableIntStateOf(0) }
     // One scroll moves the header (when it is not pinned), the marks and alphaTab's page.
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
-    var canZoomIn by remember { mutableStateOf(true) }
     // The note about a mark, under the tab and the player. It is laid out after them in the body, not as the scaffold's
     // bottom bar: the keyboard's Tab follows the layout, and a scaffold's bars come before its content (WCAG 2.4.3).
     val noteShown = told?.let { s?.marks?.columns?.getOrNull(it) } != null
@@ -367,21 +414,22 @@ fun TabScreen(vm: PlayViewModel) {
         // Space plays and pauses from anywhere on the screen, unless a button in focus takes it as its own press.
         modifier = Modifier.onKeyEvent {
             // A key held down sends its press again and again: only the first one counts.
-            if (it.type == KeyEventType.KeyDown && it.key == Key.Spacebar && canPlay) { if (it.nativeKeyEvent.repeatCount == 0) practice.toggle(); true } else false
+            if (it.type != KeyEventType.KeyDown) false
+            else if (it.key == Key.Spacebar && canPlay) { if (it.nativeKeyEvent.repeatCount == 0) practice.toggle(); true }
+            else if (it.key == Key.Escape && inFocus) { focus = focus.leave(); true }
+            else if (it.key == Key.F && !it.isCtrlPressed && !it.isAltPressed && !it.isMetaPressed && (focus.on || (s != null && s.index.bars > 0))) {
+                if (it.nativeKeyEvent.repeatCount == 0) focus = if (focus.on) focus.leave() else focus.enter()
+                true
+            } else false
         },
         containerColor = c.bg,
         topBar = {
-            PlayTopBar(title, vm::back, stringResource(R.string.back), titleIsHeading = true) {
-                val percent = stringResource(R.string.fs_tab_zoom, zoom)
-                fun set(to: Int) { zoom = to; TabPlaces.zoom = to }
-                IconButton({ set((zoom - FretscribeTab.zoomStep).coerceAtLeast(FretscribeTab.zoomMin)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-out"),
-                    enabled = zoom > FretscribeTab.zoomMin) {
-                    BcIcon(DesignR.drawable.ic_bc_zoom_out, stringResource(R.string.zoom_out) + ". " + percent)
+            // The back button has no word here: the title and four buttons need the width.
+            if (!inFocus) PlayTopBar(title, vm::back, null, titleIsHeading = true) {
+                if (s != null && s.index.bars > 0) IconButton({ focus = focus.enter() }, Modifier.size(48.dp).testTag("fs-tab-full-screen")) {
+                    BcIcon(R.drawable.ic_fs_fullscreen, stringResource(R.string.fs_tab_full_screen))
                 }
-                IconButton({ set((zoom + FretscribeTab.zoomStep).coerceAtMost(FretscribeTab.zoomMax)) }, Modifier.size(48.dp).testTag("fs-tab-zoom-in"),
-                    enabled = zoom < FretscribeTab.zoomMax && canZoomIn) {
-                    BcIcon(DesignR.drawable.ic_bc_zoom_in, stringResource(R.string.zoom_in) + ". " + percent)
-                }
+                zoomButtons()
             }
         },
     ) { padding ->
@@ -473,34 +521,35 @@ fun TabScreen(vm: PlayViewModel) {
             // with large text, it would take the room of the tab itself: then it is the top of the page and scrolls away with it.
             // (The player under the tab has its own room.)
             val pinned = !landscape && headerHeight * 3 <= area - playerHeight
-            val inset = if (pinned) 0 else headerHeight
+            val inset = if (inFocus || pinned) 0 else headerHeight
             val header: @Composable () -> Unit = {
-                Column(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }.padding(horizontal = ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
-                        // The tuning chip: a button whose name reads the whole state. The tuning and capo sheet comes later; for now it opens Check the song.
-                        Box(
-                            Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-tuning")
-                                .background(c.surfaceRaised, ScribeButtonShape).border(1.dp, c.borderStrong, ScribeButtonShape)
-                                .clickable(role = Role.Button, onClick = ::checkTheSong)
-                                .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s2)
-                                .semantics { contentDescription = chipName },
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            Text(stringResource(R.string.fs_tab_chip, tuning, capo), style = MaterialTheme.typography.labelLarge, color = c.text,
-                                modifier = Modifier.clearAndSetSemantics { })
-                        }
-                        // The tempo, which the page's own header would say: the page keeps the music.
-                        if (tempo != null) Text(stringResource(R.string.fs_tab_tempo, tempo), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
-                            modifier = Modifier.testTag("fs-tab-tempo").semantics { contentDescription = tempoSpoken.orEmpty() })
+                // The tuning, the tempo and what is marked are one row, and wrap onto a second only when they do not fit.
+                FlowRow(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }.padding(horizontal = ScribeSpace.s4),
+                    horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
+                    itemVerticalAlignment = Alignment.CenterVertically) {
+                    // The tuning chip: a button whose name reads the whole state. The tuning and capo sheet comes later; for now it opens Check the song.
+                    Box(
+                        Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-tuning")
+                            .background(c.surfaceRaised, ScribeButtonShape).border(1.dp, c.borderStrong, ScribeButtonShape)
+                            .clickable(role = Role.Button, onClick = ::checkTheSong)
+                            .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s2)
+                            .semantics { contentDescription = chipName },
+                        contentAlignment = Alignment.CenterStart,
+                    ) {
+                        Text(stringResource(R.string.fs_tab_chip, tuning, capo), style = MaterialTheme.typography.labelLarge, color = c.text,
+                            modifier = Modifier.clearAndSetSemantics { })
                     }
+                    // The tempo, which the page's own header would say: the page keeps the music.
+                    if (tempo != null) Text(stringResource(R.string.fs_tab_tempo, tempo), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
+                        modifier = Modifier.testTag("fs-tab-tempo").semantics { contentDescription = tempoSpoken.orEmpty() })
                     if (s.marks.doubtful > 0) Row(
                         // To the first "?" on the page, with its note open (Check the song only counts them).
-                        Modifier.fillMaxWidth().sizeIn(minHeight = 48.dp).testTag("fs-tab-marked")
+                        Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-marked")
                             .clickable(role = Role.Button) { doubts.firstOrNull()?.let(::showMark) ?: checkTheSong() },
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
                     ) {
                         Text(pluralStringResource(R.plurals.fs_tab_marked, s.marks.doubtful, s.marks.doubtful),
-                            style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.weight(1f))
+                            style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                         BcIcon(DesignR.drawable.ic_bc_open, null, tint = c.textMuted)
                     }
                     if (s.marks.noPlace > 0) Text(pluralStringResource(R.plurals.fs_tab_no_place_count, s.marks.noPlace, s.marks.noPlace),
@@ -609,8 +658,8 @@ fun TabScreen(vm: PlayViewModel) {
                 }
             }
 
+            // (The title is the top bar's heading.)
             val summary = listOfNotNull(
-                title.takeIf { it.isNotEmpty() },
                 stringResource(when (s.layout) {
                     TabLayout.NOTATION -> R.string.fs_tab_summary_notation
                     TabLayout.TAB_AND_NOTATION -> R.string.fs_tab_summary_tab_and_notation
@@ -622,9 +671,41 @@ fun TabScreen(vm: PlayViewModel) {
                 s.marks.doubtful.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_check_marked, it, it) },
                 s.marks.noPlace.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_tab_no_place_count, it, it) },
             ).joinToString(". ") + "."
+            val player: @Composable () -> Unit = {
+                PracticeBar(practice, s.index.measures, place, follows = clock != null,
+                    canFetch = r.jobId != null && remember(practice.recording) { vm.container.engine() != null },
+                    onFetch = { vm.container.engine()?.let(practice::fetch) })
+            }
+            Box(Modifier.fillMaxSize()) {
+            // (The controls come first in the keyboard's order, and are drawn over the tab.)
+            if (inFocus) Box(Modifier.fillMaxSize().zIndex(1f)) {
+                // Any touch on the controls keeps them up a while longer; it is not consumed.
+                val touched = Modifier.pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial); touches++ } }
+                val leave = stringResource(R.string.fs_tab_full_screen_leave)
+                if (focus.controlsShown(readFromTheTop)) {
+                    Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().background(c.bg).then(touched).testTag("fs-tab-focus-controls"),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        IconButton({ focus = focus.leave() }, Modifier.size(48.dp).testTag("fs-tab-full-screen-leave")) { BcIcon(R.drawable.ic_fs_fullscreen_exit, leave) }
+                        Spacer(Modifier.weight(1f))
+                        zoomButtons()
+                    }
+                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(touched)) { player() }
+                } else {
+                    // Only the small buttons: Play or Pause when there is a recording, and Leave full screen.
+                    Row(Modifier.align(Alignment.BottomEnd).padding(ScribeSpace.s2).background(c.bg, CircleShape).border(1.dp, c.borderStrong, CircleShape).testTag("fs-tab-focus-minimal"),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        if (canPlay) IconButton(practice::toggle, Modifier.size(48.dp).testTag("fs-tab-focus-play")) {
+                            BcIcon(if (practice.playing) DesignR.drawable.ic_bc_pause else DesignR.drawable.ic_bc_play, stringResource(if (practice.playing) R.string.pause else R.string.play))
+                        }
+                        IconButton({ focus = focus.leave() }, Modifier.size(48.dp).testTag("fs-tab-full-screen-leave")) { BcIcon(R.drawable.ic_fs_fullscreen_exit, leave) }
+                    }
+                }
+            }
             Column(Modifier.fillMaxSize()) {
-                if (pinned) header()
-                Box(Modifier.weight(1f).fillMaxWidth().clipToBounds().onSizeChanged { viewport = it.height }.onFocusChanged { tabFocused = it.hasFocus }) {
+                if (pinned && !inFocus) header()
+                Box(Modifier.weight(1f).fillMaxWidth().clipToBounds().onSizeChanged { viewport = it.height }.onFocusChanged { tabFocused = it.hasFocus }
+                    // In full screen a tap on the tab (not on a mark) shows the controls, and another hides them.
+                    .pointerInput(inFocus) { if (inFocus) detectTapGestures { focus = focus.tapped(); touches++ } }) {
                     // alphaTab's view fills the room and scrolls its own page (it draws the lines in view). While the header
                     // is still on screen above the page, the view is moved down under it.
                     key(tab) {
@@ -635,7 +716,7 @@ fun TabScreen(vm: PlayViewModel) {
                     // Over it, in one scroll: the header when it is not pinned, then a column of the page's own height with the marks.
                     // It takes the drags, the keyboard's focus and the screen reader. No stretch at the ends: the page under it would not stretch with it.
                     Column(Modifier.fillMaxSize().testTag("fs-tab-scroll").verticalScroll(scroll, overscrollEffect = null)) {
-                        if (!pinned) header()
+                        if (!pinned && !inFocus) header()
                         Box(Modifier.fillMaxWidth().height(with(density) { (e?.height ?: 0).toDp() })) {
                             // Each mark is an element of its own, in reading order: 48 dp, from the mark down over its numerals.
                             val target = with(density) { 48.dp.toPx() }
@@ -660,11 +741,8 @@ fun TabScreen(vm: PlayViewModel) {
                     }
                 }
                 // The player, under the tab and after it in the keyboard's and a screen reader's order: the recording is the sound.
-                Box(Modifier.fillMaxWidth().onSizeChanged { playerHeight = it.height }) {
-                    PracticeBar(practice, s.index.measures, place, follows = clock != null,
-                        canFetch = r.jobId != null && remember(practice.recording) { vm.container.engine() != null },
-                        onFetch = { vm.container.engine()?.let(practice::fetch) })
-                }
+                if (!inFocus) Box(Modifier.fillMaxWidth().onSizeChanged { playerHeight = it.height }) { player() }
+            }
             }
         }
         noteUnderTheTab()
