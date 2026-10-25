@@ -36,8 +36,8 @@ struct ConnectionLifecycle: ViewModifier {
             .task { path.start() }
     }
 
-    /// The computer a staged connection shows: as the engine names itself.
-    static let stagedServerName = "Brasscribe on Studio Mac"
+    /// The computer a staged connection shows: as the engine names itself (`Wire.serverNamePrefix`).
+    static let stagedServerName = Wire.serverNamePrefix + "Studio Mac"
 }
 
 /// Counts network path changes (Wi-Fi joined, lost, switched).

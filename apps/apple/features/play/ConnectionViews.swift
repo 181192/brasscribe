@@ -52,9 +52,6 @@ enum ConnectionCopy {
         }
     }
 
-    /// Where the latest apps and the desktop program are downloaded: always the latest release.
-    static let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
-
     static var pairAgain: String {
         switch device {
         case .phone: String(localized: "Pair this phone again")
@@ -130,18 +127,21 @@ struct UpdateAction: View {
     let which: InterfaceMatch.Update
     /// Where it is shown, the start of its accessibility identifiers ("connectionGetUpdate", "pairingUpdateAddress").
     let place: String
+    @Environment(\.playHost) private var host
+    /// The product's download page (`PlayHost.downloads`).
+    private var downloads: URL { host!.downloads }
 
     var body: some View {
         switch which {
         case .app:
-            Link(destination: ConnectionCopy.downloads) { Text("Open the download page") }
+            Link(destination: downloads) { Text("Open the download page") }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
                 .accessibilityIdentifier("\(place)GetUpdate")
         case .computer:
             VStack(alignment: .leading, spacing: Space.s1) {
                 Text("On your computer, download the latest desktop program from this address:")
                     .foregroundStyle(Color.Scribe.textMuted)
-                Text(verbatim: ConnectionCopy.downloads.absoluteString)
+                Text(verbatim: downloads.absoluteString)
                     .foregroundStyle(Color.Scribe.text)
                     .textSelection(.enabled)
                     .accessibilityIdentifier("\(place)UpdateAddress")

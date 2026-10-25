@@ -155,7 +155,10 @@ targets:
   BrasscribePlayTests:
     type: bundle.unit-test
     platform: [iOS, macOS]
-    sources: [AppTests]
+    sources:
+      - path: AppTests
+      # The test code every Play app's tests share.
+      - path: ../../testing/PlayTests
     dependencies:
       - target: BrasscribePlay_${platform}
       - package: ScreenCatalogue

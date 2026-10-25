@@ -17,6 +17,8 @@ protocol PlayHost: AnyObject, Observable {
     var pendingLink: PairingLink? { get set }
     /// Settings is open (the connection row's "Connect" and "Pair again" open it).
     var showSettings: Bool { get set }
+    /// Where this app and the desktop program are downloaded: always the latest release, never a version by name.
+    var downloads: URL { get }
     /// The device was paired: what the app lists from the computer is fetched again.
     func pairedWithComputer() async
     /// The connection changed: what the app lists from the computer is fetched again, or goes.

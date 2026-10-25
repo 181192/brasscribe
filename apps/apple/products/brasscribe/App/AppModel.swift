@@ -425,6 +425,9 @@ final class AppModel: PlayHost {
         ask(PendingSource(audioURL: url, title: title))
     }
 
+    /// Brasscribe Play and Bandroom are downloaded from the repository's latest release.
+    let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
+
     func recorded(_ url: URL, title: String) { acceptRecording(url, title: title) }
     func recordedSilence() { show(.silence) }
     func pairedWithComputer() async { await refreshComputerScores() }
