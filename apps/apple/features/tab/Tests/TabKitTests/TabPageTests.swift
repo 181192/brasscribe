@@ -189,3 +189,16 @@ let pagesDraw: Bool = {
         #endif
     }
 }
+
+/// The page fails closed: when the rule that keeps it off the network cannot be made, it is never loaded, and every
+/// engraving fails.
+@MainActor
+@Test(.timeLimit(.minutes(1))) func withoutItsNetworkRuleThePageIsNotLoaded() async throws {
+    let page = TabPage(rules: "not a rule list")
+    let end = Date().addingTimeInterval(20)
+    while page.unavailable == nil, Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+    #expect(page.unavailable != nil)
+    #expect(!page.networkBlocked)
+    await #expect(throws: TabPage.PageError.self) { _ = try await page.show(musicXML: try fixture("bass-line/tab.musicxml"), palette: light) }
+    #expect(page.requested.isEmpty)
+}

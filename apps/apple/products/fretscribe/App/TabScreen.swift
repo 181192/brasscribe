@@ -115,7 +115,7 @@ struct TabScreen: View {
 
     @ViewBuilder private var content: some View {
         if let sheet {
-            if sheet.index.bars == 0 {
+            if sheet.index.bars == 0 || page.unavailable != nil {
                 VStack(alignment: .leading, spacing: Space.s4) {
                     header(sheet)
                     NoticeBox(systemImage: PlayIcon.info.systemName, text: String(localized: "This tab can't be shown. Go back and open it again."))

@@ -107,6 +107,9 @@ public final class TabPage: NSObject {
     @ObservationIgnored private var inTurn = false
     /// The rule that keeps the page off the network is in place (it is, before the page is first loaded).
     @ObservationIgnored public private(set) var networkBlocked = false
+    /// Why the page is not shown: the rule that keeps it off the network could not be put in place, so it is never
+    /// loaded. Nil while it can be.
+    public private(set) var unavailable: String?
     public private(set) var engraving: TabEngraving?
     @ObservationIgnored public var onEngraving: ((TabEngraving) -> Void)?
     @ObservationIgnored nonisolated static let log = Logger(subsystem: "no.kalli.scribe", category: "tab")
@@ -115,7 +118,10 @@ public final class TabPage: NSObject {
         public let description: String
     }
 
-    public override init() {
+    public override convenience init() { self.init(rules: TabPage.noNetwork) }
+
+    /// [rules] is the content rule list that keeps the page off the network; a test hands in one that does not compile.
+    init(rules: String) {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .nonPersistent()
         config.setURLSchemeHandler(assets, forURLScheme: Self.scheme)
@@ -142,20 +148,32 @@ public final class TabPage: NSObject {
         #endif
         // The page is loaded only once the rule that blocks every request leaving the device is in place: a page that
         // needed the network would fail instead of fetching.
+        // Without that rule the page is not loaded at all, and every call on it fails (`unavailable`).
         Task { [weak self] in
-            await self?.blockNetwork()
-            self?.webView.load(URLRequest(url: URL(string: "\(Self.scheme)://page/index.html")!))
+            guard let self else { return }
+            if let why = await blockNetwork(rules: rules) {
+                unavailable = why
+                ready.forEach { $0.resume() }
+                ready = []
+                return
+            }
+            webView.load(URLRequest(url: URL(string: "\(Self.scheme)://page/index.html")!))
         }
     }
 
     static let noNetwork = #"[{"trigger":{"url-filter":"^https?://"},"action":{"type":"block"}},{"trigger":{"url-filter":"^wss?://"},"action":{"type":"block"}}]"#
 
-    private func blockNetwork() async {
+    /// Puts the rule in place; returns why it could not be, nil when it is.
+    func blockNetwork(rules: String = TabPage.noNetwork) async -> String? {
         do {
-            let list = try await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "no-network", encodedContentRuleList: Self.noNetwork)
-            if let list { webView.configuration.userContentController.add(list); networkBlocked = true }
+            let list = try await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "no-network", encodedContentRuleList: rules)
+            guard let list else { return "no rule list" }
+            webView.configuration.userContentController.add(list)
+            networkBlocked = true
+            return nil
         } catch {
             Self.log.error("the rule that keeps the tab page off the network could not be made: \(String(describing: error), privacy: .public)")
+            return String(describing: error)
         }
     }
 
@@ -174,8 +192,13 @@ public final class TabPage: NSObject {
 
     /// Waits for the page's script to be loaded.
     public func loaded() async {
-        if isReady { return }
+        if isReady || unavailable != nil { return }
         await withCheckedContinuation { ready.append($0) }
+    }
+
+    /// Fails when the page is not shown (`unavailable`).
+    private func usable() throws {
+        if let unavailable { throw PageError(description: "the tab page is not shown: \(unavailable)") }
     }
 
     /// Engraves [musicXML] in [palette]; returns once the page is laid out. [doubtful] notes ("bar:string:fret:tick", the
@@ -184,6 +207,7 @@ public final class TabPage: NSObject {
     public func show(musicXML: Data, palette: TabPalette, scale: Double = 1, staff: String = "tab", doubtful: [String] = [],
                      marks: [TabMarkSpot] = [], markStaff: Int = 0) async throws -> TabEngraving {
         await loaded()
+        try usable()
         await takeTurn()
         defer { endTurn() }
         struct Options: Encodable {
@@ -202,6 +226,7 @@ public final class TabPage: NSObject {
     /// The same page in other colours (another appearance).
     public func palette(_ palette: TabPalette) async throws -> TabEngraving {
         await loaded()
+        try usable()
         await takeTurn()
         defer { endTurn() }
         let p = String(decoding: try JSONEncoder().encode(palette), as: UTF8.self)
@@ -217,6 +242,7 @@ public final class TabPage: NSObject {
     /// Returns where it stands, in the page's points.
     @discardableResult
     public func cursor(bar: Int?, tick: Int = 0) async throws -> CGRect? {
+        try usable()
         let js = bar.map { "tab.cursorAt(\($0), \(tick))" } ?? "tab.cursorAt(null, 0)"
         let r = try await webView.evaluateJavaScript(js)
         guard let d = r as? [String: Any], let x = d["x"] as? Double, let y = d["y"] as? Double, let h = d["h"] as? Double else { return nil }
