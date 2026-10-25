@@ -1,10 +1,10 @@
-"""Make the site's screenshots from the apps' own screenshots, as listed in site/shots.txt.
+"""Make the site's screenshots from the apps' own screenshots, as listed in site/brasscribe/shots.txt.
 
 Each source is cropped to its kind's ratio (see SIZES; too tall keeps the top, too wide keeps the
 middle; a kind without a height keeps the source's own ratio), then written at two sizes: the 2x
 size (<slot>-<lang>-<theme>.avif/.webp) and half of it (…-1x.avif/.webp), plus a quantised PNG at
 2x for light variants (the <img> fallback). Needs avifenc, cwebp and pngquant on PATH.
-Usage: uv run --with pillow python site/make_shots.py
+Usage: uv run --with pillow python site/brasscribe/make_shots.py
 """
 
 import shutil
@@ -15,8 +15,8 @@ from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "site" / "shots"
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / "site" / "brasscribe" / "shots"
 # 2x pixel size per kind. phone = iPhone 17 portrait (1206 × 2622), tablet = iPad Air 11" portrait
 # (1640 × 2360), desktop = 16:10, mac = a macOS window capture at its own ratio.
 SIZES = {"phone": (600, 1304), "tablet": (720, 1036), "desktop": (1440, 900), "mac": (1440, None)}
@@ -55,7 +55,7 @@ def main() -> int:
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
     rows, names = [], {}
-    for line in (ROOT / "site" / "shots.txt").read_text().splitlines():
+    for line in (ROOT / "site" / "brasscribe" / "shots.txt").read_text().splitlines():
         if not line.strip() or line.startswith("#"):
             continue
         if "=" in line and " " not in line.strip():  # NAME=path, used as $NAME below

@@ -313,7 +313,7 @@ tbody th { font-weight: 600; }
   .guide { display: block; }
 }
 
-/* Research article (site/research/, site/nb/research/) */
+/* Research article (site/brasscribe/research/, site/brasscribe/nb/research/) */
 .paper { max-width: 70ch; }
 .paper h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); }
 .paper h2 { font-size: clamp(1.75rem, 3.4vw, 2.25rem); }

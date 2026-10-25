@@ -18,7 +18,7 @@
 The outcomes for the bass trombone and percussion seats were checked by running `seat_part` / `with_reading` / `seat_lineup` in `music`. The screens were checked against the committed screenshots:
 - `apps/android/docs/screenshots/{my-instrument,design,music-stand}`
 - `apps/apple/docs/screenshots`, `apps/apple/docs/responsive`
-- `site/shots`
+- `site/brasscribe/shots`
 
 No new captures were needed. The existing renders cover every screen discussed except "Who plays the tune?", the quartet-refused card and the percussion notice, and none of those three has a harness scene yet (see P3-10).
 

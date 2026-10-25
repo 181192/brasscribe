@@ -548,7 +548,7 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 
 - `design/brands/brasscribe/system.md:104,107,113,114,116` and `design/brands/brasscribe/brand/brand.md:101,126`: the first-run second step, the Settings **You** section, the source label component, and "<part> (you)". kvartett also edits `system.md:116`, so apply this on top of it.
 - `design/brands/brasscribe/mockups/my-instrument-*.html` and `render.mjs` (this change).
-- `site/guide/index.html`, `site/nb/guide/index.html`: "Tell Brasscribe what you play".
+- `site/brasscribe/guide/index.html`, `site/brasscribe/nb/guide/index.html`: "Tell Brasscribe what you play".
 
 ---
 
