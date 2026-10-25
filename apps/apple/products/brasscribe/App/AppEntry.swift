@@ -1,3 +1,4 @@
+import PlaybackKit
 import SwiftUI
 
 /// Starts the app, or on the Mac, when it hosts the unit tests, an app with no window: the
@@ -5,6 +6,8 @@ import SwiftUI
 @main
 enum AppEntry {
     static func main() {
+        // the band's sounds, for the app and for the tests it hosts
+        BandSounds.set = BrassBand.sounds
         #if os(macOS)
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             UnitTestHost.main()

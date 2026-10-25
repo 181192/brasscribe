@@ -29,7 +29,7 @@ struct ScoreEntry: Identifiable, Hashable {
         let downloaded = Set(pieces.compactMap(\.remoteJobID))
         var seenAudio = Set<String>()
         var remote: [ScoreEntry] = []
-        for j in jobs.sorted(by: { ($0.created ?? 0) > ($1.created ?? 0) }) where j.status == "succeeded" && j.outputs.contains(ArtifactKind.musicXML.engineName) {
+        for j in jobs.sorted(by: { ($0.created ?? 0) > ($1.created ?? 0) }) where j.status == "succeeded" && j.outputs.contains("brass-band.musicxml") {
             if let audio = j.audioID, !seenAudio.insert(audio).inserted { continue }
             guard !downloaded.contains(j.id) else { continue }
             let date = Date(timeIntervalSince1970: j.created ?? 0)

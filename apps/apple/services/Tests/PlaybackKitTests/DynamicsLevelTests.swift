@@ -57,8 +57,8 @@ struct DynamicsLevelTests {
     }
 
     func pitchedLUFS(velocity v: Int) throws -> Double {
-        var bank = SoundBank.locate(bundle: .main)
-        bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
+        withTheBand(); var bank = SoundBank.locate(bundle: .main)
+        withTheBand(); bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
         let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
         // 18 dB down, so even the uncorrected ff stays under the limiter; the reference is 12 dB down
         e.outputGainDB = PlaybackLevels.bandGainDB - 18
@@ -80,8 +80,8 @@ struct DynamicsLevelTests {
     /// with alphaSynth's (RenderHarnessTests.Measure_part_balance in the Windows tests). Runs only when
     /// SCRIBE_KNOTS=1.
     @Test(.enabled(if: ProcessInfo.processInfo.environment["SCRIBE_KNOTS"] == "1")) func partBalance() throws {
-        var bank = SoundBank.locate(bundle: .main)
-        bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
+        withTheBand(); var bank = SoundBank.locate(bundle: .main)
+        withTheBand(); bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
         for name in phrase.names {
             let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
             e.roomOn = false
@@ -94,8 +94,8 @@ struct DynamicsLevelTests {
     /// The remap keeps the band calibration: the full-band phrase, played at the velocities the
     /// sequence would send, still lands on the shared phrase target.
     @Test func remappedPhraseStaysOnTheTarget() throws {
-        var bank = SoundBank.locate(bundle: .main)
-        bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
+        withTheBand(); var bank = SoundBank.locate(bundle: .main)
+        withTheBand(); bank.band = try #require(BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: ["brasscribe-band-16bit.sf2"]).0)
         let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
         let buf = try phrase.remapped.render(e, score: score)
         let lufs = LoudnessMeter.integrated(buf)

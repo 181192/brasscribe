@@ -59,7 +59,7 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
     }
 
     func sources() {
-        let bank = SoundBank.locate(bundle: .main)
+        withTheBand(); let bank = SoundBank.locate(bundle: .main)
         print("RENDER sounds root: \(renderEnv["SCRIBE_SOUNDS"] ?? "(unset)")")
         print("RENDER band: \(bank.bandStatus)")
         print("RENDER room IR: \(RoomIR.locate()?.path ?? "none"), used only for -irhall")

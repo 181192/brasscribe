@@ -66,15 +66,40 @@ public enum BandSoundStatus: Sendable, Equatable {
     }
 }
 
+/// A product's band sound set: its SoundFont builds, by name, and the folder of its own under Application Support where
+/// a player may put more. The product hands it in (`BandSounds.set`); without one there are no band sounds.
+public struct BandSoundSet: Sendable {
+    /// The phone build, the 16-bit build and the 24-bit master.
+    public var mobile: String, sixteenBit: String, master: String
+    /// Its folder under Application Support, such as "<Product>/SoundFonts".
+    public var supportFolder: String
+    /// Where a checkout of the repository has it, for development and tests: the SoundFonts' folder, and the folder of
+    /// its mapping.json and seating.json, both from the repository's root.
+    public var repositorySounds: String
+    public var repositoryMapping: String
+
+    public init(mobile: String, sixteenBit: String, master: String, supportFolder: String,
+                repositorySounds: String, repositoryMapping: String) {
+        self.mobile = mobile; self.sixteenBit = sixteenBit; self.master = master; self.supportFolder = supportFolder
+        self.repositorySounds = repositorySounds; self.repositoryMapping = repositoryMapping
+    }
+
+    /// Whether [name] is one of this set's builds (a general bank beside them is not).
+    public func holds(_ name: String) -> Bool { [mobile, sixteenBit, master].contains(name) }
+}
+
 public enum BandSounds {
-    static let log = Logger(subsystem: "no.kalli.brasscribe", category: "sound")
+    static let log = Logger(subsystem: "no.kalli.scribe", category: "sound")
+
+    /// The band sound set of the app, set once at launch before any score plays.
+    nonisolated(unsafe) public static var set: BandSoundSet?
 
     /// The band SoundFont builds in the order this device prefers them. iPhone and iPad get the phone build
     /// (77 MB, which the app bundles for iOS): smaller, for phone memory and download size. The Mac gets the
     /// 16-bit build (195 MB), else the 24-bit master. Each falls back to the other so a checkout still plays.
-    static func bandFiles(phone: Bool = BandSounds.isPhone) -> [String] {
-        phone ? ["brasscribe-band-mobile.sf2", "brasscribe-band-16bit.sf2", "brasscribe-band.sf2"]
-              : ["brasscribe-band-16bit.sf2", "brasscribe-band.sf2", "brasscribe-band-mobile.sf2"]
+    static func bandFiles(phone: Bool = BandSounds.isPhone, set: BandSoundSet? = BandSounds.set) -> [String] {
+        guard let s = set else { return [] }
+        return phone ? [s.mobile, s.sixteenBit, s.master] : [s.sixteenBit, s.master, s.mobile]
     }
 
     #if os(iOS)
@@ -83,7 +108,7 @@ public enum BandSounds {
     static let isPhone = false
     #endif
 
-    /// The band SoundFont (`data/sounds/band/brasscribe-band*.sf2`): every part has its own
+    /// The band SoundFont (`data/sounds/band`, the set's builds): every part has its own
     /// preset at (bank, program) with layered desks and a staccato bank; drums are bank 128.
     /// Gain is `band_soundfont.channel_gain_db`. Seats come from seating.json as above.
     /// Keyed by the mapping's part names; use `BandSoundFont` to resolve any score part name.
@@ -146,13 +171,14 @@ public enum BandSounds {
     /// Where the band sounds are looked for, in order:
     ///   1. `SCRIBE_SOUNDS` = a repository root (development): data/sounds/band + sounds/*.json
     ///   2. the app bundle: `Sounds/` (copied in by `make bandsound`) with mapping.json and seating.json
-    ///   3. ~/Library/Application Support/Brasscribe/SoundFonts (mapping from there, else from the bundle)
+    ///   3. the set's folder under Application Support (mapping from there, else from the bundle)
     ///   4. the repository this package is built from (tests and `swift run` in a checkout)
     static func candidates(bundle: Bundle) -> [Candidate] {
         var out: [Candidate] = []
+        guard let set = BandSounds.set else { return [] }
         func repo(_ r: URL) -> Candidate {
-            Candidate(dir: r.appending(path: "data/sounds/band"), mapping: r.appending(path: "sounds/mapping.json"),
-                      seating: r.appending(path: "sounds/seating.json"))
+            Candidate(dir: r.appending(path: set.repositorySounds), mapping: r.appending(path: "\(set.repositoryMapping)/mapping.json"),
+                      seating: r.appending(path: "\(set.repositoryMapping)/seating.json"))
         }
         if let root = ProcessInfo.processInfo.environment["SCRIBE_SOUNDS"] { out.append(repo(URL(fileURLWithPath: root))) }
         var bundled: Candidate?
@@ -161,16 +187,19 @@ public enum BandSounds {
             out.append(bundled!)
         }
         if let support = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-            .appending(path: "Brasscribe/SoundFonts") {
+            .appending(path: set.supportFolder) {
             let own = support.appending(path: "mapping.json")
             let mapping = FileManager.default.fileExists(atPath: own.path) ? own : (bundled?.mapping ?? own)
             out.append(Candidate(dir: support, mapping: mapping, seating: bundled?.seating ?? support.appending(path: "seating.json")))
         }
         var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         for _ in 0..<8 {
-            // sounds/band.py, not only mapping.json: on a case-insensitive volume apps/apple/Sounds/
-            // (the staged bundle copy) would otherwise pass for the repository's sounds/ folder
-            if FileManager.default.fileExists(atPath: dir.appending(path: "sounds/band.py").path) { out.append(repo(dir)); break }
+            // the repository's root (its pixi.toml), not only a mapping.json: on a case-insensitive volume
+            // apps/apple/products/*/Sounds/ (the staged bundle copy) would otherwise pass for the repository's sounds
+            if FileManager.default.fileExists(atPath: dir.appending(path: "\(set.repositoryMapping)/mapping.json").path),
+               FileManager.default.fileExists(atPath: dir.appending(path: "pixi.toml").path) {
+                out.append(repo(dir)); break
+            }
             dir = dir.deletingLastPathComponent()
         }
         return out

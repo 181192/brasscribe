@@ -64,18 +64,18 @@ func partSoundVectors() -> URL? {
     let bank = SoundBank(general: nil)
     #expect(bank.tier == .basic)
     #expect(bank.bandStatus.isMissing)
-    let (_, status) = BandSounds.locateBand(bundle: .main)
+    withTheBand(); let (_, status) = BandSounds.locateBand(bundle: .main)
     if status.isMissing { #expect(!status.details.isEmpty, "the details say where the band sounds were looked for") }
 }
 
 /// iPhone and iPad prefer the phone build (the one the iOS app bundles), the Mac the 16-bit build;
 /// either falls back to the other builds rather than to the basic tier.
 @Test func eachDevicePrefersItsOwnBandSoundFont() {
-    let phone = BandSounds.bandFiles(phone: true), mac = BandSounds.bandFiles(phone: false)
+    withTheBand(); let phone = BandSounds.bandFiles(phone: true), mac = BandSounds.bandFiles(phone: false)
     #expect(phone.first == "brasscribe-band-mobile.sf2")
     #expect(mac.first == "brasscribe-band-16bit.sf2")
     #expect(Set(phone) == Set(mac))
-    #expect(BandSounds.bandFiles() == (BandSounds.isPhone ? phone : mac))
+    withTheBand(); #expect(BandSounds.bandFiles() == (BandSounds.isPhone ? phone : mac))
     #if os(iOS)
     #expect(BandSounds.isPhone)
     #else
@@ -96,7 +96,7 @@ func partSoundVectors() -> URL? {
         return BandSounds.Candidate(dir: dir, mapping: dir.appending(path: "mapping.json"), seating: dir.appending(path: "seating.json"))
     }
     func found(_ c: BandSounds.Candidate, phone: Bool) -> String? {
-        let (band, status) = BandSounds.locateBand(in: [c], files: BandSounds.bandFiles(phone: phone))
+        withTheBand(); let (band, status) = BandSounds.locateBand(in: [c], files: BandSounds.bandFiles(phone: phone))
         #expect(band == nil || !status.isMissing)
         return band?.soundFont.lastPathComponent
     }
@@ -108,14 +108,14 @@ func partSoundVectors() -> URL? {
     #expect(found(both, phone: true) == "brasscribe-band-mobile.sf2")
     #expect(found(both, phone: false) == "brasscribe-band-16bit.sf2")
     let empty = try folder([])
-    let (none, status) = BandSounds.locateBand(in: [empty], files: BandSounds.bandFiles(phone: true))
+    withTheBand(); let (none, status) = BandSounds.locateBand(in: [empty], files: BandSounds.bandFiles(phone: true))
     #expect(none == nil && status.isMissing, "a broken install still reports the band sounds as missing")
 }
 
 /// Without any environment variable, a checkout finds the band SoundFont and every golden part
 /// (and the quartet names) plays a band preset, never the General MIDI bank.
 @Test(.enabled(if: bandSoundFont() != nil)) func bandSoundFontIsTheDefault() throws {
-    let (band, status) = BandSounds.locateBand(bundle: .main)
+    withTheBand(); let (band, status) = BandSounds.locateBand(bundle: .main)
     let b = try #require(band, "not found: \(status.details)")
     #expect(!status.isMissing)
     for name in ["1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium", "Tuba", "Baritone", "Trombone"] {
@@ -158,7 +158,7 @@ private func unisonScore() throws -> Score {
     let score = try unisonScore()
     #expect(score.parts.count == 2)
     #expect(MIDIWriter.channels(for: score).values.count == 2)
-    let bank = SoundBank.locate(bundle: .main)
+    withTheBand(); let bank = SoundBank.locate(bundle: .main)
     let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
     e.roomOn = false
     #expect(e.sampler(for: score.parts[0]) !== e.sampler(for: score.parts[1]))
@@ -198,7 +198,7 @@ private func drumScore(program: Int?) throws -> Score {
 /// A percussion part's <midi-program> picks the kit: 2 (program 1) the pop kit, none or anything
 /// else the band kit, on the percussion bank either way.
 @Test(.enabled(if: bandSoundFont() != nil)) func percussionProgramSelectsTheKit() throws {
-    let (band, _) = BandSounds.locateBand(bundle: .main)
+    withTheBand(); let (band, _) = BandSounds.locateBand(bundle: .main)
     let b = try #require(band)
     for (program, kit) in [(nil, 0), (1, 0), (2, 1), (26, 0)] as [(Int?, Int)] {
         let part = try #require(try drumScore(program: program).parts.first)
@@ -212,7 +212,7 @@ private func drumScore(program: Int?) throws -> Score {
 /// The pop kit sounds, and not as the band kit: its bass drum is MS Basic's kick, the band kit's
 /// the concert bass drum.
 @Test(.enabled(if: bandSoundFont() != nil)) func popKitPlays() throws {
-    let bank = SoundBank.locate(bundle: .main)
+    withTheBand(); let bank = SoundBank.locate(bundle: .main)
     func render(_ program: Int?) throws -> AVAudioPCMBuffer {
         let score = try drumScore(program: program)
         let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())

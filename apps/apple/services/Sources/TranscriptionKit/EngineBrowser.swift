@@ -22,7 +22,7 @@ public final class EngineBrowser {
             self.name = name; self.serverID = serverID; self.host = host
         }
 
-        /// The computer's name for sentences such as "Brasscribe on {computer}".
+        /// The computer's name for sentences such as "Bandroom on {computer}".
         public var computerName: String { host ?? EngineRecord.computerName(fromServerName: name) }
     }
 

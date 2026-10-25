@@ -20,7 +20,7 @@ public final class ConnectionMonitor {
     /// Heartbeats done since launch; the first result is not announced.
     public private(set) var checks = 0
 
-    /// An address for loopback use without pairing (Brasscribe on this same Mac).
+    /// An address for loopback use without pairing (the engine on this same Mac).
     public var localAddress: URL?
 
     @ObservationIgnored let store: CredentialStore
@@ -68,7 +68,7 @@ public final class ConnectionMonitor {
         machine.handle(.suspended, at: now())
     }
 
-    /// Whether "Connect" can try right away (a paired engine, or Brasscribe on this same computer);
+    /// Whether "Connect" can try right away (a paired engine, or the engine on this same computer);
     /// otherwise it means pairing.
     public var canConnect: Bool { record != nil || localAddress != nil }
 
@@ -164,7 +164,7 @@ public final class ConnectionMonitor {
         }
     }
 
-    /// Brasscribe on this same computer answers without pairing.
+    /// The engine on this same computer answers without pairing.
     private func localRecord() -> EngineRecord? {
         localAddress.map { EngineRecord(serverID: "", serverName: "", token: nil, lastAddress: $0.absoluteString) }
     }
@@ -180,7 +180,7 @@ public final class ConnectionMonitor {
         let svc = CompanionService(baseURL: url, token: r.token, session: session)
         var out = r
         out.lastAddress = address
-        // the engine this record is for; none yet for Brasscribe on this same computer
+        // the engine this record is for; none yet for the engine on this same computer
         let ours = r.isProvisional ? nil : r.serverID
         // without a device entry, health is the whole heartbeat
         func fromHealth() async -> Check {
@@ -188,7 +188,7 @@ public final class ConnectionMonitor {
             do { h = try await svc.health(timeout: 5, from: ours) }
             catch TranscriptionError.interfaceMismatch(let update) { return .mismatch(update) }
             catch { return .unreachable }
-            // Brasscribe on this same computer trusts loopback; an engine that wants pairing is not it
+            // the engine on this same computer trusts loopback; an engine that wants pairing is not it
             if r.token == nil, h.authRequired { return .unreachable }
             if let ours, h.serverID != ours { return .otherServer }
             if case .mismatch(let update) = InterfaceMatch.of(engine: h.interfaceVersion) { return .mismatch(update) }

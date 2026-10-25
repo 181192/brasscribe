@@ -82,7 +82,7 @@ public final class ModelStore: @unchecked Sendable {
     public init(cache: URL? = nil, localSource: URL? = nil, remoteBase: URL? = nil) {
         let support = (try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true))
             ?? FileManager.default.temporaryDirectory
-        self.cache = cache ?? support.appending(path: "Brasscribe/Models", directoryHint: .isDirectory)
+        self.cache = cache ?? support.appending(path: "Scribe/Models", directoryHint: .isDirectory)
         _localSource = localSource ?? ProcessInfo.processInfo.environment["SCRIBE_MODELS"].map { URL(fileURLWithPath: $0) }
         _remoteBase = remoteBase
     }

@@ -19,7 +19,7 @@ public final class OutputStageAU: AUAudioUnit {
         componentFlags: AudioComponentFlags.sandboxSafe.rawValue, componentFlagsMask: 0)
 
     static let registered: Void = {
-        AUAudioUnit.registerSubclass(OutputStageAU.self, as: componentDescription, name: "Brasscribe: Output Stage", version: 1)
+        AUAudioUnit.registerSubclass(OutputStageAU.self, as: componentDescription, name: "Scribe: Output Stage", version: 1)
     }()
 
     private var inBusArray: AUAudioUnitBusArray!

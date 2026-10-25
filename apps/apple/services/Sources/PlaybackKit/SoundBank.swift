@@ -5,7 +5,7 @@ import ScoreKit
 
 /// Where instrument sounds come from.
 ///
-/// Band tier (the default): the band SoundFont (`brasscribe-band*.sf2`, bundled into the app by
+/// Band tier (the default): the band SoundFont (the builds of the app's `BandSounds.set`, bundled into the app by
 /// `make bandsound`), every score part resolved to its own real-sample preset with
 /// `PartSoundResolver` (mapping.json `resolve`), at the part's `channel_gain_db`. A brass part never
 /// plays General MIDI while the band SoundFont is there.
@@ -44,7 +44,7 @@ public struct SoundBank: Sendable {
     }
 
     /// The band SoundFont (see `BandSounds.locateBand`), plus the General MIDI bank for
-    /// non-brass parts: `SCRIBE_SOUNDFONT`, then Application Support/Brasscribe/SoundFonts,
+    /// non-brass parts: `SCRIBE_SOUNDFONT`, then the band sound set's folder under Application Support,
     /// then the app bundle, then the macOS system DLS.
     public static func locate(bundle: Bundle = .main) -> SoundBank {
         var bank = locateGeneral(bundle: bundle)
@@ -60,11 +60,11 @@ public struct SoundBank: Sendable {
         if let env = ProcessInfo.processInfo.environment["SCRIBE_SOUNDFONT"], fm.fileExists(atPath: env) {
             return SoundBank(general: URL(fileURLWithPath: env))
         }
-        if let support = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
-            .appending(path: "Brasscribe/SoundFonts"),
+        if let set = BandSounds.set,
+           let support = try? fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+            .appending(path: set.supportFolder),
            let files = try? fm.contentsOfDirectory(at: support, includingPropertiesForKeys: nil),
-           let sf = files.first(where: { ["sf2", "dls"].contains($0.pathExtension.lowercased())
-               && !$0.lastPathComponent.hasPrefix("brasscribe-band") }) {
+           let sf = files.first(where: { ["sf2", "dls"].contains($0.pathExtension.lowercased()) && !set.holds($0.lastPathComponent) }) {
             return SoundBank(general: sf)
         }
         if let b = bundle.url(forResource: "MuseScore_General", withExtension: "sf2") { return SoundBank(general: b) }

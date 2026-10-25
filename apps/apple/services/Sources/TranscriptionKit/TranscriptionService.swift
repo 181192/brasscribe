@@ -1,47 +1,26 @@
 import Foundation
 import ScoreKit
 
-/// "What is this?" — the answer picks the pipeline profile. The app never guesses.
-/// Raw values are the engine's profile ids.
-public enum SourceProfile: String, CaseIterable, Codable, Sendable, Identifiable {
-    case solo
-    case brassBand = "brass-band"
-    case orchestraWithSoloist = "orchestra-with-soloist"
-    case popRock = "pop-rock"
-    public var id: String { rawValue }
-    /// The engine's target these profiles belong to: this app makes band scores.
-    public static let target = "brass"
-}
-
-/// What the musician wants out, sent along when the engine supports it.
-public struct OutputChoice: Sendable, Equatable, Codable {
-    public var lineup: Lineup
-    public var difficulty: Difficulty
-    /// Target key in fifths (nil = keep the detected key).
-    public var keyFifths: Int?
-    /// The player's seat (a core seat id), the clef they read ("treble"/"bass") and who plays the
-    /// tune ("lineup"/"seat"). Nil: no seat, and the score is what it was before seats.
-    public var seat: String?
-    public var reads: String?
-    public var lead: String?
-    public init(lineup: Lineup = .fullBand, difficulty: Difficulty = .faithful, keyFifths: Int? = nil,
-                seat: String? = nil, reads: String? = nil, lead: String? = nil) {
-        self.lineup = lineup; self.difficulty = difficulty; self.keyFifths = keyFifths
-        self.seat = seat; self.reads = reads; self.lead = lead
-    }
-
-    /// The seat options as the core's arrangers take them.
-    public var seatOptions: SeatOptions { SeatOptions(seat: seat, reads: reads, lead: lead) }
+/// One of a target's own options for a job, as the engine's upload form takes it (engine/openapi.json).
+public struct EngineField: Sendable, Equatable {
+    public var name: String
+    public var value: String
+    public init(_ name: String, _ value: String) { self.name = name; self.value = value }
 }
 
 public struct TranscriptionRequest: Sendable {
     public var audioURL: URL
-    public var profile: SourceProfile
+    /// The engine's profile id.
+    public var profile: String
     public var title: String?
-    public var output: OutputChoice
-    public init(audioURL: URL, profile: SourceProfile, title: String? = nil, output: OutputChoice = .init()) {
-        self.audioURL = audioURL; self.profile = profile; self.title = title; self.output = output
+    /// The target's options, sent with the recording.
+    public var fields: [EngineField]
+    public init(audioURL: URL, profile: String, title: String? = nil, fields: [EngineField] = []) {
+        self.audioURL = audioURL; self.profile = profile; self.title = title; self.fields = fields
     }
+
+    /// The value sent as [name]; nil when it is not sent.
+    public func field(_ name: String) -> String? { fields.last { $0.name == name }?.value }
 }
 
 /// Plain-language step names; the app localises them.
@@ -81,22 +60,50 @@ public struct TranscriptionProgress: Sendable, Equatable {
 }
 
 public enum ArtifactKind: String, CaseIterable, Sendable, Codable {
-    case composition, musicXML, pdf, midi, audio, brailleBRF, talkingScore
+    case composition, musicXML, pdf, midi, audio, brailleBRF, talkingScore, tab
 
-    /// File name the engine uses for this artifact.
-    public var engineName: String {
+    /// Where the engine serves it for a job: `v1/jobs/<id>/<endpoint>`, whatever the target names its file.
+    public var endpoint: String {
         switch self {
-        case .composition: return "composition.json"
-        case .musicXML: return "brass-band.musicxml"
-        case .pdf: return "brass-band.pdf"
-        case .midi: return "brass-band.mid"
-        case .audio: return "brass-band.mp3"
-        case .brailleBRF: return "brass-band.brf"
-        case .talkingScore: return "talking-score.txt"
+        case .composition: "composition"
+        case .musicXML: "musicxml"
+        case .pdf: "pdf"
+        case .midi: "midi"
+        case .audio: "audio"
+        case .brailleBRF: "braille"
+        case .talkingScore: "talking-score"
+        case .tab: "tab"
         }
     }
 
-    public var fileExtension: String { String(engineName.split(separator: ".").last ?? "") }
+    /// Whether a job's output file of this name is this kind. The target names its files (`brass-band.musicxml`,
+    /// `tab.musicxml`); the shared ones have one name.
+    public func isOutput(_ name: String) -> Bool {
+        switch self {
+        case .composition: name == "composition.json"
+        case .talkingScore: name == "talking-score.txt"
+        case .tab: name == "tab.json"
+        default: name.hasSuffix("." + fileExtension)
+        }
+    }
+
+    public var fileExtension: String {
+        switch self {
+        case .composition, .tab: "json"
+        case .musicXML: "musicxml"
+        case .pdf: "pdf"
+        case .midi: "mid"
+        case .audio: "mp3"
+        case .brailleBRF: "brf"
+        case .talkingScore: "txt"
+        }
+    }
+
+    /// The kinds among a job's output files.
+    public static func available(in outputs: some Sequence<String>) -> Set<ArtifactKind> {
+        let names = Array(outputs)
+        return Set(allCases.filter { kind in names.contains { kind.isOutput($0) } })
+    }
 }
 
 public struct TranscriptionResult: Sendable {
@@ -124,8 +131,6 @@ public enum TranscriptionError: Error, Equatable, Sendable, LocalizedError {
     case jobFailed(String)
     case cancelled
     case artifactUnavailable(ArtifactKind)
-    /// A quartet was asked for a take with one line only (the app shows its own words).
-    case needsWholeGroup
     /// The computer's interface version is not this app's: nothing was sent to it (the app shows its own words).
     case interfaceMismatch(InterfaceMatch.Update)
 
@@ -137,10 +142,9 @@ public enum TranscriptionError: Error, Equatable, Sendable, LocalizedError {
         case .http(let c, let s): return "The computer answered \(c): \(s)"
         case .jobFailed(let s): return "Transcription failed: \(s)"
         case .cancelled: return "Cancelled."
-        case .artifactUnavailable(let k): return "\(k.engineName) is not available for this transcription."
-        case .needsWholeGroup: return "Needs a recording of the whole group"
-        case .interfaceMismatch(.app): return "This app is older than Brasscribe on the computer."
-        case .interfaceMismatch(.computer): return "Brasscribe on the computer is older than this app."
+        case .artifactUnavailable(let k): return "The \(k.endpoint) is not available for this transcription."
+        case .interfaceMismatch(.app): return "This app is older than the program on the computer."
+        case .interfaceMismatch(.computer): return "The program on the computer is older than this app."
         }
     }
 }

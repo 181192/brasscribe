@@ -12,8 +12,8 @@ struct LiveEngineTests {
     @Test func healthProfilesAndPairing() async throws {
         let h = try await svc.health()
         #expect(h.status == "ok")
-        let names = Set(try await svc.profiles().map(\.name))
-        #expect(names == Set(SourceProfile.allCases.map(\.rawValue)))
+        let names = Set(try await svc.profiles(of: "brass").map(\.name))
+        #expect(names == ["solo", "brass-band", "orchestra-with-soloist", "pop-rock"])
         await #expect(throws: TranscriptionError.pairingRejected) { try await svc.pair(code: "000000", deviceName: "test", platform: "macos") }
     }
 
@@ -25,7 +25,7 @@ struct LiveEngineTests {
         let t0 = Date()
         var progress: [TranscriptionProgress] = []
         var result: TranscriptionResult?
-        for try await ev in svc.transcribe(.init(audioURL: audio, profile: .orchestraWithSoloist, title: "Mikkel")) {
+        for try await ev in svc.transcribe(.init(audioURL: audio, profile: "orchestra-with-soloist", title: "Mikkel")) {
             switch ev {
             case .progress(let p): progress.append(p)
             case .finished(let r): result = r
