@@ -15,7 +15,7 @@ on memory or on this file.
 | Which checks to run, and the areas | `scripts/check.sh` (run it without arguments for its help) and [docs/dev/verify.md](docs/dev/verify.md) |
 | How a release is made | `scripts/release.sh` and [docs/dev/release.md](docs/dev/release.md) |
 | What CI runs | `.github/workflows/` |
-| Design rules and tokens | [design/README.md](design/README.md) and `design/tokens/` |
+| Design rules and tokens | [design/README.md](design/README.md) and `design/tooling/` |
 | Why the architecture is as it is | [docs/research/00-summary.md](docs/research/00-summary.md) |
 | Per-app build and toolchain | the README in the app's directory (`apps/<app>/`, `apps/bandroom/<os>/`) |
 | Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |

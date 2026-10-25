@@ -1,7 +1,7 @@
 import Darwin
 import Foundation
 
-/// "This computer" in words (design/server-app.md §7.5). Numbers come from the host, not the engine.
+/// "This computer" in words (design/shared/server-app.md §7.5). Numbers come from the host, not the engine.
 public enum WorkLoad: Int, Equatable, Sendable, CaseIterable {
     case calm = 1, busy, veryBusy
 

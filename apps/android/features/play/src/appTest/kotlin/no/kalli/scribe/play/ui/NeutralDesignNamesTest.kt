@@ -24,7 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The design system's neutral names (design/tokens/README.md) are the same in every product's generated
+ * The design system's neutral names (design/tooling/README.md) are the same in every product's generated
  * theme. This is compiled for each product, so a neutral name that one of them lacks fails its build.
  */
 class NeutralDesignNamesTest {

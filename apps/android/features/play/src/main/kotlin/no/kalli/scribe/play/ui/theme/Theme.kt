@@ -31,8 +31,8 @@ val DisplayFace = FontFamily(
 )
 
 /**
- * The app's one theme entry point: the product's generated theme (design/dist/android or
- * design/fretscribe/dist/android: colour scheme, type ramp, shapes) with the display face. Colours come
+ * The app's one theme entry point: the product's generated theme (design/brands/brasscribe/dist/android or
+ * design/brands/fretscribe/dist/android: colour scheme, type ramp, shapes) with the display face. Colours come
  * from ScribeTheme.colors, the roles every product has, and [productColors], what the shared screens draw
  * in a product's own (the score's very uncertain, loop and cursor). [dark] is the resolved Settings ›
  * Display › Appearance: the score and every dialog take their colours from here, never from the phone's

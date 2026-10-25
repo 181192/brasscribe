@@ -5,7 +5,7 @@ namespace Brasscribe.Play.Core.Tests;
 /// <summary>
 /// A missing XAML resource key only fails when the page loads on Windows. This checks, off Windows,
 /// that every {StaticResource}/{ThemeResource} key the app's XAML (and the score view's code) uses is
-/// defined by the linked design theme (design/dist/windows/BrasscribeTheme.xaml), by Themes/Styles.xaml
+/// defined by the linked design theme (design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml), by Themes/Styles.xaml
 /// or App.xaml, or is a WinUI resource the app relies on.
 /// </summary>
 public partial class XamlResourceTests
@@ -25,14 +25,14 @@ public partial class XamlResourceTests
     private static HashSet<string> Defined()
     {
         var files = new List<string> { Path.Combine(App, "Themes", "Styles.xaml"), Path.Combine(App, "App.xaml") };
-        if (TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml") is { } theme) files.Add(theme);
+        if (TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml") is { } theme) files.Add(theme);
         return files.SelectMany(f => KeyRegex().Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)).ToHashSet();
     }
 
     [SkippableFact]
     public void Every_resource_key_the_app_uses_is_defined()
     {
-        Skip.If(TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml") is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        Skip.If(TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml") is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml"));
         var defined = Defined();
         var used = new Dictionary<string, string>();
         foreach (var file in Directory.EnumerateFiles(App, "*.xaml", SearchOption.AllDirectories))
@@ -53,8 +53,8 @@ public partial class XamlResourceTests
     [SkippableFact]
     public void Every_design_key_Bandroom_uses_is_defined()
     {
-        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
-        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        var theme = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml"));
         string app = Path.Combine(TestPaths.RepoRoot!, "apps", "bandroom", "windows", "src", "Brasscribe.Bandroom");
         var defined = new[] { theme!, Path.Combine(app, "Themes", "Styles.xaml"), Path.Combine(app, "App.xaml") }
             .SelectMany(f => KeyRegex().Matches(File.ReadAllText(f)).Select(m => m.Groups[1].Value)).ToHashSet();
@@ -73,8 +73,8 @@ public partial class XamlResourceTests
     [SkippableFact]
     public void The_theme_has_one_key_for_each_role()
     {
-        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
-        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        var theme = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml"));
         var keys = KeyRegex().Matches(File.ReadAllText(theme!)).Select(m => m.Groups[1].Value).ToHashSet();
         Assert.Contains("ScribeTextBrush", keys);
         Assert.Contains("ScribeRadiusMd", keys);
@@ -91,9 +91,9 @@ public partial class XamlResourceTests
     [SkippableFact]
     public void Every_themed_key_the_apps_use_is_in_each_theme_dictionary_and_in_Pink()
     {
-        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
-        var pink = TestPaths.RepoFile("design/dist/windows/BrasscribePinkTheme.xaml");
-        Skip.If(theme is null || pink is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        var theme = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml");
+        var pink = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml");
+        Skip.If(theme is null || pink is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml"));
         var dictionaries = new Dictionary<string, HashSet<string>>();
         foreach (var (file, name) in new[] { (theme!, "theme"), (pink!, "Pink") })
             foreach (Match d in ThemeDictionaryRegex().Matches(File.ReadAllText(file)))

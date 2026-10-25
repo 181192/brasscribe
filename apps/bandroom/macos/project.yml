@@ -37,12 +37,12 @@ targets:
     sources:
       - path: App
         excludes: ["Info.plist", "*.entitlements"]
-      # The design system, linked from design/dist (regenerate there, never copy here).
-      - path: ../../../design/dist/apple/BrasscribeDesign.swift
-      - path: ../../../design/dist/apple/BrasscribeDesign.xcassets
-      - path: ../../../design/dist/apple/Fonts/InstrumentSerif-Regular.ttf
+      # The design system, linked from design/brands/brasscribe/dist (regenerate there, never copy here).
+      - path: ../../../design/brands/brasscribe/dist/apple/BrasscribeDesign.swift
+      - path: ../../../design/brands/brasscribe/dist/apple/BrasscribeDesign.xcassets
+      - path: ../../../design/brands/brasscribe/dist/apple/Fonts/InstrumentSerif-Regular.ttf
         buildPhase: resources
-      - path: ../../../design/dist/apple/Fonts/OFL.txt
+      - path: ../../../design/brands/brasscribe/dist/apple/Fonts/OFL.txt
         buildPhase: resources
     dependencies:
       - package: BandroomKit

@@ -1,12 +1,12 @@
 # Brasscribe design
 
 This folder is the single source for how Brasscribe Play and Studio look, sound and behave.
-- [`system.md`](system.md): components, patterns, layout, navigation and the screen map
-- [`brand/brand.md`](brand/brand.md): name, mark, icon, typeface, voice and copy rules
-- [`mockups/png/`](mockups/png/): the key screens (phone and desktop, light and dark, two screens in Norwegian, and Studio)
-- [`claude/`](claude/README.md): the design system as a Claude artifact, generated from this folder
+- [`brands/brasscribe/system.md`](brands/brasscribe/system.md): components, patterns, layout, navigation and the screen map
+- [`brands/brasscribe/brand/brand.md`](brands/brasscribe/brand/brand.md): name, mark, icon, typeface, voice and copy rules
+- [`brands/brasscribe/mockups/png/`](brands/brasscribe/mockups/png/): the key screens (phone and desktop, light and dark, two screens in Norwegian, and Studio)
+- [`brands/brasscribe/claude/`](brands/brasscribe/claude/README.md): the design system as a Claude artifact, generated from this folder
 
-![Home, What is this?, review and score](mockups/png/home-desktop-light.png)
+![Home, What is this?, review and score](brands/brasscribe/mockups/png/home-desktop-light.png)
 
 ## Principles
 
@@ -19,29 +19,29 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 
 ## Tokens
 
-- **Source:** [`tokens/tokens.json`](tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
+- **Source:** [`brands/brasscribe/tokens/tokens.json`](brands/brasscribe/tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
   - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground), `color.high-contrast-light` (on a light ground), and the hidden `color.pink` / `color.pink-dark` (§10 of system.md).
   - More contrast keeps light or dark on every platform: `high-contrast-light` in a light appearance, `high-contrast` in a dark one. Studio's `brasscribe.css` picks by the resolved theme under `prefers-contrast: more`, the Apple asset catalog has the light one under its `high` appearance and the dark one under `dark` + `high`, and Compose's `scribeColors` picks by `dark`. WinUI takes the system's colours in a contrast theme.
   - Every checked pair of both high-contrast palettes reaches 7:1 (WCAG 1.4.6); `qa/tools/contrast.py` fails below that.
   - Typography roles name their Dynamic Type style, Material role and Windows ramp style.
-- **Icons:** [`tokens/icons.json`](tokens/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
+- **Icons:** [`tooling/icons.json`](tooling/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
 ```sh
-uv run design/tokens/build.py            # regenerate every brand's dist and docs/accessibility/design-tokens.json
-uv run design/tokens/build.py --check    # CI: exit 1 if anything is stale
-uv run --with pytest pytest design/tokens
+uv run design/tooling/build.py            # regenerate every brand's dist and docs/accessibility/design-tokens.json
+uv run design/tooling/build.py --check    # CI: exit 1 if anything is stale
+uv run --with pytest pytest design/tooling
 uv run qa/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 76 pairs x 6 modes), exit 1 on failure
-uv run design/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
-node design/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
+uv run design/brands/brasscribe/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
+node design/brands/brasscribe/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
 
-**One generator, every brand.** [`tokens/README.md`](tokens/README.md) says how the generator serves any number of brands on every platform, and has the naming rule: a small set of neutral names (`Scribe…`, `--scribe-…`) that are the same in every brand's files, and each brand's own names for everything else.
+**One generator, every brand.** [`tooling/README.md`](tooling/README.md) says how the generator serves any number of brands on every platform, and has the naming rule: a small set of neutral names (`Scribe…`, `--scribe-…`) that are the same in every brand's files, and each brand's own names for everything else.
 
-**Fretscribe** has its own design in [`fretscribe/`](fretscribe/): brand, tokens, the rules it changes ([`fretscribe/system.md`](fretscribe/system.md)), flows and mockups. The same generator writes its Apple, Android, Windows and web files into `fretscribe/dist`. Its Android theme still has the Kotlin names above, so the two Android apps share their screens; [`fretscribe/tokens/README.md`](fretscribe/tokens/README.md) has the map from those names to Fretscribe's tokens. No Apple or Windows app uses Fretscribe's files yet.
+**Fretscribe** has its own design in [`brands/fretscribe/`](brands/fretscribe/): brand, tokens, the rules it changes ([`brands/fretscribe/system.md`](brands/fretscribe/system.md)), flows and mockups. The same generator writes its Apple, Android, Windows and web files into `fretscribe/dist`. Its Android theme still has the Kotlin names above, so the two Android apps share their screens; [`brands/fretscribe/tokens/README.md`](brands/fretscribe/tokens/README.md) has the map from those names to Fretscribe's tokens. No Apple or Windows app uses Fretscribe's files yet.
 
 ```sh
-uv run design/tokens/build.py --brand fretscribe [--check]
-uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon
+uv run design/tooling/build.py --brand fretscribe [--check]
+uv run design/brands/fretscribe/brand/build.py  # Fretscribe's Android launcher icon
 ```
 
 **Contrast:** all 456 pairs pass (76 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
@@ -52,7 +52,7 @@ uv run design/fretscribe/brand/build.py  # Fretscribe's Android launcher icon
 
 ### Using the tokens per platform
 
-Each app copies (or links) from `design/dist/`. The generator never edits `apps/`.
+Each app copies (or links) from `design/brands/brasscribe/dist/`. The generator never edits `apps/`.
 
 | Platform | Copy | Use |
 |---|---|---|
@@ -71,26 +71,26 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 - [ ] Use one primary button per screen, with 12 px corners. No pill shapes and no platform accent colour.
 - [ ] Use the display face only for screen titles of 28 pt and up and for the wordmark.
 - [ ] Put the app icon from `dist/icons/<platform>` in place.
-- [ ] Put the copy through the voice rules in `brand/brand.md`, and use the glossary for both en and nb. Rename "companion engine" and "motor" to "Brasscribe on your computer" / "Brasscribe på datamaskinen".
-- [ ] Give every error a title, a reason and a recovery button (`mockups/png/error-*`).
+- [ ] Put the copy through the voice rules in `brands/brasscribe/brand/brand.md`, and use the glossary for both en and nb. Rename "companion engine" and "motor" to "Brasscribe on your computer" / "Brasscribe på datamaskinen".
+- [ ] Give every error a title, a reason and a recovery button (`brands/brasscribe/mockups/png/error-*`).
 - [ ] Follow the player-bar order: Play first, bar fields for the loop, a beat counter that never flashes, and "Mute my part".
 - [ ] Transcribing shows the plain-language steps, the percentage and, for a score made on the device, the time left, and Cancel. Announce at most every 10% or 10 s.
 - [ ] Check reduced motion, 200% text and high contrast against the mockups.
 
-**From the usability review** (`reviews/usability-review.md`; the specs in `system.md` and `brand/brand.md` are updated):
+**From the usability review** (`brands/brasscribe/reviews/usability-review.md`; the specs in `brands/brasscribe/system.md` and `brands/brasscribe/brand/brand.md` are updated):
 - [ ] Take the new tokens: `focus` is now ink / paper / white (it was blue, like `uncertain`), `adlib-tint` is a neutral warm grey (it was pale blue), dark `secondary` is one step lighter and the dark `loop-tint` lighter in weight.
-- [ ] Mixer: labelled **Mute** / **Only this** toggles (nb **Demp** / **Bare denne**), never M/S, Solo or Lyd av. Icons from `icons.json` (`mute`, `solo`).
+- [ ] Mixer: labelled **Mute** / **Only this** toggles (nb **Demp** / **Bare denne**), never M/S, Solo or Lyd av. Icons from `tooling/icons.json` (`mute`, `solo`).
 - [ ] Every on/off toggle (Count-in, Metronome, Mute my part, Mute, Only this): **on = tonal fill + 1.5 px ink edge + ✓**. Ink fill is only for the one primary.
 - [ ] Phone player: practice chips in **two rows** (Speed · Repeat · Count-in / Metronome · Mute my part) or a **Practice ▾** sheet. Nothing clips or scrolls behind a fade.
 - [ ] Part view: the same player as the score view. Play is the only primary; **Mute my part** (headphones) is on by default; Speed and Repeat are there. Desktop gets a **Full score** back button.
-- [ ] Review: **Finish later (N left)** with the confirm dialog (`mockups/png/finish-later-*`), **Skip** on phone, "Written G, minim" + "it could also be an A", the list sorted by part then bar with "+ N more".
+- [ ] Review: **Finish later (N left)** with the confirm dialog (`brands/brasscribe/mockups/png/finish-later-*`), **Skip** on phone, "Written G, minim" + "it could also be an A", the list sorted by part then bar with "+ N more".
 - [ ] Score view: the status line **"N notes marked ? · Check them"** (re-opens Review); "?" marks are tappable (44 pt).
 - [ ] Share or print: title **Share or print**, default **Solo Cornet (you) + PDF** (1 file), **Print** as the primary, the same scope labels everywhere (Solo Cornet (you) / Every part / Conductor's score), a **Show ? marks** switch, a legend in the PDF footer. No ✕ when there's a Cancel.
-- [ ] The new **How should the score be?** screen (`mockups/png/choose-output-*`): Which band? / How hard? (with the tip) / Key, primary **Show the score**.
+- [ ] The new **How should the score be?** screen (`brands/brasscribe/mockups/png/choose-output-*`): Which band? / How hard? (with the tip) / Key, primary **Show the score**.
 - [ ] Touch targets ≥ 44 pt everywhere, **48 pt** for the player and the review buttons; previous/next bar get a visible 48 pt hit area.
 - [ ] Errors: commands, addresses and codes only inside **Details for the band's tech person** (collapsed). The desktop primary is bottom right.
 - [ ] Cancel while transcribing confirms: "Stop making this score? The recording stays in Your scores."
-- [ ] Copy: apply the glossary in `brand/brand.md` (Open a recording, Repeat bars / Stop repeating, Spill av, Behold, Read aloud / Les opp, Show video, As written for B♭ / Concert pitch, Laying out the pages, "62%" / "62 %", no "we", no "DRM", no "Transcribed").
+- [ ] Copy: apply the glossary in `brands/brasscribe/brand/brand.md` (Open a recording, Repeat bars / Stop repeating, Spill av, Behold, Read aloud / Les opp, Show video, As written for B♭ / Concert pitch, Laying out the pages, "62%" / "62 %", no "we", no "DRM", no "Transcribed").
 
 ### Apple (`apps/apple`)
 - [ ] `FlowViews.swift`: change "Uncertain notes are marked with an open diamond and an orange colour." to the "?" legend. **(drift)**

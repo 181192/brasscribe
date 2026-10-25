@@ -49,7 +49,7 @@ enum class Reads(val id: String) {
 data class TabJobOptions(val instrument: String, val tuning: String, val layout: String)
 
 /**
- * The player's answer to "Your instrument" (design/fretscribe/flows.md §2): what new tabs are written for.
+ * The player's answer to "Your instrument" (design/brands/fretscribe/flows.md §2): what new tabs are written for.
  * A song already written keeps the instrument it was made for.
  *
  * [kind] is the engine's instrument ("guitar-6", "bass-5", "ukulele-baritone") and [tuning] one of the

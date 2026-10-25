@@ -4,14 +4,14 @@ plugins {
 }
 
 /*
- * Brasscribe's design system for Android, generated from its tokens by design/tokens/build.py into design/dist: the neutral
+ * Brasscribe's design system for Android, generated from its tokens by design/tooling/build.py into design/brands/brasscribe/dist: the neutral
  * theme (no.kalli.scribe.design, the same declarations in every brand with this brand's values) and Brasscribe's own roles
  * (no.kalli.brasscribe.design), compiled as they are; the icon drawables, the display face (as res/font/display) and the
  * launcher icons, synced into one generated res folder (res/font may hold only fonts, so the font's licence goes to
  * the assets). Every brand's module has the namespace no.kalli.scribe.design, so the shared screens name the same R.
  */
 val repoRoot = rootProject.extra["repoRoot"] as File
-val dist = File(repoRoot, "design/dist")
+val dist = File(repoRoot, "design/brands/brasscribe/dist")
 val displayFont = "instrument_serif"
 
 android {

@@ -120,7 +120,7 @@ object Brasscribe : Product {
     /**
      * The screen that follows a finished transcription: Check the notes, or the score for a draft made on the phone.
      * A draft has only Basic Pitch on the melody, so every melody note is marked "?", and its notice already says it
-     * is rough; Check the notes is still reachable from the score (design/system.md, the band draft).
+     * is rough; Check the notes is still reachable from the score (design/brands/brasscribe/system.md, the band draft).
      */
     override fun afterTranscription(result: TranscriptionResult): Screen = if (result.draft) Screen.SCORE else Screen.REVIEW
 

@@ -26,7 +26,7 @@ public enum KeyModifiers { None = 0, Ctrl = 1, Shift = 2, Alt = 4 }
 /// The shortcut list of qa/screen-reader-scripts/keyboard-desktop.md for Windows. Single-character
 /// keys work only while the score has focus and can be turned off (WCAG 2.1.4); arrows, Space,
 /// Home/End and modifier shortcuts always work there. F (with the single-key shortcuts) and F11
-/// open the music stand. Inside the stand (design/music-stand.md §7) there is no note focus: the
+/// open the music stand. Inside the stand (design/brands/brasscribe/music-stand.md §7) there is no note focus: the
 /// arrows and Page Up/Down turn pages (so Bluetooth page turners work), Home/End go to the first and
 /// last page, Esc leaves the stand before it ever leaves the score, and F or F11 leave it too.
 /// </summary>

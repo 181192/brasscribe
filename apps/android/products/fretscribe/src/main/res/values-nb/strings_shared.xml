@@ -226,7 +226,7 @@
     <string name="companion_allow_heavy_desc">Av: den bruker bare resultater den allerede har, og et nytt opptak stopper ved første tunge steg. Bruk det til å sjekke tilkoblingen.</string>
     <!-- Om -->
     <string name="about_title">Om appen og lisenser</string>
-    <!-- Music stand (design/music-stand.md §9) -->
+    <!-- Music stand (design/brands/brasscribe/music-stand.md §9) -->
     <string name="stand_enter">Notestativ</string>
     <string name="stand_open_from_library">Åpne på notestativet</string>
     <string name="stand_left">Notestativet er lukket.</string>

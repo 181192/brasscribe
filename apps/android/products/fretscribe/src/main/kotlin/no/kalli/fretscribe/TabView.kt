@@ -96,7 +96,7 @@ data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: Li
  * is not public in the Android build, and does no more than this.
  */
 object TabFont {
-    /** The face in the app's assets (design/fretscribe/brand/fonts). */
+    /** The face in the app's assets (design/brands/fretscribe/brand/fonts). */
     const val ASSET = "fonts/FretscribeTab-Regular.ttf"
 
     private var face: AlphaSkiaTypeface? = null

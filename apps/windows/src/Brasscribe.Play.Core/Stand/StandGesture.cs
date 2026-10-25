@@ -1,6 +1,6 @@
 namespace Brasscribe.Play.Core.Stand;
 
-/// <summary>The stand's swipe (design/music-stand.md §5.2): a horizontal swipe on the music turns a page.</summary>
+/// <summary>The stand's swipe (design/brands/brasscribe/music-stand.md §5.2): a horizontal swipe on the music turns a page.</summary>
 public static class StandGesture
 {
     /// <summary>A swipe that starts within this of an edge belongs to the system (edge gestures) and never turns a page.</summary>

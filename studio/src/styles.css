@@ -1,4 +1,4 @@
-/* Studio on the Brasscribe design system (design/system.md §7, the workbench variant).
+/* Studio on the Brasscribe design system (design/brands/brasscribe/system.md §7, the workbench variant).
    Colours, type, spacing, radii and motion come from the generated tokens; this file only
    lays them out. brasscribe.css handles dark mode, data-theme, prefers-contrast,
    forced-colors and reduced motion: --scribe-… is what every brand has, --bc-… is Brasscribe's
@@ -6,8 +6,8 @@
 
    Sizes are rem so browser zoom and the user's font size scale everything (WCAG 1.4.4);
    only hairlines, focus rings and canvas strokes are px. Spacing is on the 8 px grid. */
-@import "../../design/dist/web/brasscribe.css";
-@import "../../design/dist/web/fonts.css";
+@import "../../design/brands/brasscribe/dist/web/brasscribe.css";
+@import "../../design/brands/brasscribe/dist/web/fonts.css";
 
 :root {
   --gutter: var(--scribe-space-6);
@@ -42,7 +42,7 @@ ul { padding-left: 1.25rem; }
 .skip-link { position: absolute; left: var(--scribe-space-2); top: -4rem; z-index: 10; background: var(--scribe-surface-raised); color: var(--scribe-text); padding: var(--scribe-space-2) var(--scribe-space-4); border-radius: var(--scribe-radius-xs); box-shadow: inset 0 0 0 2px var(--scribe-focus); }
 .skip-link:focus { top: var(--scribe-space-2); }
 
-/* Icons (design/dist/web/icons.js, Material Symbols grid) */
+/* Icons (design/brands/brasscribe/dist/web/icons.js, Material Symbols grid) */
 .i { width: 1.25rem; height: 1.25rem; flex: none; fill: currentColor; vertical-align: -0.25em; }
 
 /* ---------------------------------------------------------------- shell */

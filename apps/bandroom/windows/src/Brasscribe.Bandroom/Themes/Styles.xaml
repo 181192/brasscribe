@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Brasscribe Bandroom styles on top of the generated design tokens (Themes/BrasscribeTheme.xaml, linked
-    from design/dist/windows). Colours come only from the Bc* brushes; in a Windows contrast theme those map
+    from design/brands/brasscribe/dist/windows). Colours come only from the Bc* brushes; in a Windows contrast theme those map
     to system colours. The flyout uses 40 epx buttons (touch-friendly, §7) and 14 epx body text.
 -->
 <ResourceDictionary
@@ -143,7 +143,7 @@
     </Style>
 
     <!-- ===== Surfaces ===== -->
-    <!-- A window's root: the background follows the window's own theme (Appearance, design/system.md §10). -->
+    <!-- A window's root: the background follows the window's own theme (Appearance, design/brands/brasscribe/system.md §10). -->
     <Style x:Key="WindowRootStyle" TargetType="Grid">
         <Setter Property="Background" Value="{ThemeResource ScribeBgBrush}" />
     </Style>

@@ -42,7 +42,7 @@
     <Content Include="Strings\**\*.resw" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <!-- The design system: theme, fonts and icons are linked from design/dist, never copied. -->
+  <!-- The design system: theme, fonts and icons are linked from design/brands/brasscribe/dist, never copied. -->
   <ItemGroup>
     <Page Include="$(DesignDir)dist\windows\BrasscribeTheme.xaml" Link="Themes\BrasscribeTheme.xaml" />
     <Content Include="$(DesignDir)dist\windows\Assets\Fonts\*" Link="Assets\Fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

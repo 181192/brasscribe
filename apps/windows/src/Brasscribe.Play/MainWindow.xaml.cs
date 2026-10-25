@@ -19,7 +19,7 @@ public interface IScreenPage
 }
 
 /// <summary>
-/// The shell (design/system.md §4, Windows): a title bar with Back, the page title and the page's
+/// The shell (design/brands/brasscribe/system.md §4, Windows): a title bar with Back, the page title and the page's
 /// actions; a NavigationView whose pane holds the library on Home and while a score is made; and a
 /// Frame that shows one flow step at a time. The view model's <see cref="MainViewModel.Screen"/>
 /// decides the step; the frame keeps no back stack (Back goes through the view model).

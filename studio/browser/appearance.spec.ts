@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Appearance (design/system.md §10): with more contrast, Light and Dark keep their theme
+// Appearance (design/brands/brasscribe/system.md §10): with more contrast, Light and Dark keep their theme
 // and get the high-contrast palette for it; forced colours still hand over to the system.
 const bg = (page: Page) => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--scribe-bg").trim().toUpperCase());
 const scheme = (page: Page) => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme);

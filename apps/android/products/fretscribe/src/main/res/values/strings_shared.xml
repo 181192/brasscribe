@@ -230,7 +230,7 @@
     <string name="companion_allow_heavy_desc">Off: it only reuses results it already has, and a new recording stops at its first heavy step. Use it to check the connection.</string>
     <!-- About -->
     <string name="about_title">About and licences</string>
-    <!-- Music stand (design/music-stand.md §9) -->
+    <!-- Music stand (design/brands/brasscribe/music-stand.md §9) -->
     <string name="stand_enter">Music stand</string>
     <string name="stand_open_from_library">Open on the music stand</string>
     <!-- Said when a pedal goes back to the start of the repeat. -->

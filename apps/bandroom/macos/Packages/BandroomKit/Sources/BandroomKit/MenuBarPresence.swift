@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-/// Whether the menu-bar mark can be seen (design/server-app.md §3.3). On a MacBook with a notch a crowded
+/// Whether the menu-bar mark can be seen (design/shared/server-app.md §3.3). On a MacBook with a notch a crowded
 /// menu bar puts extra items behind the camera housing, or off the screen, without telling the app.
 public enum StatusItemVisibility {
     /// What AppKit reports about the status item's window after launch.

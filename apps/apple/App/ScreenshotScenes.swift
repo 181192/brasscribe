@@ -3,7 +3,7 @@ import ScoreKit
 import TranscriptionKit
 
 /// Opens one key screen directly (`-screen <name>`), for the screenshots in docs/screenshots
-/// and the side-by-side check against design/mockups.
+/// and the side-by-side check against design/brands/brasscribe/mockups.
 enum ScreenshotScenes {
     @MainActor static func open(_ name: String, app: AppModel, openScore: () -> Piece?) {
         switch name {

@@ -8,10 +8,10 @@ using Xunit.Abstractions;
 namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
-/// The notation overlays of design/system.md §6: "?" and boxed "?" instead of rings and brackets,
+/// The notation overlays of design/brands/brasscribe/system.md §6: "?" and boxed "?" instead of rings and brackets,
 /// tints that never stack, outlines only in contrast themes, and the score tokens. With the golden
 /// score present, previews of the full score, the part view and the review snippet are written as PNGs
-/// (to BRASSCRIBE_PREVIEW_DIR, or previews/ next to the test binaries) to compare with design/mockups.
+/// (to BRASSCRIBE_PREVIEW_DIR, or previews/ next to the test binaries) to compare with design/brands/brasscribe/mockups.
 /// </summary>
 [Collection(AlphaTabCollection.Name)]
 public class ScoreOverlayTests(ITestOutputHelper log)
@@ -92,12 +92,12 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         Assert.Contains(items, i => i.Kind == OverlayKind.CursorLine);
     }
 
-    // Pink recolours the chrome; of the notation only Pink light's very uncertain differs (design/system.md §10).
+    // Pink recolours the chrome; of the notation only Pink light's very uncertain differs (design/brands/brasscribe/system.md §10).
     [SkippableFact]
     public void Pink_lights_very_uncertain_matches_the_generated_Pink_theme()
     {
-        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribePinkTheme.xaml");
-        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribePinkTheme.xaml"));
+        var theme = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml"));
         string xaml = File.ReadAllText(theme);
         foreach (var (key, kind) in new[] { ("Light", ThemeKind.Light), ("Dark", ThemeKind.Dark) })
         {
@@ -116,8 +116,8 @@ public class ScoreOverlayTests(ITestOutputHelper log)
     [SkippableFact]
     public void Score_colours_match_the_generated_theme()
     {
-        var theme = TestPaths.RepoFile("design/dist/windows/BrasscribeTheme.xaml");
-        Skip.If(theme is null, TestPaths.Missing("design/dist/windows/BrasscribeTheme.xaml"));
+        var theme = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml");
+        Skip.If(theme is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml"));
         string xaml = File.ReadAllText(theme);
         foreach (var (key, palette) in new[] { ("Light", UncertaintyPalette.Light), ("Dark", UncertaintyPalette.Dark) })
         {
@@ -182,7 +182,7 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         Skip.If(compPath is null, TestPaths.Missing(TestPaths.GoldenComposition));
         string dir = Environment.GetEnvironmentVariable("BRASSCRIBE_PREVIEW_DIR") is { Length: > 0 } d ? d : TestPaths.Output("previews");
         Directory.CreateDirectory(dir);
-        ScorePreview.UseDisplayFont(TestPaths.RepoFile("design/brand/fonts/InstrumentSerif-Italic.ttf") is { } f ? File.ReadAllBytes(f) : null);
+        ScorePreview.UseDisplayFont(TestPaths.RepoFile("design/brands/brasscribe/brand/fonts/InstrumentSerif-Italic.ttf") is { } f ? File.ReadAllBytes(f) : null);
 
         string xml = File.ReadAllText(xmlPath);
         var composition = CompositionJson.Parse(File.ReadAllText(compPath));

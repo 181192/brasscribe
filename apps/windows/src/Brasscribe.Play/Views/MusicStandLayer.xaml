@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:views="using:Brasscribe.Play.Views">
 
-    <!-- The music stand's control layer (design/music-stand.md §4): a card at the bottom centre with
+    <!-- The music stand's control layer (design/brands/brasscribe/music-stand.md §4): a card at the bottom centre with
          ‹ page · ⏮ bar · Play · bar ⏭ · page › · − Speed + · Repeat · Only my part. Hidden means
          Collapsed, so it leaves the tab order and the UIA tree. The rows stack at large text sizes, and the
          card grows upwards; it never clips. Play is the only ink control; the page buttons have a tonal

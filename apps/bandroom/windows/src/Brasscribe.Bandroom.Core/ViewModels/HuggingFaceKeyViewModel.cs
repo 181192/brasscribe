@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace Brasscribe.Bandroom.Core.ViewModels;
 
 /// <summary>
-/// The Hugging Face access card in Settings, where the key is entered (design/server-app.md §3.2, step 2). Saving it
+/// The Hugging Face access card in Settings, where the key is entered (design/shared/server-app.md §3.2, step 2). Saving it
 /// starts the band writer's download, so its terms are shown here and must be accepted first.
 /// </summary>
 public sealed partial class HuggingFaceKeyViewModel : ObservableObject

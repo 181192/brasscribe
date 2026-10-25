@@ -2,7 +2,7 @@ import BandroomKit
 import CoreImage.CIFilterBuiltins
 import SwiftUI
 
-/// Pair a phone (design/server-app.md §3.4, mockups/png/server-pair-*). The code works while this window is
+/// Pair a phone (design/shared/server-app.md §3.4, mockups/png/server-pair-*). The code works while this window is
 /// open, and only once.
 struct PairWindow: View {
     @Environment(AppModel.self) private var app

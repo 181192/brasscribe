@@ -7,7 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Brasscribe.Play.Core.ViewModels;
 
 /// <summary>
-/// The music stand (design/music-stand.md): the score alone, in pages, for playing from a stand. It
+/// The music stand (design/brands/brasscribe/music-stand.md): the score alone, in pages, for playing from a stand. It
 /// opens on your part (the player's own part, else the part shown; §12.1), keeps the position as plain
 /// text in a band at the top with Leave, and has one control layer that hides itself while the music
 /// plays (<see cref="StandLayer"/>). Playback turns the pages unless Settings says not to (§12.2).

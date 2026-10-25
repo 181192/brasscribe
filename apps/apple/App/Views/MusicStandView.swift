@@ -2,7 +2,7 @@ import NotationKit
 import ScoreKit
 import SwiftUI
 
-/// The music stand (design/music-stand.md): the score alone, in pages, with a persistent band at
+/// The music stand (design/brands/brasscribe/music-stand.md): the score alone, in pages, with a persistent band at
 /// the top (the position as plain text, and ✕ Leave) and a control layer that hides itself while
 /// the music plays, unless assistive technology, the keyboard or a setting needs it.
 struct MusicStandView: View {

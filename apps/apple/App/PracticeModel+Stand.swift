@@ -4,7 +4,7 @@ import Observation
 import ScoreKit
 import SwiftUI
 
-/// The music stand (design/music-stand.md): the score alone, in pages, for playing from a stand.
+/// The music stand (design/brands/brasscribe/music-stand.md): the score alone, in pages, for playing from a stand.
 ///
 /// The score is engraved with a fixed number of bars per system as one long page
 /// (`ScoreRenderer.Layout.barsPerSystem`). The stand cuts that page into screen-sized windows of

@@ -1,6 +1,6 @@
 # 04 — Brand directions
 
-Fretscribe records or opens audio and writes it down as tablature, with optional standard notation, for guitar, bass, ukulele and mandolin. It is free, non-commercial and local-first, and it must meet WCAG 2.2 AA. This document scans the visual landscape, proposes three brand directions, recommends one, and specifies the logo files in `design/brand/`.
+Fretscribe records or opens audio and writes it down as tablature, with optional standard notation, for guitar, bass, ukulele and mandolin. It is free, non-commercial and local-first, and it must meet WCAG 2.2 AA. This document scans the visual landscape, proposes three brand directions, recommends one, and specifies the logo files in `design/brands/brasscribe/brand/`.
 
 Method notes. Competitor observations come from homepages, app-store listings and design write-ups (see Sources). They describe patterns, not measured colours. All contrast ratios are computed with the WCAG 2.x relative-luminance formula. Font claims were checked against the font files from the `google/fonts` repository: digit advance widths and OpenType features were inspected, and the digits were rendered at 44–80 px and again under a 3 px Gaussian blur to approximate reading from a music stand.
 
@@ -219,7 +219,7 @@ Workbench is the fallback if user testing finds Ruled Paper too austere. Borrow 
 
 ## 4. Logo files (Ruled Paper)
 
-All files are in `design/fretscribe/brand/`. The text is outlined to paths, so no font is needed at runtime. Each file has `role="img"` and a `<title>`, and each passes `xmllint --noout`.
+All files are in `design/brands/fretscribe/brand/`. The text is outlined to paths, so no font is needed at runtime. Each file has `role="img"` and a `<title>`, and each passes `xmllint --noout`.
 
 | File | Use |
 |---|---|
@@ -245,7 +245,7 @@ All files are in `design/fretscribe/brand/`. The text is outlined to paths, so n
 
 ## 5. Implementation notes
 
-> **Changed in the design** (`design/fretscribe/brand/brand.md`): the unsure mark is a "?" above the tab column rather than a dashed outline round the numeral (outlines read as circled numbers in tab); focus is ink, not the accent; the tab font ships with the plain zero built in as "Fretscribe Tab"; and the platform UI face is used for body text, with Atkinson Hyperlegible Next for titles.
+> **Changed in the design** (`design/brands/fretscribe/brand/brand.md`): the unsure mark is a "?" above the tab column rather than a dashed outline round the numeral (outlines read as circled numbers in tab); focus is ink, not the accent; the tab font ships with the plain zero built in as "Fretscribe Tab"; and the platform UI face is used for body text, with Atkinson Hyperlegible Next for titles.
 
 - **Self-host the fonts and bundle them in the apps.** Don't load them from the Google Fonts CDN at runtime. A third-party request conflicts with "local-first, nothing leaves the device", and subsetting CDNs can drop the `zero` and `tnum` features the tab renderer depends on.
 - **Respect the OFL naming rule.** Atkinson Hyperlegible's reserved font names apply to modified versions, and subsetting counts as modification. Either ship the unmodified OFL files, or rename any subset family (for example to `FS Tab Mono`) and keep the licence file alongside it.

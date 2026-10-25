@@ -9,7 +9,7 @@ import no.kalli.scribe.play.ui.*
 import android.content.res.Resources
 import no.kalli.scribe.engine.Tab
 
-/** What the tab view's numbers come from that the generated theme does not carry yet (design/fretscribe/tokens/tokens.json, `tab`). */
+/** What the tab view's numbers come from that the generated theme does not carry yet (design/brands/fretscribe/tokens/tokens.json, `tab`). */
 object TabTokens {
     /** `tab.numeral-scale`: fret numbers relative to body text. */
     const val NUMERAL_SCALE = 1.5

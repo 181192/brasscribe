@@ -1,4 +1,4 @@
-/** Appearance (design/system.md §10): Match system, Light or Dark, stored per browser, and the
+/** Appearance (design/brands/brasscribe/system.md §10): Match system, Light or Dark, stored per browser, and the
  *  hidden Pink light and Pink dark once Pink is unlocked (activate the Brasscribe Studio lockup five
  *  times in a row). The choice becomes data-theme on <html>; brasscribe.css reads it. Pink light and
  *  Pink dark also set data-palette="pink". With more contrast (prefers-contrast: more) the choice

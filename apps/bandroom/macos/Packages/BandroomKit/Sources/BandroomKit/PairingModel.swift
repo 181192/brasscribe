@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The Pair a phone window (design/server-app.md §3.4). The engine's pairing window is open exactly while this
+/// The Pair a phone window (design/shared/server-app.md §3.4). The engine's pairing window is open exactly while this
 /// window is open; each code works once. It opens for 10 minutes and is extended in the background while the window
 /// stays open, so a window that is never closed (Bandroom quits or crashes) doesn't leave a code working.
 @MainActor

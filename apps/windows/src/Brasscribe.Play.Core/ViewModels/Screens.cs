@@ -11,7 +11,7 @@ public static class Screens
     public static bool IsReview(Screen current) => current == Screen.Review;
     public static bool IsError(Screen current) => current == Screen.Error;
     public static bool IsChooseOutput(Screen current) => current == Screen.ChooseOutput;
-    /// <summary>The library sidebar shows on Home and while a score is made (design/mockups: home, transcribing).</summary>
+    /// <summary>The library sidebar shows on Home and while a score is made (design/brands/brasscribe/mockups: home, transcribing).</summary>
     public static bool ShowsLibrary(Screen current) => current is Screen.Start or Screen.Transcribing;
     public static bool Not(bool value) => !value;
     public static bool HasText(string? value) => !string.IsNullOrEmpty(value);

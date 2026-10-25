@@ -307,7 +307,7 @@ fun AboutScreen(vm: PlayViewModel) {
 }
 
 /**
- * The version, which is also the way into the hidden Pink palette (design/system.md §10): five
+ * The version, which is also the way into the hidden Pink palette (design/brands/brasscribe/system.md §10): five
  * activations in a row unlock it. It is a real button, so a TalkBack double-tap, a keyboard or a
  * switch reaches it as well as a finger; nothing on screen says so.
  */

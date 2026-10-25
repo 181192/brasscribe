@@ -55,17 +55,17 @@ targets:
         type: folder
         buildPhase: resources
         optional: true
-      # The design system, linked from design/dist (regenerate there, never copy here).
-      # App/Icon.xcassets is generated from design/dist/icons/apple by scripts/check-prereqs.sh.
-      - path: ../../design/dist/apple/BrasscribeDesign.swift
-      - path: ../../design/dist/apple/BrasscribeDesign.xcassets
-      - path: ../../design/dist/apple/Fonts/InstrumentSerif-Regular.ttf
+      # The design system, linked from design/brands/brasscribe/dist (regenerate there, never copy here).
+      # App/Icon.xcassets is generated from design/brands/brasscribe/dist/icons/apple by scripts/check-prereqs.sh.
+      - path: ../../design/brands/brasscribe/dist/apple/BrasscribeDesign.swift
+      - path: ../../design/brands/brasscribe/dist/apple/BrasscribeDesign.xcassets
+      - path: ../../design/brands/brasscribe/dist/apple/Fonts/InstrumentSerif-Regular.ttf
         buildPhase: resources
-      - path: ../../design/dist/apple/Fonts/OFL.txt
+      - path: ../../design/brands/brasscribe/dist/apple/Fonts/OFL.txt
         buildPhase: resources
-      - path: ../../design/brand/fonts/InstrumentSerif-Italic.ttf
+      - path: ../../design/brands/brasscribe/brand/fonts/InstrumentSerif-Italic.ttf
         buildPhase: resources
-      - path: ../../design/brand/logo/mark.svg
+      - path: ../../design/brands/brasscribe/brand/logo/mark.svg
         buildPhase: resources
     dependencies:
       - package: BrasscribeKit

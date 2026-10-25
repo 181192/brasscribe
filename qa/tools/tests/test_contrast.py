@@ -23,7 +23,7 @@ def test_simulation_keeps_greys():
 
 
 def test_dtcg_tokens_load_and_pass():
-    tokens = c.ROOT / "design" / "tokens" / "tokens.json"
+    tokens = c.ROOT / "design" / "brands" / "brasscribe" / "tokens" / "tokens.json"
     if not tokens.exists():
         return
     data = c.load_dtcg(tokens)
@@ -34,7 +34,7 @@ def test_dtcg_tokens_load_and_pass():
 
 
 def test_fretscribe_tokens_load_and_pass():
-    tokens = c.ROOT / "design" / "fretscribe" / "tokens" / "tokens.json"
+    tokens = c.ROOT / "design" / "brands" / "fretscribe" / "tokens" / "tokens.json"
     data = c.load_dtcg(tokens)
     assert set(data["themes"]) == {"light", "dark", "high-contrast", "high-contrast-light"}
     assert data["pairs"]
@@ -59,7 +59,7 @@ def test_dtcg_extension_namespace_is_not_fixed(tmp_path):
 
 
 def test_every_brand_passes_in_every_mode_and_its_report_is_current(capsys):
-    # design/tokens/brands.json lists the brands; each has at least the four neutral modes.
+    # design/tooling/brands.json lists the brands; each has at least the four neutral modes.
     assert {b["name"] for b in c.brands()} >= {"brasscribe", "fretscribe"}
     for brand in c.brands():
         data = c.load_dtcg(c.ROOT / brand["tokens"])
@@ -74,19 +74,19 @@ def test_a_malformed_brand_is_told_what_is_missing(tmp_path, monkeypatch):
     import pytest
     listed = tmp_path / "brands.json"
     monkeypatch.setattr(c, "BRANDS", listed)
-    listed.write_text(json.dumps({"brands": [{"name": "x", "tokens": "design/tokens/tokens.json"}]}))
+    listed.write_text(json.dumps({"brands": [{"name": "x", "tokens": "design/brands/brasscribe/tokens/tokens.json"}]}))
     with pytest.raises(SystemExit, match="brand x has no 'contrast-report'"):
         c.main(["--brands"])
     listed.write_text(json.dumps({"brands": [{"name": "x", "tokens": "nowhere.json", "contrast-report": "r.md"}]}))
     with pytest.raises(SystemExit, match="x's token file nowhere.json is not there"):
         c.main(["--brands"])
-    raw = json.loads((c.ROOT / "design" / "tokens" / "tokens.json").read_text())
-    raw["$extensions"]["no.brasscribe"]["contrast"]["pairs"].append(["glow", "bg", 3.0, "1.4.11"])
+    raw = json.loads((c.ROOT / "design" / "brands" / "brasscribe" / "tokens" / "tokens.json").read_text())
+    raw["$extensions"]["no.kalli.brasscribe"]["contrast"]["pairs"].append(["glow", "bg", 3.0, "1.4.11"])
     tokens = tmp_path / "tokens.json"
     tokens.write_text(json.dumps(raw))
     with pytest.raises(SystemExit, match="a contrast pair names 'glow', which color.light does not have"):
         c.load_dtcg(tokens)
-    del raw["$extensions"]["no.brasscribe"]["contrast"]
+    del raw["$extensions"]["no.kalli.brasscribe"]["contrast"]
     tokens.write_text(json.dumps(raw))
     with pytest.raises(SystemExit, match=r"tokens.json: expected one \$extensions entry with modes and contrast"):
         c.load_dtcg(tokens)

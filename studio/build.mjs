@@ -56,14 +56,14 @@ if (bandSf2) {
 cpSync(join(here, "src", "index.html"), join(out, "index.html"));
 // An example score for the viewer (public domain, arranged by the core: apps/fixtures/make-old-hundredth.py).
 cpSync(join(here, "..", "apps", "fixtures", "old-hundredth", "brass-band.musicxml"), join(out, "examples", "old-hundredth.musicxml"));
-// Brand icons from the design system (design/dist/icons/web), rendered by design/brand/build.py.
-const icons = join(here, "..", "design", "dist", "icons", "web");
+// Brand icons from the design system (design/brands/brasscribe/dist/icons/web), rendered by design/brands/brasscribe/brand/build.py.
+const icons = join(here, "..", "design", "brands", "brasscribe", "dist", "icons", "web");
 for (const f of ["favicon.svg", "favicon.ico", "favicon-32.png", "apple-touch-icon.png", "icon-192.png"]) {
   cpSync(join(icons, f), join(out, f));
 }
 
 // Scripts and styles are bundled from their sources: the design tokens
-// (design/dist/web/*.css), the brand fonts and the icon paths are imported,
+// (design/brands/brasscribe/dist/web/*.css), the brand fonts and the icon paths are imported,
 // not copied by hand.
 const options = {
   entryPoints: { studio: join(here, "src", "main.ts"), "studio-style": join(here, "src", "styles.css") },
@@ -84,7 +84,7 @@ if (watch) {
   await ctx.watch();
 } else {
   await build(options);
-  cpSync(join(here, "..", "design", "dist", "web", "fonts", "OFL.txt"), join(assets, "fonts", "OFL.txt"));
+  cpSync(join(here, "..", "design", "brands", "brasscribe", "dist", "web", "fonts", "OFL.txt"), join(assets, "fonts", "OFL.txt"));
   const size = readFileSync(join(assets, "studio.js")).length;
   console.log(`studio.js ${(size / 1024).toFixed(0)} KiB -> ${out}`);
 }

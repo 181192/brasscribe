@@ -9,7 +9,7 @@ data class StandSystem(val top: Float, val bottom: Float, val firstBar: Int, val
 data class StandPage(val first: Int, val last: Int)
 
 /**
- * The music stand's pages (design/music-stand.md §3): a page is whatever fits the screen, in whole
+ * The music stand's pages (design/brands/brasscribe/music-stand.md §3): a page is whatever fits the screen, in whole
  * systems, and the next page starts with the last system of this one, so the line being read stays in
  * view across a turn. On a phone on its side (two systems a page) that turns one system at a time.
  * A tablet on its side shows one full-width page too (see ui/MusicStand.kt).

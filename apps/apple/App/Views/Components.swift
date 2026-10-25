@@ -2,7 +2,7 @@ import ScoreKit
 import SVGRender
 import SwiftUI
 
-// The brand shows only through the tokens (design/dist/apple), the one button shape, the
+// The brand shows only through the tokens (design/brands/brasscribe/dist/apple), the one button shape, the
 // display face and the mark. Everything here is built from those; screens use these
 // pieces instead of their own colours or shapes.
 
@@ -342,7 +342,7 @@ struct HelperLine: View {
 }
 
 /// Where a flow page's actions go. On the Mac they follow the content, trailing in its column
-/// (design/system.md §2: "Bottom right of the content, after Cancel"), so a tall window never leaves
+/// (design/brands/brasscribe/system.md §2: "Bottom right of the content, after Cancel"), so a tall window never leaves
 /// them far below it. On iPhone and iPad they sit in a band at the bottom of the screen.
 enum PageActions {
     static var followContent: Bool {
@@ -429,7 +429,7 @@ extension View {
 
 // MARK: the mark
 
-/// The Brasscribe mark (design/brand/logo/mark.svg), drawn in brass or ink. Decorative.
+/// The Brasscribe mark (design/brands/brasscribe/brand/logo/mark.svg), drawn in brass or ink. Decorative.
 struct BrandMark: View {
     var size: CGFloat = 28
     var color: Color = .Scribe.brand
@@ -528,7 +528,7 @@ extension View {
 /// Percent in the user's locale: "75%" in English, "75 %" in Norwegian.
 func percentText(_ value: Double) -> String { (value / 100).formatted(.percent.precision(.fractionLength(0))) }
 
-/// The selected row of the review's note list (design/system.md: selection is `selection-tint`
+/// The selected row of the review's note list (design/brands/brasscribe/system.md: selection is `selection-tint`
 /// with a 1 px `selection-edge`), under the page's text colour. The system highlight fills with the
 /// tint instead (primary, near black in light), under text that keeps its own colour.
 enum SelectedRow {

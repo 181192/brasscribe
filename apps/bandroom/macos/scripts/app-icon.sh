@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# actool does not follow symlinks inside a catalog, so the app icon set from design/dist is copied
+# actool does not follow symlinks inside a catalog, so the app icon set from design/brands/brasscribe/dist is copied
 # into a generated catalog (App/Icon.xcassets, not committed). Runs before `xcodegen generate`.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-ICONS="$HERE/../../../design/dist/icons/apple/AppIcon.appiconset"
+ICONS="$HERE/../../../design/brands/brasscribe/dist/icons/apple/AppIcon.appiconset"
 mkdir -p "$HERE/App/Icon.xcassets"
 rm -rf "$HERE/App/Icon.xcassets/AppIcon.appiconset"
 cp -R "$ICONS" "$HERE/App/Icon.xcassets/AppIcon.appiconset"

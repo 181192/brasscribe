@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Fretscribe's own words (design/fretscribe/brand/brand.md: a good teacher; no "AI", no "we", verbs on
+    <!-- Fretscribe's own words (design/brands/fretscribe/brand/brand.md: a good teacher; no "AI", no "we", verbs on
          buttons). The rest are Brasscribe's, in src/main; a string here replaces the one of the same name. -->
     <string name="app_name" translatable="false">Fretscribe</string>
     <string name="brand_name" translatable="false">Fretscribe</string>
     <string name="share_target_label">Write down the notes with Fretscribe</string>
 
-    <!-- First run (design/fretscribe/flows.md §1), as it is today: every tab is written on the computer. -->
+    <!-- First run (design/brands/fretscribe/flows.md §1), as it is today: every tab is written on the computer. -->
     <string name="first_run_hero_start">"Tab from "</string>
     <string name="first_run_hero_end">any recording.</string>
     <string name="first_run_1_title">Record or open a recording</string>
@@ -49,7 +49,7 @@
     <string name="settings_seat_caption">Fretscribe remembers this for your tabs.</string>
     <string name="companion_title">Bandroom on your computer</string>
     <!-- Bandroom on your computer (the pairing screen). The program is Brasscribe Bandroom, the same for both apps:
-         Bandroom in running text (design/fretscribe/brand/brand.md), its full name where the player looks for it. -->
+         Bandroom in running text (design/brands/fretscribe/brand/brand.md), its full name where the player looks for it. -->
     <string name="bandroom_get_title">Get Bandroom</string>
     <string name="bandroom_get_text">Bandroom is free for Mac (Apple silicon) and Windows, and is called Brasscribe Bandroom when you install it. On your computer, download it from this address:</string>
     <string name="companion_explain">Open Bandroom on your computer (it is Brasscribe Bandroom in the list of programs) and choose Pair a phone. Type the six digits it shows.</string>
@@ -84,7 +84,7 @@
     <string name="settings_text_motion_desc">Fretscribe follows the phone\'s text size, contrast and animation settings</string>
     <string name="appearance_contrast_note">Your contrast setting is on, so Fretscribe uses its high-contrast colours.</string>
 
-    <!-- Your instrument (design/fretscribe/flows.md §2) -->
+    <!-- Your instrument (design/brands/fretscribe/flows.md §2) -->
     <string name="fs_instrument_title">Your instrument</string>
     <string name="fs_instrument_body">Fretscribe remembers this for your tabs. You can change it in Settings.</string>
     <!-- The same screen opened from Settings. -->
@@ -121,7 +121,7 @@
     <string name="fs_bass_with_strings">%1$d-string bass</string>
     <string name="fs_instrument_value">%1$s · %2$s · %3$s</string>
 
-    <!-- What is this? (design/fretscribe/flows.md §5). In this version the computer writes down both. -->
+    <!-- What is this? (design/brands/fretscribe/flows.md §5). In this version the computer writes down both. -->
     <string name="fs_what_hint">Your answer decides how Fretscribe listens.</string>
     <string name="fs_what_no_recording">This recording is no longer on the phone. Open it again from Home.</string>
     <string name="fs_what_instrument">Just my instrument</string>

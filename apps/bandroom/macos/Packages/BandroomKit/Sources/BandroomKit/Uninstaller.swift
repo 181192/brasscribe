@@ -1,6 +1,6 @@
 import Foundation
 
-/// Removes what Bandroom put on this Mac (design/server-app.md §3.10): the data folder (environments,
+/// Removes what Bandroom put on this Mac (design/shared/server-app.md §3.10): the data folder (environments,
 /// paired phones, the admin token) and the logs. The downloads (the models folder and the band writer in the
 /// Hugging Face cache) can be kept for a later reinstall.
 ///

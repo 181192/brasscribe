@@ -168,7 +168,7 @@ final class AppModel {
 
     /// Solos on this device when that is switched on; a brass band as a draft on this device when the
     /// computer is not there or the player asked for drafts; everything else, and anything without the
-    /// listening files, on the computer (design/system.md, "A band draft on the device").
+    /// listening files, on the computer (design/brands/brasscribe/system.md, "A band draft on the device").
     nonisolated static func maker(for profile: SourceProfile, soloOnDevice: Bool, bandDraftOnDevice: Bool, computerThere: Bool,
                       modelsReady: Bool) -> Maker {
         guard modelsReady else { return .computer }

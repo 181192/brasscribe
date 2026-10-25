@@ -27,13 +27,13 @@ class MuteWordingTest {
     @Test
     fun theDesignSaysDempToo() {
         val design = File(checkNotNull(System.getProperty("scribe.repo")) { "scribe.repo is not set by the build" }, "design")
-        val glossary = File(design, "brand/brand.md").readText()
+        val glossary = File(design, "brands/brasscribe/brand/brand.md").readText()
         assertTrue(glossary.contains("| Silence one part | Mute | ${nb("mute")} |"))
         assertTrue(glossary.contains("| Mute my part (headphones icon) | ${nb("mute_my_part")} |"))
-        val icons = File(design, "tokens/icons.json").readText()
+        val icons = File(design, "tooling/icons.json").readText()
         assertTrue(Regex(""""mute":\s*\{"en": "Mute",\s*"nb": "${nb("mute")}"""").containsMatchIn(icons))
         assertTrue(Regex(""""play-along":\s*\{"en": "Mute my part",\s*"nb": "${nb("mute_my_part")}"""").containsMatchIn(icons))
-        for (doc in listOf("brand/brand.md", "system.md", "README.md")) {
+        for (doc in listOf("brands/brasscribe/brand/brand.md", "brands/brasscribe/system.md", "README.md")) {
             val text = File(design, doc).readText()
             assertFalse(doc, Regex("""(?i)never[^.|]*\bDemp\b""").containsMatchIn(text))
             assertFalse(doc, text.contains("**Lyd av** / **Bare denne**"))

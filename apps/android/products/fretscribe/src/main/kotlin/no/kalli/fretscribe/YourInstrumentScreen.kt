@@ -169,7 +169,7 @@ fun yourInstrumentValue(): String {
 internal class Choice(val id: String, val label: String, val spoken: String = label)
 
 /**
- * "Your instrument" (design/fretscribe/flows.md §2, system.md §5): one question per row, each a picker
+ * "Your instrument" (design/brands/fretscribe/flows.md §2, system.md §5): one question per row, each a picker
  * row that shows its answer. Asked once after the first run, where Not now leaves the defaults, and
  * opened again from Settings. Nothing is kept until Continue or Save (WCAG 3.2.2), and songs already
  * written are never changed by it.

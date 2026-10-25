@@ -148,7 +148,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     }
 
     /// <summary>
-    /// Settings › Appearance (design/system.md §10): stored on this PC, applied to every window at once. A
+    /// Settings › Appearance (design/brands/brasscribe/system.md §10): stored on this PC, applied to every window at once. A
     /// Windows contrast theme always wins; the choice is kept for when it's turned off.
     /// </summary>
     private void StartAppearance()

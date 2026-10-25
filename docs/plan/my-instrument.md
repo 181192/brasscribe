@@ -222,11 +222,11 @@ Every part is one of three things. The data values are internal. The UI words (�
 
 ## 3. The UX
 
-It follows `design/system.md` (rules §1, components §5), `design/brand/brand.md` (voice, words) and WCAG 2.2 AA. Mockups are in `design/mockups/my-instrument-*.html`, with PNGs in `design/mockups/png/my-instrument-*`.
+It follows `design/brands/brasscribe/system.md` (rules §1, components §5), `design/brands/brasscribe/brand/brand.md` (voice, words) and WCAG 2.2 AA. Mockups are in `design/brands/brasscribe/mockups/my-instrument-*.html`, with PNGs in `design/brands/brasscribe/mockups/png/my-instrument-*`.
 
 | First run | Settings | Score: arranged vs from the recording | Review: your own take |
 |---|---|---|---|
-| ![](../../design/mockups/png/my-instrument-first-run-phone-light.png) | ![](../../design/mockups/png/my-instrument-settings-phone-light.png) | ![](../../design/mockups/png/my-instrument-score-desktop-light.png) | ![](../../design/mockups/png/my-instrument-review-phone-light.png) |
+| ![](../../design/brands/brasscribe/mockups/png/my-instrument-first-run-phone-light.png) | ![](../../design/brands/brasscribe/mockups/png/my-instrument-settings-phone-light.png) | ![](../../design/brands/brasscribe/mockups/png/my-instrument-score-desktop-light.png) | ![](../../design/brands/brasscribe/mockups/png/my-instrument-review-phone-light.png) |
 
 ### 3.1 First run: "What do you play?"
 
@@ -546,8 +546,8 @@ The Norwegian is written, not translated (`brand.md:69`). Part names come from o
 
 ### 5.8 Design and site
 
-- `design/system.md:104,107,113,114,116` and `design/brand/brand.md:101,126`: the first-run second step, the Settings **You** section, the source label component, and "<part> (you)". kvartett also edits `system.md:116`, so apply this on top of it.
-- `design/mockups/my-instrument-*.html` and `render.mjs` (this change).
+- `design/brands/brasscribe/system.md:104,107,113,114,116` and `design/brands/brasscribe/brand/brand.md:101,126`: the first-run second step, the Settings **You** section, the source label component, and "<part> (you)". kvartett also edits `system.md:116`, so apply this on top of it.
+- `design/brands/brasscribe/mockups/my-instrument-*.html` and `render.mjs` (this change).
 - `site/guide/index.html`, `site/nb/guide/index.html`: "Tell Brasscribe what you play".
 
 ---
@@ -636,7 +636,7 @@ This builds on `feat/kvartett`, and it must land after it. The files below are a
 | String catalogs: `make-string-catalog.py` + `Localizable.xcstrings`, `values*/strings.xml`, `gen_resw.py` + `.resw` | every app UI branch | high. Add at the end of each block, then regenerate. |
 | `PartNames.swift`, `PartNames.kt`, `MusicXmlTalkingScoreBuilder.cs`, `talking_score.rs` | kvartett (quartet names) | medium |
 | `sounds/mapping.json`, `sounds/render.py` | `feat/band-sound-per-instrument` | low: seat parts use band names already mapped. A solo take is one part with one player. |
-| `design/system.md`, `brand.md`, `design/mockups/render.mjs` | design branches, kvartett | medium |
+| `design/brands/brasscribe/system.md`, `brand.md`, `design/brands/brasscribe/mockups/render.mjs` | design branches, kvartett | medium |
 
 ---
 
@@ -675,7 +675,7 @@ Build these once the connection, pairing and quartet branches are on `main`. Eac
    - *Done when:* `./gradlew testDebugUnitTest lint` passes.
 9. **Windows, then docs.**
    - Apply §5.7, then `gen_resw.py`.
-   - Update `design/system.md` and `brand.md` (§5.8) and the site guide.
+   - Update `design/brands/brasscribe/system.md` and `brand.md` (§5.8) and the site guide.
    - *Done when:* the Windows tests and the Axe.Windows checks pass.
 
 Steps 1–6 hold no UI and can land while app branches are still moving. Steps 7–9 should each rebase just before they start.

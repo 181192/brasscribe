@@ -1,8 +1,8 @@
 // Icons and the Studio lockup from the design system. icons.js (generated from
-// design/tokens/icons.json) defines globalThis.BrasscribeIcons: path data on the
+// design/tooling/icons.json) defines globalThis.BrasscribeIcons: path data on the
 // Material Symbols 960 grid, keyed by action.
-import "../../../design/dist/web/icons.js";
-import lockupSvg from "../../../design/brand/logo/lockup-studio.svg";
+import "../../../design/brands/brasscribe/dist/web/icons.js";
+import lockupSvg from "../../../design/brands/brasscribe/brand/logo/lockup-studio.svg";
 
 declare global {
   // eslint-disable-next-line no-var

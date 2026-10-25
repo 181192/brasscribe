@@ -4,14 +4,14 @@ plugins {
 }
 
 /*
- * Fretscribe's design system for Android, generated from its tokens by design/tokens/build.py into design/fretscribe/dist: the neutral
+ * Fretscribe's design system for Android, generated from its tokens by design/tooling/build.py into design/brands/fretscribe/dist: the neutral
  * theme (no.kalli.scribe.design, the same declarations in every brand with this brand's values) and Fretscribe's own roles
  * (no.kalli.fretscribe.design), compiled as they are; the icon drawables, the display face (as res/font/display) and the
  * launcher icons, synced into one generated res folder (res/font may hold only fonts, so the font's licence goes to
  * the assets). Every brand's module has the namespace no.kalli.scribe.design, so the shared screens name the same R.
  */
 val repoRoot = rootProject.extra["repoRoot"] as File
-val dist = File(repoRoot, "design/fretscribe/dist")
+val dist = File(repoRoot, "design/brands/fretscribe/dist")
 val displayFont = "atkinson_hyperlegible_next"
 
 android {

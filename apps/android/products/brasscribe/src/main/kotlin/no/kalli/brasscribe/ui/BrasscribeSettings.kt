@@ -20,7 +20,7 @@ import no.kalli.scribe.play.ui.SectionLabel
 import no.kalli.scribe.play.ui.SettingsScreen
 import no.kalli.scribe.play.ui.SwitchRow
 
-/** Settings with Brasscribe's own sections: the band's sound, and the music stand (design/music-stand.md section 9). */
+/** Settings with Brasscribe's own sections: the band's sound, and the music stand (design/brands/brasscribe/music-stand.md section 9). */
 @Composable
 fun BrasscribeSettingsScreen(vm: PlayViewModel) = SettingsScreen(vm, beforeDisplay = { SoundSettings(vm) }, afterDisplay = { StandSettings(vm) })
 

@@ -11,8 +11,8 @@ fun Test.screenTests(repoRoot: File, robolectric: String, bandSounds: File, cata
     systemProperty("scribe.fixtures", File(repoRoot, "apps/fixtures").absolutePath)
     inputs.dir(File(repoRoot, "apps/fixtures")).withPropertyName("screenFixtures")
     // MuteWordingTest reads the design's glossary and icon labels.
-    inputs.files(File(repoRoot, "design/brand/brand.md"), File(repoRoot, "design/system.md"), File(repoRoot, "design/README.md"),
-        File(repoRoot, "design/tokens/icons.json")).withPropertyName("designWording")
+    inputs.files(File(repoRoot, "design/brands/brasscribe/brand/brand.md"), File(repoRoot, "design/brands/brasscribe/system.md"), File(repoRoot, "design/README.md"),
+        File(repoRoot, "design/tooling/icons.json")).withPropertyName("designWording")
     inputs.files(project.fileTree(File(repoRoot, "core/target/release")) { include("libscribe_ffi.*") }).withPropertyName("hostCore")
     // (Robolectric reaches into the JDK for Android's file descriptors; a newer JDK asks for the export.)
     jvmArgs("--enable-native-access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")

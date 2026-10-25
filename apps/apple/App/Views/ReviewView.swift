@@ -3,7 +3,7 @@ import ScoreKit
 import SwiftUI
 import TranscriptionKit
 
-/// "Check the notes" (design/system.md, Review list): one uncertain note at a time with its bars,
+/// "Check the notes" (design/brands/brasscribe/system.md, Review list): one uncertain note at a time with its bars,
 /// how sure Brasscribe is, what each transcriber heard, Listen / Change note…, then Skip or Keep.
 struct ReviewView: View {
     @Environment(AppModel.self) private var app

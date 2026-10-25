@@ -11,7 +11,7 @@
     <RootNamespace>Brasscribe.Play</RootNamespace>
     <AssemblyName>BrasscribePlay</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>..\..\..\..\design\dist\icons\windows\Assets\AppIcon.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\..\..\design\brands\brasscribe\dist\icons\windows\Assets\AppIcon.ico</ApplicationIcon>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
@@ -44,10 +44,10 @@
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 
-  <!-- The design system (design/): theme, display face and app icons are linked from design/dist,
+  <!-- The design system (design/): theme, display face and app icons are linked from design/brands/brasscribe/dist,
        never copied, so a token change reaches the app on the next build. -->
   <PropertyGroup>
-    <DesignDir>..\..\..\..\design\</DesignDir>
+    <DesignDir>..\..\..\..\design\brands\brasscribe\</DesignDir>
   </PropertyGroup>
   <ItemGroup>
     <Page Include="$(DesignDir)dist\windows\BrasscribeTheme.xaml" Link="Themes\BrasscribeTheme.xaml" />

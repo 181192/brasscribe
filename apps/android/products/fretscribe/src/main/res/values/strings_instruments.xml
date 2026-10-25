@@ -2,7 +2,7 @@
 <resources>
     <!-- Fretscribe's words for the guitar, the ukulele and the mandolin, beside the bass (the rest are in strings.xml). -->
 
-    <!-- Your instrument (design/fretscribe/flows.md §2) -->
+    <!-- Your instrument (design/brands/fretscribe/flows.md §2) -->
     <!-- A ukulele is chosen by its size, where a guitar and a bass are chosen by their strings. -->
     <string name="fs_size">Size</string>
     <string name="fs_size_small">Soprano, concert or tenor</string>

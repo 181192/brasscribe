@@ -96,7 +96,7 @@ internal fun computerProfiles(vm: PlayViewModel, there: Boolean): ComputerProfil
 }
 
 /**
- * "What is this?" (design/fretscribe/flows.md §5): the instrument alone, or a full song it is picked out
+ * "What is this?" (design/brands/fretscribe/flows.md §5): the instrument alone, or a full song it is picked out
  * of. For a guitar or a bass nothing is chosen until the player chooses; a ukulele or a mandolin starts on
  * the instrument alone, as the computer takes it, and A full song says when it works. The answer stays
  * with the recording. In this version the computer writes down the notes for both, so the row under the

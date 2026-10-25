@@ -1,7 +1,7 @@
 import BandroomKit
 import Foundation
 
-/// Words for states and values (design/server-app.md §10). English keys; bokmål in Localizable.xcstrings.
+/// Words for states and values (design/shared/server-app.md §10). English keys; bokmål in Localizable.xcstrings.
 enum Strings {
     static func tooltip(_ state: DisplayState, connected: Int) -> String {
         switch state {

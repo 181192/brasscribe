@@ -1,6 +1,6 @@
 import Foundation
 
-/// The licence step of setup (design/server-app.md §3.2): the band writer's terms are accepted here, before it downloads.
+/// The licence step of setup (design/shared/server-app.md §3.2): the band writer's terms are accepted here, before it downloads.
 public enum LicenceStep {
     /// The model page: the licence and its makers' conditions of use, in full.
     public static var termsPage: URL { ModelComponent.bandWriter.page }

@@ -2,7 +2,7 @@
 
 Owner feedback: the Mac app "doesn't resize as a user would expect, and some screens expand to full height".
 This audit renders every macOS screen at the window sizes people actually use and compares the result
-with the macOS Human Interface Guidelines and [design/system.md](../../design/system.md) §2.
+with the macOS Human Interface Guidelines and [design/system.md](../../design/brands/brasscribe/system.md) §2.
 
 **Status (2026-09-29):** every finding is fixed on `main` (window minimum 900 × 600, content-sized sheets kept above the Dock, controls reachable over the score). The UI tests that exercise it run in the macOS VM (`docs/dev/macos-vm.md`).
 

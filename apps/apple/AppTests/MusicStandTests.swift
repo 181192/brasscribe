@@ -5,7 +5,7 @@ import Testing
 import TranscriptionKit
 @testable import BrasscribePlay
 
-/// The auto-hide rule of design/music-stand.md §4.2: only while the music plays, and never while
+/// The auto-hide rule of design/brands/brasscribe/music-stand.md §4.2: only while the music plays, and never while
 /// a screen reader, switch access, the keyboard or the setting needs the controls.
 @Test func standAutoHidesOnlyWhilePlayingAndNothingNeedsTheControls() {
     func hides(playing: Bool = true, voiceOver: Bool = false, switchControl: Bool = false, keyboard: Bool = false,

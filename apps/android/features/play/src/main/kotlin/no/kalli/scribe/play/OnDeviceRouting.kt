@@ -5,7 +5,7 @@ import no.kalli.scribe.connection.ConnectionState
 import no.kalli.scribe.engine.Profile
 
 /**
- * Where a recording is written down, and the words for it (design/system.md §3, "A band draft on the
+ * Where a recording is written down, and the words for it (design/brands/brasscribe/system.md §3, "A band draft on the
  * device"). A solo is made on the phone whenever it can be; a brass band goes to the computer when it is
  * there, and is otherwise made on the phone as a quick draft. The other band choices need the computer.
  */

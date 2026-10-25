@@ -3,7 +3,7 @@ using System.Xml.Linq;
 
 namespace Brasscribe.Bandroom.Core;
 
-/// <summary>Localized copy (design/server-app.md §10). Keys are the deck's keys with "_" for "." and "-".</summary>
+/// <summary>Localized copy (design/shared/server-app.md §10). Keys are the deck's keys with "_" for "." and "-".</summary>
 public interface IStrings
 {
     string this[string key] { get; }

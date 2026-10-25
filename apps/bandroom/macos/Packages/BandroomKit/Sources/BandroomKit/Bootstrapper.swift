@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// The engine environment (design/server-app.md §5.1 option A). First run: copy the workspace that ships in the app
+/// The engine environment (design/shared/server-app.md §5.1 option A). First run: copy the workspace that ships in the app
 /// (pixi.toml, pixi.lock and the engine source) into `<data>/envs`, then `pixi install` from the lockfile; a
 /// checkout only needs the install. The install always runs: an environment left from an earlier build may not
 /// match the lockfile just copied in, and the engine must not install it at launch (it would outlast the health

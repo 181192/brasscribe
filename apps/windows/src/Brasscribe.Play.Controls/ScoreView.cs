@@ -25,7 +25,7 @@ public sealed record ScoreEventItem(string Name, Rect Bounds, bool IsCurrent);
 
 /// <summary>
 /// The notation view. It shows alphaTab's rendered pages and draws the overlays planned by
-/// <see cref="ScoreOverlay"/> in the score tokens (design/system.md §6): tints (cursor bar, repeated
+/// <see cref="ScoreOverlay"/> in the score tokens (design/brands/brasscribe/system.md §6): tints (cursor bar, repeated
 /// bars, ad lib bars) under the notation, and over it the 3 epx cursor, the loop brackets and label,
 /// dashed ad lib bar lines, and a "?" (boxed below 0.4) above each uncertain note, so uncertainty
 /// never relies on colour alone. The focused note gets a 2 epx outline with a 2 epx gap.

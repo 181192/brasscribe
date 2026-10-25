@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Brasscribe.Bandroom.Core.Appearance;
 
-/// <summary>The Appearance choice in Settings (design/system.md §10). Match system is the default.</summary>
+/// <summary>The Appearance choice in Settings (design/brands/brasscribe/system.md §10). Match system is the default.</summary>
 public enum AppearanceChoice { System, Light, Dark }
 
 /// <summary>The theme the windows get: Default follows Windows (and every contrast theme).</summary>

@@ -36,7 +36,7 @@ public sealed partial class ExportChoice : ObservableObject
 }
 
 /// <summary>
-/// "Share or print" (design/reviews/usability-review.md P1-5): it starts with the player's own part
+/// "Share or print" (design/brands/brasscribe/reviews/usability-review.md P1-5): it starts with the player's own part
 /// as a PDF, the thing most players want. Scope and formats are chosen with labelled toggles; the
 /// primary action prints the PDF, and "Save" writes every chosen file (to a folder when there are
 /// several). Uncertain notes keep their "?" marks in every file.

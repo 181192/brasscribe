@@ -14,8 +14,8 @@ if [ ! -d "$HERE/../../core/swift/ScribeCore/ScribeFFI.xcframework" ]; then
   exit 1
 fi
 # actool does not follow symlinks inside a catalog, so the app icon set from
-# design/dist is copied into a generated catalog (App/Icon.xcassets, not committed).
-ICONS="$HERE/../../design/dist/icons/apple/AppIcon.appiconset"
+# design/brands/brasscribe/dist is copied into a generated catalog (App/Icon.xcassets, not committed).
+ICONS="$HERE/../../design/brands/brasscribe/dist/icons/apple/AppIcon.appiconset"
 mkdir -p "$HERE/App/Icon.xcassets"
 rm -rf "$HERE/App/Icon.xcassets/AppIcon.appiconset"
 cp -R "$ICONS" "$HERE/App/Icon.xcassets/AppIcon.appiconset"

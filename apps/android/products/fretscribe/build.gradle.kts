@@ -136,9 +136,9 @@ val soundMap = tasks.register<Sync>("syncSoundMap") {
     into("sounds") { from(File(repoRoot, "sounds")) { include("mapping.json") } }
     filePermissions { user { read = true; write = true } }
 }
-// Fretscribe Tab, the face of the fret numbers (design/fretscribe/brand/fonts, OFL), with its licence.
+// Fretscribe Tab, the face of the fret numbers (design/brands/fretscribe/brand/fonts, OFL), with its licence.
 val tabFont = tasks.register<Sync>("syncTabFont") {
-    val fonts = File(repoRoot, "design/fretscribe/brand/fonts")
+    val fonts = File(repoRoot, "design/brands/fretscribe/brand/fonts")
     into(layout.buildDirectory.dir("generated/tab-font"))
     into("assets/fonts") { from(fonts) { include("FretscribeTab-Regular.ttf") } }
     into("assets/licences") { from(fonts) { include("OFL-FretscribeTab.txt"); rename { "fretscribe-tab-OFL.txt" } } }

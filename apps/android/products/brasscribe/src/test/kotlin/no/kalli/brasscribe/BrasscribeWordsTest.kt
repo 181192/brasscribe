@@ -11,7 +11,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * What Brasscribe says, in English and bokmål, is true and in the band room's words (design/brand/brand.md): no
+ * What Brasscribe says, in English and bokmål, is true and in the band room's words (design/brands/brasscribe/brand/brand.md): no
  * developer command, no "transcribe", no "output", and nb «opptak» for a recording.
  */
 class BrasscribeWordsTest {

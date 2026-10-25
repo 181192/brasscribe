@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Play's plain step names (design/server-app.md §7.2), one per engine stage kind, as the phones say them.
+/// Play's plain step names (design/shared/server-app.md §7.2), one per engine stage kind, as the phones say them.
 public enum JobStep: String, Equatable, Sendable {
     case preparing, findingBeat, separatingInstruments, separatingSoloist, transcribing, arranging, engraving
 

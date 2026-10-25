@@ -29,7 +29,7 @@ import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * Page pedals on the music stand while a repeat is set (design/music-stand.md §7): right (Page Down) plays and pauses,
+ * Page pedals on the music stand while a repeat is set (design/brands/brasscribe/music-stand.md §7): right (Page Down) plays and pauses,
  * left (Page Up) goes back to the repeat's first bar, and the stand says so under Repeat. Without a repeat they turn pages.
  */
 @OptIn(ExperimentalTestApi::class)

@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 /// Starts the engine as a child process, restarts it with back-off when it exits unexpectedly, and stops it
-/// (design/server-app.md §3.3). Runs `SupervisorMachine`'s effects.
+/// (design/shared/server-app.md §3.3). Runs `SupervisorMachine`'s effects.
 @MainActor
 @Observable
 public final class EngineSupervisor {

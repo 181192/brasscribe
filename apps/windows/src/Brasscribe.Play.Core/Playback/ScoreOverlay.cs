@@ -2,7 +2,7 @@ using Brasscribe.Play.Core.Scores;
 
 namespace Brasscribe.Play.Core.Playback;
 
-/// <summary>What an overlay item on the notation is (design/system.md §6; the colours are the Bc score tokens).</summary>
+/// <summary>What an overlay item on the notation is (design/brands/brasscribe/system.md §6; the colours are the Bc score tokens).</summary>
 public enum OverlayKind
 {
     /// <summary>The bar under the playback cursor: <c>cursor-tint</c>.</summary>
@@ -48,7 +48,7 @@ public sealed record AdlibRegion(IReadOnlyList<Box> Boxes, string? Label = null,
 
 /// <summary>
 /// Plans the overlays drawn over the rendered notation, as plain primitives so the WinUI score view
-/// and the Skia preview draw exactly the same thing. The rules (design/system.md §1 and §6):
+/// and the Skia preview draw exactly the same thing. The rules (design/brands/brasscribe/system.md §1 and §6):
 /// uncertainty is a "?" above the note and a boxed "?" below 0.4, in the note's colour, never rings,
 /// diamonds or brackets; tints never stack (inside the repeated bars the loop tint replaces the
 /// ad lib and cursor-bar tints, while the ad lib text and dashed bar lines stay); contrast themes

@@ -3,7 +3,7 @@ import CoreGraphics
 /// Keeps a Mac window on its screen: inside the visible frame (no part under the Dock or the menu
 /// bar), in AppKit screen coordinates (y up). Pure functions, so the rules are unit-tested.
 enum WindowFit {
-    /// The main window's one minimum, a frame size (design/system.md §2). Every screen lays out at it
+    /// The main window's one minimum, a frame size (design/brands/brasscribe/system.md §2). Every screen lays out at it
     /// without clipping, and no screen asks for more.
     static let minimumWindow = CGSize(width: 900, height: 600)
     /// The title bar and toolbar above the content.

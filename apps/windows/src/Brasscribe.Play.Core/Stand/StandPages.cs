@@ -11,7 +11,7 @@ public readonly record struct StandSystem(double Top, double Bottom, int FirstBa
 public readonly record struct StandPage(int FirstSystem, int LastSystem, double Top, double Bottom, int FirstBar, int LastBar);
 
 /// <summary>
-/// The music stand's page model (design/music-stand.md §3). A page is the whole systems that fit the
+/// The music stand's page model (design/brands/brasscribe/music-stand.md §3). A page is the whole systems that fit the
 /// page height. On a single page a turn keeps the last system: the next page starts with it, so the
 /// player never loses their place. In a spread (two pages side by side) pages follow on without
 /// overlap and a turn moves the right page to the left, so the next line is always in view.

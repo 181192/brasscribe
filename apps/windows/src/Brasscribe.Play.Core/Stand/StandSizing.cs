@@ -1,7 +1,7 @@
 namespace Brasscribe.Play.Core.Stand;
 
 /// <summary>
-/// The stand's sizing contract (design/music-stand.md §3): the bars per system and the systems per
+/// The stand's sizing contract (design/brands/brasscribe/music-stand.md §3): the bars per system and the systems per
 /// page decide the staff size, not the other way round. When the text size or the zoom grows, bars per
 /// system drop first, and a page always keeps at least two systems.
 /// </summary>

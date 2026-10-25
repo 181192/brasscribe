@@ -11,7 +11,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace Brasscribe.Play.Core.ViewModels;
 
-/// <summary>The screens of the Play flow (design/system.md §3). The part view is the score screen with one part chosen.</summary>
+/// <summary>The screens of the Play flow (design/brands/brasscribe/system.md §3). The part view is the score screen with one part chosen.</summary>
 public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, Error, ChooseOutput, WhatDoYouPlay }
 
 /// <summary>

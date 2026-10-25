@@ -1,8 +1,8 @@
 import BandroomKit
 import SwiftUI
 
-/// Settings (design/server-app.md §4): Start when I log in · Where downloads are kept · Hugging Face access ·
-/// Appearance (design/system.md §10) · Text size · About.
+/// Settings (design/shared/server-app.md §4): Start when I log in · Where downloads are kept · Hugging Face access ·
+/// Appearance (design/brands/brasscribe/system.md §10) · Text size · About.
 struct SettingsView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.colorSchemeContrast) private var contrast

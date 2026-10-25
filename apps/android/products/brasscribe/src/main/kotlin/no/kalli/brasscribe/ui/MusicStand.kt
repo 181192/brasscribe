@@ -113,11 +113,11 @@ import no.kalli.scribe.score.ScoreUiState
 import no.kalli.scribe.score.StandPages
 import kotlin.math.roundToInt
 
-/** Where the stand was opened from: that opener gets the focus back on leaving (design/music-stand.md §6). */
+/** Where the stand was opened from: that opener gets the focus back on leaving (design/brands/brasscribe/music-stand.md §6). */
 enum class StandOrigin { BUTTON, LIBRARY }
 
 /**
- * The music stand (design/music-stand.md): the score alone, in pages, with a persistent band at the top
+ * The music stand (design/brands/brasscribe/music-stand.md): the score alone, in pages, with a persistent band at the top
  * (the position as plain text and ✕ Leave) and a control layer that hides itself. What survives a
  * rotation is saved (the activity handles its own configuration changes, so this is for process death).
  */

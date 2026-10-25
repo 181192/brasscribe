@@ -9,7 +9,7 @@ namespace Brasscribe.Play.Core.ViewModels;
 public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable, UpdateApp, UpdateBandroom }
 
 /// <summary>
-/// An error with a way forward (design/system.md §5, Errors with recovery): the title says what
+/// An error with a way forward (design/brands/brasscribe/system.md §5, Errors with recovery): the title says what
 /// happened, the reason why, numbered steps what to do, and the buttons are the way out, the most
 /// likely fix first. The recording is never lost, and the screen says so. Commands and codes for the
 /// band's tech person sit behind a "Details" disclosure, never in the body.

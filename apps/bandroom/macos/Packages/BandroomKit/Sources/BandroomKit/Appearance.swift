@@ -1,6 +1,6 @@
 import AppKit
 
-/// Settings › Appearance (design/system.md §10): follow the system, or force light or dark on this Mac.
+/// Settings › Appearance (design/brands/brasscribe/system.md §10): follow the system, or force light or dark on this Mac.
 /// Stored per device in UserDefaults under `appearance`; unknown or missing values mean "Match system".
 public enum AppearanceChoice: String, CaseIterable, Identifiable, Sendable {
     case system, light, dark

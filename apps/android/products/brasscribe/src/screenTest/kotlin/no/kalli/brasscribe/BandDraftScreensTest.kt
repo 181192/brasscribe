@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * A band draft on the phone (design/system.md §3): with no computer paired, Brass band is made on the phone
+ * A band draft on the phone (design/brands/brasscribe/system.md §3): with no computer paired, Brass band is made on the phone
  * and What is this? says it is a quick draft; a draft score says so above the music.
  */
 @RunWith(AndroidJUnit4::class)

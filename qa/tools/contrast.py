@@ -21,11 +21,11 @@ also encoded by notehead shape (WCAG 1.4.1).
 
 With --tokens it reads a W3C Design Tokens (DTCG) file instead: colour roles under
 color.<mode>.<role>.$value.hex, and the modes, pairs and distinguish lists under the product's
-own $extensions entry (e.g. "no.brasscribe"; whichever single entry has modes and contrast):
+own $extensions entry (e.g. "no.kalli.brasscribe"; whichever single entry has modes and contrast):
 
-    uv run qa/tools/contrast.py --tokens design/tokens/tokens.json > qa/reports/contrast-design-tokens.md
+    uv run qa/tools/contrast.py --tokens design/brands/brasscribe/tokens/tokens.json > qa/reports/contrast-design-tokens.md
 
-With --brands it checks every brand of design/tokens/brands.json in every one of its modes, and that each
+With --brands it checks every brand of design/tooling/brands.json in every one of its modes, and that each
 brand's committed report is the one its tokens give (--brands --write rewrites the reports):
 
     uv run qa/tools/contrast.py --brands
@@ -40,7 +40,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOKENS = ROOT / "docs" / "accessibility" / "design-tokens.json"
-BRANDS = ROOT / "design" / "tokens" / "brands.json"
+BRANDS = ROOT / "design" / "tooling" / "brands.json"
 DE_MIN = 20.0  # heuristic: CIEDE2000 below this reads as "similar" at notehead size
 HIGH_CONTRAST_MIN = 7.0  # WCAG 1.4.6 (AAA): every pair of a high-contrast theme
 
@@ -191,9 +191,9 @@ def brands() -> list[dict]:
     for i, brand in enumerate(found):
         for key in ("name", "tokens", "contrast-report"):
             if not isinstance(brand.get(key), str) or not brand[key]:
-                raise SystemExit(f"design/tokens/brands.json: brand {brand.get('name') or i + 1} has no '{key}'")
+                raise SystemExit(f"design/tooling/brands.json: brand {brand.get('name') or i + 1} has no '{key}'")
         if not (ROOT / brand["tokens"]).is_file():
-            raise SystemExit(f"design/tokens/brands.json: {brand['name']}'s token file {brand['tokens']} is not there")
+            raise SystemExit(f"design/tooling/brands.json: {brand['name']}'s token file {brand['tokens']} is not there")
     return found
 
 

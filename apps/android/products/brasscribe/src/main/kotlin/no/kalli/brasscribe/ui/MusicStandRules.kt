@@ -6,7 +6,7 @@ import no.kalli.scribe.play.ui.*
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.KeyEvent
 
-/** What a key does on the music stand (design/music-stand.md §7). */
+/** What a key does on the music stand (design/brands/brasscribe/music-stand.md §7). */
 enum class StandCommand { NEXT_PAGE, PREVIOUS_PAGE, FIRST_PAGE, LAST_PAGE, NEXT_BAR, PREVIOUS_BAR, PLAY_PAUSE, REPEAT_START, LEAVE, SHOW_CONTROLS }
 
 /** The music stand's rules that do not need a screen: keys, auto-hide, layout and "your part". */

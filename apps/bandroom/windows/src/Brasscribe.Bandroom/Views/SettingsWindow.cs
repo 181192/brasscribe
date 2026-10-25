@@ -30,7 +30,7 @@ public interface ISettingsHost
 /// Settings (server-app.md, "Settings page in the window"): SettingsCard-style rows for Name shown to phones
 /// (only when the device name looks machine-made, or one is set), Hugging Face access (the band writer's terms,
 /// accepted before a key is saved, since saving starts its download), Appearance
-/// (design/system.md §10) and Start when I log in. Appearance is a ComboBox, as in Windows Settings ›
+/// (design/brands/brasscribe/system.md §10) and Start when I log in. Appearance is a ComboBox, as in Windows Settings ›
 /// Personalisation › Choose your mode; it applies at once, and focus stays on it.
 /// </summary>
 internal sealed class SettingsWindow : Window

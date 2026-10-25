@@ -10,7 +10,7 @@ public readonly record struct StandContext(
     bool Keyboard = false);
 
 /// <summary>
-/// Showing and hiding the stand's control layer (design/music-stand.md §4.2), without a UI framework:
+/// Showing and hiding the stand's control layer (design/brands/brasscribe/music-stand.md §4.2), without a UI framework:
 /// <list type="bullet">
 /// <item>a tap on the music toggles it (on pointer-up); a key shows it; it shows on entry while paused;</item>
 /// <item>it hides by itself <see cref="HideDelay"/> after the last touch, and only while the music plays;</item>
@@ -79,7 +79,7 @@ public sealed class StandLayer
     /// Whether a key pressed in the stand shows the layer and starts the hide wait again: Space does (Tab too, handled
     /// on its own as it moves into the layer). The page keys (arrows, Page Up/Down, Home/End) turn the page and leave
     /// the layer and its timer as they are: a Bluetooth page turner or pedal is a keyboard that sends them, and a pedal
-    /// press must not put controls over the music (design/music-stand.md §4.2). No other key shows it either.
+    /// press must not put controls over the music (design/brands/brasscribe/music-stand.md §4.2). No other key shows it either.
     /// </summary>
     public static bool ShowsLayer(ViewModels.ScoreKey? key) => key == ViewModels.ScoreKey.Space;
 

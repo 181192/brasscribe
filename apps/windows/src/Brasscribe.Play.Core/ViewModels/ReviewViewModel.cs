@@ -73,7 +73,7 @@ public sealed record EvidenceRow(string Name, string Heard, bool Agrees)
 public sealed record NoteChoice(string Label, int Shift);
 
 /// <summary>
-/// "Check the notes": one uncertain note at a time (design/system.md §5, Review list). The note is
+/// "Check the notes": one uncertain note at a time (design/brands/brasscribe/system.md §5, Review list). The note is
 /// shown with its bar, part, name and duration, the level in words and what else it could be; the
 /// player listens to the bar, keeps the note (the "?" goes) or skips it. "Finish later" asks first,
 /// because the notes left keep their marks; the score view offers "Check them" to come back.
