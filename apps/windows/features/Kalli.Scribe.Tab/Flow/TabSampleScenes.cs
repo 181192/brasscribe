@@ -17,7 +17,7 @@ public static class TabSampleScenes
          "check-the-song", "tab", "error", "error-update"];
 
     /// <summary>The computer in the sample scenes.</summary>
-    public const string SampleServer = ServerNames.Prefix + "Studio PC";
+    public const string SampleServer = Wire.ServerNamePrefix + "Studio PC";
 
     /// <summary>The song in the sample scenes.</summary>
     public const string SampleTitle = "Guitar line";

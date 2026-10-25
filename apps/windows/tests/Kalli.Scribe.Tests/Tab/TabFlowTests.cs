@@ -139,7 +139,7 @@ public class TabFlowTests : TempFolderTest
     public async Task A_recording_is_written_down_as_a_tab_checked_and_shown_with_its_recording()
     {
         var (flow, computer, players) = Build(Computer());
-        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        flow.Settings.Connection.Show(ConnectionState.Connected, Wire.ServerNamePrefix + "Studio PC");
         await flow.Start.OpenPathAsync(await Take());
         await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
 
@@ -179,7 +179,7 @@ public class TabFlowTests : TempFolderTest
     public async Task A_change_on_Check_the_song_writes_the_same_upload_down_again()
     {
         var (flow, computer, _) = Build(Computer());
-        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        flow.Settings.Connection.Show(ConnectionState.Connected, Wire.ServerNamePrefix + "Studio PC");
         await flow.Start.OpenPathAsync(await Take());
         await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
         flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.Single(c => c.Recording == Recording.Instrument));
@@ -199,7 +199,7 @@ public class TabFlowTests : TempFolderTest
     public async Task A_computer_without_the_tab_profile_is_not_sent_a_guitar()
     {
         var (flow, computer, _) = Build(Computer(profiles: """[{"name":"bass-tab","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]}]"""));
-        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        flow.Settings.Connection.Show(ConnectionState.Connected, Wire.ServerNamePrefix + "Studio PC");
         await flow.Start.OpenPathAsync(await Take());
         await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
         flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.Single(c => c.Recording == Recording.Song));
