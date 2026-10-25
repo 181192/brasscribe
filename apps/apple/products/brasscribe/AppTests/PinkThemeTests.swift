@@ -107,12 +107,12 @@ import Testing
         for (choice, suffix) in [(AppearanceSetting.pinkLight, "pink"), (.pinkDark, "pink-dark")] {
             let dark = choice == .pinkDark
             store.set(choice.rawValue, forKey: AppearanceSetting.key)
-            save(await render(HarnessShell { HomeView() }.environment(app), size: window, dark: dark), "apple-home-\(suffix)")
+            save(await render(HarnessShell { HomeView() }.environment(app).playHost(app), size: window, dark: dark), "apple-home-\(suffix)")
             let model = try await LayoutFixtures.model(piece)
-            save(await render(HarnessShell { PracticeView(model: model).pageBackground() }.environment(app), size: window, dark: dark,
+            save(await render(HarnessShell { PracticeView(model: model).pageBackground() }.environment(app).playHost(app), size: window, dark: dark,
                               wait: { !model.pages.isEmpty && !model.engraving }), "apple-score-\(suffix)")
             model.stopAll()
-            let settings = SettingsView().environment(app).tint(Color.Scribe.primary).defaultAppStorage(store)
+            let settings = SettingsView().environment(app).playHost(app).tint(Color.Scribe.primary).defaultAppStorage(store)
             save(await render(settings, size: CGSize(width: 600, height: 1100), dark: dark, toEnd: true), "apple-settings-\(suffix)")
         }
         store.removePersistentDomain(forName: "pink-shots")

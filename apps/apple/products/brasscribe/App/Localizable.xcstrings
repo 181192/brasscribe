@@ -1001,26 +1001,6 @@
         }
       }
     },
-    "Brasscribe on %@": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Brasscribe på %@"
-          }
-        }
-      }
-    },
-    "Brasscribe on your computer": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Brasscribe på datamaskinen"
-          }
-        }
-      }
-    },
     "Brasscribe on your computer couldn't finish the score. Try again.": {
       "localizations": {
         "nb": {
@@ -1503,6 +1483,22 @@
     },
     "Details for the band's tech person": {
       "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detaljer for den tekniske i bandet"
+          }
+        }
+      }
+    },
+    "Details for the tech person": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details for the band's tech person"
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -2321,8 +2317,14 @@
         }
       }
     },
-    "Looking for Brasscribe on your network…": {
+    "Looking for the desktop program on your network…": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for Brasscribe on your network…"
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -2741,8 +2743,14 @@
         }
       }
     },
-    "Not connected. You can still make scores on this iPad.": {
+    "Not connected (this iPad).": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. You can still make scores on this iPad."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -2751,8 +2759,14 @@
         }
       }
     },
-    "Not connected. You can still make scores on this Mac.": {
+    "Not connected (this Mac).": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. You can still make scores on this Mac."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -2761,8 +2775,14 @@
         }
       }
     },
-    "Not connected. You can still make scores on this phone.": {
+    "Not connected (this phone).": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. You can still make scores on this phone."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -3011,8 +3031,14 @@
         }
       }
     },
-    "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": {
+    "On your computer, click the desktop program's mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -3021,8 +3047,14 @@
         }
       }
     },
-    "On your computer, download the latest Brasscribe Bandroom from this address:": {
+    "On your computer, download the latest desktop program from this address:": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your computer, download the latest Brasscribe Bandroom from this address:"
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -4011,16 +4043,6 @@
         }
       }
     },
-    "Scores already on this device stay. To use the computer again, pair once more.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Partiturene som allerede er på denne enheten, blir værende. For å bruke datamaskinen igjen må du koble til på nytt."
-          }
-        }
-      }
-    },
     "Scores for your band, from": {
       "localizations": {
         "nb": {
@@ -4531,8 +4553,14 @@
         }
       }
     },
-    "That code isn't a Brasscribe pairing code.": {
+    "That isn't a pairing code.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code isn't a Brasscribe pairing code."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -4541,8 +4569,14 @@
         }
       }
     },
-    "That isn't a Brasscribe pairing link. It starts with scribe://pair.": {
+    "That isn't a pairing link. It starts with scribe://pair.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That isn't a Brasscribe pairing link. It starts with scribe://pair."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -4601,8 +4635,14 @@
         }
       }
     },
-    "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.": {
+    "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -4787,6 +4827,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "Notene er her fortsatt: Les opp og avspilling virker."
+          }
+        }
+      }
+    },
+    "The program on %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe on %@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på %@"
+          }
+        }
+      }
+    },
+    "The program on your computer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe on your computer"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe på datamaskinen"
           }
         }
       }
@@ -5351,8 +5423,14 @@
         }
       }
     },
-    "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.": {
+    "Update the program on your computer. This app is newer than the program there, and they only work together when both are up to date.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -5361,8 +5439,14 @@
         }
       }
     },
-    "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.": {
+    "Update this app. The program on your computer is newer than this app, and they only work together when both are up to date.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",
@@ -5471,6 +5555,22 @@
         }
       }
     },
+    "What is on this device stays. To use the computer again, pair once more.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scores already on this device stay. To use the computer again, pair once more."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partiturene som allerede er på denne enheten, blir værende. For å bruke datamaskinen igjen må du koble til på nytt."
+          }
+        }
+      }
+    },
     "What is this?": {
       "localizations": {
         "nb": {
@@ -5551,8 +5651,14 @@
         }
       }
     },
-    "Without Brasscribe Bandroom, start the engine with “scribe serve --lan”.": {
+    "Without the desktop program, start the engine with “scribe serve --lan”.": {
       "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Brasscribe Bandroom, start the engine with “scribe serve --lan”."
+          }
+        },
         "nb": {
           "stringUnit": {
             "state": "translated",

@@ -80,7 +80,7 @@ import AppKit
             BrasscribePalette.shared.isPink = pink
             let name = "\(pink ? "pink" : "standard") \(dark ? "dark" : "light")"
             let root = HarnessShell(sidebar: false) { ReviewView(piece: piece) }
-                .environment(app)
+                .environment(app).playHost(app)
                 .environment(\.colorScheme, dark ? .dark : .light)
             let host = OffscreenHost(root, size: CGSize(width: 1100, height: 700))
             host.window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)

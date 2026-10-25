@@ -7,7 +7,8 @@ import VisionKit
 /// Settings › Your computer: how this device stands with its computer, and the three ways to pair
 /// (choose the computer and allow it there, scan or paste the pairing link, or type the six digits).
 struct YourComputerSection: View {
-    @Environment(AppModel.self) private var app
+    @Environment(\.playHost) private var host
+    private var app: any PlayHost { host! }
     @State private var browser = EngineBrowser()
     @State private var code = ""
     @State private var linkText = ""
@@ -41,7 +42,7 @@ struct YourComputerSection: View {
     private var showPairing: Bool {
         switch app.connection.state {
         case .needsPairing: return true
-        // Brasscribe on this same Mac needs no pairing
+        // the desktop program on this same Mac needs no pairing
         case .connected: return false
         // one of the two needs an update first; the pairing it has is kept
         case .mismatch: return false
@@ -53,7 +54,6 @@ struct YourComputerSection: View {
     }
 
     var body: some View {
-        @Bindable var app = app
         Section {
             ConnectionStatusRow()
             if let approval { approvalView(approval) }
@@ -67,17 +67,17 @@ struct YourComputerSection: View {
                     .disabled(busy)
             }
             DisclosureGroup {
-                Text("Without Brasscribe Bandroom, start the engine with “scribe serve --lan”.")
+                Text("Without the desktop program, start the engine with “scribe serve --lan”.")
                     .font(Font.Scribe.callout)
                 ConnectionDetails()
                 if showPairing && approval == nil { linkField }
                 if let problem = browser.problem {
                     Text(problem).font(Font.Scribe.caption).foregroundStyle(Color.Scribe.textMuted)
                 }
-                TextField(text: $app.companionURL) { Text("Address") }
+                TextField(text: Binding(get: { app.companionURL }, set: { app.companionURL = $0 })) { Text("Address") }
                     .textContentType(.URL)
                     .autocorrectionDisabled()
-            } label: { Text("Details for the band's tech person") }
+            } label: { Text("Details for the tech person") }
         } header: { Text("Your computer") } footer: {
             if showPairing { Text("Do this once. This device stays paired, also when the computer restarts or gets a new address.").foregroundStyle(Color.Scribe.textMuted) }
         }
@@ -102,14 +102,14 @@ struct YourComputerSection: View {
             Button("Forget", role: .destructive) { Task { await forget() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Scores already on this device stay. To use the computer again, pair once more.")
+            Text("What is on this device stays. To use the computer again, pair once more.")
         }
         #if os(iOS)
         .sheet(isPresented: $scanning) {
             QRScannerSheet { text in
                 scanning = false
                 if let link = PairingLink(string: text) { Task { await pair(link) } }
-                else { message = String(localized: "That code isn't a Brasscribe pairing code.") }
+                else { message = String(localized: "That isn't a pairing code.") }
             }
         }
         #endif
@@ -118,18 +118,18 @@ struct YourComputerSection: View {
     // MARK: ways to pair
 
     @ViewBuilder private var pairingWays: some View {
-        Text("On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.")
+        Text("On your computer, click the desktop program's mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.")
             .font(Font.Scribe.body).fixedSize(horizontal: false, vertical: true)
         // 1. choose the computer here, then allow it there (no code)
         ForEach(browser.engines) { engine in
             Button { Task { await ask(engine) } } label: {
-                Label(ConnectionCopy.named(computer: engine.computerName), systemImage: BrasscribeIcon.computer.systemName)
+                Label(ConnectionCopy.named(computer: engine.computerName), systemImage: PlayIcon.computer.systemName)
             }
             .disabled(busy)
             .accessibilityHint(Text("Asks the computer to allow this device."))
         }
         if browser.engines.isEmpty {
-            Text("Looking for Brasscribe on your network…").foregroundStyle(Color.Scribe.textMuted)
+            Text("Looking for the desktop program on your network…").foregroundStyle(Color.Scribe.textMuted)
         }
         // 2. scan the QR code (the camera app also opens its link here)
         #if os(iOS)
@@ -163,7 +163,7 @@ struct YourComputerSection: View {
                 .accessibilityIdentifier("pairingLink")
             Button("Use link") {
                 if let link = PairingLink(string: linkText) { Task { await pair(link) } }
-                else { message = String(localized: "That isn't a Brasscribe pairing link. It starts with scribe://pair.") }
+                else { message = String(localized: "That isn't a pairing link. It starts with scribe://pair.") }
             }
             .disabled(linkText.isEmpty || busy)
         }
@@ -214,7 +214,7 @@ struct YourComputerSection: View {
         message = nil
         let svc = CompanionService(baseURL: url)
         do {
-            let req = try await svc.requestPairing(deviceName: AppModel.deviceName, platform: AppModel.platform)
+            let req = try await svc.requestPairing(deviceName: ThisDevice.name, platform: ThisDevice.platform)
             var a = Approval(engineName: name, address: url, requestID: req.requestID, matchCode: req.matchCode)
             approval = a
             AccessibilityNotifier.announce(String(localized: "Check that your computer shows \(req.matchCode.map(String.init).joined(separator: " ")), then choose Allow there."))
@@ -244,7 +244,7 @@ struct YourComputerSection: View {
             app.connection.poke()
         } catch {
             approval = nil
-            message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
+            message = String(localized: "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.")
         }
     }
 
@@ -253,7 +253,7 @@ struct YourComputerSection: View {
         message = nil
         let url = URL(string: app.companionURL) ?? URL(string: "http://localhost:8765")!
         do {
-            let r = try await CompanionService(baseURL: url).pair(code: code, deviceName: AppModel.deviceName, platform: AppModel.platform)
+            let r = try await CompanionService(baseURL: url).pair(code: code, deviceName: ThisDevice.name, platform: ThisDevice.platform)
             app.connection.adopt(r, address: url)
             self.code = ""
             paired(name: app.connection.serverName)
@@ -263,7 +263,7 @@ struct YourComputerSection: View {
             message = ConnectionCopy.update(which)
             app.connection.poke()
         } catch {
-            message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
+            message = String(localized: "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.")
         }
     }
 
@@ -271,7 +271,7 @@ struct YourComputerSection: View {
         busy = true; defer { busy = false }
         message = nil
         do {
-            if let url = try await app.connection.pair(link: link, deviceName: AppModel.deviceName, platform: AppModel.platform) {
+            if let url = try await app.connection.pair(link: link, deviceName: ThisDevice.name, platform: ThisDevice.platform) {
                 // no code in the link: ask the computer instead
                 await ask(at: url, name: EngineRecord.computerName(fromServerName: link.serverName))
             } else {
@@ -284,7 +284,7 @@ struct YourComputerSection: View {
             message = ConnectionCopy.update(which)
             app.connection.poke()
         } catch {
-            message = String(localized: "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.")
+            message = String(localized: "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.")
         }
     }
 
@@ -304,7 +304,7 @@ struct YourComputerSection: View {
         let text = String(localized: "Paired with \(ConnectionCopy.name(name)).")
         message = text
         AccessibilityNotifier.announce(text)
-        Task { await app.refreshComputerScores() }
+        Task { await app.pairedWithComputer() }
     }
 
     private func forget() async {

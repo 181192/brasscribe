@@ -100,7 +100,7 @@ import TranscriptionKit
         for v in Self.variants {
             // Where the screen's own views are: in the detail column's navigation stack.
             let witness = AppearanceWitness()
-            let host = OffscreenHost(HarnessShell(sidebar: sidebar) { content().catalogueWitness(witness) }.environment(app), size: Self.window,
+            let host = OffscreenHost(HarnessShell(sidebar: sidebar) { content().catalogueWitness(witness) }.environment(app).playHost(app), size: Self.window,
                                      dark: v.dark, increasedContrast: v.increasedContrast, witness: witness)
             defer { host.close() }
             if let opened { await host.settle(0.8); opened() }
@@ -110,7 +110,7 @@ import TranscriptionKit
 
     /// A sheet at the size it opens at: its ideal, within its minimum and maximum.
     private func sheet(_ screen: String, app: AppModel, controls: Bool = true, @ViewBuilder _ content: () -> some View) async throws {
-        let root = content().environment(app).tint(Color.Scribe.primary)
+        let root = content().environment(app).playHost(app).tint(Color.Scribe.primary)
         let measured = Measure.sizes(root)
         let size = CGSize(width: min(max(measured.ideal.width, measured.min.width), measured.max.width),
                           height: min(max(measured.ideal.height, measured.min.height), measured.max.height))

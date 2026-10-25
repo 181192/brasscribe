@@ -1,4 +1,3 @@
-import OnDeviceKit
 import SwiftUI
 import TranscriptionKit
 #if os(macOS)
@@ -27,7 +26,8 @@ struct LevelMeter: View {
 }
 
 struct MicRecordView: View {
-    @Environment(AppModel.self) private var app
+    @Environment(\.playHost) private var host
+    private var app: any PlayHost { host! }
     @Environment(\.dismiss) private var dismiss
     @State private var rec = MicRecorder()
     @State private var error: String?
@@ -88,10 +88,10 @@ struct MicRecordView: View {
         guard let url = rec.url else { return }
         if rec.peak < 0.001 {
             rec.discard()
-            app.show(.silence)
+            app.recordedSilence()
         } else {
             dismiss()
-            app.acceptRecording(url, title: ScoreTitles.recording(at: Date()))
+            app.recorded(url, title: RecordingTitles.recording(at: Date()))
         }
     }
 }
@@ -99,7 +99,8 @@ struct MicRecordView: View {
 #if os(macOS)
 /// Records what this Mac is playing (all sound, or one app) through a Core Audio process tap.
 struct CaptureView: View {
-    @Environment(AppModel.self) private var app
+    @Environment(\.playHost) private var host
+    private var app: any PlayHost { host! }
     @Environment(\.dismiss) private var dismiss
     @State private var apps: [AudioApp] = []
     @State private var choice: String = "system"
@@ -164,9 +165,9 @@ struct CaptureView: View {
             do {
                 let result = try r.stop()
                 recorder = nil
-                if result.isSilent { app.show(.silence); return }
+                if result.isSilent { app.recordedSilence(); return }
                 dismiss()
-                app.acceptRecording(result.url, title: ScoreTitles.recording(at: Date()))
+                app.recorded(result.url, title: RecordingTitles.recording(at: Date()))
             } catch {
                 recorder = nil
                 self.error = "\(error)"

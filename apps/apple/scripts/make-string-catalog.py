@@ -643,6 +643,27 @@ NB = {
     "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).": "Brasscribe åpner opptak, videoer og MusicXML-partiturer (.musicxml, .xml eller .mxl).",
 }
 
+# Brasscribe's English for the keys of the screens every Play app shares (features/play): their keys name no product,
+# and each product says them in its own words.
+EN = {
+    "The program on your computer": "Brasscribe on your computer",
+    "The program on %@": "Brasscribe on %@",
+    "Not connected (this phone).": "Not connected. You can still make scores on this phone.",
+    "Not connected (this iPad).": "Not connected. You can still make scores on this iPad.",
+    "Not connected (this Mac).": "Not connected. You can still make scores on this Mac.",
+    "Update this app. The program on your computer is newer than this app, and they only work together when both are up to date.": "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.",
+    "Update the program on your computer. This app is newer than the program there, and they only work together when both are up to date.": "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.",
+    "On your computer, download the latest desktop program from this address:": "On your computer, download the latest Brasscribe Bandroom from this address:",
+    "Without the desktop program, start the engine with “scribe serve --lan”.": "Without Brasscribe Bandroom, start the engine with “scribe serve --lan”.",
+    "Details for the tech person": "Details for the band's tech person",
+    "What is on this device stays. To use the computer again, pair once more.": "Scores already on this device stay. To use the computer again, pair once more.",
+    "That isn't a pairing code.": "That code isn't a Brasscribe pairing code.",
+    "On your computer, click the desktop program's mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": "On your computer, click the Brasscribe mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.",
+    "Looking for the desktop program on your network…": "Looking for Brasscribe on your network…",
+    "That isn't a pairing link. It starts with scribe://pair.": "That isn't a Brasscribe pairing link. It starts with scribe://pair.",
+    "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.": "The computer can't be reached. Check that Brasscribe on the computer says Running, and that both are on the same network.",
+}
+
 INFO_NB = {
     "CFBundleDisplayName": "Brasscribe Play",
     "NSMicrophoneUsageDescription": "Brasscribe Play tar opp spillingen din for å gjøre den om til noter.",
@@ -652,8 +673,11 @@ INFO_NB = {
 }
 
 
-def entry(nb: str) -> dict:
-    return {"localizations": {"nb": {"stringUnit": {"state": "translated", "value": nb}}}}
+def entry(nb: str, en: str | None = None) -> dict:
+    loc = {"nb": {"stringUnit": {"state": "translated", "value": nb}}}
+    if en is not None:
+        loc["en"] = {"stringUnit": {"state": "translated", "value": en}}
+    return {"localizations": loc}
 
 
 def main(root: str) -> None:
@@ -678,9 +702,9 @@ def main(root: str) -> None:
     missing = []
     for k in sorted(keys):
         if k in NB:
-            strings[k] = entry(NB[k])
+            strings[k] = entry(NB[k], EN.get(k))
         elif k in existing:
-            strings[k] = entry(existing[k])
+            strings[k] = entry(existing[k], EN.get(k))
         else:
             strings[k] = {}
             missing.append(k)

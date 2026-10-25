@@ -56,7 +56,7 @@ import TranscriptionKit
     private func window(_ name: String, sizes: [WindowSize] = windowSizes, sidebar: Bool = true, app: AppModel,
                         opened: (() -> Void)? = nil, wait: (() -> Bool)? = nil, @ViewBuilder _ content: () -> some View) async -> ScreenReport {
         LayoutProbe.frames = [:]
-        let root = HarnessShell(sidebar: sidebar) { content() }.environment(app)
+        let root = HarnessShell(sidebar: sidebar) { content() }.environment(app).playHost(app)
         var measured = Measure.Sizes(min: .zero, ideal: .zero, max: .zero)
         let first = CGSize(width: 1280, height: 800 - OffscreenHost.toolbarHeight)
         let host = OffscreenHost(root, size: first)
@@ -92,7 +92,7 @@ import TranscriptionKit
     /// A sheet opens at its ideal size, within its minimum and maximum.
     private func sheet(_ name: String, app: AppModel, wait: (() -> Bool)? = nil, @ViewBuilder _ content: () -> some View) async -> ScreenReport {
         LayoutProbe.frames = [:]
-        let root = content().environment(app).tint(Color.Scribe.primary)
+        let root = content().environment(app).playHost(app).tint(Color.Scribe.primary)
         let measured = Measure.sizes(root)
         let size = CGSize(width: min(max(measured.ideal.width, measured.min.width), measured.max.width),
                           height: min(max(measured.ideal.height, measured.min.height), measured.max.height))

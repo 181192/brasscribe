@@ -46,6 +46,8 @@ targets:
     sources:
       - path: App
         excludes: ["Info-*.plist", "*.entitlements"]
+      # The screens and pieces every Play app shares (each product's catalog has their words).
+      - path: ../../features/play
       - path: ../../Frameworks/VerovioResources
         type: folder
         buildPhase: resources

@@ -1,7 +1,7 @@
 import SwiftUI
 import TranscriptionKit
 
-/// Words for the connection to the computer, the same on every Play app.
+/// Words for the connection to the computer, the same on every Play app (each product's catalog says them in its words).
 enum ConnectionCopy {
     enum Device { case phone, iPad, mac }
 
@@ -13,12 +13,12 @@ enum ConnectionCopy {
         #endif
     }
 
-    /// "Brasscribe on Studio Mac" / "Brasscribe på Studio Mac": built from the computer's name, so the
+    /// "Bandroom on Studio Mac" / "Bandroom på Studio Mac", in the product's words: built from the computer's name, so the
     /// English server name never ends up inside a Norwegian sentence.
     static func name(_ serverName: String) -> String { named(computer: EngineRecord.computerName(fromServerName: serverName)) }
 
     static func named(computer: String) -> String {
-        computer.isEmpty ? String(localized: "Brasscribe on your computer") : String(localized: "Brasscribe on \(computer)")
+        computer.isEmpty ? String(localized: "The program on your computer") : String(localized: "The program on \(computer)")
     }
 
     static func status(_ s: ConnectionState) -> String {
@@ -27,9 +27,9 @@ enum ConnectionCopy {
         case .reconnecting(let n): String(localized: "Looking for \(name(n)) …")
         case .offline:
             switch device {
-            case .phone: String(localized: "Not connected. You can still make scores on this phone.")
-            case .iPad: String(localized: "Not connected. You can still make scores on this iPad.")
-            case .mac: String(localized: "Not connected. You can still make scores on this Mac.")
+            case .phone: String(localized: "Not connected (this phone).")
+            case .iPad: String(localized: "Not connected (this iPad).")
+            case .mac: String(localized: "Not connected (this Mac).")
             }
         case .needsPairing:
             switch device {
@@ -41,18 +41,18 @@ enum ConnectionCopy {
         }
     }
 
-    /// The app and Brasscribe on the computer are not the same version: which of the two to update. The sentence is the
+    /// The app and the program on the computer are not the same version: which of the two to update. The sentence is the
     /// whole message, on the connection row, when pairing and when a score is asked of the computer.
     static func update(_ which: InterfaceMatch.Update) -> String {
         switch which {
         case .app:
-            String(localized: "Update Brasscribe Play. Brasscribe on your computer is newer than this app, and they only work together when both are up to date.")
+            String(localized: "Update this app. The program on your computer is newer than this app, and they only work together when both are up to date.")
         case .computer:
-            String(localized: "Update Brasscribe on your computer. This app is newer than Brasscribe there, and they only work together when both are up to date.")
+            String(localized: "Update the program on your computer. This app is newer than the program there, and they only work together when both are up to date.")
         }
     }
 
-    /// Where the latest Brasscribe Play and Brasscribe Bandroom are downloaded: always the latest release.
+    /// Where the latest apps and the desktop program are downloaded: always the latest release.
     static let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
 
     static var pairAgain: String {
@@ -65,11 +65,11 @@ enum ConnectionCopy {
 
     static func systemImage(_ s: ConnectionState) -> String {
         switch s {
-        case .connected: BrasscribeIcon.running.systemName
-        case .reconnecting: BrasscribeIcon.network.systemName
+        case .connected: PlayIcon.running.systemName
+        case .reconnecting: PlayIcon.network.systemName
         case .offline: "wifi.slash"
-        case .needsPairing: BrasscribeIcon.accessKey.systemName
-        case .mismatch: BrasscribeIcon.download.systemName
+        case .needsPairing: PlayIcon.accessKey.systemName
+        case .mismatch: PlayIcon.download.systemName
         }
     }
 }
@@ -77,7 +77,8 @@ enum ConnectionCopy {
 /// The compact connection row: an icon and words (never colour alone), plus the one way forward when
 /// there is one ("Connect", "Pair this phone again", where to get the update). On Home and in Settings.
 struct ConnectionStatusRow: View {
-    @Environment(AppModel.self) private var app
+    @Environment(\.playHost) private var host
+    private var app: any PlayHost { host! }
 
     var body: some View {
         let state = app.connection.state
@@ -138,7 +139,7 @@ struct UpdateAction: View {
                 .accessibilityIdentifier("\(place)GetUpdate")
         case .computer:
             VStack(alignment: .leading, spacing: Space.s1) {
-                Text("On your computer, download the latest Brasscribe Bandroom from this address:")
+                Text("On your computer, download the latest desktop program from this address:")
                     .foregroundStyle(Color.Scribe.textMuted)
                 Text(verbatim: ConnectionCopy.downloads.absoluteString)
                     .foregroundStyle(Color.Scribe.text)
@@ -151,9 +152,10 @@ struct UpdateAction: View {
     }
 }
 
-/// Addresses, the server id and when it last answered, behind "Details for the band's tech person".
+/// Addresses, the server id and when it last answered, behind "Details for the tech person".
 struct ConnectionDetails: View {
-    @Environment(AppModel.self) private var app
+    @Environment(\.playHost) private var host
+    private var app: any PlayHost { host! }
 
     var body: some View {
         let r = app.connection.record

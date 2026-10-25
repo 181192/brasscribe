@@ -27,7 +27,7 @@ enum Route: Hashable {
 }
 
 @Observable @MainActor
-final class AppModel {
+final class AppModel: PlayHost {
     var pieces: [Piece] = Piece.loadAll() { didSet { rebuildScores() } }
     /// "Your scores": this device's pieces and the computer's latest finished scores.
     private(set) var scores: [ScoreEntry] = ScoreEntry.merge(pieces: Piece.loadAll(), jobs: [])
@@ -118,21 +118,8 @@ final class AppModel {
     }
 
     /// This device, as the computer lists it.
-    static var deviceName: String {
-        #if os(iOS)
-        UIDevice.current.name
-        #else
-        Host.current().localizedName ?? "Mac"
-        #endif
-    }
-
-    static var platform: String {
-        #if os(iOS)
-        "ios"
-        #else
-        "macos"
-        #endif
-    }
+    static var deviceName: String { ThisDevice.name }
+    static var platform: String { ThisDevice.platform }
 
     /// A `scribe://pair` link opened from outside the app (the camera, another app): Settings asks
     /// before it pairs, or asks the computer to allow this device when the link has no code.
@@ -437,6 +424,10 @@ final class AppModel {
     func acceptRecording(_ url: URL, title: String) {
         ask(PendingSource(audioURL: url, title: title))
     }
+
+    func recorded(_ url: URL, title: String) { acceptRecording(url, title: title) }
+    func recordedSilence() { show(.silence) }
+    func pairedWithComputer() async { await refreshComputerScores() }
 
     private func copyToInbox(_ url: URL) throws -> URL {
         let inbox = FileManager.default.temporaryDirectory.appending(path: "Inbox", directoryHint: .isDirectory)
