@@ -20,6 +20,11 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
+  <Folder Name="/products/fretscribe/">
+    <Project Path="products/fretscribe/Kalli.Fretscribe/Kalli.Fretscribe.csproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Kalli.Scribe.Tests/Kalli.Scribe.Tests.csproj" />
   </Folder>

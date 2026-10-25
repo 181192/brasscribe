@@ -30,15 +30,28 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
     private IReadOnlyList<string> _stages = [];
 
     /// <summary>The tab's facts are being read from the computer.</summary>
-    [ObservableProperty] public partial bool IsReading { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsLead))]
+    public partial bool IsReading { get; set; }
 
     /// <summary>Why the facts can't be had now; null when they are there or still read.</summary>
-    [ObservableProperty] public partial string? MissingText { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMissing), nameof(ShowsLead))]
+    public partial string? MissingText { get; set; }
+
+    public bool HasMissing => MissingText is not null;
+
+    /// <summary>The facts are there: the lead line above the rows says what they are.</summary>
+    public bool ShowsLead => !IsReading && MissingText is null;
 
     public ObservableCollection<SongCheckRow> Rows { get; } = [];
 
     /// <summary>Why no row offers its change (the computer is away, or too old for this instrument); null when they do.</summary>
-    [ObservableProperty] public partial string? NoChangeText { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNoChange))]
+    public partial string? NoChangeText { get; set; }
+
+    public bool HasNoChange => NoChangeText is not null;
 
     /// <summary>"You can change this later." under the rows, when one offers a change.</summary>
     [ObservableProperty] public partial bool ShowsLater { get; set; }
@@ -72,9 +85,9 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
     {
         _tab = tab;
         _stages = stages;
-        IsReading = false;
         MissingText = null;
         Update(computerThere);
+        IsReading = false;
     }
 
     /// <summary>The rows again, as the connection and the computer's profiles are now.</summary>

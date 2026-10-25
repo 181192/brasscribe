@@ -51,7 +51,8 @@ public sealed partial class TabFlowViewModel : ObservableObject
         {
             if (e.PropertyName != nameof(ConnectionMonitor.State)) return;
             _engine = null;
-            _ = AskProfilesAsync();
+            // A state shown as sample content has no computer behind it to ask.
+            if (!Settings.Connection.IsPreview) _ = AskProfilesAsync();
             WhatIsThis.ComputerChanged(ComputerThere);
             Check.Update(ComputerThere);
         };
@@ -69,7 +70,13 @@ public sealed partial class TabFlowViewModel : ObservableObject
             _source = source;
             WhatIsThis.Open(source, Instrument.Stored, ComputerThere);
             Screen = TabScreen.WhatIsThis;
-            _ = AskProfilesAsync();
+            if (!Settings.Connection.IsPreview || Profiles.Answer is null) _ = AskProfilesAsync();
+        };
+        // A score file is not a recording: this app writes tab from what it hears.
+        Start.ScoreOpened += (_, path) =>
+        {
+            Start.ErrorText = _s.Format("Tab_Error_ScoreFile", Path.GetFileName(path));
+            _announcer.Announce(Start.ErrorText, AnnouncementKind.Important);
         };
         WhatIsThis.Chosen += async (_, source) => await WriteDownAsync(source, audioId: null);
         Check.WriteAgain += async (_, options) =>
@@ -294,6 +301,33 @@ public sealed partial class TabFlowViewModel : ObservableObject
         await TabPage.ShowAsync(sheet, composition, job ?? _libraryId ?? title, job, recording, songs);
     }
 
+    /// <summary>What is this? for <paramref name="source"/>, with the computer's profiles as given (the sample scenes).</summary>
+    public void ShowWhatIsThis(SourceAudio source, IReadOnlySet<string>? listed)
+    {
+        _source = source;
+        Profiles.Answered(Settings.EngineUri.ToString(), listed);
+        WhatIsThis.Open(source, Instrument.Stored, ComputerThere);
+        Screen = TabScreen.WhatIsThis;
+    }
+
+    /// <summary>Check the song for a tab's facts as given (the sample scenes).</summary>
+    public void ShowCheck(TabResult tab, IReadOnlyList<string> stages)
+    {
+        Profiles.Answered(Settings.EngineUri.ToString(), new HashSet<string> { TabProfiles.Tab });
+        Check.Show(tab, stages, ComputerThere);
+        Screen = TabScreen.CheckTheSong;
+    }
+
+    /// <summary>A tab with its data as given, without its recording (the sample scenes).</summary>
+    public async Task ShowTabAsync(string musicXml, TabResult tab, Composition? composition, string title)
+    {
+        int opening = ++_opening;
+        TabPage.Reading(title);
+        Screen = TabScreen.Tab;
+        var sheet = await Task.Run(() => TabSheet.Read(musicXml, tab));
+        if (opening == _opening) await TabPage.ShowAsync(sheet, composition, title, null, null, null);
+    }
+
     [RelayCommand]
     private void OpenLibraryItem(LibraryItem? item) => _ = OpenLibraryItemAsync(item);
 
@@ -391,7 +425,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
     }
 
     private string KindName(FrettedInstrument kind) => YourInstrument.StringsOf(kind) is { } n && Instruments.Of(kind) is { } i
-        ? _s.Format("Tab_KindWithStrings", n, _s[$"Tab_Instrument_{i}"])
+        ? _s.Format($"Tab_KindWithStrings_{i}", n)
         : _s[$"Tab_Kind_{kind}"];
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]

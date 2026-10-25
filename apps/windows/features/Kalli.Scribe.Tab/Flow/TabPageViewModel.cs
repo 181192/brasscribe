@@ -89,7 +89,11 @@ public sealed partial class TabPageViewModel : ObservableObject, IDisposable
     [ObservableProperty] public partial bool IsReading { get; set; }
 
     /// <summary>The page could not be read.</summary>
-    [ObservableProperty] public partial string? FailedText { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasFailed))]
+    public partial string? FailedText { get; set; }
+
+    public bool HasFailed => FailedText is not null;
 
     public bool IsReady => Sheet is not null;
 

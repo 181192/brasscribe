@@ -70,17 +70,19 @@ public sealed partial class YourInstrumentViewModel : ObservableObject
         _filling = true;
         try
         {
-            Draft = value.Valid();
-            SelectedInstrument = Instruments.First(i => i.Value == Draft.Instrument);
+            var v = value.Valid();
+            SelectedInstrument = Instruments.First(i => i.Value == v.Instrument);
             Kinds.Clear();
-            foreach (var k in Draft.Instrument.Kinds()) Kinds.Add(new Choice<FrettedInstrument>(k, KindName(k)));
+            foreach (var k in v.Instrument.Kinds()) Kinds.Add(new Choice<FrettedInstrument>(k, KindName(k)));
             OnPropertyChanged(nameof(HasKinds));
-            SelectedKind = Kinds.First(k => k.Value == Draft.Kind);
+            SelectedKind = Kinds.First(k => k.Value == v.Kind);
             Tunings.Clear();
-            foreach (var t in Draft.Tunings) Tunings.Add(new Choice<string>(t, TuningName(t, _s)));
-            SelectedTuning = Tunings.FirstOrDefault(t => t.Value == Draft.Tuning) ?? Tunings.FirstOrDefault();
-            SelectedHand = Hands.First(h => h.Value == Draft.Hand);
-            SelectedReads = ReadsChoices.First(r => r.Value == Draft.Reads);
+            foreach (var t in v.Tunings) Tunings.Add(new Choice<string>(t, TuningName(t, _s)));
+            SelectedTuning = Tunings.FirstOrDefault(t => t.Value == v.Tuning) ?? Tunings.FirstOrDefault();
+            SelectedHand = Hands.First(h => h.Value == v.Hand);
+            SelectedReads = ReadsChoices.First(r => r.Value == v.Reads);
+            // Last: the screen fills its rows again when it changes, from everything above.
+            Draft = v;
         }
         finally { _filling = false; }
     }

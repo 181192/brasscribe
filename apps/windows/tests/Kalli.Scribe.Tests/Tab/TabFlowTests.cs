@@ -216,4 +216,32 @@ public class TabFlowTests : TempFolderTest
         await Until(() => flow.Screen == TabScreen.WhatIsThis);
         Assert.Equal("Tab_What_ConnectFirst", flow.WhatIsThis.Missing);
     }
+
+    [Fact]
+    public async Task Every_sample_scene_shows_its_screen_from_the_fixture()
+    {
+        string fixture = TestPaths.RepoFile("apps/fixtures/guitar-line/tab.musicxml") is { } xml ? Path.GetDirectoryName(xml)! : throw new FileNotFoundException("guitar-line");
+        foreach (var scene in TabSampleScenes.Names)
+        {
+            var (flow, computer, _) = Build(Computer(), firstRun: scene == "first-run");
+            Assert.True(await TabSampleScenes.ShowAsync(flow, scene, fixture), scene);
+            var expected = scene switch
+            {
+                "first-run" => TabScreen.FirstRun,
+                "your-instrument" => TabScreen.YourInstrument,
+                "home" or "home-offline" or "home-update" => TabScreen.Home,
+                "what-is-this" or "what-is-this-offline" => TabScreen.WhatIsThis,
+                "transcribing" => TabScreen.Transcribing,
+                "check-the-song" => TabScreen.CheckTheSong,
+                "tab" => TabScreen.Tab,
+                _ => TabScreen.Error,
+            };
+            Assert.Equal(expected, flow.Screen);
+            if (scene == "tab") Assert.True(flow.TabPage.IsReady && flow.TabPage.Marks.Count >= 0);
+            if (scene == "check-the-song") Assert.NotEmpty(flow.Check.Rows);
+            // The scenes never talk to a computer.
+            Assert.Empty(computer.Requests);
+        }
+        Assert.False(await TabSampleScenes.ShowAsync(Build(Computer()).Flow, "tab", fixture: null));
+    }
 }
