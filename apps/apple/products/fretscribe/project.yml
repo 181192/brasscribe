@@ -1,0 +1,154 @@
+# XcodeGen spec for Fretscribe (macOS, iOS, iPadOS). Generate with `make project-fretscribe`;
+# the .xcodeproj is not committed.
+name: Fretscribe
+options:
+  bundleIdPrefix: no.kalli
+  deploymentTarget:
+    iOS: "26.0"
+    macOS: "26.0"
+  developmentLanguage: en
+  knownRegions: [en, nb]
+  createIntermediateGroups: true
+  preGenCommand: ../../scripts/check-prereqs-fretscribe.sh
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.13.0"
+    # override on the command line (FRETSCRIBE_BUNDLE_ID=…) to run beside another build of the app
+    FRETSCRIBE_BUNDLE_ID: no.kalli.fretscribe
+    CURRENT_PROJECT_VERSION: "19"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+
+packages:
+  ScribeServices:
+    path: ../../services
+  TabKit:
+    path: ../../features/tab
+  AudioCapture:
+    path: ../../../../capture
+  # The screen catalogue's checks (test code only, macOS).
+  ScreenCatalogue:
+    path: ../../testing/ScreenCatalogue
+
+targets:
+  Fretscribe:
+    type: application
+    platform: [iOS, macOS]
+    sources:
+      - path: App
+        excludes: ["Info-*.plist", "*.entitlements"]
+      # The screens and pieces every Play app shares (each product's catalog has their words).
+      - path: ../../features/play
+      # The design system, linked from design/brands/fretscribe/dist (regenerate there, never copy here).
+      # App/Icon.xcassets is generated from design/brands/fretscribe/dist/icons/apple by scripts/check-prereqs-fretscribe.sh.
+      - path: ../../../../design/brands/fretscribe/dist/apple/FretscribeDesign.swift
+      - path: ../../../../design/brands/fretscribe/dist/apple/FretscribeDesign.xcassets
+      - path: ../../../../design/brands/fretscribe/dist/apple/Fonts/AtkinsonHyperlegibleNext-wght.ttf
+        buildPhase: resources
+      - path: ../../../../design/brands/fretscribe/dist/apple/Fonts/FretscribeTab-Regular.ttf
+        buildPhase: resources
+      - path: ../../../../design/brands/fretscribe/dist/apple/Fonts/OFL-AtkinsonHyperlegibleNext.txt
+        buildPhase: resources
+      - path: ../../../../design/brands/fretscribe/dist/apple/Fonts/OFL-FretscribeTab.txt
+        buildPhase: resources
+      - path: ../../../../design/brands/fretscribe/brand/logo-mark.svg
+        buildPhase: resources
+    dependencies:
+      - package: ScribeServices
+        product: ScoreKit
+      - package: ScribeServices
+        product: TranscriptionKit
+      - package: TabKit
+        product: TabKit
+      - package: AudioCapture
+        product: AudioCapture
+        destinationFilters: [macOS]
+    info:
+      path: App/Info-${platform}.plist
+      properties:
+        CFBundleDisplayName: Fretscribe
+        NSHumanReadableCopyright: "© 2026 Kristoffer-Andre Kalliainen. MIT or Apache-2.0."
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, nb]
+        NSMicrophoneUsageDescription: Fretscribe records your playing to write it down as tab.
+        NSAudioCaptureUsageDescription: Fretscribe records the sound playing on this Mac to write it down as tab.
+        NSLocalNetworkUsageDescription: Fretscribe talks to Bandroom on your own computer, which writes down the notes.
+        NSCameraUsageDescription: Fretscribe scans the code your computer shows, to connect to it.
+        # The pairing link is the family's (scribe:); fretscribe: is this app's own, for a sibling app that was opened
+        # with a link meant for this one.
+        CFBundleURLTypes:
+          - CFBundleURLName: no.kalli.fretscribe.pair
+            CFBundleURLSchemes: [scribe, fretscribe]
+        LSApplicationQueriesSchemes: [brasscribe]
+        NSBonjourServices: [_scribe._tcp]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        UIBackgroundModes: [audio]
+        UIAppFonts: [AtkinsonHyperlegibleNext-wght.ttf, FretscribeTab-Regular.ttf]
+        ATSApplicationFontsPath: "."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight, UIInterfaceOrientationPortraitUpsideDown]
+        LSSupportsOpeningDocumentsInPlace: true
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio recording
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.audio]
+          - CFBundleTypeName: Video
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.movie]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(FRETSCRIBE_BUNDLE_ID)
+        CODE_SIGN_ENTITLEMENTS: App/Fretscribe-${platform}.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.music
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        SUPPORTS_MACCATALYST: NO
+        "ARCHS[sdk=macosx*]": arm64
+      configs:
+        Debug:
+          "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": App/Debug.entitlements
+
+  FretscribeTests:
+    type: bundle.unit-test
+    platform: [iOS, macOS]
+    sources:
+      - path: AppTests
+      # The test code every Play app's tests share: the off-screen window the screen catalogue draws in.
+      - path: ../../testing/PlayTests
+    dependencies:
+      - target: Fretscribe_${platform}
+      - package: ScreenCatalogue
+        product: ScreenCatalogue
+        destinationFilters: [macOS]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: no.kalli.fretscribe.tests
+
+schemes:
+  Fretscribe-iOS:
+    build:
+      targets:
+        Fretscribe_iOS: all
+    test:
+      targets: [FretscribeTests_iOS]
+      gatherCoverageData: false
+  Fretscribe-macOS:
+    build:
+      targets:
+        Fretscribe_macOS: all
+    test:
+      targets: [FretscribeTests_macOS]

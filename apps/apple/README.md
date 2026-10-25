@@ -1,4 +1,4 @@
-# Brasscribe Play for macOS, iOS and iPadOS
+# Brasscribe Play and Fretscribe for macOS, iOS and iPadOS
 
 One SwiftUI app for macOS, iOS and iPadOS. It covers import, recording, transcription through the companion engine,
 review, the score, practice and export.
@@ -23,6 +23,31 @@ scripts/run-fixture-mac.sh                                        # open the Old
 scripts/run-fixture-sim.sh "iPhone 17" docs/screenshots/x.png     # same on a simulator, with a screenshot
 scripts/screenshots.sh mac|iphone|ipad [screen …]                 # docs/screenshots, from the same fixture
 ```
+
+## Fretscribe
+
+Fretscribe for Mac, iPhone and iPad (`products/fretscribe`) turns a recording into tab for guitar, bass, ukulele or
+mandolin, written down by Bandroom on the computer, as Fretscribe for Android does: Your instrument, What is this?,
+writing down the notes, Check the song, and the tab (`features/tab`, alphaTab in a web view) with its practice player,
+marks and full-screen mode. It needs no Verovio, no core and no band sounds.
+
+```sh
+make project-fretscribe            # products/fretscribe/Fretscribe.xcodeproj (fetches alphaTab, makes the app icon catalog)
+make test-fretscribe-mac           # the macOS app's unit tests
+scripts/screenshots.sh record fretscribe   # its Mac screen catalogue, off screen: build/catalogue/fretscribe
+make ipa-fretscribe                # build/fretscribe-ios-unsigned.ipa, checked as Play's
+python3 scripts/make-string-catalog.py build/DerivedData-fs/Build/Intermediates.noindex --product fretscribe
+                                   # its string catalog, from products/fretscribe/words.json
+```
+
+Its words are its own (`products/fretscribe/words.json`, English and bokmål), also for the screens it shares with
+Play (`features/play`). Each release has `fretscribe-macos-arm64.zip` and `fretscribe-ios-unsigned.ipa`, signed and
+installed as Play's below.
+
+**Pairing links.** The link Bandroom shows names the family (`scribe://pair?…`), and both apps register `scribe:`, so
+the system opens one of them. When the other app is installed too, the one that opened asks which app is to connect,
+and hands the link to the other under that app's own scheme (`brasscribe:`, `fretscribe:`) when the player chooses it
+(`features/play/PairingLinks.swift`). Pairing from inside an app (scanning, the code, the computer's name) is as before.
 
 ## iPhone and iPad (test build)
 

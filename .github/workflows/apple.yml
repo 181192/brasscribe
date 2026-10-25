@@ -1,5 +1,8 @@
 name: apple
 
+# Fretscribe for Mac, iPhone and iPad (job `fretscribe`): its macOS app's unit tests and Mac screen catalogue, and a build
+# of its iPhone simulator app with its tests; with `release`, its Mac app and its unsigned IPA beside Play's.
+
 # Brasscribe Play for macOS, iOS and iPadOS, and Bandroom for Mac. Checks: Play's Swift package tests, the
 # macOS app's unit tests and a build of the iPhone simulator app with its tests (job `play`) and its Mac screen
 # catalogue (job `play-screens`); BandroomKit's tests and Bandroom's screen catalogue (job `bandroom`). With
@@ -26,6 +29,9 @@ on:
         type: boolean
         default: false
       skip_bandroom:
+        type: boolean
+        default: false
+      skip_fretscribe:
         type: boolean
         default: false
       iphone_tests:
@@ -334,6 +340,70 @@ jobs:
           if-no-files-found: ignore
           retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
 
+  # Fretscribe for Mac, iPhone and iPad: the macOS app's unit tests and its Mac screen catalogue (every screen off screen
+  # in light, dark, increased contrast and bokmål, with its checks), and the iPhone simulator app with its tests, built
+  # and not run. It needs no Verovio, no core and no band sounds; alphaTab is fetched when the project is generated.
+  fretscribe:
+    name: Fretscribe (macOS app, screen catalogue, iPhone simulator build)
+    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_fretscribe && !inputs.noise_play && !inputs.noise_bandroom }}
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          dev="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          test -d "$dev" || { echo "Xcode $XCODE_VERSION is not on this image" >&2; ls -d /Applications/Xcode_* >&2; exit 1; }
+          sudo xcode-select -s "$dev"
+          echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      - run: brew install xcodegen
+
+      - name: Unit tests (macOS app)
+        run: make test-fretscribe-mac
+
+      - name: Screen catalogue
+        run: scripts/screenshots.sh record fretscribe
+
+      # The Mac build does not compile what is only for iOS: a test that no longer builds there would otherwise first
+      # show in a release.
+      - name: Build the iPhone simulator app and its tests
+        run: |
+          dest=$(scripts/newest-iphone.sh)
+          make build-for-testing-fretscribe-ios IPHONE_DEST="$dest"
+
+      - name: What the screenshots were taken with
+        if: ${{ always() && github.event_name != 'pull_request' }}
+        shell: bash
+        working-directory: .
+        env:
+          CATALOGUE: fretscribe-mac
+          DIR: apps/apple/build/catalogue/fretscribe
+        run: |
+          mkdir -p "$DIR"
+          jq -n --arg catalogue "$CATALOGUE" --arg commit "$GITHUB_SHA" --arg image "${ImageOS:-} ${ImageVersion:-}" \
+            --arg toolchain "$(xcodebuild -version | tr '\n' ' ')" '{catalogue: $catalogue, commit: $commit, image: $image, toolchain: $toolchain}' > "$DIR/record.json"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ${{ github.event_name == 'pull_request' && 'fretscribe-mac-screenshots' || format('screens-fretscribe-mac-{0}', github.sha) }}
+          path: apps/apple/build/catalogue/fretscribe
+          if-no-files-found: ignore
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: apple-fretscribe-test-results
+          path: apps/apple/build/DerivedData-fs/Logs/Test/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
+
   # What scripts/check.sh full bandroom-mac runs: the reader of requires-pixi, BandroomKit's unit tests, and the
   # screen catalogue (apps/bandroom/macos/README.md, Testing): every screen in light, dark, increased contrast,
   # the largest text size and bokmål, with its checks, in a Debug build of the app hosting the tests, off screen
@@ -519,6 +589,28 @@ jobs:
           mkdir -p "$RUNNER_TEMP/out"
           (cd "$stage" && ditto -c -k --keepParent "Brasscribe Play.app" "$RUNNER_TEMP/out/brasscribe-play-macos-arm64.zip")
 
+      # Fretscribe for Mac beside it, re-signed ad hoc in the same way. It has no band sounds and no Verovio: the tab
+      # page with alphaTab is what it must carry.
+      - name: Release build of Fretscribe for Mac
+        if: ${{ inputs.release }}
+        run: |
+          make project-fretscribe
+          xcodebuild -project products/fretscribe/Fretscribe.xcodeproj -derivedDataPath build/DerivedData-fs \
+            -scheme Fretscribe-macOS -configuration Release -destination 'generic/platform=macOS' build
+          app=$(find build/DerivedData-fs/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          [ -n "$app" ] || { echo "no .app under build/DerivedData-fs/Build/Products/Release" >&2; exit 1; }
+          stage="$RUNNER_TEMP/stage-fretscribe"; F="$stage/Fretscribe.app"
+          mkdir -p "$stage" && ditto "$app" "$F"
+          [ -s "$(find "$F" -name alphaTab.min.js | head -1)" ] || { echo "the app has no alphaTab" >&2; exit 1; }
+          codesign -d --entitlements - --xml "$F" > "$RUNNER_TEMP/fretscribe.entitlements"
+          for f in "$F"/Contents/Frameworks/* "$F"/Contents/PlugIns/*; do
+            [ -e "$f" ] && codesign --force --sign - "$f"
+          done
+          codesign --force --sign - --entitlements "$RUNNER_TEMP/fretscribe.entitlements" "$F"
+          codesign --verify --deep --strict "$F"
+          codesign -d --entitlements - "$F" 2>&1 | grep -q app-sandbox
+          (cd "$stage" && ditto -c -k --keepParent "Fretscribe.app" "$RUNNER_TEMP/out/fretscribe-macos-arm64.zip")
+
       # Bandroom is how the engine is distributed: its post-build scripts stage the engine workspace
       # (with the workspace stamp of this commit), the band SoundFont and the core's command line (built
       # here for the macOS Bandroom supports; the engine needs it for bass tabs), and it bundles pixi so
@@ -627,6 +719,11 @@ jobs:
 
       - name: Unsigned IPA of Play for iPhone and iPad
         run: scripts/make-ipa.sh "$RUNNER_TEMP/out/brasscribe-play-ios-unsigned.ipa"
+
+      - name: Unsigned IPA of Fretscribe for iPhone and iPad
+        env:
+          PRODUCT: fretscribe
+        run: scripts/make-ipa.sh "$RUNNER_TEMP/out/fretscribe-ios-unsigned.ipa"
 
       - uses: actions/upload-artifact@v7
         with:

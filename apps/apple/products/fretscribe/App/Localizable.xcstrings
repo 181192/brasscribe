@@ -1,0 +1,3366 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        }
+      }
+    },
+    "%@ (playing)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (spiller)"
+          }
+        }
+      }
+    },
+    "%@ didn't answer. Check that it's still open.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ svarte ikke. Sjekk at det fortsatt er åpent."
+          }
+        }
+      }
+    },
+    "%@ has no place on your instrument here. Is the tuning right?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ har ingen plass på instrumentet ditt her. Er stemmingen riktig?"
+          }
+        }
+      }
+    },
+    "%@ is higher than your highest fret. Is the tuning right?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ er høyere enn det høyeste båndet ditt. Er stemmingen riktig?"
+          }
+        }
+      }
+    },
+    "%@ is lower than your lowest string. Is the tuning right?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ er lavere enn den laveste strengen din. Er stemmingen riktig?"
+          }
+        }
+      }
+    },
+    "%@ string, fret %lld, %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ streng, bånd %lld, %@."
+          }
+        }
+      }
+    },
+    "%@ string, open, %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ streng, åpen, %@."
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        }
+      }
+    },
+    "%@ · %@ · %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@ · %@"
+          }
+        }
+      }
+    },
+    "%@. You can switch to another app: when the tab is ready, it is in Your songs while this device is connected to your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@. Du kan bytte til en annen app: Når tabben er klar, ligger den i Sangene dine mens denne enheten er koblet til datamaskinen."
+          }
+        }
+      }
+    },
+    "%@: one bar earlier": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: én takt tidligere"
+          }
+        }
+      }
+    },
+    "%@: one bar later": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: én takt senere"
+          }
+        }
+      }
+    },
+    "%lld bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld takt"
+          }
+        }
+      }
+    },
+    "%lld bars": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld takter"
+          }
+        }
+      }
+    },
+    "%lld beats a minute": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld slag i minuttet"
+          }
+        }
+      }
+    },
+    "%lld note marked ?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tone merket ?"
+          }
+        }
+      }
+    },
+    "%lld note marked ? · Check it": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tone merket ? · Sjekk den"
+          }
+        }
+      }
+    },
+    "%lld note with no place": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tone uten plass"
+          }
+        }
+      }
+    },
+    "%lld notes are written an octave lower than they were heard.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner er skrevet en oktav lavere enn de ble hørt."
+          }
+        }
+      }
+    },
+    "%lld notes marked ?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner merket ?"
+          }
+        }
+      }
+    },
+    "%lld notes marked ? · Check them": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner merket ? · Sjekk dem"
+          }
+        }
+      }
+    },
+    "%lld notes to check": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner å sjekke"
+          }
+        }
+      }
+    },
+    "%lld notes with no place": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner uten plass"
+          }
+        }
+      }
+    },
+    "%lld notes with no place on your instrument. Is the tuning right?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld toner uten plass på instrumentet ditt. Er stemmingen riktig?"
+          }
+        }
+      }
+    },
+    "%lld percent": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld prosent"
+          }
+        }
+      }
+    },
+    "%lld-string bass": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-strengs bass"
+          }
+        }
+      }
+    },
+    "%lld-string guitar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld-strengs gitar"
+          }
+        }
+      }
+    },
+    "1st": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1."
+          }
+        }
+      }
+    },
+    "2nd": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2."
+          }
+        }
+      }
+    },
+    "3rd": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3."
+          }
+        }
+      }
+    },
+    "4th": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4."
+          }
+        }
+      }
+    },
+    "5th": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5."
+          }
+        }
+      }
+    },
+    "6th": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6."
+          }
+        }
+      }
+    },
+    "7th": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7."
+          }
+        }
+      }
+    },
+    "8th": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8."
+          }
+        }
+      }
+    },
+    "A band or a record. Fretscribe picks out the bass.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et band eller en plate. Fretscribe plukker ut bassen."
+          }
+        }
+      }
+    },
+    "A band or a record. Fretscribe picks out the guitar.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et band eller en plate. Fretscribe plukker ut gitaren."
+          }
+        }
+      }
+    },
+    "A band or a record. This only works when no guitar is playing: in a song, Fretscribe can't tell a mandolin from a guitar.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en mandolin fra en gitar."
+          }
+        }
+      }
+    },
+    "A band or a record. This only works when no guitar is playing: in a song, Fretscribe can't tell a ukulele from a guitar.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en ukulele fra en gitar."
+          }
+        }
+      }
+    },
+    "A full song": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En hel sang"
+          }
+        }
+      }
+    },
+    "A little flat of concert pitch (A = 440): %lld cents.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Litt lavere enn kammertonen (A = 440): %lld cent."
+          }
+        }
+      }
+    },
+    "A little sharp of concert pitch (A = 440): %lld cents.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Litt høyere enn kammertonen (A = 440): %lld cent."
+          }
+        }
+      }
+    },
+    "A note here has no place on your instrument. Is the tuning right?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tone her har ingen plass på instrumentet ditt. Er stemmingen riktig?"
+          }
+        }
+      }
+    },
+    "A “?” above a note means Fretscribe wasn't sure of it. A boxed “!” marks a note your instrument can't play there. Listen to that bar of the recording to check it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Lytt til den takten i opptaket for å sjekke den."
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Om"
+          }
+        }
+      }
+    },
+    "Address": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse"
+          }
+        }
+      }
+    },
+    "Ask again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spør på nytt"
+          }
+        }
+      }
+    },
+    "Asks the computer to allow this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ber datamaskinen om å godkjenne denne enheten."
+          }
+        }
+      }
+    },
+    "B, E, A, D": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "H, E, A, D"
+          }
+        }
+      }
+    },
+    "BEAD": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HEAD"
+          }
+        }
+      }
+    },
+    "Back": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake"
+          }
+        }
+      }
+    },
+    "Back to Home": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake til Hjem"
+          }
+        }
+      }
+    },
+    "Back to the start": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake til starten"
+          }
+        }
+      }
+    },
+    "Back to the start of the repeat": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake til starten av gjentakelsen"
+          }
+        }
+      }
+    },
+    "Bandroom on this Mac writes down the notes. The recording is not sent online.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på denne Macen skriver ned tonene. Opptaket sendes ikke på nettet."
+          }
+        }
+      }
+    },
+    "Bandroom on your computer couldn't finish the tab. Try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen klarte ikke å gjøre ferdig tabben. Prøv igjen."
+          }
+        }
+      }
+    },
+    "Bandroom on your computer didn't accept these choices. It may need an update.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering."
+          }
+        }
+      }
+    },
+    "Bandroom on your computer is writing down the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen skriver ned tonene"
+          }
+        }
+      }
+    },
+    "Bandroom on your computer writes down the notes. Open it there, and connect in Settings.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger."
+          }
+        }
+      }
+    },
+    "Bandroom on your computer writes down the notes. The recording is not sent online.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen skriver ned tonene. Opptaket sendes ikke til nettet."
+          }
+        }
+      }
+    },
+    "Bar %@, beat %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takt %@, slag %lld"
+          }
+        }
+      }
+    },
+    "Bar %@, beat %lld.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takt %@, slag %lld."
+          }
+        }
+      }
+    },
+    "Bar 0 is the pickup bar.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takt 0 er opptakten."
+          }
+        }
+      }
+    },
+    "Baritone ukulele": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barytonukulele"
+          }
+        }
+      }
+    },
+    "Bass": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bass"
+          }
+        }
+      }
+    },
+    "C standard (two whole steps down)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C-standard (to heltoner ned)"
+          }
+        }
+      }
+    },
+    "Can't reach Bandroom on your computer. Check that it is running and on the same network.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Får ikke kontakt med Bandroom på datamaskinen. Sjekk at den kjører og er på samme nettverk."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt"
+          }
+        }
+      }
+    },
+    "Capo": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capo"
+          }
+        }
+      }
+    },
+    "Check that your computer shows %@, then choose Allow there.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk at datamaskinen viser %@, og velg Godkjenn der."
+          }
+        }
+      }
+    },
+    "Check the notes marked ?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk tonene merket ?"
+          }
+        }
+      }
+    },
+    "Check the song": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk sangen"
+          }
+        }
+      }
+    },
+    "Choose one to continue.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg én for å fortsette."
+          }
+        }
+      }
+    },
+    "Choosing strings and frets": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velger strenger og bånd"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lukk"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til"
+          }
+        }
+      }
+    },
+    "Connect your computer to continue.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til datamaskinen for å fortsette."
+          }
+        }
+      }
+    },
+    "Connected to %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koblet til %@"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett"
+          }
+        }
+      }
+    },
+    "D G B E": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "D G H E"
+          }
+        }
+      }
+    },
+    "D standard (a whole step down)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "D-standard (en heltone ned)"
+          }
+        }
+      }
+    },
+    "D, A, D, G, A, D": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "D, A, D, G, A, D"
+          }
+        }
+      }
+    },
+    "D, G, B, E": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "D, G, H, E"
+          }
+        }
+      }
+    },
+    "DADGAD": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DADGAD"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slett"
+          }
+        }
+      }
+    },
+    "Delete this song?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slette denne sangen?"
+          }
+        }
+      }
+    },
+    "Delete…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slett …"
+          }
+        }
+      }
+    },
+    "Details for the tech person": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detaljer for den tekniske"
+          }
+        }
+      }
+    },
+    "Do this once. This device stays paired, also when the computer restarts or gets a new address.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør dette én gang. Enheten forblir tilkoblet, også når datamaskinen starter på nytt eller får ny adresse."
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferdig"
+          }
+        }
+      }
+    },
+    "Drop A": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop A"
+          }
+        }
+      }
+    },
+    "Drop B": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop H"
+          }
+        }
+      }
+    },
+    "Drop C": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop C"
+          }
+        }
+      }
+    },
+    "Drop D": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drop D"
+          }
+        }
+      }
+    },
+    "Drop a recording here": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slipp et opptak her"
+          }
+        }
+      }
+    },
+    "E-flat standard (half a step down)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ess-standard (en halvtone ned)"
+          }
+        }
+      }
+    },
+    "Every tab you make is kept under Your songs, on this device and on your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle tabbene du lager, ligger under Sangene dine, på denne enheten og på datamaskinen."
+          }
+        }
+      }
+    },
+    "Everything playing on this Mac": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All lyd som spilles på denne Macen"
+          }
+        }
+      }
+    },
+    "Faster": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskere"
+          }
+        }
+      }
+    },
+    "Forget": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem"
+          }
+        }
+      }
+    },
+    "Forget this computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem denne datamaskinen"
+          }
+        }
+      }
+    },
+    "Forget this computer?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glemme denne datamaskinen?"
+          }
+        }
+      }
+    },
+    "Fretscribe allowed for it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe tok hensyn til det."
+          }
+        }
+      }
+    },
+    "Fretscribe can't follow the recording in this tab. You can still read it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe kan ikke følge opptaket i denne tabben. Du kan fortsatt lese den."
+          }
+        }
+      }
+    },
+    "Fretscribe can't open sheet music yet": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe kan ikke åpne noter ennå"
+          }
+        }
+      }
+    },
+    "Fretscribe can't use it: it is copy-protected. Play it and record it instead.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe kan ikke bruke det: Det er kopibeskyttet. Spill det av og ta det opp i stedet."
+          }
+        }
+      }
+    },
+    "Fretscribe couldn't get it from your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe fikk ikke hentet den fra datamaskinen din."
+          }
+        }
+      }
+    },
+    "Fretscribe couldn't read the sound in it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe klarte ikke å lese lyden i den."
+          }
+        }
+      }
+    },
+    "Fretscribe is a non-commercial project. It uses alphaTab (MPL-2.0) with the Bravura font (SIL OFL 1.1) to draw the tab. Bandroom on your computer writes down the notes.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe er et ikke-kommersielt prosjekt. Det bruker alphaTab (MPL-2.0) med skriften Bravura (SIL OFL 1.1) til å tegne tabben. Bandroom på datamaskinen skriver ned tonene."
+          }
+        }
+      }
+    },
+    "Fretscribe isn't sure about this one.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe er ikke sikker på denne."
+          }
+        }
+      }
+    },
+    "Fretscribe opens recordings and videos.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe åpner opptak og videoer."
+          }
+        }
+      }
+    },
+    "Fretscribe remembers this for your tabs.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe husker dette til tabbene dine."
+          }
+        }
+      }
+    },
+    "Fretscribe remembers this for your tabs. You can change it in Settings.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fretscribe husker dette til tabbene dine. Du kan endre det i Innstillinger."
+          }
+        }
+      }
+    },
+    "From bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fra takt"
+          }
+        }
+      }
+    },
+    "Full screen": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullskjerm"
+          }
+        }
+      }
+    },
+    "G D A E": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "G D A E"
+          }
+        }
+      }
+    },
+    "G, D, A, E": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "G, D, A, E"
+          }
+        }
+      }
+    },
+    "Get it from your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hent det fra datamaskinen"
+          }
+        }
+      }
+    },
+    "Get started": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kom i gang"
+          }
+        }
+      }
+    },
+    "Getting ready": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør klar"
+          }
+        }
+      }
+    },
+    "Getting the recording from your computer…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henter opptaket fra datamaskinen…"
+          }
+        }
+      }
+    },
+    "Getting the recording ready": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør opptaket klart"
+          }
+        }
+      }
+    },
+    "Guitar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gitar"
+          }
+        }
+      }
+    },
+    "Help": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hjelp"
+          }
+        }
+      }
+    },
+    "High G": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Høy G"
+          }
+        }
+      }
+    },
+    "Home": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hjem"
+          }
+        }
+      }
+    },
+    "Input level": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inngangsnivå"
+          }
+        }
+      }
+    },
+    "Instrument": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrument"
+          }
+        }
+      }
+    },
+    "It makes tabs from recordings. Open a recording, or record what you play.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den lager tabber fra opptak. Åpne et opptak, eller spill inn det du spiller."
+          }
+        }
+      }
+    },
+    "Just my instrument": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bare instrumentet mitt"
+          }
+        }
+      }
+    },
+    "Keep going": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett"
+          }
+        }
+      }
+    },
+    "Key and tempo": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toneart og tempo"
+          }
+        }
+      }
+    },
+    "Keys": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taster"
+          }
+        }
+      }
+    },
+    "Last answered": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svarte sist"
+          }
+        }
+      }
+    },
+    "Last bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siste takt"
+          }
+        }
+      }
+    },
+    "Last bar of the repeat": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siste takt i gjentakelsen"
+          }
+        }
+      }
+    },
+    "Last uncertain note": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siste usikre tone"
+          }
+        }
+      }
+    },
+    "Laying out the tab": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setter opp tabben"
+          }
+        }
+      }
+    },
+    "Leave full screen": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forlat fullskjerm"
+          }
+        }
+      }
+    },
+    "Left full screen": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forlot fullskjerm"
+          }
+        }
+      }
+    },
+    "Left hand on the neck (most players)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venstre hånd på halsen (de fleste)"
+          }
+        }
+      }
+    },
+    "Listen to this bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lytt til denne takten"
+          }
+        }
+      }
+    },
+    "Listening for the beat": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lytter etter pulsen"
+          }
+        }
+      }
+    },
+    "Looking for %@ …": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leter etter %@ …"
+          }
+        }
+      }
+    },
+    "Looking for the desktop program on your network…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Looking for Bandroom on your network…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ser etter Bandroom på nettverket …"
+          }
+        }
+      }
+    },
+    "Low G": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lav G"
+          }
+        }
+      }
+    },
+    "MP3, WAV, M4A, MP4 and most other formats": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MP3, WAV, M4A, MP4 og de fleste andre formater"
+          }
+        }
+      }
+    },
+    "Mandolin": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mandolin"
+          }
+        }
+      }
+    },
+    "Microphone access is off. Turn it on in Settings to record.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mikrofontilgang er slått av. Slå den på i Innstillinger for å ta opp."
+          }
+        }
+      }
+    },
+    "More for %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mer for %@"
+          }
+        }
+      }
+    },
+    "Next ?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste ?"
+          }
+        }
+      }
+    },
+    "Next bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste takt"
+          }
+        }
+      }
+    },
+    "Next uncertain note": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste usikre tone"
+          }
+        }
+      }
+    },
+    "No microphone was found. Connect one and try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ingen mikrofon. Koble til en og prøv igjen."
+          }
+        }
+      }
+    },
+    "Not connected (this Mac).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. Fretscribe needs your computer to write a tab."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilkoblet. Fretscribe trenger datamaskinen for å skrive en tabb."
+          }
+        }
+      }
+    },
+    "Not connected (this iPad).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. Fretscribe needs your computer to write a tab."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilkoblet. Fretscribe trenger datamaskinen for å skrive en tabb."
+          }
+        }
+      }
+    },
+    "Not connected (this phone).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not connected. Fretscribe needs your computer to write a tab."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke tilkoblet. Fretscribe trenger datamaskinen for å skrive en tabb."
+          }
+        }
+      }
+    },
+    "Notation": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noter"
+          }
+        }
+      }
+    },
+    "Notes Fretscribe isn't sure about get a “?”. Listen to the bar and decide.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toner Fretscribe er usikker på, får et «?». Lytt til takten og bestem deg."
+          }
+        }
+      }
+    },
+    "Notes to check": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toner å sjekke"
+          }
+        }
+      }
+    },
+    "Notes with no place": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toner uten plass"
+          }
+        }
+      }
+    },
+    "Nothing was heard": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting ble hørt"
+          }
+        }
+      }
+    },
+    "Nothing written down yet. Record a riff or open a recording.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak."
+          }
+        }
+      }
+    },
+    "Octave": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oktav"
+          }
+        }
+      }
+    },
+    "On %@, choose Allow. Check that it shows the same number:": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg Godkjenn på %@. Sjekk at den viser det samme tallet:"
+          }
+        }
+      }
+    },
+    "On your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På datamaskinen din"
+          }
+        }
+      }
+    },
+    "On your computer, click the desktop program's mark in the menu bar (Mac) or the taskbar corner (Windows), and choose Pair a phone.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Bandroom on your computer (it is Brasscribe Bandroom in the list of programs) and choose Pair a phone."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Bandroom på datamaskinen (det heter Brasscribe Bandroom i listen over programmer), og velg Koble til en telefon."
+          }
+        }
+      }
+    },
+    "On your computer, download the latest desktop program from this address:": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom is free for Mac (Apple silicon) and Windows, and is called Brasscribe Bandroom when you install it. On your computer, download it from this address:"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom er gratis for Mac (Apple silicon) og Windows, og heter Brasscribe Bandroom når du installerer det. Last det ned på datamaskinen fra denne adressen:"
+          }
+        }
+      }
+    },
+    "One instrument playing, with nothing else.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett instrument som spiller, uten noe annet."
+          }
+        }
+      }
+    },
+    "Only pair with a computer you know. The recordings you send go to it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble bare til en datamaskin du kjenner. Opptakene du sender, går til den."
+          }
+        }
+      }
+    },
+    "Open D": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpen D"
+          }
+        }
+      }
+    },
+    "Open E": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpen E"
+          }
+        }
+      }
+    },
+    "Open G": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpen G"
+          }
+        }
+      }
+    },
+    "Open a recording": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne et opptak"
+          }
+        }
+      }
+    },
+    "Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt."
+          }
+        }
+      }
+    },
+    "Open the download page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne nedlastingssiden"
+          }
+        }
+      }
+    },
+    "Opening the tab…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpner tabben…"
+          }
+        }
+      }
+    },
+    "Pair": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til"
+          }
+        }
+      }
+    },
+    "Pair this Mac again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til Macen på nytt"
+          }
+        }
+      }
+    },
+    "Pair this iPad again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til iPaden på nytt"
+          }
+        }
+      }
+    },
+    "Pair this phone again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til telefonen på nytt"
+          }
+        }
+      }
+    },
+    "Pair with %@ at %@?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til %1$@ på adressen %2$@?"
+          }
+        }
+      }
+    },
+    "Paired with %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koblet til %@."
+          }
+        }
+      }
+    },
+    "Pairing link": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilkoblingslenke"
+          }
+        }
+      }
+    },
+    "Pause": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "Picking out your instrument": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plukker ut instrumentet ditt"
+          }
+        }
+      }
+    },
+    "Pickup bar, beat %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptakten, slag %lld"
+          }
+        }
+      }
+    },
+    "Play": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill av"
+          }
+        }
+      }
+    },
+    "Play a riff or a whole song": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill et riff eller en hel sang"
+          }
+        }
+      }
+    },
+    "Play it, or open a song you have. Bandroom on your computer writes down the notes.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill det, eller åpne en sang du har. Bandroom på datamaskinen skriver ned tonene."
+          }
+        }
+      }
+    },
+    "Play it, record it, or open a file. Bandroom on your computer writes down the notes.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill det, ta det opp, eller åpne en fil. Bandroom på datamaskinen skriver ned tonene."
+          }
+        }
+      }
+    },
+    "Play this bar slowly": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill denne takten sakte"
+          }
+        }
+      }
+    },
+    "Play when you're ready.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill når du er klar."
+          }
+        }
+      }
+    },
+    "Port": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port"
+          }
+        }
+      }
+    },
+    "Practise with the tab": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Øv med tabben"
+          }
+        }
+      }
+    },
+    "Previous bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forrige takt"
+          }
+        }
+      }
+    },
+    "Progress": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framdrift"
+          }
+        }
+      }
+    },
+    "Record": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta opp"
+          }
+        }
+      }
+    },
+    "Record from": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta opp fra"
+          }
+        }
+      }
+    },
+    "Record or open a recording": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spill inn eller åpne et opptak"
+          }
+        }
+      }
+    },
+    "Record what's playing": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta opp det som spilles"
+          }
+        }
+      }
+    },
+    "Record with the microphone": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta opp med mikrofonen"
+          }
+        }
+      }
+    },
+    "Recorded": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tatt opp"
+          }
+        }
+      }
+    },
+    "Recorded %lld seconds": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sekunder tatt opp"
+          }
+        }
+      }
+    },
+    "Recording, %@ %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptak, %@ %@"
+          }
+        }
+      }
+    },
+    "Recording…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tar opp …"
+          }
+        }
+      }
+    },
+    "Reference pitch": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kammertone"
+          }
+        }
+      }
+    },
+    "Repeat bar %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjenta takt %@"
+          }
+        }
+      }
+    },
+    "Repeat bars": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjenta takter"
+          }
+        }
+      }
+    },
+    "Repeat bars %@ to %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjenta takt %@ til %@"
+          }
+        }
+      }
+    },
+    "Repeating %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjentar %@"
+          }
+        }
+      }
+    },
+    "Repeating %@–%@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjentar %@–%@"
+          }
+        }
+      }
+    },
+    "Right hand on the neck (instrument upside down)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Høyre hånd på halsen (instrumentet opp ned)"
+          }
+        }
+      }
+    },
+    "Right hand on the neck (left-handed instrument)": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Høyre hånd på halsen (venstrehendt instrument)"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagre"
+          }
+        }
+      }
+    },
+    "Scan the code": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skann koden"
+          }
+        }
+      }
+    },
+    "Sending the recording to your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sender opptaket til datamaskinen"
+          }
+        }
+      }
+    },
+    "Server id": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server-ID"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Innstillinger"
+          }
+        }
+      }
+    },
+    "Show the tab": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis tabben"
+          }
+        }
+      }
+    },
+    "Six-digit code": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sekssifret kode"
+          }
+        }
+      }
+    },
+    "Size": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Størrelse"
+          }
+        }
+      }
+    },
+    "Size %lld%%": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Størrelse %lld %%"
+          }
+        }
+      }
+    },
+    "Slow it down and repeat the hard bars.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sett ned tempoet og gjenta de vanskelige taktene."
+          }
+        }
+      }
+    },
+    "Slow the recording down, and repeat the hard bars.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sett ned farten på opptaket, og gjenta de vanskelige taktene."
+          }
+        }
+      }
+    },
+    "Slower": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saktere"
+          }
+        }
+      }
+    },
+    "Something went wrong while Bandroom on your computer was working on it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noe gikk galt mens Bandroom på datamaskinen arbeidet med den."
+          }
+        }
+      }
+    },
+    "Sound from another app on this Mac": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyd fra en annen app på denne Macen"
+          }
+        }
+      }
+    },
+    "Sounds like %@. Written for %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Høres ut som %@. Skrevet for %@."
+          }
+        }
+      }
+    },
+    "Source code and licences": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kildekode og lisenser"
+          }
+        }
+      }
+    },
+    "Space plays and pauses the recording. While the tab has the keyboard's focus, the right arrow goes a bar on, and the left arrow a bar back or to the start of the bars being repeated.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellomrom spiller av og setter opptaket på pause. Når tabben har tastaturfokus, går pil høyre en takt fram, og pil venstre en takt tilbake eller til starten av taktene som gjentas."
+          }
+        }
+      }
+    },
+    "Speed": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo"
+          }
+        }
+      }
+    },
+    "Speed %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo %@"
+          }
+        }
+      }
+    },
+    "Standard": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standard"
+          }
+        }
+      }
+    },
+    "Start recording": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start opptak"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp"
+          }
+        }
+      }
+    },
+    "Stop repeating": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slutt å gjenta"
+          }
+        }
+      }
+    },
+    "Stop writing down the notes?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slutte å skrive ned tonene?"
+          }
+        }
+      }
+    },
+    "Stopped. You can start again from the recording.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet. Du kan starte på nytt fra opptaket."
+          }
+        }
+      }
+    },
+    "Streaming apps usually block recording. You hear the music, but the recording stays silent.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strømmeapper stopper som regel opptak. Du hører musikken, men opptaket blir stille."
+          }
+        }
+      }
+    },
+    "Strings": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strenger"
+          }
+        }
+      }
+    },
+    "Tab": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab"
+          }
+        }
+      }
+    },
+    "Tab and notation": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab og noter"
+          }
+        }
+      }
+    },
+    "Tab from": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabb fra"
+          }
+        }
+      }
+    },
+    "Tab looks the same either way.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabben ser lik ut uansett."
+          }
+        }
+      }
+    },
+    "Tabs are written on your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab skrives på datamaskinen"
+          }
+        }
+      }
+    },
+    "Technical details": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekniske detaljer"
+          }
+        }
+      }
+    },
+    "That code didn't work. Check the six digits on the computer, or choose the computer above and allow it there.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koden virket ikke. Sjekk de seks sifrene på datamaskinen, eller velg datamaskinen over og godkjenn den der."
+          }
+        }
+      }
+    },
+    "That code has been used or has run out. Show a new one on the computer, or choose the computer above and allow it there.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koden er brukt eller utløpt. Vis en ny på datamaskinen, eller velg datamaskinen over og godkjenn den der."
+          }
+        }
+      }
+    },
+    "That isn't a pairing code.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That code isn't from Bandroom on a computer."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den koden er ikke fra Bandroom på en datamaskin."
+          }
+        }
+      }
+    },
+    "That isn't a pairing link. It starts with scribe://pair.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That isn't a pairing link from Bandroom. It starts with scribe://pair."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det er ikke en tilkoblingslenke fra Bandroom. Den begynner med scribe://pair."
+          }
+        }
+      }
+    },
+    "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't connect. Check that Bandroom on the computer says Running, and that both are on the same network."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fikk ikke kontakt. Sjekk at Bandroom på datamaskinen sier Kjører, og at begge er på samme nettverk."
+          }
+        }
+      }
+    },
+    "The computer didn't allow this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen godkjente ikke denne enheten."
+          }
+        }
+      }
+    },
+    "The computer no longer recognises this Mac.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne Macen lenger."
+          }
+        }
+      }
+    },
+    "The computer no longer recognises this iPad.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne iPaden lenger."
+          }
+        }
+      }
+    },
+    "The computer no longer recognises this phone.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen kjenner ikke igjen denne telefonen lenger."
+          }
+        }
+      }
+    },
+    "The pairing link is for any of them. Each app connects on its own.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilkoblingslenken gjelder alle. Hver app kobler seg til for seg."
+          }
+        }
+      }
+    },
+    "The pickup bar, beat %lld.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptakten, slag %lld."
+          }
+        }
+      }
+    },
+    "The program on %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom on %@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på %@"
+          }
+        }
+      }
+    },
+    "The program on your computer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom on your computer"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen"
+          }
+        }
+      }
+    },
+    "The recording didn't come. Is your computer on?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket kom ikke. Er datamaskinen på?"
+          }
+        }
+      }
+    },
+    "The recording is kept. You can start again from it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket blir tatt vare på. Du kan starte på nytt fra det."
+          }
+        }
+      }
+    },
+    "The recording is not on this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket er ikke på denne enheten."
+          }
+        }
+      }
+    },
+    "The recording is not on this device. Connect to your computer to get it. You can still read the tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket er ikke på denne enheten. Koble til datamaskinen for å hente det. Du kan fortsatt lese tabben."
+          }
+        }
+      }
+    },
+    "The recording is silent. Check the microphone and try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket er stille. Sjekk mikrofonen og prøv igjen."
+          }
+        }
+      }
+    },
+    "The recording is too large to keep on this device. You can still read the tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket er for stort til å ligge på denne enheten. Du kan fortsatt lese tabben."
+          }
+        }
+      }
+    },
+    "The recording plays these bars again and again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket spiller disse taktene om og om igjen."
+          }
+        }
+      }
+    },
+    "The request ran out before it was allowed on the computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forespørselen gikk ut før den ble godkjent på datamaskinen."
+          }
+        }
+      }
+    },
+    "The song is removed from this device.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sangen fjernes fra denne enheten."
+          }
+        }
+      }
+    },
+    "The song is removed from your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sangen fjernes fra datamaskinen din."
+          }
+        }
+      }
+    },
+    "The tab couldn't be made": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabben kunne ikke lages"
+          }
+        }
+      }
+    },
+    "Then: %@.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deretter: %@."
+          }
+        }
+      }
+    },
+    "There is no room on this device for the recording. You can still read the tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det er ikke plass til opptaket på denne enheten. Du kan fortsatt lese tabben."
+          }
+        }
+      }
+    },
+    "This device can't play the recording. You can still read the tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enheten kan ikke spille av opptaket. Du kan fortsatt lese tabben."
+          }
+        }
+      }
+    },
+    "This device is paired with %@. If you pair with %@, this device uses it instead.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enheten er koblet til %1$@. Hvis du kobler til %2$@, bruker enheten den i stedet."
+          }
+        }
+      }
+    },
+    "This device's id": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enhetens ID"
+          }
+        }
+      }
+    },
+    "This file couldn't be opened": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filen kunne ikke åpnes"
+          }
+        }
+      }
+    },
+    "This is what Fretscribe heard. If something here is wrong, the frets are wrong too.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også."
+          }
+        }
+      }
+    },
+    "This recording is protected": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket er beskyttet"
+          }
+        }
+      }
+    },
+    "This tab can't be shown. Go back and open it again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne tabben kan ikke vises. Gå tilbake og åpne den på nytt."
+          }
+        }
+      }
+    },
+    "This tab couldn't be opened": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne tabben kunne ikke åpnes"
+          }
+        }
+      }
+    },
+    "Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (both SIL Open Font License 1.1).": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titler er satt i Atkinson Hyperlegible Next, og båndtallene i Fretscribe Tab (begge SIL Open Font License 1.1)."
+          }
+        }
+      }
+    },
+    "To bar": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Til takt"
+          }
+        }
+      }
+    },
+    "Try again": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv igjen"
+          }
+        }
+      }
+    },
+    "Tuning": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemming"
+          }
+        }
+      }
+    },
+    "Tuning: %@, %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stemming: %@, %@"
+          }
+        }
+      }
+    },
+    "Turn a recording into": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør et opptak om til"
+          }
+        }
+      }
+    },
+    "Ukulele": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukulele"
+          }
+        }
+      }
+    },
+    "Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Bandroom på datamaskinen. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
+    "Update the program on your computer. This app is newer than the program there, and they only work together when both are up to date.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Bandroom on your computer. This app is newer than Bandroom there, and they only work together when both are up to date."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Bandroom på datamaskinen. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
+    "Update this app. Bandroom on your computer is newer than this app, and they only work together when both are up to date.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater denne appen. Bandroom på datamaskinen er nyere enn appen, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
+    "Update this app. The program on your computer is newer than this app, and they only work together when both are up to date.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update Fretscribe. Bandroom on your computer is newer than this app, and they only work together when both are up to date."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater Fretscribe. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert."
+          }
+        }
+      }
+    },
+    "Use link": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk lenken"
+          }
+        }
+      }
+    },
+    "Usual tuning": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vanlig stemming"
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versjon %@"
+          }
+        }
+      }
+    },
+    "Waiting for your computer …": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Venter på datamaskinen …"
+          }
+        }
+      }
+    },
+    "What Fretscribe heard can't be shown right now. You can still open the tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det Fretscribe hørte, kan ikke vises nå. Du kan likevel åpne tabben."
+          }
+        }
+      }
+    },
+    "What is on this device stays. To use the computer again, pair once more.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs already on this device stay. To use the computer again, pair once more."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sangene som allerede er på denne enheten, blir værende. For å bruke datamaskinen igjen må du koble til på nytt."
+          }
+        }
+      }
+    },
+    "What is this?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hva er dette?"
+          }
+        }
+      }
+    },
+    "What you play": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hva du spiller"
+          }
+        }
+      }
+    },
+    "Which app should connect to your computer?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvilken app skal kobles til datamaskinen?"
+          }
+        }
+      }
+    },
+    "Which hand is on the neck?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvilken hånd er på halsen?"
+          }
+        }
+      }
+    },
+    "Without the desktop program, start the engine with “scribe serve --lan”.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Bandroom, start the engine with “scribe serve --lan”."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uten Bandroom starter du motoren med «scribe serve --lan»."
+          }
+        }
+      }
+    },
+    "Write down a tab": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lag en tab"
+          }
+        }
+      }
+    },
+    "Writing down the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriver ned tonene"
+          }
+        }
+      }
+    },
+    "Written as it was heard, as you chose.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skrevet slik det ble hørt, slik du valgte."
+          }
+        }
+      }
+    },
+    "Written one octave higher than it was heard.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skrevet én oktav høyere enn det ble hørt."
+          }
+        }
+      }
+    },
+    "Written one octave higher, as you chose.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skrevet én oktav høyere, slik du valgte."
+          }
+        }
+      }
+    },
+    "Written one octave lower than it was heard.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skrevet én oktav lavere enn det ble hørt."
+          }
+        }
+      }
+    },
+    "Written one octave lower, as you chose.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skrevet én oktav lavere, slik du valgte."
+          }
+        }
+      }
+    },
+    "Written two octaves lower than it was heard.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skrevet to oktaver lavere enn det ble hørt."
+          }
+        }
+      }
+    },
+    "You can change this later.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan endre dette senere."
+          }
+        }
+      }
+    },
+    "You read": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du leser"
+          }
+        }
+      }
+    },
+    "Your answer decides how Fretscribe listens.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svaret ditt bestemmer hvordan Fretscribe lytter."
+          }
+        }
+      }
+    },
+    "Your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen din"
+          }
+        }
+      }
+    },
+    "Your computer doesn't have the recording any more. You can still read the tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen har ikke opptaket lenger. Du kan fortsatt lese tabben."
+          }
+        }
+      }
+    },
+    "Your instrument": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrumentet ditt"
+          }
+        }
+      }
+    },
+    "Your recordings stay on your own devices. Free, with nothing locked.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptakene dine blir på dine egne enheter. Gratis, uten noe som er låst."
+          }
+        }
+      }
+    },
+    "Your songs": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sangene dine"
+          }
+        }
+      }
+    },
+    "Zoom in": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom inn"
+          }
+        }
+      }
+    },
+    "Zoom out": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom ut"
+          }
+        }
+      }
+    },
+    "any recording.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hvilket som helst opptak."
+          }
+        }
+      }
+    },
+    "capo %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "capo %lld"
+          }
+        }
+      }
+    },
+    "no capo": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "uten capo"
+          }
+        }
+      }
+    },
+    "tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tab."
+          }
+        }
+      }
+    },
+    "♩ = %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "♩ = %lld"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

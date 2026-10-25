@@ -100,7 +100,7 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 # The build number goes up by one on every release; Android's versionCode is where it is kept.
 build=$(( $(sed -nE "$default_config"' s/^ *versionCode = ([0-9]+).*/\1/p' "$gradle") + 1 ))
-apple="apps/apple/products/brasscribe/project.yml apps/bandroom/macos/project.yml"
+apple="apps/apple/products/brasscribe/project.yml apps/apple/products/fretscribe/project.yml apps/bandroom/macos/project.yml"
 windows="apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
 for g in $gradles; do
   sed -i.bak -E "$default_config { s/^( *versionCode = )[0-9]+/\1$build/; s/^( *versionName = )\"[^\"]*\"/\1\"$version\"/; }" "$g"

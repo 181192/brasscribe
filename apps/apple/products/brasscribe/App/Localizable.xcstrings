@@ -4831,6 +4831,16 @@
         }
       }
     },
+    "The pairing link is for any of them. Each app connects on its own.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilkoblingslenken gjelder alle. Hver app kobler seg til for seg."
+          }
+        }
+      }
+    },
     "The program on %@": {
       "localizations": {
         "en": {
@@ -5597,6 +5607,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hva du spiller"
+          }
+        }
+      }
+    },
+    "Which app should connect to your computer?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvilken app skal kobles til datamaskinen?"
           }
         }
       }

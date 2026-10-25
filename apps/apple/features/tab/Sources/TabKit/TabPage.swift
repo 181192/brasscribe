@@ -22,11 +22,68 @@ public struct TabBarBox: Codable, Equatable, Sendable {
     public var x: Double, y: Double, w: Double, h: Double
 }
 
+/// One line of the engraving, in the page's points: where it is, and its first and last bar (counted from 0).
+public struct TabLine: Codable, Equatable, Sendable {
+    public var top: Double, bottom: Double
+    public var first: Int, last: Int
+
+    public init(top: Double, bottom: Double, first: Int, last: Int) {
+        self.top = top; self.bottom = bottom; self.first = first; self.last = last
+    }
+}
+
+/// A mark the screen draws over the page ("?" above a doubtful note, a boxed "!" above a note with no place): the
+/// column it stands over, and the notes there. `string` counts from the top line, as the tab's data does; a note on a
+/// notation staff is found by its `pitchClass` (0 is C).
+public struct TabMarkSpot: Encodable, Equatable, Sendable {
+    public struct Note: Encodable, Equatable, Sendable {
+        public var string: Int?
+        public var fret: Int?
+        public var pitchClass: Int?
+        /// In doubt: its numeral (or note head) takes the doubt colour.
+        public var doubt: Bool
+
+        public init(string: Int?, fret: Int?, pitchClass: Int?, doubt: Bool) {
+            self.string = string; self.fret = fret; self.pitchClass = pitchClass; self.doubt = doubt
+        }
+    }
+
+    public var staff: Int
+    /// The measure, counted from 0 as written.
+    public var bar: Int
+    /// From the start of the measure, in `TabIndex.ticks` to a quarter note.
+    public var tick: Int
+    public var notes: [Note]
+
+    public init(staff: Int, bar: Int, tick: Int, notes: [Note]) {
+        self.staff = staff; self.bar = bar; self.tick = tick; self.notes = notes
+    }
+}
+
+/// Where a mark goes in the engraving, in the page's points: `mark` is its place in the spots the page was shown with,
+/// `x` the middle of its column, `top` and `bottom` the mark itself, `columnBottom` how far down the column's numerals
+/// go, and `width` how wide the mark and the numerals are.
+public struct TabMarkBox: Codable, Equatable, Sendable {
+    public var mark: Int
+    public var x: Double
+    public var top: Double, bottom: Double
+    public var columnBottom: Double
+    public var width: Double
+
+    public init(mark: Int, x: Double, top: Double, bottom: Double, columnBottom: Double, width: Double) {
+        self.mark = mark; self.x = x; self.top = top; self.bottom = bottom; self.columnBottom = columnBottom; self.width = width
+    }
+}
+
 /// The engraving once alphaTab has laid the page out.
 public struct TabEngraving: Equatable, Sendable {
     public var height: Double
     public var width: Double
     public var bars: [TabBarBox]
+    /// The lines of the page, top to bottom.
+    public var lines: [TabLine] = []
+    /// Where the marks the page was shown with go; a mark the page has no beat for is left out.
+    public var marks: [TabMarkBox] = []
     /// How long alphaTab took, from the song to the laid-out page.
     public var milliseconds: Int
     /// Every resource the page loaded, as URLs: all of them are the app's own.
@@ -121,15 +178,21 @@ public final class TabPage: NSObject {
         await withCheckedContinuation { ready.append($0) }
     }
 
-    /// Engraves [musicXML] in [palette]; returns once the page is laid out.
-    public func show(musicXML: Data, palette: TabPalette, scale: Double = 1, staff: String = "tab", doubtful: [String] = []) async throws -> TabEngraving {
+    /// Engraves [musicXML] in [palette]; returns once the page is laid out. [doubtful] notes ("bar:string:fret:tick", the
+    /// string counted from the lowest) take the doubt colour, and so do the notes in doubt of [marks], whose places the
+    /// engraving says. [markStaff] is the staff the marks and the cursor stand on.
+    public func show(musicXML: Data, palette: TabPalette, scale: Double = 1, staff: String = "tab", doubtful: [String] = [],
+                     marks: [TabMarkSpot] = [], markStaff: Int = 0) async throws -> TabEngraving {
         await loaded()
         await takeTurn()
         defer { endTurn() }
-        struct Options: Encodable { let scale: Double; let palette: TabPalette; let staff: String; let doubtful: [String] }
-        let opts = String(decoding: try JSONEncoder().encode(Options(scale: scale, palette: palette, staff: staff, doubtful: doubtful)), as: UTF8.self)
+        struct Options: Encodable {
+            let scale: Double; let palette: TabPalette; let staff: String; let doubtful: [String]; let marks: [TabMarkSpot]; let markStaff: Int
+        }
+        let opts = String(decoding: try JSONEncoder().encode(Options(scale: scale, palette: palette, staff: staff, doubtful: doubtful,
+                                                                     marks: marks, markStaff: markStaff)), as: UTF8.self)
         return try await withCheckedThrowingContinuation { c in
-            waiting = c
+            replace(with: c)
             webView.evaluateJavaScript("tab.show('\(musicXML.base64EncodedString())', \(opts)); 0") { _, error in
                 if let error { self.finish(.failure(error)) }
             }
@@ -143,7 +206,7 @@ public final class TabPage: NSObject {
         defer { endTurn() }
         let p = String(decoding: try JSONEncoder().encode(palette), as: UTF8.self)
         return try await withCheckedThrowingContinuation { c in
-            waiting = c
+            replace(with: c)
             webView.evaluateJavaScript("tab.palette(\(p)); 0") { _, error in
                 if let error { self.finish(.failure(error)) }
             }
@@ -158,6 +221,12 @@ public final class TabPage: NSObject {
         let r = try await webView.evaluateJavaScript(js)
         guard let d = r as? [String: Any], let x = d["x"] as? Double, let y = d["y"] as? Double, let h = d["h"] as? Double else { return nil }
         return CGRect(x: x, y: y, width: 2, height: h)
+    }
+
+    /// A new engraving asked for while one is being laid out: the one asked for before is told it was replaced.
+    private func replace(with c: CheckedContinuation<TabEngraving, Error>) {
+        finish(.failure(PageError(description: "replaced by a newer engraving")))
+        waiting = c
     }
 
     private func finish(_ result: Result<TabEngraving, Error>) {
@@ -182,7 +251,16 @@ public final class TabPage: NSObject {
                 guard let bar = b["bar"] as? Int else { return nil }
                 return TabBarBox(bar: bar, x: b["x"] as? Double ?? 0, y: b["y"] as? Double ?? 0, w: b["w"] as? Double ?? 0, h: b["h"] as? Double ?? 0)
             }
-            let e = TabEngraving(height: m["height"] as? Double ?? 0, width: m["width"] as? Double ?? 0, bars: bars,
+            let lines = (m["lines"] as? [[String: Any]] ?? []).compactMap { l -> TabLine? in
+                guard let first = l["first"] as? Int, let last = l["last"] as? Int else { return nil }
+                return TabLine(top: l["top"] as? Double ?? 0, bottom: l["bottom"] as? Double ?? 0, first: first, last: last)
+            }
+            let marks = (m["marks"] as? [[String: Any]] ?? []).compactMap { b -> TabMarkBox? in
+                guard let mark = b["mark"] as? Int else { return nil }
+                return TabMarkBox(mark: mark, x: b["x"] as? Double ?? 0, top: b["top"] as? Double ?? 0, bottom: b["bottom"] as? Double ?? 0,
+                                  columnBottom: b["columnBottom"] as? Double ?? 0, width: b["w"] as? Double ?? 0)
+            }
+            let e = TabEngraving(height: m["height"] as? Double ?? 0, width: m["width"] as? Double ?? 0, bars: bars, lines: lines, marks: marks,
                                  milliseconds: m["ms"] as? Int ?? 0, resources: assets.requested, fonts: m["fonts"] as? [String] ?? [])
             engraving = e
             onEngraving?(e)

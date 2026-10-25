@@ -65,6 +65,7 @@ jobs:
       windows_fretscribe: ${{ github.event_name != 'pull_request' || ((steps.filter.outputs.windows_play == 'true' || steps.filter.outputs.windows_fretscribe == 'true') && steps.version.outputs.only != 'true') }}
       windows_bandroom: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.windows_bandroom == 'true' && steps.version.outputs.only != 'true') }}
       apple_play: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.apple_play == 'true' && steps.version.outputs.only != 'true') }}
+      apple_fretscribe: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.apple_fretscribe == 'true' && steps.version.outputs.only != 'true') }}
       apple_bandroom: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.apple_bandroom == 'true' && steps.version.outputs.only != 'true') }}
     steps:
       - uses: actions/checkout@v7
@@ -93,7 +94,9 @@ jobs:
             windows_play: ['apps/windows/*', 'apps/windows/services/**', 'apps/windows/features/**', 'apps/windows/tests/**', 'apps/windows/tools/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/scribe-core/**', 'core/ffi/**', 'core/targets/**', 'core/bindings/c/**', 'design/tooling/**', 'docs/shared/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml']
             windows_brasscribe: ['apps/windows/products/brasscribe/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/windows/**', 'design/brands/brasscribe/dist/icons/windows/**', 'design/brands/brasscribe/brand/**', 'apps/fixtures/old-hundredth/**', 'apps/fixtures/ties-and-trills.musicxml', 'sounds/**', 'engine/src/scribe_engine/static/assets/alphatab/**']
             windows_fretscribe: ['apps/windows/products/fretscribe/**', 'design/brands/fretscribe/tokens/**', 'design/brands/fretscribe/dist/windows/**', 'design/brands/fretscribe/dist/icons/windows/**', 'design/brands/fretscribe/brand/**', 'apps/fixtures/guitar-line/**']
-            apple_play: ['apps/apple/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/brand/**', 'design/brands/brasscribe/pink/**', 'sounds/**', '.github/workflows/apple.yml']
+            # What both Apple apps are built from, and each one's own: a change in one product's folder checks that product only.
+            apple_play: ['apps/apple/services/**', 'apps/apple/features/**', 'apps/apple/testing/**', 'apps/apple/scripts/**', 'apps/apple/Makefile', 'apps/apple/products/brasscribe/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/brand/**', 'design/brands/brasscribe/pink/**', 'sounds/**', '.github/workflows/apple.yml']
+            apple_fretscribe: ['apps/apple/services/**', 'apps/apple/features/**', 'apps/apple/testing/**', 'apps/apple/scripts/**', 'apps/apple/Makefile', 'apps/apple/products/fretscribe/**', 'capture/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/fretscribe/**', '.github/workflows/apple.yml']
             apple_bandroom: ['apps/bandroom/macos/**', 'apps/apple/testing/ScreenCatalogue/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml']
             windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/windows/**', 'design/brands/brasscribe/dist/icons/windows/**', 'design/brands/brasscribe/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/scribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml']
 
@@ -587,9 +590,9 @@ jobs:
       skip_fretscribe: ${{ needs.changes.outputs.windows_fretscribe != 'true' }}
       skip_bandroom: ${{ needs.changes.outputs.windows_bandroom != 'true' }}
 
-  # Play for Mac, iOS and iPadOS and Bandroom for Mac (apple.yml): Play's package tests, the macOS app's unit tests
-  # and a build of the iPhone simulator app with its tests (they run at night, nightly.yml), BandroomKit's tests
-  # and the Bandroom build, on a macOS runner. On a pull request only for
+  # Brasscribe Play and Fretscribe for Mac, iOS and iPadOS, and Bandroom for Mac (apple.yml): the package tests, each
+  # macOS app's unit tests and screen catalogue and a build of each iPhone simulator app with its tests (Play's run at
+  # night, nightly.yml), BandroomKit's tests and the Bandroom build, on a macOS runner. On a pull request only for
   # the app the change reaches; on pushes to main both, which also fills the caches pull requests read. Not on a
   # release tag: release.yml calls apple.yml itself, for the release builds.
   apple:
@@ -597,10 +600,11 @@ jobs:
     needs: changes
     if: >-
       !startsWith(github.ref, 'refs/tags/')
-      && (needs.changes.outputs.apple_play == 'true' || needs.changes.outputs.apple_bandroom == 'true')
+      && (needs.changes.outputs.apple_play == 'true' || needs.changes.outputs.apple_fretscribe == 'true' || needs.changes.outputs.apple_bandroom == 'true')
     uses: ./.github/workflows/apple.yml
     with:
       skip_play: ${{ needs.changes.outputs.apple_play != 'true' }}
+      skip_fretscribe: ${{ needs.changes.outputs.apple_fretscribe != 'true' }}
       skip_bandroom: ${{ needs.changes.outputs.apple_bandroom != 'true' }}
 
   # One check that is always reported, whichever jobs ran: the one to make required.
