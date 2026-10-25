@@ -14,9 +14,9 @@ client). Neither was built.
 `features/tab` (`TabKit`) holds the page (`Resources/page`: `index.html`, `tab.js`) and `TabPage`, which owns the
 web view. `TabPageTests` checks each point below on macOS, off screen in `swift test`. On the iPhone simulator (CI runs
 the package's tests there with `xcodebuild test`) a package's tests have no window scene, where a web view does not
-draw: there `TabPageEverywhereTests` checks what holds without drawing (the page is kept off the network from its first
-load, loads only its own files, and is hidden from VoiceOver), and Fretscribe's app-hosted tests draw the page on the
-iPhone.
+draw and may not even start its page: there `TabPageEverywhereTests` checks what holds without it (the rule that keeps
+the page off the network is in place before its first load, and the web view is hidden from VoiceOver), and
+Fretscribe's app-hosted tests on the iPhone load and draw the page, offline, in both appearances, with its cursor.
 
 | Question | Result |
 |---|---|
