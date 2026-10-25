@@ -1,17 +1,17 @@
 using System.Text.RegularExpressions;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Review;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Review;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.TalkingScore;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The notation overlays of design/brands/brasscribe/system.md §6: "?" and boxed "?" instead of rings and brackets,
 /// tints that never stack, outlines only in contrast themes, and the score tokens. With the golden
 /// score present, previews of the full score, the part view and the review snippet are written as PNGs
-/// (to BRASSCRIBE_PREVIEW_DIR, or previews/ next to the test binaries) to compare with design/brands/brasscribe/mockups.
+/// (to SCRIBE_PREVIEW_DIR, or previews/ next to the test binaries) to compare with design/brands/brasscribe/mockups.
 /// </summary>
 [Collection(AlphaTabCollection.Name)]
 public class ScoreOverlayTests(ITestOutputHelper log)
@@ -180,7 +180,7 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         var compPath = TestPaths.RepoFile(TestPaths.GoldenComposition);
         Skip.If(xmlPath is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         Skip.If(compPath is null, TestPaths.Missing(TestPaths.GoldenComposition));
-        string dir = Environment.GetEnvironmentVariable("BRASSCRIBE_PREVIEW_DIR") is { Length: > 0 } d ? d : TestPaths.Output("previews");
+        string dir = Environment.GetEnvironmentVariable("SCRIBE_PREVIEW_DIR") is { Length: > 0 } d ? d : TestPaths.Output("previews");
         Directory.CreateDirectory(dir);
         ScorePreview.UseDisplayFont(TestPaths.RepoFile("design/brands/brasscribe/brand/fonts/InstrumentSerif-Italic.ttf") is { } f ? File.ReadAllBytes(f) : null);
 

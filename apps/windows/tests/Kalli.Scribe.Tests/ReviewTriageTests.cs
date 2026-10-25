@@ -1,10 +1,10 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The second usability review's items: review triage (your part first, very unsure first, the
@@ -18,7 +18,7 @@ public class ReviewTriageTests
     private sealed class Inline : IUiDispatcher { public void Post(Action action) => action(); }
 
     private static IStrings Strings() => new ReswStrings(ReswStrings.Parse(System.Xml.Linq.XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "en-US", "Resources.resw"))));
 
     private static (ScoreViewModel Score, ReviewViewModel Review) Load()
     {

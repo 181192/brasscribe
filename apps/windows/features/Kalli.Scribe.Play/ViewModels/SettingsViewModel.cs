@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
 using System.Net;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>
 /// Language, appearance, keyboard, motion, talking-score and engine settings, persisted through <see cref="ISettingsStore"/>.

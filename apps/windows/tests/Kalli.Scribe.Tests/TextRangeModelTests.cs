@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class TextRangeModelTests
 {

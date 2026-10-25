@@ -1,12 +1,12 @@
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>Home: open a recording (the one primary), the other ways in as cards, and your scores.</summary>
 public sealed partial class HomePage : Page, IScreenPage

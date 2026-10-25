@@ -1,6 +1,6 @@
 using System.Xml;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// The kit a percussion part asks for: the 0-based &lt;midi-program&gt; of its first

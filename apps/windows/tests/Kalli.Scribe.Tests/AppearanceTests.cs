@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Settings › Display › Appearance (design/brands/brasscribe/system.md §10): Match system, Light, Dark, and Pink light and Pink dark once unlocked; contrast themes win.</summary>
 public class AppearanceTests
@@ -14,7 +14,7 @@ public class AppearanceTests
         public void Announce(string text, AnnouncementKind kind = AnnouncementKind.Status) => Said.Add(text);
     }
 
-    private static string Resw(string lang) => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", lang, "Resources.resw");
+    private static string Resw(string lang) => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", lang, "Resources.resw");
 
     private static IStrings Strings() => new ReswStrings(ReswStrings.Parse(XDocument.Load(Resw("en-US"))));
 
@@ -118,7 +118,7 @@ public class AppearanceTests
     [Fact]
     public void Settings_offers_the_three_choices_in_one_native_ComboBox_in_order()
     {
-        var xaml = XDocument.Load(Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Dialogs", "SettingsDialog.xaml"));
+        var xaml = XDocument.Load(Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Dialogs", "SettingsDialog.xaml"));
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
         var box = xaml.Descendants().Single(e => (string?)e.Attribute(x + "Uid") == "AppearanceBox");
         Assert.Equal("ComboBox", box.Name.LocalName);

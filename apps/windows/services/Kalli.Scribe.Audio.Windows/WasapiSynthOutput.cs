@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
 
-namespace Brasscribe.Play.Audio.Windows;
+namespace Kalli.Scribe.Audio.Windows;
 
 /// <summary>
 /// Plays the alphaTab synth buffer through WASAPI shared mode on the default output device.

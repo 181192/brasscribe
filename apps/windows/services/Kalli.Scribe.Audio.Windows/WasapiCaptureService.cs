@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Brasscribe.Play.Core.Capture;
+using Kalli.Scribe.Capture;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
-namespace Brasscribe.Play.Audio.Windows;
+namespace Kalli.Scribe.Audio.Windows;
 
 /// <summary>
 /// <see cref="ICaptureService"/> on WASAPI: microphone (shared-mode capture), everything the default

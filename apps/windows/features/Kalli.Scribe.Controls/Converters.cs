@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 
-namespace Brasscribe.Play.Controls;
+namespace Kalli.Scribe.Controls;
 
 /// <summary>int view-model properties to NumberBox's double Value and back.</summary>
 public sealed partial class IntToDoubleConverter : IValueConverter

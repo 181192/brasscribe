@@ -1,7 +1,7 @@
 using System.Net;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Services;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>
 /// The player's words for what went wrong on the engine or in the core. The engine and the core

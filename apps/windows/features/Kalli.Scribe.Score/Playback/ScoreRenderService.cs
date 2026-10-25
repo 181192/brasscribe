@@ -2,10 +2,10 @@ using AlphaTab;
 using AlphaTab.Model;
 using AlphaTab.Rendering;
 using AlphaTab.Rendering.Utils;
-using Brasscribe.Play.Core.Review;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Review;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>One rendered piece of the score: its position in the whole and the engine's result.</summary>
 public sealed record RenderedPartial(double X, double Y, double Width, double Height, int FirstBar, int LastBar, object Result);

@@ -18,7 +18,9 @@
     <PackageReference Include="AlphaSkia.Native.Linux" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
+    <ProjectReference Include="../../services/Kalli.Scribe.Services/Kalli.Scribe.Services.csproj" />
+    <ProjectReference Include="../../features/Kalli.Scribe.Score/Kalli.Scribe.Score.csproj" />
+    <ProjectReference Include="../../features/Kalli.Scribe.Play/Kalli.Scribe.Play.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />

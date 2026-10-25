@@ -1,9 +1,10 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// "How should the score be?": Which band? (full brass band, small band or quartet), How hard? (as played,

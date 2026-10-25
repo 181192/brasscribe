@@ -4,15 +4,21 @@
     <Platform Name="x64" />
     <Platform Name="ARM64" />
   </Configurations>
-  <Folder Name="/src/">
-    <Project Path="src/Brasscribe.Play.Audio.Windows/Brasscribe.Play.Audio.Windows.csproj" />
-    <Project Path="src/Brasscribe.Play.Controls/Brasscribe.Play.Controls.csproj" />
-    <Project Path="src/Brasscribe.Play.Core/Brasscribe.Play.Core.csproj" />
-    <Project Path="src/Brasscribe.Play/Brasscribe.Play.csproj">
+  <Folder Name="/services/">
+    <Project Path="services/Kalli.Scribe.Services/Kalli.Scribe.Services.csproj" />
+    <Project Path="services/Kalli.Scribe.Audio.Windows/Kalli.Scribe.Audio.Windows.csproj" />
+  </Folder>
+  <Folder Name="/features/">
+    <Project Path="features/Kalli.Scribe.Score/Kalli.Scribe.Score.csproj" />
+    <Project Path="features/Kalli.Scribe.Play/Kalli.Scribe.Play.csproj" />
+    <Project Path="features/Kalli.Scribe.Controls/Kalli.Scribe.Controls.csproj" />
+  </Folder>
+  <Folder Name="/products/brasscribe/">
+    <Project Path="products/brasscribe/Kalli.Brasscribe/Kalli.Brasscribe.csproj">
       <Platform Project="x64" />
     </Project>
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Brasscribe.Play.Core.Tests/Brasscribe.Play.Core.Tests.csproj" />
+    <Project Path="tests/Kalli.Scribe.Tests/Kalli.Scribe.Tests.csproj" />
   </Folder>
 </Solution>

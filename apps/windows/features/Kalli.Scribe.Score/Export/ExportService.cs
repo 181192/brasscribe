@@ -1,9 +1,9 @@
 using System.Text;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Export;
+namespace Kalli.Scribe.Export;
 
 public enum ExportFormat
 {

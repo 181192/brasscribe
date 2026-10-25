@@ -1,8 +1,8 @@
-using Brasscribe.Play.Core.Engine;
+using Kalli.Scribe.Engine;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>The connection status row on Home and in Settings (the same look as the other Play apps).</summary>
 public sealed partial class ConnectionRow : UserControl

@@ -1,10 +1,10 @@
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 [Collection(AlphaTabCollection.Name)]
 public class CaptureAndExportTests

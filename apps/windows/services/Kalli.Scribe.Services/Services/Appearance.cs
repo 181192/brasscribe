@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Services;
+namespace Kalli.Scribe.Services;
 
 /// <summary>
 /// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). Match system is the default. <see cref="PinkLight"/> and

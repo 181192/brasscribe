@@ -1,13 +1,13 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Review;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Review;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using Kalli.Scribe.ViewModels;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The third usability review: score titles that are never a bare timestamp, review by
@@ -22,7 +22,7 @@ public class ReviewRound3Tests(ITestOutputHelper log)
     private sealed class Inline : IUiDispatcher { public void Post(Action action) => action(); }
 
     private static IStrings Strings() => new ReswStrings(ReswStrings.Parse(System.Xml.Linq.XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "en-US", "Resources.resw"))));
 
     [Theory]
     [InlineData("20260815_155324", "Recording, 15 Aug 15:53")]

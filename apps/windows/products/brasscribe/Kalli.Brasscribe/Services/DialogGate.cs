@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Services;
+namespace Kalli.Brasscribe.Services;
 
 /// <summary>
 /// WinUI shows one ContentDialog at a time and throws when a second one opens (a pairing link that

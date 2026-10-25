@@ -1,10 +1,10 @@
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>One plain-language step of making a score, as the transcribing screen lists it.</summary>
 public sealed partial class TranscriptionStep(string key, string label) : ObservableObject

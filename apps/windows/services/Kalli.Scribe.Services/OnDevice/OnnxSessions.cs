@@ -1,6 +1,6 @@
 using Microsoft.ML.OnnxRuntime;
 
-namespace Brasscribe.Play.Core.OnDevice;
+namespace Kalli.Scribe.OnDevice;
 
 public enum ExecutionTarget { Cpu, DirectMl }
 

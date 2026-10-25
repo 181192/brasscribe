@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.Services;
+namespace Kalli.Scribe.Services;
 
 /// <summary>A score in "Your scores": where its files are and what the list row says.</summary>
 /// <remarks><c>MyPart</c> is the part chosen for this score with "Make this my part" (its own name); null follows the seat.</remarks>

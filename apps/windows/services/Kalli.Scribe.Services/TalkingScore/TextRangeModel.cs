@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.TalkingScore;
+namespace Kalli.Scribe.TalkingScore;
 
 /// <summary>UI Automation text units, in the order UIA defines them.</summary>
 public enum TextUnitKind { Character = 0, Format = 1, Word = 2, Line = 3, Paragraph = 4, Page = 5, Document = 6 }

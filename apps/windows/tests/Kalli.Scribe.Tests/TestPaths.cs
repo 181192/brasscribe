@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Locates fixtures and the repo-level data/models folders (absent in CI, so tests skip).</summary>
 internal static class TestPaths

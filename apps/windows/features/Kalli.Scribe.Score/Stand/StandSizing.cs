@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Stand;
+namespace Kalli.Scribe.Stand;
 
 /// <summary>
 /// The stand's sizing contract (design/brands/brasscribe/music-stand.md §3): the bars per system and the systems per

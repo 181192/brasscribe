@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Brasscribe.Play.Core.Engine;
+using Kalli.Scribe.Engine;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>An HttpMessageHandler that answers from a function and records every request.</summary>
 internal sealed class FakeHandler(Func<HttpRequestMessage, int, HttpResponseMessage> respond) : HttpMessageHandler

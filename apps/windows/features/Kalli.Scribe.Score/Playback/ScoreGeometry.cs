@@ -2,9 +2,9 @@ using AlphaTab.Core.EcmaScript;
 using AlphaTab.Midi;
 using AlphaTab.Model;
 using AlphaTab.Rendering.Utils;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 public readonly record struct Box(double X, double Y, double W, double H)
 {

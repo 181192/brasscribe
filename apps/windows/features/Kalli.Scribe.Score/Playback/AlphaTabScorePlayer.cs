@@ -5,7 +5,7 @@ using AlphaTab.Midi;
 using AlphaTab.Model;
 using AlphaTab.Synth;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// Plays MusicXML with alphaTab's synth (TinySoundFont on a SoundFont2 file). The synth writes into

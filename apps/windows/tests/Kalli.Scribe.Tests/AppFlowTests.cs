@@ -1,14 +1,15 @@
 using System.Net;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The whole Play flow through the view models, with the real .resw strings, a fake engine on the
@@ -56,7 +57,7 @@ public class AppFlowTests
     }
 
     private static IStrings Strings() => new ReswStrings(ReswStrings.Parse(XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "en-US", "Resources.resw"))));
 
     private const string JobRunning = """{"id":"j1","profile":"brass-band","target":"brass","status":"running","created":1,"stages":[{"name":"beats","status":"pending"},{"name":"arrange","status":"pending"}]}""";
     private const string JobDone = """{"id":"j1","profile":"brass-band","target":"brass","status":"succeeded","created":1,"stages":[],"outputs":["brass-band.musicxml","composition.json"]}""";

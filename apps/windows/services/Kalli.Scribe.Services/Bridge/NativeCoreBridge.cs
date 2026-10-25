@@ -2,14 +2,13 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Brasscribe.Play.Core.Arrangement;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Bridge;
+namespace Kalli.Scribe.Bridge;
 
 /// <summary>
 /// Calls the Rust core through its C ABI (library scribe_ffi, core/bindings/c/scribe.h).

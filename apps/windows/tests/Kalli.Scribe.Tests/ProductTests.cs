@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
-using Brasscribe.Play.Core;
-using Brasscribe.Play.Core.Engine;
+using Kalli.Scribe;
+using Kalli.Scribe.Engine;
 using Xunit;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class ProductTests
 {

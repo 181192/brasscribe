@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 public sealed record TrackInfo(int Index, string Name, bool IsPercussion, int DisplayTransposition);
 

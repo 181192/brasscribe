@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The band SoundFont as the app uses it: the part map from sounds/mapping.json, one MIDI channel

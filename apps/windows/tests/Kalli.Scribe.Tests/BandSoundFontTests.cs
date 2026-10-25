@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The single band SoundFont (sounds/band.py → data/sounds/band/brasscribe-band.sf2) in alphaTab:

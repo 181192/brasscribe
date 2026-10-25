@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// The realistic playback tier: sfizz (BSD-2) rendering the SFZ instruments under sounds/

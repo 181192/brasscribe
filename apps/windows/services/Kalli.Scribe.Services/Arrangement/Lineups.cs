@@ -1,8 +1,11 @@
 using System.Text.Json;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.Arrangement;
+
+/// <summary>A brass band lineup: the full band, the small band or a quartet.</summary>
+public enum Lineup { FullBand, MinimalBand, Quartet }
 
 /// <summary>
 /// The lineup names each side speaks: the engine says "full", the Rust core says "band", both say

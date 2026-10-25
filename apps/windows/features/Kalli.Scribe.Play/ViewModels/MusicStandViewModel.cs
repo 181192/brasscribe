@@ -1,10 +1,10 @@
 using System.ComponentModel;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.Stand;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.Stand;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>
 /// The music stand (design/brands/brasscribe/music-stand.md): the score alone, in pages, for playing from a stand. It

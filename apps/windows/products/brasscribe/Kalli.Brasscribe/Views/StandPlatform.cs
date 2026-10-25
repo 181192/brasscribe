@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// What Windows tells the music stand: whether a screen reader runs, whether a text field or the touch

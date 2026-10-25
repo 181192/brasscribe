@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Scores;
+namespace Kalli.Scribe.Scores;
 
 /// <summary>
 /// Key names for people: "B♭ major" / "B-dur", and the written key a transposing instrument reads

@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>What an overlay item on the notation is (design/brands/brasscribe/system.md §6; the colours are the Bc score tokens).</summary>
 public enum OverlayKind

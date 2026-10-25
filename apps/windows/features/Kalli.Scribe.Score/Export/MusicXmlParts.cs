@@ -1,7 +1,7 @@
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Brasscribe.Play.Core.Export;
+namespace Kalli.Scribe.Export;
 
 /// <summary>Single-part MusicXML from a partwise score (the "parts" export), without an engine round trip.</summary>
 public static class MusicXmlParts

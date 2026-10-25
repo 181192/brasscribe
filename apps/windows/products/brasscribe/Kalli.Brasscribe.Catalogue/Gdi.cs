@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Brasscribe.ScreenCheck;
 
-namespace Brasscribe.Play.Catalogue;
+namespace Kalli.Brasscribe.Catalogue;
 
 /// <summary>
 /// A window's client area as DWM composes it (PrintWindow with PW_CLIENTONLY | PW_RENDERFULLCONTENT), as BGRA, and

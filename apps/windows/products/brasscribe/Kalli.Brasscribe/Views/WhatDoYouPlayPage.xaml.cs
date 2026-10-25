@@ -1,9 +1,9 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>"What do you play?" after Get started (docs/brasscribe/plan/my-instrument.md §3.1).</summary>
 public sealed partial class WhatDoYouPlayPage : Page, IScreenPage

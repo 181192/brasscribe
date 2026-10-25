@@ -1,10 +1,10 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public sealed class BrassSoundSetTests(ITestOutputHelper log)
 {
@@ -138,14 +138,14 @@ public sealed class BrassSoundSetTests(ITestOutputHelper log)
     }
 
     /// <summary>
-    /// Opt-in measurement with a real dev set (BRASSCRIBE_BUILT_SOUNDS=&lt;checkout&gt;/data/sounds/built):
+    /// Opt-in measurement with a real dev set (SCRIBE_BUILT_SOUNDS=&lt;checkout&gt;/data/sounds/built):
     /// managed bytes allocated and still held after Load, and the managed heap after ApplyTo.
     /// </summary>
     [SkippableFact]
     public void Measure_the_dev_set()
     {
-        var dir = Environment.GetEnvironmentVariable("BRASSCRIBE_BUILT_SOUNDS");
-        Skip.If(dir is null || !Directory.Exists(dir), "opt-in measurement: set BRASSCRIBE_BUILT_SOUNDS to a built sound set (<checkout>/data/sounds/built)");
+        var dir = Environment.GetEnvironmentVariable("SCRIBE_BUILT_SOUNDS");
+        Skip.If(dir is null || !Directory.Exists(dir), "opt-in measurement: set SCRIBE_BUILT_SOUNDS to a built sound set (<checkout>/data/sounds/built)");
         long before = GC.GetTotalMemory(true), allocated = GC.GetTotalAllocatedBytes(true);
         var set = BrassSoundSet.Load(dir);
         long loadAlloc = GC.GetTotalAllocatedBytes(true) - allocated;

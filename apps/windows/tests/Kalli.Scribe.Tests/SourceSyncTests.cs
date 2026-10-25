@@ -1,11 +1,11 @@
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Original-versus-score switching and the video following the score.</summary>
 [Collection(AlphaTabCollection.Name)]
@@ -67,7 +67,7 @@ public class SourceSyncTests
     public void Switching_keeps_the_position_in_both_directions()
     {
         var strings = new ReswStrings(ReswStrings.Parse(XDocument.Load(
-            Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+            Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "en-US", "Resources.resw"))));
         var said = new List<string>();
         var announcer = new ListAnnouncer(said);
         var original = new FakeOriginal();

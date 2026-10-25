@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Dialogs;
+namespace Kalli.Brasscribe.Dialogs;
 
 public sealed partial class ShortcutsDialog : ContentDialog
 {

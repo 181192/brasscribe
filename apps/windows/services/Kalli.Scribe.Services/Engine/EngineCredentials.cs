@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Services;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>
 /// A small secret store: one secret per (resource, key). Windows keeps it in the Credential Locker

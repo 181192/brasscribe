@@ -1,10 +1,10 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Cleared number boxes and scores with nothing in them: the app carries on with a sensible value.</summary>
 public class EmptyInputTests

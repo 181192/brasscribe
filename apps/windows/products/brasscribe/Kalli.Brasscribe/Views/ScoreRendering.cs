@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// The one notation renderer of the app. alphaTab shares static state and is not safe to call from

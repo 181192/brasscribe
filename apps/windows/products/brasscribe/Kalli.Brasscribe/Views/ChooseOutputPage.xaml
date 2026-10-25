@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Brasscribe.Play.Views.ChooseOutputPage"
+    x:Class="Kalli.Brasscribe.Views.ChooseOutputPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
-    xmlns:views="using:Brasscribe.Play.Views"
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:views="using:Kalli.Brasscribe.Views"
     NavigationCacheMode="Required">
 
     <!-- "How should the score be?": three questions, and nothing is arranged again until Show the score. -->

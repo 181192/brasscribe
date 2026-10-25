@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// Integrated loudness (ITU-R BS.1770 / EBU R128) of audio fed in chunks: K-weighting, 400 ms

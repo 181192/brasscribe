@@ -6,8 +6,8 @@ Windows only: CI runs both on every pull request that reaches the apps (`.github
 
 ## How it runs
 
-The catalogue is the app itself, built as its own test host: `-p:BrasscribeCatalogue=true` adds the tests in this
-folder, MSTest and the Microsoft Testing Platform to `src/Brasscribe.Play` and builds into `bin/catalogue` and
+The catalogue is the app itself, built as its own test host: `-p:ScribeCatalogue=true` adds the tests in this
+folder, MSTest and the Microsoft Testing Platform to `products/brasscribe/Kalli.Brasscribe` and builds into `bin/catalogue` and
 `obj/catalogue`, apart from the app's own build. `App.OnLaunched` hands the start to `CatalogueHost.cs`, which runs
 the test platform in the app's process; each `[UITestMethod]` runs on the app's UI thread. Nothing of this is in the
 app's own build (`App.RunCatalogue` is a partial method without a body there).
@@ -61,7 +61,7 @@ that the setting reached it, as it does for the contrast theme and the text size
 
 Dialogs (Settings, Share or print) are opened again in each choice, so they show it, and the next one is opened only
 when the one before has gone. The run in bokmål sets the
-language through `BRASSCRIBE_CATALOGUE_LANG` (the test platform runs the tests in a process of its own, with its own
+language through `SCRIBE_CATALOGUE_LANG` (the test platform runs the tests in a process of its own, with its own
 arguments), and checks that the app's strings are in bokmål; `tools/ScreenCheck play` checks the same of the app's own
 build started with `--lang nb-NO`.
 
@@ -117,6 +117,6 @@ Its accepted findings are in `apps/bandroom/windows/tools/Screenshots/known-find
 
 ## Off Windows
 
-`tools/check-macos.sh` type-checks the catalogue build (`tools/CodeBehindCheck -p:BrasscribeCatalogue=true`), builds
+`tools/check-macos.sh` type-checks the catalogue build (`tools/CodeBehindCheck -p:ScribeCatalogue=true`), builds
 `tools/ScreenCheck` and runs `tools/ScreenCheck.Tests`: the checks on pictures, the rule for when a screenshot is
 taken, the comparison and the verdict, each shown failing on a picture made for it.

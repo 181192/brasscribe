@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>One note Brasscribe wasn't sure about, as the review list shows it.</summary>
 public sealed partial class ReviewItem : ObservableObject

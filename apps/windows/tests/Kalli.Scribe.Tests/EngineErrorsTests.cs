@@ -1,15 +1,15 @@
 using System.Net;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Engine and core failures in the player's words: never the engine's English in the nb UI.</summary>
 public class EngineErrorsTests
 {
     private static IStrings Strings(string lang) => new ReswStrings(ReswStrings.Parse(XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", lang, "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", lang, "Resources.resw"))));
 
     private static EngineException Refused(string code) =>
         new("The engine answered 422. {\"detail\": \"percussion can't be written down\", \"code\": \"" + code + "\"}",

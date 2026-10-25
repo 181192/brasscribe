@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 public enum ScoreCommand
 {

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Window
-    x:Class="Brasscribe.Play.MainWindow"
+    x:Class="Kalli.Brasscribe.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
-    xmlns:views="using:Brasscribe.Play.Views">
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:views="using:Kalli.Brasscribe.Views">
 
     <Grid x:Name="Root" Background="{ThemeResource ScribeBgBrush}" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.KeyboardAccelerators>

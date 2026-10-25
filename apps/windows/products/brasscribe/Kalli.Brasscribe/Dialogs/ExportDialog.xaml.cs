@@ -1,9 +1,9 @@
 using System.ComponentModel;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Dialogs;
+namespace Kalli.Brasscribe.Dialogs;
 
 /// <summary>"Share or print": what (your part, every part, the conductor's score), as (PDF by default), then Print or Save.</summary>
 public sealed partial class ExportDialog : ContentDialog

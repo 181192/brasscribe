@@ -1,13 +1,14 @@
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>The three lineups (full band, small band, quartet): names on every side, the solo gate, the core.</summary>
 [Collection(AlphaTabCollection.Name)]
@@ -20,7 +21,7 @@ public class LineupTests
     }
 
     private static IStrings Strings(string lang = "en-US") => new ReswStrings(ReswStrings.Parse(XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", lang, "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", lang, "Resources.resw"))));
 
     [Fact]
     public void Every_lineup_has_an_engine_and_a_core_name_and_the_quartet_is_never_the_band()
@@ -170,7 +171,7 @@ public class LineupTests
         Assert.Equal(("Conductor's score", "Dirigentpartitur"), (en["Export_Scope_Conductor"], nb["Export_Scope_Conductor"]));
         Assert.Equal(("1st Cornet (you)", "1. kornett (deg)"),
             (en.Format("Export_Scope_MyPart", "1st Cornet"), nb.Format("Export_Scope_MyPart", "1. kornett")));
-        var resw = File.ReadAllText(Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "nb-NO", "Resources.resw"));
+        var resw = File.ReadAllText(Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "nb-NO", "Resources.resw"));
         Assert.Contains("<value>Kvartett</value>", resw);
         Assert.DoesNotContain("Lite korps", resw);
     }

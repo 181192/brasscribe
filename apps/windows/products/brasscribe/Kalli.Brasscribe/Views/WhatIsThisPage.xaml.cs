@@ -1,9 +1,9 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>"What is this?": four answers, nothing chosen until the player chooses (Continue waits for it).</summary>
 public sealed partial class WhatIsThisPage : Page, IScreenPage

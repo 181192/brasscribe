@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The flow of a Play app: the view models from the start through recording, transcribing and the score to
+       settings and export. Logic and state only. Platform-neutral. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Kalli.Scribe</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\Kalli.Scribe.Services\Kalli.Scribe.Services.csproj" />
+    <ProjectReference Include="..\Kalli.Scribe.Score\Kalli.Scribe.Score.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kalli.Scribe.Tests" />
+  </ItemGroup>
+</Project>

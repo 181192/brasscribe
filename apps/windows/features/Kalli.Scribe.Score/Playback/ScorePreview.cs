@@ -1,7 +1,7 @@
 using AlphaSkia;
-using Brasscribe.Play.Core.Review;
+using Kalli.Scribe.Review;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// Draws rendered notation and its overlays into one PNG with Skia: the same primitives the WinUI

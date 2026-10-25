@@ -3,9 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 public sealed class EngineException(string message, HttpStatusCode? status = null, Exception? inner = null, string? code = null)
     : Exception(message, inner)

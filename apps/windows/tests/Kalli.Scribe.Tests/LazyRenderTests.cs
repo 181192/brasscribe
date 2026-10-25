@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Off-thread, per-page rendering: the caller is never blocked, layout places every page, and a

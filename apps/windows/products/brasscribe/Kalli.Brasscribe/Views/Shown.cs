@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// <see cref="Screens"/> as Visibility, for x:Bind function bindings on Visibility. A function that

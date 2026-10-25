@@ -1,10 +1,10 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// The music stand's control layer: transport, pages, speed, Repeat and Only my part. It reports the

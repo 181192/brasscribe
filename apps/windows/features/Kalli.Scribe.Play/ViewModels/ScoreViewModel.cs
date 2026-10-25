@@ -1,13 +1,13 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 public sealed record ScorePartItem(int Index, string Name, string? Instrument, int UncertainCount);
 

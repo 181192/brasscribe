@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Export;
+namespace Kalli.Scribe.Export;
 
 /// <summary>
 /// The talking-score text export (spec §6): a heading per part, a sub-heading per bar and one line

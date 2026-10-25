@@ -1,11 +1,11 @@
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.TalkingScore;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Automation.Text;
 using Windows.Foundation;
 
-namespace Brasscribe.Play.Controls;
+namespace Kalli.Scribe.Controls;
 
 /// <summary>
 /// UI Automation for the score (Narrator, NVDA, Magnifier):

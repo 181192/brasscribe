@@ -1,11 +1,11 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// The "more" menu on a row of "Your scores" (sidebar and Home): Edit title, Check the notes, Open on
@@ -52,7 +52,7 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
-            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
             Title = s["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = s["Score_SaveTitle"],
@@ -60,7 +60,7 @@ internal static class ScoreOptions
             DefaultButton = ContentDialogButton.Primary,
         };
         input.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = input.Text.Trim().Length > 0;
-        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.RenameLibraryItemAsync(item, input.Text);
+        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.RenameLibraryItemAsync(item, input.Text);
     }
 
     private static async Task DeleteAsync(MainViewModel main, LibraryItem item, XamlRoot root)
@@ -69,14 +69,14 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
-            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
             Title = s.Format("ScoreOptions_DeleteTitle", item.Title),
             Content = s[item.OnComputer ? "ScoreOptions_DeleteComputer" : "ScoreOptions_DeleteThisPc"],
             PrimaryButtonText = s["ScoreOptions_Delete"],
             CloseButtonText = s["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.DeleteLibraryItemAsync(item);
+        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.DeleteLibraryItemAsync(item);
     }
 
     private static string Glyph(string key) => (string)Application.Current.Resources[key];

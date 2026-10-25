@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace Brasscribe.Play.Audio.Windows.Interop;
+namespace Kalli.Scribe.Audio.Windows.Interop;
 
 // Core Audio declarations for process loopback capture (audioclient.h, audioclientactivationparams.h,
 // mmdeviceapi.h). Vtable order matters for [ComImport] interfaces: methods are listed exactly as in

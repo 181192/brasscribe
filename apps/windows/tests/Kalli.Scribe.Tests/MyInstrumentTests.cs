@@ -1,18 +1,18 @@
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Arrangement;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Seats;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Seats;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// "What do you play?" and "your part" (docs/brasscribe/plan/my-instrument.md): the picker, the settings, which part is the
@@ -141,7 +141,7 @@ public class MyInstrumentTests
     }
 
     private static IStrings Strings(string lang = "en-US") => new LangStrings(new ReswStrings(ReswStrings.Parse(XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", lang, "Resources.resw")))), lang);
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", lang, "Resources.resw")))), lang);
 
     private static (MainViewModel Main, Announcements Said, InMemorySettings Store) Build(ICoreBridge? core = null, bool firstRun = false,
         ScoreLibrary? library = null, Action<InMemorySettings>? setup = null)

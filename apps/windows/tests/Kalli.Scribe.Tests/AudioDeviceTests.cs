@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Playback;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>The audio device opens only while the band plays; loopback recordings keep their silences.</summary>
 public class AudioDeviceTests

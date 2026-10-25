@@ -82,7 +82,7 @@ The artifacts are for the apps. `cargo test` in `core/` still builds in the work
 | apple | `make -C apps/apple package-test-fast` | the suites in `APPLE_SLOW` (tagged `.slow`), and the app tests |
 | apple app | `make -C apps/apple build-for-testing-mac`, then `make -C apps/apple test-mac-unit` (repeatable) | UI tests |
 | android | `./gradlew testDebugUnitTest -Pscribe.fast` (every module and both apps, the screens on the JVM) | JUnit category `Slow` (the screen catalogues, practice in real time), release unit tests, instrumented tests |
-| windows | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
+| windows | `dotnet test tests/Kalli.Scribe.Tests --filter 'Category!=Slow'` | `[Trait("Category", "Slow")]` |
 | core .NET | `cd core/dotnet/Scribe.Core.Tests && dotnet test` | nothing (seconds) |
 | bandroom-mac | `cd apps/bandroom/macos && scripts/test-kit.sh [filter]`, the catalogue's checks (`apps/apple/Packages/ScreenCatalogue`) | the screen catalogue (tier 2 adds `scripts/screenshots.sh record`, which builds the app) |
 
@@ -122,7 +122,7 @@ Windows apps on a Windows runner (`windows.yml`) when it touches `apps/windows/`
 `core/`, the design tokens, `sounds/`, or the pixi workspace and engine sources Bandroom bundles: the core
 tests, the WinUI builds, the start-up smoke tests, the Bandroom engine test and both apps'
 screen catalogues
-([apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../../apps/windows/tests/Brasscribe.Play.Catalogue/README.md));
+([apps/windows/products/brasscribe/Kalli.Brasscribe.Catalogue/README.md](../../../apps/windows/products/brasscribe/Kalli.Brasscribe.Catalogue/README.md));
 and the Apple apps on a macOS runner (`apple.yml`) when it touches
 `apps/apple/`, `capture/`, `core/`, the app fixtures, the design files the apps bundle or `sounds/` (Play: the
 Swift packages, the macOS app unit tests, a build of the iPhone simulator app and its tests, and the Mac screen

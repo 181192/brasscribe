@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Stand;
+namespace Kalli.Scribe.Stand;
 
 /// <summary>One system (line of music) of the laid-out score, in score-surface coordinates; bars are 0-based.</summary>
 public readonly record struct StandSystem(double Top, double Bottom, int FirstBar, int LastBar)

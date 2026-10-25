@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Brasscribe.Play.Core.Scores;
+namespace Kalli.Scribe.Scores;
 
 /// <summary>
 /// The canonical score (scribe_music.score_model.Composition): concert pitch, integer ticks.

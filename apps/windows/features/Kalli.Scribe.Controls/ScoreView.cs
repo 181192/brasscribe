@@ -1,5 +1,5 @@
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
@@ -15,7 +15,7 @@ using Windows.Foundation;
 using Windows.System;
 using Windows.UI.Core;
 
-namespace Brasscribe.Play.Controls;
+namespace Kalli.Scribe.Controls;
 
 /// <summary>A rendered piece of notation at its place in the whole score.</summary>
 public sealed record ScorePage(ImageSource Image, Rect Bounds);
@@ -532,7 +532,7 @@ public sealed partial class ScoreView : UserControl
     {
         if (!IsStand || _viewModel is null) return;
         double startX = _swipeStart;
-        int direction = Brasscribe.Play.Core.Stand.StandGesture.Swipe(startX, ActualWidth, e.Cumulative.Translation.X, e.Cumulative.Translation.Y);
+        int direction = Kalli.Scribe.Stand.StandGesture.Swipe(startX, ActualWidth, e.Cumulative.Translation.X, e.Cumulative.Translation.Y);
         if (direction == 0) return;
         e.Handled = true;
         if (direction > 0) _viewModel.Stand.NextPage();
@@ -586,7 +586,7 @@ public sealed partial class ScoreView : UserControl
         var mods = Modifiers();
         var key = MapKey(e.Key);
         // Space shows the stand's controls; a pedal's page keys turn the page and leave them as they are.
-        if (IsStand && Brasscribe.Play.Core.Stand.StandLayer.ShowsLayer(key)) StandKey?.Invoke(this, EventArgs.Empty);
+        if (IsStand && Kalli.Scribe.Stand.StandLayer.ShowsLayer(key)) StandKey?.Invoke(this, EventArgs.Empty);
         if (key is null)
         {
             base.OnKeyDown(e);

@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
-using Brasscribe.Play.Audio.Windows.Interop;
+using Kalli.Scribe.Audio.Windows.Interop;
 using NAudio.Wave;
 
-namespace Brasscribe.Play.Audio.Windows;
+namespace Kalli.Scribe.Audio.Windows;
 
 /// <summary>
 /// Records one process and its children with WASAPI process loopback: ActivateAudioInterfaceAsync

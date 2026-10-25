@@ -2,9 +2,9 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
-using Brasscribe.Play.Core.Arrangement;
+using Kalli.Scribe.Arrangement;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public sealed class LayerInputsTests : IDisposable
 {

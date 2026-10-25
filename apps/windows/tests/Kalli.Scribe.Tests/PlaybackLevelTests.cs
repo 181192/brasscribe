@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Playback loudness (sounds/playback-levels.json): the shared limiter curve, recording gain rule
@@ -283,7 +283,7 @@ public class PlaybackLevelTests(ITestOutputHelper log)
     }
 
     /// <summary>A player that can play its audio from another file, as Windows' media player does for a boost.</summary>
-    private sealed class BoostingOriginal : Brasscribe.Play.Core.Services.IOriginalPlayer
+    private sealed class BoostingOriginal : Kalli.Scribe.Services.IOriginalPlayer
     {
         public bool HasMedia => true;
         public bool HasVideo => false;

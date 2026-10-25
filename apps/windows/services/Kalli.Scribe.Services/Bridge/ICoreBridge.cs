@@ -1,10 +1,10 @@
-using Brasscribe.Play.Core.Arrangement;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Bridge;
+namespace Kalli.Scribe.Bridge;
 
 /// <summary>
 /// The shared symbolic core as the app sees it. The native implementation calls the Rust core

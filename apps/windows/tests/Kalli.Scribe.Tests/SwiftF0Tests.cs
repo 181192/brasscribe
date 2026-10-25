@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using Brasscribe.Play.Core.OnDevice;
+using Kalli.Scribe.OnDevice;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>SwiftF0 ONNX on the CPU execution provider (the same code path uses DirectML on Windows).</summary>
 public class SwiftF0Tests(ITestOutputHelper log)

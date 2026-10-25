@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// The loudness every Play app plays at: sounds/playback-levels.json, which the tests check these

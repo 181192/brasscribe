@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Brasscribe.Play.Core.Services;
+namespace Kalli.Scribe.Services;
 
 /// <summary>
 /// Titles for "Your scores" (usability review 3, P1-C): never a bare timestamp such as

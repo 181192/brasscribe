@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>
 /// The names and the number this app shares with the engine. The link and the network service carry the

@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using Brasscribe.Play.Core.Capture;
+using Kalli.Scribe.Capture;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Stopping a recording: WASAPI capture reports RecordingStopped through the context that started it

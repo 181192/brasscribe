@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Capture;
+namespace Kalli.Scribe.Capture;
 
 public enum CaptureNoticeKind
 {

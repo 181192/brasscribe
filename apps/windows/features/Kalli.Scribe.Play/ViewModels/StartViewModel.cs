@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>An audio source ready for "What is this?": a decoded WAV plus what it came from.</summary>
 public sealed record SourceAudio(string WavPath, string DisplayName, TimeSpan Duration, string? OriginalPath, bool HasVideo);

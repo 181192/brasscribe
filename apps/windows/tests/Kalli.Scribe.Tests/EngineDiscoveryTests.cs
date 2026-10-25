@@ -1,10 +1,10 @@
 using System.Text;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class EngineDiscoveryTests
 {
@@ -119,7 +119,7 @@ public class EngineDiscoveryTests
     }
 
     private static IStrings Strings() => new ReswStrings(ReswStrings.Parse(XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "en-US", "Resources.resw"))));
 
     [Fact]
     public async Task Choosing_a_found_engine_sets_the_address_and_keeps_its_credential()

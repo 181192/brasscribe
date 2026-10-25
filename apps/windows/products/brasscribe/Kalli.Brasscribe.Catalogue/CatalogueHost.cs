@@ -5,12 +5,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting.AppContainer;
 
 [assembly: DoNotParallelize]
 
-namespace Brasscribe.Play;
+namespace Kalli.Brasscribe;
 
 /// <summary>
 /// The app as the screen catalogue's test host: the Microsoft Testing Platform runs in this process, started from
 /// OnLaunched, and the [UITestMethod] tests run on this app's UI thread. Only in the catalogue build
-/// (-p:BrasscribeCatalogue=true); see tests/Brasscribe.Play.Catalogue/README.md.
+/// (-p:ScribeCatalogue=true); see products/brasscribe/Kalli.Brasscribe.Catalogue/README.md.
 /// </summary>
 public partial class App
 {
@@ -19,7 +19,7 @@ public partial class App
         handled = true;
         // The run's language. Not --lang: the test platform runs the tests in a process of its own, started with the
         // platform's arguments only. Set before any window or string is made, as the app's constructor does.
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_CATALOGUE_LANG") is { Length: > 0 } language)
+        if (Environment.GetEnvironmentVariable("SCRIBE_CATALOGUE_LANG") is { Length: > 0 } language)
         {
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = language;
             var culture = System.Globalization.CultureInfo.GetCultureInfo(language);

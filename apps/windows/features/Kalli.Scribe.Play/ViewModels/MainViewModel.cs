@@ -1,15 +1,15 @@
-using Brasscribe.Play.Core.Arrangement;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Seats;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Seats;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>The screens of the Play flow (design/brands/brasscribe/system.md §3). The part view is the score screen with one part chosen.</summary>
 public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, Error, ChooseOutput, WhatDoYouPlay }
@@ -73,7 +73,7 @@ public sealed partial class MainViewModel : ObservableObject
             try { return core.ArrangeMusicXmlWith(composition, Output.Applied); }
             catch (Bridge.CoreBridgeException e)
             {
-                _announcer.Announce(Brasscribe.Play.Core.Engine.EngineErrors.CoreMessage(e.Message, _s), AnnouncementKind.Important);
+                _announcer.Announce(Kalli.Scribe.Engine.EngineErrors.CoreMessage(e.Message, _s), AnnouncementKind.Important);
                 return null;
             }
         };

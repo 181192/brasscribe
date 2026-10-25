@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices.WindowsRuntime;
-using Brasscribe.Play.Controls;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Review;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Controls;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Review;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -12,7 +12,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Streams;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// "Check the notes": the list of notes Brasscribe wasn't sure about in the sidebar, one note at a
@@ -122,14 +122,14 @@ public sealed partial class ReviewPage : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
             Title = strings["FinishLater_Title"],
             Content = ViewModel.ConfirmText,
             PrimaryButtonText = strings["FinishLater_Confirm"],
             CloseButtonText = strings["FinishLater_Keep"],
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) ViewModel.ConfirmFinishCommand.Execute(null);
+        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) ViewModel.ConfirmFinishCommand.Execute(null);
         else
         {
             ViewModel.CancelFinishCommand.Execute(null);
@@ -180,7 +180,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
             Title = strings["ChangeNote_Title"],
             Content = content,
             PrimaryButtonText = strings["ChangeNote_Save"],
@@ -189,7 +189,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         };
         Update();
         // Save stays on the note: focus goes to "Changed to …" (the change is also announced), else back to Change note….
-        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
+        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
             ChangedLine.Focus(FocusState.Programmatic);
         else ChangeNoteButton.Focus(FocusState.Programmatic);
     }

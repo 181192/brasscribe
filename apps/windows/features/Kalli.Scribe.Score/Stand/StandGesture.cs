@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Stand;
+namespace Kalli.Scribe.Stand;
 
 /// <summary>The stand's swipe (design/brands/brasscribe/music-stand.md §5.2): a horizontal swipe on the music turns a page.</summary>
 public static class StandGesture

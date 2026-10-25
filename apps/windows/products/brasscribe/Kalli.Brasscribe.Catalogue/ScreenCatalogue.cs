@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 using Brasscribe.ScreenCheck;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -8,7 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.VisualStudio.TestTools.UnitTesting.AppContainer;
 
-namespace Brasscribe.Play.Catalogue;
+namespace Kalli.Brasscribe.Catalogue;
 
 /// <summary>
 /// Every screen of the app with sample content (the scenes of <see cref="PreviewScenes"/>, Settings and Share or
@@ -57,8 +57,8 @@ public sealed class ScreenCatalogue
         {
             Type? dialog = scene switch
             {
-                "export" => typeof(Brasscribe.Play.Dialogs.ExportDialog),
-                "settings" => typeof(Brasscribe.Play.Dialogs.SettingsDialog),
+                "export" => typeof(Kalli.Brasscribe.Dialogs.ExportDialog),
+                "settings" => typeof(Kalli.Brasscribe.Dialogs.SettingsDialog),
                 _ => null,
             };
             PreviewScenes.Show(main, scene == "settings" ? "home" : scene, Options.Score);
@@ -149,7 +149,7 @@ public sealed class ScreenCatalogue
     /// <summary>
     /// An icon that was only ever seen cut by a scrolling edge has had its contrast measured in no screenshot of
     /// this run: one finding each, named by its code point. Not when the run takes only some of the screens
-    /// (BRASSCRIBE_CATALOGUE_SCENES): the icon may be whole on one that was left out.
+    /// (SCRIBE_CATALOGUE_SCENES): the icon may be whole on one that was left out.
     /// </summary>
     private static IEnumerable<Finding> UnmeasuredIcons() =>
         Options.AllScenes
@@ -268,10 +268,10 @@ public sealed class ScreenCatalogue
             var open = VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Select(p => p.Child).OfType<ContentDialog>().ToList();
             if (dialog is null)
             {
-                if (open.Count > 0 || Brasscribe.Play.Services.DialogGate.IsOpen) return "a dialog is still open";
+                if (open.Count > 0 || Kalli.Brasscribe.Services.DialogGate.IsOpen) return "a dialog is still open";
             }
             else if (open.Count != 1 || open[0].GetType() != dialog || !open[0].IsLoaded
-                     || !ReferenceEquals(Brasscribe.Play.Services.DialogGate.Opened, open[0]))
+                     || !ReferenceEquals(Kalli.Brasscribe.Services.DialogGate.Opened, open[0]))
                 return $"{dialog.Name} has not opened";
 
             var theme = App.Theme!.Current;
@@ -290,7 +290,7 @@ public sealed class ScreenCatalogue
     {
         if (node is UIElement { Visibility: not Visibility.Visible }) return true;
         if (node is Image { Source: null }) return false;
-        if (node is Brasscribe.Play.Controls.ScoreView score)
+        if (node is Kalli.Scribe.Controls.ScoreView score)
         {
             var shown = score.PagesNear(score.Viewport, margin: 0).ToList();
             return shown.Count > 0 && shown.All(score.HasPageImage);
@@ -310,7 +310,7 @@ public sealed class ScreenCatalogue
         List<ContentDialog> Open() => VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Select(p => p.Child).OfType<ContentDialog>().ToList();
         foreach (var d in Open()) d.Hide();
         var clock = Stopwatch.StartNew();
-        while (Open().Count > 0 || Brasscribe.Play.Services.DialogGate.IsOpen)
+        while (Open().Count > 0 || Kalli.Brasscribe.Services.DialogGate.IsOpen)
         {
             if (clock.Elapsed > TimeSpan.FromSeconds(10)) return false;
             await Task.Delay(50);
@@ -420,7 +420,7 @@ public sealed class ScreenCatalogue
     /// <summary>This run's settings, from the environment (the test platform has the command line).</summary>
     private static class Options
     {
-        private static string? Env(string name) => Environment.GetEnvironmentVariable("BRASSCRIBE_CATALOGUE_" + name) is { Length: > 0 } v ? v : null;
+        private static string? Env(string name) => Environment.GetEnvironmentVariable("SCRIBE_CATALOGUE_" + name) is { Length: > 0 } v ? v : null;
 
         /// <summary>Where the screenshots go.</summary>
         public static string Out { get; } = Path.GetFullPath(Env("OUT") ?? "catalogue");
@@ -438,7 +438,7 @@ public sealed class ScreenCatalogue
             (Env("VARIANTS") ?? "light,dark").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Select(AppearanceSetting.Parse).ToArray();
 
-        /// <summary>Screens taken in Pink (BRASSCRIBE_CATALOGUE_PINK_SCENES); all when not set.</summary>
+        /// <summary>Screens taken in Pink (SCRIBE_CATALOGUE_PINK_SCENES); all when not set.</summary>
         private static readonly string[]? PinkScenes = Env("PINK_SCENES")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         /// <summary>The choices a screen is taken in: Pink only on the screens for Pink (but under a contrast theme,
@@ -454,7 +454,7 @@ public sealed class ScreenCatalogue
 
         public static bool Wanted(string scene) => Only is null || Only.Contains(scene);
 
-        /// <summary>The run takes every screen (BRASSCRIBE_CATALOGUE_SCENES is not set).</summary>
+        /// <summary>The run takes every screen (SCRIBE_CATALOGUE_SCENES is not set).</summary>
         public static bool AllScenes => Only is null;
     }
 }

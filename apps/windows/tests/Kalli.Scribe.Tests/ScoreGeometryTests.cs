@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 [Collection(AlphaTabCollection.Name)]
 public class ScoreGeometryTests

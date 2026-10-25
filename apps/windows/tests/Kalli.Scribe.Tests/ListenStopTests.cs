@@ -1,9 +1,9 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>A score player driven by the test: positions and state changes happen when the test says so.</summary>
 internal sealed class ScriptedPlayer : IScorePlayer

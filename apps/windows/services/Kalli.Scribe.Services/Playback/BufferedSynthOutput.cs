@@ -2,7 +2,7 @@ using AlphaTab;
 using AlphaTab.Core.EcmaScript;
 using AlphaTab.Synth;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// alphaTab synth output that buffers interleaved stereo float samples and lets an audio device

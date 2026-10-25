@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Brasscribe.Play.Core.TalkingScore;
+namespace Kalli.Scribe.TalkingScore;
 
 // The TalkingScore JSON shape (docs/shared/accessibility/talking-score-spec.md §6). The same types read
 // the conformance vectors, so names follow that document exactly (snake_case on the wire).

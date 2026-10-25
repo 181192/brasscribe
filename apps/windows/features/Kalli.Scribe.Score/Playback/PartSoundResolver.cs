@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>A resolved part: the mapping.json part whose preset plays, which rule found it, and the sound.</summary>
 public sealed record ResolvedPart(string Part, string Step, TrackSound Sound, string? Target);

@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>A progress snapshot in plain terms for the UI.</summary>
 public sealed record TranscriptionProgress(

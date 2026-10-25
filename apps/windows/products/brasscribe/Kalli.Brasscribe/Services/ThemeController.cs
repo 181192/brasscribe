@@ -1,6 +1,6 @@
 using System.ComponentModel;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -8,7 +8,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI.ViewManagement;
 
-namespace Brasscribe.Play.Services;
+namespace Kalli.Brasscribe.Services;
 
 /// <summary>
 /// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). The theme is set on each window's root element

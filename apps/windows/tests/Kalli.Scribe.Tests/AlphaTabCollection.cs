@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>alphaTab keeps shared static state; tests that load or render scores run one at a time.</summary>
 [CollectionDefinition(Name, DisableParallelization = true)]

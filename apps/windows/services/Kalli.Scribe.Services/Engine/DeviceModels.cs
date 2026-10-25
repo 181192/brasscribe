@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 // DTOs for this device's pairing with the engine (engine/openapi.json, tag "devices" and "pairing").
 

@@ -1,13 +1,13 @@
 using AlphaTab.Midi;
-using Brasscribe.Play.Core.Arrangement;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.TalkingScore;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The Rust core through its C ABI. Runs when SCRIBE_FFI_PATH points at a built
@@ -201,7 +201,7 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
         Skip.If(xmlPath is null, TestPaths.Missing(TestPaths.GoldenMusicXml));
         Skip.If(json is null, TestPaths.Missing(TestPaths.GoldenComposition));
         var strings = new Services.ReswStrings(Services.ReswStrings.Parse(System.Xml.Linq.XDocument.Load(
-            Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", "en-US", "Resources.resw"))));
+            Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", "en-US", "Resources.resw"))));
         var quiet = new QuietAnnouncer();
         using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
         var score = new ViewModels.ScoreViewModel(bridge, new ViewModels.PlayerViewModel(player, quiet, strings, new InlineUi()), quiet, strings);

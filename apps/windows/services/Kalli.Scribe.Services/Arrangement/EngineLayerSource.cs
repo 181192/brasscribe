@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Engine;
+using Kalli.Scribe.Engine;
 
-namespace Brasscribe.Play.Core.Arrangement;
+namespace Kalli.Scribe.Arrangement;
 
 /// <summary>
 /// Fetches the layered arranger's inputs from an engine job's stage files and keeps them in a local

@@ -1,13 +1,14 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>What to share or print: the conductor's score, one PDF per player, or the player's own part.</summary>
 public enum ExportScope { MyPart, EveryPart, Conductor }

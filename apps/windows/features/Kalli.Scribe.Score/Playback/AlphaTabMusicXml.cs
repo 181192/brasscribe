@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using AlphaTab.Model;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// What alphaTab 1.8.4's MusicXML importer gets wrong for a brass-band score, and the fixes, applied around every

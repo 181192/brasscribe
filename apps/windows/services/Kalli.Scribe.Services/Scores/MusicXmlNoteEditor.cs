@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace Brasscribe.Play.Core.Scores;
+namespace Kalli.Scribe.Scores;
 
 public static class MusicXmlNoteEditor
 {

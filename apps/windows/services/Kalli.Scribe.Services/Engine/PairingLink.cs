@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>Why a pairing link was not used.</summary>
 public enum PairingLinkProblem { None, NotAPairingLink, NewerVersion, BadServerId, NeedsPinning }

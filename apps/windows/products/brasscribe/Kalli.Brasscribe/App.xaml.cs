@@ -1,14 +1,14 @@
-using Brasscribe.Play.Audio.Windows;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
-using Brasscribe.Play.Services;
+using Kalli.Scribe.Audio.Windows;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
+using Kalli.Brasscribe.Services;
 using Microsoft.UI.Xaml;
 
-namespace Brasscribe.Play;
+namespace Kalli.Brasscribe;
 
 /// <summary>Composition root: platform services, view models and the main window.</summary>
 public partial class App : Application
@@ -97,8 +97,8 @@ public partial class App : Application
     private const string InstanceKey = "BrasscribePlay";
 
     /// <summary>
-    /// The screen catalogue (tests/Brasscribe.Play.Catalogue) takes over the start here when the app is built as its
-    /// test host (-p:BrasscribeCatalogue=true); in the app itself this has no body and is compiled away.
+    /// The screen catalogue (products/brasscribe/Kalli.Brasscribe.Catalogue) takes over the start here when the app is built as its
+    /// test host (-p:ScribeCatalogue=true); in the app itself this has no body and is compiled away.
     /// </summary>
     static partial void RunCatalogue(App app, ref bool handled);
 
@@ -239,7 +239,7 @@ public partial class App : Application
         _ => null,
     };
 
-    private static string? LinkIn(string? text) => Core.Engine.PairingLink.In(text);
+    private static string? LinkIn(string? text) => Kalli.Scribe.Engine.PairingLink.In(text);
 
     /// <summary>
     /// With a pairing link and another Brasscribe Play already running, the link goes to that window and
@@ -286,7 +286,7 @@ public partial class App : Application
             try
             {
                 Microsoft.Windows.AppLifecycle.ActivationRegistrationManager.RegisterForProtocolActivation(
-                    Core.Engine.Wire.PairScheme, "", Strings["AppWindowTitle"], exe);
+                    Kalli.Scribe.Engine.Wire.PairScheme, "", Strings["AppWindowTitle"], exe);
             }
             catch (Exception e) when (e is System.Runtime.InteropServices.COMException or InvalidOperationException or UnauthorizedAccessException) { }
         });

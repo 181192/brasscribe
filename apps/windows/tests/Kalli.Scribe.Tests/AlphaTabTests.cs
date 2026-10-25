@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using AlphaTab.Core.EcmaScript;
 using AlphaTab.Importer;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Review;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Review;
+using Kalli.Scribe.TalkingScore;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// alphaTab .NET run headless: MusicXML import, transposition display, SVG rendering, MIDI and the
@@ -153,8 +153,8 @@ public class AlphaTabTests(ITestOutputHelper log)
     [SkippableFact]
     public void Synth_plays_through_the_buffered_output()
     {
-        var sf = TestPaths.RepoFile(Environment.GetEnvironmentVariable("BRASSCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2");
-        Skip.If(sf is null, TestPaths.Missing(Environment.GetEnvironmentVariable("BRASSCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2"));
+        var sf = TestPaths.RepoFile(Environment.GetEnvironmentVariable("SCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2");
+        Skip.If(sf is null, TestPaths.Missing(Environment.GetEnvironmentVariable("SCRIBE_TEST_SF2") ?? "data/sounds/built/trombone/trombone.sf2"));
         var output = new BufferedSynthOutput();
         using var player = new AlphaTabScorePlayer(output);
         player.LoadSoundFont(File.ReadAllBytes(sf));

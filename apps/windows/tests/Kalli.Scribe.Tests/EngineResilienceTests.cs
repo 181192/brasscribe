@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The engine client under a bad network: timeouts, broken answers, dropped and silent event streams.

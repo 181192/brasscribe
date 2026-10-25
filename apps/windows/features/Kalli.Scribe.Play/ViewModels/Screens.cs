@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>Small functions for x:Bind in the WinUI views (bool binds to Visibility directly).</summary>
 public static class Screens

@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Capture;
+namespace Kalli.Scribe.Capture;
 
 /// <summary>
 /// Waits for a capture device to report that it stopped, without holding the calling thread. NAudio

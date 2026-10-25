@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.TalkingScore;
+namespace Kalli.Scribe.TalkingScore;
 
 /// <summary>Result of a navigation command: the text to expose (and announce) and whether the cursor moved.</summary>
 public sealed record NavigationResult(string Text, bool Moved);

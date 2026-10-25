@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Brasscribe.Play.Views.HomePage"
+    x:Class="Kalli.Brasscribe.Views.HomePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
-    xmlns:views="using:Brasscribe.Play.Views"
-    xmlns:capture="using:Brasscribe.Play.Core.Capture"
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:views="using:Kalli.Brasscribe.Views"
+    xmlns:capture="using:Kalli.Scribe.Capture"
     NavigationCacheMode="Required"
     AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop">
 

@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Text.Json;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Checks the hand-written DTOs against a snapshot of engine/openapi.json, so a change in the

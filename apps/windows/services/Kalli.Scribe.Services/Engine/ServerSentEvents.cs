@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>One parsed Server-Sent Event.</summary>
 public sealed record ServerSentEvent(string? Id, string EventType, string Data);

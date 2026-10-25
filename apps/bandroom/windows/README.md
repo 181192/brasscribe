@@ -131,7 +131,7 @@ open-until-closed pairing window answer with the bearer, and the engine's proces
 screen catalogue (`tools/Screenshots/catalogue.ps1`: every view in Light, Dark,
 bokmål, a contrast theme and 200 % text, with the contrast of its text, Axe.Windows and a walk with Tab; its
 screenshots are the artefact `bandroom-windows-screenshots`, to look at). How it works and what its answers
-mean: [apps/windows/tests/Brasscribe.Play.Catalogue/README.md](../../windows/tests/Brasscribe.Play.Catalogue/README.md#bandroom-for-windows).
+mean: [apps/windows/products/brasscribe/Kalli.Brasscribe.Catalogue/README.md](../../windows/products/brasscribe/Kalli.Brasscribe.Catalogue/README.md#bandroom-for-windows).
 
 ## Not done yet
 

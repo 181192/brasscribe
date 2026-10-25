@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// A missing XAML resource key only fails when the page loads on Windows. This checks, off Windows,
@@ -20,7 +20,7 @@ public partial class XamlResourceTests
         "SystemColorButtonFaceColor", "SystemColorButtonTextColor", "SystemColorHotlightColor",
     ];
 
-    private static string App => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play");
+    private static string App => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe");
 
     private static HashSet<string> Defined()
     {
@@ -42,7 +42,7 @@ public partial class XamlResourceTests
         }
         // Code looks keys up by name too (the score view's overlay brushes, the title bar's colours, menu icons):
         // every string that is a key of the design, in the app and in its controls.
-        foreach (var (key, file) in CodeKeys(App, Path.Combine(App, "..", "Brasscribe.Play.Controls"))) used.TryAdd(key, file);
+        foreach (var (key, file) in CodeKeys(App, Path.Combine(App, "..", "..", "..", "features", "Kalli.Scribe.Controls"))) used.TryAdd(key, file);
 
         Assert.True(used.Count > 50, $"only {used.Count} keys found; the scan is broken");
         var missing = used.Where(u => !defined.Contains(u.Key) && !WinUi.Contains(u.Key)).Select(u => $"{u.Key} ({u.Value})").Order().ToList();
@@ -103,7 +103,7 @@ public partial class XamlResourceTests
 
         string bandroom = Path.Combine(TestPaths.RepoRoot!, "apps", "bandroom", "windows", "src", "Brasscribe.Bandroom");
         var used = new HashSet<string>();
-        foreach (string app in new[] { App, Path.Combine(App, "..", "Brasscribe.Play.Controls"), bandroom })
+        foreach (string app in new[] { App, Path.Combine(App, "..", "..", "..", "features", "Kalli.Scribe.Controls"), bandroom })
         {
             foreach (var file in Directory.EnumerateFiles(app, "*.xaml", SearchOption.AllDirectories).Where(NotBuilt))
                 foreach (Match m in UseRegex().Matches(File.ReadAllText(file))) used.Add(m.Groups[2].Value);
@@ -131,7 +131,7 @@ public partial class XamlResourceTests
     [Fact]
     public void The_theme_is_linked_from_design_not_copied()
     {
-        var csproj = File.ReadAllText(Path.Combine(App, "Brasscribe.Play.csproj"));
+        var csproj = File.ReadAllText(Path.Combine(App, "Kalli.Brasscribe.csproj"));
         Assert.Contains(@"dist\windows\BrasscribeTheme.xaml", csproj);
         Assert.Contains(@"dist\icons\windows\Assets\*", csproj);
         Assert.False(File.Exists(Path.Combine(App, "Themes", "BrasscribeTheme.xaml")));

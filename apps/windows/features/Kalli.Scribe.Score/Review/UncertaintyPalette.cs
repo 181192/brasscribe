@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Brasscribe.Play.Core.Review;
+namespace Kalli.Scribe.Review;
 
 public readonly record struct Rgb(byte R, byte G, byte B)
 {

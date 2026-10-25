@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Bridge;
+using Kalli.Scribe.Bridge;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The tests that run the Rust core skip themselves when SCRIBE_FFI_PATH is not set, so that the suite runs

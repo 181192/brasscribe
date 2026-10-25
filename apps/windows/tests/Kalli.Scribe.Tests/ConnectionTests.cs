@@ -1,12 +1,12 @@
 using System.Net;
 using System.Text.Json;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// A pretend local network of engines, answering like the real engine (api.py): /v1/health,
@@ -141,7 +141,7 @@ public class ConnectionMonitorTests
     private static readonly Uri New = new("http://192.0.2.44:8765/");
 
     internal static IStrings Strings(string lang = "en-US") => new ReswStrings(ReswStrings.Parse(XDocument.Load(
-        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play", "Strings", lang, "Resources.resw"))));
+        Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe", "Strings", lang, "Resources.resw"))));
 
     private sealed class Rig
     {

@@ -2,15 +2,15 @@ using System.Text.Json;
 using AlphaTab.Core.EcmaScript;
 using AlphaTab.Midi;
 using AlphaTab.Synth;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Every score part reaches its own real-sample preset: the shared resolver vectors
 /// (sounds/partsound-vectors.json), other writers' part names on the golden score, unisons in
-/// the MIDI export, and (with BRASSCRIBE_SOUNDCHECK_OUT set) the test phrases rendered through
+/// the MIDI export, and (with SCRIBE_SOUNDCHECK_OUT set) the test phrases rendered through
 /// alphaSynth for sounds/soundcheck.py.
 /// </summary>
 [Collection(AlphaTabCollection.Name)]
@@ -230,10 +230,10 @@ public class PartSoundTests(ITestOutputHelper log)
     [SkippableFact]
     public void Sound_check_renders_the_test_phrases_through_alphaSynth()
     {
-        var outDir = Environment.GetEnvironmentVariable("BRASSCRIBE_SOUNDCHECK_OUT");
-        var sf2Path = Environment.GetEnvironmentVariable("BRASSCRIBE_SOUNDCHECK_SF2") is { Length: > 0 } p ? p : TestPaths.RepoFile(BandSf2);
+        var outDir = Environment.GetEnvironmentVariable("SCRIBE_SOUNDCHECK_OUT");
+        var sf2Path = Environment.GetEnvironmentVariable("SCRIBE_SOUNDCHECK_SF2") is { Length: > 0 } p ? p : TestPaths.RepoFile(BandSf2);
         var phrases = TestPaths.RepoFile("data/sounds/phrases/phrases.json");
-        Skip.If(string.IsNullOrEmpty(outDir), "opt-in sound check: set BRASSCRIBE_SOUNDCHECK_OUT to a folder for the rendered phrases");
+        Skip.If(string.IsNullOrEmpty(outDir), "opt-in sound check: set SCRIBE_SOUNDCHECK_OUT to a folder for the rendered phrases");
         Skip.If(sf2Path is null, TestPaths.Missing(BandSf2));
         Skip.If(phrases is null, TestPaths.Missing("data/sounds/phrases/phrases.json"));
         Skip.If(Mapping is null, TestPaths.Missing("sounds/mapping.json"));

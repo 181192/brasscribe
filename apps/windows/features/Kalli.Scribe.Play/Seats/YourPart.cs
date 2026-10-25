@@ -1,8 +1,9 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Seats;
+namespace Kalli.Scribe.Seats;
 
 /// <summary>A part of the shown score, as "your part" is looked up in it.</summary>
 /// <param name="Name">The part's own (English) name, as the arranger wrote it.</param>

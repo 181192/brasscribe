@@ -1,9 +1,9 @@
 using System.Text;
 using System.Xml.Linq;
 using AlphaTab.Midi;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// alphaTab's MusicXML fixes (<see cref="AlphaTabMusicXml"/>): ties in transposing parts sound once, a note whose

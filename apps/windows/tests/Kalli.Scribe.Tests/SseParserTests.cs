@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Engine;
+using Kalli.Scribe.Engine;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class SseParserTests
 {

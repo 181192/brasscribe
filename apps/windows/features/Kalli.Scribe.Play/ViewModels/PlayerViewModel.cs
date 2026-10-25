@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>One number of the beat counter ("1 2 3 4"); the current one is underlined, never flashed.</summary>
 public sealed record BeatCell(int Number, bool IsCurrent);

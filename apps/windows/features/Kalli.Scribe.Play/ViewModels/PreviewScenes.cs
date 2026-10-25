@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>
 /// Puts the app on one screen with sample content, without a recording or Brasscribe on your

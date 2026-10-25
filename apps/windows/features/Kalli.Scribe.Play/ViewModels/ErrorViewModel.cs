@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>What went wrong, for the error screen.</summary>
 public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable, UpdateApp, UpdateBandroom }

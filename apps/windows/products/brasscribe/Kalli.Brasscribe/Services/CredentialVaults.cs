@@ -1,10 +1,10 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using Brasscribe.Play.Core.Engine;
+using Kalli.Scribe.Engine;
 using Windows.Security.Credentials;
 
-namespace Brasscribe.Play.Services;
+namespace Kalli.Brasscribe.Services;
 
 /// <summary>The engine credential in the Windows Credential Locker (PasswordVault): resource "Brasscribe engine", user name = server id.</summary>
 public sealed class CredentialLockerVault : ISecretVault

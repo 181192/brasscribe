@@ -1,9 +1,9 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>Making the score: the plain-language steps, percentage, time left and Cancel (which asks first).</summary>
 public sealed partial class TranscribingPage : Page, IScreenPage
@@ -30,14 +30,14 @@ public sealed partial class TranscribingPage : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
             Title = strings["CancelDialog_Title"],
             Content = strings["CancelDialog_Content"],
             PrimaryButtonText = strings["CancelDialog_Stop"],
             CloseButtonText = strings["CancelDialog_Keep"],
             DefaultButton = ContentDialogButton.Close,
         };
-        var result = await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
+        var result = await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog);
         if (result == ContentDialogResult.Primary) await ViewModel.CancelCommand.ExecuteAsync(null);
         else
         {

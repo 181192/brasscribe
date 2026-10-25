@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Brasscribe.Play.Views.TranscribingPage"
+    x:Class="Kalli.Brasscribe.Views.TranscribingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:Brasscribe.Play.Core.ViewModels"
-    xmlns:controls="using:Brasscribe.Play.Controls"
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:controls="using:Kalli.Scribe.Controls"
     NavigationCacheMode="Required">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">

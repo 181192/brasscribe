@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Dialogs;
+namespace Kalli.Brasscribe.Dialogs;
 
 public sealed partial class GoToBarDialog : ContentDialog
 {

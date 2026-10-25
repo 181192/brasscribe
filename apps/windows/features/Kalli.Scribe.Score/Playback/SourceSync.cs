@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>
 /// Score position ↔ time in the original recording, through the Composition's beat map (beat_times;

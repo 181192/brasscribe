@@ -1,13 +1,13 @@
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Corrected notes, "Your scores" and the files the app writes and cleans up.</summary>
 public class ScoreEditingTests

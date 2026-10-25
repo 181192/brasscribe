@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 
-namespace Brasscribe.Play.Core.Arrangement;
+namespace Kalli.Scribe.Arrangement;
 
 /// <summary>Frame-level SwiftF0 contour of the solo stem: where sustained solo notes really end.</summary>
 /// <param name="Times">Frame times in seconds.</param>

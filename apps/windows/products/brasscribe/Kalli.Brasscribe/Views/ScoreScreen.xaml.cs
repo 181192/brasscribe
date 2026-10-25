@@ -1,11 +1,11 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Brasscribe.Play.Controls;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Review;
-using Brasscribe.Play.Core.Stand;
-using Brasscribe.Play.Core.ViewModels;
-using Brasscribe.Play.Dialogs;
+using Kalli.Scribe.Controls;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Review;
+using Kalli.Scribe.Stand;
+using Kalli.Scribe.ViewModels;
+using Kalli.Brasscribe.Dialogs;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -14,7 +14,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.Foundation;
 using Windows.Storage.Streams;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// The score and the part view. Renders the selected part (or the full score) with alphaTab's Skia
@@ -83,7 +83,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         }), handledEventsToo: true);
     }
 
-    private static readonly TimeSpan StandLayer_HideDelay = Brasscribe.Play.Core.Stand.StandLayer.HideDelay;
+    private static readonly TimeSpan StandLayer_HideDelay = Kalli.Scribe.Stand.StandLayer.HideDelay;
 
     public ScoreViewModel ViewModel
     {
@@ -166,8 +166,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     public async Task ShowGoToBarAsync()
     {
-        var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && dialog.Bar is { } bar)
+        var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs };
+        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && dialog.Bar is { } bar)
         {
             ViewModel.GoToBar(bar);
         }
@@ -182,14 +182,14 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
             Title = strings["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = strings["Score_SaveTitle"],
             CloseButtonText = strings["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Primary,
         };
-        if (await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
+        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -267,17 +267,17 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (ViewModel.Stand.IsOpen)
         {
             // The stand: the music alone on the paper, edge to edge with a small margin.
-            PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
+            PageFrame.Background = Kalli.Scribe.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
             PageSheet.MaxWidth = double.PositiveInfinity;
             PageSheet.Margin = new Thickness(24, 0, 24, 0);
-            PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
+            PageSheet.Background = Kalli.Scribe.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
             return;
         }
         bool part = ViewModel.IsPartView;
-        PageFrame.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, part ? "ScribeSurfaceBrush" : "ScribeBgBrush");
+        PageFrame.Background = Kalli.Scribe.Controls.ThemedResources.Brush(this, part ? "ScribeSurfaceBrush" : "ScribeBgBrush");
         PageSheet.MaxWidth = part ? 960 : double.PositiveInfinity;
         PageSheet.Margin = part ? new Thickness(24, 24, 24, 0) : new Thickness(0);
-        PageSheet.Background = Brasscribe.Play.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
+        PageSheet.Background = Kalli.Scribe.Controls.ThemedResources.Brush(this, "ScribeBgBrush");
     }
 
     private bool _syncing;
@@ -474,7 +474,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (e.Handled || ViewModel?.Stand.IsOpen != true) return;
         var mapped = ScoreView.MapKey(e.Key);
         // Tab and Space show the layer and start its wait again; a pedal's page keys leave both as they are.
-        if (e.Key == Windows.System.VirtualKey.Tab || Brasscribe.Play.Core.Stand.StandLayer.ShowsLayer(mapped)) StandInteraction(showLayer: true);
+        if (e.Key == Windows.System.VirtualKey.Tab || Kalli.Scribe.Stand.StandLayer.ShowsLayer(mapped)) StandInteraction(showLayer: true);
         if (XamlRoot is not null && FocusManager.GetFocusedElement(XamlRoot) is TextBox or NumberBox) return;
         if (mapped is not { } key || key == ScoreKey.Space) return; // Space presses the focused button
         // Single-key shortcuts (F, L, -, +) work only while the score has focus (WCAG 2.1.4).
@@ -653,11 +653,11 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         Notation.SetFocusRect(box is { } f ? ToRect(f) : null, items, staff is { } st ? ToRect(st) : null);
     }
 
-    private static string Brief(Brasscribe.Play.Core.TalkingScore.ScoreNavigator nav, Brasscribe.Play.Core.TalkingScore.TsEvent ev)
+    private static string Brief(Kalli.Scribe.TalkingScore.ScoreNavigator nav, Kalli.Scribe.TalkingScore.TsEvent ev)
     {
         var part = nav.Part;
-        var s = nav.Settings with { Verbosity = Brasscribe.Play.Core.TalkingScore.Verbosity.Brief };
-        return Brasscribe.Play.Core.TalkingScore.Announcer.Announce(
+        var s = nav.Settings with { Verbosity = Kalli.Scribe.TalkingScore.Verbosity.Brief };
+        return Kalli.Scribe.TalkingScore.Announcer.Announce(
             new(part.Name, part.NameNb, part.Instrument, part.InstrumentNb, part.Transpose),
             new(nav.Bar.Number, nav.Bar.KeyFifths), ev, new(part.Name, nav.Bar.Number, s.PitchMode), s);
     }

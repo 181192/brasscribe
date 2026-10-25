@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Brasscribe.Play.Core.TalkingScore;
+namespace Kalli.Scribe.TalkingScore;
 
 /// <summary>
 /// Builds talking-score announcements in English and Norwegian bokmål following

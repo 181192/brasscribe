@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class CompositionTests
 {

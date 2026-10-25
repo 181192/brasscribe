@@ -1,9 +1,9 @@
-using Brasscribe.Play.Core.Seats;
+using Kalli.Scribe.Seats;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>
 /// The instrument, part and clef questions of "What do you play?", on the first run and in Settings. The radio

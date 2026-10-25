@@ -1,8 +1,8 @@
-using Brasscribe.Play.Core.Capture;
+using Kalli.Scribe.Capture;
 using NAudio.MediaFoundation;
 using NAudio.Wave;
 
-namespace Brasscribe.Play.Audio.Windows;
+namespace Kalli.Scribe.Audio.Windows;
 
 /// <summary>
 /// Decodes audio files and the audio track of video files with Media Foundation (the codecs Windows
@@ -39,6 +39,6 @@ public sealed class MediaFoundationDecoder : IMediaDecoder
             {
                 resampler?.Dispose();
             }
-            return new DecodedMedia(outputPath, reader.TotalTime, Brasscribe.Play.Core.Capture.MediaTypes.Classify(inputPath) == MediaKind.Video, rate, reader.WaveFormat.Channels);
+            return new DecodedMedia(outputPath, reader.TotalTime, Kalli.Scribe.Capture.MediaTypes.Classify(inputPath) == MediaKind.Video, rate, reader.WaveFormat.Channels);
         }, ct);
 }

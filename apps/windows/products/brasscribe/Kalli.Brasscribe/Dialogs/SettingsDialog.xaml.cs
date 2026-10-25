@@ -1,11 +1,11 @@
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.TalkingScore;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Dialogs;
+namespace Kalli.Brasscribe.Dialogs;
 
 public sealed partial class SettingsDialog : ContentDialog
 {
@@ -32,7 +32,7 @@ public sealed partial class SettingsDialog : ContentDialog
 
     public SettingsViewModel ViewModel { get; }
 
-    private Brasscribe.Play.Core.Seats.SeatPickerViewModel? _seatPicker;
+    private Kalli.Scribe.Seats.SeatPickerViewModel? _seatPicker;
 
     private void ShowSeat() => SeatValue.Text = _main.Seats.Describe(ViewModel.SeatChoice);
 
@@ -57,12 +57,12 @@ public sealed partial class SettingsDialog : ContentDialog
         CloseSeat(choice);
     }
 
-    private void OnConductSeat(object sender, RoutedEventArgs e) => CloseSeat(Brasscribe.Play.Core.Seats.SeatChoice.Conductor);
+    private void OnConductSeat(object sender, RoutedEventArgs e) => CloseSeat(Kalli.Scribe.Seats.SeatChoice.Conductor);
 
     private void OnCancelSeat(object sender, RoutedEventArgs e) => CloseSeat(null);
 
     /// <summary>Saves (or not) and puts focus back on the What you play row (design/brands/brasscribe/system.md: focus returns where it came from).</summary>
-    private void CloseSeat(Brasscribe.Play.Core.Seats.SeatChoice? choice)
+    private void CloseSeat(Kalli.Scribe.Seats.SeatChoice? choice)
     {
         // Existing scores keep their arrangement; only "your part" in them follows the new answer.
         if (choice is not null) ViewModel.SeatChoice = choice;

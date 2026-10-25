@@ -1,11 +1,11 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Capture;
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Capture;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Checks the WinUI app's .resw files from the source tree: both languages have the same keys and
@@ -14,8 +14,8 @@ namespace Brasscribe.Play.Core.Tests;
 /// </summary>
 public partial class LocalizationTests
 {
-    private static string App => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play");
-    private static string CoreSrc => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "src", "Brasscribe.Play.Core");
+    private static string App => Path.Combine(TestPaths.RepoRoot!, "apps", "windows", "products", "brasscribe", "Kalli.Brasscribe");
+    private static readonly string[] Shared = ["services", "features"];
 
     private static Dictionary<string, string> Load(string lang) =>
         ReswStrings.Parse(XDocument.Load(Path.Combine(App, "Strings", lang, "Resources.resw")));
@@ -76,7 +76,7 @@ public partial class LocalizationTests
     {
         var keys = Load("en-US").Keys.ToHashSet();
         var used = new HashSet<string>();
-        foreach (var file in Directory.EnumerateFiles(CoreSrc, "*.cs", SearchOption.AllDirectories)
+        foreach (var file in Shared.SelectMany(d => Directory.EnumerateFiles(Path.Combine(TestPaths.RepoRoot!, "apps", "windows", d), "*.cs", SearchOption.AllDirectories))
                      .Concat(Directory.EnumerateFiles(App, "*.cs", SearchOption.AllDirectories)))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")) continue;

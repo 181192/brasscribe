@@ -1,17 +1,17 @@
 using System.Diagnostics;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Offline renders of whole scores through the Windows player (alphaSynth, the band SoundFont and
 /// the output stage), for listening and for comparing sound changes. Runs only when
-/// BRASSCRIBE_RENDER_OUT is set:
+/// SCRIBE_RENDER_OUT is set:
 /// <list type="bullet">
-/// <item>BRASSCRIBE_RENDER_SCORES: brass-band.musicxml paths, colon-separated (default: the golden arrangement)</item>
-/// <item>BRASSCRIBE_RENDER_SF2: label=path pairs, comma-separated (default: desktop and mobile band SoundFonts)</item>
-/// <item>BRASSCRIBE_RENDER_PARTS=1: also every part solo, first score, first SoundFont, at −12 dB</item>
+/// <item>SCRIBE_RENDER_SCORES: brass-band.musicxml paths, colon-separated (default: the golden arrangement)</item>
+/// <item>SCRIBE_RENDER_SF2: label=path pairs, comma-separated (default: desktop and mobile band SoundFonts)</item>
+/// <item>SCRIBE_RENDER_PARTS=1: also every part solo, first score, first SoundFont, at −12 dB</item>
 /// </list>
 /// Writes &lt;score&gt;-alphatab-&lt;label&gt;.wav (the app's output) and …-m12.wav (make-up gain 12 dB lower,
 /// so the limiter all but never bends: the signal before it), 32-bit float stereo at 44.1 kHz.
@@ -23,12 +23,12 @@ public class RenderHarnessTests(ITestOutputHelper log)
 
     /// <summary>
     /// The band kit (bank 128 program 0) against the pop kit (program 1, MS Basic unchanged) through
-    /// alphaSynth: K-weighted level of each drum's hits. Runs only when BRASSCRIBE_KNOTS=1.
+    /// alphaSynth: K-weighted level of each drum's hits. Runs only when SCRIBE_KNOTS=1.
     /// </summary>
     [SkippableFact]
     public void Measure_kits()
     {
-        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_KNOTS") != "1", "BRASSCRIBE_KNOTS is not 1");
+        Skip.If(Environment.GetEnvironmentVariable("SCRIBE_KNOTS") != "1", "SCRIBE_KNOTS is not 1");
         var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
         foreach (var key in new[] { 36, 38, 40, 42, 49, 57 })
         {
@@ -47,12 +47,12 @@ public class RenderHarnessTests(ITestOutputHelper log)
     /// <summary>
     /// dynamics.sampler_velocity.alphatab_lufs, measured: the full-band phrase's pitched parts at one
     /// velocity through alphaSynth with the app's channel plan and balance, 12 dB under the band gain.
-    /// Runs only when BRASSCRIBE_KNOTS=1 (after a sound pack change).
+    /// Runs only when SCRIBE_KNOTS=1 (after a sound pack change).
     /// </summary>
     [SkippableFact]
     public void Measure_velocity_knots()
     {
-        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_KNOTS") != "1", "BRASSCRIBE_KNOTS is not 1");
+        Skip.If(Environment.GetEnvironmentVariable("SCRIBE_KNOTS") != "1", "SCRIBE_KNOTS is not 1");
         var sf2Path = TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!;
         var phrases = TestPaths.RepoFile("data/sounds/phrases/phrases.json")!;
         var band = BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!);
@@ -83,12 +83,12 @@ public class RenderHarnessTests(ITestOutputHelper log)
 
     /// <summary>
     /// Each part of the full-band phrase alone at velocity 80 with the app's channel plan and balance, for
-    /// comparing the part balance with Apple's (DynamicsLevelTests.partBalance). Runs only when BRASSCRIBE_KNOTS=1.
+    /// comparing the part balance with Apple's (DynamicsLevelTests.partBalance). Runs only when SCRIBE_KNOTS=1.
     /// </summary>
     [SkippableFact]
     public void Measure_part_balance()
     {
-        Skip.If(Environment.GetEnvironmentVariable("BRASSCRIBE_KNOTS") != "1", "BRASSCRIBE_KNOTS is not 1");
+        Skip.If(Environment.GetEnvironmentVariable("SCRIBE_KNOTS") != "1", "SCRIBE_KNOTS is not 1");
         var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
         var band = BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!);
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(TestPaths.RepoFile("data/sounds/phrases/phrases.json")!));
@@ -112,13 +112,13 @@ public class RenderHarnessTests(ITestOutputHelper log)
     /// <summary>
     /// Every pitched part of the full-band phrase alone through alphaSynth, one held note at the middle of the
     /// part's phrase at every odd velocity: where the velocity layers split, the level jumps. Writes
-    /// part, velocity and the note's RMS (dBFS, 100–600 ms after the onset) to BRASSCRIBE_SWEEP_OUT (a TSV).
+    /// part, velocity and the note's RMS (dBFS, 100–600 ms after the onset) to SCRIBE_SWEEP_OUT (a TSV).
     /// </summary>
     [SkippableFact]
     public void Measure_velocity_sweep()
     {
-        var outPath = Environment.GetEnvironmentVariable("BRASSCRIBE_SWEEP_OUT");
-        Skip.If(string.IsNullOrEmpty(outPath), "BRASSCRIBE_SWEEP_OUT is not set");
+        var outPath = Environment.GetEnvironmentVariable("SCRIBE_SWEEP_OUT");
+        Skip.If(string.IsNullOrEmpty(outPath), "SCRIBE_SWEEP_OUT is not set");
         var bytes = File.ReadAllBytes(TestPaths.RepoFile("data/sounds/band/brasscribe-band-16bit.sf2")!);
         var band = BandSoundFont.Load(TestPaths.RepoFile("sounds/mapping.json")!);
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(TestPaths.RepoFile("data/sounds/phrases/phrases.json")!));
@@ -146,16 +146,16 @@ public class RenderHarnessTests(ITestOutputHelper log)
     }
 
     /// <summary>
-    /// Every note alphaSynth plays in the first score (BRASSCRIBE_RENDER_SCORES or the golden), from the MIDI the
-    /// player loads: track, channel, start and end in seconds, key, velocity. Written to BRASSCRIBE_NOTES_OUT (a
+    /// Every note alphaSynth plays in the first score (SCRIBE_RENDER_SCORES or the golden), from the MIDI the
+    /// player loads: track, channel, start and end in seconds, key, velocity. Written to SCRIBE_NOTES_OUT (a
     /// TSV), for a note-by-note comparison with Apple's (PlaybackKit RenderHarnessTests.dumpNotes).
     /// </summary>
     [SkippableFact]
     public void Dump_notes()
     {
-        var outPath = Environment.GetEnvironmentVariable("BRASSCRIBE_NOTES_OUT");
-        Skip.If(string.IsNullOrEmpty(outPath), "BRASSCRIBE_NOTES_OUT is not set");
-        var score = Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_SCORES") is { Length: > 0 } s
+        var outPath = Environment.GetEnvironmentVariable("SCRIBE_NOTES_OUT");
+        Skip.If(string.IsNullOrEmpty(outPath), "SCRIBE_NOTES_OUT is not set");
+        var score = Environment.GetEnvironmentVariable("SCRIBE_RENDER_SCORES") is { Length: > 0 } s
             ? s.Split(':', StringSplitOptions.RemoveEmptyEntries)[0]
             : TestPaths.RepoFile(TestPaths.GoldenMusicXml)!;
         using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
@@ -200,18 +200,18 @@ public class RenderHarnessTests(ITestOutputHelper log)
     [SkippableFact]
     public void Render_scores()
     {
-        var outDir = Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_OUT");
-        Skip.If(string.IsNullOrEmpty(outDir), "BRASSCRIBE_RENDER_OUT is not set");
+        var outDir = Environment.GetEnvironmentVariable("SCRIBE_RENDER_OUT");
+        Skip.If(string.IsNullOrEmpty(outDir), "SCRIBE_RENDER_OUT is not set");
         Directory.CreateDirectory(outDir);
         var mapping = TestPaths.RepoFile("sounds/mapping.json");
         Assert.NotNull(mapping);
         log.WriteLine($"mapping {mapping}");
 
-        var scores = (Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_SCORES") is { Length: > 0 } s
+        var scores = (Environment.GetEnvironmentVariable("SCRIBE_RENDER_SCORES") is { Length: > 0 } s
             ? s.Split(':', StringSplitOptions.RemoveEmptyEntries)
             : [TestPaths.RepoFile(TestPaths.GoldenMusicXml)!]).ToList();
         var repo = Environment.GetEnvironmentVariable("SCRIBE_REPO") ?? TestPaths.RepoRoot!;
-        var sf2s = (Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_SF2") is { Length: > 0 } f
+        var sf2s = (Environment.GetEnvironmentVariable("SCRIBE_RENDER_SF2") is { Length: > 0 } f
                 ? f
                 : $"desktop={repo}/data/sounds/band/brasscribe-band-16bit.sf2,mobile={repo}/data/sounds/band/brasscribe-band-mobile.sf2")
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -231,7 +231,7 @@ public class RenderHarnessTests(ITestOutputHelper log)
             }
         }
 
-        if (Environment.GetEnvironmentVariable("BRASSCRIBE_RENDER_PARTS") != "1") return;
+        if (Environment.GetEnvironmentVariable("SCRIBE_RENDER_PARTS") != "1") return;
         string first = scores[0];
         string firstName = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(first))!).Name;
         var (_, desktop) = sf2s[0];

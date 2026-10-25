@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text.RegularExpressions;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
 using Microsoft.Extensions.Time.Testing;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// The app and the engine must have the same interface version. When they differ the app says which of the two to

@@ -1,8 +1,8 @@
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
-namespace Brasscribe.Play.Views;
+namespace Kalli.Brasscribe.Views;
 
 /// <summary>The music stand's band at the top: where you are, and Leave.</summary>
 public sealed partial class MusicStandBand : UserControl

@@ -2,7 +2,7 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 
-namespace Brasscribe.Play.Controls;
+namespace Kalli.Scribe.Controls;
 
 /// <summary>
 /// Theme resources looked up from code for an element's own theme. Application.Current.Resources[key] resolves

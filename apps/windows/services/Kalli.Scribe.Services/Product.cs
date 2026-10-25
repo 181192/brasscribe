@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core;
+namespace Kalli.Scribe;
 
 /// <summary>What this app is among the apps on the shared core: the target whose scores it makes and shows.</summary>
 public static class Product

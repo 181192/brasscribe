@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Writes the en-US and nb-NO Resources.resw of Brasscribe Play from one table (keeps keys in step).
 
-Usage: python3 tools/Strings/gen_resw.py src/Brasscribe.Play/Strings
+Usage: python3 products/brasscribe/tools/gen_resw.py products/brasscribe/Kalli.Brasscribe/Strings
 Edit the table here, not the .resw files; LocalizationTests checks the result."""
 import sys
 from pathlib import Path

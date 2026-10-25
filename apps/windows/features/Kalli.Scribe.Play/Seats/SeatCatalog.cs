@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Services;
 
-namespace Brasscribe.Play.Core.Seats;
+namespace Kalli.Scribe.Seats;
 
 /// <summary>
 /// The player's answer to "What do you play?": a seat of the contest band, "none" (I conduct or listen), or not

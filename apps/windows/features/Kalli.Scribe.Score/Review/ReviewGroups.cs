@@ -1,7 +1,7 @@
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Review;
+namespace Kalli.Scribe.Review;
 
 /// <summary>
 /// Puts the Composition's review groups on the printed notes: every note of a group gets its index,

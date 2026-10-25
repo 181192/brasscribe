@@ -1,8 +1,8 @@
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public sealed class MusicXmlNoteEditorTests
 {

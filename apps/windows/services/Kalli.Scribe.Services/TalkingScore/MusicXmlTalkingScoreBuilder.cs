@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Xml;
 using System.Xml.Linq;
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.TalkingScore;
+namespace Kalli.Scribe.TalkingScore;
 
 /// <summary>
 /// Builds the talking-score structure (spec §6) from a partwise MusicXML score plus, when available,

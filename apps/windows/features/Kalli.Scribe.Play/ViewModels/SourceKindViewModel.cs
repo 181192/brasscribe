@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
 /// <summary>The four answers to "What is this?", each tied to an engine profile.</summary>
 public enum SourceKind { Solo, BrassBand, OrchestraWithSoloist, PopRock }

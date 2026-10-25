@@ -1,8 +1,8 @@
 using AlphaTab.Midi;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>Humanized playback timing applied to alphaTab's playback MIDI, with a stand-in humanizer.</summary>
 [Collection(AlphaTabCollection.Name)]

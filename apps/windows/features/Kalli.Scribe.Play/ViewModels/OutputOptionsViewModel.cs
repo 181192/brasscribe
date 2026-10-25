@@ -1,14 +1,13 @@
-using Brasscribe.Play.Core.Arrangement;
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Engine;
-using Brasscribe.Play.Core.Seats;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Arrangement;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Engine;
+using Kalli.Scribe.Seats;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Brasscribe.Play.Core.ViewModels;
+namespace Kalli.Scribe.ViewModels;
 
-public enum Lineup { FullBand, MinimalBand, Quartet }
 public enum Difficulty { Faithful, Standard, Easier }
 
 /// <summary>

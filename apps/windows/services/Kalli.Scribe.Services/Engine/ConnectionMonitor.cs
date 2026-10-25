@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Net;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 /// <summary>The connection states the Play apps show (the same on every platform).</summary>
 public enum ConnectionState

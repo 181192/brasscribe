@@ -1,6 +1,6 @@
-using Brasscribe.Play.Core.Bridge;
+using Kalli.Scribe.Bridge;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class CoreBridgeTests
 {

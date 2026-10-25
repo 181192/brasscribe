@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 
-namespace Brasscribe.Play.Core.Services;
+namespace Kalli.Scribe.Services;
 
 public enum AnnouncementKind
 {

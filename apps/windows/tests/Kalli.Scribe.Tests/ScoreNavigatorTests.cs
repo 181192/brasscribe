@@ -1,8 +1,8 @@
-using Brasscribe.Play.Core.Export;
-using Brasscribe.Play.Core.Scores;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.Export;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 public class ScoreNavigatorTests
 {

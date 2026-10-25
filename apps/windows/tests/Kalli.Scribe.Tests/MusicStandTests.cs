@@ -1,10 +1,10 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Playback;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.Stand;
-using Brasscribe.Play.Core.ViewModels;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.Stand;
+using Kalli.Scribe.ViewModels;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>The music stand's keys, pages, control layer, sizing and view model (design/brands/brasscribe/music-stand.md).</summary>
 public class MusicStandKeyTests

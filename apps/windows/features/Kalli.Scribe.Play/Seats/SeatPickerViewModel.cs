@@ -1,8 +1,8 @@
-using Brasscribe.Play.Core.Bridge;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Brasscribe.Play.Core.Seats;
+namespace Kalli.Scribe.Seats;
 
 /// <summary>
 /// "What do you play?": the instrument, then which part (nothing chosen for the player), then, for low brass, the

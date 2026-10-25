@@ -1,7 +1,7 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
-namespace Brasscribe.Play.Core.OnDevice;
+namespace Kalli.Scribe.OnDevice;
 
 /// <summary>One pitch frame: time of the frame, f0 in Hz and a voicing confidence (voiced at ≥ 0.5).</summary>
 public readonly record struct PitchFrame(double TimeS, double Hz, float Confidence)

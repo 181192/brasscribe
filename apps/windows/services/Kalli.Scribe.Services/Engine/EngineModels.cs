@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Brasscribe.Play.Core.Scores;
+using Kalli.Scribe.Scores;
 
-namespace Brasscribe.Play.Core.Engine;
+namespace Kalli.Scribe.Engine;
 
 // DTOs for the companion engine API (engine/openapi.json, "scribe engine" 0.1.0).
 // Property names map to snake_case through EngineJsonContext.

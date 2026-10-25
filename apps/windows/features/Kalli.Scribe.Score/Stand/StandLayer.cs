@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Stand;
+namespace Kalli.Scribe.Stand;
 
 /// <summary>What the stand's control layer needs to know before it may hide by itself.</summary>
 public readonly record struct StandContext(

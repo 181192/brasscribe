@@ -1,4 +1,4 @@
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>How one part sounds: preset (0-based program, bank) and its balance in the band.</summary>
 public sealed record TrackSound(int Program, int Bank, double GainDb = 0, bool Percussion = false);

@@ -1,15 +1,15 @@
 using System.ComponentModel;
-using Brasscribe.Play.Core.Services;
-using Brasscribe.Play.Core.ViewModels;
-using Brasscribe.Play.Dialogs;
-using Brasscribe.Play.Views;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.ViewModels;
+using Kalli.Brasscribe.Dialogs;
+using Kalli.Brasscribe.Views;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.System;
 
-namespace Brasscribe.Play;
+namespace Kalli.Brasscribe;
 
 /// <summary>A flow step shown in the window's frame.</summary>
 public interface IScreenPage
@@ -255,8 +255,8 @@ public sealed partial class MainWindow : Window
     {
         if (!ViewModel.OpenExportCommand.CanExecute(null)) return;
         ViewModel.OpenExportCommand.Execute(null);
-        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
+        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot, RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs };
+        await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog);
         ExportButton.Focus(FocusState.Programmatic);
     }
 
@@ -274,19 +274,19 @@ public sealed partial class MainWindow : Window
             if (pairingLink is not null) await ViewModel.Settings.PairFromLinkAsync(pairingLink);
             return;
         }
-        if (Brasscribe.Play.Services.DialogGate.IsOpen)
+        if (Kalli.Brasscribe.Services.DialogGate.IsOpen)
         {
             if (pairingLink is null) return;
-            if (_waitingLink is null) Brasscribe.Play.Services.DialogGate.Closed += OnDialogClosed;
+            if (_waitingLink is null) Kalli.Brasscribe.Services.DialogGate.Closed += OnDialogClosed;
             _waitingLink = pairingLink;
             return;
         }
         _settingsOpen = true;
         try
         {
-            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
+            var dialog = new SettingsDialog(ViewModel.Settings, ViewModel) { XamlRoot = Content.XamlRoot, RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs };
             if (pairingLink is not null) dialog.Opened += async (_, _) => await ViewModel.Settings.PairFromLinkAsync(pairingLink);
-            await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
+            await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog);
             ViewModel.Settings.CancelAsk();
         }
         finally { _settingsOpen = false; }
@@ -295,7 +295,7 @@ public sealed partial class MainWindow : Window
 
     private void OnDialogClosed(object? sender, EventArgs e)
     {
-        Brasscribe.Play.Services.DialogGate.Closed -= OnDialogClosed;
+        Kalli.Brasscribe.Services.DialogGate.Closed -= OnDialogClosed;
         // After the closing dialog has gone from the screen.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
         {
@@ -318,8 +318,8 @@ public sealed partial class MainWindow : Window
 
     private async Task ShowShortcutsAsync()
     {
-        var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Brasscribe.Play.Services.ThemeController.ForDialogs };
-        await Brasscribe.Play.Services.DialogGate.ShowAsync(dialog);
+        var dialog = new ShortcutsDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs };
+        await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog);
         HelpButton.Focus(FocusState.Programmatic);
     }
 }

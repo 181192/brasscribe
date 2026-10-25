@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Platform-neutral logic of Brasscribe Play: builds and tests on macOS, Linux and Windows. -->
+  <!-- What every app uses and that has no screens: the score model, the talking score, the core bridge, the engine
+       client, capture contracts, the synth's output stage, the library and settings. Platform-neutral: builds and tests on macOS, Linux and Windows. -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>Brasscribe.Play.Core</RootNamespace>
+    <RootNamespace>Kalli.Scribe</RootNamespace>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
@@ -15,6 +16,8 @@
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="Brasscribe.Play.Core.Tests" />
+    <InternalsVisibleTo Include="Kalli.Scribe.Score" />
+    <InternalsVisibleTo Include="Kalli.Scribe.Play" />
+    <InternalsVisibleTo Include="Kalli.Scribe.Tests" />
   </ItemGroup>
 </Project>

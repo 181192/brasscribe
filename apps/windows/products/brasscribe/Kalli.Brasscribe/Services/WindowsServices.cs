@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Brasscribe.Play.Core.Services;
+using Kalli.Scribe.Services;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -8,7 +8,7 @@ using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage.Pickers;
 
-namespace Brasscribe.Play.Services;
+namespace Kalli.Brasscribe.Services;
 
 /// <summary>
 /// Speaks through UI Automation notification events (Narrator and NVDA read them). Progress uses
@@ -321,7 +321,7 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
         const int steps = 8;
         for (int i = 1; i <= steps; i++)
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(Brasscribe.Play.Core.Playback.BufferedSynthOutput.StopFadeMs / steps));
+            await Task.Delay(TimeSpan.FromMilliseconds(Kalli.Scribe.Playback.BufferedSynthOutput.StopFadeMs / steps));
             if (fade != _fade) return; // played again meanwhile (CancelFade cleared _fading)
             _player.Volume = _volume * (1 - (double)i / steps);
         }

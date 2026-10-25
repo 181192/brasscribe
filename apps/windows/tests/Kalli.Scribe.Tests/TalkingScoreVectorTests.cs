@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Brasscribe.Play.Core.TalkingScore;
+using Kalli.Scribe.TalkingScore;
 
-namespace Brasscribe.Play.Core.Tests;
+namespace Kalli.Scribe.Tests;
 
 /// <summary>
 /// Runs every case of docs/shared/accessibility/talking-score-vectors.json (linked into Fixtures by the project file) in both

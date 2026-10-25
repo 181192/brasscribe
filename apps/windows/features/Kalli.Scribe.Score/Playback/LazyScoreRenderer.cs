@@ -4,7 +4,7 @@ using AlphaTab.Model;
 using AlphaTab.Rendering;
 using AlphaTab.Rendering.Utils;
 
-namespace Brasscribe.Play.Core.Playback;
+namespace Kalli.Scribe.Playback;
 
 /// <summary>One page (alphaTab partial) of a laid-out score: where it goes and which bars it holds.</summary>
 public sealed record ScorePageSlot(string Id, double X, double Y, double Width, double Height, int FirstBar, int LastBar);
