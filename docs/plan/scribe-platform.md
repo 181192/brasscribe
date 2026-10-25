@@ -45,7 +45,7 @@ core/
   targets/fretted/        crate target-fretted: was core/target-fretted
   ffi/  cli/              were core/brasscribe-ffi and core/brasscribe-cli
   bindings/  swift/  dotnet/  android/  conformance/  tools/  scripts/    stay where they are
-engine/  music/  eval/    Python: a package per target beside the shared code (not yet true, see Open)
+engine/  music/  eval/    Python: stay at top level, a package per target beside the shared code (not yet split per target, see Open)
 ml/  convert/  capture/  shared tools, stay: see "Where the rest goes"
 apps/
   android/
@@ -80,7 +80,7 @@ The test for each folder: where would the sibling product's version of this go? 
 
 | Folder | Used by | Placement |
 |---|---|---|
-| `capture/` | Apple builds and CI (macOS process-tap recorder) | Shared. Records any audio; stays. Its tool is still called `brasscribe-capture`, which is a product word to drop with the Apple restructure (step 9). |
+| `capture/` | Apple builds and CI (macOS process-tap recorder) | Shared. Records any audio; stays. Its tool is still called `brasscribe-capture`, which is a product word to drop with the Apple restructure (step 10). |
 | `convert/` | Model conversion to ONNX and Core ML, parity reports | Shared. A folder per model, so a model for another target is one more folder. Stays. |
 | `ml/` | `ml/adapters/<model>`: one environment per model behind `run.sh`; `ml/pipelines` | Shared. Models are not products; a profile (per target) chooses which run. Stays. |
 | `sounds/` | Android, Apple, Windows, Bandroom builds (the band SoundFont); `pixi fetch-sounds` | Mixed. The band pack (`band*.py`, `seating.json`, `mapping.json`, `band-sounds.json`, `LICENSES.md`, the band tests) is brass-specific. The SoundFont reader and writer, DSP, rendering, parity and `ab-test/` are not. Target: `sounds/common/` for the tools, `sounds/brass-band/` for the band pack, and a guitar set is `sounds/<set>/` beside it. The files that mix both are split file by file when this moves. |
