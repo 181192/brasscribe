@@ -145,6 +145,8 @@ public sealed partial class TabView : UserControl
                 {
                     // Rhythm on the tab staff itself, as stems with the bar's beams; the screen's header says the tuning and tempo.
                     s.Notation.RhythmMode = TabRhythmMode.ShowWithBars;
+                    // Fret numbers in Fretscribe Tab, when the app carries it.
+                    if (TabFace.At(TabFace.NumeralUnits) is { } face) s.Display.Resources.TablatureFont = face;
                     foreach (var element in new[] { NotationElement.TrackNames, NotationElement.GuitarTuning, NotationElement.EffectTempo })
                         s.Notation.Elements.Set(element, false);
                 });
@@ -271,6 +273,32 @@ public sealed partial class TabView : UserControl
     }
 
     private Brush Brush(string key) => Theme.Brush(key, this);
+}
+
+/// <summary>
+/// Fret numbers in Fretscribe Tab. alphaTab draws with alphaSkia, which finds a face by its family name among the
+/// system's fonts and the faces registered with it: <c>AlphaSkiaTypeface.Register</c> adds one from its bytes.
+/// </summary>
+internal static class TabFace
+{
+    /// <summary>The numerals' size in alphaTab's units, as Fretscribe for Android has them.</summary>
+    public const double NumeralUnits = 14.0;
+
+    private static readonly Lazy<AlphaSkia.AlphaSkiaTypeface?> Face = new(() =>
+    {
+        try { return AlphaSkia.AlphaSkiaTypeface.Register(File.ReadAllBytes(System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "FretscribeTab-Regular.ttf"))); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Fretscribe Tab could not be registered; fret numbers use the system's face: {e.Message}");
+            return null;
+        }
+    });
+
+    /// <summary>alphaTab's font for the face at <paramref name="size"/>, by the family name and weight the face has; null without it.</summary>
+    public static AlphaTab.Model.Font? At(double size) => Face.Value is { } f
+        ? new AlphaTab.Model.Font(f.FamilyName, size, f.IsItalic ? AlphaTab.Model.FontStyle.Italic : AlphaTab.Model.FontStyle.Plain,
+            f.Weight > 400 ? AlphaTab.Model.FontWeight.Bold : AlphaTab.Model.FontWeight.Regular)
+        : null;
 }
 
 /// <summary>The app's theme resources for the element's own theme (Light, Dark or a contrast theme).</summary>
