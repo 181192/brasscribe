@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
 
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>
 /// PNG files of screenshots: 8-bit RGBA, written without an image library, read back whatever filters a writer used

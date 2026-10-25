@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Brasscribe.ScreenCheck;
+using Kalli.Scribe.ScreenCheck;
 
 // ScreenCheck <command> [--name value]...
 //
@@ -50,7 +50,7 @@ static int Verdict(Options o)
 {
     string dir = o.Need("dir");
     var runs = Directory.Exists(dir) ? Directory.GetFiles(dir, "catalogue-*.json").Order().Select(CatalogueRun.Load).ToList() : [];
-    var verdict = Brasscribe.ScreenCheck.Verdict.Of(runs, CatalogueRun.LoadKnown(o.Need("known")));
+    var verdict = Kalli.Scribe.ScreenCheck.Verdict.Of(runs, CatalogueRun.LoadKnown(o.Need("known")));
     string md = verdict.Markdown(o.Need("title"));
     Console.WriteLine(md);
     if (o.Get("summary") is { } summary) File.AppendAllText(summary, md);

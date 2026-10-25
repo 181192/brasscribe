@@ -1,6 +1,6 @@
-using Brasscribe.ScreenCheck;
+using Kalli.Scribe.ScreenCheck;
 
-namespace Brasscribe.ScreenCheck.Tests;
+namespace Kalli.Scribe.ScreenCheck.Tests;
 
 /// <summary>The catalogues' picture checks, each shown passing and failing on a picture made for it.</summary>
 public class ScreenCheckTests

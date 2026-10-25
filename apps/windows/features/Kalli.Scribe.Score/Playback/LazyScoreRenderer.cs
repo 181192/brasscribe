@@ -44,8 +44,9 @@ public sealed class LazyScoreRenderer : IDisposable
     /// <paramref name="width"/>, the result and its bounds are in view units (DIPs); the pages are drawn at
     /// <paramref name="pixelScale"/> pixels per unit (the display's scale, 1.5 at 150 %), so they stay sharp when shown at their size in units.
     /// </summary>
+    /// <paramref name="configure"/> changes the renderer's settings last (a tab's rhythm marks, the elements it hides).
     public Task<ScoreLayout> LayoutAsync(Score score, IReadOnlyList<int> tracks, double width, double scale, LayoutMode mode, Action<Score>? prepare = null,
-        Review.UncertaintyPalette? theme = null, int barsPerRow = -1, double pixelScale = 1)
+        Review.UncertaintyPalette? theme = null, int barsPerRow = -1, double pixelScale = 1, Action<Settings>? configure = null)
     {
         int generation = Interlocked.Increment(ref _generation);
         double px = double.IsFinite(pixelScale) ? Math.Clamp(pixelScale, 1, 4) : 1;
@@ -66,6 +67,7 @@ public sealed class LazyScoreRenderer : IDisposable
             // The page padding is in pixels, not scaled with the notation: keep it the same in view units.
             if (px != 1 && settings.Display.Padding is { } padding)
                 settings.Display.Padding = padding.Select(p => p * px).ToList();
+            configure?.Invoke(settings);
             var renderer = new ScoreRenderer(settings) { Width = width * px };
             var pages = new List<ScorePageSlot>();
             double totalW = 0, totalH = 0;
@@ -142,6 +144,9 @@ public sealed class LazyScoreRenderer : IDisposable
         try { return ScorePreview.Compose(output, overlay(output), theme, pad: 16, viewport: view); }
         finally { ScoreRenderService.Release(output); }
     });
+
+    /// <summary>alphaTab's reading of a MusicXML document, on the renderer's thread.</summary>
+    public Task<Score> ParseAsync(byte[] musicXml) => Run(() => AlphaTabScorePlayer.Parse(musicXml, new Settings()));
 
     /// <summary>PNG of one page of the current layout; null when a newer layout replaced it.</summary>
     public Task<byte[]?> RenderPageAsync(int generation, string pageId) => Run(() =>

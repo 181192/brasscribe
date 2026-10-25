@@ -1,0 +1,1395 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AboutText.Text" xml:space="preserve">
+    <value>Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1).</value>
+  </data>
+  <data name="AppWindowTitle" xml:space="preserve">
+    <value>Fretscribe</value>
+  </data>
+  <data name="AppearanceBox.Header" xml:space="preserve">
+    <value>Utseende</value>
+  </data>
+  <data name="AppearanceContrastNote.Text" xml:space="preserve">
+    <value>Kontrasttemaet ditt er på, så Windows velger fargene.</value>
+  </data>
+  <data name="AppearanceDark.Content" xml:space="preserve">
+    <value>Mørkt</value>
+  </data>
+  <data name="AppearanceLight.Content" xml:space="preserve">
+    <value>Lyst</value>
+  </data>
+  <data name="AppearanceSystem.Content" xml:space="preserve">
+    <value>Følg systemet</value>
+  </data>
+  <data name="AskComputerButton.Content" xml:space="preserve">
+    <value>Spør på datamaskinen i stedet</value>
+  </data>
+  <data name="AskComputerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ingen kode å skrive: velg Godkjenn på datamaskinen</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Tilbake</value>
+  </data>
+  <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gå tilbake (Alt+Venstre)</value>
+  </data>
+  <data name="BackButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Tilbake</value>
+  </data>
+  <data name="BackButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Tilbake</value>
+  </data>
+  <data name="Back_CheckTheSong" xml:space="preserve">
+    <value>Sjekk sangen</value>
+  </data>
+  <data name="Back_Home" xml:space="preserve">
+    <value>Hjem</value>
+  </data>
+  <data name="CancelAskButton.Content" xml:space="preserve">
+    <value>Slutt å vente</value>
+  </data>
+  <data name="CancelAskButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Slutt å vente på at datamaskinen godkjenner denne PC-en</value>
+  </data>
+  <data name="CancelDialog_Content" xml:space="preserve">
+    <value>Opptaket blir liggende på denne PC-en, så du kan starte på nytt.</value>
+  </data>
+  <data name="CancelDialog_Keep" xml:space="preserve">
+    <value>Fortsett</value>
+  </data>
+  <data name="CancelDialog_Stop" xml:space="preserve">
+    <value>Stopp</value>
+  </data>
+  <data name="CancelDialog_Title" xml:space="preserve">
+    <value>Slutte å skrive det ned?</value>
+  </data>
+  <data name="CancelTranscriptionButton.Content" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="CancelTranscriptionButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Slutt å skrive det ned (spør først)</value>
+  </data>
+  <data name="CaptureNotice.Title" xml:space="preserve">
+    <value>Ingenting ble hørt</value>
+  </data>
+  <data name="CheckHeading.Text" xml:space="preserve">
+    <value>Sjekk sangen</value>
+  </data>
+  <data name="CheckLater.Text" xml:space="preserve">
+    <value>Du kan endre dette senere.</value>
+  </data>
+  <data name="CheckLead.Text" xml:space="preserve">
+    <value>Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også.</value>
+  </data>
+  <data name="CheckReading.Text" xml:space="preserve">
+    <value>Leser det Fretscribe hørte …</value>
+  </data>
+  <data name="CheckReadingProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Leser det Fretscribe hørte</value>
+  </data>
+  <data name="ConnectButton.Content" xml:space="preserve">
+    <value>Koble til</value>
+  </data>
+  <data name="ConnectButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Åpne Bandroom på datamaskinen og velg Koble til en enhet, og skriv inn koden her</value>
+  </data>
+  <data name="Connection_Connect" xml:space="preserve">
+    <value>Koble til</value>
+  </data>
+  <data name="Connection_ConnectHelp" xml:space="preserve">
+    <value>Koble denne PC-en til Bandroom på datamaskinen</value>
+  </data>
+  <data name="Connection_Connected" xml:space="preserve">
+    <value>Koblet til Bandroom på {0}</value>
+  </data>
+  <data name="Connection_DetailsAddress" xml:space="preserve">
+    <value>Adresse: {0}</value>
+  </data>
+  <data name="Connection_DetailsLastSeen" xml:space="preserve">
+    <value>Svarte sist: {0}</value>
+  </data>
+  <data name="Connection_DetailsServerId" xml:space="preserve">
+    <value>Server-ID: {0}</value>
+  </data>
+  <data name="Connection_GetUpdate" xml:space="preserve">
+    <value>Hent oppdateringen</value>
+  </data>
+  <data name="Connection_GetUpdateHelp" xml:space="preserve">
+    <value>Åpner siden med nyeste Fretscribe og nyeste Bandroom for datamaskinen</value>
+  </data>
+  <data name="Connection_NeedsPairing" xml:space="preserve">
+    <value>Datamaskinen kjenner ikke igjen denne PC-en lenger.</value>
+  </data>
+  <data name="Connection_Offline" xml:space="preserve">
+    <value>Ikke tilkoblet. Tabber skrives på datamaskinen: koble den til for å skrive en ny.</value>
+  </data>
+  <data name="Connection_PairAgain" xml:space="preserve">
+    <value>Koble til PC-en på nytt</value>
+  </data>
+  <data name="Connection_Reconnecting" xml:space="preserve">
+    <value>Leter etter Bandroom på {0} …</value>
+  </data>
+  <data name="Connection_ThisPc" xml:space="preserve">
+    <value>denne PC-en</value>
+  </data>
+  <data name="Connection_UpdateApp" xml:space="preserve">
+    <value>Oppdater Fretscribe. Bandroom på {0} er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Connection_UpdateBandroom" xml:space="preserve">
+    <value>Oppdater Bandroom på {0}. Denne appen er nyere enn Bandroom der, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Connection_UpdateBandroomHere" xml:space="preserve">
+    <value>Oppdater Bandroom på denne PC-en. Den er eldre enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Connection_YourComputer" xml:space="preserve">
+    <value>datamaskinen</value>
+  </data>
+  <data name="ContinueButton.Content" xml:space="preserve">
+    <value>Fortsett</value>
+  </data>
+  <data name="ContinueButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Skriv ned tonene</value>
+  </data>
+  <data name="DecodingProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Leser filen</value>
+  </data>
+  <data name="DiscoveredEnginesList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Datamaskiner som kjører Bandroom på dette nettverket</value>
+  </data>
+  <data name="Duration_MinutesSeconds" xml:space="preserve">
+    <value>{0} min {1} s</value>
+  </data>
+  <data name="Duration_Seconds" xml:space="preserve">
+    <value>{0} s</value>
+  </data>
+  <data name="EngineAddressBox.Header" xml:space="preserve">
+    <value>Adresse</value>
+  </data>
+  <data name="EngineAddressBox.PlaceholderText" xml:space="preserve">
+    <value>http://127.0.0.1:8765</value>
+  </data>
+  <data name="EngineDetails.Header" xml:space="preserve">
+    <value>Detaljer for den som satte opp datamaskinen</value>
+  </data>
+  <data name="EngineDetails.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Detaljer for den som satte opp datamaskinen</value>
+  </data>
+  <data name="ErrorSteps.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hva du kan gjøre</value>
+  </data>
+  <data name="Error_ChooseAnother" xml:space="preserve">
+    <value>Velg et annet opptak</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Details" xml:space="preserve">
+    <value>Start den med: scribe serve. Innstillinger viser adressen den bruker. Meldingen var: {0}</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Reason" xml:space="preserve">
+    <value>Opptaket ditt er trygt. Tabber skrives på datamaskinen, og den svarer ikke.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Step1" xml:space="preserve">
+    <value>Sjekk at datamaskinen er på og på samme nettverk.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Step2" xml:space="preserve">
+    <value>Åpne Bandroom på datamaskinen.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Step3" xml:space="preserve">
+    <value>Velg Prøv igjen.</value>
+  </data>
+  <data name="Error_ComputerUnreachable_Title" xml:space="preserve">
+    <value>Får ikke kontakt med Bandroom på datamaskinen</value>
+  </data>
+  <data name="Error_DetailsHeading" xml:space="preserve">
+    <value>Detaljer for den som satte opp datamaskinen</value>
+  </data>
+  <data name="Error_Engine" xml:space="preserve">
+    <value>Bandroom på datamaskinen fikk et problem. Prøv igjen.</value>
+  </data>
+  <data name="Error_GetUpdate" xml:space="preserve">
+    <value>Hent oppdateringen</value>
+  </data>
+  <data name="Error_GetUpdate_Help" xml:space="preserve">
+    <value>Åpner siden med nyeste Fretscribe og nyeste Bandroom for datamaskinen</value>
+  </data>
+  <data name="Error_NeedsPairing" xml:space="preserve">
+    <value>Datamaskinen må kobles til på nytt. Skriv inn koden den viser, i Innstillinger.</value>
+  </data>
+  <data name="Error_NotFound" xml:space="preserve">
+    <value>Bandroom på datamaskinen har ikke dette opptaket lenger. Åpne det på nytt.</value>
+  </data>
+  <data name="Error_Options" xml:space="preserve">
+    <value>Bandroom på datamaskinen kunne ikke bruke disse valgene. Prøv andre valg, eller oppdater Bandroom på datamaskinen.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
+    <value>Fretscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step1" xml:space="preserve">
+    <value>Lukk andre apper som bruker filen, og velg Prøv igjen.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Step2" xml:space="preserve">
+    <value>Eller velg et annet opptak.</value>
+  </data>
+  <data name="Error_RecordingUnreadable_Title" xml:space="preserve">
+    <value>Opptaket kan ikke leses</value>
+  </data>
+  <data name="Error_ScoreFailed_Reason" xml:space="preserve">
+    <value>Opptaket ditt er trygt. Noe stoppet Bandroom på datamaskinen mens den arbeidet.</value>
+  </data>
+  <data name="Error_ScoreFailed_Step1" xml:space="preserve">
+    <value>Velg Prøv igjen. Det går ofte andre gang.</value>
+  </data>
+  <data name="Error_ScoreFailed_Step2" xml:space="preserve">
+    <value>Hvis det stopper igjen, prøv et kortere opptak.</value>
+  </data>
+  <data name="Error_ScoreFailed_Title" xml:space="preserve">
+    <value>Tabben kunne ikke skrives</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>Datamaskinen brukte for lang tid på å svare. Sjekk at den er på og våken, og prøv igjen.</value>
+  </data>
+  <data name="Error_TooLarge" xml:space="preserve">
+    <value>Opptaket er for stort til å sendes. Prøv et kortere opptak.</value>
+  </data>
+  <data name="Error_TryAgain" xml:space="preserve">
+    <value>Prøv igjen</value>
+  </data>
+  <data name="Error_Unreachable" xml:space="preserve">
+    <value>Får ikke kontakt med Bandroom på datamaskinen. Sjekk at den er på og på samme nettverk.</value>
+  </data>
+  <data name="Error_UpdateApp_Reason" xml:space="preserve">
+    <value>Opptaket ditt er trygt. Bandroom på datamaskinen er nyere enn denne appen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Error_UpdateApp_Step1" xml:space="preserve">
+    <value>Oppdater Fretscribe på denne PC-en.</value>
+  </data>
+  <data name="Error_UpdateApp_Step2" xml:space="preserve">
+    <value>Velg Prøv igjen.</value>
+  </data>
+  <data name="Error_UpdateApp_Title" xml:space="preserve">
+    <value>Oppdater Fretscribe</value>
+  </data>
+  <data name="Error_UpdateBandroom_Reason" xml:space="preserve">
+    <value>Opptaket ditt er trygt. Denne appen er nyere enn Bandroom på datamaskinen, og de virker bare sammen når begge er oppdatert.</value>
+  </data>
+  <data name="Error_UpdateBandroom_Step1" xml:space="preserve">
+    <value>Oppdater Bandroom på datamaskinen.</value>
+  </data>
+  <data name="Error_UpdateBandroom_Step2" xml:space="preserve">
+    <value>Velg Prøv igjen.</value>
+  </data>
+  <data name="Error_UpdateBandroom_Title" xml:space="preserve">
+    <value>Oppdater Bandroom på datamaskinen</value>
+  </data>
+  <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spill opptaket raskere; tonehøyden er den samme</value>
+  </data>
+  <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Raskere</value>
+  </data>
+  <data name="FasterButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Raskere</value>
+  </data>
+  <data name="FetchRecordingButton.Content" xml:space="preserve">
+    <value>Hent det fra datamaskinen</value>
+  </data>
+  <data name="FetchRecordingButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Kopier opptaket fra Bandroom for å øve med det</value>
+  </data>
+  <data name="FindEnginesButton.Content" xml:space="preserve">
+    <value>Finn på dette nettverket</value>
+  </data>
+  <data name="FindEnginesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Se etter datamaskiner som kjører Bandroom på samme nettverk</value>
+  </data>
+  <data name="FirstRunHeading.Text" xml:space="preserve">
+    <value>Tab fra et hvilket som helst opptak.</value>
+  </data>
+  <data name="FirstRunPoint1Body.Text" xml:space="preserve">
+    <value>Spill det, eller åpne en sang du har.</value>
+  </data>
+  <data name="FirstRunPoint1Title.Text" xml:space="preserve">
+    <value>Spill inn eller åpne et opptak</value>
+  </data>
+  <data name="FirstRunPoint2Body.Text" xml:space="preserve">
+    <value>Tonene skrives ned på din egen datamaskin. Ingenting sendes til nettet.</value>
+  </data>
+  <data name="FirstRunPoint2Title.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen skriver det ned</value>
+  </data>
+  <data name="FirstRunPoint3Body.Text" xml:space="preserve">
+    <value>Toner Fretscribe er usikker på, får et «?». Lytt til takten og bestem deg.</value>
+  </data>
+  <data name="FirstRunPoint3Title.Text" xml:space="preserve">
+    <value>Sjekk tonene merket ?</value>
+  </data>
+  <data name="FirstRunPrivacy.Text" xml:space="preserve">
+    <value>Opptakene dine blir på denne PC-en og på din egen datamaskin. Gratis, og ingenting er låst.</value>
+  </data>
+  <data name="FullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Tabben fyller hele skjermen (F11; Esc går ut)</value>
+  </data>
+  <data name="FullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Fullskjerm</value>
+  </data>
+  <data name="FullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Fullskjerm</value>
+  </data>
+  <data name="GetStartedButton.Content" xml:space="preserve">
+    <value>Kom i gang</value>
+  </data>
+  <data name="GetStartedButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Velg instrumentet ditt, og gå så til Hjem</value>
+  </data>
+  <data name="HandBox.Header" xml:space="preserve">
+    <value>Hvilken hånd er på halsen?</value>
+  </data>
+  <data name="HomeEmpty.Text" xml:space="preserve">
+    <value>Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</value>
+  </data>
+  <data name="HomeHeading.Text" xml:space="preserve">
+    <value>Gjør et opptak om til tab.</value>
+  </data>
+  <data name="HomeIntro.Text" xml:space="preserve">
+    <value>Spill det, ta det opp, eller åpne en fil. Bandroom på datamaskinen skriver ned tonene.</value>
+  </data>
+  <data name="HomeSongsHeading.Text" xml:space="preserve">
+    <value>SANGENE DINE</value>
+  </data>
+  <data name="ImportBody.Text" xml:space="preserve">
+    <value>MP3, WAV, M4A, FLAC eller en video</value>
+  </data>
+  <data name="ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Åpne en lyd- eller videofil (Ctrl+O)</value>
+  </data>
+  <data name="ImportButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Åpne et opptak</value>
+  </data>
+  <data name="ImportTitle.Text" xml:space="preserve">
+    <value>Åpne et opptak</value>
+  </data>
+  <data name="InstrumentBox.Header" xml:space="preserve">
+    <value>Instrument</value>
+  </data>
+  <data name="InstrumentChangeButton.Content" xml:space="preserve">
+    <value>Endre</value>
+  </data>
+  <data name="InstrumentChangeButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Endre instrumentet, stemmingen og hva du leser</value>
+  </data>
+  <data name="InstrumentHeading.Text" xml:space="preserve">
+    <value>Instrumentet ditt</value>
+  </data>
+  <data name="InstrumentLead.Text" xml:space="preserve">
+    <value>Fretscribe husker dette til tabbene dine. Du kan endre det i Innstillinger.</value>
+  </data>
+  <data name="InstrumentNotNowButton.Content" xml:space="preserve">
+    <value>Ikke nå</value>
+  </data>
+  <data name="InstrumentNotNowButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Behold det du hadde: en seksstrengs gitar i standardstemming til du svarer</value>
+  </data>
+  <data name="InstrumentRowLabel.Text" xml:space="preserve">
+    <value>Nye tabber skrives for</value>
+  </data>
+  <data name="InstrumentSaveButton.Content" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="InstrumentSaveButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Bruk disse svarene til nye tabber</value>
+  </data>
+  <data name="LanguageBox.Header" xml:space="preserve">
+    <value>Appspråk</value>
+  </data>
+  <data name="LanguageRestartNote.Text" xml:space="preserve">
+    <value>Nytt språk tas i bruk neste gang du starter appen.</value>
+  </data>
+  <data name="LanguageSystem.Content" xml:space="preserve">
+    <value>Samme som Windows</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Toppen og spilleren kommer tilbake (Esc eller F11)</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Gå ut av fullskjerm</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Gå ut av fullskjerm</value>
+  </data>
+  <data name="LevelMeter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Inngangsnivå</value>
+  </data>
+  <data name="LibraryHeading.Text" xml:space="preserve">
+    <value>SANGENE DINE</value>
+  </data>
+  <data name="LibraryNav.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sangene dine</value>
+  </data>
+  <data name="Library_DeleteFailed" xml:space="preserve">
+    <value>Kunne ikke slette {0}. Er datamaskinen på?</value>
+  </data>
+  <data name="Library_Deleted" xml:space="preserve">
+    <value>Slettet {0}</value>
+  </data>
+  <data name="Library_OnComputer" xml:space="preserve">
+    <value>{0} · På datamaskinen din</value>
+  </data>
+  <data name="Library_RecordingTitle" xml:space="preserve">
+    <value>Opptak, {0}</value>
+  </data>
+  <data name="Library_SaveFailed" xml:space="preserve">
+    <value>Endringen kunne ikke lagres på denne PC-en. Sjekk at disken ikke er full, og prøv igjen.</value>
+  </data>
+  <data name="Library_Today" xml:space="preserve">
+    <value>I dag</value>
+  </data>
+  <data name="Library_Unavailable" xml:space="preserve">
+    <value>Finnes ikke. Koble til disken den ligger på, for å åpne den.</value>
+  </data>
+  <data name="Library_Yesterday" xml:space="preserve">
+    <value>I går</value>
+  </data>
+  <data name="MatchCodeLabel.Text" xml:space="preserve">
+    <value>Datamaskinen viser det samme tallet</value>
+  </data>
+  <data name="NewSongButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spill inn eller åpne et opptak</value>
+  </data>
+  <data name="NewSongButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ny sang</value>
+  </data>
+  <data name="NewSongLabel.Text" xml:space="preserve">
+    <value>Ny sang</value>
+  </data>
+  <data name="NextBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>En takt fram (Høyre)</value>
+  </data>
+  <data name="NextBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Neste takt</value>
+  </data>
+  <data name="NextBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Neste takt</value>
+  </data>
+  <data name="NextMarkButton.Content" xml:space="preserve">
+    <value>Neste ?</value>
+  </data>
+  <data name="NextMarkButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gå til neste tone merket ? eller !</value>
+  </data>
+  <data name="Notice_Problem" xml:space="preserve">
+    <value>Noe gikk galt, men sangene dine er trygge. Hvis det skjer igjen, start Fretscribe på nytt.</value>
+  </data>
+  <data name="PairingCodeBox.Header" xml:space="preserve">
+    <value>Kode</value>
+  </data>
+  <data name="PairingCodeBox.PlaceholderText" xml:space="preserve">
+    <value>De seks sifrene datamaskinen viser</value>
+  </data>
+  <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>En takt tilbake (Venstre)</value>
+  </data>
+  <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Forrige takt</value>
+  </data>
+  <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Forrige takt</value>
+  </data>
+  <data name="ReadsBox.Header" xml:space="preserve">
+    <value>Du leser</value>
+  </data>
+  <data name="RecordMicBody.Text" xml:space="preserve">
+    <value>Spill det i rommet, med mikrofonen</value>
+  </data>
+  <data name="RecordMicButton.Content" xml:space="preserve">
+    <value>Spill inn</value>
+  </data>
+  <data name="RecordMicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ta opp med mikrofonen (Ctrl+Shift+R)</value>
+  </data>
+  <data name="RecordMicTitle.Text" xml:space="preserve">
+    <value>Spill inn</value>
+  </data>
+  <data name="RecordSystemBody.Text" xml:space="preserve">
+    <value>Lyd fra en annen app på denne PC-en</value>
+  </data>
+  <data name="RecordSystemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Ta opp alt denne PC-en spiller</value>
+  </data>
+  <data name="RecordSystemButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ta opp det som spilles</value>
+  </data>
+  <data name="RecordSystemTitle.Text" xml:space="preserve">
+    <value>Ta opp det som spilles</value>
+  </data>
+  <data name="RecordingTime.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Opptakstid</value>
+  </data>
+  <data name="ReduceMotionSwitch.Header" xml:space="preserve">
+    <value>Mindre bevegelse</value>
+  </data>
+  <data name="ReduceMotionSwitch.OffContent" xml:space="preserve">
+    <value>Av</value>
+  </data>
+  <data name="ReduceMotionSwitch.OnContent" xml:space="preserve">
+    <value>På</value>
+  </data>
+  <data name="ReduceMotionSwitch.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Sidene skifter uten å gli</value>
+  </data>
+  <data name="Score_RenameFailed" xml:space="preserve">
+    <value>{0} kunne ikke lagres som tittel. Prøv igjen.</value>
+  </data>
+  <data name="Screen_CheckTheSong" xml:space="preserve">
+    <value>Sjekk sangen</value>
+  </data>
+  <data name="Screen_Error" xml:space="preserve">
+    <value>Noe gikk galt</value>
+  </data>
+  <data name="Screen_FirstRun" xml:space="preserve">
+    <value>Velkommen</value>
+  </data>
+  <data name="Screen_Home" xml:space="preserve">
+    <value>Hjem</value>
+  </data>
+  <data name="Screen_Tab" xml:space="preserve">
+    <value>Tab</value>
+  </data>
+  <data name="Screen_Transcribing" xml:space="preserve">
+    <value>Skriver ned tonene</value>
+  </data>
+  <data name="Screen_WhatIsThis" xml:space="preserve">
+    <value>Hva er dette?</value>
+  </data>
+  <data name="Screen_YourInstrument" xml:space="preserve">
+    <value>Instrumentet ditt</value>
+  </data>
+  <data name="SettingsAboutHeading.Text" xml:space="preserve">
+    <value>Om</value>
+  </data>
+  <data name="SettingsAccessibilityHeading.Text" xml:space="preserve">
+    <value>Visning</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Instrumentet ditt, språk, utseende og Bandroom på datamaskinen (Ctrl+,)</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="SettingsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="SettingsDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="SettingsDialog.Title" xml:space="preserve">
+    <value>Innstillinger</value>
+  </data>
+  <data name="SettingsEngineHeading.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen</value>
+  </data>
+  <data name="SettingsLanguageHeading.Text" xml:space="preserve">
+    <value>Språk</value>
+  </data>
+  <data name="SettingsYouHeading.Text" xml:space="preserve">
+    <value>Instrumentet ditt</value>
+  </data>
+  <data name="Settings_AppVersion" xml:space="preserve">
+    <value>Versjon {0}</value>
+  </data>
+  <data name="Settings_Engine_AskBusy" xml:space="preserve">
+    <value>Andre enheter venter på datamaskinen. Prøv igjen om et par minutter.</value>
+  </data>
+  <data name="Settings_Engine_AskDenied" xml:space="preserve">
+    <value>Datamaskinen godkjente ikke denne PC-en. Du kan spørre på nytt.</value>
+  </data>
+  <data name="Settings_Engine_AskExpired" xml:space="preserve">
+    <value>Datamaskinen svarte ikke i tide. Du kan spørre på nytt.</value>
+  </data>
+  <data name="Settings_Engine_AskWaiting" xml:space="preserve">
+    <value>Velg Godkjenn på datamaskinen når den viser dette tallet: {0}</value>
+  </data>
+  <data name="Settings_Engine_Chosen" xml:space="preserve">
+    <value>Bruker Bandroom på {0}. Skriv inn den sekssifrede koden den viser, og velg Koble til.</value>
+  </data>
+  <data name="Settings_Engine_ChosenPaired" xml:space="preserve">
+    <value>Bruker Bandroom på {0}. Denne PC-en er allerede koblet til den.</value>
+  </data>
+  <data name="Settings_Engine_CodeWrong" xml:space="preserve">
+    <value>Den koden virket ikke. Sjekk de seks sifrene på datamaskinen, og prøv igjen.</value>
+  </data>
+  <data name="Settings_Engine_Connected" xml:space="preserve">
+    <value>Koblet til Bandroom på {0}.</value>
+  </data>
+  <data name="Settings_Engine_Failed" xml:space="preserve">
+    <value>Noe gikk galt i kontakten med datamaskinen. Prøv igjen.</value>
+  </data>
+  <data name="Settings_Engine_Forgotten" xml:space="preserve">
+    <value>Datamaskinen kjenner ikke igjen denne PC-en lenger. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet.</value>
+  </data>
+  <data name="Settings_Engine_FoundMany" xml:space="preserve">
+    <value>Fant {0} datamaskiner som kjører Bandroom. Velg én.</value>
+  </data>
+  <data name="Settings_Engine_FoundOne" xml:space="preserve">
+    <value>Fant Bandroom på {0}. Velg den for å bruke den.</value>
+  </data>
+  <data name="Settings_Engine_Locked" xml:space="preserve">
+    <value>For mange feil koder. Vent litt, eller spør på datamaskinen i stedet.</value>
+  </data>
+  <data name="Settings_Engine_NeedsCode" xml:space="preserve">
+    <value>Datamaskinen ber om en kode. Skriv inn de seks sifrene den viser, eller spør på datamaskinen i stedet.</value>
+  </data>
+  <data name="Settings_Engine_NoneFound" xml:space="preserve">
+    <value>Fant ingen datamaskin som kjører Bandroom på dette nettverket. Sjekk at Bandroom på datamaskinen sier at den kjører, og at begge er på samme wifi.</value>
+  </data>
+  <data name="Settings_Engine_Searching" xml:space="preserve">
+    <value>Ser etter Bandroom på nettverket …</value>
+  </data>
+  <data name="Settings_Engine_Unpaired" xml:space="preserve">
+    <value>Denne PC-en er ikke lenger koblet til Bandroom på {0}.</value>
+  </data>
+  <data name="Settings_Engine_Unreachable" xml:space="preserve">
+    <value>Fikk ikke kontakt med datamaskinen. Sjekk at Bandroom kjører der, og at begge er på samme nettverk.</value>
+  </data>
+  <data name="Settings_Link_Invalid" xml:space="preserve">
+    <value>Den lenken er ikke en tilkoblingslenke fra Bandroom.</value>
+  </data>
+  <data name="Settings_Link_Looking" xml:space="preserve">
+    <value>Leter etter Bandroom på {0} …</value>
+  </data>
+  <data name="Settings_Link_Newer" xml:space="preserve">
+    <value>Lenken er fra en nyere Bandroom. Oppdater appen, og prøv igjen.</value>
+  </data>
+  <data name="Settings_Link_NotFound" xml:space="preserve">
+    <value>Fant ikke Bandroom på {0}. Sjekk at denne PC-en er på samme nettverk som datamaskinen.</value>
+  </data>
+  <data name="ShowTabButton.Content" xml:space="preserve">
+    <value>Vis tabben</value>
+  </data>
+  <data name="ShowTabButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Åpne tabben for å lese og øve på den</value>
+  </data>
+  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Spill opptaket saktere; tonehøyden er den samme</value>
+  </data>
+  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Saktere</value>
+  </data>
+  <data name="SlowerButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Saktere</value>
+  </data>
+  <data name="SongCards.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sangene dine</value>
+  </data>
+  <data name="SongOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Endre tittel eller slett</value>
+  </data>
+  <data name="SongOptionsButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mer</value>
+  </data>
+  <data name="SongOptionsButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Mer</value>
+  </data>
+  <data name="SongOptions_Delete" xml:space="preserve">
+    <value>Slett</value>
+  </data>
+  <data name="SongOptions_DeleteComputer" xml:space="preserve">
+    <value>Tabben og opptaket slettes fra datamaskinen.</value>
+  </data>
+  <data name="SongOptions_DeleteThisPc" xml:space="preserve">
+    <value>Tabben slettes fra denne PC-en. Bandroom på datamaskinen beholder sin kopi.</value>
+  </data>
+  <data name="SongOptions_DeleteTitle" xml:space="preserve">
+    <value>Slette {0}?</value>
+  </data>
+  <data name="SongOptions_EditTitle" xml:space="preserve">
+    <value>Endre tittel</value>
+  </data>
+  <data name="Song_Cancel" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="Song_EditTitle" xml:space="preserve">
+    <value>Endre tittel</value>
+  </data>
+  <data name="Song_SaveTitle" xml:space="preserve">
+    <value>Lagre</value>
+  </data>
+  <data name="StartError.Title" xml:space="preserve">
+    <value>Det gikk ikke</value>
+  </data>
+  <data name="Start_Error_Capture" xml:space="preserve">
+    <value>Opptaket kunne ikke starte: {0}</value>
+  </data>
+  <data name="Start_Error_ChooseApp" xml:space="preserve">
+    <value>Velg først appen som skal tas opp.</value>
+  </data>
+  <data name="Start_Error_Decode" xml:space="preserve">
+    <value>{0} kan ikke leses. Prøv en annen fil, eller ta det opp i stedet.</value>
+  </data>
+  <data name="Start_Error_Link" xml:space="preserve">
+    <value>Lenker til strømmetjenester kan ikke lastes ned. Spill musikken og ta den opp i stedet.</value>
+  </data>
+  <data name="Start_Error_MicrophonePermission" xml:space="preserve">
+    <value>Fretscribe har ikke lov til å bruke mikrofonen. Gi tilgang i Windows-innstillinger, Personvern, Mikrofon.</value>
+  </data>
+  <data name="Start_Error_NeedsCodec" xml:space="preserve">
+    <value>Windows kunne ikke lese {0}. Slike filer kan trenge Webmedieutvidelser fra Microsoft Store. Prøv en MP3-, WAV- eller MP4-fil, eller ta det opp i stedet.</value>
+  </data>
+  <data name="Start_Error_Score" xml:space="preserve">
+    <value>{0} kan ikke åpnes som tab.</value>
+  </data>
+  <data name="Start_Error_TooShort" xml:space="preserve">
+    <value>Opptaket er kortere enn ett sekund. Prøv igjen.</value>
+  </data>
+  <data name="Start_Error_Unsupported" xml:space="preserve">
+    <value>{0} kan ikke åpnes. Prøv en MP3-, WAV-, M4A- eller MP4-fil.</value>
+  </data>
+  <data name="Start_Imported" xml:space="preserve">
+    <value>Åpnet {0}, {1}</value>
+  </data>
+  <data name="Start_Level_Good" xml:space="preserve">
+    <value>Inngangsnivå, bra</value>
+  </data>
+  <data name="Start_Level_Low" xml:space="preserve">
+    <value>Inngangsnivå, lavt</value>
+  </data>
+  <data name="Start_Level_Silent" xml:space="preserve">
+    <value>Inngangsnivå, stille</value>
+  </data>
+  <data name="Start_Level_TooLoud" xml:space="preserve">
+    <value>Inngangsnivå, for høyt</value>
+  </data>
+  <data name="Start_Notice_Interrupted" xml:space="preserve">
+    <value>Opptaket stoppet av seg selv: enheten ble koblet fra, eller disken er full. Velg Stopp for å beholde det som ble tatt opp.</value>
+  </data>
+  <data name="Start_Notice_NothingPlaying" xml:space="preserve">
+    <value>Det kommer bare stillhet. Sjekk at noe spiller. Strømmeapper stopper som regel opptak.</value>
+  </data>
+  <data name="Start_Notice_SilenceWhilePlaying" xml:space="preserve">
+    <value>Appen spiller, men Fretscribe hører bare stillhet. Strømmeapper stopper som regel opptak. Åpne en fil i stedet, eller ta opp med mikrofonen.</value>
+  </data>
+  <data name="Start_Notice_TooLoud" xml:space="preserve">
+    <value>Lyden er for høy og blir forvrengt. Skru ned volumet litt.</value>
+  </data>
+  <data name="Start_RecordingName" xml:space="preserve">
+    <value>Opptak</value>
+  </data>
+  <data name="Start_RecordingStarted" xml:space="preserve">
+    <value>Opptaket har startet</value>
+  </data>
+  <data name="Start_RecordingStopped" xml:space="preserve">
+    <value>Opptaket er stoppet, {0}</value>
+  </data>
+  <data name="StopRecordingButton.Content" xml:space="preserve">
+    <value>Stopp opptaket</value>
+  </data>
+  <data name="StopRecordingButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Stopp og gå videre med opptaket (Ctrl+Shift+R)</value>
+  </data>
+  <data name="TabPage.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Tab</value>
+  </data>
+  <data name="TabReading.Text" xml:space="preserve">
+    <value>Åpner tabben …</value>
+  </data>
+  <data name="TabReadingProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Åpner tabben</value>
+  </data>
+  <data name="Tab_BarBeat" xml:space="preserve">
+    <value>Takt {0}, slag {1}</value>
+  </data>
+  <data name="Tab_Capo" xml:space="preserve">
+    <value>capo {0}</value>
+  </data>
+  <data name="Tab_Check_Added" xml:space="preserve">
+    <value>{0} toner lagt til for å fullføre en akkord. De er merket ?.</value>
+  </data>
+  <data name="Tab_Check_Added_One" xml:space="preserve">
+    <value>{0} tone lagt til for å fullføre en akkord. Den er merket ?.</value>
+  </data>
+  <data name="Tab_Check_Added_Title" xml:space="preserve">
+    <value>Toner lagt til</value>
+  </data>
+  <data name="Tab_Check_AsHeard" xml:space="preserve">
+    <value>Skriv det slik det ble hørt</value>
+  </data>
+  <data name="Tab_Check_Capo" xml:space="preserve">
+    <value>Capo</value>
+  </data>
+  <data name="Tab_Check_Capo_Change" xml:space="preserve">
+    <value>Endre capo</value>
+  </data>
+  <data name="Tab_Check_Capo_Keeps" xml:space="preserve">
+    <value>Endrer du capo, endres båndene. Tonene er de samme.</value>
+  </data>
+  <data name="Tab_Check_Capo_None" xml:space="preserve">
+    <value>Ingen capo</value>
+  </data>
+  <data name="Tab_Check_Capo_On" xml:space="preserve">
+    <value>Capo på bånd {0}</value>
+  </data>
+  <data name="Tab_Check_Connect" xml:space="preserve">
+    <value>Koble til datamaskinen for å endre dette.</value>
+  </data>
+  <data name="Tab_Check_KeyTempo" xml:space="preserve">
+    <value>Toneart og tempo</value>
+  </data>
+  <data name="Tab_Check_KeyTempo_Spoken" xml:space="preserve">
+    <value>{0}, {1} slag i minuttet, {2} slag i takten</value>
+  </data>
+  <data name="Tab_Check_KeyTempo_Value" xml:space="preserve">
+    <value>{0} · ♩ = {1} · {2}/{3}</value>
+  </data>
+  <data name="Tab_Check_LeftOut" xml:space="preserve">
+    <value>{0} toner er utelatt. De kan ikke spilles sammen med resten.</value>
+  </data>
+  <data name="Tab_Check_LeftOut_One" xml:space="preserve">
+    <value>{0} tone er utelatt. Den kan ikke spilles sammen med resten.</value>
+  </data>
+  <data name="Tab_Check_LeftOut_Title" xml:space="preserve">
+    <value>Utelatte toner</value>
+  </data>
+  <data name="Tab_Check_Marked" xml:space="preserve">
+    <value>{0} toner merket ?</value>
+  </data>
+  <data name="Tab_Check_Marked_One" xml:space="preserve">
+    <value>{0} tone merket ?</value>
+  </data>
+  <data name="Tab_Check_Missing" xml:space="preserve">
+    <value>Det Fretscribe hørte kan ikke vises akkurat nå. {0}</value>
+  </data>
+  <data name="Tab_Check_NoComputer" xml:space="preserve">
+    <value>Den ble skrevet på datamaskinen, som ikke er tilkoblet.</value>
+  </data>
+  <data name="Tab_Check_NoPlace" xml:space="preserve">
+    <value>{0} toner uten plass på instrumentet ditt. Er stemmingen riktig?</value>
+  </data>
+  <data name="Tab_Check_NoPlace_One" xml:space="preserve">
+    <value>{0} tone uten plass på instrumentet ditt. Er stemmingen riktig?</value>
+  </data>
+  <data name="Tab_Check_NoPlace_Title" xml:space="preserve">
+    <value>Toner uten plass</value>
+  </data>
+  <data name="Tab_Check_Notes" xml:space="preserve">
+    <value>Toner å sjekke</value>
+  </data>
+  <data name="Tab_Check_Octave" xml:space="preserve">
+    <value>Oktav</value>
+  </data>
+  <data name="Tab_Check_Octave_AsHeard" xml:space="preserve">
+    <value>Skrevet slik det ble hørt, slik du valgte.</value>
+  </data>
+  <data name="Tab_Check_Octave_Auto" xml:space="preserve">
+    <value>La Fretscribe velge</value>
+  </data>
+  <data name="Tab_Check_Octave_ChosenDown" xml:space="preserve">
+    <value>Skrevet én oktav lavere, slik du valgte.</value>
+  </data>
+  <data name="Tab_Check_Octave_ChosenUp" xml:space="preserve">
+    <value>Skrevet én oktav høyere, slik du valgte.</value>
+  </data>
+  <data name="Tab_Check_Octave_Down" xml:space="preserve">
+    <value>Skrevet én oktav lavere enn det ble hørt.</value>
+  </data>
+  <data name="Tab_Check_Octave_Notes" xml:space="preserve">
+    <value>{0} toner er skrevet en oktav lavere enn de ble hørt.</value>
+  </data>
+  <data name="Tab_Check_Octave_Notes_One" xml:space="preserve">
+    <value>{0} tone er skrevet en oktav lavere enn den ble hørt.</value>
+  </data>
+  <data name="Tab_Check_Octave_TwoDown" xml:space="preserve">
+    <value>Skrevet to oktaver lavere enn det ble hørt.</value>
+  </data>
+  <data name="Tab_Check_Octave_Up" xml:space="preserve">
+    <value>Skrevet én oktav høyere enn det ble hørt.</value>
+  </data>
+  <data name="Tab_Check_Reference" xml:space="preserve">
+    <value>Kammertone</value>
+  </data>
+  <data name="Tab_Check_Reference_Allowed" xml:space="preserve">
+    <value>Fretscribe tok hensyn til det.</value>
+  </data>
+  <data name="Tab_Check_Reference_Flat" xml:space="preserve">
+    <value>Litt lavere enn kammertonen (A = 440): {0} cent.</value>
+  </data>
+  <data name="Tab_Check_Reference_Sharp" xml:space="preserve">
+    <value>Litt høyere enn kammertonen (A = 440): {0} cent.</value>
+  </data>
+  <data name="Tab_Check_SoundsLike" xml:space="preserve">
+    <value>Høres ut som {0}. Skrevet for {1}.</value>
+  </data>
+  <data name="Tab_Check_Tuning" xml:space="preserve">
+    <value>Stemming</value>
+  </data>
+  <data name="Tab_Check_Use" xml:space="preserve">
+    <value>Bruk {0}</value>
+  </data>
+  <data name="Tab_Chip" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Tab_Error_ScoreFile" xml:space="preserve">
+    <value>{0} er noter, ikke et opptak. Fretscribe skriver tab fra det den hører: åpne et opptak, eller spill det inn.</value>
+  </data>
+  <data name="Tab_Failed" xml:space="preserve">
+    <value>Denne tabben kan ikke vises. Gå tilbake og åpne den på nytt.</value>
+  </data>
+  <data name="Tab_Hand_Left" xml:space="preserve">
+    <value>Venstre hånd på halsen (de fleste)</value>
+  </data>
+  <data name="Tab_Hand_Note" xml:space="preserve">
+    <value>Tabben ser lik ut uansett.</value>
+  </data>
+  <data name="Tab_Hand_Right" xml:space="preserve">
+    <value>Høyre hånd på halsen (venstrehåndsinstrument)</value>
+  </data>
+  <data name="Tab_Hand_RightUpsideDown" xml:space="preserve">
+    <value>Høyre hånd på halsen (instrumentet opp ned)</value>
+  </data>
+  <data name="Tab_InstrumentValue" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Tab_InstrumentWithStrings" xml:space="preserve">
+    <value>{0}, {1} strenger</value>
+  </data>
+  <data name="Tab_Instrument_Bass" xml:space="preserve">
+    <value>Bass</value>
+  </data>
+  <data name="Tab_Instrument_Guitar" xml:space="preserve">
+    <value>Gitar</value>
+  </data>
+  <data name="Tab_Instrument_Mandolin" xml:space="preserve">
+    <value>Mandolin</value>
+  </data>
+  <data name="Tab_Instrument_Ukulele" xml:space="preserve">
+    <value>Ukulele</value>
+  </data>
+  <data name="Tab_KindWithStrings_Bass" xml:space="preserve">
+    <value>{0}-strengs bass</value>
+  </data>
+  <data name="Tab_KindWithStrings_Guitar" xml:space="preserve">
+    <value>{0}-strengs gitar</value>
+  </data>
+  <data name="Tab_KindWithStrings_Mandolin" xml:space="preserve">
+    <value>Mandolin</value>
+  </data>
+  <data name="Tab_KindWithStrings_Ukulele" xml:space="preserve">
+    <value>Ukulele</value>
+  </data>
+  <data name="Tab_Kind_Mandolin" xml:space="preserve">
+    <value>Mandolin</value>
+  </data>
+  <data name="Tab_Kind_Ukulele" xml:space="preserve">
+    <value>Sopran, konsert eller tenor</value>
+  </data>
+  <data name="Tab_Kind_UkuleleBaritone" xml:space="preserve">
+    <value>Baryton</value>
+  </data>
+  <data name="Tab_Kind_Unknown" xml:space="preserve">
+    <value>Instrument</value>
+  </data>
+  <data name="Tab_Mark_NoPlace" xml:space="preserve">
+    <value>Takt {0}, slag {1}: en tone her har ingen plass på instrumentet ditt. Er stemmingen riktig?</value>
+  </data>
+  <data name="Tab_Mark_NotSure" xml:space="preserve">
+    <value>Takt {0}, slag {1}: Fretscribe er ikke sikker på denne. Spill takten sakte.</value>
+  </data>
+  <data name="Tab_Marked" xml:space="preserve">
+    <value>{0} toner merket ?</value>
+  </data>
+  <data name="Tab_Marked_One" xml:space="preserve">
+    <value>{0} tone merket ?</value>
+  </data>
+  <data name="Tab_NoCapo" xml:space="preserve">
+    <value>uten capo</value>
+  </data>
+  <data name="Tab_NoPlaceCount" xml:space="preserve">
+    <value>{0} toner uten plass</value>
+  </data>
+  <data name="Tab_NoPlaceCount_One" xml:space="preserve">
+    <value>{0} tone uten plass</value>
+  </data>
+  <data name="Tab_PickupBeat" xml:space="preserve">
+    <value>Opptakten, slag {0}</value>
+  </data>
+  <data name="Tab_Practice_From" xml:space="preserve">
+    <value>Fra takt</value>
+  </data>
+  <data name="Tab_Practice_Getting" xml:space="preserve">
+    <value>Henter opptaket fra datamaskinen …</value>
+  </data>
+  <data name="Tab_Practice_Gone" xml:space="preserve">
+    <value>Datamaskinen har ikke opptaket lenger. Du kan fortsatt lese tabben.</value>
+  </data>
+  <data name="Tab_Practice_Looking" xml:space="preserve">
+    <value>Ser etter opptaket …</value>
+  </data>
+  <data name="Tab_Practice_NoAnswer" xml:space="preserve">
+    <value>Opptaket kom ikke. Er datamaskinen på?</value>
+  </data>
+  <data name="Tab_Practice_NoBeats" xml:space="preserve">
+    <value>Fretscribe kan ikke følge opptaket i denne tabben. Du kan fortsatt lese den.</value>
+  </data>
+  <data name="Tab_Practice_NoRoom" xml:space="preserve">
+    <value>Det er ikke plass til opptaket på denne PC-en. Du kan fortsatt lese tabben.</value>
+  </data>
+  <data name="Tab_Practice_NotHere" xml:space="preserve">
+    <value>Opptaket er ikke på denne PC-en.</value>
+  </data>
+  <data name="Tab_Practice_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Tab_Practice_Play" xml:space="preserve">
+    <value>Spill</value>
+  </data>
+  <data name="Tab_Practice_Repeat" xml:space="preserve">
+    <value>Gjenta takter</value>
+  </data>
+  <data name="Tab_Practice_RepeatOn" xml:space="preserve">
+    <value>Gjentar {0}–{1}</value>
+  </data>
+  <data name="Tab_Practice_RepeatOn_One" xml:space="preserve">
+    <value>Gjentar {0}</value>
+  </data>
+  <data name="Tab_Practice_RepeatSet" xml:space="preserve">
+    <value>Gjenta</value>
+  </data>
+  <data name="Tab_Practice_RepeatStop" xml:space="preserve">
+    <value>Slutt å gjenta</value>
+  </data>
+  <data name="Tab_Practice_RepeatTitle" xml:space="preserve">
+    <value>Gjenta takter</value>
+  </data>
+  <data name="Tab_Practice_Speed" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="Tab_Practice_To" xml:space="preserve">
+    <value>Til takt</value>
+  </data>
+  <data name="Tab_Practice_TooLarge" xml:space="preserve">
+    <value>Opptaket er for stort til å ligge på denne PC-en. Du kan fortsatt lese tabben.</value>
+  </data>
+  <data name="Tab_Practice_Unplayable" xml:space="preserve">
+    <value>Denne PC-en kan ikke spille av opptaket. Du kan fortsatt lese tabben.</value>
+  </data>
+  <data name="Tab_Practice_UpdateApp" xml:space="preserve">
+    <value>Oppdater Fretscribe for å hente opptaket fra datamaskinen.</value>
+  </data>
+  <data name="Tab_Practice_UpdateComputer" xml:space="preserve">
+    <value>Oppdater Bandroom på datamaskinen for å hente opptaket derfra.</value>
+  </data>
+  <data name="Tab_Reads_Notation" xml:space="preserve">
+    <value>Noter</value>
+  </data>
+  <data name="Tab_Reads_Tab" xml:space="preserve">
+    <value>Tab</value>
+  </data>
+  <data name="Tab_Reads_TabAndNotation" xml:space="preserve">
+    <value>Tab og noter</value>
+  </data>
+  <data name="Tab_Size" xml:space="preserve">
+    <value>Størrelse</value>
+  </data>
+  <data name="Tab_Song" xml:space="preserve">
+    <value>Tab</value>
+  </data>
+  <data name="Tab_Strings" xml:space="preserve">
+    <value>Strenger</value>
+  </data>
+  <data name="Tab_StringsCount" xml:space="preserve">
+    <value>{0} strenger</value>
+  </data>
+  <data name="Tab_ToCheck" xml:space="preserve">
+    <value>{0} toner å sjekke</value>
+  </data>
+  <data name="Tab_ToCheck_One" xml:space="preserve">
+    <value>{0} tone å sjekke</value>
+  </data>
+  <data name="Tab_TooOld_Bass" xml:space="preserve">
+    <value>Bandroom på datamaskinen er for gammel til å skrive denne tabben. Oppdater den der.</value>
+  </data>
+  <data name="Tab_TooOld_Guitar" xml:space="preserve">
+    <value>Bandroom på datamaskinen er for gammel til å skrive gitartab. Oppdater den der.</value>
+  </data>
+  <data name="Tab_TooOld_Mandolin" xml:space="preserve">
+    <value>Bandroom på datamaskinen er for gammel til å skrive mandolintab. Oppdater den der.</value>
+  </data>
+  <data name="Tab_TooOld_Ukulele" xml:space="preserve">
+    <value>Bandroom på datamaskinen er for gammel til å skrive ukuleletab. Oppdater den der.</value>
+  </data>
+  <data name="Tab_Tuning_Bead" xml:space="preserve">
+    <value>BEAD</value>
+  </data>
+  <data name="Tab_Tuning_CStandard" xml:space="preserve">
+    <value>C-standard (to hele trinn ned)</value>
+  </data>
+  <data name="Tab_Tuning_DStandard" xml:space="preserve">
+    <value>D-standard (et helt trinn ned)</value>
+  </data>
+  <data name="Tab_Tuning_Dadgad" xml:space="preserve">
+    <value>DADGAD</value>
+  </data>
+  <data name="Tab_Tuning_DropA" xml:space="preserve">
+    <value>Drop A</value>
+  </data>
+  <data name="Tab_Tuning_DropB" xml:space="preserve">
+    <value>Drop B</value>
+  </data>
+  <data name="Tab_Tuning_DropC" xml:space="preserve">
+    <value>Drop C</value>
+  </data>
+  <data name="Tab_Tuning_DropD" xml:space="preserve">
+    <value>Drop D</value>
+  </data>
+  <data name="Tab_Tuning_EbStandard" xml:space="preserve">
+    <value>Ess-standard (et halvt trinn ned)</value>
+  </data>
+  <data name="Tab_Tuning_HighG" xml:space="preserve">
+    <value>Høy G</value>
+  </data>
+  <data name="Tab_Tuning_LowG" xml:space="preserve">
+    <value>Lav G</value>
+  </data>
+  <data name="Tab_Tuning_OpenD" xml:space="preserve">
+    <value>Åpen D</value>
+  </data>
+  <data name="Tab_Tuning_OpenE" xml:space="preserve">
+    <value>Åpen E</value>
+  </data>
+  <data name="Tab_Tuning_OpenG" xml:space="preserve">
+    <value>Åpen G</value>
+  </data>
+  <data name="Tab_Tuning_Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Tab_What_Asking" xml:space="preserve">
+    <value>Spør datamaskinen …</value>
+  </data>
+  <data name="Tab_What_ChooseOne" xml:space="preserve">
+    <value>Velg hva opptaket er.</value>
+  </data>
+  <data name="Tab_What_ConnectFirst" xml:space="preserve">
+    <value>Koble til datamaskinen for å fortsette.</value>
+  </data>
+  <data name="Tab_What_Instrument" xml:space="preserve">
+    <value>Bare instrumentet mitt</value>
+  </data>
+  <data name="Tab_What_Instrument_Desc" xml:space="preserve">
+    <value>Ett instrument som spiller, uten noe annet.</value>
+  </data>
+  <data name="Tab_What_NoRecording" xml:space="preserve">
+    <value>Dette opptaket er ikke lenger på denne PC-en. Åpne det på nytt fra Hjem.</value>
+  </data>
+  <data name="Tab_What_Song" xml:space="preserve">
+    <value>En hel sang</value>
+  </data>
+  <data name="Tab_What_Song_Desc_Bass" xml:space="preserve">
+    <value>Et band eller en plate. Fretscribe plukker ut bassen.</value>
+  </data>
+  <data name="Tab_What_Song_Desc_Guitar" xml:space="preserve">
+    <value>Et band eller en plate. Fretscribe plukker ut gitaren.</value>
+  </data>
+  <data name="Tab_What_Song_Desc_Mandolin" xml:space="preserve">
+    <value>Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en mandolin fra en gitar.</value>
+  </data>
+  <data name="Tab_What_Song_Desc_Ukulele" xml:space="preserve">
+    <value>Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en ukulele fra en gitar.</value>
+  </data>
+  <data name="Tab_Zoom" xml:space="preserve">
+    <value>{0} %</value>
+  </data>
+  <data name="ToStartButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Tilbake til starten av gjentakelsen, eller av sangen</value>
+  </data>
+  <data name="ToStartButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Til starten</value>
+  </data>
+  <data name="ToStartButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Til starten</value>
+  </data>
+  <data name="TranscribeLeaveNote.Text" xml:space="preserve">
+    <value>Tabben ligger i Sangene dine når den er klar.</value>
+  </data>
+  <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Skriver ned tonene</value>
+  </data>
+  <data name="TranscribeWhere.Text" xml:space="preserve">
+    <value>På datamaskinen</value>
+  </data>
+  <data name="Transcribe_CancelConfirm" xml:space="preserve">
+    <value>Slutte å skrive det ned? Opptaket blir liggende på denne PC-en.</value>
+  </data>
+  <data name="Transcribe_Cancelled" xml:space="preserve">
+    <value>Stoppet. Opptaket beholdes.</value>
+  </data>
+  <data name="Transcribe_Device" xml:space="preserve">
+    <value>Kjører på {0}</value>
+  </data>
+  <data name="Transcribe_Done" xml:space="preserve">
+    <value>Tabben er klar</value>
+  </data>
+  <data name="Transcribe_Error" xml:space="preserve">
+    <value>Stoppet: {0}</value>
+  </data>
+  <data name="Transcribe_Eta_Hours" xml:space="preserve">
+    <value>Omtrent {0} timer igjen</value>
+  </data>
+  <data name="Transcribe_Eta_Minutes" xml:space="preserve">
+    <value>Omtrent {0} minutter igjen</value>
+  </data>
+  <data name="Transcribe_Eta_UnderMinute" xml:space="preserve">
+    <value>Under ett minutt igjen</value>
+  </data>
+  <data name="Transcribe_Eta_Unknown" xml:space="preserve">
+    <value>Regner ut hvor lang tid som er igjen</value>
+  </data>
+  <data name="Transcribe_Failed" xml:space="preserve">
+    <value>Tabben kunne ikke skrives</value>
+  </data>
+  <data name="Transcribe_Overline" xml:space="preserve">
+    <value>Steg {0} av {1} · {2}</value>
+  </data>
+  <data name="Transcribe_ProgressAnnouncement" xml:space="preserve">
+    <value>{0} prosent. {1}. {2}</value>
+  </data>
+  <data name="Transcribe_Rearranging" xml:space="preserve">
+    <value>Skriver det ned på nytt med endringen din</value>
+  </data>
+  <data name="Transcribe_Stage_Arrange" xml:space="preserve">
+    <value>Legger tonene på strengene</value>
+  </data>
+  <data name="Transcribe_Stage_Beats" xml:space="preserve">
+    <value>Finner pulsen</value>
+  </data>
+  <data name="Transcribe_Stage_Engrave" xml:space="preserve">
+    <value>Setter opp tabben</value>
+  </data>
+  <data name="Transcribe_Stage_Notes" xml:space="preserve">
+    <value>Skriver ned tonene</value>
+  </data>
+  <data name="Transcribe_Stage_Separate" xml:space="preserve">
+    <value>Plukker ut instrumentet ditt</value>
+  </data>
+  <data name="Transcribe_Stage_Upload" xml:space="preserve">
+    <value>Gjør opptaket klart</value>
+  </data>
+  <data name="Transcribe_Stage_Working" xml:space="preserve">
+    <value>Arbeider</value>
+  </data>
+  <data name="Transcribe_Started" xml:space="preserve">
+    <value>Skriver ned {0} som {1}</value>
+  </data>
+  <data name="Transcribe_StepCurrent" xml:space="preserve">
+    <value>{0}, nå</value>
+  </data>
+  <data name="Transcribe_StepDone" xml:space="preserve">
+    <value>{0}, ferdig</value>
+  </data>
+  <data name="Transcribe_StepPending" xml:space="preserve">
+    <value>{0}, kommer</value>
+  </data>
+  <data name="Transcribe_Step_Arrange" xml:space="preserve">
+    <value>Legger tonene på strengene</value>
+  </data>
+  <data name="Transcribe_Step_Beats" xml:space="preserve">
+    <value>Finner pulsen</value>
+  </data>
+  <data name="Transcribe_Step_Layout" xml:space="preserve">
+    <value>Setter opp tabben</value>
+  </data>
+  <data name="Transcribe_Step_Notes" xml:space="preserve">
+    <value>Skriver ned tonene</value>
+  </data>
+  <data name="Transcribe_Step_Ready" xml:space="preserve">
+    <value>Gjør opptaket klart</value>
+  </data>
+  <data name="Transcribe_Step_Separate" xml:space="preserve">
+    <value>Plukker ut instrumentet ditt</value>
+  </data>
+  <data name="Transcribe_Step_SeparateSoloist" xml:space="preserve">
+    <value>Plukker ut instrumentet ditt</value>
+  </data>
+  <data name="TuningBox.Header" xml:space="preserve">
+    <value>Vanlig stemming</value>
+  </data>
+  <data name="UnpairButton.Content" xml:space="preserve">
+    <value>Glem denne datamaskinen</value>
+  </data>
+  <data name="UnpairButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Datamaskinen glemmer denne PC-en, og denne PC-en glemmer datamaskinen</value>
+  </data>
+  <data name="WhatCancelButton.Content" xml:space="preserve">
+    <value>Avbryt</value>
+  </data>
+  <data name="WhatCancelButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Tilbake til Hjem; opptaket beholdes</value>
+  </data>
+  <data name="WhatHeading.Text" xml:space="preserve">
+    <value>Hva er dette?</value>
+  </data>
+  <data name="WhatIntro.Text" xml:space="preserve">
+    <value>Svaret ditt bestemmer hvordan Fretscribe lytter.</value>
+  </data>
+  <data name="WhatOptions.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hva er dette?</value>
+  </data>
+  <data name="WhatWhere.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen skriver ned tonene. Opptaket sendes ikke til nettet.</value>
+  </data>
+  <data name="WhatWhereNeeded.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen skriver ned tonene.</value>
+  </data>
+  <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gjør tabben større</value>
+  </data>
+  <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Større</value>
+  </data>
+  <data name="ZoomInButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Større</value>
+  </data>
+  <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Gjør tabben mindre</value>
+  </data>
+  <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Mindre</value>
+  </data>
+  <data name="ZoomOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Mindre</value>
+  </data>
+</root>

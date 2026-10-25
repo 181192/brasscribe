@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>
 /// The Axe.Windows rules and the walk with Tab on every screen of Play for Windows, one start of the app each

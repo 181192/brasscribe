@@ -1,6 +1,6 @@
 #!/bin/sh
-# Everything of Brasscribe Play for Windows that builds and runs off Windows:
-# core tests, the Windows audio library, the WinUI controls library, a C# type-check of the app (also as the screen
+# Everything of the Windows apps that builds and runs off Windows:
+# the shared tests, the Windows audio library, the WinUI controls library, a C# type-check of each app (also as its screen
 # catalogue's test host) and the tests of the catalogues' picture checks.
 # The XAML compile, PRI generation and the app itself need Windows (see .github/workflows/windows.yml).
 set -eu
@@ -14,5 +14,7 @@ dotnet build services/Kalli.Scribe.Audio.Windows
 dotnet build features/Kalli.Scribe.Controls -p:Platform=x64 -p:AppxGeneratePriEnabled=false
 dotnet build tools/CodeBehindCheck -p:Platform=x64 -p:AppxGeneratePriEnabled=false
 dotnet build tools/CodeBehindCheck -p:Platform=x64 -p:AppxGeneratePriEnabled=false -p:ScribeCatalogue=true
+dotnet build tools/CodeBehindCheck/Fretscribe -p:Platform=x64 -p:AppxGeneratePriEnabled=false
+dotnet build tools/CodeBehindCheck/Fretscribe -p:Platform=x64 -p:AppxGeneratePriEnabled=false -p:ScribeCatalogue=true
 dotnet test tools/ScreenCheck.Tests
 dotnet build tools/ScreenCheck

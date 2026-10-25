@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using Brasscribe.ScreenCheck;
+using Kalli.Scribe.ScreenCheck;
 
 namespace Kalli.Brasscribe.Catalogue;
 

@@ -1,0 +1,49 @@
+using Kalli.Scribe.Tab;
+using Kalli.Scribe.ViewModels;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
+
+namespace Kalli.Fretscribe.Views;
+
+/// <summary>Writing the notes down: the plain-language steps, percentage, time left and Cancel (which asks first).</summary>
+public sealed partial class TranscribingPage : Page, IScreenPage
+{
+    public TranscribingPage() => InitializeComponent();
+
+    public TabFlowViewModel Main { get; private set; } = null!;
+    public TranscriptionViewModel ViewModel { get; private set; } = null!;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        Main = (TabFlowViewModel)e.Parameter;
+        ViewModel = Main.Transcription;
+        Bindings.Update();
+    }
+
+    public void FocusHeading() => Heading.Focus(FocusState.Programmatic);
+
+    /// <summary>"Stop writing it down?" Esc keeps going and returns focus to Cancel.</summary>
+    private async void OnCancelClick(object sender, RoutedEventArgs e)
+    {
+        ViewModel.AskCancelCommand.Execute(null);
+        var strings = App.Strings;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
+            Title = strings["CancelDialog_Title"],
+            Content = strings["CancelDialog_Content"],
+            PrimaryButtonText = strings["CancelDialog_Stop"],
+            CloseButtonText = strings["CancelDialog_Keep"],
+            DefaultButton = ContentDialogButton.Close,
+        };
+        var result = await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog);
+        if (result == ContentDialogResult.Primary) await ViewModel.CancelCommand.ExecuteAsync(null);
+        else
+        {
+            ViewModel.KeepGoingCommand.Execute(null);
+            CancelButton.Focus(FocusState.Programmatic);
+        }
+    }
+}

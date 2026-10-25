@@ -826,9 +826,32 @@ def android_outputs() -> dict[str, str | bytes]:
 
 # ---------------------------------------------------------------- Windows
 
-def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
+def mix(a: str, b: str, t: float) -> str:
+    """The colour t of the way from a to b (#RRGGBB)."""
+    pa, pb = ([int(c[i:i + 2], 16) for i in (1, 3, 5)] for c in (a, b))
+    return "#" + "".join(f"{round(x + (y - x) * t):02X}" for x, y in zip(pa, pb))
+
+
+def windows_accent(mode: str) -> list[tuple[str, str]]:
+    """WinUI's accent ramp from the primary role, so accent buttons, the dialog primary, checked toggles, check
+    boxes and radio buttons are the one primary colour, never the system accent. WinUI fills with Dark1 in Light and
+    Light2 in Dark, and writes accent text with Dark2/Dark3 and Light3: those are the primary, a step towards its
+    on-colour, and one away from it."""
+    roles = neutral_roles()
+    p, on = hexval(mode, roles["primary"]), hexval(mode, roles["on-primary"])
+    if mode == "light":
+        ramp = {"": p, "Dark1": p, "Dark2": mix(p, on, .06), "Dark3": mix(p, on, .12),
+                "Light1": mix(p, on, .06), "Light2": mix(p, on, .12), "Light3": mix(p, on, .3)}
+    else:
+        ramp = {"": p, "Dark1": mix(p, on, .08), "Dark2": mix(p, on, .16), "Dark3": mix(p, on, .24),
+                "Light1": mix(p, "#FFFFFF", .3), "Light2": p, "Light3": mix(p, "#FFFFFF", .6)}
+    return [(f"SystemAccentColor{k}", v) for k, v in ramp.items()]
+
+
+def windows_theme_dictionaries(light: str, dark: str, accent: bool = False) -> list[str]:
     """The Light, Dark and HighContrast theme dictionaries of every colour role, for two modes of tokens.json:
-    the neutral roles under Scribe…, then the brand's own under its prefix. A role has one key."""
+    the neutral roles under Scribe…, then the brand's own under its prefix. A role has one key. With accent, also
+    WinUI's accent ramp from the primary (windows_accent); contrast themes keep the system's."""
     neutral = [("Scribe" + pascal(name), src, NEUTRAL["roles"][name]["windows"]) for name, src in neutral_roles().items()]
     own = [(KEY + pascal(r), r, system_colour(r, "windows")) for r in own_roles()]
     X = ["    <ResourceDictionary.ThemeDictionaries>"]
@@ -839,6 +862,9 @@ def windows_theme_dictionaries(light: str, dark: str) -> list[str]:
                 X.append(f'            <Color x:Key="{k}Color">#{round(alpha(mode, r) * 255):02X}{hexval(mode, r)[1:]}</Color>')
             for k, r, _ in part:
                 X.append(f'            <SolidColorBrush x:Key="{k}Brush" Color="{{StaticResource {k}Color}}"/>')
+        if accent:
+            for k, v in windows_accent(mode):
+                X.append(f'            <Color x:Key="{k}">#FF{v[1:]}</Color>')
         X.append("        </ResourceDictionary>")
     X.append('        <ResourceDictionary x:Key="HighContrast">')
     for part in (neutral, own):
@@ -869,7 +895,7 @@ def windows_outputs() -> dict[str, str | bytes]:
          f"<!-- Merge into App.xaml: <ResourceDictionary Source=\"ms-appx:///Themes/{PRODUCT}Theme.xaml\"/>.",
          f"     Use {{ThemeResource ScribeTextBrush}} etc.: Scribe… is what every brand has (design/tooling/README.md),",
          f"     {KEY}… is {PRODUCT}'s own. Contrast themes map every role to the user's system colours. -->"]
-    X += XAML_OPEN + windows_theme_dictionaries("light", "dark") + [""]
+    X += XAML_OPEN + windows_theme_dictionaries("light", "dark", accent=True) + [""]
     B = ["    <!-- Spacing (epx), radii, sizes -->"]
     for k, v in group("space").items():
         B.append(f'    <x:Double x:Key="{KEY}Space{k}">{fmt(dimension(v))}</x:Double>')

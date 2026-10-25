@@ -1,4 +1,4 @@
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>A screen could not be taken as the screen that was asked for: no screenshot of it is kept to compare.</summary>
 public sealed class ScreenNotTakenException(string why) : Exception(why);

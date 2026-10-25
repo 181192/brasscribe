@@ -1,6 +1,6 @@
-using Brasscribe.ScreenCheck;
+using Kalli.Scribe.ScreenCheck;
 
-namespace Brasscribe.ScreenCheck.Tests;
+namespace Kalli.Scribe.ScreenCheck.Tests;
 
 /// <summary>Which part of the window the walk with Tab must reach everything in.</summary>
 public class KeyboardScopeTests

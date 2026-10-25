@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Kalli.Fretscribe.Views.TabScreenPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Kalli.Fretscribe.Controls"
+    xmlns:views="using:Kalli.Fretscribe.Views"
+    NavigationCacheMode="Required"
+    KeyboardAcceleratorPlacementMode="Hidden">
+    <Page.KeyboardAccelerators>
+        <!-- Space plays and pauses; Left goes back to the start of the repeat (a bar back when nothing is repeated), Right a bar on. -->
+        <KeyboardAccelerator Key="Space" Invoked="OnSpace" />
+        <KeyboardAccelerator Key="Left" Invoked="OnLeft" />
+        <KeyboardAccelerator Key="Right" Invoked="OnRight" />
+        <KeyboardAccelerator Key="F11" Invoked="OnFullScreen" />
+        <KeyboardAccelerator Key="Escape" Invoked="OnEscape" />
+    </Page.KeyboardAccelerators>
+
+    <!-- The tab, to read and to practise: the tuning and capo above it with what there is to check, the page, and the
+         player under it. The recording is the sound; the cursor stands at the beat it is at and the page follows it. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="Header" Padding="24,16,24,8" ColumnSpacing="12" Visibility="{x:Bind ViewModel.ChromeShown, Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="6">
+                <TextBlock x:Name="Heading" Style="{StaticResource SectionHeadingStyle}" Margin="0" AutomationProperties.HeadingLevel="Level1"
+                           IsTabStop="True" Text="{x:Bind ViewModel.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border Style="{StaticResource StatusRowStyle}" Padding="10,4">
+                        <TextBlock Text="{x:Bind ViewModel.Chip, Mode=OneWay}" Style="{StaticResource LabelStyle}" />
+                    </Border>
+                    <TextBlock Text="{x:Bind ViewModel.Summary, Mode=OneWay}" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                <Button x:Uid="NextMarkButton" Style="{StaticResource ActionButtonStyle}" Click="OnNextMark"
+                        Visibility="{x:Bind views:Shown.HasText(ViewModel.Summary), Mode=OneWay}" />
+                <Button x:Uid="ZoomOutButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.ZoomOutCommand}">
+                    <FontIcon Glyph="{StaticResource FsIconZoomOut}" FontSize="16" />
+                </Button>
+                <TextBlock Text="{x:Bind ViewModel.ZoomText, Mode=OneWay}" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" MinWidth="44"
+                           TextAlignment="Center" />
+                <Button x:Uid="ZoomInButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.ZoomInCommand}">
+                    <FontIcon Glyph="{StaticResource FsIconZoomIn}" FontSize="16" />
+                </Button>
+                <Button x:Name="FullScreenButton" x:Uid="FullScreenButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.FullScreenCommand}">
+                    <FontIcon Glyph="{StaticResource FsIconFullScreen}" FontSize="16" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Padding="24" Spacing="12" Visibility="{x:Bind ViewModel.IsReading, Mode=OneWay}">
+            <TextBlock x:Uid="TabReading" Style="{StaticResource LeadStyle}" />
+            <ProgressBar IsIndeterminate="True" Style="{StaticResource ProgressStyle}" x:Uid="TabReadingProgress" />
+        </StackPanel>
+        <InfoBar Grid.Row="1" Severity="Error" IsClosable="False" VerticalAlignment="Top" Margin="24"
+                 IsOpen="{x:Bind ViewModel.HasFailed, Mode=OneWay}" Message="{x:Bind ViewModel.FailedText, Mode=OneWay}" />
+        <controls:TabView x:Name="Tab" Grid.Row="1" Margin="12,0" x:Uid="TabPage" />
+
+        <!-- Full screen with the controls aside: Play or Pause and Leave full screen stay over the tab's corner. A tap or
+             click on the tab brings the rest back. -->
+        <StackPanel x:Name="MinimalControls" Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="16" Padding="4"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource ScribeSurfaceBrush}"
+                    BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="1" CornerRadius="8"
+                    Visibility="{x:Bind ViewModel.MinimalShown, Mode=OneWay}">
+            <Button x:Name="MinimalPlayButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.PlayPauseCommand}"
+                    IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}" AutomationProperties.Name="{x:Bind ViewModel.PlayLabel, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.PlayLabel, Mode=OneWay}">
+                <FontIcon x:Name="MinimalPlayGlyph" Glyph="{StaticResource FsIconPlay}" FontSize="16" />
+            </Button>
+            <Button x:Name="LeaveFullScreenButton" x:Uid="LeaveFullScreenButton" Style="{StaticResource IconButtonStyle}" Click="OnLeaveFullScreen">
+                <FontIcon Glyph="{StaticResource FsIconFullScreenLeave}" FontSize="16" />
+            </Button>
+        </StackPanel>
+
+        <!-- The player: play, back to the start, a bar back and on, where the song is, the speed and the bars repeated. -->
+        <Border x:Name="Player" Grid.Row="2" Background="{ThemeResource ScribeSurfaceBrush}" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,1,0,0"
+                Padding="16,10" Visibility="{x:Bind ViewModel.ChromeShown, Mode=OneWay}">
+            <Grid ColumnSpacing="12" RowSpacing="6">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="PlayButton" Style="{StaticResource PlayButtonStyle}" Command="{x:Bind ViewModel.PlayPauseCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}" AutomationProperties.Name="{x:Bind ViewModel.PlayLabel, Mode=OneWay}"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.PlayLabel, Mode=OneWay}">
+                        <FontIcon x:Name="PlayGlyph" Glyph="{StaticResource FsIconPlay}" FontSize="18" />
+                    </Button>
+                    <Button x:Uid="ToStartButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.ToStartCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
+                        <FontIcon Glyph="{StaticResource FsIconRestart}" FontSize="16" />
+                    </Button>
+                    <Button x:Uid="PreviousBarButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.PreviousBarCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
+                        <FontIcon Glyph="{StaticResource FsIconPreviousBar}" FontSize="16" />
+                    </Button>
+                    <Button x:Uid="NextBarButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.NextBarCommand}"
+                            IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
+                        <FontIcon Glyph="{StaticResource FsIconNextBar}" FontSize="16" />
+                    </Button>
+                </StackPanel>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{x:Bind ViewModel.PlaceText, Mode=OneWay}" Style="{StaticResource NumericStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.RecordingText, Mode=OneWay}" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                               Visibility="{x:Bind views:Shown.HasText(ViewModel.RecordingText), Mode=OneWay}" AutomationProperties.LiveSetting="Polite" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button x:Uid="FetchRecordingButton" Style="{StaticResource ActionButtonStyle}" Click="OnFetch"
+                            Visibility="{x:Bind ViewModel.CanFetch, Mode=OneWay}" />
+                    <Button x:Uid="SlowerButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.SlowerCommand}">
+                        <FontIcon Glyph="{StaticResource FsIconMinus}" FontSize="14" />
+                    </Button>
+                    <TextBlock Text="{x:Bind ViewModel.SpeedText, Mode=OneWay}" Style="{StaticResource LabelStyle}" VerticalAlignment="Center" MinWidth="64"
+                               TextAlignment="Center" />
+                    <Button x:Uid="FasterButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.FasterCommand}">
+                        <FontIcon Glyph="{StaticResource FsIconPlus}" FontSize="14" />
+                    </Button>
+                    <Button x:Name="RepeatButton" Style="{StaticResource ActionButtonStyle}" Click="OnRepeat" MinHeight="40">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource FsIconLoop}" FontSize="16" />
+                            <TextBlock x:Name="RepeatLabel" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

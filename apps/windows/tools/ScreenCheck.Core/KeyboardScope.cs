@@ -1,4 +1,4 @@
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>An element above a Tab stop: its UI Automation runtime id, and whether it is an open modal dialog.</summary>
 public readonly record struct ScopeNode(string Id, bool IsModalDialog);

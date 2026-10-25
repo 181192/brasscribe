@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>
 /// Bandroom for Windows' screen catalogue: every view with sample content (--show VIEW [--state STATE], no engine),

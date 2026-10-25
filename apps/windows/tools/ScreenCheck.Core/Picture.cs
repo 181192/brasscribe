@@ -1,4 +1,4 @@
-namespace Brasscribe.ScreenCheck;
+namespace Kalli.Scribe.ScreenCheck;
 
 /// <summary>A screenshot as 8-bit BGRA rows, top to bottom (the layout of RenderTargetBitmap and GDI+).</summary>
 public sealed class Picture(int width, int height, byte[] bgra)

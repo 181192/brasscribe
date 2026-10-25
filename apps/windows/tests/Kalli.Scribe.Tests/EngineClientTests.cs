@@ -105,6 +105,31 @@ public class EngineClientTests
     }
 
     [Fact]
+    public async Task Reads_a_tab_and_the_recording_a_job_was_made_from()
+    {
+        var tab = File.ReadAllText(TestPaths.RepoFile("apps/fixtures/bass-line/tab.json")!);
+        var (c, h) = Make((r, _) => r.RequestUri!.AbsolutePath switch
+        {
+            "/v1/jobs/j1/tab" => FakeHandler.Json(tab),
+            "/v1/jobs/j1/input" => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 2, 3]) },
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+        });
+
+        var read = await c.GetTabAsync("j1");
+        await using var input = await c.GetJobInputAsync("j1");
+        using var bytes = new MemoryStream();
+        await input.CopyToAsync(bytes);
+
+        Assert.Equal("bass-4-standard", read.Preset);
+        Assert.NotEmpty(read.Notes);
+        Assert.Equal([1, 2, 3], bytes.ToArray());
+        // A job without a tab is the engine's 404.
+        var e = await Assert.ThrowsAsync<EngineException>(() => c.GetTabAsync("j2"));
+        Assert.Equal(HttpStatusCode.NotFound, e.Status);
+        Assert.Equal(3, h.Requests.Count);
+    }
+
+    [Fact]
     public async Task Rejected_pairing_code_is_a_plain_message()
     {
         var (c, _) = Make((_, _) => new HttpResponseMessage(HttpStatusCode.Forbidden));

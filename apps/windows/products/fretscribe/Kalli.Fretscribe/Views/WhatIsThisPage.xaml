@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Kalli.Fretscribe.Views.WhatIsThisPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:tab="using:Kalli.Scribe.Tab"
+    xmlns:views="using:Kalli.Fretscribe.Views"
+    NavigationCacheMode="Required">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="820" Padding="40,64,40,32" Spacing="12" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <FontIcon Glyph="{StaticResource FsIconFile}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
+                <TextBlock x:Name="SourceLine" Style="{StaticResource MutedStyle}" />
+            </StackPanel>
+            <TextBlock x:Name="Heading" x:Uid="WhatHeading" Style="{StaticResource ScreenHeadingStyle}"
+                       AutomationProperties.HeadingLevel="Level1" IsTabStop="True" />
+            <TextBlock x:Uid="WhatIntro" Style="{StaticResource LeadStyle}" Margin="0,0,0,16" TextWrapping="Wrap" />
+
+            <!-- A radio group of two cards: arrows move between answers. For a guitar or a bass nothing is picked for you. -->
+            <RadioButtons x:Name="Options" x:Uid="WhatOptions" ItemsSource="{x:Bind ViewModel.Choices}"
+                          SelectionChanged="OnSelectionChanged" MaxColumns="2">
+                <RadioButtons.ItemTemplate>
+                    <DataTemplate x:DataType="tab:RecordingChoice">
+                        <RadioButton Style="{StaticResource ChoiceCardStyle}" Margin="0,0,16,16"
+                                     AutomationProperties.Name="{x:Bind Label}" AutomationProperties.HelpText="{x:Bind Description}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{x:Bind Label}" Style="{StaticResource HeadlineStyle}" />
+                                <TextBlock Text="{x:Bind Description}" Style="{StaticResource MutedStyle}" FontSize="15" LineHeight="21" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </RadioButton>
+                    </DataTemplate>
+                </RadioButtons.ItemTemplate>
+            </RadioButtons>
+
+            <!-- The computer writes the notes down for both: where it is, or how to connect it. -->
+            <Grid ColumnSpacing="10" Visibility="{x:Bind ViewModel.ComputerThere, Mode=OneWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="{StaticResource FsIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                <TextBlock Grid.Column="1" x:Uid="WhatWhere" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+            </Grid>
+            <StackPanel Spacing="8" Visibility="{x:Bind views:Shown.Not(ViewModel.ComputerThere), Mode=OneWay}">
+                <TextBlock x:Uid="WhatWhereNeeded" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                <views:ConnectionRow x:Name="ConnectionStatus" ActionInvoked="OnConnectionAction" />
+            </StackPanel>
+
+            <Grid ColumnSpacing="16" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <!-- One line says what is still missing; a screen reader is told when it changes, without interrupting. -->
+                <TextBlock x:Name="MissingText" Style="{StaticResource MutedStyle}" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Text="{x:Bind ViewModel.Missing, Mode=OneWay}" AutomationProperties.LiveSetting="Polite" />
+                <Button x:Name="CancelButton" x:Uid="WhatCancelButton" Grid.Column="1" Style="{StaticResource PlainButtonStyle}" Click="OnCancel" />
+                <Button x:Name="ContinueButton" x:Uid="ContinueButton" Grid.Column="2" Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{x:Bind ViewModel.ContinueCommand}" AccessKey="C"
+                        AutomationProperties.HelpText="{x:Bind ViewModel.Missing, Mode=OneWay}" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

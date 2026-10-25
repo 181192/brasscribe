@@ -45,6 +45,7 @@ What a release ships:
 | `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `scribe-core` inside |
 | `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `scribe-core` inside |
 | `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |
+| `fretscribe-windows-x64.zip` | Fretscribe for Windows, self-contained (preview). Built in a job of its own: if it fails, the release goes out without it |
 | `scribe-core-*` | the `scribe-core` command-line tool, per OS |
 | `SHA256SUMS` | checksums of the files above |
 

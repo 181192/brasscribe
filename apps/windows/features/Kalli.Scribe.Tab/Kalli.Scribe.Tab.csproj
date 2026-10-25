@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Tab for one fretted instrument: the player's instrument, the tab's page read back from its MusicXML, the marks
+       on it, the song check, and practising with the recording. Logic and state only. Platform-neutral. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Kalli.Scribe.Tab</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Records and constructors document only the parameters that need it. -->
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\Kalli.Scribe.Services\Kalli.Scribe.Services.csproj" />
+    <ProjectReference Include="..\Kalli.Scribe.Play\Kalli.Scribe.Play.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kalli.Scribe.Tests" />
+  </ItemGroup>
+</Project>

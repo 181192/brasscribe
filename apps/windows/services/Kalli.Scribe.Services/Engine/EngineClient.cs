@@ -102,6 +102,14 @@ public interface IEngineClient
     Task<Evidence> GetEvidenceAsync(string jobId, CancellationToken ct = default) =>
         throw new NotSupportedException("This engine client cannot read evidence.");
 
+    /// <summary>The tab of a tab job: a string and fret for every note, and what the song check asks about.</summary>
+    Task<TabResult> GetTabAsync(string jobId, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot read tabs.");
+
+    /// <summary>The recording the job was made from, as it was sent.</summary>
+    Task<Stream> GetJobInputAsync(string jobId, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot read a job's recording.");
+
     /// <summary>Retitles a run: its manifest, Composition and MusicXML.</summary>
     Task<Job> RenameRunAsync(string jobId, string title, CancellationToken ct = default) =>
         throw new NotSupportedException("This engine client cannot rename runs.");
@@ -280,6 +288,12 @@ public sealed class EngineClient : IEngineClient
 
     public Task<Evidence> GetEvidenceAsync(string jobId, CancellationToken ct = default) =>
         SendJsonAsync(HttpMethod.Get, $"v1/jobs/{Uri.EscapeDataString(jobId)}/evidence", null, EngineJsonContext.Default.Evidence, ct);
+
+    public Task<TabResult> GetTabAsync(string jobId, CancellationToken ct = default) =>
+        SendJsonAsync(HttpMethod.Get, $"v1/jobs/{Uri.EscapeDataString(jobId)}/tab", null, EngineJsonContext.Default.TabResult, ct);
+
+    public Task<Stream> GetJobInputAsync(string jobId, CancellationToken ct = default) =>
+        SendStreamAsync($"v1/jobs/{Uri.EscapeDataString(jobId)}/input", ct);
 
     public Task<Job> RenameRunAsync(string jobId, string title, CancellationToken ct = default) =>
         SendJsonAsync(HttpMethod.Patch, $"v1/runs/{Uri.EscapeDataString(jobId)}",

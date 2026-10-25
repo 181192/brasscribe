@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Fretscribe for Windows: WinUI 3 (Windows App SDK), unpackaged and self-contained so CI can start the exe directly
+    for the accessibility scan. Package.appxmanifest is kept for an MSIX build (set WindowsPackageType to MSIX).
+    The tab is written on the computer, so the app carries no models, no ONNX Runtime and no band sounds.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(ScribeWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(ScribeWindowsMinVersion)</TargetPlatformMinVersion>
+    <RootNamespace>Kalli.Fretscribe</RootNamespace>
+    <AssemblyName>Fretscribe</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\..\..\..\..\design\brands\fretscribe\dist\icons\windows\Assets\AppIcon.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <SatelliteResourceLanguages>en-US;nb-NO</SatelliteResourceLanguages>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Product>Fretscribe</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- Native Skia for alphaTab's bitmap rendering of the tab. -->
+    <PackageReference Include="AlphaSkia.Native.Windows" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\services\Kalli.Scribe.Services\Kalli.Scribe.Services.csproj" />
+    <ProjectReference Include="..\..\..\services\Kalli.Scribe.Audio.Windows\Kalli.Scribe.Audio.Windows.csproj" />
+    <ProjectReference Include="..\..\..\services\Kalli.Scribe.WinUI\Kalli.Scribe.WinUI.csproj" />
+    <ProjectReference Include="..\..\..\features\Kalli.Scribe.Score\Kalli.Scribe.Score.csproj" />
+    <ProjectReference Include="..\..\..\features\Kalli.Scribe.Play\Kalli.Scribe.Play.csproj" />
+    <ProjectReference Include="..\..\..\features\Kalli.Scribe.Tab\Kalli.Scribe.Tab.csproj" />
+    <ProjectReference Include="..\..\..\features\Kalli.Scribe.Controls\Kalli.Scribe.Controls.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <!-- Fretscribe's design system (design/brands/fretscribe): theme, faces and app icons are linked from its dist, never
+       copied, so a token change reaches the app on the next build. -->
+  <PropertyGroup>
+    <DesignDir>..\..\..\..\..\design\brands\fretscribe\</DesignDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Page Include="$(DesignDir)dist\windows\FretscribeTheme.xaml" Link="Themes\FretscribeTheme.xaml" />
+    <Content Include="$(DesignDir)dist\windows\Assets\Fonts\*" Link="Assets\Fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)dist\icons\windows\Assets\*" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)brand\logo-mark.svg" Link="Assets\Brand\logo-mark.svg" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(DesignDir)brand\logo-mark-dark.svg" Link="Assets\Brand\logo-mark-dark.svg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- The screen catalogue: with -p:ScribeCatalogue=true this same app is built as its own test host (MSTest on
+       the Microsoft Testing Platform, started from App.OnLaunched), with the tests in products/fretscribe/Kalli.Fretscribe.Catalogue.
+       Never part of the app's own build. A console exe, so the test platform's output reaches the console. -->
+  <PropertyGroup Condition="'$(ScribeCatalogue)' == 'true'">
+    <OutputType>Exe</OutputType>
+    <DefineConstants>$(DefineConstants);SCRIBE_CATALOGUE</DefineConstants>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <GenerateTestingPlatformEntryPoint>false</GenerateTestingPlatformEntryPoint>
+    <GenerateSelfRegisteredExtensions>false</GenerateSelfRegisteredExtensions>
+    <CatalogueDir>..\Kalli.Fretscribe.Catalogue\</CatalogueDir>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(ScribeCatalogue)' == 'true'">
+    <PackageReference Include="MSTest.TestFramework" />
+    <PackageReference Include="MSTest.TestAdapter" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <Compile Include="$(CatalogueDir)**\*.cs" Link="Catalogue\%(RecursiveDir)%(Filename)%(Extension)" />
+    <ProjectReference Include="..\..\..\tools\ScreenCheck.Core\ScreenCheck.Core.csproj" />
+  </ItemGroup>
+</Project>
