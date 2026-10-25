@@ -13,6 +13,8 @@ services/Kalli.Scribe.WinUI/           Windows services every app uses: strings,
                                        credentials, the original's player (code-only WinUI)
 features/Kalli.Scribe.Score/           the score: alphaTab rendering and playback, the music stand's pages, review, export
 features/Kalli.Scribe.Play/            the flow's view models, from the start to the score, settings and export
+features/Kalli.Scribe.Tab/             tab for one fretted instrument: the player's instrument, the tab page and its marks,
+                                       the song check, practising with the recording (logic and state only)
 features/Kalli.Scribe.Controls/        the notation view and Settings › Appearance on the windows (code-only WinUI)
 products/brasscribe/Kalli.Brasscribe/  Brasscribe Play: WinUI 3 app (XAML, words, composition root)
 products/brasscribe/Kalli.Brasscribe.Catalogue/  its screen catalogue: the app as its own test host (MSTest)

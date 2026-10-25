@@ -297,7 +297,8 @@ public sealed partial record SongFacts(int? Strings, string? Tuning, int ToCheck
         if (compositionJson is not null)
         {
             try { toCheck = CompositionJson.Parse(compositionJson).Voices.Sum(v => v.Notes.Count(n => n.Confidence < TabNote.Doubt)); }
-            catch (Exception e) when (e is System.Text.Json.JsonException or InvalidOperationException or NullReferenceException) { toCheck = 0; }
+            // Notes that can't be read are none to check.
+            catch (Exception) { toCheck = 0; }
         }
         return new SongFacts(open.Count > 0 ? open.Count : null, preset is null ? null : SongCheck.TuningOf(preset), toCheck,
             preset is null ? null : SongCheck.KindOf(preset));
