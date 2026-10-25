@@ -121,7 +121,7 @@ digest of each key and what a Fretscribe APK must not carry (the band SoundFont,
 ## 3. Play for Mac
 
 ```sh
-cd apps/apple && xcodegen generate
+cd apps/apple/products/brasscribe && xcodegen generate
 xcodebuild -project BrasscribePlay.xcodeproj -scheme BrasscribePlay-macOS -configuration Release \
   -destination 'generic/platform=macOS' -derivedDataPath "$S/dd-play" build
 P="$S/stage/Brasscribe Play.app"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Play for Mac's screen catalogue (AppTests/PlayScreensTests.swift): every screen in every variant with its checks
+# Play for Mac's screen catalogue (products/brasscribe/AppTests/PlayScreensTests.swift): every screen in every variant with its checks
 # (names, target sizes, cut-off text, reading order), and a screenshot of each. Run through scripts/screenshots.sh:
 #
 #   scripts/screenshots.sh record    build the macOS app's tests and run it: the screenshots and each screen's
