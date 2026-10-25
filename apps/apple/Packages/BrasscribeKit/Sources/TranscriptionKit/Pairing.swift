@@ -89,7 +89,7 @@ public struct PairingLink: Equatable, Sendable {
     }
 }
 
-/// What this device remembers about one engine it paired with (docs/plan/pairing-and-remote-access.md §4.5).
+/// What this device remembers about one engine it paired with (docs/shared/plan/pairing-and-remote-access.md §4.5).
 /// Only `token` is secret, but the whole record lives in the Keychain.
 public struct EngineRecord: Codable, Equatable, Sendable {
     /// The engine's stable id. Empty for a credential moved from the old plain storage, until the

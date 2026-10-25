@@ -8,7 +8,7 @@ import TranscriptionKit
 @testable import BrasscribePlay
 
 /// Every macOS screen rendered off screen at the window sizes people use, from the window's minimum
-/// to a 27" display, with the layout rules of docs/research/14-macos-responsiveness.md checked on
+/// to a 27" display, with the layout rules of docs/shared/research/14-macos-responsiveness.md checked on
 /// each: one window minimum, actions that follow the content, capped reading columns, a sidebar that
 /// steps aside, sheets that hug their content.
 @MainActor

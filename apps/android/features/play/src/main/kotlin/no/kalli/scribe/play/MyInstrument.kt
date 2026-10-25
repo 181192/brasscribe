@@ -8,7 +8,7 @@ import no.kalli.scribe.model.SeatPart
 import no.kalli.scribe.model.VoiceRole
 
 /**
- * The player's answer to "What do you play?" (docs/plan/my-instrument.md §2.1): not asked yet, "I
+ * The player's answer to "What do you play?" (docs/brasscribe/plan/my-instrument.md §2.1): not asked yet, "I
  * conduct or listen", or a seat of the contest band with the clef they read.
  */
 sealed interface SeatChoice {

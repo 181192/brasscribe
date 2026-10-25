@@ -10,7 +10,7 @@
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
 #   scripts/screenshots.sh record   the Mac screen catalogue, off screen, with its checks and a screenshot of each (README, Testing)
 #   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only in the
-#                    macOS VM (scripts/mac-vm.sh test-ui, docs/dev/macos-vm.md) or in CI
+#                    macOS VM (scripts/mac-vm.sh test-ui, docs/shared/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
 #   make ipa         unsigned Release build for iPhone and iPad (build/brasscribe-play-ios-unsigned.ipa)
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
@@ -23,7 +23,7 @@ IPAD ?= iPad Air 11-inch (M4)
 comma := ,
 IPHONE_DEST ?= $(if $(IPHONE),platform=iOS Simulator$(comma)name=$(IPHONE),$(shell DEVELOPER_DIR="$(DEVELOPER_DIR)" scripts/newest-iphone.sh))
 DERIVED := build/DerivedData
-# Swift suites the fast tier skips (swift test --skip takes a regular expression; see docs/dev/verify.md).
+# Swift suites the fast tier skips (swift test --skip takes a regular expression; see docs/shared/dev/verify.md).
 APPLE_SLOW ?= ArrangementLevelTests|DynamicsLevelTests|RecordingLevelTests
 XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
@@ -94,7 +94,7 @@ size: project
 ipa:
 	./scripts/make-ipa.sh
 
-# Repeat runs without rebuilding (docs/dev/verify.md): build-for-testing once, then run the unit
+# Repeat runs without rebuilding (docs/shared/dev/verify.md): build-for-testing once, then run the unit
 # tests from the same DerivedData as often as needed. No UI tests.
 #   make build-for-testing-mac   then   make test-mac-unit        macOS app unit tests
 #   make build-for-testing-ios   then   make test-ios-unit        app unit tests on the iPhone simulator

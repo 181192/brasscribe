@@ -14,7 +14,7 @@ from . import targets
 from .config import Settings
 from .names import valid_id
 
-# Licences as recorded in docs/plan/apps-plan.md §7 and docs/research/00-summary.md §0/§3.
+# Licences as recorded in docs/brasscribe/plan/apps-plan.md §7 and docs/shared/research/00-summary.md §0/§3.
 DATASETS = {
     "choralebricks-brass4": {"licence": "CC-BY 4.0", "source_url": "https://zenodo.org/records/20849469",
                              "download": "python -m scribe_eval.choralebricks (from the downloaded ChoraleBricks v1.1.0)"},

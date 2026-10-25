@@ -98,7 +98,7 @@ Most severe first. Each item has bar numbers and an owner area (engine, arranger
 
 - In black-and-white print or photocopies, which is how band parts are usually shared, the uncertainty disappears.
 - Uncertain notes cluster in the fast runs, e.g. bars 19–26, 40–55 and 105–116.
-- Fix: shape encoding per `docs/accessibility/visual-design-tokens.md` §2.
+- Fix: shape encoding per `docs/shared/accessibility/visual-design-tokens.md` §2.
 
 ### 9. Score and part layout: renderer/exporter
 

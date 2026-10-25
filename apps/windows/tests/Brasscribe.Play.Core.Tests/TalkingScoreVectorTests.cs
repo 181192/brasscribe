@@ -5,7 +5,7 @@ using Brasscribe.Play.Core.TalkingScore;
 namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
-/// Runs every case of docs/accessibility/talking-score-vectors.json (linked into Fixtures by the project file) in both
+/// Runs every case of docs/shared/accessibility/talking-score-vectors.json (linked into Fixtures by the project file) in both
 /// languages. Per the vectors' header: B-flat cornet (chromatic -2) and written key 2 sharps unless stated.
 /// </summary>
 public class TalkingScoreVectorTests

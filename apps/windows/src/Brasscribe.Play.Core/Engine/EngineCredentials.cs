@@ -26,7 +26,7 @@ public sealed class InMemorySecretVault : ISecretVault
 }
 
 /// <summary>
-/// What this device keeps per engine (docs/plan/pairing-and-remote-access.md §4.5). Only the token is
+/// What this device keeps per engine (docs/shared/plan/pairing-and-remote-access.md §4.5). Only the token is
 /// secret, but the whole record is small and lives in the vault so it moves with the device the same way.
 /// </summary>
 public sealed record EngineCredential(

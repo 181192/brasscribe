@@ -608,7 +608,7 @@ def mikkel_reference() -> list[dict]:
     """PROVISIONAL reference notes for two fast Mikkel passages (no hand transcription exists): the SwiftF0
     contour's plateaus (48 ms at one semitone on the piece's tuning), kept only where an independent harmonic
     sum over the solo stem's own spectrum puts the pitch on that semitone rather than a neighbour or the octave
-    below. For spot-checking by ear (docs/plan/fast-notes.md lists them); test only."""
+    below. For spot-checking by ear (docs/brasscribe/plan/fast-notes.md lists them); test only."""
     import soundfile as sf
 
     from .paths import DATA

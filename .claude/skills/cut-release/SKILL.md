@@ -5,7 +5,7 @@ description: Cut a Brasscribe release (version bump, changelog, tag, CI build an
 
 # Cut a release
 
-The procedure and its reasons are in [docs/dev/release.md](../../../docs/dev/release.md); the
+The procedure and its reasons are in [docs/shared/dev/release.md](../../../docs/shared/dev/release.md); the
 steps are scripted in `scripts/release.sh`. Read both before starting.
 
 1. On `main`, up to date with `origin/main`, with a clean tree.

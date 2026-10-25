@@ -1,6 +1,6 @@
 # sounds: realistic playback tier
 
-Sample fetching, brass-band instrument building, seating and room placement, and the offline reference renderer the native players are expected to match (docs/plan/apps-plan.md §5.4).
+Sample fetching, brass-band instrument building, seating and room placement, and the offline reference renderer the native players are expected to match (docs/brasscribe/plan/apps-plan.md §5.4).
 
 ## Band sounds for the apps
 
@@ -27,7 +27,7 @@ A new pack: rebuild (`band.py --bits 16`, `apps/android/scripts/mobile_soundfont
 `python3 sounds/tools/band_sounds.py pin --version sounds-YYYY.MM.DD` (rewrites the pin and `SHA256SUMS`; `--dir DIR`
 for a pack built outside `data/sounds/band`), publish the two files and `SHA256SUMS` as a pre-release with that tag
 (`gh release create sounds-YYYY.MM.DD --prerelease …`; a `sounds-*` tag starts no workflow), and commit the pin.
-[docs/dev/release.md](../docs/dev/release.md) has the whole release flow.
+[docs/shared/dev/release.md](../docs/shared/dev/release.md) has the whole release flow.
 
 Where every sample comes from, and the licences and notices the apps ship with the SoundFont: [LICENSES.md](LICENSES.md).
 
@@ -86,7 +86,7 @@ The blind A/B test is described in [ab-test/protocol.md](ab-test/protocol.md). T
 
 ## Parts and lineups
 
-`mapping.json` `lineups` lists every lineup's part names (brass band, minimal brass, brass quartet). `resolve` is how every player turns a score part into a preset: normalized exact name, alias, keyword, instrument id, GM program. A brass part never ends on General MIDI. `partsound.py` is the reference; `partsound-vectors.json` is asserted by the Apple, Android, Windows and Studio tests. Measurements and the before/after coverage are in docs/research/12-band-sound.md.
+`mapping.json` `lineups` lists every lineup's part names (brass band, minimal brass, brass quartet). `resolve` is how every player turns a score part into a preset: normalized exact name, alias, keyword, instrument id, GM program. A brass part never ends on General MIDI. `partsound.py` is the reference; `partsound-vectors.json` is asserted by the Apple, Android, Windows and Studio tests. Measurements and the before/after coverage are in docs/shared/research/12-band-sound.md.
 
 ## Band SoundFont
 

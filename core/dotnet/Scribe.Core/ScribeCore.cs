@@ -74,7 +74,7 @@ public readonly record struct PlayedNote(double Start, double End, int Pitch, in
 /// <summary>Humanized notes of one player, the player's detune in cents, and the statistics as JSON.</summary>
 public sealed record HumanizedPart(IReadOnlyList<PlayedNote> Notes, double DetuneCents, string StatsJson);
 
-/// <summary>Talking-score announcer settings (docs/accessibility/talking-score-spec.md §2).</summary>
+/// <summary>Talking-score announcer settings (docs/shared/accessibility/talking-score-spec.md §2).</summary>
 public sealed record TalkingSettings(string Lang = "en", string PitchMode = "written", string Verbosity = "standard",
     string OctaveStyle = "scientific", bool AnnounceConfident = false);
 

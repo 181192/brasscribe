@@ -173,7 +173,7 @@ public class ScoreOverlayTests(ITestOutputHelper log)
 
     /// <summary>Full score (bars 9–16 with a loop and the cursor), the solo part and a review snippet, light and dark.</summary>
     [SkippableFact]
-    [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/dev/verify.md)
+    [Trait("Category", "Slow")] // seconds; the fast tier filters it out (docs/shared/dev/verify.md)
     public void Golden_previews()
     {
         var xmlPath = TestPaths.RepoFile(TestPaths.GoldenMusicXml);

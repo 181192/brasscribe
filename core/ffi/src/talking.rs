@@ -1,4 +1,4 @@
-//! Talking score (docs/accessibility/talking-score-spec.md): the document, the
+//! Talking score (docs/shared/accessibility/talking-score-spec.md): the document, the
 //! announcer, navigation and the text/HTML export. Apps never build
 //! announcement strings themselves.
 

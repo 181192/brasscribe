@@ -736,7 +736,7 @@ add("Shortcut_StandPage", "Next or previous page", "Neste eller forrige side")
 add("Shortcut_StandFirstLast", "First or last page", "Første eller siste side")
 add("Shortcut_StandLeave", "Leave the music stand", "Gå ut av notestativet")
 
-# ---- my instrument (docs/plan/my-instrument.md §3.8) ----
+# ---- my instrument (docs/brasscribe/plan/my-instrument.md §3.8) ----
 # Part and seat names never come from here: the core's seats() and part_name_nb are the one table.
 add("Screen_WhatDoYouPlay", "What do you play?", "Hva spiller du?")
 prop("SeatHeading", "Text", "What do you play?", "Hva spiller du?")

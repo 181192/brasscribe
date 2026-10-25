@@ -3,7 +3,7 @@
 Per-model scripts that convert the pipeline's models to platform runtimes (ONNX, Core ML,
 TFLite) and test the converted model against the reference framework on the eval sets.
 A model is switched on in Play only once its parity gate passes (note F1 >= 0.98 against the
-reference output, `docs/plan/apps-plan.md` §6).
+reference output, `docs/brasscribe/plan/apps-plan.md` §6).
 
 This lives in `convert/`, not `models/convert/`: `models/` is ignored (repo `.gitignore` and
 `.git/info/exclude`) and is a symlink in worktrees, so it cannot hold tracked files.

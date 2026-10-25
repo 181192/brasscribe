@@ -8,7 +8,7 @@ import XCTest
 /// spread their controls over a taller window.
 ///
 /// These resize a real window with a real pointer, so they run only in the macOS VM
-/// (scripts/mac-vm.sh test-ui, docs/dev/macos-vm.md) or on a CI runner, never on a desktop in use.
+/// (scripts/mac-vm.sh test-ui, docs/shared/dev/macos-vm.md) or on a CI runner, never on a desktop in use.
 final class WindowSizeUITests: XCTestCase {
     var app: XCUIApplication!
 

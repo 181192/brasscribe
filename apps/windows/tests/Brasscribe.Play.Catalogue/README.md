@@ -96,7 +96,7 @@ keep still).
 The screenshots are the `windows-screenshots` and `bandroom-windows-screenshots` artefacts of a pull request's run, to
 look at; no check waits for them, and none is kept in git. After a merge, CI compares the pictures on `main` with those
 of the `main` before it and lists changed screens in an issue
-([docs/dev/verify.md](../../../../docs/dev/verify.md#screenshots)).
+([docs/shared/dev/verify.md](../../../../docs/shared/dev/verify.md#screenshots)).
 
 `known-findings.json` lists findings that are accepted for now, each with the issue that tracks it and why (`check`,
 `shot` and `what` are regular expressions over a finding); an entry without its issue is refused, and one that

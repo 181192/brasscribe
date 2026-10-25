@@ -6,13 +6,13 @@ description: Pick and run the right checks for a change in Brasscribe, and repor
 # Verify a change
 
 The tiers, the areas and what each runs are defined by `scripts/check.sh` and
-[docs/dev/verify.md](../../../docs/dev/verify.md). Read them; don't rely on a remembered list.
+[docs/shared/dev/verify.md](../../../docs/shared/dev/verify.md). Read them; don't rely on a remembered list.
 
 1. **Set up once per checkout:** `eval "$(scripts/worktree-setup.sh)"` (later shells: `source .scribe-env`).
 2. **While working:** `make check-fast`. It runs the areas the branch touches. To name areas:
    `AREAS="engine core" make check-fast`. Run `scripts/check.sh` without arguments to see the areas.
 3. **Before handing off:** `make check` (the full suites, as CI runs them).
-4. **Device, audio or UI changes:** tier 3 in docs/dev/verify.md (emulators, simulators, VMs). Never
+4. **Device, audio or UI changes:** tier 3 in docs/shared/dev/verify.md (emulators, simulators, VMs). Never
    drive UI tests on the host desktop; the docs say where they run.
 5. **Paths no area covers:** `scripts/check.sh` maps changed paths to areas; a change only outside
    them (for example Bandroom for Windows, `site/`, `sounds/`, `design/`, `.github/`) makes it print

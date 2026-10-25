@@ -15,7 +15,7 @@ using Brasscribe.Play.Core.ViewModels;
 namespace Brasscribe.Play.Core.Tests;
 
 /// <summary>
-/// "What do you play?" and "your part" (docs/plan/my-instrument.md): the picker, the settings, which part is the
+/// "What do you play?" and "your part" (docs/brasscribe/plan/my-instrument.md): the picker, the settings, which part is the
 /// player's in each lineup, the options sent to the engine and the arrangers, and the screens that follow the part.
 /// The core is faked with a few rows of its seat table; the native spot checks run against the real one.
 /// </summary>
@@ -365,7 +365,7 @@ public class MyInstrumentTests
         picker.PartIndex = 2;
         Assert.Equal(new SeatChoice("3rd-cornet", null), picker.Choice);
 
-        picker.InstrumentIndex = 1; // Trumpet: one part, treble only (docs/plan/trumpet.md §3.4)
+        picker.InstrumentIndex = 1; // Trumpet: one part, treble only (docs/brasscribe/plan/trumpet.md §3.4)
         Assert.False(picker.ShowsParts);
         Assert.False(picker.ShowsReads);
         Assert.Equal(new SeatChoice("trumpet", null), picker.Choice);

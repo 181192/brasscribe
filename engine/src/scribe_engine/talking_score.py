@@ -1,4 +1,4 @@
-"""Talking score: the text form of a score (docs/accessibility/talking-score-spec.md).
+"""Talking score: the text form of a score (docs/shared/accessibility/talking-score-spec.md).
 
   build(musicxml, composition)  -> TalkingScore JSON shape (spec §6) from the arranged MusicXML
                                    (spelled written pitch, types, ties, tuplets) plus the Composition
@@ -7,7 +7,7 @@
   to_html / to_text(doc, settings)              -> the export: a heading per part, a sub-heading
                                                    per bar, one line per event (standard verbosity)
 
-The conformance vectors (docs/accessibility/talking-score-vectors.json) are the reference, the
+The conformance vectors (docs/shared/accessibility/talking-score-vectors.json) are the reference, the
 same ones the Windows app's announcer passes. Output never depends on the process locale.
 Events are plain dicts with the JSON field names.
 """

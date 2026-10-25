@@ -59,7 +59,7 @@ and canned demo states for screenshots.
 
 `scripts/check.sh fast bandroom-mac` runs the unit tests, `full bandroom-mac` also builds the app and runs the
 screen catalogue.
-Release builds are made by hand: [docs/dev/release.md](../../../docs/dev/release.md) §4.
+Release builds are made by hand: [docs/shared/dev/release.md](../../../docs/shared/dev/release.md) §4.
 
 ## Testing
 
@@ -111,14 +111,14 @@ navigation turned on in System Settings), a text of several lines cut at its las
 frame, not the width it was wrapped at), the colour contrast of each text (the design tokens' pairs are checked in
 CI), the menu-bar item and its popover window, notifications, the keychain, the login item and the engine itself.
 `scripts/desktop-screenshots.sh` takes the real popover from the menu bar; run it in the macOS VM
-([docs/dev/macos-vm.md](../../../docs/dev/macos-vm.md)).
+([docs/shared/dev/macos-vm.md](../../../docs/shared/dev/macos-vm.md)).
 
 **Screenshots** are not kept in git, and no check waits for them. `scripts/screenshots.sh record` builds the app for
 testing and runs the catalogue with its checks; it fails when a screen fails one or is not taken. The screenshots and each screen's
 tree go into `build/catalogue/screenshots/`. CI does the same on every pull request that reaches Bandroom
 (`apple.yml`), and the pictures are in the `bandroom-mac-screenshots` artefact, to look at. After a merge, CI
 compares the pictures on `main` with those of the `main` before it and lists changed screens in an issue
-([docs/dev/verify.md](../../../docs/dev/verify.md#screenshots)).
+([docs/shared/dev/verify.md](../../../docs/shared/dev/verify.md#screenshots)).
 
 A new screen or state gets a `Screen` in the catalogue; a found problem the change does not fix is an issue, and an
 entry in `known` only with that issue named.

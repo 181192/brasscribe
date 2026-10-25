@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Brasscribe.Play.Core.TalkingScore;
 
-// The TalkingScore JSON shape (docs/accessibility/talking-score-spec.md §6). The same types read
+// The TalkingScore JSON shape (docs/shared/accessibility/talking-score-spec.md §6). The same types read
 // the conformance vectors, so names follow that document exactly (snake_case on the wire).
 
 public sealed record TsPitch(string Step, int Alter, int Octave);

@@ -8,7 +8,7 @@ import kotlin.math.withSign
 
 /**
  * The loudness every Play app plays at: sounds/playback-levels.json, which the tests check these
- * against (docs/research/12-band-sound.md §11).
+ * against (docs/shared/research/12-band-sound.md §11).
  */
 object PlaybackLevels {
     /** The full-band test phrase lands here (integrated LUFS) through the band stage. */

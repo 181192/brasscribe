@@ -676,7 +676,7 @@
     <string name="conn_detail_last_seen">Last answered: %1$s</string>
     <string name="conn_detail_last_error">Last error: %1$s</string>
     <string name="band_sounds_missing">The band sounds are missing. Reinstall Brasscribe Play to hear the band.</string>
-    <!-- What do you play? (docs/plan/my-instrument.md §3.8) -->
+    <!-- What do you play? (docs/brasscribe/plan/my-instrument.md §3.8) -->
     <string name="seat_title">What do you play?</string>
     <string name="seat_body">Brasscribe shows your part first and mutes it when you play along. You can change it in Settings.</string>
     <string name="seat_instrument">Instrument</string>

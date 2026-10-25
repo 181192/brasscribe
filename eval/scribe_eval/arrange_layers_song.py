@@ -227,7 +227,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         args.solo_contour = L / "solo-sw.contour.npz"
     solo_contour = Contour.load(args.solo_contour) if args.solo_contour else None
     # Faithful: the fast notes as played, pitch-change onsets the segmentation merged (slurred trills and
-    # runs) and a finer grid where the onsets need it (docs/plan/fast-notes.md). Standard and easier keep the
+    # runs) and a finer grid where the onsets need it (docs/brasscribe/plan/fast-notes.md). Standard and easier keep the
     # simpler line they were tuned on.
     fast_notes = args.difficulty == "faithful"
     if fast_notes:

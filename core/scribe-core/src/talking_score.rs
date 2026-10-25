@@ -1,4 +1,4 @@
-//! Talking score: the text form of a score (docs/accessibility/talking-score-spec.md).
+//! Talking score: the text form of a score (docs/shared/accessibility/talking-score-spec.md).
 //!
 //! * [`build`] reads partwise MusicXML (spelled written pitch, types, ties,
 //!   tuplets) plus the Composition (confidence, sources, performed time, free
@@ -10,7 +10,7 @@
 //!   event.
 //!
 //! Events are JSON objects with the field names of spec §6. The conformance
-//! vectors (docs/accessibility/talking-score-vectors.json) are the reference.
+//! vectors (docs/shared/accessibility/talking-score-vectors.json) are the reference.
 //! Output never depends on the process locale.
 
 use std::collections::HashMap;

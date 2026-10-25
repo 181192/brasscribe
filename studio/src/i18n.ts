@@ -400,7 +400,7 @@ const en = {
   "cmp.kind.same": "same", "cmp.kind.added": "added", "cmp.kind.removed": "removed", "cmp.kind.moved": "moved", "cmp.kind.octave": "octave",
 
   "bench.intro1": "Each suite scores model outputs against the baselines in ",
-  "bench.intro2": " (the numbers in docs/research/10-benchmark-results.md). The gate fails when a metric moves more than its tolerance (±0.01 F1).",
+  "bench.intro2": " (the numbers in docs/shared/research/10-benchmark-results.md). The gate fails when a metric moves more than its tolerance (±0.01 F1).",
   "bench.suites": "Suites",
   "bench.latest": "Latest result",
   "bench.trend": "Trend",
@@ -991,7 +991,7 @@ const nb: Record<Key, string> = {
   "cmp.kind.same": "lik", "cmp.kind.added": "lagt til", "cmp.kind.removed": "fjernet", "cmp.kind.moved": "flyttet", "cmp.kind.octave": "oktav",
 
   "bench.intro1": "Hver pakke måler modellresultater mot grunnlinjene i ",
-  "bench.intro2": " (tallene i docs/research/10-benchmark-results.md). Porten stenger når et måltall flytter seg mer enn toleransen (±0,01 F1).",
+  "bench.intro2": " (tallene i docs/shared/research/10-benchmark-results.md). Porten stenger når et måltall flytter seg mer enn toleransen (±0,01 F1).",
   "bench.suites": "Målepakker",
   "bench.latest": "Siste resultat",
   "bench.trend": "Utvikling",

@@ -27,6 +27,6 @@ tasks.test {
     // Re-run when the golden output is re-saved.
     inputs.files(fileTree(File(repoRoot, "data/golden/mikkel-arranged-band")) { include("composition.json") }).withPropertyName("golden")
     // The talking-score conformance vectors, read where every other port reads them.
-    systemProperty("scribe.vectors", File(repoRoot, "docs/accessibility/talking-score-vectors.json").absolutePath)
-    inputs.file(File(repoRoot, "docs/accessibility/talking-score-vectors.json")).withPropertyName("vectors")
+    systemProperty("scribe.vectors", File(repoRoot, "docs/shared/accessibility/talking-score-vectors.json").absolutePath)
+    inputs.file(File(repoRoot, "docs/shared/accessibility/talking-score-vectors.json")).withPropertyName("vectors")
 }

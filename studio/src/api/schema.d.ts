@@ -3809,7 +3809,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Talking score (docs/accessibility/talking-score-spec.md): HTML with a heading per part and bar, plain text, or the TalkingScore JSON */
+            /** @description Talking score (docs/shared/accessibility/talking-score-spec.md): HTML with a heading per part and bar, plain text, or the TalkingScore JSON */
             200: {
                 headers: {
                     [name: string]: unknown;

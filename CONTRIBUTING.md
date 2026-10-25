@@ -15,7 +15,7 @@ with AI coding tools, as long as you've checked it.
 1. Fork, then branch from `main` (`fix/…`, `feat/…`, `docs/…`).
 2. Set up once: `eval "$(scripts/worktree-setup.sh)"`. Each app's README lists its toolchain.
 3. Work in small steps and run `make check-fast`; run `make check` before opening the pull request.
-   [docs/dev/verify.md](docs/dev/verify.md) explains the tiers and when device or UI checks are needed.
+   [docs/shared/dev/verify.md](docs/shared/dev/verify.md) explains the tiers and when device or UI checks are needed.
 4. Commit with [Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`.
 5. Open a pull request and fill in the template, including what you verified and how AI was used.
    Pull requests are squash-merged: the title becomes the commit on `main` and an entry in the

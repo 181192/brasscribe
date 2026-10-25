@@ -180,7 +180,7 @@ public struct TalkingScore: Sendable {
 
     /// A pickup (anacrusis): the first measure when it is numbered 0, or left out of the numbering and shorter
     /// than a full bar. It is named, never numbered, and is not one of the bars counted
-    /// (docs/accessibility/talking-score-spec.md §4.10).
+    /// (docs/shared/accessibility/talking-score-spec.md §4.10).
     public func isPickup(_ index: Int) -> Bool {
         guard index == 0, let m = score.measures.first else { return false }
         if Int(m.number.trimmingCharacters(in: .whitespaces)) == 0 { return true }

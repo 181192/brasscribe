@@ -1,7 +1,7 @@
 # Blind A/B listening test: realistic tier vs baseline
 
 **Question:** do listeners prefer the realistic sound tier over the baseline (MuseScore with MS Basic)?
-**Acceptance bar** (docs/plan/apps-plan.md §6): the realistic tier is preferred in at least 80% of judgements. With 5 listeners × 5 excerpts that is **20 of 25**. Under chance, 20/25 has a one-sided binomial p of 0.002.
+**Acceptance bar** (docs/brasscribe/plan/apps-plan.md §6): the realistic tier is preferred in at least 80% of judgements. With 5 listeners × 5 excerpts that is **20 of 25**. Under chance, 20/25 has a one-sided binomial p of 0.002.
 
 ## What is compared
 

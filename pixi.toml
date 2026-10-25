@@ -68,7 +68,7 @@ pytest-testmon = ">=2"
 
 [feature.test.tasks]
 test = "pytest engine/tests music/tests"
-# Inner loop (docs/dev/verify.md): without the tests marked slow, and only the tests the changed code reaches
+# Inner loop (docs/shared/dev/verify.md): without the tests marked slow, and only the tests the changed code reaches
 # (pytest-testmon; the first run records a baseline in .testmondata and runs everything).
 test-fast = "pytest engine/tests music/tests -m 'not slow' -q"
 test-affected = "pytest engine/tests music/tests --testmon -q"

@@ -1,4 +1,4 @@
-"""Profiles: which pipeline a recording goes through (docs/research/00-summary.md §0).
+"""Profiles: which pipeline a recording goes through (docs/shared/research/00-summary.md §0).
 
   solo                    one brass line, no separation. SwiftF0 is the spine,
                           confirmed by MuScriptor or Basic Pitch (pipeline A, solo rule)

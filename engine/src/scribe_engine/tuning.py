@@ -1,4 +1,4 @@
-"""Retune before transcribing (docs/research/11-overlaps-and-in-between-tones.md §3.2).
+"""Retune before transcribing (docs/shared/research/11-overlaps-and-in-between-tones.md §3.2).
 
 Bands rarely play at exactly A = 440: the eval recordings sit 1–20 cents sharp, and
 Basic Pitch loses most notes of a band 30 cents off. A transcription stage estimates its

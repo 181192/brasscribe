@@ -8,7 +8,7 @@ public enum PairingLinkProblem { None, NotAPairingLink, NewerVersion, BadServerI
 /// <summary>
 /// The pairing payload the computer shows as a QR code and link:
 /// <c>scribe://pair?v=1&amp;id=&lt;server_id&gt;&amp;name=&lt;name&gt;&amp;h=ip:port,...&amp;code=&lt;6 digits&gt;[&amp;fp=&lt;spki&gt;]</c>
-/// (docs/plan/pairing-and-remote-access.md §4.2). Unknown keys are ignored.
+/// (docs/shared/plan/pairing-and-remote-access.md §4.2). Unknown keys are ignored.
 /// </summary>
 public sealed record PairingLink(string ServerId, string ServerName, IReadOnlyList<Uri> Hosts, string? Code, string? Fingerprint)
 {

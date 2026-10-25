@@ -165,7 +165,7 @@ class FreeSpan:
     label: str = "ad lib."
 
 
-# Uncertainty encoding (docs/accessibility/visual-design-tokens.md §2): colour plus a "?" above the
+# Uncertainty encoding (docs/shared/accessibility/visual-design-tokens.md §2): colour plus a "?" above the
 # note, boxed when very unsure, so it survives black-and-white print. Thresholds come from the
 # calibration (confidence.py); neighbouring marks in a bar are merged into one review group.
 UNCERTAIN_COLOUR = "#0063A6"

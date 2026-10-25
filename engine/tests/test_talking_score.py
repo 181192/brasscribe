@@ -8,7 +8,7 @@ import pytest
 from scribe_engine import talking_score as T
 
 ROOT = Path(__file__).resolve().parents[2]
-VECTORS = json.loads((ROOT / "docs" / "accessibility" / "talking-score-vectors.json").read_text())["cases"]
+VECTORS = json.loads((ROOT / "docs" / "shared" / "accessibility" / "talking-score-vectors.json").read_text())["cases"]
 
 
 def _vector_call(c: dict, lang: str) -> str:

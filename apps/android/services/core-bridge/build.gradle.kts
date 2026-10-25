@@ -43,8 +43,8 @@ android {
             it.environment("ORT_DISABLE_TELEMETRY", "1")
             it.systemProperty("scribe.models", File(repoRoot, "models/converted").absolutePath)
             it.systemProperty("scribe.data", File(repoRoot, "data").absolutePath)
-            it.systemProperty("scribe.vectors", File(repoRoot, "docs/accessibility/talking-score-vectors.json").absolutePath)
-            it.inputs.file(File(repoRoot, "docs/accessibility/talking-score-vectors.json")).withPropertyName("vectors")
+            it.systemProperty("scribe.vectors", File(repoRoot, "docs/shared/accessibility/talking-score-vectors.json").absolutePath)
+            it.inputs.file(File(repoRoot, "docs/shared/accessibility/talking-score-vectors.json")).withPropertyName("vectors")
             // The engine's solo profile on the same clip, for comparison (see README); the test skips without it.
             (findProperty("scribe.engineSolo") as String?)?.let { p -> it.systemProperty("scribe.engineSolo", p) }
         }

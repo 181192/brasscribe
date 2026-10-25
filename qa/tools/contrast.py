@@ -4,7 +4,7 @@
 # ///
 """WCAG contrast and colour-vision-deficiency check for the design tokens.
 
-Reads docs/accessibility/design-tokens.json and prints a markdown report:
+Reads docs/shared/accessibility/design-tokens.json and prints a markdown report:
   - WCAG 2.x contrast ratio for every listed pair in every theme, against its minimum
   - CIEDE2000 colour difference for the "distinguish" pairs under normal vision and
     simulated protanopia, deuteranopia, tritanopia (Machado et al. 2009, severity 1.0)
@@ -39,7 +39,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-TOKENS = ROOT / "docs" / "accessibility" / "design-tokens.json"
+TOKENS = ROOT / "docs" / "shared" / "accessibility" / "design-tokens.json"
 BRANDS = ROOT / "design" / "tooling" / "brands.json"
 DE_MIN = 20.0  # heuristic: CIEDE2000 below this reads as "similar" at notehead size
 HIGH_CONTRAST_MIN = 7.0  # WCAG 1.4.6 (AAA): every pair of a high-contrast theme
@@ -223,7 +223,7 @@ def main(argv: list[str] | None = None) -> int:
         cmd, label = f"uv run qa/tools/contrast.py --tokens {argv[1]}", argv[1]
     else:
         data = json.loads(TOKENS.read_text())
-        cmd, label = "uv run qa/tools/contrast.py", "docs/accessibility/design-tokens.json"
+        cmd, label = "uv run qa/tools/contrast.py", "docs/shared/accessibility/design-tokens.json"
     text, failures = report(data, cmd, label)
     print(text)
     return 1 if failures else 0

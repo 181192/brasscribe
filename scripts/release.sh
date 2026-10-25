@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cuts a release in two steps, because main only takes changes through pull requests
-# (docs/dev/release.md):
+# (docs/shared/dev/release.md):
 #   scripts/release.sh --preview      print the notes the next release would get
 #   scripts/release.sh X.Y.Z          bump every app version, regenerate CHANGELOG.md, commit
 #                                     `chore(release): X.Y.Z` on release/vX.Y.Z and open a pull request

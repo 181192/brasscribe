@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** Runs every case of docs/accessibility/talking-score-vectors.json. */
+/** Runs every case of docs/shared/accessibility/talking-score-vectors.json. */
 class TalkingScoreVectorsTest {
     @Serializable
     data class Case(

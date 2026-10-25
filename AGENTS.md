@@ -11,12 +11,12 @@ on memory or on this file.
 | Question | Source of truth |
 |---|---|
 | What the project is, the apps, the layout | [README.md](README.md) |
-| How to set up a checkout or worktree | `scripts/worktree-setup.sh` and [docs/dev/verify.md](docs/dev/verify.md) |
-| Which checks to run, and the areas | `scripts/check.sh` (run it without arguments for its help) and [docs/dev/verify.md](docs/dev/verify.md) |
-| How a release is made | `scripts/release.sh` and [docs/dev/release.md](docs/dev/release.md) |
+| How to set up a checkout or worktree | `scripts/worktree-setup.sh` and [docs/shared/dev/verify.md](docs/shared/dev/verify.md) |
+| Which checks to run, and the areas | `scripts/check.sh` (run it without arguments for its help) and [docs/shared/dev/verify.md](docs/shared/dev/verify.md) |
+| How a release is made | `scripts/release.sh` and [docs/shared/dev/release.md](docs/shared/dev/release.md) |
 | What CI runs | `.github/workflows/` |
 | Design rules and tokens | [design/README.md](design/README.md) and `design/tooling/` |
-| Why the architecture is as it is | [docs/research/00-summary.md](docs/research/00-summary.md) |
+| Why the architecture is as it is | [docs/shared/research/00-summary.md](docs/shared/research/00-summary.md) |
 | Per-app build and toolchain | the README in the app's directory (`apps/<app>/`, `apps/bandroom/<os>/`) |
 | Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
 
@@ -40,7 +40,7 @@ on memory or on this file.
   core; the conformance suite checks they agree. [core/README.md](core/README.md) says what counts as
   the reference. Change the reference first, then the port.
 - **Goldens change deliberately.** Reference outputs are promoted at merge, never from a branch and
-  never just to make a test pass: follow [docs/dev/release.md](docs/dev/release.md) §10.
+  never just to make a test pass: follow [docs/shared/dev/release.md](docs/shared/dev/release.md) §10.
 - **Keep docs true.** If your change makes a doc wrong, fix the doc in the same branch. Don't add
   numbers or lists to docs that a script can print instead.
 

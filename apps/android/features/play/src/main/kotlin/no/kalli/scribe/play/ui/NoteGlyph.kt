@@ -21,7 +21,7 @@ import no.kalli.scribe.design.ScribeTheme
 import no.kalli.scribe.model.Uncertainty
 
 /**
- * A note drawn with the uncertainty encoding of docs/accessibility/visual-design-tokens.md §2, as in
+ * A note drawn with the uncertainty encoding of docs/shared/accessibility/visual-design-tokens.md §2, as in
  * the score: a "?" above an uncertain note and a boxed "?" above a very uncertain one, both in the
  * note's colour; confident and checked notes are plain ink. The mark carries the level, so it
  * survives greyscale and every colour-vision type.

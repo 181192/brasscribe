@@ -6,7 +6,7 @@ import kotlin.math.floor
 
 /*
  * Talking-score announcements: the text a screen reader speaks for one stop in the score.
- * Implements docs/accessibility/talking-score-spec.md and is checked against its conformance vectors.
+ * Implements docs/shared/accessibility/talking-score-spec.md and is checked against its conformance vectors.
  * The Rust core will provide the same function; until then this is the implementation behind CoreBridge.
  */
 

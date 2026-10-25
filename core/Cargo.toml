@@ -17,7 +17,7 @@ opt-level = 3
 lto = "thin"
 codegen-units = 1
 
-# Inner-loop tests (docs/dev/verify.md): release optimisation without LTO, parallel and incremental
+# Inner-loop tests (docs/shared/dev/verify.md): release optimisation without LTO, parallel and incremental
 # codegen, in target/fast. `cargo test --profile fast`; the release profile stays what ships.
 [profile.fast]
 inherits = "release"

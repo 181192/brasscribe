@@ -2,7 +2,7 @@ import Foundation
 
 /// How a score's dynamics become MIDI velocities: alphaTab's rules, so every Play app plays a score at
 /// the same levels (sounds/playback-levels.json "dynamics", which the tests check these against;
-/// docs/research/12-band-sound.md §11).
+/// docs/shared/research/12-band-sound.md §11).
 ///
 /// - A dynamic mark (`<dynamics>` in a direction or in a note's notations) holds from where it is read
 ///   until the next one, in document order; a part starts at f.

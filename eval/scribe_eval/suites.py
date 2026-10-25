@@ -6,7 +6,7 @@ data (e.g. data/eval/<set>/<song>/muscriptor-medium.mid); no model runs. In
 `live` mode the transcription suites run adapters for missing outputs.
 
 The gate compares every metric with eval/baselines.json (numbers taken from
-docs/research/10-benchmark-results.md), default tolerance ±0.01. A suite
+docs/shared/research/10-benchmark-results.md), default tolerance ±0.01. A suite
 whose data is missing is reported as skipped, never as passed.
 """
 
@@ -382,7 +382,7 @@ def _golden_arrange(data: Path, mode: str) -> dict[str, float]:
             "notes_identical_frac": c.notes_identical / max(1, c.to_dict()["notes_total"])}
 
 
-# Faithful writes the solo's fast notes as played (docs/plan/fast-notes.md §7): Mikkel's Solo Cornet is mostly
+# Faithful writes the solo's fast notes as played (docs/brasscribe/plan/fast-notes.md §7): Mikkel's Solo Cornet is mostly
 # 16ths there, so that one metric of that one part gets a looser limit. Standard and easier keep every threshold.
 FAITHFUL_LIMITS = {"Solo Cornet:sixteenth_pct": 65.0}
 
@@ -429,7 +429,7 @@ def _solo_instruments(data: Path, mode: str) -> dict[str, float]:
     if not FIXTURES.is_dir():
         raise SkipSuite(f"missing fixtures: {FIXTURES}")
     m = metrics(seats=True)
-    # The seat's gates (docs/plan/my-instrument.md §6.3): recall on low brass, and a solo take written as played.
+    # The seat's gates (docs/brasscribe/plan/my-instrument.md §6.3): recall on low brass, and a solo take written as played.
     recall = {"baritone": 0.93, "trombone": 0.93, "tuba": 0.85}
     m["seat_gates"] = float(all(m[f"{k}.seat_recall"] >= v for k, v in recall.items())
                             and all(v <= 0.01 for k, v in m.items() if k.endswith(".seat_moved")))

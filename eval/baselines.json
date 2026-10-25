@@ -1,5 +1,5 @@
 {
-  "description": "Regression baselines for `scribe bench`, taken from docs/research/10-benchmark-results.md. Suites are grouped by the target they gate (brass, fretted). Each suite cites the section its numbers come from. Default tolerance applies unless a metric sets its own. higher_is_better=false marks error-type metrics. Change a number only deliberately, together with the doc.",
+  "description": "Regression baselines for `scribe bench`, taken from docs/shared/research/10-benchmark-results.md. Suites are grouped by the target they gate (brass, fretted). Each suite cites the section its numbers come from. Default tolerance applies unless a metric sets its own. higher_is_better=false marks error-type metrics. Change a number only deliberately, together with the doc.",
   "tolerance": 0.01,
   "targets": {
     "brass": {
@@ -407,7 +407,7 @@
           }
         },
         "readability": {
-          "source": "qa/tools/musicxml_readability.py --check --baseline qa/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement; per difficulty since the fast-notes solo path (docs/plan/fast-notes.md §7): faithful with the Solo Cornet 16th limit at 65 %, standard and easier on the unchanged thresholds",
+          "source": "qa/tools/musicxml_readability.py --check --baseline qa/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement; per difficulty since the fast-notes solo path (docs/brasscribe/plan/fast-notes.md §7): faithful with the Solo Cornet 16th limit at 65 %, standard and easier on the unchanged thresholds",
           "metrics": {
             "passed": {
               "value": 1,
@@ -565,7 +565,7 @@
           }
         },
         "solo-instruments": {
-          "source": "docs/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's; cornet_moved since the faithful soloist placement: docs/plan/trumpet.md §2.5; since the fast-notes solo path (docs/plan/fast-notes.md §7): more right notes, and far fewer wrong ones (trumpet 16 -> 3, flugelhorn 17 -> 8), so q_hit is a share of a handful; q_missed: wrong notes without a \"?\" per 100 notes (trumpet 0.93 -> 0.25, flugelhorn 0.87 -> 0.62)",
+          "source": "docs/brasscribe/plan/my-instrument.md §1.2, §6.3 and §7.1: the solo path per instrument, today's (no seat) and the seat's; cornet_moved since the faithful soloist placement: docs/brasscribe/plan/trumpet.md §2.5; since the fast-notes solo path (docs/brasscribe/plan/fast-notes.md §7): more right notes, and far fewer wrong ones (trumpet 16 -> 3, flugelhorn 17 -> 8), so q_hit is a share of a handful; q_missed: wrong notes without a \"?\" per 100 notes (trumpet 0.93 -> 0.25, flugelhorn 0.87 -> 0.62)",
           "metrics": {
             "baritone.sw_f1": 0.972,
             "baritone.bp_f1": 0.869,
@@ -741,7 +741,7 @@
           }
         },
         "seat-voices": {
-          "source": "docs/plan/my-instrument.md §1.3 and §7.3: each seat's voice from the brass4 mixes by range",
+          "source": "docs/brasscribe/plan/my-instrument.md §1.3 and §7.3: each seat's voice from the brass4 mixes by range",
           "metrics": {
             "muscriptor-medium.S_f1": 0.924,
             "muscriptor-medium.S_recall": 0.95,
@@ -770,7 +770,7 @@
           }
         },
         "fast-notes": {
-          "source": "docs/plan/fast-notes.md §7-§8: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets, dense quantization and trill notation at standard and easier; errors: clips and builds that failed (a failed stage would score as empty, which a control counts as perfect)",
+          "source": "docs/brasscribe/plan/fast-notes.md §7-§8: the solo path on the frozen fast-notes clips (real trumpet samples dry, in a hall and through Mega-53, with the must-stay-one-note controls), after contour onsets, dense quantization and trill notation at standard and easier; errors: clips and builds that failed (a failed stage would score as empty, which a control counts as perfect)",
           "metrics": {
             "oracle.built:easier.trill_kept": 0.481,
             "oracle.ctl-ampvib.extra": {

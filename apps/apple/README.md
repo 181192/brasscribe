@@ -63,7 +63,7 @@ pairing address, the microphone, the camera and playing in the background are de
 alone. The on-device models are not in the app: they download only once a download address is set in
 Settings (see "Offline solos" below).
 
-The macOS UI tests run only in a headless macOS VM, never on your desktop: see [docs/dev/macos-vm.md](../../docs/dev/macos-vm.md).
+The macOS UI tests run only in a headless macOS VM, never on your desktop: see [docs/shared/dev/macos-vm.md](../../docs/shared/dev/macos-vm.md).
 
 UI tests, the app unit tests and the screenshots open `apps/fixtures/old-hundredth` (a public-domain
 hymn arranged by the core, with review marks; regenerate with `apps/fixtures/make-old-hundredth.py`),
@@ -178,7 +178,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
 | --- | --- | --- |
 | `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh record` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator), `make test-iphone` (its unit and UI tests; CI runs them every night, not on pull requests); `make test-mac-ui` only in the macOS VM |
 
-See [docs/dev/verify.md](../../docs/dev/verify.md).
+See [docs/shared/dev/verify.md](../../docs/shared/dev/verify.md).
 
 ## Screen catalogue (Mac)
 
@@ -262,7 +262,7 @@ a screen fails one or is not taken. The screenshots and each screen's tree go in
 job `play-screens`) runs it on every pull request that reaches Play, and the pictures are in the
 `play-mac-screenshots` artefact, to look at: no check waits for them. After a merge, CI compares the pictures on
 `main` with those of the `main` before it and lists changed screens in an issue
-([docs/dev/verify.md](../../docs/dev/verify.md#screenshots)). The catalogue is left out of `make test` and
+([docs/shared/dev/verify.md](../../docs/shared/dev/verify.md#screenshots)). The catalogue is left out of `make test` and
 `make test-mac-unit`. No images are committed.
 
 To measure the catalogue itself, `apple.yml` started by hand with `noise_play` (or `noise_bandroom`) takes it twice
