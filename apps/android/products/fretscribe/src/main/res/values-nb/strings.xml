@@ -142,7 +142,6 @@
     <string name="transcribe_cancelled_kept">Stoppet. Opptaket ligger i Sangene dine.</string>
     <string name="transcribe_cancelled">Stoppet. Du kan starte på nytt fra opptaket.</string>
     <string name="transcribe_done">Tabben er klar</string>
-    <string name="transcribe_failed">Tabben kunne ikke lages: %1$s</string>
 
     <!-- Problemer -->
     <string name="problem_score_title">Tabben kunne ikke lages</string>

@@ -10,10 +10,7 @@
     <string name="back_home">Tilbake til Hjem</string>
     <string name="cancel">Avbryt</string>
     <string name="continue_label">Fortsett</string>
-    <string name="more">Mer</string>
-    <string name="controls_hidden">Kontroller</string>
     <string name="settings">Innstillinger</string>
-    <string name="change">Endre</string>
     <string name="retry">Prøv igjen</string>
     <string name="on">På</string>
     <string name="off">Av</string>
@@ -46,11 +43,6 @@
     <string name="home_your_scores">Partiturene dine</string>
     <string name="edit_title">Endre navn</string>
     <string name="save">Lagre</string>
-    <string name="pitch_down">En halvtone ned</string>
-    <string name="pitch_up">En halvtone opp</string>
-    <string name="review_changed_from">Endret til %1$s (var %2$s)</string>
-    <string name="review_change_undone">Tilbake til %1$s, slik Brasscribe skrev den</string>
-    <string name="review_undo_change">Angre endringen</string>
     <string name="score_options">Valg for %1$s</string>
     <string name="check_notes">Sjekk tonene</string>
     <string name="delete">Slett</string>
@@ -62,20 +54,6 @@
     <string name="kept_storage">Opptakene i Partiturene dine bruker %1$s.</string>
     <string name="on_your_computer">På datamaskinen din</string>
     <string name="opening_score">Åpner …</string>
-    <string name="evidence_how_sure">Hvor sikker Brasscribe er</string>
-    <string name="evidence_percent">%1$d %%</string>
-    <string name="evidence_heard">Det Brasscribe hørte hver gang</string>
-    <string name="evidence_same">Samme, %1$s</string>
-    <string name="evidence_no_note">Ingen tone</string>
-    <string name="review_could_also_be">%1$s: det kan også være %2$s.</string>
-    <string name="review_listen_side_by_side">%1$s. Lytt til opptaket og partituret side om side.</string>
-    <string name="change_note">Endre tone …</string>
-    <string name="change_note_title">Endre tone</string>
-    <string name="change_note_preview">Spill takten med denne tonen</string>
-    <plurals name="notes_to_check">
-        <item quantity="one">%d tone å sjekke</item>
-        <item quantity="other">%d toner å sjekke</item>
-    </plurals>
     <string name="imported">Åpnet %1$s, %2$s</string>
     <string name="imported_video">Åpnet %1$s, %2$s. Lyden brukes.</string>
     <string name="reading_file">Åpner %1$s</string>
@@ -125,18 +103,11 @@
 
     <!-- Hva er dette? -->
     <string name="profile_title">Hva er dette?</string>
-    <string name="profile_hint">Svaret ditt bestemmer hvordan Brasscribe lytter. Den gjetter aldri.</string>
     <string name="profile_solo">Ett instrument</string>
-    <string name="profile_solo_desc">Én musiker alene, som når du øver på kornetten.</string>
     <string name="profile_brass_band">Brassband</string>
-    <string name="profile_brass_band_desc">Et helt band som spiller sammen, uten andre instrumenter.</string>
     <string name="profile_orchestra">Solist med orkester eller band</string>
-    <string name="profile_orchestra_desc">Du får solostemmen, og akkompagnementet arrangert for brassband.</string>
     <string name="profile_pop">Pop eller rock</string>
-    <string name="profile_pop_desc">Sang, gitarer, tangenter, bass og trommer.</string>
-    <string name="profile_not_sure">Usikker? Velg Brassband for en gruppe, eller Ett instrument for et opptak av bare deg. Du kan endre det senere.</string>
     <string name="profile_choose_one">Velg ett for å fortsette.</string>
-    <string name="where_title">Hvor partituret lages</string>
     <string name="where_device">På telefonen</string>
     <string name="where_device_desc">Bare ett instrument. Opptaket blir på telefonen.</string>
     <string name="where_device_solo_only">Bare for ett instrument eller et brassband.</string>
@@ -144,12 +115,7 @@
     <string name="where_device_draft_desc">Datamaskinen lager et bedre partitur.</string>
     <string name="where_device_draft_card">Et raskt utkast. Opptaket blir på telefonen.</string>
     <string name="where_companion">På datamaskinen din</string>
-    <string name="where_companion_desc">%1$s · opptaket sendes ikke til nettet</string>
     <string name="where_device_unavailable">Denne versjonen kan ikke lage partitur på telefonen.</string>
-    <plurals name="where_device_too_long">
-        <item quantity="one">Bare for opptak på opptil %d minutt.</item>
-        <item quantity="other">Bare for opptak på opptil %d minutter.</item>
-    </plurals>
     <string name="where_companion_missing">Koble til Brasscribe Bandroom på datamaskinen først.</string>
     <string name="problem_connect_computer">Koble til datamaskinen</string>
 
@@ -188,14 +154,9 @@
     <string name="transcribe_cancel_keep">Fortsett</string>
     <string name="transcribe_cancelled">Stoppet. Opptaket er tatt vare på.</string>
     <string name="transcribe_cancelled_kept">Stoppet. Opptaket ligger i Partiturene dine.</string>
-    <string name="transcribe_failed">Partituret kunne ikke lages: %1$s</string>
     <string name="transcribe_done">Partituret er klart</string>
     <string name="transcribe_where_device">På telefonen</string>
     <string name="transcribe_where_device_draft">På telefonen, som utkast</string>
-    <string name="draft_notice">Et raskt utkast laget på telefonen. Datamaskinen lager et bedre partitur, og resultatet her kan bli litt annerledes enn på datamaskinen.</string>
-    <string name="draft_notice_short">Et raskt utkast laget på telefonen.</string>
-    <string name="draft_make_full">Lag hele partituret</string>
-    <string name="draft_no_computer">Åpne Brasscribe Bandroom på datamaskinen for å lage hele partituret fra det samme opptaket.</string>
     <string name="draft_label">Utkast</string>
     <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
     <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
@@ -223,69 +184,20 @@
     <string name="transcribe_progress_label">Framdrift</string>
 
     <!-- Sjekk tonene -->
-    <plurals name="review_title">
-        <item quantity="one">Sjekk %d tone</item>
-        <item quantity="other">Sjekk %d toner</item>
-    </plurals>
-    <string name="review_all_checked">Alle tonene er sjekket</string>
-    <string name="review_lead">Brasscribe var usikker på disse. Lytt, og behold eller endre hver av dem.</string>
-    <string name="review_card_title">Takt %1$d · %2$s</string>
-    <string name="review_position">%1$d av %2$d</string>
-    <string name="review_note_line">Notert %1$s, %2$s</string>
-    <string name="level_uncertain">Usikker</string>
-    <string name="level_very_uncertain">Svært usikker</string>
-    <string name="review_keep_next">Behold, gå til neste</string>
-    <string name="review_skip">Hopp over</string>
-    <string name="review_finish_later">Fortsett senere (%1$d igjen)</string>
-    <string name="review_finish_later_title">Sjekke ferdig senere?</string>
-    <plurals name="review_finish_later_text">
-        <item quantity="one">%d tone beholder «?»-merket. Du kan sjekke den når som helst fra partituret: trykk «Sjekk dem».</item>
-        <item quantity="other">%d toner beholder «?»-merkene. Du kan sjekke dem når som helst fra partituret: trykk «Sjekk dem».</item>
-    </plurals>
-    <string name="review_finish_later_confirm">Fortsett senere</string>
-    <string name="review_keep_checking">Sjekk videre</string>
-    <string name="review_still_to_check">Gjenstår å sjekke</string>
-    <string name="review_more">+ %1$d til</string>
-    <string name="review_all_notes">Alle tonene i %1$s</string>
-    <string name="legend_uncertain">Usikker</string>
-    <string name="legend_very_uncertain">Svært usikker</string>
-    <string name="review_next_uncertain">Neste usikre tone</string>
-    <string name="review_no_uncertain">Ingen usikre toner igjen</string>
-    <string name="action_listen_bar">Lytt til denne takten</string>
-    <string name="action_mark_checked">Behold</string>
     <string name="checked_left">Beholdt. %1$d igjen</string>
     <string name="playing_bar_original">Spiller takt %1$d, opptaket</string>
     <string name="playing_bar_score">Spiller takt %1$d, partituret</string>
     <string name="listen_unavailable">Det finnes ikke noe opptak å spille for denne takten.</string>
-    <string name="bar_heading">Takt %1$d</string>
-    <string name="bar_rest_heading">Takt %1$d til %2$d</string>
-    <string name="pickup_heading">Opptakt</string>
-    <string name="pickup_rest_one_heading">Opptakt og takt 1</string>
-    <string name="pickup_rest_heading">Opptakt og takt 1–%1$d</string>
-    <string name="review_continue">Neste: Hvordan skal partituret bli?</string>
-    <string name="dur_whole">helnote</string>
-    <string name="dur_half">halvnote</string>
-    <string name="dur_quarter">firedelsnote</string>
-    <string name="dur_eighth">åttedelsnote</string>
-    <string name="dur_16th">sekstendelsnote</string>
-    <string name="dur_32nd">trettitodelsnote</string>
-    <string name="dur_note">note</string>
-    <string name="dur_dotted">punktert %1$s</string>
 
     <!-- Velg resultat -->
-    <string name="output_title">Hvordan skal partituret bli?</string>
-    <string name="lineup">Hvilket band?</string>
     <string name="lineup_full">Fullt brassband</string>
     <string name="lineup_full_desc">Omtrent 25 musikere</string>
     <string name="lineup_minimal">Lite band</string>
     <string name="lineup_minimal_desc">10–15 musikere, stemmene doblet</string>
     <string name="lineup_solo">Bare solostemmen</string>
-    <string name="lineup_solo_desc">Bare melodien, til én musiker.</string>
     <string name="lineup_quartet">Kvartett</string>
     <string name="lineup_quartet_desc">4 musikere, én på hver stemme</string>
-    <string name="profile_solo_percussion">Ikke for slagverk ennå</string>
     <string name="percussion_solo_refused">Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet, så får du slagverkstemmen når opptaket har trommer.</string>
-    <string name="change_what_i_play">Endre hva jeg spiller</string>
     <string name="error_generic">Noe gikk galt. Prøv igjen.</string>
     <string name="error_unreachable">Får ikke kontakt med Brasscribe Bandroom på datamaskinen. Sjekk at den kjører og er på samme nettverk.</string>
     <string name="error_pair_again">Datamaskinen kjenner ikke igjen denne telefonen lenger. Koble dem sammen på nytt i Innstillinger.</string>
@@ -301,92 +213,27 @@
     <string name="problem_record_again">Spill inn på nytt</string>
     <string name="other_product_row">Tab · åpnes i Fretscribe</string>
     <string name="other_product_opens">Dette er en tab. Åpne den i Fretscribe.</string>
-    <string name="lineup_full_not_yet">Kommer senere for opptak av hele bandet</string>
     <string name="lineup_quartet_needs_group">Trenger et opptak av hele gruppen</string>
-    <string name="difficulty">Hvor vanskelig?</string>
     <string name="difficulty_faithful">Som spilt</string>
     <string name="difficulty_standard">Litt enklere</string>
     <string name="difficulty_easier">Enklere</string>
-    <string name="difficulty_tip">Enklere beholder melodien, men unngår høye toner og raske løp.</string>
-    <string name="difficulty_unsupported">Dette partituret er skrevet slik det ble spilt. Koble til Brasscribe Bandroom på datamaskinen for de andre valgene.</string>
-    <string name="key_label">Toneart</string>
-    <string name="key_as_recorded">Som i opptaket</string>
-    <plurals name="key_shift">
-        <item quantity="one">%d halvtone</item>
-        <item quantity="other">%d halvtoner</item>
-    </plurals>
-    <string name="output_apply">Vis partituret</string>
     <string name="arrangement_ready">Partituret er klart</string>
 
     <!-- Partitur og øving -->
     <string name="score_title">Partitur</string>
-    <string name="score_summary">Partitur for %1$s. %2$s. Takt %3$d av %4$d.</string>
-    <string name="show_all_parts">Alle stemmer</string>
-    <string name="show_one_part">Min stemme</string>
-    <string name="written_pitch">Notert</string>
-    <string name="concert_pitch">Klingende</string>
-    <string name="read_aloud">Les opp</string>
-    <plurals name="score_marked">
-        <item quantity="one">%d tone merket ?</item>
-        <item quantity="other">%d toner merket ?</item>
-    </plurals>
-    <string name="check_them">Sjekk dem</string>
     <string name="play">Spill av</string>
     <string name="pause">Pause</string>
-    <string name="bar_of">Takt %1$d av %2$d</string>
-    <string name="beat_of">Slag %1$d av %2$d</string>
-    <string name="speed">Tempo</string>
     <string name="speed_value">%1$d %%</string>
     <string name="speed_chip">Tempo %1$d %%</string>
-    <string name="loop">Gjenta</string>
-    <string name="loop_chip_on">Gjentar %1$d–%2$d</string>
-    <string name="loop_title">Gjenta takter</string>
-    <string name="loop_tip">Spiller disse taktene om og om igjen.</string>
     <string name="loop_from">Fra takt</string>
     <string name="loop_to">Til takt</string>
-    <string name="loop_set">Gjenta disse taktene</string>
     <string name="loop_clear">Slutt å gjenta</string>
-    <string name="loop_set_announce">Gjentar takt %1$d til %2$d</string>
-    <string name="loop_cleared">Sluttet å gjenta</string>
-    <string name="loop_invalid">Skriv takter mellom 1 og %1$d, den første først.</string>
-    <string name="count_in">Inntelling</string>
-    <string name="metronome">Metronom</string>
-    <string name="mute_my_part">Demp stemmen min</string>
-    <string name="mute">Demp</string>
-    <string name="only_this">Bare denne</string>
-    <string name="mute_part">Demp %1$s</string>
-    <string name="solo_part">Bare %1$s</string>
-    <string name="parts">Stemmer</string>
     <string name="zoom_in">Zoom inn</string>
     <string name="zoom_out">Zoom ut</string>
-    <string name="sound">Lyd</string>
-    <string name="sound_baseline">Standard</string>
-    <string name="sound_realistic">Realistisk</string>
-    <string name="sound_realistic_unavailable">Ikke med i denne versjonen av appen.</string>
-    <string name="sound_realistic_loading">Laster inn instrumentene …</string>
-    <string name="sound_realistic_test_tone">Ingen realistiske instrumenter er installert ennå: du hører bandlydene.</string>
-    <plurals name="sound_pack_parts">
-        <item quantity="one">%d stemme spiller et ekte instrument.</item>
-        <item quantity="other">%d stemmer spiller ekte instrumenter.</item>
-    </plurals>
-    <string name="sound_humanized">Spilles med menneskelig timing og dynamikk.</string>
-    <string name="sound_band_soundfont">Brassbandlyder.</string>
-    <string name="sound_note">Metronomen og inntellingen bruker alltid standardlyden.</string>
     <string name="action_next_bar">Neste takt</string>
     <string name="action_prev_bar">Forrige takt</string>
-    <string name="action_next_part">Neste stemme</string>
-    <string name="action_prev_part">Forrige stemme</string>
-    <string name="action_read_bar">Les takten</string>
-    <string name="action_play_bar">Spill av denne takten</string>
-    <string name="action_check_marks">Sjekk ?-tonene i denne takten</string>
-    <string name="player_loading">Åpner partituret</string>
-    <string name="player_playing">Spiller</string>
-    <string name="player_paused">Satt på pause</string>
-    <string name="score_error">Partituret kan ikke vises: %1$s</string>
-    <string name="part_of">%1$s, %2$d av %3$d</string>
 
     <!-- Del eller skriv ut -->
-    <string name="export">Del eller skriv ut</string>
     <string name="export_title">Del eller skriv ut</string>
     <string name="export_formats">Formater</string>
     <string name="export_pdf">PDF</string>
@@ -470,38 +317,8 @@
     <string name="about_font">Overskriftene er satt i Instrument Serif (SIL Open Font License 1.1).</string>
     <!-- Music stand (design/music-stand.md §9) -->
     <string name="stand_enter">Notestativ</string>
-    <string name="stand_enter_tip">Bare notene, til å spille fra notestativet (F)</string>
     <string name="stand_open_from_library">Åpne på notestativet</string>
-    <string name="stand_leave">Gå ut</string>
-    <string name="stand_leave_name">Gå ut av notestativet</string>
-    <string name="stand_part_yours">%1$s (deg)</string>
-    <string name="stand_position">Takt %1$d · side %2$d av %3$d</string>
-    <string name="stand_position_line">%1$s · takt %2$d · side %3$d av %4$d</string>
-    <string name="stand_position_tablet">%1$s · %2$s · takt %3$d · side %4$d av %5$d</string>
-    <string name="stand_prev_page">Forrige side</string>
-    <string name="stand_next_page">Neste side</string>
-    <string name="stand_slower">Saktere</string>
-    <string name="stand_faster">Raskere</string>
-    <string name="stand_repeat">Gjenta</string>
-    <string name="stand_repeat_on">Gjenta %1$d–%2$d</string>
-    <string name="stand_pedals_repeat">Pedaler: høyre spiller av og pauser, venstre går tilbake til takt %1$d.</string>
-    <string name="stand_back_to_repeat">Tilbake til takt %1$d.</string>
-    <string name="stand_only_mine">Bare stemmen min</string>
-    <string name="stand_lock">Lås retningen</string>
-    <string name="stand_lock_on">Retningen er låst</string>
-    <string name="stand_turn">Snu notene</string>
-    <string name="stand_turn_name">Snu notene så de passer telefonen</string>
-    <string name="stand_hint">Trykk på notene for å vise knappene.</string>
-    <string name="stand_entered">Notestativ. %1$s, takt %2$d av %3$d.</string>
-    <string name="stand_score_summary">%1$s, takt %2$d av %3$d, side %4$d av %5$d</string>
-    <string name="stand_first_page">Første side.</string>
-    <string name="stand_last_page">Siste side.</string>
-    <string name="stand_page_turned">Side %1$d av %2$d, takt %3$d til %4$d.</string>
-    <string name="stand_locked">Retningen er låst. Notene blir stående slik.</string>
-    <string name="stand_unlocked">Notene snur seg med telefonen igjen.</string>
     <string name="stand_left">Notestativet er lukket.</string>
-    <string name="settings_stand_controls">Vis alltid knappene på notestativet</string>
-    <string name="settings_stand_follow">Bla om mens musikken spiller</string>
     <string name="help_stand_title">Notestativ</string>
     <string name="help_stand_pedal">Sidevendere og pedaler virker når de sender piltaster eller Page Up og Page Down. Mellomrom starter og stopper musikken. Når noe gjentas, blar ikke pedalene: høyre (Page Down) spiller av og pauser, og venstre (Page Up) går tilbake til starten av det som gjentas.</string>
     <string name="help_stand_tablet_lock">Bruk retningslåsen i kontrollsenteret (iPad) eller hurtiginnstillingene (Android) for å holde nettbrettet i én retning.</string>
@@ -510,12 +327,8 @@
     <string name="problem_sheet_music_title">Appen kan ikke åpne noter ennå</string>
     <string name="problem_sheet_music_body">Den arbeider ut fra opptak. Åpne et opptak, eller spill inn det du spiller.</string>
     <string name="home_open_score_desc">MusicXML fra MuseScore, Sibelius eller Dorico</string>
-    <string name="talking_score_unavailable">Les opp er ikke med i denne versjonen av appen.</string>
-    <string name="output_lead">Du kan endre dette senere. Ingenting går tapt.</string>
     <string name="key_major">%1$s-dur</string>
     <string name="key_minor">%1$s-moll</string>
-    <string name="key_shifted">%1$s fra opptaket</string>
-    <string name="view_menu">Visning</string>
     <string name="export_what">Hva</string>
     <string name="export_scope_my_part">%1$s (deg)</string>
     <string name="export_scope_every_part">Alle stemmer</string>
@@ -524,28 +337,7 @@
     <string name="export_scope_score_quartet">Partitur (alle 4 stemmer)</string>
     <string name="export_whole_score_only">%1$s · hele partituret</string>
     <string name="export_made_before_change">Laget før endringene dine. Bandroom på datamaskinen lager den på nytt.</string>
-    <string name="review_your_part_first">Sjekk stemmen din først</string>
-    <string name="review_accompaniment">Akkompagnement (%1$d)</string>
-    <plurals name="review_your_part_count">
-        <item quantity="one">%1$d tone i %2$s.</item>
-        <item quantity="other">%1$d toner i %2$s.</item>
-    </plurals>
-    <plurals name="review_very_first">
-        <item quantity="one">Den %d svært usikre kommer først.</item>
-        <item quantity="other">De %d svært usikre kommer først.</item>
-    </plurals>
-    <string name="key_concert">%1$s (klingende)</string>
-    <string name="key_for_bflat">%1$s for B-instrumenter</string>
-    <string name="key_lower">− Lavere</string>
-    <string name="key_higher">Høyere +</string>
-    <string name="key_semitone_hint">én halvtone</string>
-    <string name="written_pitch_for">Notert for %1$s</string>
-    <string name="written_tip">Notert er det du leser i stemmen din. Klingende er slik det låter på et piano.</string>
-    <string name="practice">Øving</string>
-    <string name="written_tip_label">Hva notert og klingende betyr</string>
     <string name="help">Hjelp</string>
-    <string name="settings_sound_standard">Klare, lette lyder som starter med en gang.</string>
-    <string name="settings_sound_realistic">Ekte messinginstrumenter, spilt med menneskelig timing.</string>
     <string name="settings_display">Visning</string>
     <string name="settings_language">Språk</string>
     <string name="settings_language_desc">Norsk (bokmål) eller English, i telefonens innstillinger</string>
@@ -572,30 +364,6 @@
     <string name="help_5_text">På telefonen: ett instrument, eller et raskt utkast for brassband. For hele bandpartituret, en solist med band, eller pop og rock, åpner du Brasscribe Bandroom på datamaskinen og kobler til i Innstillinger.</string>
     <string name="help_6_title">Lenker og strømmeapper</string>
     <string name="help_6_text">Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</string>
-    <string name="octave_down">Oktav ned</string>
-    <string name="octave_up">Oktav opp</string>
-    <string name="review_most_right">De fleste er nok riktige. Lytt til noen, og behold resten takt for takt.</string>
-    <plurals name="review_keep_bar">
-        <item quantity="one">Behold denne takten</item>
-        <item quantity="other">Behold resten av takten (%d)</item>
-    </plurals>
-    <plurals name="review_most_right_start_very">
-        <item quantity="one">De fleste er nok riktige. Begynn med den %d svært usikre.</item>
-        <item quantity="other">De fleste er nok riktige. Begynn med de %d svært usikre.</item>
-    </plurals>
-    <string name="review_card_title_bars">Takt %1$d–%2$d · %3$s</string>
-    <plurals name="review_title_places">
-        <item quantity="one">Sjekk %d sted</item>
-        <item quantity="other">Sjekk %d steder</item>
-    </plurals>
-    <plurals name="review_your_part_places">
-        <item quantity="one">%1$d sted i %2$s.</item>
-        <item quantity="other">%1$d steder i %2$s.</item>
-    </plurals>
-    <plurals name="review_group_notes">
-        <item quantity="one">%d tone</item>
-        <item quantity="other">%d toner</item>
-    </plurals>
     <string name="home_full_band">Fullt band</string>
     <plurals name="home_bars">
         <item quantity="one">%d takt</item>
@@ -604,14 +372,6 @@
     <plurals name="home_to_check">
         <item quantity="one">%d å sjekke</item>
         <item quantity="other">%d å sjekke</item>
-    </plurals>
-    <plurals name="score_marked_places">
-        <item quantity="one">%d sted merket ?</item>
-        <item quantity="other">%d steder merket ?</item>
-    </plurals>
-    <plurals name="review_start_very">
-        <item quantity="one">Begynn med den %d svært usikre.</item>
-        <item quantity="other">Begynn med de %d svært usikre.</item>
     </plurals>
 
     <!-- Connection to the computer, pairing, and listening to a bar. -->
@@ -626,7 +386,6 @@
     <string name="conn_allow">Tillat</string>
     <string name="conn_pair_again">Koble til telefonen på nytt</string>
     <string name="server_name_format">Brasscribe på %1$s</string>
-    <string name="listen_stop">Stopp</string>
     <string name="listen_stopped">Stoppet</string>
     <string name="listen_ended">Slutt på takt %1$d</string>
     <string name="pair_scan">Skann koden på datamaskinen</string>
@@ -661,96 +420,11 @@
     <string name="conn_detail_last_error">Siste feil: %1$s</string>
     <string name="band_sounds_missing">Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</string>
     <!-- Hva spiller du? (docs/plan/my-instrument.md §3.8) -->
-    <string name="seat_title">Hva spiller du?</string>
-    <string name="seat_body">Brasscribe viser stemmen din først og demper den når du spiller med. Du kan endre det i Innstillinger.</string>
-    <string name="seat_instrument">Instrument</string>
-    <string name="seat_which_part">Hvilken stemme?</string>
-    <string name="seat_reads">Du leser</string>
-    <string name="seat_reads_treble_bflat">G-nøkkel i B</string>
-    <string name="seat_reads_treble_eflat">G-nøkkel i Ess</string>
-    <string name="seat_reads_bass">F-nøkkel, klingende</string>
-    <string name="seat_reads_treble_bflat_spoken">G-nøkkel i B</string>
-    <string name="seat_reads_treble_eflat_spoken">G-nøkkel i Ess</string>
-    <string name="seat_continue_hint">Velg instrumentet ditt, eller «Jeg dirigerer eller lytter».</string>
-    <string name="seat_part_hint">Velg hvilken stemme du spiller.</string>
-    <string name="seat_none">Jeg dirigerer eller lytter</string>
     <string name="seat_skip">Ikke nå</string>
-    <string name="inst_cornet">Kornett</string>
-    <string name="inst_trumpet">Trompet</string>
-    <string name="inst_trumpet_sub">i B</string>
-    <string name="inst_trumpet_sub_spoken">i B</string>
-    <string name="inst_soprano">Sopran</string>
-    <string name="inst_soprano_sub">Ess-kornett</string>
-    <string name="inst_soprano_sub_spoken">Ess-kornett</string>
-    <string name="inst_flugelhorn">Flygelhorn</string>
-    <string name="inst_tenor_horn">Althorn</string>
-    <string name="inst_tenor_horn_sub">i Ess</string>
-    <string name="inst_tenor_horn_sub_spoken">i Ess</string>
-    <string name="inst_baritone">Baryton</string>
-    <string name="inst_euphonium">Eufonium</string>
-    <string name="inst_trombone">Trombone</string>
-    <string name="inst_bass_trombone">Basstrombone</string>
-    <string name="inst_eb_bass">Ess-bass</string>
-    <string name="inst_eb_bass_spoken">Ess-bass</string>
-    <string name="inst_bb_bass">B-bass</string>
-    <string name="inst_bb_bass_spoken">B-bass</string>
-    <string name="inst_percussion">Slagverk</string>
     <string name="settings_you">Instrumentet ditt</string>
     <string name="settings_seat">Hva du spiller</string>
-    <string name="settings_seat_not_set">Ikke valgt</string>
-    <string name="settings_seat_value">%1$s · %2$s</string>
-    <string name="settings_reads_treble_bflat">G-nøkkel i B</string>
-    <string name="settings_reads_treble_eflat">G-nøkkel i Ess</string>
-    <string name="settings_reads_bass">F-nøkkel, klingende</string>
     <string name="settings_seat_caption">Nye partiturer åpner på stemmen din. Partiturer du har fra før, beholder stemmen du valgte.</string>
-    <string name="my_part_make">Gjør til min stemme</string>
     <string name="my_part_made">%1$s er stemmen din i dette partituret.</string>
-    <string name="who_played">Hvem spilte?</string>
-    <string name="who_plays_tune">Hvem spiller melodien?</string>
-    <string name="tune_lineup">%1$s (som vanlig)</string>
-    <string name="tune_seat">Deg: %1$s</string>
-    <string name="solo_one_part">Et soloopptak gir én stemme: din.</string>
-    <string name="change_output">Band, vanskelighet og toneart …</string>
-    <string name="write_for_another">Skriv for et annet instrument …</string>
-    <string name="source_yours">Fra opptaket ditt</string>
-    <string name="source_recording">Fra opptaket</string>
-    <string name="source_arranged">Arrangert ut fra harmoniene i bandet</string>
-    <string name="source_empty">Tom i dette arrangementet</string>
-    <string name="explain_recording">Brasscribe skrev ned tonene den hørte for denne stemmen.</string>
-    <string name="explain_empty">Ingenting i opptaket ga denne stemmen noen toner, så den står tom.</string>
-    <string name="explain_arranged">Ingen spilte denne stemmen alene i opptaket. Brasscribe skrev den ut fra akkordene den hørte, så den kan avvike fra noten din.</string>
-    <string name="review_empty_title">Stemmen din er tom</string>
-    <string name="review_empty_body">Ingenting i opptaket ga %1$s noen toner, så det er ingenting av ditt å sjekke.</string>
-    <string name="review_arranged_title">Stemmen din er arrangert</string>
-    <string name="review_arranged_body">Ingen spilte %1$s alene i opptaket, så Brasscribe skrev stemmen ut fra akkordene den hørte. Det er ingen toner av dine å sjekke.</string>
-    <string name="review_check_others">Sjekk de andre stemmene</string>
-    <string name="review_show_mine">Vis stemmen min</string>
-    <string name="mapped_same_full">Fullt brassband har ingen %1$s. Her er stemmen din %2$s, den nærmeste: samme stemming og nøkkel.</string>
-    <string name="mapped_other_full">Fullt brassband har ingen %1$s. Her er stemmen din %2$s, skrevet for %3$s.</string>
-    <string name="mapped_takes_full">Fullt brassband har ingen stemme for %1$s. Du får stemmen til %2$s, skrevet for %1$s.</string>
-    <string name="mapped_takes_minimal">Det lille bandet har ingen stemme for %1$s. Du får stemmen til %2$s, skrevet for %1$s.</string>
-    <string name="mapped_same_minimal">Det lille bandet har ingen %1$s. Her er stemmen din %2$s, den nærmeste: samme stemming og nøkkel.</string>
-    <string name="mapped_same_quartet">Kvartetten har ingen %1$s. Her er stemmen din %2$s, den nærmeste: samme stemming og nøkkel.</string>
-    <string name="mapped_other_minimal">Det lille bandet har ingen %1$s. Her er stemmen din %2$s, skrevet for %3$s.</string>
-    <string name="mapped_other_quartet">Kvartetten har ingen %1$s. Her er stemmen din %2$s, skrevet for %3$s.</string>
-    <string name="mapped_none_minimal">Det lille bandet har ingen slagverkstemme. Brasscribe åpner alle stemmene.</string>
-    <string name="mapped_none_quartet">Kvartetten har ingen slagverkstemme. Brasscribe åpner alle stemmene.</string>
-    <string name="key_bflat">B</string>
-    <string name="key_eflat">Ess</string>
-    <string name="key_on_your_part">%1$s på stemmen din</string>
-    <string name="key_as_it_sounds">%1$s, klingende</string>
-    <string name="written_for_treble">Skrevet for %1$s i %2$s, G-nøkkel</string>
-    <string name="written_for_bass">Skrevet for %1$s, F-nøkkel, klingende</string>
-    <string name="lineup_your_part">%1$s · stemmen din: %2$s</string>
     <string name="engine_too_old_seat">Bandroom på datamaskinen er for gammel til å skrive for instrumentet ditt. Oppdater den for å bruke dette.</string>
     <string name="lead_seat_refused">Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?</string>
-    <string name="mapped_short_full">Fullt brassband har ingen %1$s — viser %2$s</string>
-    <string name="mapped_short_takes_full">Fullt brassband har ingen stemme for %1$s — viser %2$s, skrevet for %1$s</string>
-    <string name="mapped_short_takes_minimal">Det lille bandet har ingen stemme for %1$s — viser %2$s, skrevet for %1$s</string>
-    <string name="mapped_short_minimal">Det lille bandet har ingen %1$s — viser %2$s</string>
-    <string name="mapped_short_quartet">Kvartetten har ingen %1$s — viser %2$s</string>
-    <string name="mapped_short_none_minimal">Det lille bandet har ingen slagverkstemme — viser alle stemmene</string>
-    <string name="mapped_short_none_quartet">Kvartetten har ingen slagverkstemme — viser alle stemmene</string>
-    <string name="mapped_close">Lukk meldingen</string>
-    <string name="written_tip_full">%1$s: det du leser i stemmen din. Klingende: slik det låter på et piano.</string>
 </resources>
