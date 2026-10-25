@@ -311,7 +311,7 @@ The measured Usina hall position is too wet for any stage, at base and head alik
 
 #### P1-b. The dense quantizer fails the existing readability gate on Mikkel
 
-The `readability` suite checks the Mikkel arrangement against `qa/reports/mikkel-golden-readability.json`. The Solo Cornet part:
+The `readability` suite checks the Mikkel arrangement against `qa/brasscribe/reports/mikkel-golden-readability.json`. The Solo Cornet part:
 
 | | base | head | head with `dense=False` (F1 + F2 only) |
 |---|---|---|---|

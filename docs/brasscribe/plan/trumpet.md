@@ -76,7 +76,7 @@ MuseScore 4.7.5 (`/Applications/MuseScore 4.app`) compiles `instruments.xml` int
 
 The core's cornet (`pro (52,82)`, `comfortable (52,79)`) already matches MuseScore. A trumpet has three semitones more at the top, so Mikkel's 84 (C6 sounding, written D6) is playable on a trumpet and not on a cornet by MuseScore's numbers.
 
-The repo's QA tool disagrees for the solo cornet. `qa/tools/musicxml_readability.py:48` gives `"solo cornet"` an extreme of written D6, which is sounding 84. `"cornet"` gets written C6, sounding 82. §2.2 settles which wins.
+The repo's QA tool disagrees for the solo cornet. `qa/shared/tools/musicxml_readability.py:48` gives `"solo cornet"` an extreme of written D6, which is sounding 84. `"cornet"` gets written C6, sounding 82. §2.2 settles which wins.
 
 ### 1.3 Mikkel on the Rust path, and what makes notes move
 
@@ -140,7 +140,7 @@ This merges the earlier list, the review's §1.5 and a full audit. "Today with a
 | `studio/src/lib/talkingxml.ts:36-43` `NB_PARTS` | nb names | name | English name |
 | `studio/src/lib/navigator.ts:225-238` | instrument name by transposition (−2 → "Cornet in B♭") | chromatic | "Cornet in B♭" (Flugelhorn has the same bug today) |
 | `studio/src/views/run.ts:277-280` `seatName` | title-cases the seat id | id | "Trumpet" by luck |
-| `qa/tools/musicxml_readability.py:46-60` `RANGES` | written ranges by part-name substring | contains | unchecked |
+| `qa/shared/tools/musicxml_readability.py:46-60` `RANGES` | written ranges by part-name substring | contains | unchecked |
 | `apps/apple/.../ScoreKit/Score.swift:198-233` `Section.init`, `defaultSeat` | section and pan | name contains | `.other`, panned centre |
 | `apps/apple/App/Seats.swift:132-150` | tile order, 5 localized tile titles | instrument id | last tile, no nb title |
 | `apps/apple/App/PracticeModel.swift:146-148`, `ScoreKit/CoreBridge.swift:66-71` | "Solo Cornet" / "1st Cornet" as the lead | literal | not "your part" when the soloist is the lead |
@@ -174,7 +174,7 @@ The arranger's role lists are arranging policy for the band's own parts, not ins
 
 | Instrument | `pro` | `solo` | Source |
 |---|---|---|---|
-| B♭ cornet | (52,82) | **(52,84)** | `qa/tools/musicxml_readability.py:48`: "solo cornet", extreme written D6. MuseScore has no soloist field. |
+| B♭ cornet | (52,82) | **(52,84)** | `qa/shared/tools/musicxml_readability.py:48`: "solo cornet", extreme written D6. MuseScore has no soloist field. |
 | B♭ trumpet (§3) | (52,85) | None (= pro) | MuseScore 4.7.5 `bb-trumpet` P |
 | every other | as today | None | |
 
@@ -297,7 +297,7 @@ The Mikkel intro phrases at ticks 0 and 156 (2 notes and 1 note) are the solo li
   - the Windows `NativeCoreBridgeTests.cs:20` `GoldenNotes` count, and `TestPaths.cs`
   - `music/tests/test_seats.py`
   - `eval/baselines.json`, `eval/scribe_eval/difficulty_bench.py`, `suites.py`
-  - `qa/reports/mikkel-golden-readability.json`
+  - `qa/brasscribe/reports/mikkel-golden-readability.json`
   - the full list: the tests that turn red when `make check-all` runs with the old golden and the new code
 - **Fixture-only readers stay on the old directory.** These are the apps' playback and notation tests that only load the MusicXML.
 - **At merge**, one commit (`chore: promote the soloist golden`):
@@ -416,7 +416,7 @@ The rule behind it: a seat whose own part is not in the lineup takes the part it
 | `studio/src/lib/validate.ts:11` `RANGES` | `Trumpet: R([52, 85], [52, 80])` |
 | `studio/src/lib/validate.ts:35` `CROSSING_PAIRS` | `["Trumpet", "Repiano Cornet"]` |
 | Windows `MusicXmlTalkingScoreBuilder.cs:443` | the two rows above |
-| `qa/tools/musicxml_readability.py:46` | `("trumpet", (54, 57, 84, 87))`, written: pro 52–85 and the solo cornet's comfort top |
+| `qa/shared/tools/musicxml_readability.py:46` | `("trumpet", (54, 57, 84, 87))`, written: pro 52–85 and the solo cornet's comfort top |
 
 `studio/src/lib/navigator.ts:225` names the instrument by transposition, so a trumpet reads "Cornet in B♭", as a flugelhorn does today. That is fixed by (c), not here.
 

@@ -155,7 +155,7 @@ jobs:
         run: pixi run test
 
       - name: QA tool tests
-        run: pixi run pytest -q qa/tools/tests
+        run: pixi run pytest -q qa/shared/tools/tests
 
       # Every brand's generated design (design/tooling/brands.json lists them: design/brands/brasscribe/dist and
       # design/brands/fretscribe/dist) is committed: it must be what the tokens generate, on every platform, and
@@ -166,7 +166,7 @@ jobs:
           python3 design/tooling/build.py --check
 
       - name: Contrast of the design tokens (every brand, every mode, reports up to date)
-        run: python3 qa/tools/contrast.py --brands
+        run: python3 qa/shared/tools/contrast.py --brands
 
       - name: Band sound coverage (every lineup part has its own real-sample preset)
         run: python3 sounds/partsound.py --check

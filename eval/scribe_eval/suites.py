@@ -388,11 +388,11 @@ FAITHFUL_LIMITS = {"Solo Cornet:sixteenth_pct": 65.0}
 
 
 def _readability(data: Path, mode: str) -> dict[str, float]:
-    """qa/tools/musicxml_readability.py --check --baseline on a fresh Mikkel arrangement."""
+    """qa/shared/tools/musicxml_readability.py --check --baseline on a fresh Mikkel arrangement."""
     import sys
 
-    tool = ROOT / "qa" / "tools" / "musicxml_readability.py"
-    baseline = ROOT / "qa" / "reports" / "mikkel-golden-readability.json"
+    tool = ROOT / "qa" / "shared" / "tools" / "musicxml_readability.py"
+    baseline = ROOT / "qa" / "brasscribe" / "reports" / "mikkel-golden-readability.json"
     if not tool.exists() or not baseline.exists():
         raise SkipSuite("qa readability tool or its baseline is missing")
     out: dict[str, float] = {}
@@ -821,7 +821,7 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           _quartet_audio, ("eval/choralebricks-brass4",), ci=True),
     Suite("mikkel-golden", "brass", "re-arrange cached Mikkel layers and compare with the golden output", _golden_arrange,
           ("mikkel/repro/layers", MIKKEL_GOLDEN)),
-    Suite("readability", "brass", "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
+    Suite("readability", "brass", "QA readability gate (qa/shared/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
           _readability, ("mikkel/repro/layers", MIKKEL_GOLDEN)),
     Suite("solo-instruments", "brass", "the solo path per brass instrument on frozen ChoraleBricks stems (SwiftF0/Basic Pitch MIDI)",
           _solo_instruments, (), ci=True),

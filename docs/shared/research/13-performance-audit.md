@@ -153,7 +153,7 @@ Studio's one-SoundFont-per-page (#1), the largest measured memory cost in the pr
 
 ## 4. Measurements
 
-Scripts are in `qa/perf/` and `studio/perf/`. Machine: Apple M-series Mac, macOS 26, Chromium headless shell from Playwright, engine on loopback.
+Scripts are in `qa/shared/perf/` and `studio/perf/`. Machine: Apple M-series Mac, macOS 26, Chromium headless shell from Playwright, engine on loopback.
 
 ### M1. Studio: memory and SoundFont traffic per score
 
@@ -200,7 +200,7 @@ Same probe, engine with and without the header. The 195 MB file was downloaded o
 ### M3. Event streams against the request pool
 
 ```sh
-pixi run python qa/perf/sse_starve.py 10 39 41 60
+pixi run python qa/shared/perf/sse_starve.py 10 39 41 60
 ```
 
 | Open streams | Before 0696ca8 | After |
@@ -221,7 +221,7 @@ Heap limits on the emulator: `adb -s emulator-5554 shell getprop dalvik.vm.heapg
 ### M5. Engine stage timings from run manifests
 
 ```sh
-pixi run python qa/perf/run_stages.py data/runs
+pixi run python qa/shared/perf/run_stages.py data/runs
 ```
 
 49 manifests. Median / max seconds when a stage actually ran:
@@ -257,7 +257,7 @@ The first run of each profile, with a cold file cache and nothing cached, took 4
 ### M6. Adapter start-up cost
 
 ```sh
-PYTHON="pixi run python" qa/perf/adapter_overhead.sh data/mikkel/mikkel.wav swift-f0 basic-pitch muscriptor
+PYTHON="pixi run python" qa/shared/perf/adapter_overhead.sh data/mikkel/mikkel.wav swift-f0 basic-pitch muscriptor
 ```
 
 | Adapter | 2 s clip (cold) | 2 s clip (warm) | 60 s clip (warm) |
@@ -278,7 +278,7 @@ PYTHON="pixi run python" qa/perf/adapter_overhead.sh data/mikkel/mikkel.wav swif
 
 ```sh
 cd core && cargo build --release -p scribe-cli && cd ..
-PYTHONPATH=core/conformance pixi run python qa/perf/core_times.py core/target/release/scribe-core
+PYTHONPATH=core/conformance pixi run python qa/shared/perf/core_times.py core/target/release/scribe-core
 cd core && cargo test -p scribe-ffi --release --test layers_band_c_api -- --ignored c_abi_alone   # under /usr/bin/time -l
 cd core && cargo test -p scribe-ffi --release --test layers_band_c_api -- --ignored c_abi_heap_peak --nocapture
 ```

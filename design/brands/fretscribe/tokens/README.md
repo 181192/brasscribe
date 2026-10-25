@@ -10,7 +10,7 @@ Run these from the repository root:
 ```sh
 uv run design/tooling/build.py --brand fretscribe
 uv run design/tooling/build.py --brand fretscribe --check
-uv run qa/tools/contrast.py --brands --write    # rewrites contrast.md (and Brasscribe's report)
+uv run qa/shared/tools/contrast.py --brands --write    # rewrites contrast.md (and Brasscribe's report)
 ```
 
 ## What is generated
@@ -51,6 +51,6 @@ typography token (600, as in [`brand.md`](../brand/brand.md)).
 
 ## Contrast check
 
-`qa/tools/contrast.py` exits 1 on any failure, and the tests in `qa/tools/tests` run it on these tokens.
+`qa/shared/tools/contrast.py` exits 1 on any failure, and the tests in `qa/shared/tools/tests` run it on these tokens.
 The current report is [`contrast.md`](contrast.md): 0 failures in light, dark, high contrast and high
 contrast light. In the two high-contrast modes every pair has to reach 7:1.

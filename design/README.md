@@ -22,7 +22,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 - **Source:** [`brands/brasscribe/tokens/tokens.json`](brands/brasscribe/tokens/tokens.json), in W3C Design Tokens (DTCG 2025.10) format.
   - Colour roles are sibling groups `color.light`, `color.dark`, `color.high-contrast` (on a dark ground), `color.high-contrast-light` (on a light ground), and the hidden `color.pink` / `color.pink-dark` (§10 of system.md).
   - More contrast keeps light or dark on every platform: `high-contrast-light` in a light appearance, `high-contrast` in a dark one. Studio's `brasscribe.css` picks by the resolved theme under `prefers-contrast: more`, the Apple asset catalog has the light one under its `high` appearance and the dark one under `dark` + `high`, and Compose's `scribeColors` picks by `dark`. WinUI takes the system's colours in a contrast theme.
-  - Every checked pair of both high-contrast palettes reaches 7:1 (WCAG 1.4.6); `qa/tools/contrast.py` fails below that.
+  - Every checked pair of both high-contrast palettes reaches 7:1 (WCAG 1.4.6); `qa/shared/tools/contrast.py` fails below that.
   - Typography roles name their Dynamic Type style, Material role and Windows ramp style.
 - **Icons:** [`tooling/icons.json`](tooling/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
@@ -30,7 +30,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 uv run design/tooling/build.py            # regenerate every brand's dist and docs/shared/accessibility/design-tokens.json
 uv run design/tooling/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tooling
-uv run qa/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 76 pairs x 6 modes), exit 1 on failure
+uv run qa/shared/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 76 pairs x 6 modes), exit 1 on failure
 uv run design/brands/brasscribe/brand/build.py             # mark, lockups, app icons (needs rsvg-convert)
 node design/brands/brasscribe/mockups/render.mjs           # mockup PNGs (Playwright from studio/node_modules, or PLAYWRIGHT_MODULE=…)
 ```
@@ -44,11 +44,11 @@ uv run design/tooling/build.py --brand fretscribe [--check]
 uv run design/brands/fretscribe/brand/build.py  # Fretscribe's Android launcher icon
 ```
 
-**Contrast:** all 456 pairs pass (76 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
+**Contrast:** all 456 pairs pass (76 pairs in each of the six modes, the hidden Pink pair included). See [`qa/shared/reports/contrast-design-tokens.md`](../qa/shared/reports/contrast-design-tokens.md).
 
 **Accessibility compatibility:**
 - `docs/shared/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.
-- Its report, [`qa/reports/contrast-tokens.md`](../qa/reports/contrast-tokens.md), shows 84 of 84 pairs passing.
+- Its report, [`qa/shared/reports/contrast-tokens.md`](../qa/shared/reports/contrast-tokens.md), shows 84 of 84 pairs passing.
 
 ### Using the tokens per platform
 

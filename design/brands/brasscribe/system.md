@@ -362,7 +362,7 @@ The roles that differ from Light and Dark. Everything else, including every othe
 | warning / error | 26 | 30 |
 | success / warning | 33 | 29 |
 
-Every one of the 74 checked pairs passes in both modes; the full list is in [`qa/reports/contrast-design-tokens.md`](../../../qa/reports/contrast-design-tokens.md). The last table is the CIEDE2000 difference under normal vision (20 or more reads as distinct; shape and words carry the meaning as well).
+Every one of the 74 checked pairs passes in both modes; the full list is in [`qa/shared/reports/contrast-design-tokens.md`](../../../qa/shared/reports/contrast-design-tokens.md). The last table is the CIEDE2000 difference under normal vision (20 or more reads as distinct; shape and words carry the meaning as well).
 
 #### Screenshots
 

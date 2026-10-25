@@ -153,7 +153,7 @@ pub static CORNET: Instrument = Instrument {
     id: "bb-cornet", name: "Cornet in B♭", short: "Cnt.", chromatic: -2, diatonic: -1, clef: Clef::Treble,
     pro: (52, 82), comfortable: (52, 79), roles: &[Melody, Countermelody, UpperHarmony, InnerHarmony, RhythmicSupport, Solo],
     gm_program: 56, musescore_id: "bb-cornet", section: "cornets", sound: "brass.cornet",    reading: Some((55, 79)), reading_limit: Some((52, 82)),
-    // The qa tool's "solo cornet" row (qa/tools/musicxml_readability.py): a soloist reaches written D6.
+    // The qa tool's "solo cornet" row (qa/shared/tools/musicxml_readability.py): a soloist reaches written D6.
     solo: Some((52, 84)),
 };
 /// Not a brass-band part: the lead a trumpet player takes (a trumpet seat, [`seat_own_part`]). MuseScore

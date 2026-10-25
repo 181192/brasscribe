@@ -19,9 +19,9 @@ uv run design/tooling/build.py                     # write every brand's outputs
 uv run design/tooling/build.py --check             # CI: exit 1 if any brand's output is stale
 uv run design/tooling/build.py --brand fretscribe  # one brand
 uv run --with pytest pytest design/tooling
-uv run qa/tools/contrast.py --brands              # every brand, every mode; exit 1 on a failure or a stale report
+uv run qa/shared/tools/contrast.py --brands              # every brand, every mode; exit 1 on a failure or a stale report
                                                   # (a high-contrast mode needs 7:1 for every pair)
-uv run qa/tools/contrast.py --brands --write      # rewrite the contrast reports
+uv run qa/shared/tools/contrast.py --brands --write      # rewrite the contrast reports
 ```
 
 ## What a brand gets
@@ -168,5 +168,5 @@ there.
    (only the roles it names differently), `notation`, `system-colours` for its own roles, and `fonts`
    (the display face with its `android-resource`, its name in `res/font`).
 2. Add it to `brands.json` with its own output folder.
-3. Run the generator and `qa/tools/contrast.py --brands --write`. The tests and CI pick the brand up
+3. Run the generator and `qa/shared/tools/contrast.py --brands --write`. The tests and CI pick the brand up
    from `brands.json`.

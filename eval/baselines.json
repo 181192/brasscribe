@@ -407,7 +407,7 @@
           }
         },
         "readability": {
-          "source": "qa/tools/musicxml_readability.py --check --baseline qa/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement; per difficulty since the fast-notes solo path (docs/brasscribe/plan/fast-notes.md §7): faithful with the Solo Cornet 16th limit at 65 %, standard and easier on the unchanged thresholds",
+          "source": "qa/shared/tools/musicxml_readability.py --check --baseline qa/brasscribe/reports/mikkel-golden-readability.json passes on a fresh Mikkel arrangement; per difficulty since the fast-notes solo path (docs/brasscribe/plan/fast-notes.md §7): faithful with the Solo Cornet 16th limit at 65 %, standard and easier on the unchanged thresholds",
           "metrics": {
             "passed": {
               "value": 1,

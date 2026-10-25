@@ -721,7 +721,7 @@ and do not read it. `tab.doubt_below` decides the `?` and the "to check" as it d
 The same requests and answers reach the apps through the bindings in `scribe-ffi`
 (`fretted_fingering_json` for `solve_json`, `fretted_tab_json` for `tab_json`,
 `fretted_tab_text_json` and `fretted_playing_instructions_json` for the two texts; see
-[the core's README](../README.md#bindings)) and the command line (`scribe-core fret`, and `tab`
+[the core's README](../../README.md#bindings)) and the command line (`scribe-core fret`, and `tab`
 with `--format json`, `text` or `instructions`, where `--lang` and `--width` stand in for the
 request's `text`). Every refusal is invalid input there.
 

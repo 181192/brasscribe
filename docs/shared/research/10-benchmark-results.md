@@ -443,7 +443,7 @@ Faithful keeps every transcribed note, so it keeps the solo's uncomfortable note
 `music/src/scribe_music/freetime.py`; benchmark `scribe_eval.freetime_bench ../data/eval/urmp-brass ../data/eval/choralebricks-brass4`.
 - Detection: runs of ≥ 3 beat intervals and ≥ 4 s that match neither the piece's beat nor its double, half or split, with spread ≥ 0.2 of the mean interval.
 - Fires on 1 of 18 eval pieces (Air on the G String, 169.6–181.1 s, a ritardando into a 4.5 s hold). Strict-passage position / subdivision / duration change by 0.000 on every piece (mean 0.474 / 0.886 / 0.627 in both runs).
-- Mikkel: 0.03–29.76 s detected, notated as 7 bars *ad lib.* at ♩≈57. Solo Cornet 16ths in the intro fall from 30.8% to 5.6% (`qa/tools/musicxml_readability.py --range`).
+- Mikkel: 0.03–29.76 s detected, notated as 7 bars *ad lib.* at ♩≈57. Solo Cornet 16ths in the intro fall from 30.8% to 5.6% (`qa/shared/tools/musicxml_readability.py --range`).
 - Open: the region-tempo rule (median melody gap = half note, clamped 40–100 BPM) is tuned on Mikkel only.
 
 ## Durations from audio
@@ -485,7 +485,7 @@ Open: large transpositions put the basses on ledger lines (E♭ Bass with 3+ led
 
 ## Readability (Mikkel)
 
-`qa/tools/musicxml_readability.py <musicxml> --check --baseline qa/reports/mikkel-golden-readability.json` (the baseline is the tool's `--json` output for the golden). Solo Cornet, from the first golden to the current one: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5 % → 6.7 %; 16ths 40.2 % → 63.6 %. The 16ths rose with the fast-notes golden (2026-09-29), which writes the solo's fast notes as played; the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/scribe_eval/suites.py`), and every other threshold is unchanged. Whole score: dynamics 0 → 209, rehearsal marks 0 → 11, key changes 0 → 8.
+`qa/shared/tools/musicxml_readability.py <musicxml> --check --baseline qa/brasscribe/reports/mikkel-golden-readability.json` (the baseline is the tool's `--json` output for the golden). Solo Cornet, from the first golden to the current one: uncertain notes by colour only 230 → 0; double dots 9 → 0; printed accidentals 37.5 % → 6.7 %; 16ths 40.2 % → 63.6 %. The 16ths rose with the fast-notes golden (2026-09-29), which writes the solo's fast notes as played; the faithful Solo Cornet gate is 65 % 16ths (`FAITHFUL_LIMITS` in `eval/scribe_eval/suites.py`), and every other threshold is unchanged. Whole score: dynamics 0 → 209, rehearsal marks 0 → 11, key changes 0 → 8.
 
 ## Rust core conformance
 

@@ -6,7 +6,7 @@ MuseScore's instruments.xml: `pro` is its professional range (hard limit),
 `reading` is narrower: where the arranger places notes by preference, so parts
 stay off the ledger lines, and `reading_limit` bounds its placement (the
 extreme reading range). They are the written comfort and extreme ranges of
-qa/tools/musicxml_readability.py (RANGES) at concert pitch, e.g. cornet and horn
+qa/shared/tools/musicxml_readability.py (RANGES) at concert pitch, e.g. cornet and horn
 from written A3 rather than the bottom valve note F♯3, E♭/B♭ Bass up to written
 D5; heuristic defaults still to be confirmed by players. Transposition follows the
 MuseScore/MusicXML convention: `chromatic` is sounding minus written, so
@@ -98,7 +98,7 @@ _INSTRUMENTS = [
                frozenset({R.MELODY, R.UPPER_HARMONY, R.SOLO}), 56, "eb-cornet", "cornets", "brass.cornet.soprano", reading=(63, 84)),
     Instrument("bb-cornet", "Cornet in B♭", "Cnt.", -2, -1, "treble", (52, 82), (52, 79),
                frozenset({R.MELODY, R.COUNTERMELODY, R.UPPER_HARMONY, R.INNER_HARMONY, R.RHYTHMIC_SUPPORT, R.SOLO}), 56, "bb-cornet", "cornets", "brass.cornet", reading=(55, 79), reading_limit=(52, 82),
-               # The qa tool's "solo cornet" row (qa/tools/musicxml_readability.py): a soloist reaches written D6.
+               # The qa tool's "solo cornet" row (qa/shared/tools/musicxml_readability.py): a soloist reaches written D6.
                solo=(52, 84)),
     # Not a brass-band part: the lead a trumpet player takes (a trumpet seat, SEAT_OWN_PARTS). MuseScore
     # 4.7.5 bb-trumpet ranges; reading and placement as the cornet's, so every mode writes the cornet's notes.

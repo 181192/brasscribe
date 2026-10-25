@@ -1,6 +1,6 @@
 """How long a plain API call waits while N job event streams are open.
 
-    pixi run python qa/perf/sse_starve.py 10 39 41 60
+    pixi run python qa/shared/perf/sse_starve.py 10 39 41 60
 
 Runs the engine app under uvicorn on a free port with an empty data directory and one fake
 running job, opens N event streams on it, then times GET /v1/health. Before the streams had

@@ -17,18 +17,18 @@ Exit code 1 if any contrast pair is below its minimum (use in CI). Colour differ
 below DE_MIN are reported as "weak"; they do not fail the run because uncertainty is
 also encoded by notehead shape (WCAG 1.4.1).
 
-    uv run qa/tools/contrast.py > qa/reports/contrast-tokens.md
+    uv run qa/shared/tools/contrast.py > qa/shared/reports/contrast-tokens.md
 
 With --tokens it reads a W3C Design Tokens (DTCG) file instead: colour roles under
 color.<mode>.<role>.$value.hex, and the modes, pairs and distinguish lists under the product's
 own $extensions entry (e.g. "no.kalli.brasscribe"; whichever single entry has modes and contrast):
 
-    uv run qa/tools/contrast.py --tokens design/brands/brasscribe/tokens/tokens.json > qa/reports/contrast-design-tokens.md
+    uv run qa/shared/tools/contrast.py --tokens design/brands/brasscribe/tokens/tokens.json > qa/shared/reports/contrast-design-tokens.md
 
 With --brands it checks every brand of design/tooling/brands.json in every one of its modes, and that each
 brand's committed report is the one its tokens give (--brands --write rewrites the reports):
 
-    uv run qa/tools/contrast.py --brands
+    uv run qa/shared/tools/contrast.py --brands
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ import math
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 TOKENS = ROOT / "docs" / "shared" / "accessibility" / "design-tokens.json"
 BRANDS = ROOT / "design" / "tooling" / "brands.json"
 DE_MIN = 20.0  # heuristic: CIEDE2000 below this reads as "similar" at notehead size
@@ -202,7 +202,7 @@ def check_brands(write: bool = False) -> int:
     bad = 0
     for brand in brands():
         data = load_dtcg(ROOT / brand["tokens"])
-        text, failures = report(data, f"uv run qa/tools/contrast.py --tokens {brand['tokens']}", brand["tokens"])
+        text, failures = report(data, f"uv run qa/shared/tools/contrast.py --tokens {brand['tokens']}", brand["tokens"])
         path = ROOT / brand["contrast-report"]
         if write:
             path.write_text(text + "\n")
@@ -220,10 +220,10 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] == ["--tokens"] and len(argv) == 2:
         src = Path(argv[1])
         data = load_dtcg(src if src.is_absolute() or src.exists() else ROOT / src)
-        cmd, label = f"uv run qa/tools/contrast.py --tokens {argv[1]}", argv[1]
+        cmd, label = f"uv run qa/shared/tools/contrast.py --tokens {argv[1]}", argv[1]
     else:
         data = json.loads(TOKENS.read_text())
-        cmd, label = "uv run qa/tools/contrast.py", "docs/shared/accessibility/design-tokens.json"
+        cmd, label = "uv run qa/shared/tools/contrast.py", "docs/shared/accessibility/design-tokens.json"
     text, failures = report(data, cmd, label)
     print(text)
     return 1 if failures else 0

@@ -4,7 +4,7 @@
 # ///
 """Readability heuristics for brass-band MusicXML (score-partwise).
 
-Stdlib only, so it runs in CI with `uv run qa/tools/musicxml_readability.py`.
+Stdlib only, so it runs in CI with `uv run qa/shared/tools/musicxml_readability.py`.
 
 Reports per part and for the whole score:
   - share of notes shorter than a 16th, and the share that are exactly 16ths
@@ -41,7 +41,7 @@ STEP_SEMITONE = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 
 # Written ranges as MIDI numbers: (extreme_low, comfort_low, comfort_high, extreme_high).
 # Heuristic defaults for a British-style brass band (treble-clef transposing parts,
-# bass trombone in concert bass clef). Not authoritative; see qa/reviews for the open question.
+# bass trombone in concert bass clef). Not authoritative; see qa/brasscribe/reviews for the open question.
 # Matched in order against the lower-cased part name.
 RANGES: list[tuple[str, tuple[int, int, int, int]]] = [
     ("soprano", (54, 60, 81, 86)),       # F#3  C4  A5  D6

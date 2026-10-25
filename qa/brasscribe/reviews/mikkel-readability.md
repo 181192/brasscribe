@@ -5,14 +5,14 @@
 **Method**
 - Viewed the full-score PDF, 46 pages rendered at 90–110 dpi.
 - Rendered the Solo Cornet part on its own through MuseScore to check the page turns. The part was extracted from the MusicXML, then `mscore -o solo.pdf solo.musicxml` produced 3 pages. `mscore -P` for all parts crashed before writing any output.
-- Ran the heuristics in `qa/tools/musicxml_readability.py`.
+- Ran the heuristics in `qa/shared/tools/musicxml_readability.py`.
 - Bar numbers are MusicXML measure numbers. They match the printed numbers: bars 1–128, with no pickup bar.
 
 **Viewpoint:** a player reading a part in a band rehearsal. Sight-reading, a stand partner, page turns, and a conductor calling "from letter B".
 
 ## Measured (heuristics)
 
-Command: `uv run qa/tools/musicxml_readability.py data/golden/mikkel-arranged-band/brass-band.musicxml --bars`. Full output: [qa/reports/mikkel-golden-readability.md](../reports/mikkel-golden-readability.md). For the intro: `--range 1-4`, output in [qa/reports/mikkel-golden-readability-intro.md](../reports/mikkel-golden-readability-intro.md).
+Command: `uv run qa/shared/tools/musicxml_readability.py data/golden/mikkel-arranged-band/brass-band.musicxml --bars`. Full output: [qa/brasscribe/reports/mikkel-golden-readability.md](../reports/mikkel-golden-readability.md). For the intro: `--range 1-4`, output in [qa/brasscribe/reports/mikkel-golden-readability-intro.md](../reports/mikkel-golden-readability-intro.md).
 
 | Metric | Value |
 |---|---|
