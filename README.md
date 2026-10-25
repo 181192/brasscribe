@@ -78,23 +78,27 @@ Releases are built by CI from a tag; `scripts/release.sh X.Y.Z` prepares one ([d
 
 ## Repository layout
 
-| Path | What |
-|---|---|
-| `engine/` | Engine: CLI, HTTP service, job DAG, profiles, the committed Studio bundle |
-| `music/` | Python reference library: composition model, quantization, spelling, arranger, MusicXML |
-| `eval/` | Benchmark suites and gated baselines |
-| `ml/adapters/` | One isolated environment per model, behind a `run.sh <input> <output>` contract |
-| `convert/` | Conversions of the small models to ONNX and Core ML, with parity reports |
-| `core/` | Rust core, its CLI, the Swift/Kotlin/C bindings and the conformance runner |
-| `studio/` | Studio web app (TypeScript) |
-| `apps/` | Play for Apple, Android and Windows; Bandroom for Mac and Windows |
-| `capture/` | macOS audio capture tool |
-| `sounds/` | Band sound pack: sources, build, mapping and licences |
-| `design/` | Design system, brand, tokens and mockups |
-| `docs/` | Research, plans, accessibility specs, developer docs |
-| `site/` | The public site |
-| `qa/` | Readability, contrast and performance checks and reports |
-| `scripts/` | Worktree setup, check tiers, core artifacts |
+One shared core, and a thin app per product. Where each part goes, and how to add a product:
+[docs/plan/scribe-platform.md](docs/plan/scribe-platform.md).
+
+| Path | What | Shared or per product |
+|---|---|---|
+| `core/` | Rust core, its CLI, the Swift/Kotlin/C bindings and the conformance runner | Shared; a crate per output kind in `core/targets/` |
+| `engine/` | Engine: CLI, HTTP service, job DAG, profiles, the committed Studio bundle | Shared |
+| `music/` | Python reference library: composition model, quantization, spelling, arranger, MusicXML | Shared |
+| `eval/` | Benchmark suites and gated baselines | Shared |
+| `ml/adapters/` | One isolated environment per model, behind a `run.sh <input> <output>` contract | Shared |
+| `convert/` | Conversions of the small models to ONNX and Core ML, with parity reports | Shared |
+| `studio/` | Studio web app (TypeScript) | Shared |
+| `capture/` | macOS audio capture tool | Shared |
+| `apps/` | Android, Apple and Windows clients, with a product per client; Bandroom for Mac and Windows; test fixtures | Per product inside each client |
+| `design/` | Design system: token generator, brands, mockups | Per brand |
+| `sounds/` | Sound packs: sources, build, mapping and licences | Per sound set |
+| `docs/` | Research, plans, accessibility specs, developer docs | Per product, plus shared |
+| `qa/` | Readability, contrast and performance checks and reports, screen-reader scripts | Per product, plus shared |
+| `site/` | The public site | Shared build, a section per product |
+| `scripts/` | Worktree setup, check tiers, core artifacts, release | Shared |
+| `data/`, `models/`, `build/` | Local datasets, model weights and build output; not in git | Local |
 
 ## Documentation
 

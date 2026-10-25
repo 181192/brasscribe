@@ -45,7 +45,8 @@ core/
   targets/fretted/        crate target-fretted: was core/target-fretted
   ffi/  cli/              were core/brasscribe-ffi and core/brasscribe-cli
   bindings/  swift/  dotnet/  android/  conformance/  tools/  scripts/    stay where they are
-engine/  music/  eval/    Python: a package per target beside the shared code
+engine/  music/  eval/    Python: a package per target beside the shared code (not yet true, see Open)
+ml/  convert/  capture/  shared tools, stay: see "Where the rest goes"
 apps/
   android/
     services/             was the modules engine-client, core-bridge, audio, and the non-screen parts of app
@@ -56,11 +57,14 @@ apps/
   windows/                the same three levels as projects
   bandroom/{macos,windows}/
   fixtures/               stays; a folder per target inside it
-studio/
+studio/                   stays: serves every app
+sounds/  qa/  site/       a folder per product beside a shared one: see below
+scripts/                  stays: repository tooling
 design/
   tooling/                was design/tokens/build.py, the schema and the checks
   brands/brasscribe/      was design/{tokens,brand,pink,dist,mockups,system.md,music-stand.md}
   brands/fretscribe/      was design/fretscribe/
+  shared/                 was design/{server-app.md,reviews} that is not about one product
 docs/
   shared/                 was docs/{dev,research,accessibility} and this plan
   brasscribe/             was the Brasscribe plans in docs/plan
@@ -69,6 +73,39 @@ docs/
 ```
 
 `docs/` moves in one pull request once step 3 is in, since step 3 changes many of the paths the documents name.
+
+### Where the rest goes
+
+The test for each folder: where would the sibling product's version of this go? Something that belongs to one product or one target sits under that product's or target's name. Something every product uses stays neutral, with the product folders beside it.
+
+| Folder | Used by | Placement |
+|---|---|---|
+| `capture/` | Apple builds and CI (macOS process-tap recorder) | Shared. Records any audio; stays. Its tool is still called `brasscribe-capture`, which is a product word to drop with the Apple restructure (step 9). |
+| `convert/` | Model conversion to ONNX and Core ML, parity reports | Shared. A folder per model, so a model for another target is one more folder. Stays. |
+| `ml/` | `ml/adapters/<model>`: one environment per model behind `run.sh`; `ml/pipelines` | Shared. Models are not products; a profile (per target) chooses which run. Stays. |
+| `sounds/` | Android, Apple, Windows, Bandroom builds (the band SoundFont); `pixi fetch-sounds` | Mixed. The band pack (`band*.py`, `seating.json`, `mapping.json`, `band-sounds.json`, `LICENSES.md`, the band tests) is brass-specific. The SoundFont reader and writer, DSP, rendering, parity and `ab-test/` are not. Target: `sounds/common/` for the tools, `sounds/brass-band/` for the band pack, and a guitar set is `sounds/<set>/` beside it. The files that mix both are split file by file when this moves. |
+| `qa/` | CI (contrast, readability tests), release checks | `qa/perf` and `qa/tools` (contrast, MusicXML readability) are shared. `qa/reports`, `qa/reviews` and `qa/screen-reader-scripts` are about Brasscribe Play and go to `qa/brasscribe/`; Fretscribe gets `qa/fretscribe/`. The contrast reports on design tokens stay with the tools. |
+| `site/` | `pages.yml`, `ci.yml`, `site/build.sh` | One build and one stylesheet, shared. Content per product: `site/brasscribe/` (today's `index.html`, `guide/`, `research/`, `nb/`, `shots/`) and `site/fretscribe/` when it has pages. The root page stays the family page. |
+| `scripts/` | Every workflow, `worktree-setup.sh`, the macOS VM | Shared repository tooling; stays. `release.sh` takes the product from the tag. |
+| `design/claude/` | Publishes Brasscribe's design system as a Claude artifact; reads the Brasscribe sources | Brand-specific: `design/brands/brasscribe/claude/`. Fretscribe's would sit beside it. |
+| `design/pink/` | Brasscribe screenshots of the pink theme, read by the Apple workflow's path filter | Brand-specific: `design/brands/brasscribe/pink/`. |
+| `design/reviews/` | Written reviews with screenshots | `music-stand/` and the usability reviews of the Brasscribe mockups and Android screens: `design/brands/brasscribe/reviews/`. `studio-review.md` is about Studio, which serves every app: `design/shared/`. Likewise `design/server-app.md` (Bandroom). |
+| `apps/android/design/{brasscribe,fretscribe}` | Gradle modules that wrap each brand's generated design system | Already a folder per brand; stays. A new brand adds its module here. |
+| `apps/android/docs/screenshots/` | Android documentation and reviews | Mixed folders (`design`, `score-*`, `music-stand`, `my-instrument` are Brasscribe's; `fretscribe` is Fretscribe's). Target: `screenshots/<product>/…`. |
+
+Neutral folders stay at the top level and do not carry a product name. A product's own files carry its name as a folder, not as a prefix in a file name.
+
+### Adding a sibling product
+
+For a product `<p>` on the same core:
+
+1. Clients: on each of Android, Apple and Windows, `products/<p>/` (screens, words, navigation, identifiers) using the existing `services/` and `features/`. A feature only this product has goes in `features/` when a second product could use its logic, otherwise inside the product.
+2. Design: `design/brands/<p>/` with its tokens, brand and mockups, generated by `design/tooling`; on Android a module in `apps/android/design/<p>`.
+3. Docs: `docs/<p>/` for its plans and research; `qa/<p>/` for its screen-reader scripts and reports.
+4. Output kind: if the product writes a new kind of output, a crate `core/targets/<kind>/` and a Python target package for it, and a profile in the engine. A product that reuses an existing kind needs neither.
+5. Sounds, models: a sound set in `sounds/<set>/`; a model as one folder each in `ml/adapters/` and `convert/`.
+6. Site: `site/<p>/` if it has public pages.
+7. CI and release: path filters for its own folders in the per-client workflows, so a change to another product does not build it; a tag `<p>-vX.Y.Z` and a changelog.
 
 ## Versions and releases
 
@@ -129,6 +166,7 @@ Steps 1, 2, 4 and 5 run side by side. Step 3 touches what every client loads, so
 
 ## Open
 
+- The Python packages do not yet separate targets. `music/src/scribe_music` holds the brass arranger and instruments (`arranger.py`, `instruments.py`, `difficulty.py`, `parts.py`) beside shared notation code, `engine/src/scribe_engine` holds `tab.py`, `bass_tab.py` and `tuning.py` beside the shared pipeline, and `eval/scribe_eval` has the brass and tab benchmarks side by side. The Rust side is already split (`core/targets/brass`, `core/targets/fretted`). Splitting the Python the same way is not done and not part of the folder moves.
 - How tab is drawn on Apple: alphaTab in a web view, a native drawing of the core's tab data, or Verovio. Decided by a spike in step 10.
 - The desktop program's name. It serves every app; "Bandroom" without a product's name in front is the working choice.
 - When the repository itself takes a neutral name.
