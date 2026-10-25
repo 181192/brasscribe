@@ -218,7 +218,7 @@ screenshots says how long each screen took and what it waited for.
 **Readable, measured in the picture.** For each text the tree has in view, the ground is the colour most of its
 frame has, and the text is the colour furthest from it that the frame has more than a few pixels of (the core of
 the glyphs, not their blended edges). The ratio between the two is the WCAG contrast ratio, the one
-`qa/tools/contrast.py` computes for the design tokens. The tree does not say how large a text is, so large text gets
+`qa/shared/tools/contrast.py` computes for the design tokens. The tree does not say how large a text is, so large text gets
 no lower bar. A text that falls short fails the take by name, with its ratio: `its text “Very unsure” is 4.65:1 on
 its ground, under 7:1`. That is found as soon as the screen keeps still and is not waited for (waiting does not
 change a steady picture), and such a screen is not one of the three after which the catalogue stops: a colour that

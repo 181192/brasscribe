@@ -202,7 +202,7 @@ The screen tests (`screenTest`, `appScreenTest`) are one source for two runs: ea
 - alphaTab's page after a turn of the phone (`TabViewTest`'s two turned tests: on the JVM the turn is told to the activity by hand, and the page ends a line off or undrawn) and the colours of what alphaTab engraves (alphaSkia's desktop build swaps red and blue, so a doubtful numeral is checked in its colour on a device, `TabViewTest.theDoubtfulNumeralsAreDrawnInTheDoubtColour`; on the JVM the colours the tab view is given and asks alphaTab to engrave are checked, and ink and the lines on both); the system's monospace face (`TabViewTest.withoutItsFaceTheFretNumbersAreInTheSystemsMonospace`)
 - what is said to a screen reader as an announcement (`PracticeTest.thePlaceItStopsAtIsSaidOnce`), and an upgrade over an older installed build
 - the per-app language setting: the generated locale config (`locales_config`) is read by the system's settings, which the JVM does not have; the JVM switches the app's language itself
-- by hand, on a real phone: TalkBack's speech (`qa/screen-reader-scripts/talkback-android.md`), the sound by ear, and how it feels to use
+- by hand, on a real phone: TalkBack's speech (`qa/brasscribe/screen-reader-scripts/talkback-android.md`), the sound by ear, and how it feels to use
 
 The device smoke (`scripts/device-tests.sh smoke`, about two minutes for both apps) starts each app, makes a score or a tab from a recording the phone decodes itself, checks the score or tab has ink on the screen, and turns the phone. For an emulator of your own:
 
@@ -223,7 +223,7 @@ The export test shares MusicXML, MIDI, the talking-score HTML and the PDF and ch
 
 Screenshots of the design (light, dark, bokmål and 200% text) are in `docs/screenshots/design/`; the ones from before the design system are in `docs/screenshots/before-design/`.
 
-The TalkBack acceptance script (`qa/screen-reader-scripts/talkback-android.md`) still needs a person with TalkBack on a device. Automated checks cannot hear speech.
+The TalkBack acceptance script (`qa/brasscribe/screen-reader-scripts/talkback-android.md`) still needs a person with TalkBack on a device. Automated checks cannot hear speech.
 
 ## Known limits
 

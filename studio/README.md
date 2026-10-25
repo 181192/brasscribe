@@ -108,7 +108,7 @@ Light, dark, our high-contrast palette (`prefers-contrast: more`), forced colour
 
 Scores play with the band SoundFont when the engine serves one at `/assets/band/` (`SCRIBE_BAND_SOUNDS_DIR`, set by Bandroom to its bundled phone pack), each part on its preset from `sounds/mapping.json`; otherwise with alphaTab's General MIDI sounds.
 
-Uncertain notes are coloured and marked with a "?" above them. Below 0.4 the "?" is boxed. Every colour is repeated by a shape, a pattern or text. The keyboard shortcuts follow `qa/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.
+Uncertain notes are coloured and marked with a "?" above them. Below 0.4 the "?" is boxed. Every colour is repeated by a shape, a pattern or text. The keyboard shortcuts follow `qa/brasscribe/screen-reader-scripts/keyboard-desktop.md`; press F1 in Studio to see them.
 
 ## Test tiers
 

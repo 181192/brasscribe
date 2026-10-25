@@ -8,7 +8,7 @@
 
     <Grid x:Name="Root" Background="{ThemeResource ScribeBgBrush}" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.KeyboardAccelerators>
-            <!-- Global shortcuts (qa/screen-reader-scripts/keyboard-desktop.md); all use a modifier. -->
+            <!-- Global shortcuts (qa/brasscribe/screen-reader-scripts/keyboard-desktop.md); all use a modifier. -->
             <KeyboardAccelerator Key="O" Modifiers="Control" Invoked="OnImportAccelerator" />
             <KeyboardAccelerator Key="R" Modifiers="Control,Shift" Invoked="OnRecordAccelerator" />
             <KeyboardAccelerator Key="Space" Modifiers="Control,Shift" Invoked="OnPlayPauseAccelerator" />

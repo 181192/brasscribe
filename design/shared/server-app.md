@@ -422,7 +422,7 @@ Mockups: `../brands/brasscribe/mockups/png/server-mac-popover-*` and `../brands/
 |---|---|
 | 1.3.1, 4.1.2 Name, role, value | The status is text, not just an icon. The menu-bar item's accessible name is the tooltip in §6.1. Meters expose their word as the value ("Work load, Calm"), not a percentage. |
 | 1.4.1 Use of colour | State = badge **shape** plus word. Status colours sit only on icons. The progress bar has the percentage in text beside it. |
-| 1.4.3, 1.4.11 Contrast | All colours are tokens. New pairs used here: `success`/`warning`/`error` on `surface` (popover ground), `brass` on `surface-raised` (progress on a card), `text-muted` on `surface-raised`. They are added to the token contrast list and pass in light, dark and high contrast (`qa/reports/contrast-design-tokens.md`). |
+| 1.4.3, 1.4.11 Contrast | All colours are tokens. New pairs used here: `success`/`warning`/`error` on `surface` (popover ground), `brass` on `surface-raised` (progress on a card), `text-muted` on `surface-raised`. They are added to the token contrast list and pass in light, dark and high contrast (`qa/shared/reports/contrast-design-tokens.md`). |
 | High contrast | macOS **Increase Contrast** uses the high-contrast tokens (black on white in the light appearance, white on black in the dark one; no tints). Windows **contrast themes** use system colours (`forced-colors`). **The QR code always stays black on a white plate** with a 4-module quiet zone and a 1 px border, because many scanners can't read inverted codes; it is an image, not text. |
 | 1.4.4 Resize text, 1.4.10 Reflow | The popover width is fixed (360) but its height grows, and the text wraps; it scrolls past 80 % of the screen height. Past 150 % Windows text scale, the tray click opens the **window** form instead of the flyout. The macOS window form should follow the system text size; **verify** whether macOS's per-app text size applies to a third-party SwiftUI window. If it doesn't, add a text-size setting. No text is in images except the QR. |
 | 1.4.13 Content on hover | The tray tooltip is also available through the accessible name. Nothing essential is only in a tooltip. |
@@ -435,7 +435,7 @@ Mockups: `../brands/brasscribe/mockups/png/server-mac-popover-*` and `../brands/
 | 3.3.8 Accessible authentication | The no-code path (choose the computer on the phone, then Allow here) and the QR. Code entry allows paste and autofill. The Hugging Face step uses sign-in in the browser (password managers work) or a pasted key; nobody retypes a key. |
 | 4.1.3 Status messages | These are announced politely, without moving focus: state changes (once), job progress (at most every 10 s or 10 %), "Kari's iPhone is paired", and "Too many wrong codes". |
 | Language | nb-NO and en from the first build. The app follows the system language; the copy deck is §10. Percent is "62%" (en) and "62 %" (nb); dates follow `brand.md`. |
-| Screen-reader scripts | Add a "Bandroom" section to `qa/screen-reader-scripts/`: open from the keyboard, read the state, pair with no code, remove a device, stop while busy. |
+| Screen-reader scripts | Add a "Bandroom" section to `qa/brasscribe/screen-reader-scripts/`: open from the keyboard, read the state, pair with no code, remove a device, stop while busy. |
 
 ## 10. Copy deck
 

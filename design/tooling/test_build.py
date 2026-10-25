@@ -50,7 +50,7 @@ def test_compat_file_keeps_its_shape():
 def test_focus_never_looks_like_uncertainty():
     # The focus ring sits on notation; it must not share a hue family with the uncertainty colours.
     import sys
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     for mode in ("light", "dark", "high-contrast-light"):
         for role in ("uncertain", "very-uncertain"):
@@ -60,7 +60,7 @@ def test_focus_never_looks_like_uncertainty():
 
 def test_light_high_contrast_is_seven_to_one():
     # Every checked pair reaches WCAG AAA (7:1) on the light high-contrast palette.
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     for fg, bg, _, _ in build.EXT["contrast"]["pairs"]:
         r = contrast.contrast(build.hexval("high-contrast-light", fg), build.hexval("high-contrast-light", bg))
@@ -88,7 +88,7 @@ def test_pink_keeps_the_notation_and_its_meaning():
 def test_pink_very_unsure_is_the_same_orange_a_shade_darker():
     # Pink's tonal fills are darker than Light's, so the very-unsure "?" on one needs a darker orange to
     # stay readable as text (4.5:1). It keeps its hue: next to Light's it is the same colour, only darker.
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import colorsys
     import contrast
 
@@ -105,7 +105,7 @@ def test_pink_very_unsure_is_the_same_orange_a_shade_darker():
 
 
 def test_pink_status_and_primary_stay_apart():
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     for mode in ("pink", "pink-dark"):
         for a, b in (("error", "primary"), ("success", "error"), ("warning", "error"), ("success", "warning"),
@@ -193,7 +193,7 @@ def test_every_brand_defines_every_role_in_every_mode():
 
 
 def test_every_brand_passes_its_contrast_pairs_in_every_mode():
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     for name, b in brands().items():
         assert b.EXT["contrast"]["pairs"], name
@@ -211,7 +211,7 @@ def test_every_brand_passes_its_contrast_pairs_in_every_mode():
 
 def test_more_contrast_keeps_light_or_dark_on_every_platform():
     # A light appearance with more contrast is light: dark ink on a light ground, never the dark palette.
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     for name, b in brands().items():
         product = b.PRODUCT
@@ -253,7 +253,7 @@ def test_more_contrast_keeps_light_or_dark_on_every_platform():
 
 def test_light_very_uncertain_keeps_its_margin():
     # The tightest pair of the palette: Light's very-uncertain "?" on a tonal fill.
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     assert round(contrast.contrast(build.hexval("light", "very-uncertain"), build.hexval("light", "secondary")), 2) == 4.53
 
@@ -487,7 +487,7 @@ def test_swift_has_one_name_for_each_role():
 def test_accent_is_for_what_you_act_on_and_brand_is_identity():
     # The accent carries links and progress, so it is readable as text on every plain ground, in every mode
     # of every brand, and each brand lists those pairs. The brand colour is not checked as text.
-    sys.path.insert(0, str(build.ROOT / "qa" / "tools"))
+    sys.path.insert(0, str(build.ROOT / "qa" / "shared" / "tools"))
     import contrast
     for name, b in brands().items():
         accent = b.neutral_roles()["accent"]

@@ -43,7 +43,7 @@ private extension Pictures {
         mutating func add(_ red: UInt8, _ green: UInt8, _ blue: UInt8, _ alpha: UInt8) {
             count += 1; r += Int(red); g += Int(green); b += Int(blue); a += Int(alpha)
         }
-        /// The relative luminance of their mean colour (WCAG 2, sRGB), as `qa/tools/contrast.py` has it.
+        /// The relative luminance of their mean colour (WCAG 2, sRGB), as `qa/shared/tools/contrast.py` has it.
         var luminance: Double {
             func linear(_ sum: Int) -> Double {
                 let v = Double(sum) / Double(count) / 255

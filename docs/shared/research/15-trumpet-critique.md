@@ -78,7 +78,7 @@ on 83 and 84 (the same 12 as in 743c04d) as `impossible`, and so would Studio `v
 part name). The soloist range is only consistent if the lead's *instrument* changes to a trumpet
 (pro 85). Otherwise the validators have to learn a soloist exception.
 
-In the repo's own QA, `qa/tools/musicxml_readability.py:48` already gives `"solo cornet"` a wider
+In the repo's own QA, `qa/shared/tools/musicxml_readability.py:48` already gives `"solo cornet"` a wider
 written row (extreme 86 = sounding 84, comfort 84 = sounding 82) than `"cornet"` (extreme 84 =
 sounding 82). The QA tool and MuseScore disagree today, and the plan should say which one wins.
 
@@ -120,7 +120,7 @@ hardcoded, and each would miss or mislabel a trumpet:
 | `apps/android/.../MyInstrument.kt:112`, `Lineup.kt:14,36` | quartet aliases, lead names "Solo Cornet"/"1st Cornet" | not be recognised as the lead |
 | `apps/android/.../ui/WhatDoYouPlayScreen.kt`, `apps/apple/App/Seats.swift:133,143` | instrument picker order and titles by instrument id | not appear in "What do you play" |
 | `sounds/mapping.json` resolve (`keywords` "trumpet" → Solo Cornet; `instruments`), `sounds/partsound.py:73`, `partsound-vectors.json`, `seating.json` | the resolver every platform ports, plus its vectors and seat positions | play the cornet preset; «Trompet» misses the keyword (fallback only) |
-| `qa/tools/musicxml_readability.py:46` | `RANGES` by part-name substring | go unchecked (no "trumpet" row) |
+| `qa/shared/tools/musicxml_readability.py:46` | `RANGES` by part-name substring | go unchecked (no "trumpet" row) |
 | `engine/src/scribe_engine/profiles.py:251` | title "solo cornet & brass band (draft)" | keep "solo cornet" in the title |
 | `apps/windows/tests/.../PartSoundTests.cs:80` | renames "3rd Cornet" → "Trumpet in B♭" and expects the band SF2 to play it | already codifies trumpet = cornet preset, so a separate trumpet preset changes this test |
 | `design/mockups/scores.js`, `design/mockups/music-stand.js`, site `index.html`/`guide`/`nb` | cornet part lists and copy | show no trumpet (docs only) |

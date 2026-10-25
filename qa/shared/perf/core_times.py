@@ -1,7 +1,7 @@
 """Wall time and peak memory of the Rust CLI on each conformance case, without the Python reference.
 
     cd core && cargo build --release -p scribe-cli && cd ..
-    PYTHONPATH=core/conformance pixi run python qa/perf/core_times.py core/target/release/scribe-core [mikkel]
+    PYTHONPATH=core/conformance pixi run python qa/shared/perf/core_times.py core/target/release/scribe-core [mikkel]
 
 Uses the conformance suite's own case list and command lines (scribe_conformance.run.rust_cmd),
 writes into a temporary directory, and reports the best of three runs and the peak resident set

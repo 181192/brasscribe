@@ -266,7 +266,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | Criterion | How the stand meets it |
 |---|---|
 | 1.3.4 Orientation | Both orientations work everywhere. The app never locks on its own; the lock is the player's own toggle, and leaving the stand releases it. |
-| 1.4.3 / 1.4.11 Contrast | Tokens only, with **Leave** and the card on `surface-raised` with a `border-strong` edge (every pair passes: `qa/tools/contrast.py --tokens`). The HC variant has no tints or shadows. |
+| 1.4.3 / 1.4.11 Contrast | Tokens only, with **Leave** and the card on `surface-raised` with a `border-strong` edge (every pair passes: `qa/shared/tools/contrast.py --tokens`). The HC variant has no tints or shadows. |
 | 1.4.4 / 1.4.10 Resize, reflow | The layer's rows wrap. The stand is a two-dimensional exception; the talking score is the reflow alternative, as for the score (checklist Q1). |
 | 1.4.13 Content on hover or focus | The first-time hint takes no focus, a tap dismisses it, and it does not return |
 | 2.1.1 / 2.1.2 Keyboard, no trap | Every control can be reached by Tab; F / Esc enter and leave; arrow and page keys turn pages (§7) |
@@ -286,7 +286,7 @@ Inside the stand, arrow keys turn pages, not notes, because there is no note foc
 | 4.1.2 Name, role, value | Toggles expose on/off (✓ and the selected state); the position line is a status, not a control |
 | 4.1.3 Status messages | Enter, leave, page turn and lock are announced without moving focus (§6) |
 
-**Universell utforming.** The Norwegian regulation (forskrift §4b) cites EN 301 549, which covers these criteria. EN 301 549 V4.1.1 also asks for the shortcut list in Help (12.1). Add F, F11 and the page keys to `qa/screen-reader-scripts/keyboard-desktop.md`.
+**Universell utforming.** The Norwegian regulation (forskrift §4b) cites EN 301 549, which covers these criteria. EN 301 549 V4.1.1 also asks for the shortcut list in Help (12.1). Add F, F11 and the page keys to `qa/brasscribe/screen-reader-scripts/keyboard-desktop.md`.
 
 ## 11. Implementation plan
 
@@ -295,7 +295,7 @@ The plan is sized for one workstream per platform. The first step on each platfo
 ### Shared, before any platform (design, small)
 
 1. Add the six icons to `design/tooling/icons.json`, then run `uv run design/tooling/build.py`. Also add "Music stand / Notestativ" to the brand table. *Done when:* `build.py --check` passes.
-2. Add the §9 keys to each app's strings. Add the stand keys to `qa/screen-reader-scripts/keyboard-desktop.md` and the TalkBack/VoiceOver/Narrator scripts: enter, leave, pedal and lock.
+2. Add the §9 keys to each app's strings. Add the stand keys to `qa/brasscribe/screen-reader-scripts/keyboard-desktop.md` and the TalkBack/VoiceOver/Narrator scripts: enter, leave, pedal and lock.
 
 ### Android (`apps/android`): fix what exists
 

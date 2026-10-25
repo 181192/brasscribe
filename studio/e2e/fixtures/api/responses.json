@@ -2274,7 +2274,7 @@
    {
     "name": "readability",
     "target": "brass",
-    "description": "QA readability gate (qa/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
+    "description": "QA readability gate (qa/shared/tools/musicxml_readability.py --check --baseline) on a fresh Mikkel arrangement",
     "cpu": true,
     "requires": [
      "mikkel/repro/layers",

@@ -71,7 +71,7 @@ Studio is a workbench and has no phone player, part view or Play export, so most
 | 11 | Android title bar on Share or print | "(draft)" is unexplained. Is the printout a draft? | Drop it from Play titles, or explain it: "Draft: 215 notes still marked ?". |
 | 12 | Studio, Core conformance (every theme) | "Could not load. Failed to fetch" gives no reason and no next step, and "Failed to fetch" stays English in nb. | "Couldn't reach Brasscribe on this computer. Is `scribe serve` running?" plus a **Try again** button. Localise it. |
 | 13 | Studio nb | The Play button says "Spill" (first review §2: **Spill av**). | Change it to "Spill av". |
-| 14 | Android dark, all parts (`11-dark`) | Inside the cursor-bar tint, the grey noteheads on dark purple look low in contrast. | Run `qa/tools/contrast.py` on `ink-dark` over the `cursor-tint` blend. If it fails, lower the tint alpha in dark. |
+| 14 | Android dark, all parts (`11-dark`) | Inside the cursor-bar tint, the grey noteheads on dark purple look low in contrast. | Run `qa/shared/tools/contrast.py` on `ink-dark` over the `cursor-tint` blend. If it fails, lower the tint alpha in dark. |
 | 15 | No screenshots of these states | Can't verify: a chip turned on, the Repeat on/off state ("Stop repeating"), the transcribing Cancel confirmation, and the ad-lib tint with the cursor elsewhere (bar 1 is always under the cursor, so ad lib and cursor look identical). | Add screenshots of these four states. |
 
 ### P3

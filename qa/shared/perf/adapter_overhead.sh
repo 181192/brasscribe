@@ -2,13 +2,13 @@
 # Fixed cost of one model adapter call: wall time on a 2 s clip (nearly all start-up: interpreter,
 # uv environment, imports, model load) against a 60 s clip of the same recording.
 #
-#   qa/perf/adapter_overhead.sh data/mikkel/mikkel.wav swift-f0 basic-pitch muscriptor
+#   qa/shared/perf/adapter_overhead.sh data/mikkel/mikkel.wav swift-f0 basic-pitch muscriptor
 #
 # Run it twice: the first call after a while pays a cold file cache (about 9-11 s here).
 # muscriptor and beat-this use the GPU; the engine's GPU mutex is not taken, so do not run
 # this while a job is running.
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/../../.."
 src=$1; shift
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT

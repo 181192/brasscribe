@@ -1,8 +1,8 @@
 # Visual design tokens: colour, shape, contrast, motion, zoom
 
 - **Source of truth:** [design/brands/brasscribe/tokens/tokens.json](../../../design/brands/brasscribe/tokens/tokens.json), the Brasscribe design tokens. [design-tokens.json](design-tokens.json) is generated from it by `uv run design/tooling/build.py` and keeps its existing shape for tools that read it.
-- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/brands/brasscribe/tokens/tokens.json` (every design-system role, 76 pairs in each of six modes: light, dark, two high-contrast and two hidden Pink palettes) exit 1 on any contrast failure and run in CI.
-- **Generated reports:** [qa/reports/contrast-tokens.md](../../../qa/reports/contrast-tokens.md) and [qa/reports/contrast-design-tokens.md](../../../qa/reports/contrast-design-tokens.md). Every ratio below is copied from the first; don't edit numbers by hand.
+- **Check:** `uv run qa/shared/tools/contrast.py` (this palette) and `uv run qa/shared/tools/contrast.py --tokens design/brands/brasscribe/tokens/tokens.json` (every design-system role, 76 pairs in each of six modes: light, dark, two high-contrast and two hidden Pink palettes) exit 1 on any contrast failure and run in CI.
+- **Generated reports:** [qa/shared/reports/contrast-tokens.md](../../../qa/shared/reports/contrast-tokens.md) and [qa/shared/reports/contrast-design-tokens.md](../../../qa/shared/reports/contrast-design-tokens.md). Every ratio below is copied from the first; don't edit numbers by hand.
 
 ## 1. Palette
 
@@ -102,7 +102,7 @@ On Apple, `accessibilityDifferentiateWithoutColor` needs nothing extra, because 
   - Highlight for focus and cursor
   - LinkText for the uncertain level (shape carries the level)
 - The token values apply when the user picks our high-contrast theme in-app, or the platform has no system palette.
-- There are two high-contrast palettes: `high-contrast` (white on black) and `high-contrast-light` (black on white, every pair at 7:1 or more; see qa/reports/contrast-design-tokens.md). The one used matches the resolved light or dark theme, on every platform. In both, every checked pair must reach 7:1 (WCAG 1.4.6): `qa/tools/contrast.py` fails a high-contrast theme below that, whatever minimum the pair lists.
+- There are two high-contrast palettes: `high-contrast` (white on black) and `high-contrast-light` (black on white, every pair at 7:1 or more; see qa/shared/reports/contrast-design-tokens.md). The one used matches the resolved light or dark theme, on every platform. In both, every checked pair must reach 7:1 (WCAG 1.4.6): `qa/shared/tools/contrast.py` fails a high-contrast theme below that, whatever minimum the pair lists.
 - Remove tints (ad lib, loop) and replace them with outlines. Staff lines use full ink colour.
 - Keep shape encoding. Shapes carry meaning here, because system palettes collapse colour.
 

@@ -1,6 +1,6 @@
 """Per-stage timings over every run manifest in a runs directory.
 
-    pixi run python qa/perf/run_stages.py [data/runs]
+    pixi run python qa/shared/perf/run_stages.py [data/runs]
 
 Prints, per (stage, status), how many runs and the median and largest seconds, then the
 runs in which some stage actually ran (not cached or imported). A stage's seconds include

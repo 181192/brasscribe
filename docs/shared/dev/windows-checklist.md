@@ -106,7 +106,7 @@ note the step number and what you saw, and stop at the first crash.
 
 ## 5. Narrator
 
-Use `qa/screen-reader-scripts/narrator-windows.md` for the full script. For this branch:
+Use `qa/brasscribe/screen-reader-scripts/narrator-windows.md` for the full script. For this branch:
 
 1. "What do you play?": each tile has a name and its key line. Continue's hint is read when nothing
    is chosen.

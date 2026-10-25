@@ -21,7 +21,7 @@ These are **acceptance scripts for apps that are not built yet**. They define wh
 
 ## Shared flow (step IDs used by every script)
 
-The expected announcements are in English. Run each script once in nb as well; the nb strings come from the String Catalog and [talking-score-spec.md](../../docs/shared/accessibility/talking-score-spec.md). "Must contain" means the tokens must appear in this order. Platform role words ("button", "knapp", "adjustable") come after them.
+The expected announcements are in English. Run each script once in nb as well; the nb strings come from the String Catalog and [talking-score-spec.md](../../../docs/shared/accessibility/talking-score-spec.md). "Must contain" means the tokens must appear in this order. Platform role words ("button", "knapp", "adjustable") come after them.
 
 | ID | Step | Must contain (en) |
 |---|---|---|
@@ -35,7 +35,7 @@ The expected announcements are in English. Run each script once in nb as well; t
 | S8 | Parts | "Parts, list, 18 items"; "Solo Cornet, 2 of 18"; opening it: "Solo Cornet part. Written pitch, Cornet in B-flat"; the toggle "Concert pitch, switch, off" → on: "Concert pitch" |
 | S9 | Playback, loop, speed | "Play, button" → "Playing, bar 1" (status). Pause → "Paused, bar 5 beat 3". "Speed, 100 percent, adjustable": step down → "95 percent". Loop without dragging: "Loop from bar, text field" 12, "to bar" 16, "Set loop" → "Loop set, bars 12 to 16". "Loop, switch, on". "Mute Solo Cornet, toggle, off" → "on". "Count-in, switch"; "Metronome, switch" |
 | S10 | Play-along | "Play along, button" → "Your part Solo Cornet is muted. Count-in 1 bar". Count-in numbers are **spoken or shown**, both configurable. No flashing. Stop → "Stopped" |
-| S11 | Talking-score navigation | next/previous note, beat, bar, part, uncertain note; go to bar 82 → "bars 82 to 88: rest, 7 bars"; read bar; play this bar. The strings must match [talking-score-vectors.json](../../docs/shared/accessibility/talking-score-vectors.json) exactly for the vector cases |
+| S11 | Talking-score navigation | next/previous note, beat, bar, part, uncertain note; go to bar 82 → "bars 82 to 88: rest, 7 bars"; read bar; play this bar. The strings must match [talking-score-vectors.json](../../../docs/shared/accessibility/talking-score-vectors.json) exactly for the vector cases |
 | S12 | Export | "Export, button" → a format list containing: MusicXML score, MusicXML parts, PDF, MIDI, Audio, Talking score text, Braille BRF. Choose "Braille BRF", part "Solo Cornet", then "Save" → "Exported Solo Cornet as braille, file Old Hundredth - Solo Cornet.brf". The BRF opens in a BRF viewer or on a braille display with part and bar structure intact. Also "Talking score text" → an HTML file with headings per part and bar |
 | S13 | Errors | unsupported file: "Can't open notes.docx. Choose an audio or video file." Companion missing: "Can't reach the computer engine. Start Brasscribe on your computer, then try again." DRM source: "This app blocks recording. Import a file instead." Each is announced when it appears and is reachable afterwards |
 | S14 | Preferences | at the largest text size, every S1–S12 control is reachable and nothing is truncated. Reduced motion stops cursor animation. High contrast / increase contrast switches the theme. Nothing overrides the system screen-reader speech rate or verbosity |

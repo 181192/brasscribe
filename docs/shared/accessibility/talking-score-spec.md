@@ -241,7 +241,7 @@ A pickup (anacrusis) is the incomplete bar before bar 1. In the data it is the b
 
 The same commands on every platform. The apps map them to native gestures.
 
-| Command | Result | Apple (VoiceOver) | Android (TalkBack) | Keyboard: Windows, Studio (macOS uses Option in place of Ctrl; full list in `qa/screen-reader-scripts/keyboard-desktop.md`) |
+| Command | Result | Apple (VoiceOver) | Android (TalkBack) | Keyboard: Windows, Studio (macOS uses Option in place of Ctrl; full list in `qa/brasscribe/screen-reader-scripts/keyboard-desktop.md`) |
 |---|---|---|---|---|
 | Next / previous note | next event in the part (skips tie continuations) | rotor "Notes", swipe down/up | swipe right/left on the score list (one item per event) | → / ← |
 | Next / previous beat | event or `held` at the next beat | rotor "Beats" | custom action "Next beat" | Ctrl+→ / Ctrl+← |

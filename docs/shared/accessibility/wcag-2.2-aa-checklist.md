@@ -33,9 +33,9 @@ The project **targets WCAG 2.2 AA plus the applicable EN 301 549 V4.1.1 clauses*
 ## 2. Project-wide rules
 
 - Localisation: nb-NO and en from the first build, using platform localisation (String Catalogs, `strings.xml`, `.resw`, and ICU messages in Studio). The talking-score grammar is in [talking-score-spec.md](talking-score-spec.md).
-- Colours come only from [design-tokens.json](design-tokens.json). CI runs `uv run qa/tools/contrast.py`.
+- Colours come only from [design-tokens.json](design-tokens.json). CI runs `uv run qa/shared/tools/contrast.py`.
 - Notation is always drawn as an image (Verovio SVG or alphaTab canvas). The **talking score** is its accessible, reflowable equivalent, and any screen with notation offers it.
-- Scripted screen-reader runs are in [../../qa/screen-reader-scripts/](../../../qa/screen-reader-scripts/).
+- Scripted screen-reader runs are in [../../qa/brasscribe/screen-reader-scripts/](../../../qa/brasscribe/screen-reader-scripts/).
 
 ## 3. WCAG 2.2 A and AA (55 criteria)
 
@@ -54,9 +54,9 @@ The project **targets WCAG 2.2 AA plus the applicable EN 301 549 V4.1.1 clauses*
 | 1.3.3 Sensory characteristics | A | No instruction relies on colour, shape or position alone ("tap the red notes" is not allowed; say "notes marked uncertain"). | Copy review | Manual review of all strings (en, nb) |
 | 1.3.4 Orientation | AA | Play works in portrait and landscape on iOS, iPadOS and Android. | Do not lock orientation. | Rotate each screen (device) |
 | 1.3.5 Identify input purpose | AA | Few personal-data fields exist. The pairing code uses `oneTimeCode`; a name or e-mail for export metadata uses name/email content types. | A: `.textContentType(.oneTimeCode)`. K: `semantics { contentType = ContentType.SmsOtpCode }` / autofill hints. W: `InputScope`. S: `autocomplete="one-time-code"`. | Inspect |
-| 1.4.1 Use of colour | A | Uncertainty, the active part, the loop range, the cursor and errors are shown by shape, pattern or text **as well as** colour. See [visual-design-tokens.md](visual-design-tokens.md) §2. Engine output today uses red only (`#D0021B`, 230 solo notes in the Mikkel golden output): fails. | Notehead shape plus marker in all renderers. A: honour `accessibilityDifferentiateWithoutColor` by adding a text badge. | `qa/tools/musicxml_readability.py --check` (`colour_only_uncertain` = 0); greyscale screenshot review |
+| 1.4.1 Use of colour | A | Uncertainty, the active part, the loop range, the cursor and errors are shown by shape, pattern or text **as well as** colour. See [visual-design-tokens.md](visual-design-tokens.md) §2. Engine output today uses red only (`#D0021B`, 230 solo notes in the Mikkel golden output): fails. | Notehead shape plus marker in all renderers. A: honour `accessibilityDifferentiateWithoutColor` by adding a text badge. | `qa/shared/tools/musicxml_readability.py --check` (`colour_only_uncertain` = 0); greyscale screenshot review |
 | 1.4.2 Audio control | A | Playback never starts on its own. A pause/stop control is reachable in one step and is the first control in the player bar. The metronome and count-in have their own volume. | – | Manual: open a score; nothing plays |
-| 1.4.3 Contrast (minimum) | AA | Text ≥ 4.5:1, large text ≥ 3:1, in all three themes. | Tokens | `uv run qa/tools/contrast.py` (CI); spot checks with Accessibility Inspector Color Contrast Calculator, Accessibility Scanner, and Accessibility Insights Colour Contrast; axe `color-contrast` |
+| 1.4.3 Contrast (minimum) | AA | Text ≥ 4.5:1, large text ≥ 3:1, in all three themes. | Tokens | `uv run qa/shared/tools/contrast.py` (CI); spot checks with Accessibility Inspector Color Contrast Calculator, Accessibility Scanner, and Accessibility Insights Colour Contrast; axe `color-contrast` |
 | 1.4.4 Resize text | AA | UI text scales to 200% (Dynamic Type up to AX5 on iOS; font scale 2.0 on Android; Windows text size 225%) without loss of function. The notation zooms separately up to 400%. | A: Dynamic Type fonts (`.font(.body)`), no fixed heights. K: `sp` units, no fixed heights. W: honour `UISettings.TextScaleFactor` (the default for XAML text). S: `rem`, browser zoom 200%. | Screenshots at max text size; nothing clipped or overlapping |
 | 1.4.5 Images of text | AA | No text rendered as images. Titles, part names and bar numbers inside the notation image have a text equivalent (the talking score). | – | Review |
 | 1.4.10 Reflow | AA | UI reflows at 320 CSS px width (or the platform equivalent: 1280 px at 400%). The **score** needs two-dimensional layout; the talking score and the single-part view are the reflowable alternative. | K/A: size classes; the score becomes a single-staff horizontal view. S: CSS grid, no fixed widths. | Studio: browser at 320 px, axe plus manual. Native: iPad Split View at its narrowest width; Android split screen; Windows at 500 px wide |
@@ -68,7 +68,7 @@ The project **targets WCAG 2.2 AA plus the applicable EN 301 549 V4.1.1 clauses*
 
 | SC | Lvl | Requirement for Brasscribe | Implementation | Test (tool) |
 |---|---|---|---|---|
-| 2.1.1 Keyboard | A | Everything works from the keyboard on macOS, Windows, iPad with keyboard, Android with keyboard, and Studio. That covers import, record, transcribe, cancel, review, next/previous uncertain note, part mute/solo, loop set by bar numbers, speed, play-along, talking-score navigation and export. See the keyboard script. | A: `.focusable()`, `.keyboardShortcut`, `.onKeyPress`, Full Keyboard Access (iOS). K: `Modifier.focusable()`, `onKeyEvent`, `FocusRequester`. W: native tab order, `KeyboardAccelerator`, `AccessKey`. S: native elements, `tabindex="0"` only on the custom score widget, roving tabindex inside it. | `qa/screen-reader-scripts/keyboard-desktop.md` (Mac, Windows, Studio); iPad with Full Keyboard Access |
+| 2.1.1 Keyboard | A | Everything works from the keyboard on macOS, Windows, iPad with keyboard, Android with keyboard, and Studio. That covers import, record, transcribe, cancel, review, next/previous uncertain note, part mute/solo, loop set by bar numbers, speed, play-along, talking-score navigation and export. See the keyboard script. | A: `.focusable()`, `.keyboardShortcut`, `.onKeyPress`, Full Keyboard Access (iOS). K: `Modifier.focusable()`, `onKeyEvent`, `FocusRequester`. W: native tab order, `KeyboardAccelerator`, `AccessKey`. S: native elements, `tabindex="0"` only on the custom score widget, roving tabindex inside it. | `qa/brasscribe/screen-reader-scripts/keyboard-desktop.md` (Mac, Windows, Studio); iPad with Full Keyboard Access |
 | 2.1.2 No keyboard trap | A | The score canvas captures arrow keys but Tab/Shift+Tab (and Esc) always leave it. Modal dialogs trap focus until they close, which is allowed. | – | Keyboard script, step K-12 |
 | 2.1.4 Character key shortcuts | A | Single-key shortcuts (Space, L, [, ], digits) work **only while the score or player has focus**, and can be turned off or remapped in Settings. Global shortcuts use a modifier. | Scope handlers to the focused view; add a Settings → Keyboard page. | Keyboard script K-20; with the screen reader on, single keys do not fight VoiceOver/NVDA quick-nav |
 | 2.2.1 Timing adjustable | A | No time limits. The LAN pairing code does not expire while the pairing screen is open; if it expires, one action renews it with no data lost. A transcription job never times out on the user. | – | Leave the pairing screen open for 30 min |
@@ -148,7 +148,7 @@ The project **targets WCAG 2.2 AA plus the applicable EN 301 549 V4.1.1 clauses*
 | Android | Accessibility Test Framework via `AccessibilityChecks.enable()` (Espresso) and Compose tests; Android Accessibility Scanner on a device | TalkBack, Switch Access, Voice Access |
 | Windows | Axe.Windows (NuGet) in UI tests; Accessibility Insights for Windows FastPass | Narrator, NVDA, high-contrast themes |
 | Studio | `@axe-core/playwright` in CI (rules for WCAG 2.2 AA: tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`) | NVDA + Firefox or Chrome, VoiceOver + Safari |
-| Output | `uv run qa/tools/musicxml_readability.py --check <file>`, `uv run qa/tools/contrast.py` | Readability review by a player |
+| Output | `uv run qa/shared/tools/musicxml_readability.py --check <file>`, `uv run qa/shared/tools/contrast.py` | Readability review by a player |
 
 ## Open questions
 
