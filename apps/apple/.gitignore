@@ -8,3 +8,5 @@ xcuserdata/
 .swiftpm/
 products/*/App/Icon.xcassets/
 Sounds/
+# alphaTab, fetched by scripts/fetch-alphatab.sh
+features/tab/Sources/TabKit/Resources/page/alphatab/

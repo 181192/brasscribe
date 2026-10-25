@@ -130,6 +130,14 @@ jobs:
           dest=$(scripts/newest-iphone.sh)
           make build-for-testing-ios IPHONE_DEST="$dest"
 
+      # The tab feature's tests on the iPhone simulator as well: its page is a web view, and WebKit on iOS draws and
+      # loads differently from the Mac's.
+      - name: Test the tab feature on the iPhone simulator
+        working-directory: apps/apple/features/tab
+        run: |
+          dest=$(../../scripts/newest-iphone.sh)
+          xcodebuild -scheme TabKit -destination "$dest" -derivedDataPath ../../build/DerivedData-tab test -quiet
+
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
         if: failure()

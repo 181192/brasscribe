@@ -1,5 +1,6 @@
 # Brasscribe Play for Apple platforms.
 #   make verovio     build Verovio.xcframework (once, ~2 min)
+#   make alphatab    fetch alphaTab into the tab feature (features/tab), checked against its checksum
 #   make soundfont   download the baseline SF2 into data/soundfonts
 #   make bandsound   stage the band SoundFont + mapping into Sounds/ (bundled; also run by make project)
 #   make project     generate products/brasscribe/BrasscribePlay.xcodeproj with XcodeGen
@@ -31,11 +32,14 @@ XCB := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
-.PHONY: verovio soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
+.PHONY: verovio alphatab soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
 
 verovio:
 	./scripts/build-verovio.sh
+
+alphatab:
+	./scripts/fetch-alphatab.sh
 
 soundfont:
 	./scripts/fetch-soundfont.sh
@@ -51,9 +55,10 @@ build: project
 	$(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' build
 	$(XCB) -scheme BrasscribePlay-iOS -destination 'platform=iOS Simulator,name=$(IPAD)' build
 
-package-test:
+package-test: alphatab
 	cd services && swift test
 	cd features/score && swift test
+	cd features/tab && swift test
 	cd testing/ScreenCatalogue && swift test
 	cd ../../capture && swift test
 
@@ -118,7 +123,8 @@ test-ios-unit:
 
 # Package tests without the slow audio-rendering suites (tier 1). --no-parallel as in package-test:
 # PlaybackKitTests crash (SIGTRAP) when Swift Testing runs them in parallel.
-package-test-fast:
+package-test-fast: alphatab
 	cd services && swift test --no-parallel --skip '$(APPLE_SLOW)'
 	cd features/score && swift test --no-parallel --skip '$(APPLE_SLOW)'
+	cd features/tab && swift test
 	cd testing/ScreenCatalogue && swift test

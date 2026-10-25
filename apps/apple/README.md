@@ -78,6 +78,7 @@ and skip themselves when it is missing.
 | `products/brasscribe/` | Brasscribe Play: `project.yml` (XcodeGen spec: one multiplatform app target, unit tests, UI tests), `App/` (SwiftUI app: models (`AppModel`, `PracticeModel`, `Piece`), views, string catalogs (en, nb)), `AppTests/`, `AppUITests/` |
 | `services/` | Swift package `ScribeServices`: `ScoreKit` (Composition, MusicXML parser, talking score, MIDI, CoreBridge), `TranscriptionKit` (companion client and fixture service), `PlaybackKit` (AVAudioEngine), `SVGRender` (native SVG drawing), `OnDeviceKit` |
 | `features/score/` | `NotationKit`: Verovio wrapper: engraving, part filtering, concert pitch, timemap |
+| `features/tab/` | `TabKit`: the tab, engraved by alphaTab in a web view (`docs/tab-spike.md`), and its logic: reading `tab.musicxml`, the clock from the recording to the tab, practice (speed, repeats, where a song was left), the full-screen mode. `make alphatab` fetches alphaTab |
 | `testing/ScreenCatalogue/` | The screen catalogues' checks, shared with Bandroom for Mac (test code only) |
 | `../../capture` | `AudioCapture` package (Core Audio process tap), used by the macOS app and the CLI |
 | `scripts/` | Verovio, core and sound-font builds, string catalog, fixture launchers, screenshots |
