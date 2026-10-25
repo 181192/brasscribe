@@ -2,7 +2,7 @@
 # the .xcodeproj is not committed.
 name: BrasscribePlay
 options:
-  bundleIdPrefix: no.brasscribe
+  bundleIdPrefix: no.kalli
   deploymentTarget:
     iOS: "26.0"
     macOS: "26.0"
@@ -16,7 +16,7 @@ settings:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.13.0"
     # override on the command line (PLAY_BUNDLE_ID=…) to run beside another build of the app
-    PLAY_BUNDLE_ID: no.brasscribe.play
+    PLAY_BUNDLE_ID: no.kalli.brasscribe
     CURRENT_PROJECT_VERSION: "19"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
@@ -99,7 +99,7 @@ targets:
         NSLocalNetworkUsageDescription: Brasscribe Play talks to Brasscribe on your own computer to transcribe recordings.
         NSCameraUsageDescription: Brasscribe Play scans the code your computer shows, to connect to it.
         CFBundleURLTypes:
-          - CFBundleURLName: no.brasscribe.pair
+          - CFBundleURLName: no.kalli.brasscribe.pair
             CFBundleURLSchemes: [scribe]
         NSBonjourServices: [_scribe._tcp]
         NSAppTransportSecurity:
@@ -162,7 +162,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play.tests
+        PRODUCT_BUNDLE_IDENTIFIER: no.kalli.brasscribe.tests
 
   BrasscribePlayUITests:
     type: bundle.ui-testing
@@ -173,7 +173,7 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.play.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: no.kalli.brasscribe.uitests
         SWIFT_VERSION: "5.0"
         TEST_TARGET_NAME: BrasscribePlay_${platform}
 

@@ -158,10 +158,10 @@ public final class InMemoryCredentialStore: CredentialStore, @unchecked Sendable
     public func delete(serverID: String) throws { lock.withLock { _ = records.removeValue(forKey: serverID) } }
 }
 
-/// Generic-password items: service `no.brasscribe.engine`, account = `server_id`, readable after first
+/// Generic-password items: service `no.kalli.scribe.engine`, account = `server_id`, readable after first
 /// unlock and never synced or restored to another device.
 public final class KeychainCredentialStore: CredentialStore, @unchecked Sendable {
-    public static let defaultService = "no.brasscribe.engine"
+    public static let defaultService = "no.kalli.scribe.engine"
     /// Account used for a credential moved from the old storage before its engine is known.
     static let provisionalAccount = "unknown"
     public let service: String

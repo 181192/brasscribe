@@ -242,7 +242,7 @@ Hugging Face key). See `gh release view v0.2.0` for the shape.
 - **Mac.** Quit both apps (`osascript -e 'quit app "BrasscribePlay"'`, `… "Brasscribe Bandroom"`), wait
   until they are gone and Bandroom's port is free, replace `/Applications/Brasscribe Play.app` and
   `/Applications/Brasscribe Bandroom.app` with the staged ones (`ditto`), and open Bandroom. Take a file
-  listing of `~/Library/Containers/no.brasscribe.play` and `~/Library/Application Support/Brasscribe`
+  listing of `~/Library/Containers/no.kalli.brasscribe` and `~/Library/Application Support/Brasscribe`
   (without `envs/` and `logs/`) before and after, to show the user's data is untouched.
 - **The phone.** It carries the **debug**-signed app, so it gets the debug APK
   (`adb install -r products/brasscribe/build/outputs/apk/debug/brasscribe-debug.apk`; Fretscribe's is

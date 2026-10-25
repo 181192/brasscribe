@@ -45,7 +45,7 @@ enum Catalogue {
 
     /// The settings the catalogue's models read and write: a store of its own, emptied once per run, never the app's.
     static let defaults: UserDefaults = {
-        let name = "no.brasscribe.bandroom.catalogue"
+        let name = "no.kalli.bandroom.catalogue"
         let store = UserDefaults(suiteName: name)!
         store.removePersistentDomain(forName: name)
         return store

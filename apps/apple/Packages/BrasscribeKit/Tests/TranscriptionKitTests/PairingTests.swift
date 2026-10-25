@@ -146,7 +146,7 @@ private func freshDefaults() -> UserDefaults {
 /// A real Keychain round trip, in a test-only service. Skipped where the test process has no keychain
 /// (missing entitlement, or a locked keychain on a build machine).
 @Test func keychainStoreRoundTrip() throws {
-    let store = KeychainCredentialStore(service: "no.brasscribe.engine.tests.\(UUID().uuidString)")
+    let store = KeychainCredentialStore(service: "no.kalli.scribe.engine.tests.\(UUID().uuidString)")
     let r = EngineRecord(serverID: "srv-kc", serverName: "Brasscribe on Test", deviceID: "d", token: "secret", lastAddress: "http://10.0.0.2:8765")
     do { try store.save(r) } catch CredentialStoreError.keychain(let status) {
         withKnownIssue("keychain unavailable here (\(status))") { throw CredentialStoreError.keychain(status) }
