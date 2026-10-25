@@ -144,7 +144,9 @@ jobs:
         if: failure()
         with:
           name: apple-play-test-results
-          path: apps/apple/build/DerivedData/Logs/Test/*.xcresult
+          path: |
+            apps/apple/build/DerivedData/Logs/Test/*.xcresult
+            apps/apple/build/DerivedData-tab/Logs/Test/*.xcresult
           if-no-files-found: ignore
           retention-days: 7
 

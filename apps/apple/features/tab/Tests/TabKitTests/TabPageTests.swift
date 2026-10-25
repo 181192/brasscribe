@@ -170,7 +170,8 @@ let pagesDraw: Bool = {
 /// app's own files, and is hidden from VoiceOver.
 @MainActor
 @Suite(.serialized) struct TabPageEverywhereTests {
-    @Test(.timeLimit(.minutes(1))) func thePageIsOfflineAndHiddenFromVoiceOver() async throws {
+    // A web view with no window to draw in may be slow to start its page: the first on a simulator just booted took 40 s.
+    @Test(.timeLimit(.minutes(4))) func thePageIsOfflineAndHiddenFromVoiceOver() async throws {
         let page = TabPage()
         await page.loaded()
         #expect(page.networkBlocked)
