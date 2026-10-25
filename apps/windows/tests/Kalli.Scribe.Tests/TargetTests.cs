@@ -34,7 +34,7 @@ public class TargetTests
 
     /// <summary>
     /// The shared projects (services, features) name no product in what they say or store: each product hands in its
-    /// own names. The engine's name for itself on the network ("Brasscribe on …", <c>ServerNames.Prefix</c>) and the
+    /// own names. The engine's name for itself on the network ("Brasscribe on …", <c>Wire.ServerNamePrefix</c>) and the
     /// repository's address are the exceptions, until they take neutral ones.
     /// </summary>
     [Fact]
@@ -52,7 +52,7 @@ public class TargetTests
                 foreach (var (text, n) in File.ReadLines(file).Select((l, i) => (l, i + 1)))
                 {
                     string line = text.Replace("github.com/181192/brasscribe", "");
-                    if (!line.TrimStart().StartsWith("//") && ((literal.IsMatch(line) && !line.Contains("const string Prefix = ")) || pink.IsMatch(line)))
+                    if (!line.TrimStart().StartsWith("//") && ((literal.IsMatch(line) && !line.Contains("const string ServerNamePrefix = ")) || pink.IsMatch(line)))
                         found.Add($"{Path.GetRelativePath(windows, file)}:{n}");
                 }
             }
