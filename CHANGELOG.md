@@ -2,6 +2,23 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.13.0 (2026-10-25)
+
+### Breaking changes
+
+- **Android:** **Breaking:** The Android library modules move to services and features and take no.kalli.scribe names ([#395](https://github.com/181192/brasscribe/pull/395))
+- **Android:** **Breaking:** Brasscribe and Fretscribe are modules of their own, no.kalli.brasscribe and no.kalli.fretscribe, each with its own screens and words ([#396](https://github.com/181192/brasscribe/pull/396))
+
+<details><summary>Under the hood (4 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** **Breaking:** The Android library modules move to services and features and take no.kalli.scribe names ([#395](https://github.com/181192/brasscribe/pull/395))
+- **Android:** **Breaking:** Brasscribe and Fretscribe are modules of their own, no.kalli.brasscribe and no.kalli.fretscribe, each with its own screens and words ([#396](https://github.com/181192/brasscribe/pull/396))
+- **Android:** A pull request that changes one app's module checks that app alone ([#397](https://github.com/181192/brasscribe/pull/397))
+- **Research:** Every package and app id sits under no.kalli ([#394](https://github.com/181192/brasscribe/pull/394))
+
+</details>
+
 ## 0.12.0 (2026-10-11)
 
 ### Breaking changes
