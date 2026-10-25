@@ -36,9 +36,10 @@ permissions:
 
 # One group for each way in: called from ci.yml or release.yml, github.workflow is the caller's name, and
 # started by hand it is this workflow's. So a run started by hand on main neither waits for ci's run there
-# nor, as a third in the same group, takes the place of one that is waiting.
+# nor, as a third in the same group, takes the place of one that is waiting. release.yml calls it twice, once for
+# Fretscribe alone, so the two release calls have a group each.
 concurrency:
-  group: windows-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}
+  group: windows-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release }}${{ inputs.release && inputs.skip_play && '-fretscribe' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -55,7 +56,7 @@ env:
 jobs:
   build:
     name: ${{ inputs.release && 'release build' || 'test, build and scan' }}
-    if: ${{ inputs.release || !inputs.skip_play }}
+    if: ${{ !inputs.skip_play }}
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -239,7 +240,7 @@ jobs:
   # dist-fretscribe-windows-x64.
   fretscribe:
     name: ${{ inputs.release && 'fretscribe release build' || 'fretscribe (build and scan)' }}
-    if: ${{ inputs.release || !inputs.skip_fretscribe }}
+    if: ${{ !inputs.skip_fretscribe }}
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -365,7 +366,7 @@ jobs:
   # tabs) is built first; the project copies it next to the exe.
   bandroom-release:
     name: bandroom release build
-    if: ${{ inputs.release }}
+    if: ${{ inputs.release && !inputs.skip_bandroom }}
     runs-on: windows-latest
     timeout-minutes: 45
     defaults:
