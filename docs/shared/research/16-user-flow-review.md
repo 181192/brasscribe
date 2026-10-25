@@ -16,7 +16,7 @@
   - `nb_part_name` in `core/scribe-core/src/talking_score.rs:810`
 
 The outcomes for the bass trombone and percussion seats were checked by running `seat_part` / `with_reading` / `seat_lineup` in `music`. The screens were checked against the committed screenshots:
-- `apps/android/docs/screenshots/{my-instrument,design,music-stand}`
+- `apps/android/docs/screenshots/brasscribe/{my-instrument,design,music-stand}`
 - `apps/apple/docs/screenshots`, `apps/apple/docs/responsive`
 - `site/brasscribe/shots`
 

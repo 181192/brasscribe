@@ -1,6 +1,6 @@
 # Usability review, third pass: Android
 
-- **Scope:** all 75 PNGs in `apps/android/docs/screenshots/design/` on main (merge `002f6e7`), in light, dark, nb and 200 % text. That includes the requested states: `04b` cancel confirmation, `09b` chip on, `09c` ad lib with the cursor elsewhere, `13b` repeat on, `13c` stop repeating, `15b` Help, and `17`/`18` very uncertain boxed.
+- **Scope:** all 75 PNGs in `apps/android/docs/screenshots/brasscribe/design/` on main (merge `002f6e7`), in light, dark, nb and 200 % text. That includes the requested states: `04b` cancel confirmation, `09b` chip on, `09c` ad lib with the cursor elsewhere, `13b` repeat on, `13c` stop repeating, `15b` Help, and `17`/`18` very uncertain boxed.
 - **Rule** (same as before): P1 means a player taps the wrong thing, loses work, or can't find or use a core feature.
 - **Numbering:** the second review had new P1s 9–11. There was no P1-12.
 

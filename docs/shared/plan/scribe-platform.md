@@ -91,7 +91,7 @@ The test for each folder: where would the sibling product's version of this go? 
 | `design/pink/` | Brasscribe screenshots of the pink theme, read by the Apple workflow's path filter | Brand-specific: `design/brands/brasscribe/pink/`. |
 | `design/reviews/` | Written reviews with screenshots | `music-stand/` and the usability reviews of the Brasscribe mockups and Android screens: `design/brands/brasscribe/reviews/`. `studio-review.md` is about Studio, which serves every app: `design/shared/`. Likewise `design/server-app.md` (Bandroom). |
 | `apps/android/design/{brasscribe,fretscribe}` | Gradle modules that wrap each brand's generated design system | Already a folder per brand; stays. A new brand adds its module here. |
-| `apps/android/docs/screenshots/` | Android documentation and reviews | Mixed folders (`design`, `score-*`, `music-stand`, `my-instrument` are Brasscribe's; `fretscribe` is Fretscribe's). Target: `screenshots/<product>/…`. |
+| `apps/android/docs/screenshots/` | Android documentation and reviews | A folder per product: `brasscribe/` (`design`, `before-design`, `score-*`, `music-stand`, `my-instrument`) and `fretscribe/`. |
 
 Neutral folders stay at the top level and do not carry a product name. A product's own files carry its name as a folder, not as a prefix in a file name.
 
