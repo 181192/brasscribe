@@ -2,6 +2,42 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.14.0 (2026-10-25)
+
+### New features
+
+- **Android:** Fretscribe's tab can take the whole screen ([#401](https://github.com/181192/brasscribe/pull/401))
+- **iPhone, iPad and Mac:** The tab view, drawn by alphaTab, and its practice logic ([#409](https://github.com/181192/brasscribe/pull/409))
+- **iPhone, iPad and Mac:** Fretscribe for Mac, iPhone and iPad ([#415](https://github.com/181192/brasscribe/pull/415))
+- **Windows:** Fretscribe for Windows ([#417](https://github.com/181192/brasscribe/pull/417))
+- **Windows:** Share, help and kept takes in Fretscribe ([#418](https://github.com/181192/brasscribe/pull/418))
+
+### Fixes
+
+- **Windows:** Fretscribe's full screen set before the page is shown no longer throws ([#420](https://github.com/181192/brasscribe/pull/420))
+
+<details><summary>Under the hood (16 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **iPhone, iPad and Mac:** Services, features and products, as on Android ([#407](https://github.com/181192/brasscribe/pull/407))
+- **iPhone, iPad and Mac:** The engine client serves any target ([#412](https://github.com/181192/brasscribe/pull/412))
+- **iPhone, iPad and Mac:** The screens every Play app shares, in features/play ([#413](https://github.com/181192/brasscribe/pull/413))
+- **Research:** Windows has the three levels and Fretscribe ([#419](https://github.com/181192/brasscribe/pull/419))
+- **Windows:** Services, features and products, in Kalli namespaces ([#406](https://github.com/181192/brasscribe/pull/406))
+- **Windows:** Shared code takes the product's target, folders and palette ([#414](https://github.com/181192/brasscribe/pull/414))
+- Place every top-level folder in the repository layout plan ([#400](https://github.com/181192/brasscribe/pull/400))
+- Move Apple and Windows app ids to no.kalli ([#399](https://github.com/181192/brasscribe/pull/399))
+- Keep the words only Brasscribe reads in Brasscribe ([#402](https://github.com/181192/brasscribe/pull/402))
+- Add a short video tour to the README ([#404](https://github.com/181192/brasscribe/pull/404))
+- Split design/ into tooling, brands and shared ([#403](https://github.com/181192/brasscribe/pull/403))
+- Split docs/ into shared, brasscribe, fretscribe and songs ([#405](https://github.com/181192/brasscribe/pull/405))
+- Split site/ into shared and brasscribe ([#410](https://github.com/181192/brasscribe/pull/410))
+- Split qa/ into shared and brasscribe ([#408](https://github.com/181192/brasscribe/pull/408))
+- Keep Android screenshots in a folder per product ([#411](https://github.com/181192/brasscribe/pull/411))
+- Apple has the three levels and Fretscribe ([#416](https://github.com/181192/brasscribe/pull/416))
+
+</details>
+
 ## 0.13.0 (2026-10-25)
 
 ### Breaking changes
