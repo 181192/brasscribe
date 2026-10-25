@@ -79,7 +79,8 @@ public sealed partial class TabScreenPage : Page, IScreenPage
     /// <summary>Focus on a control that has just stepped aside goes to the one still there that does the same.</summary>
     private void MoveFocusFromHidden()
     {
-        if (FocusManager.GetFocusedElement(XamlRoot) is not DependencyObject focused) return;
+        // Full screen can change before the page is in the window (no XamlRoot yet): nothing has focus there to move.
+        if (XamlRoot is null || FocusManager.GetFocusedElement(XamlRoot) is not DependencyObject focused) return;
         if (ViewModel.MinimalShown && IsInside(focused, Header))
             LeaveFullScreenButton.Focus(FocusState.Programmatic);
         else if (ViewModel.MinimalShown && IsInside(focused, Player))
