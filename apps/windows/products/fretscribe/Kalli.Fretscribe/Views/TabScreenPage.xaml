@@ -25,7 +25,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid x:Name="Header" Padding="24,16,24,8" ColumnSpacing="12" Visibility="{x:Bind views:Shown.Not(ViewModel.IsFullScreen), Mode=OneWay}">
+        <Grid x:Name="Header" Padding="24,16,24,8" ColumnSpacing="12" Visibility="{x:Bind ViewModel.ChromeShown, Mode=OneWay}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -65,9 +65,25 @@
                  IsOpen="{x:Bind ViewModel.HasFailed, Mode=OneWay}" Message="{x:Bind ViewModel.FailedText, Mode=OneWay}" />
         <controls:TabView x:Name="Tab" Grid.Row="1" Margin="12,0" x:Uid="TabPage" />
 
+        <!-- Full screen with the controls aside: Play or Pause and Leave full screen stay over the tab's corner. A tap or
+             click on the tab brings the rest back. -->
+        <StackPanel x:Name="MinimalControls" Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="16" Padding="4"
+                    HorizontalAlignment="Right" VerticalAlignment="Top" Background="{ThemeResource ScribeSurfaceBrush}"
+                    BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="1" CornerRadius="8"
+                    Visibility="{x:Bind ViewModel.MinimalShown, Mode=OneWay}">
+            <Button x:Name="MinimalPlayButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.PlayPauseCommand}"
+                    IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}" AutomationProperties.Name="{x:Bind ViewModel.PlayLabel, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind ViewModel.PlayLabel, Mode=OneWay}">
+                <FontIcon x:Name="MinimalPlayGlyph" Glyph="{StaticResource FsIconPlay}" FontSize="16" />
+            </Button>
+            <Button x:Name="LeaveFullScreenButton" x:Uid="LeaveFullScreenButton" Style="{StaticResource IconButtonStyle}" Click="OnLeaveFullScreen">
+                <FontIcon Glyph="{StaticResource FsIconFullScreenLeave}" FontSize="16" />
+            </Button>
+        </StackPanel>
+
         <!-- The player: play, back to the start, a bar back and on, where the song is, the speed and the bars repeated. -->
-        <Border Grid.Row="2" Background="{ThemeResource ScribeSurfaceBrush}" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,1,0,0"
-                Padding="16,10">
+        <Border x:Name="Player" Grid.Row="2" Background="{ThemeResource ScribeSurfaceBrush}" BorderBrush="{ThemeResource ScribeBorderBrush}" BorderThickness="0,1,0,0"
+                Padding="16,10" Visibility="{x:Bind ViewModel.ChromeShown, Mode=OneWay}">
             <Grid ColumnSpacing="12" RowSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

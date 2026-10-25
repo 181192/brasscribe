@@ -128,9 +128,7 @@ public partial class FretscribeWordsTests
         foreach (var lang in new[] { "en-US", "nb-NO" })
             foreach (var (key, value) in Load(lang))
             {
-                // The computer's program is Brasscribe Bandroom when it is installed: the only place the full name is said.
-                string said = value.Replace("Brasscribe Bandroom", "", StringComparison.Ordinal);
-                Assert.False(Regex.IsMatch(said, @"\bBrasscribe\b|\bscores?\b|\bpartitur", RegexOptions.IgnoreCase), $"{lang} {key}: {value}");
+                Assert.False(Regex.IsMatch(value, @"\bBrasscribe\b|\bscores?\b|\bpartitur", RegexOptions.IgnoreCase), $"{lang} {key}: {value}");
             }
     }
 

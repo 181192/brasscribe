@@ -69,7 +69,7 @@ public sealed partial class TabPageViewModel : ObservableObject, IDisposable
             if (e.PropertyName is nameof(PracticeModel.Speed)) OnPropertyChanged(nameof(SpeedText));
             if (e.PropertyName is nameof(PracticeModel.Recording)) { OnPropertyChanged(nameof(RecordingText)); OnPropertyChanged(nameof(CanPlay)); OnPropertyChanged(nameof(CanFetch)); }
             if (e.PropertyName is nameof(PracticeModel.Repeat)) OnPropertyChanged(nameof(RepeatText));
-            if (e.PropertyName is nameof(PracticeModel.Playing)) OnPropertyChanged(nameof(PlayLabel));
+            if (e.PropertyName is nameof(PracticeModel.Playing)) { OnPropertyChanged(nameof(PlayLabel)); OnPropertyChanged(nameof(ControlsHide)); }
             if (e.PropertyName is nameof(PracticeModel.At) or nameof(PracticeModel.Jumps)) UpdatePlace();
         };
     }
@@ -135,6 +135,36 @@ public sealed partial class TabPageViewModel : ObservableObject, IDisposable
 
     /// <summary>The tab takes the whole window, the chrome hidden until asked for.</summary>
     [ObservableProperty] public partial bool IsFullScreen { get; set; }
+
+    /// <summary>What is over the tab in full screen (<see cref="TabFocus"/>): nothing but Play and Leave, or the controls.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ChromeShown), nameof(MinimalShown), nameof(ControlsHide))]
+    public partial TabFocus FullScreenFocus { get; set; }
+
+    /// <summary>A screen reader is on (Narrator): in full screen the controls then stay up, as there is nothing to tap.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ChromeShown), nameof(MinimalShown), nameof(ControlsHide))]
+    public partial bool Assistive { get; set; }
+
+    /// <summary>The header and the player are on screen: always outside full screen, and in it when asked for.</summary>
+    public bool ChromeShown => !FullScreenFocus.On || FullScreenFocus.ControlsShown(Assistive);
+
+    /// <summary>Only the small Play or Pause and Leave full screen are over the tab.</summary>
+    public bool MinimalShown => FullScreenFocus.Minimal(Assistive);
+
+    /// <summary>The controls step aside by themselves after <see cref="TabFocus.HideAfter"/>: shown in full screen while it plays.</summary>
+    public bool ControlsHide => FullScreenFocus.AutoHides(Practice.Playing, Assistive);
+
+    partial void OnIsFullScreenChanged(bool value) => FullScreenFocus = value ? FullScreenFocus.Enter() : FullScreenFocus.Leave();
+
+    /// <summary>A tap or click on the tab: in full screen it shows the controls, and a second one hides them.</summary>
+    public void TapTab() => FullScreenFocus = FullScreenFocus.Tapped();
+
+    /// <summary>The controls' time is up: they step aside if it still plays.</summary>
+    public void HideControls()
+    {
+        if (ControlsHide) FullScreenFocus = FullScreenFocus with { Controls = false };
+    }
 
     public string SpeedText => _s.Format("Tab_Practice_Speed", Practice.Speed);
 

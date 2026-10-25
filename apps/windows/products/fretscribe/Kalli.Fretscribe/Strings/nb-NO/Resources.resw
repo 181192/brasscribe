@@ -40,7 +40,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutText.Text" xml:space="preserve">
-    <value>Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1). Bandroom, programmet på datamaskinen, heter Brasscribe Bandroom når du installerer det.</value>
+    <value>Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1).</value>
   </data>
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Fretscribe</value>
@@ -443,6 +443,15 @@
   </data>
   <data name="LanguageSystem.Content" xml:space="preserve">
     <value>Samme som Windows</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Toppen og spilleren kommer tilbake (Esc eller F11)</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Gå ut av fullskjerm</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Gå ut av fullskjerm</value>
   </data>
   <data name="LevelMeter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Inngangsnivå</value>

@@ -14,7 +14,7 @@ public static class TabSampleScenes
 {
     public static readonly string[] Names =
         ["first-run", "your-instrument", "home", "home-offline", "home-update", "what-is-this", "what-is-this-offline", "transcribing",
-         "check-the-song", "tab", "error", "error-update"];
+         "check-the-song", "tab", "tab-full-screen", "error", "error-update"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = Wire.ServerNamePrefix + "Studio PC";
@@ -84,6 +84,10 @@ public static class TabSampleScenes
                 return true;
             case "tab":
                 await flow.ShowTabAsync(Read("tab.musicxml"), tab, composition, SampleTitle);
+                return true;
+            case "tab-full-screen":
+                await flow.ShowTabAsync(Read("tab.musicxml"), tab, composition, SampleTitle);
+                flow.TabPage.IsFullScreen = true;
                 return true;
         }
         return false;

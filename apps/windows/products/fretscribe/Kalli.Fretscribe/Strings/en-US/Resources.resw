@@ -40,7 +40,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutText.Text" xml:space="preserve">
-    <value>Fretscribe is a non-commercial project. Tab and notation: alphaTab (MPL-2.0). The faces are Atkinson Hyperlegible Next (SIL OFL 1.1) and Fretscribe Tab (SIL OFL 1.1). Bandroom, the program on your computer, is called Brasscribe Bandroom when you install it.</value>
+    <value>Fretscribe is a non-commercial project. Tab and notation: alphaTab (MPL-2.0). The faces are Atkinson Hyperlegible Next (SIL OFL 1.1) and Fretscribe Tab (SIL OFL 1.1).</value>
   </data>
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Fretscribe</value>
@@ -443,6 +443,15 @@
   </data>
   <data name="LanguageSystem.Content" xml:space="preserve">
     <value>Same as Windows</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>The header and the player come back (Esc or F11)</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Leave full screen</value>
+  </data>
+  <data name="LeaveFullScreenButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Leave full screen</value>
   </data>
   <data name="LevelMeter.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Input level</value>

@@ -169,6 +169,25 @@ public class TabFlowTests : TempFolderTest
         await Until(() => players.Opened.Count == 1);
         Assert.True(flow.TabPage.CanPlay);
 
+        // Full screen: only Play and Leave over the tab; a tap brings the header and the player back, a second hides them.
+        var page = flow.TabPage;
+        Assert.True(page.ChromeShown);
+        page.FullScreenCommand.Execute(null);
+        Assert.False(page.ChromeShown);
+        Assert.True(page.MinimalShown);
+        page.TapTab();
+        Assert.True(page.ChromeShown);
+        Assert.False(page.ControlsHide); // nothing plays
+        page.TapTab();
+        Assert.True(page.MinimalShown);
+        page.Assistive = true; // with a screen reader the controls stay up
+        Assert.True(page.ChromeShown);
+        Assert.False(page.MinimalShown);
+        page.Assistive = false;
+        page.IsFullScreen = false;
+        Assert.True(page.ChromeShown);
+        Assert.False(page.MinimalShown);
+
         // Back from the tab goes to Check the song for a song just written, and the sound stops.
         flow.BackCommand.Execute(null);
         Assert.Equal(TabScreen.CheckTheSong, flow.Screen);
@@ -233,11 +252,12 @@ public class TabFlowTests : TempFolderTest
                 "what-is-this" or "what-is-this-offline" => TabScreen.WhatIsThis,
                 "transcribing" => TabScreen.Transcribing,
                 "check-the-song" => TabScreen.CheckTheSong,
-                "tab" => TabScreen.Tab,
+                "tab" or "tab-full-screen" => TabScreen.Tab,
                 _ => TabScreen.Error,
             };
             Assert.Equal(expected, flow.Screen);
             if (scene == "tab") Assert.True(flow.TabPage.IsReady && flow.TabPage.Marks.Count >= 0);
+            if (scene == "tab-full-screen") Assert.True(flow.TabPage.MinimalShown);
             // The computer is there and has the tab profile: Check the song offers its changes, What is this? its Continue.
             if (scene == "check-the-song") Assert.Contains(flow.Check.Rows, r => r.HasChange);
             if (scene == "what-is-this") Assert.Null(flow.WhatIsThis.Missing);

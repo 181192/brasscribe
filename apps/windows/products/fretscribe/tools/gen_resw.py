@@ -3,8 +3,7 @@
 
 Usage: python3 products/fretscribe/tools/gen_resw.py products/fretscribe/Kalli.Fretscribe/Strings
 Edit the table here, not the .resw files; LocalizationTests checks the result. The program on the computer is
-Bandroom in running text (design/brands/fretscribe/brand/brand.md); it is Brasscribe Bandroom only where the player
-looks for it to install it."""
+Bandroom (design/brands/fretscribe/brand/brand.md)."""
 import sys
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -307,6 +306,7 @@ text_button("NextMarkButton", "Next ?", "Neste ?", "Go to the next note marked ?
 icon_button("ZoomOutButton", "Smaller", "Mindre", "Make the tab smaller", "Gjør tabben mindre")
 icon_button("ZoomInButton", "Larger", "Større", "Make the tab larger", "Gjør tabben større")
 icon_button("FullScreenButton", "Full screen", "Fullskjerm", "The tab takes the whole screen (F11; Esc leaves)", "Tabben fyller hele skjermen (F11; Esc går ut)")
+icon_button("LeaveFullScreenButton", "Leave full screen", "Gå ut av fullskjerm", "The header and the player come back (Esc or F11)", "Toppen og spilleren kommer tilbake (Esc eller F11)")
 icon_button("ToStartButton", "To the start", "Til starten", "Back to the start of the repeat, or of the song", "Tilbake til starten av gjentakelsen, eller av sangen")
 icon_button("PreviousBarButton", "Previous bar", "Forrige takt", "A bar back (Left)", "En takt tilbake (Venstre)")
 icon_button("NextBarButton", "Next bar", "Neste takt", "A bar on (Right)", "En takt fram (Høyre)")
@@ -460,8 +460,8 @@ name("EngineDetails", "Details for whoever set up the computer", "Detaljer for d
 prop("EngineAddressBox", "Header", "Address", "Adresse")
 prop("EngineAddressBox", "PlaceholderText", "http://127.0.0.1:8765", "http://127.0.0.1:8765")
 prop("SettingsAboutHeading", "Text", "About", "Om")
-prop("AboutText", "Text", "Fretscribe is a non-commercial project. Tab and notation: alphaTab (MPL-2.0). The faces are Atkinson Hyperlegible Next (SIL OFL 1.1) and Fretscribe Tab (SIL OFL 1.1). Bandroom, the program on your computer, is called Brasscribe Bandroom when you install it.",
-     "Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1). Bandroom, programmet på datamaskinen, heter Brasscribe Bandroom når du installerer det.")
+prop("AboutText", "Text", "Fretscribe is a non-commercial project. Tab and notation: alphaTab (MPL-2.0). The faces are Atkinson Hyperlegible Next (SIL OFL 1.1) and Fretscribe Tab (SIL OFL 1.1).",
+     "Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1).")
 add("Settings_AppVersion", "Version {0}", "Versjon {0}")
 add("Settings_Engine_AskBusy", "Other devices are waiting on the computer. Try again in a couple of minutes.", "Andre enheter venter på datamaskinen. Prøv igjen om et par minutter.")
 add("Settings_Engine_AskDenied", "The computer didn't allow this PC. You can ask again.", "Datamaskinen godkjente ikke denne PC-en. Du kan spørre på nytt.")
