@@ -255,3 +255,13 @@ struct TabIndexTests {
         #expect(TabIndex.parse(musicXML: xml).header != "leaked")
     }
 }
+
+/// The tab as text: every bar, its beats and the notes that start on them by string and fret.
+@Test func theTabReadsBarByBar() throws {
+    let index = TabIndex.parse(musicXML: try fixture("bass-line/tab.musicxml"))
+    let bars = TabBarReading.bars(index)
+    #expect(bars.count == index.bars)
+    #expect(bars[0].text() == "Bar 1. beat 1: 4th string open; beat 2: 4th string open.")
+    #expect(bars.allSatisfy { $0.text().hasPrefix("Bar ") || $0.text().hasPrefix("Pickup bar") })
+    #expect(bars.flatMap(\.beats).flatMap(\.notes).count == index.pieces.filter { $0.staff == index.markStaff && $0.first }.count)
+}

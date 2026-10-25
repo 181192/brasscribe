@@ -123,6 +123,8 @@
         api.error.on((e) => post({ kind: 'error', message: String(e && e.message || e) }));
         api.postRenderFinished.on(() => publish(0));
       } else {
+        // every call is a new page: its size and colours too, as its staves (below)
+        api.settings.display.scale = opts.scale || 1;
         applyPalette(api.settings, opts.palette);
         api.updateSettings();
       }

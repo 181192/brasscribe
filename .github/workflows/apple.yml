@@ -135,6 +135,7 @@ jobs:
       - name: Test the tab feature on the iPhone simulator
         working-directory: apps/apple/features/tab
         run: |
+          make -C ../.. alphatab
           dest=$(../../scripts/newest-iphone.sh)
           xcodebuild -scheme TabKit -destination "$dest" -derivedDataPath ../../build/DerivedData-tab test -quiet
 

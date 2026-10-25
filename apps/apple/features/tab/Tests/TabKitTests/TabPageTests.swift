@@ -93,12 +93,12 @@ let pagesDraw: Bool = {
         let page = TabPage()
         let window = hosted(page)
         defer { _ = window }
-        try await page.blockNetwork()
         let xml = try fixture("bass-line/tab.musicxml")
 
         let t0 = Date()
         let e = try await page.show(musicXML: xml, palette: light)
         let first = Date().timeIntervalSince(t0)
+        #expect(page.networkBlocked)
         #expect(e.height > 50)
         #expect(e.bars.count == 15)
         #expect(!e.resources.isEmpty)
@@ -151,11 +151,32 @@ let pagesDraw: Bool = {
         #expect(share(of: light.uncertain, in: shot) > 0)
     }
 
-    @Test(.timeLimit(.minutes(1))) func theWebViewIsHiddenFromVoiceOver() async throws {
+    /// Two engravings asked for at once both get their answer, one after the other.
+    @Test(.timeLimit(.minutes(1))) func twoEngravingsAskedAtOnceBothAnswer() async throws {
         let page = TabPage()
         let window = hosted(page)
         defer { _ = window }
-        _ = try await page.show(musicXML: try fixture("guitar-line/tab.musicxml"), palette: light)
+        let xml = try fixture("bass-line/tab.musicxml")
+        async let first = page.show(musicXML: xml, palette: light)
+        async let second = page.show(musicXML: try fixture("guitar-line/tab.musicxml"), palette: dark, scale: 1.5)
+        let (a, b) = try await (first, second)
+        #expect(a.bars.count == 15)
+        #expect(b.bars.count > 0 && b.bars.count != 15)
+        #expect(page.engraving == b)
+    }
+}
+
+/// What holds without drawing, on every platform: the page is kept off the network from its first load, loads only the
+/// app's own files, and is hidden from VoiceOver.
+@MainActor
+@Suite(.serialized) struct TabPageEverywhereTests {
+    @Test(.timeLimit(.minutes(1))) func thePageIsOfflineAndHiddenFromVoiceOver() async throws {
+        let page = TabPage()
+        await page.loaded()
+        #expect(page.networkBlocked)
+        let asked = page.requested
+        #expect(asked.allSatisfy { $0.hasPrefix("\(TabPage.scheme)://") }, "\(asked)")
+        #expect(asked.contains { $0.hasSuffix("alphaTab.min.js") } && asked.contains { $0.hasSuffix("tab.js") })
         #if os(macOS)
         #expect(page.webView.isAccessibilityElement() == false)
         #expect(page.webView.isAccessibilityHidden())

@@ -45,6 +45,11 @@ public final class TabPage: NSObject {
     @ObservationIgnored private var ready: [CheckedContinuation<Void, Never>] = []
     @ObservationIgnored private var isReady = false
     @ObservationIgnored private var waiting: CheckedContinuation<TabEngraving, Error>?
+    /// One engraving at a time: a call waits here until the one before it has its answer.
+    @ObservationIgnored private var turn: [CheckedContinuation<Void, Never>] = []
+    @ObservationIgnored private var inTurn = false
+    /// The rule that keeps the page off the network is in place (it is, before the page is first loaded).
+    @ObservationIgnored public private(set) var networkBlocked = false
     public private(set) var engraving: TabEngraving?
     @ObservationIgnored public var onEngraving: ((TabEngraving) -> Void)?
     @ObservationIgnored nonisolated static let log = Logger(subsystem: "no.kalli.scribe", category: "tab")
@@ -78,15 +83,37 @@ public final class TabPage: NSObject {
         webView.accessibilityElementsHidden = true
         webView.isAccessibilityElement = false
         #endif
-        webView.load(URLRequest(url: URL(string: "\(Self.scheme)://page/index.html")!))
+        // The page is loaded only once the rule that blocks every request leaving the device is in place: a page that
+        // needed the network would fail instead of fetching.
+        Task { [weak self] in
+            await self?.blockNetwork()
+            self?.webView.load(URLRequest(url: URL(string: "\(Self.scheme)://page/index.html")!))
+        }
     }
 
-    /// Blocks every request that would leave the device, so a page that needs the network fails instead of fetching.
-    public func blockNetwork() async throws {
-        let rules = #"[{"trigger":{"url-filter":"^https?://"},"action":{"type":"block"}},{"trigger":{"url-filter":"^wss?://"},"action":{"type":"block"}}]"#
-        let list = try await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "no-network", encodedContentRuleList: rules)
-        if let list { webView.configuration.userContentController.add(list) }
+    static let noNetwork = #"[{"trigger":{"url-filter":"^https?://"},"action":{"type":"block"}},{"trigger":{"url-filter":"^wss?://"},"action":{"type":"block"}}]"#
+
+    private func blockNetwork() async {
+        do {
+            let list = try await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "no-network", encodedContentRuleList: Self.noNetwork)
+            if let list { webView.configuration.userContentController.add(list); networkBlocked = true }
+        } catch {
+            Self.log.error("the rule that keeps the tab page off the network could not be made: \(String(describing: error), privacy: .public)")
+        }
     }
+
+    /// Waits for the engraving before this one to have its answer.
+    private func takeTurn() async {
+        if !inTurn { inTurn = true; return }
+        await withCheckedContinuation { turn.append($0) }
+    }
+
+    private func endTurn() {
+        if turn.isEmpty { inTurn = false } else { turn.removeFirst().resume() }
+    }
+
+    /// The files the page asked for, as URLs: all of them are the app's own.
+    public var requested: [String] { assets.requested }
 
     /// Waits for the page's script to be loaded.
     public func loaded() async {
@@ -97,6 +124,8 @@ public final class TabPage: NSObject {
     /// Engraves [musicXML] in [palette]; returns once the page is laid out.
     public func show(musicXML: Data, palette: TabPalette, scale: Double = 1, staff: String = "tab", doubtful: [String] = []) async throws -> TabEngraving {
         await loaded()
+        await takeTurn()
+        defer { endTurn() }
         struct Options: Encodable { let scale: Double; let palette: TabPalette; let staff: String; let doubtful: [String] }
         let opts = String(decoding: try JSONEncoder().encode(Options(scale: scale, palette: palette, staff: staff, doubtful: doubtful)), as: UTF8.self)
         return try await withCheckedThrowingContinuation { c in
@@ -109,6 +138,9 @@ public final class TabPage: NSObject {
 
     /// The same page in other colours (another appearance).
     public func palette(_ palette: TabPalette) async throws -> TabEngraving {
+        await loaded()
+        await takeTurn()
+        defer { endTurn() }
         let p = String(decoding: try JSONEncoder().encode(palette), as: UTF8.self)
         return try await withCheckedThrowingContinuation { c in
             waiting = c

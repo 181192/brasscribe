@@ -151,10 +151,10 @@ struct YourInstrumentTests {
     }
 
     @Test func savingLeavesEverythingElseInTheDefaultsAlone() {
-        let store = TestDefaults(["appearance": "dark", "seat": "solo-cornet"])
+        let store = TestDefaults(["appearance": "dark", "other-setting": "kept"])
         YourInstrumentStore(store.defaults).save(YourInstrument(.bass5, tuning: "drop-a", hand: .right))
         #expect(store.defaults.string(forKey: "appearance") == "dark")
-        #expect(store.defaults.string(forKey: "seat") == "solo-cornet")
+        #expect(store.defaults.string(forKey: "other-setting") == "kept")
     }
 
     @Test func storedValuesThisVersionCantOfferReadAsTheDefaults() {
