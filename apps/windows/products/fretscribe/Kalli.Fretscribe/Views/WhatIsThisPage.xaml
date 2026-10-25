@@ -34,10 +34,14 @@
             </RadioButtons>
 
             <!-- The computer writes the notes down for both: where it is, or how to connect it. -->
-            <StackPanel Orientation="Horizontal" Spacing="10" Visibility="{x:Bind ViewModel.ComputerThere, Mode=OneWay}">
-                <FontIcon Glyph="{StaticResource FsIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
-                <TextBlock x:Uid="WhatWhere" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnSpacing="10" Visibility="{x:Bind ViewModel.ComputerThere, Mode=OneWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <FontIcon Glyph="{StaticResource FsIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                <TextBlock Grid.Column="1" x:Uid="WhatWhere" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+            </Grid>
             <StackPanel Spacing="8" Visibility="{x:Bind views:Shown.Not(ViewModel.ComputerThere), Mode=OneWay}">
                 <TextBlock x:Uid="WhatWhereNeeded" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
                 <views:ConnectionRow x:Name="ConnectionStatus" ActionInvoked="OnConnectionAction" />

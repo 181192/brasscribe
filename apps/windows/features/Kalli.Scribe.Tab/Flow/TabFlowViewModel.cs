@@ -232,12 +232,15 @@ public sealed partial class TabFlowViewModel : ObservableObject
         string profile = TabSong.Profile(options.Instrument, Profiles.Listed) ?? TabProfiles.Tab;
         string title = Path.GetFileNameWithoutExtension(source.DisplayName);
         Screen = TabScreen.Transcribing;
-        await Transcription.RunAsync(source, _s[options.Recording == Recording.Song ? "Tab_What_Song" : "Tab_What_Instrument"], profile,
+        await Transcription.RunAsync(source, RecordingLabel(options.Recording), profile,
             uploaded => TabSong.Job(new JobCreate(uploaded, profile, RenderAudio: true, Title: title), options, Profiles.Listed), audioId);
         // Cancelled: back to What is this? with the recording kept.
         if (!Transcription.IsRunning && Screen == TabScreen.Transcribing && Transcription.ErrorText is null)
             Screen = _result?.Source == source ? TabScreen.CheckTheSong : TabScreen.WhatIsThis;
     }
+
+    /// <summary>What was recorded, in the words of What is this?: "A full song", "Just my instrument".</summary>
+    public string RecordingLabel(Recording? recording) => _s[recording == Recording.Song ? "Tab_What_Song" : "Tab_What_Instrument"];
 
     /// <summary>The upload the computer keeps for <paramref name="job"/>: the same recording is written down again without sending it.</summary>
     private async Task<string?> AudioOnComputerAsync(string job)

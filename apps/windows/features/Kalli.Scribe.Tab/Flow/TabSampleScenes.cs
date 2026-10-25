@@ -53,7 +53,7 @@ public static class TabSampleScenes
                 flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.FirstOrDefault(c => c.Recording == Recording.Song));
                 return true;
             case "transcribing":
-                flow.Transcription.ShowProgress(SampleTitle, TabProfiles.Tab, "", "Notes", 62, TimeSpan.FromMinutes(1));
+                flow.Transcription.ShowProgress(SampleTitle, TabProfiles.Tab, flow.RecordingLabel(Recording.Song), "Notes", 62, TimeSpan.FromMinutes(2));
                 flow.Screen = TabScreen.Transcribing;
                 return true;
             case "error":

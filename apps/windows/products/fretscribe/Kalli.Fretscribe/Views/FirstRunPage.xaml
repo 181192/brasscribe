@@ -57,10 +57,14 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <FontIcon Glyph="{StaticResource FsIconInfo}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
-                    <TextBlock x:Uid="FirstRunPrivacy" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
-                </StackPanel>
+                <Grid ColumnSpacing="10" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon Glyph="{StaticResource FsIconInfo}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                    <TextBlock Grid.Column="1" x:Uid="FirstRunPrivacy" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                </Grid>
                 <Button x:Name="GetStartedButton" x:Uid="GetStartedButton" Grid.Column="1" Style="{StaticResource PrimaryButtonStyle}"
                         Command="{x:Bind ViewModel.GetStartedCommand}" />
             </Grid>

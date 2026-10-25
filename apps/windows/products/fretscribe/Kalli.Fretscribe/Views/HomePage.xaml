@@ -133,10 +133,14 @@
                 </GridView.ItemTemplate>
             </GridView>
             <!-- Empty state: what will appear here. -->
-            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,24,0,0" Visibility="{x:Bind views:Shown.Not(Main.LibraryView.HasItems), Mode=OneWay}">
-                <Image x:Name="EmptyMark" Width="28" Height="28" AutomationProperties.AccessibilityView="Raw" />
-                <TextBlock x:Uid="HomeEmpty" Style="{StaticResource LeadStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
-            </StackPanel>
+            <Grid ColumnSpacing="12" Margin="0,24,0,0" Visibility="{x:Bind views:Shown.Not(Main.LibraryView.HasItems), Mode=OneWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Image x:Name="EmptyMark" Width="28" Height="28" AutomationProperties.AccessibilityView="Raw" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" x:Uid="HomeEmpty" Style="{StaticResource LeadStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </Page>

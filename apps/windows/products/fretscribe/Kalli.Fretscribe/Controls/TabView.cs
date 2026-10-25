@@ -105,9 +105,16 @@ public sealed partial class TabView : UserControl
         PlaceCursor(scroll: true);
     }
 
-    /// <summary>The tab's colours: its ink and lines from the app's theme.</summary>
+    /// <summary>The tab's colours: its ink and lines from the app's theme; in a contrast theme, Windows' own window colours.</summary>
     private UncertaintyPalette Palette()
     {
+        if (Kalli.Scribe.Controls.ScoreView.IsHighContrast())
+        {
+            Rgb? System(string key) => Application.Current.Resources.TryGetValue(key, out var v) && v is Windows.UI.Color c ? new Rgb(c.R, c.G, c.B) : null;
+            var hc = UncertaintyPalette.HighContrast;
+            var text = System("SystemColorWindowTextColor") ?? hc.Ink;
+            return hc with { Background = System("SystemColorWindowColor") ?? hc.Background, Ink = text, Staff = text, TextMuted = text };
+        }
         bool dark = ActualTheme == ElementTheme.Dark;
         var basis = dark ? UncertaintyPalette.Dark : UncertaintyPalette.Light;
         Rgb? Color(string key) => Theme.Color(key, dark) is { } c ? new Rgb(c.R, c.G, c.B) : null;
@@ -231,6 +238,9 @@ public sealed partial class TabView : UserControl
             mark.Click += (_, _) => _vm?.PlayBarSlowly(column.Bar);
             Canvas.SetLeft(mark, bounds.X + bounds.W / 2 - 12);
             Canvas.SetTop(mark, Math.Max(0, bounds.Y - 30));
+            // Above the column whatever its size (the text size scales it): its bottom a little over the top string.
+            double top = bounds.Y;
+            mark.SizeChanged += (_, e) => Canvas.SetTop(mark, Math.Max(0, top - e.NewSize.Height - 2));
             _marks.Children.Add(mark);
         }
     }
