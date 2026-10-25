@@ -241,6 +241,9 @@
     <string name="fs_tab_no_place_named">%1$s har ingen plass på instrumentet ditt her. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_low">%1$s er lavere enn den laveste strengen din. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_high">%1$s er høyere enn det høyeste båndet ditt. Er stemmingen riktig?</string>
+    <string name="fs_tab_full_screen">Fullskjerm</string>
+    <string name="fs_tab_full_screen_leave">Forlat fullskjerm</string>
+    <string name="fs_tab_full_screen_left">Forlot fullskjerm</string>
     <string name="fs_tab_note_close">Lukk</string>
     <string name="fs_tab_note_slowly">Spill denne takten sakte</string>
     <string name="fs_tab_note_next">Neste ?</string>

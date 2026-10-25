@@ -13,7 +13,6 @@ import no.kalli.scribe.play.ui.PracticeChip
 import no.kalli.scribe.play.ui.ScreenMargin
 
 import android.app.Activity
-import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.database.ContentObserver
@@ -104,9 +103,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import no.kalli.scribe.design.ScribeButtonShape
@@ -196,28 +192,15 @@ fun standShape(): StandShape {
         MusicStandRules.barsPerSystem(cfg.smallestScreenWidthDp, portrait))
 }
 
-fun android.content.Context.findActivity(): Activity? =
-    generateSequence(this) { (it as? ContextWrapper)?.baseContext }.filterIsInstance<Activity>().firstOrNull()
-
 /** Screen awake and no system bars while the stand is open; both come back on the way out. */
 @Composable
 fun StandWindow(enabled: Boolean) {
     val view = LocalView.current
     DisposableEffect(enabled) {
-        val window = view.context.findActivity()?.window
-        val bars = window?.let { WindowCompat.getInsetsController(it, view) }
         view.keepScreenOn = enabled
-        if (enabled) {
-            bars?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            bars?.hide(WindowInsetsCompat.Type.systemBars())
-        } else {
-            bars?.show(WindowInsetsCompat.Type.systemBars())
-        }
-        onDispose {
-            view.keepScreenOn = false
-            bars?.show(WindowInsetsCompat.Type.systemBars())
-        }
+        onDispose { view.keepScreenOn = false }
     }
+    ImmersiveBars(enabled)
 }
 
 /**

@@ -274,6 +274,9 @@
     <string name="fs_tab_no_place_named">%1$s has no place on your instrument here. Is the tuning right?</string>
     <string name="fs_tab_no_place_low">%1$s is lower than your lowest string. Is the tuning right?</string>
     <string name="fs_tab_no_place_high">%1$s is higher than your highest fret. Is the tuning right?</string>
+    <string name="fs_tab_full_screen">Full screen</string>
+    <string name="fs_tab_full_screen_leave">Leave full screen</string>
+    <string name="fs_tab_full_screen_left">Left full screen</string>
     <string name="fs_tab_note_close">Close</string>
     <!-- Under a mark's note: the bar repeats at 60 % with the practice player, and the next "?" on the page. -->
     <string name="fs_tab_note_slowly">Play this bar slowly</string>

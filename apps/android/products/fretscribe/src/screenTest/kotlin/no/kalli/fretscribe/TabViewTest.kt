@@ -250,7 +250,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-tuning").assertContentDescriptionEquals("Tuning: Standard, no capo").assertHeightIsAtLeast(48.dp).assert(hasClickAction())
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("2 notes marked ? · Check them").assertHeightIsAtLeast(48.dp).assert(hasClickAction())
         rule.onNodeWithTag("fs-tab-no-place").assertTextEquals("1 note with no place")
-        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Bass line. Tab. Tuning: Standard, no capo. 100 beats a minute. 16 bars. 2 notes marked ?. 1 note with no place.")
+        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Tab. Tuning: Standard, no capo. 100 beats a minute. 16 bars. 2 notes marked ?. 1 note with no place.")
         // Nothing of the band's score screen.
         listOf("score-view", "print", "share").forEach { assertTrue(it, rule.onAllNodesWithTag(it).fetchSemanticsNodes().isEmpty()) }
 
@@ -324,7 +324,7 @@ class TabViewTest : TabScreenTest() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         val tab = showTheTab()
         assertEquals(0, tab.unmatched)
-        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Bass line. Tab and notation. Tuning: Standard, no capo. 100 beats a minute. 16 bars. 2 notes marked ?. 1 note with no place.")
+        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Tab and notation. Tuning: Standard, no capo. 100 beats a minute. 16 bars. 2 notes marked ?. 1 note with no place.")
         assertEquals(listOf("fs-tab-mark-0", "fs-tab-mark-1", "fs-tab-mark-2"), marks)
         rule.onNodeWithTag("fs-tab-mark-0").assertContentDescriptionEquals(expected[0])
         // The notation staff writes the low D, so the mark spells it from there.
@@ -354,7 +354,7 @@ class TabViewTest : TabScreenTest() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         val tab = showTheTab()
         assertEquals(0, tab.unmatched)
-        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Bass line. Notation. Tuning: Standard, no capo. 100 beats a minute. 16 bars. 2 notes marked ?. 1 note with no place.")
+        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Notation. Tuning: Standard, no capo. 100 beats a minute. 16 bars. 2 notes marked ?. 1 note with no place.")
         assertEquals(listOf("fs-tab-mark-0", "fs-tab-mark-1", "fs-tab-mark-2"), marks)
         // No string or fret is written on this page: the mark names the note.
         rule.onNodeWithTag("fs-tab-mark-0").assertContentDescriptionEquals("Bar 3, beat 2. B. Fretscribe isn't sure about this one.")
@@ -522,7 +522,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-tuning").assertContentDescriptionEquals("Stemming: Standard, uten capo")
         rule.onNodeWithTag("fs-tab-marked").assertTextEquals("2 toner merket ? · Sjekk dem")
         rule.onNodeWithTag("fs-tab-no-place").assertTextEquals("1 tone uten plass")
-        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Bass line. Tab. Stemming: Standard, uten capo. 100 slag i minuttet. 16 takter. 2 toner merket ?. 1 tone uten plass.")
+        rule.onNodeWithTag("fs-tab").assertContentDescriptionEquals("Tab. Stemming: Standard, uten capo. 100 slag i minuttet. 16 takter. 2 toner merket ?. 1 tone uten plass.")
         rule.onNodeWithTag("fs-tab-mark-0").assertContentDescriptionEquals("Takt 3, slag 2. 3. streng, bånd 2, H. Fretscribe er ikke sikker på denne.")
         rule.onNodeWithTag("fs-tab-mark-1").assertContentDescriptionEquals("Takt 7, slag 2. D1 er lavere enn den laveste strengen din. Er stemmingen riktig?")
         checkAccessibility()

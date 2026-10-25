@@ -17,6 +17,9 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -129,6 +132,11 @@ class FretscribeScreensTest : ScreenCatalogue() {
         },
         Entry("check-the-song") { checkTheSong() },
         Entry("tab") { theTab() },
+        Entry("tab-full-screen") { theTab(); rule.onNodeWithTag("fs-tab-full-screen").performClick(); waitForTag("fs-tab-focus-minimal", 5_000); rest() },
+        Entry("tab-full-screen-controls", ownOrder = "the controls are drawn over the tab and come first; the tab's image starts in their first row") {
+            theTab(); rule.onNodeWithTag("fs-tab-full-screen").performClick(); waitForTag("fs-tab-focus-minimal", 5_000)
+            rule.onNodeWithTag("fs-tab-scroll").performTouchInput { click(Offset(2f, center.y)) }; waitForTag("fs-practice", 5_000); rest()
+        },
         // (The note under the tab is the screen's bottom bar, which Tab reaches before the tab: issue 162.)
         Entry("tab-note") { theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
