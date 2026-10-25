@@ -7,6 +7,10 @@ wasn't sure about, and plays the score back with band sounds so you can practise
 Everything runs on your own devices. A solo line is transcribed on the phone or tablet; a full band
 needs the engine running on a computer on the same network.
 
+[![A 21-second tour: open a recording, Brasscribe writes down the notes, marks the ones it wasn't sure about, then plays the score back](docs/media/brasscribe.gif)](docs/media/brasscribe.mp4)
+
+The tour with sound: [docs/media/brasscribe.mp4](docs/media/brasscribe.mp4).
+
 Site and user guide: [kalli.no/brasscribe](https://kalli.no/brasscribe/) ·
 How it works: [kalli.no/brasscribe/research](https://kalli.no/brasscribe/research/)
 
