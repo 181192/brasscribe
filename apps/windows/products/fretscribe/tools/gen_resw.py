@@ -365,8 +365,8 @@ for n, ten, tnb, en, nb in [
          "Every tab you make is kept under Your songs, on this PC and on your computer. A recording whose tab couldn't be made, or was stopped, stays there for 30 days.",
          "Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen. Et opptak som ikke ble til en tab, eller som du stoppet, ligger der i 30 dager."),
         (5, "Tabs are written on your computer", "Tab skrives på datamaskinen",
-         "Bandroom on your computer writes down the notes. Open it there, and connect in Settings. It is called Brasscribe Bandroom when you install it.",
-         "Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger. Den heter Brasscribe Bandroom når du installerer den."),
+         "Bandroom on your computer writes down the notes. Open it there, and connect in Settings.",
+         "Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger."),
         (6, "Links and streaming apps", "Lenker og strømmeapper",
          "Links can't be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.",
          "Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.")]:

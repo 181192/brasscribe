@@ -418,7 +418,7 @@
     <value>Sangene dine</value>
   </data>
   <data name="Help5Text.Text" xml:space="preserve">
-    <value>Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger. Den heter Brasscribe Bandroom når du installerer den.</value>
+    <value>Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger.</value>
   </data>
   <data name="Help5Title.Text" xml:space="preserve">
     <value>Tab skrives på datamaskinen</value>
