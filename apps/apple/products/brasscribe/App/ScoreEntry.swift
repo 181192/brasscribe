@@ -54,9 +54,7 @@ struct ScoreEntry: Identifiable, Hashable {
 /// Score titles people can tell apart.
 enum ScoreTitles {
     /// "Recording, 26 Sep 19:02"
-    static func recording(at date: Date) -> String {
-        String(localized: "Recording, \(date.formatted(.dateTime.day().month(.abbreviated))) \(date.formatted(.dateTime.hour().minute()))")
-    }
+    static func recording(at date: Date) -> String { RecordingTitles.recording(at: date) }
 
     /// The given title, or "Recording, <date>" when it's empty or only a timestamp
     /// ("20260815_155324", as recorders and phones name files). A timestamp in the name is read.

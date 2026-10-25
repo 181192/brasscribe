@@ -77,6 +77,7 @@ and skip themselves when it is missing.
 |---|---|
 | `products/brasscribe/` | Brasscribe Play: `project.yml` (XcodeGen spec: one multiplatform app target, unit tests, UI tests), `App/` (SwiftUI app: models (`AppModel`, `PracticeModel`, `Piece`), views, string catalogs (en, nb)), `AppTests/`, `AppUITests/` |
 | `services/` | Swift package `ScribeServices`: `ScoreKit` (Composition, MusicXML parser, talking score, MIDI, CoreBridge), `TranscriptionKit` (companion client and fixture service), `PlaybackKit` (AVAudioEngine), `SVGRender` (native SVG drawing), `OnDeviceKit` |
+| `features/play/` | The screens and pieces every Play app shares, compiled into each app (not a package): the connection row and its words, pairing, recording, the components built on the neutral design roles, window and sheet sizes. `PlayHost` is what they ask of the app. Their keys name no product; each product's catalog says them in its own words (`make-string-catalog.py`, `EN`), and `SharedWordsTests` (with `testing/PlayTests/SharedWords.swift`) fails when one, interpolated or not, is missing or its English or bokmål names another product. The download page is the product's (`PlayHost.downloads`) |
 | `features/score/` | `NotationKit`: Verovio wrapper: engraving, part filtering, concert pitch, timemap |
 | `features/tab/` | `TabKit`: the tab, engraved by alphaTab in a web view (`docs/tab-spike.md`), and its logic: reading `tab.musicxml`, the clock from the recording to the tab, practice (speed, repeats, where a song was left), the full-screen mode. `make alphatab` fetches alphaTab |
 | `testing/ScreenCatalogue/` | The screen catalogues' checks, shared with Bandroom for Mac (test code only) |
@@ -86,7 +87,7 @@ and skip themselves when it is missing.
 
 ## Mac window
 
-Every main window keeps a 900 × 600 minimum (`products/brasscribe/App/WindowMinimum.swift`), also for windows opened later
+Every main window keeps a 900 × 600 minimum (`features/play/WindowMinimum.swift`), also for windows opened later
 with New Window. Sheets are sized to their content and capped at the room between their top and the
 bottom of the visible frame, so Settings never reaches under the Dock, and zooming a window keeps it clear
 of the Dock. Controls drawn over the score (player bar, stand controls, video) come before the score in

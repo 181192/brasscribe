@@ -46,6 +46,8 @@ targets:
     sources:
       - path: App
         excludes: ["Info-*.plist", "*.entitlements"]
+      # The screens and pieces every Play app shares (each product's catalog has their words).
+      - path: ../../features/play
       - path: ../../Frameworks/VerovioResources
         type: folder
         buildPhase: resources
@@ -153,7 +155,10 @@ targets:
   BrasscribePlayTests:
     type: bundle.unit-test
     platform: [iOS, macOS]
-    sources: [AppTests]
+    sources:
+      - path: AppTests
+      # The test code every Play app's tests share.
+      - path: ../../testing/PlayTests
     dependencies:
       - target: BrasscribePlay_${platform}
       - package: ScreenCatalogue

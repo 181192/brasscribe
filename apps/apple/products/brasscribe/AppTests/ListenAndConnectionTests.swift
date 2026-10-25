@@ -167,8 +167,8 @@ import TranscriptionKit
 }
 
 /// Where the update is: the latest release, never a version by name.
-@Test func theUpdateIsAtTheLatestRelease() {
-    #expect(ConnectionCopy.downloads.absoluteString == "https://github.com/181192/brasscribe/releases/latest")
+@Test @MainActor func theUpdateIsAtTheLatestRelease() {
+    #expect(AppModel().downloads.absoluteString == "https://github.com/181192/brasscribe/releases/latest")
 }
 
 /// Tests and screenshots never read or write the real Keychain.
