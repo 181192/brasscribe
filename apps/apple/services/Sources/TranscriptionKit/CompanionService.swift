@@ -117,12 +117,12 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
             case audioID = "audio_id"
         }
 
-        /// The job belongs to this app: its target is the app's. A job without a target, or of a target this
-        /// app does not know, is not.
-        public var isOurs: Bool { target == SourceProfile.target }
+        /// The job belongs to an app that makes [target]'s output. A job without a target, or of another target,
+        /// does not.
+        public func belongs(to target: String) -> Bool { self.target == target }
     }
 
-    /// What each transcriber heard at the notes Brasscribe is unsure about.
+    /// What each transcriber heard at the notes the engine is unsure about.
     public struct Evidence: Codable, Sendable, Equatable {
         public struct Model: Codable, Sendable, Equatable { public let model: String; public let name: String }
         public struct Heard: Codable, Sendable, Equatable {
@@ -210,15 +210,15 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
 
     public func health() async throws -> Health { try await health(timeout: nil) }
 
-    /// The engine's profiles this app can use: the ones of its own target.
-    public func profiles() async throws -> [ProfileInfo] {
-        try Self.ownProfiles(try await send(request("v1/profiles")))
+    /// The engine's profiles of [target]: the ones an app that makes that target's output can use.
+    public func profiles(of target: String) async throws -> [ProfileInfo] {
+        try Self.profiles(of: target, in: try await send(request("v1/profiles")))
     }
 
-    /// The profiles of this app's target in the engine's answer to `/v1/profiles`. The engine serves every
-    /// app and lists the others' profiles too.
-    static func ownProfiles(_ data: Data) throws -> [ProfileInfo] {
-        try JSONDecoder().decode([ProfileInfo].self, from: data).filter { $0.target == SourceProfile.target }
+    /// The profiles of [target] in the engine's answer to `/v1/profiles`. The engine serves every app and lists
+    /// the others' profiles too.
+    static func profiles(of target: String, in data: Data) throws -> [ProfileInfo] {
+        try JSONDecoder().decode([ProfileInfo].self, from: data).filter { $0.target == target }
     }
 
     /// Exchange the code shown by the engine for this device's own credential.
@@ -323,10 +323,26 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try? await send(request("v1/jobs/\(id)", method: "DELETE"))
     }
 
-    /// This app's runs on the computer, newest first. The computer serves every app and lists the others'
-    /// runs too.
-    public func jobs() async throws -> [Job] {
-        try JSONDecoder().decode([Job].self, from: try await send(request("v1/jobs"))).filter(\.isOurs)
+    /// The runs of [target] on the computer, newest first. The computer serves every app and lists the
+    /// others' runs too.
+    public func jobs(of target: String) async throws -> [Job] {
+        try JSONDecoder().decode([Job].self, from: try await send(request("v1/jobs"))).filter { $0.belongs(to: target) }
+    }
+
+    /// The recording [jobID] was made from, as the computer keeps it, written to [file]: for an app that no
+    /// longer has its own copy.
+    public func jobInput(jobID: String, into file: URL) async throws {
+        try await requireMatch()
+        let (tmp, resp): (URL, URLResponse)
+        do { (tmp, resp) = try await session.download(for: request("v1/jobs/\(jobID)/input")) } catch {
+            interface = nil
+            throw TranscriptionError.unreachable(error.localizedDescription)
+        }
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        if code == 401 { throw TranscriptionError.notPaired }
+        guard (200..<300).contains(code) else { throw TranscriptionError.http(code, "input") }
+        try? FileManager.default.removeItem(at: file)
+        try FileManager.default.moveItem(at: tmp, to: file)
     }
 
     public func evidence(jobID: String) async throws -> Evidence {
@@ -347,7 +363,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     /// Multipart upload streamed from a temporary file, so long recordings never sit in memory.
     func upload(_ req: TranscriptionRequest) async throws -> Job {
         try await requireMatch()
-        let boundary = "brasscribe-\(UUID().uuidString)"
+        let boundary = "scribe-\(UUID().uuidString)"
         let tmp = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
         defer { try? FileManager.default.removeItem(at: tmp) }
@@ -357,20 +373,12 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         func field(_ name: String, _ value: String) throws {
             try h.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
         }
-        try field("profile", req.profile.rawValue)
+        try field("profile", req.profile)
         if let t = req.title { try field("title", t) }
         // The app renders audio itself; skipping it on the engine avoids an extra MuseScore launch.
         try field("render_audio", "false")
-        // Arrangement options (engine/openapi.json: lineup full|minimal|quartet, difficulty, key as
-        // FIFTHS[:MODE]).
-        try field("lineup", req.output.lineup.engineValue)
-        try field("difficulty", req.output.difficulty.rawValue)
-        if let k = req.output.keyFifths { try field("key", String(k)) }
-        // The player's seat, reading and who plays the tune: only when set, so a job without a seat
-        // is the same job as before.
-        if let s = req.output.seat { try field("seat", s) }
-        if let r = req.output.reads { try field("reads", r) }
-        if let l = req.output.lead { try field("lead", l) }
+        // The target's own options (engine/openapi.json), as the app chose them.
+        for f in req.fields { try field(f.name, f.value) }
         let name = req.audioURL.lastPathComponent.replacingOccurrences(of: "\"", with: "")
         try h.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
         let src = try FileHandle(forReadingFrom: req.audioURL)
@@ -389,8 +397,6 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw TranscriptionError.notPaired }
-        // The engine refuses a quartet for a solo take; the app says why in its own words.
-        if code == 422 && req.output.lineup == .quartet { throw TranscriptionError.needsWholeGroup }
         guard (200..<300).contains(code) else { throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self)) }
         return try JSONDecoder().decode(Job.self, from: data)
     }
@@ -444,7 +450,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
                     }
                     let final = try await self.job(job.id)
                     let names = Set(final.outputs)
-                    let available = Set(ArtifactKind.allCases.filter { names.contains($0.engineName) })
+                    let available = ArtifactKind.available(in: names)
                     let xml = try await artifact(.musicXML, jobID: job.id)
                     let comp = try? Composition.decode(try await artifact(.composition, jobID: job.id))
                     let evidence = try? await self.evidence(jobID: job.id)
@@ -496,10 +502,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     }
 
     public func artifact(_ kind: ArtifactKind, jobID: String) async throws -> Data {
-        let typed: [ArtifactKind: String] = [.composition: "composition", .musicXML: "musicxml", .pdf: "pdf", .midi: "midi",
-                                             .audio: "audio", .brailleBRF: "braille", .talkingScore: "talking-score"]
-        let path = typed[kind].map { "v1/jobs/\(jobID)/\($0)" } ?? "v1/jobs/\(jobID)/artifacts/\(kind.engineName)"
-        var r = request(path)
+        var r = request("v1/jobs/\(jobID)/\(kind.endpoint)")
         if kind == .talkingScore, var c = URLComponents(url: r.url!, resolvingAgainstBaseURL: false) {
             c.queryItems = [.init(name: "format", value: "text"), .init(name: "lang", value: ScoreLanguage.current.rawValue)]
             r.url = c.url

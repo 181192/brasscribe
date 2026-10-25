@@ -38,17 +38,17 @@ func goldenDir() -> URL? {
     #expect(q.feed(line: ": keepalive").isEmpty)
 }
 
-@Test func theAppSeesOnlyItsOwnTargetsProfiles() throws {
+@Test func anAppSeesOnlyItsOwnTargetsProfiles() throws {
     let answer = #"""
     [{"name":"solo","target":"brass","pipeline":"layered-solo","description":"d","validated":true,"stages":[]},
      {"name":"tab","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]},
      {"name":"brass-band","target":"brass","pipeline":"A","description":"d","validated":false,"stages":[]}]
     """#
-    let own = try CompanionService.ownProfiles(Data(answer.utf8))
+    let own = try CompanionService.profiles(of: "brass", in: Data(answer.utf8))
     #expect(own.map(\.name) == ["solo", "brass-band"])
-    #expect(own.allSatisfy { $0.target == SourceProfile.target })
+    #expect(try CompanionService.profiles(of: "fretted", in: Data(answer.utf8)).map(\.name) == ["tab"])
     // An answer without a target is not this engine's: it is refused, not shown whole.
-    #expect(throws: (any Error).self) { try CompanionService.ownProfiles(Data(#"[{"name":"solo","description":"d","validated":true}]"#.utf8)) }
+    #expect(throws: (any Error).self) { try CompanionService.profiles(of: "brass", in: Data(#"[{"name":"solo","description":"d","validated":true}]"#.utf8)) }
 }
 
 @Test func stagesReadAsPlainSteps() {
@@ -73,7 +73,7 @@ func goldenDir() -> URL? {
     let svc = FixtureService(directory: goldenDir()!, stepDelay: 0)
     var fractions: [Double] = []
     var result: TranscriptionResult?
-    for try await ev in svc.transcribe(.init(audioURL: URL(fileURLWithPath: "/dev/null"), profile: .orchestraWithSoloist)) {
+    for try await ev in svc.transcribe(.init(audioURL: URL(fileURLWithPath: "/dev/null"), profile: "orchestra-with-soloist")) {
         switch ev {
         case .progress(let p): fractions.append(p.fraction)
         case .finished(let r): result = r
@@ -304,7 +304,7 @@ extension URLRequest {
         try Data(repeating: 1, count: 3000).write(to: audio)
         var stages: [StageKind] = []
         var done: TranscriptionResult?
-        for try await ev in svc.transcribe(.init(audioURL: audio, profile: .solo, title: "t")) {
+        for try await ev in svc.transcribe(.init(audioURL: audio, profile: "solo", title: "t")) {
             switch ev {
             case .progress(let p): stages.append(p.stage)
             case .finished(let r): done = r
@@ -331,7 +331,7 @@ extension URLRequest {
         let audio = FileManager.default.temporaryDirectory.appending(path: "t.wav")
         try Data(repeating: 1, count: 3000).write(to: audio)
         let consumer = Task {
-            for try await ev in svc.transcribe(.init(audioURL: audio, profile: .solo, title: "slow")) { _ = ev }
+            for try await ev in svc.transcribe(.init(audioURL: audio, profile: "solo", title: "slow")) { _ = ev }
         }
         func seen(_ method: String, _ path: String) -> Bool {
             StubEngine.requests.contains { $0.httpMethod == method && $0.url?.path == path }
@@ -345,16 +345,16 @@ extension URLRequest {
         #expect(StubEngine.answered.contains("DELETE /v1/jobs/j9"))
     }
 
-    /// The player's seat goes to the engine as it was chosen, once.
-    @Test func aTrumpetJobIsSentAsTheTrumpetSeat() async throws {
+    /// A target's options go to the engine as they were chosen, once each.
+    @Test func aJobsOptionsAreSentAsChosen() async throws {
         StubEngine.requests = []
         StubEngine.uploads = []
         let svc = service()
         try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
         let audio = FileManager.default.temporaryDirectory.appending(path: "t.wav")
         try Data(repeating: 1, count: 3000).write(to: audio)
-        for try await _ in svc.transcribe(.init(audioURL: audio, profile: .orchestraWithSoloist, title: "t",
-                                                output: OutputChoice(seat: "trumpet", lead: "seat"))) {}
+        for try await _ in svc.transcribe(.init(audioURL: audio, profile: "orchestra-with-soloist", title: "t",
+                                                fields: [EngineField("seat", "trumpet"), EngineField("lead", "seat")])) {}
         let uploads = StubEngine.uploads
         #expect(uploads.count == 1)
         #expect(uploads.first?.contains("\r\n\r\ntrumpet\r\n") == true && uploads.first?.contains("name=\"lead\"") == true)
@@ -363,10 +363,12 @@ extension URLRequest {
     @Test func recentScoresEvidenceAndRunManagement() async throws {
         StubEngine.requests = []
         let svc = service()
-        let jobs = try await svc.jobs()
-        // The computer lists a tab, a job of a target this app does not know and one without a target: none is this app's.
+        let jobs = try await svc.jobs(of: "brass")
+        // The computer lists a tab, a job of a target nobody knows and one without a target: none is the band's.
         #expect(jobs.map(\.id) == ["j2"])
         #expect(jobs.first?.title == "Take" && jobs.first?.audioID == "a1" && jobs.first?.created == 20)
+        // The tab is the fretted target's: an app that writes tab sees it, and only it.
+        #expect(try await svc.jobs(of: "fretted").map(\.id) == ["t1"])
         let e = try await svc.evidence(jobID: "j1")
         #expect(e.notes.first?.confidence == 0.5)
         #expect(e.notes.first?.models.first == .init(model: "basic-pitch", name: "Basic Pitch", pitch: 69, agrees: false))
@@ -593,10 +595,10 @@ extension URLRequest {
         for (host, update) in [("older.local", InterfaceMatch.Update.computer), ("newer.local", .app)] {
             let svc = CompanionService(baseURL: URL(string: "http://\(host):8765")!, token: "tok", session: session)
             await #expect(throws: TranscriptionError.interfaceMismatch(update)) {
-                for try await _ in svc.transcribe(.init(audioURL: audio, profile: .solo, title: "t")) {}
+                for try await _ in svc.transcribe(.init(audioURL: audio, profile: "solo", title: "t")) {}
             }
             // nor are its jobs listed or its scores fetched
-            await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.jobs() }
+            await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.jobs(of: "brass") }
             await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.artifact(.musicXML, jobID: "j1") }
             #expect(Set(sent(to: host)) == ["GET /v1/health"])
         }
@@ -685,16 +687,16 @@ extension URLRequest {
         StubEngine.newerInterface = Wire.interfaceVersion
         defer { StubEngine.newerInterface = nil; StubEngine.alsoDown = nil }
         let svc = CompanionService(baseURL: URL(string: "http://newer.local:8765")!, token: "tok", session: session())
-        _ = try await svc.jobs()
-        _ = try await svc.jobs()
+        _ = try await svc.jobs(of: "brass")
+        _ = try await svc.jobs(of: "brass")
         #expect(sent(to: "newer.local") == ["GET /v1/health", "GET /v1/jobs", "GET /v1/jobs"])
 
         StubEngine.alsoDown = "newer.local"
-        await #expect(throws: TranscriptionError.self) { _ = try await svc.jobs() }
+        await #expect(throws: TranscriptionError.self) { _ = try await svc.jobs(of: "brass") }
         StubEngine.alsoDown = nil
         StubEngine.newerInterface = Wire.interfaceVersion + 1
         StubEngine.requests = []
-        await #expect(throws: TranscriptionError.interfaceMismatch(.app)) { _ = try await svc.jobs() }
+        await #expect(throws: TranscriptionError.interfaceMismatch(.app)) { _ = try await svc.jobs(of: "brass") }
         await #expect(throws: TranscriptionError.interfaceMismatch(.app)) { _ = try await svc.pollPairing("r1") }
         #expect(sent(to: "newer.local") == ["GET /v1/health"])
     }
@@ -730,7 +732,7 @@ extension URLRequest {
         StubEngine.oddAnswer = Self.healthBut + tail
         let svc = CompanionService(baseURL: URL(string: "http://odd.local:8765")!, session: session())
         #expect(try await svc.health().interfaceVersion.map { $0 < Wire.interfaceVersion } ?? true)
-        await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.jobs() }
+        await #expect(throws: TranscriptionError.interfaceMismatch(update)) { _ = try await svc.jobs(of: "brass") }
         // paired: the device's own answer
         StubEngine.oddAnswer = Self.deviceBut + tail
         let r = EngineRecord(serverID: "srv-1", serverName: "Brasscribe on Studio", token: "tok", lastAddress: "http://odd.local:8765")
@@ -780,7 +782,7 @@ extension URLRequest {
         let svc = CompanionService(baseURL: base, session: session())
         await #expect(throws: DecodingError.self) { _ = try await svc.health() }
         // and the next request asks again: "update" is not remembered for it
-        await #expect(throws: DecodingError.self) { _ = try await svc.jobs() }
+        await #expect(throws: DecodingError.self) { _ = try await svc.jobs(of: "brass") }
         await #expect(throws: DecodingError.self) {
             try await CompanionService(baseURL: base, session: session()).pair(code: "123456", deviceName: "x", platform: "ios")
         }
@@ -943,4 +945,21 @@ func enginesWire(_ name: String) throws -> String {
     }
     #expect(try lists("CFBundleURLSchemes") == [scheme])
     #expect(try lists("NSBonjourServices") == [service])
+}
+
+/// Each target names its own files; an app finds the kinds it needs among any target's.
+@Test func outputsAreFoundWhateverTheTargetCallsThem() {
+    #expect(ArtifactKind.available(in: ["brass-band.musicxml", "brass-band.pdf", "composition.json", "talking-score.txt"])
+            == [.musicXML, .pdf, .composition, .talkingScore])
+    #expect(ArtifactKind.available(in: ["tab.musicxml", "tab.json", "tab.txt", "composition.json"]) == [.musicXML, .tab, .composition])
+    #expect(ArtifactKind.available(in: ["tab-instructions.en.txt"]).isEmpty)
+}
+
+/// A fixture folder with several layouts of one output gives the one the app asks for.
+@Test func aFixtureGivesTheOutputItIsAskedFor() throws {
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<6 where !FileManager.default.fileExists(atPath: dir.appending(path: "apps/fixtures").path) { dir = dir.deletingLastPathComponent() }
+    let fixture = dir.appending(path: "apps/fixtures/bass-line-marks")
+    #expect(FixtureService(directory: fixture, stepDelay: 0, outputName: "tab").file(of: .musicXML)?.lastPathComponent == "tab.musicxml")
+    #expect(FixtureService(directory: fixture, stepDelay: 0, outputName: "tab").file(of: .tab)?.lastPathComponent == "tab.json")
 }

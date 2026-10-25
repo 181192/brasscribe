@@ -64,7 +64,7 @@ struct OnDeviceSoloService: TranscriptionService {
         switch output.lineup {
         case .fullBand, .minimalBand: o.lineup = output.lineup.coreValue
         // the Output screen never offers the quartet for a solo take
-        case .quartet: throw TranscriptionError.needsWholeGroup
+        case .quartet: throw NeedsWholeGroup()
         }
         o.difficulty = output.difficulty.rawValue
         o.key = output.keyFifths.map { String($0) }

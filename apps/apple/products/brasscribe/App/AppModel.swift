@@ -222,7 +222,7 @@ final class AppModel {
         guard !useFixtureService, let svc = service() as? CompanionService else { computerJobs = []; return }
         let asked = connectionChanges
         do {
-            let jobs = try await svc.jobs()
+            let jobs = try await svc.jobs(of: SourceProfile.target)
             // the connection changed while the computer answered: that change fetched the scores again, or took them away.
             // And a fetch begun while not connected (a pull to refresh, the moment after pairing) lists nothing under
             // "Not connected": the change to Connected fetches them.
@@ -288,7 +288,7 @@ final class AppModel {
             let evidence = try? await svc.evidence(jobID: jobID)
             let names = Set(computerJobs.first { $0.id == jobID }?.outputs ?? [])
             let result = TranscriptionResult(jobID: jobID, composition: comp, musicXML: xml,
-                                             available: Set(ArtifactKind.allCases.filter { names.contains($0.engineName) }), evidence: evidence)
+                                             available: ArtifactKind.available(in: names), evidence: evidence)
             let p = try Piece.create(title: title, profile: profile, result: result, original: nil, video: nil, fixtureDirectory: nil)
             refresh()
             path = [review ? .review(p) : .score(p)]
@@ -620,7 +620,7 @@ final class TranscriptionJob: Identifiable {
                 guard let self else { return }
                 if case TranscriptionError.notPaired = error { self.onRefused?() }
                 if case TranscriptionError.interfaceMismatch(let which) = error { self.needsUpdate = which; self.onRefused?() }
-                if case TranscriptionError.cancelled = error { self.cancelled = true } else if case TranscriptionError.needsWholeGroup = error {
+                if case TranscriptionError.cancelled = error { self.cancelled = true } else if error.needsWholeGroup(lineup: self.output.lineup) {
                     self.failure = String(localized: "Needs a recording of the whole group")
                 } else if !Task.isCancelled {
                     self.failure = error.localizedDescription

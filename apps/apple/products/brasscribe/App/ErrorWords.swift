@@ -11,7 +11,7 @@ enum ErrorWords {
     /// The words for `error`, or nil when nothing more specific than "it failed" is known.
     static func specific(_ error: Error) -> String? {
         switch error {
-        case TranscriptionError.needsWholeGroup: return String(localized: "Needs a recording of the whole group")
+        case is NeedsWholeGroup: return String(localized: "Needs a recording of the whole group")
         case TranscriptionError.notPaired, TranscriptionError.pairingRejected:
             return String(localized: "Your computer no longer knows this device. Connect them again in Settings.")
         case TranscriptionError.interfaceMismatch(let which): return ConnectionCopy.update(which)
