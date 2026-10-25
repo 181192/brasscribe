@@ -20,5 +20,5 @@ for v in "$@"; do
   "$W/core/target/fast/scribe-core" arrange-layers --layers "$W/data/mikkel/repro/layers" --beats "$W/data/mikkel/repro/mix.beats" \
     --out "$o" --title "Mikkel — solo cornet & brass band (draft)" --solo-contour "$C"
   echo "reading ($rl,$rh) limit ($ll,$lh):"
-  python3 "$W/docs/plan/trumpet/lead_octaves.py" "$o/brass-band.musicxml" "$o/composition.json"
+  python3 "$W/docs/brasscribe/plan/trumpet/lead_octaves.py" "$o/brass-band.musicxml" "$o/composition.json"
 done
