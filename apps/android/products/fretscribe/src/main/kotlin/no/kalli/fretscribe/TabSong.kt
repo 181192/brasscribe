@@ -141,7 +141,7 @@ fun tabProfile(kind: FrettedInstrument?, listed: Set<String>?): Profile? {
 fun tabJob(request: JobCreate, options: TabOptions, listed: Set<String>? = null): JobCreate =
     request.copy(profile = (tabProfile(options.instrument, listed) ?: Profile.TAB).id, seat = null, reads = null, lead = null).withTab(options)
 
-/** One row of Check the song (design/fretscribe/flows.md §7): what Fretscribe heard, as the result tells it. */
+/** One row of Check the song (design/brands/fretscribe/flows.md §7): what Fretscribe heard, as the result tells it. */
 sealed interface SongRow {
     /** The tuning the tab is written for, and the one the notes fit better when there is one; [kind]: the instrument, when it is known. */
     data class Tuning(val written: String, val soundsLike: String?, val kind: FrettedInstrument? = null) : SongRow

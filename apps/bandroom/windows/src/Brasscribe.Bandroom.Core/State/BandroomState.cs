@@ -3,7 +3,7 @@ using Brasscribe.Bandroom.Core.Supervisor;
 
 namespace Brasscribe.Bandroom.Core.State;
 
-/// <summary>What the icon, tooltip and status line say (design/server-app.md §6.1).</summary>
+/// <summary>What the icon, tooltip and status line say (design/shared/server-app.md §6.1).</summary>
 public enum DisplayState { SettingUp, Starting, Running, Busy, NeedsAttention, Stopped, Updating, Error }
 
 /// <summary>The badge drawn on the mark: a shape per state, never colour alone.</summary>
@@ -241,7 +241,7 @@ public static class Problems
     }
 }
 
-/// <summary>The words for the model downloads (design/server-app.md §10, download.why and setup.3).</summary>
+/// <summary>The words for the model downloads (design/shared/server-app.md §10, download.why and setup.3).</summary>
 public static class DownloadText
 {
     /// <summary>"the soloist separator": the component inside a sentence.</summary>

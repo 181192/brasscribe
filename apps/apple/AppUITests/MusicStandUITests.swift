@@ -1,6 +1,6 @@
 import XCTest
 
-/// The music stand (design/music-stand.md): in and out, the controls that stay for assistive
+/// The music stand (design/brands/brasscribe/music-stand.md): in and out, the controls that stay for assistive
 /// technology and the keyboard, and the page keys Bluetooth page turners send.
 final class MusicStandUITests: XCTestCase {
     var app: XCUIApplication!

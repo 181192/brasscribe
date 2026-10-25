@@ -23,18 +23,18 @@ products built from one codebase.
 ## Design
 
 Fretscribe's design started outside this repository and now lives in it: the design in
-[`design/fretscribe/`](../../../design/fretscribe/), the research and these plans in `docs/fretscribe/`.
+[`design/brands/fretscribe/`](../../../design/brands/fretscribe/), the research and these plans in `docs/fretscribe/`.
 
 1. Done: independent research, written without reading Brasscribe
    ([`research/01`–`04`](../research/): UX, accessibility, tab domain, brand directions).
-2. Done: comparison with Brasscribe ([`differences.md`](../../../design/fretscribe/differences.md)).
-3. Done: brand ([`brand/brand.md`](../../../design/fretscribe/brand/brand.md), mark, lockups, the
-   Fretscribe Tab font), tokens ([`tokens/tokens.json`](../../../design/fretscribe/tokens/tokens.json),
+2. Done: comparison with Brasscribe ([`differences.md`](../../../design/brands/fretscribe/differences.md)).
+3. Done: brand ([`brand/brand.md`](../../../design/brands/fretscribe/brand/brand.md), mark, lockups, the
+   Fretscribe Tab font), tokens ([`tokens/tokens.json`](../../../design/brands/fretscribe/tokens/tokens.json),
    contrast report with 0 failures), design system as a list of differences from Brasscribe's
-   ([`system.md`](../../../design/fretscribe/system.md)), user flows
-   ([`flows.md`](../../../design/fretscribe/flows.md)).
+   ([`system.md`](../../../design/brands/fretscribe/system.md)), user flows
+   ([`flows.md`](../../../design/brands/fretscribe/flows.md)).
 4. Done: mockups of Check the song, Fix a note and Practice in phone landscape
-   (`design/fretscribe/mockups/screens.src.html`; `build.py` beside it writes `screens.html`).
+   (`design/brands/fretscribe/mockups/screens.src.html`; `build.py` beside it writes `screens.html`).
 5. Next: Practice in portrait, Your instrument, the recording preflight, Norwegian copy, then tests with
    players (a blind guitarist, a low-vision player and a pedal-only player among them).
 6. Next: both design systems published as design-system pages, regenerated when `design/` changes.
@@ -108,10 +108,10 @@ unchanged.
 3. Split `pipeline` into shared transcription, which produces the composition, and a `Target` that
    arranges it. The engine profile chooses the target.
 4. Split the benchmark gates into shared transcription gates and per-target suites.
-5. Make the design tooling product-neutral. Done for the tokens build: `design/tokens/build.py` writes
+5. Make the design tooling product-neutral. Done for the tokens build: `design/tooling/build.py` writes
    every brand's Apple, Android, Windows and web files, with a small set of neutral names (`Scribe…`)
    that are the same for every brand and each brand's own names for the rest
-   ([`design/tokens/README.md`](../../../design/tokens/README.md)). Brasscribe's token roles keep their
+   ([`design/tooling/README.md`](../../../design/tooling/README.md)). Brasscribe's token roles keep their
    names (`brass*`); its tokens map them to the neutral `brand*`. Every client reads the
    neutral names, and Fretscribe's Android theme has its own. Left: the folders move to `design/tooling`
    and `design/brands/<name>`; the mockup renderer serves both products.

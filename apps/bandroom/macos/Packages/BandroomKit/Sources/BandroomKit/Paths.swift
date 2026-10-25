@@ -1,7 +1,7 @@
 import Foundation
 import SystemConfiguration
 
-/// Where Bandroom keeps things on this Mac (design/server-app.md §5.2).
+/// Where Bandroom keeps things on this Mac (design/shared/server-app.md §5.2).
 public struct BandroomPaths: Sendable, Equatable {
     /// `~/Library/Application Support/Brasscribe`: downloads, environments, paired devices. SCRIBE_DATA overrides it.
     public var data: URL

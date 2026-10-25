@@ -12,7 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** Where a recording is written down, and the band draft's words (design/system.md §3). */
+/** Where a recording is written down, and the band draft's words (design/brands/brasscribe/system.md §3). */
 class OnDeviceRoutingTest {
     private val R_ = OnDeviceRouting
 

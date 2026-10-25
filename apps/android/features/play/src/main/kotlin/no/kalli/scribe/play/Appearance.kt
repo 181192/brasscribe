@@ -3,7 +3,7 @@ package no.kalli.scribe.play
 import no.kalli.scribe.connection.KeyValueStore
 
 /**
- * Settings › Display › Appearance (design/system.md §10): follow the phone, or force light or dark.
+ * Settings › Display › Appearance (design/brands/brasscribe/system.md §10): follow the phone, or force light or dark.
  * [PINK_LIGHT] and [PINK_DARK] are the hidden palette, listed only once it is unlocked from About.
  * It is kept on this phone only (excluded from backup and device transfer).
  */

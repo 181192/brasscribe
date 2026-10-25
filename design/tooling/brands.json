@@ -1,0 +1,17 @@
+{
+  "$description": "Every brand the design system generates: its token file, the folder its outputs go to and its contrast report. design/tooling/build.py and qa/tools/contrast.py read this list, so a new brand is one entry here. Paths are from the repository root.",
+  "brands": [
+    {
+      "name": "brasscribe",
+      "tokens": "design/brands/brasscribe/tokens/tokens.json",
+      "out": "design/brands/brasscribe/dist",
+      "contrast-report": "qa/reports/contrast-design-tokens.md"
+    },
+    {
+      "name": "fretscribe",
+      "tokens": "design/brands/fretscribe/tokens/tokens.json",
+      "out": "design/brands/fretscribe/dist",
+      "contrast-report": "design/brands/fretscribe/tokens/contrast.md"
+    }
+  ]
+}

@@ -46,7 +46,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         };
         Notation.LocalizedControlType = App.Strings["Score_ControlType"];
         // The notation itself is drawn in the theme's ink, and the page is the theme's paper (Appearance can
-        // change while the score is open: design/system.md §10).
+        // change while the score is open: design/brands/brasscribe/system.md §10).
         ActualThemeChanged += (_, _) =>
         {
             if (ViewModel is null) return;
@@ -384,7 +384,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         DrawOverlays();
     }
 
-    // ---- the music stand (design/music-stand.md) ----
+    // ---- the music stand (design/brands/brasscribe/music-stand.md) ----
 
     /// <summary>Space kept above the first system and below the last one of a page.</summary>
     private const double StandPad = 8;

@@ -1,8 +1,8 @@
 # Brasscribe Bandroom for Windows
 
 Brasscribe on this computer: installs the engine, keeps it running and lives in the corner of the taskbar.
-The design is [`design/server-app.md`](../../../design/server-app.md) (states §6, flyout §7, copy deck §10);
-mockups are `design/mockups/png/server-win-flyout-*`, `server-pair-*`.
+The design is [`design/shared/server-app.md`](../../../design/shared/server-app.md) (states §6, flyout §7, copy deck §10);
+mockups are `design/brands/brasscribe/mockups/png/server-win-flyout-*`, `server-pair-*`.
 
 | Project | What |
 |---|---|
@@ -113,7 +113,7 @@ dotnet publish src/Brasscribe.Bandroom -c Release -p:Platform=x64 -r win-x64 `
 - **Data**: MSIX redirects `%LOCALAPPDATA%` writes into the package's own store, which is deleted on uninstall
   (what we want for ~10 GB). The engine runs inside the package context, so it sees the same folder.
   Play on the same PC must read `engine.json` through the package's redirected path: verify before shipping.
-- Assets come from `design/dist/icons/windows/Assets` (linked by the project, never copied).
+- Assets come from `design/brands/brasscribe/dist/icons/windows/Assets` (linked by the project, never copied).
 
 ## What CI checks (`windows.yml`, job `bandroom`)
 

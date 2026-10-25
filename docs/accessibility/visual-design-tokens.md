@@ -1,7 +1,7 @@
 # Visual design tokens: colour, shape, contrast, motion, zoom
 
-- **Source of truth:** [design/tokens/tokens.json](../../design/tokens/tokens.json), the Brasscribe design tokens. [design-tokens.json](design-tokens.json) is generated from it by `uv run design/tokens/build.py` and keeps its existing shape for tools that read it.
-- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/tokens/tokens.json` (every design-system role, 76 pairs in each of six modes: light, dark, two high-contrast and two hidden Pink palettes) exit 1 on any contrast failure and run in CI.
+- **Source of truth:** [design/brands/brasscribe/tokens/tokens.json](../../design/brands/brasscribe/tokens/tokens.json), the Brasscribe design tokens. [design-tokens.json](design-tokens.json) is generated from it by `uv run design/tooling/build.py` and keeps its existing shape for tools that read it.
+- **Check:** `uv run qa/tools/contrast.py` (this palette) and `uv run qa/tools/contrast.py --tokens design/brands/brasscribe/tokens/tokens.json` (every design-system role, 76 pairs in each of six modes: light, dark, two high-contrast and two hidden Pink palettes) exit 1 on any contrast failure and run in CI.
 - **Generated reports:** [qa/reports/contrast-tokens.md](../../qa/reports/contrast-tokens.md) and [qa/reports/contrast-design-tokens.md](../../qa/reports/contrast-design-tokens.md). Every ratio below is copied from the first; don't edit numbers by hand.
 
 ## 1. Palette

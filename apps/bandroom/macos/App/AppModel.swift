@@ -15,7 +15,7 @@ final class AppModel {
     let monitor = StatusMonitor()
     let pairing = PairingModel()
     let bootstrapper = Bootstrapper()
-    /// Replaces the engine workspace in the data folder after the app itself was updated (design/server-app.md §3.8).
+    /// Replaces the engine workspace in the data folder after the app itself was updated (design/shared/server-app.md §3.8).
     let updater = Bootstrapper()
     /// Why the last engine update failed; the previous engine runs meanwhile when it can still be started, and Try
     /// again runs the update once more. (Set from outside only by the tests of what the panel then leads with.)

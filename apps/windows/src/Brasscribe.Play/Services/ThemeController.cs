@@ -11,7 +11,7 @@ using Windows.UI.ViewManagement;
 namespace Brasscribe.Play.Services;
 
 /// <summary>
-/// Settings › Display › Appearance (design/system.md §10). The theme is set on each window's root element
+/// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). The theme is set on each window's root element
 /// (Application.RequestedTheme cannot change after start-up), on open dialogs and flyouts (they live in the
 /// popup layer and don't inherit it), and on the caption buttons. A Windows contrast theme always wins:
 /// the roots then ask for Default and the choice is kept for later.
@@ -149,7 +149,7 @@ public sealed class ThemeController
             return;
         }
         bool dark = root.ActualTheme == ElementTheme.Dark;
-        // The ink and paper of design/tokens (text, and a hover/pressed wash in the text colour).
+        // The ink and paper of design/tooling (text, and a hover/pressed wash in the text colour).
         var fg = PinkColor("ScribeTextColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xED, 0xEB, 0xE6) : ColorHelper.FromArgb(0xFF, 0x1B, 0x1A, 0x17));
         var muted = PinkColor("ScribeTextMutedColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xB4, 0xB0, 0xA7) : ColorHelper.FromArgb(0xFF, 0x5E, 0x5A, 0x52));
         bar.ButtonBackgroundColor = Colors.Transparent;

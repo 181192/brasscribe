@@ -1,7 +1,7 @@
 namespace Brasscribe.Play.Core.Services;
 
 /// <summary>
-/// Settings › Display › Appearance (design/system.md §10). Match system is the default. <see cref="PinkLight"/> and
+/// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). Match system is the default. <see cref="PinkLight"/> and
 /// <see cref="PinkDark"/> are Light and Dark in the hidden Pink palette, listed only once it is unlocked from About.
 /// The order is the Appearance box's.
 /// </summary>

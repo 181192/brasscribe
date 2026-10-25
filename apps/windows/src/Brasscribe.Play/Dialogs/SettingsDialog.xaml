@@ -45,7 +45,7 @@
             <TextBlock x:Uid="LanguageRestartNote" Style="{StaticResource MutedStyle}" />
 
             <TextBlock x:Uid="SettingsAccessibilityHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
-            <!-- Appearance (design/system.md §10): one native choice, applied at once, stored on this PC. The header
+            <!-- Appearance (design/brands/brasscribe/system.md §10): one native choice, applied at once, stored on this PC. The header
                  names the combo box for UIA, which reads the selected item as its value ("Appearance, Dark").
                  A contrast theme always wins; the box stays enabled and the line below says why. -->
             <ComboBox x:Name="AppearanceBox" x:Uid="AppearanceBox" SelectionChanged="OnAppearanceChanged" HorizontalAlignment="Stretch">
@@ -57,7 +57,7 @@
                        Visibility="{x:Bind ViewModel.HighContrast, Mode=OneWay}" />
             <ToggleSwitch x:Uid="SingleKeySwitch" IsOn="{x:Bind ViewModel.SingleKeyShortcuts, Mode=TwoWay}" />
             <ToggleSwitch x:Uid="ReduceMotionSwitch" IsOn="{x:Bind ViewModel.ReduceMotion, Mode=TwoWay}" />
-            <!-- The music stand (design/music-stand.md §9). Opening on turning the phone is a phone setting, not here. -->
+            <!-- The music stand (design/brands/brasscribe/music-stand.md §9). Opening on turning the phone is a phone setting, not here. -->
             <TextBlock x:Uid="SettingsStandHeading" Style="{StaticResource LabelStyle}" Margin="0,8,0,0" AutomationProperties.HeadingLevel="Level3" />
             <ToggleSwitch x:Uid="StandTurnPagesSwitch" IsOn="{x:Bind ViewModel.StandTurnPages, Mode=TwoWay}" />
             <ToggleSwitch x:Uid="StandKeepControlsSwitch" IsOn="{x:Bind ViewModel.StandKeepControls, Mode=TwoWay}" />
@@ -118,7 +118,7 @@
             <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
             <TextBlock x:Name="CoreVersion" Style="{StaticResource MutedStyle}" />
             <!-- The version is an ordinary button (click, Space, Enter, Narrator): five in a row unlock the hidden Pink
-                 appearance (design/system.md §10). Nothing about it hints that it does more. -->
+                 appearance (design/brands/brasscribe/system.md §10). Nothing about it hints that it does more. -->
             <Button x:Name="AppVersion" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Padding="0" Click="OnVersion" />
             <TextBlock x:Name="PinkNote" Style="{StaticResource LabelStyle}" Visibility="Collapsed" />
         </StackPanel>

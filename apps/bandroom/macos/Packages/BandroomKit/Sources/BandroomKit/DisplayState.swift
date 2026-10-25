@@ -1,6 +1,6 @@
 import Foundation
 
-/// A Needs-attention problem with one fix (design/server-app.md §6.2).
+/// A Needs-attention problem with one fix (design/shared/server-app.md §6.2).
 public enum Problem: Equatable, Sendable {
     case lowDisk(freeGB: Int)
     /// What a full-band score still needs, in catalogue order; empty when Brasscribe's own tools (the engine

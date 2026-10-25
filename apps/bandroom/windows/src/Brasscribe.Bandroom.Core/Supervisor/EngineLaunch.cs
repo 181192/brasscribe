@@ -17,7 +17,7 @@ public sealed record BandroomPaths(string DataDir)
     public string State => Path.Combine(DataDir, "bandroom");
     public string AdminTokenFile => Path.Combine(State, "admin-token");
     public string SetupMarkers => Path.Combine(State, "setup");
-    /// <summary>The Appearance choice: this PC only, never roamed (design/system.md §10).</summary>
+    /// <summary>The Appearance choice: this PC only, never roamed (design/brands/brasscribe/system.md §10).</summary>
     public string AppearanceFile => Path.Combine(State, "appearance");
     /// <summary>The name shown to phones, when one is set in Settings.</summary>
     public string ComputerNameFile => Path.Combine(State, "computer-name");

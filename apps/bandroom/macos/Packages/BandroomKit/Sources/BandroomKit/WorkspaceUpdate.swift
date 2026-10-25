@@ -95,7 +95,7 @@ public enum WorkspaceCheck: Equatable, Sendable {
     }
 }
 
-/// Replaces the code in the data folder's workspace with the app's, all or nothing (design/server-app.md §3.8).
+/// Replaces the code in the data folder's workspace with the app's, all or nothing (design/shared/server-app.md §3.8).
 ///
 /// Only the app workspace's own top-level entries are replaced (engine, music, eval, ml, pixi.toml, pixi.lock and the
 /// stamp). The pixi environments (`.pixi`) and anything else in the folder stay; runs, models, paired devices and

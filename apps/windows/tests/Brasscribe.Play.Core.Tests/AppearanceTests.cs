@@ -5,7 +5,7 @@ using Brasscribe.Play.Core.ViewModels;
 
 namespace Brasscribe.Play.Core.Tests;
 
-/// <summary>Settings › Display › Appearance (design/system.md §10): Match system, Light, Dark, and Pink light and Pink dark once unlocked; contrast themes win.</summary>
+/// <summary>Settings › Display › Appearance (design/brands/brasscribe/system.md §10): Match system, Light, Dark, and Pink light and Pink dark once unlocked; contrast themes win.</summary>
 public class AppearanceTests
 {
     private sealed class Silent : IAnnouncer

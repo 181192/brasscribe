@@ -77,14 +77,14 @@ import no.kalli.scribe.play.ui.OutlineButton
 import no.kalli.scribe.play.ui.PlainButton
 import no.kalli.scribe.play.ui.PracticeChip
 
-/** The transport's targets: reachable with an instrument in the hands (design/fretscribe/system.md §1). */
+/** The transport's targets: reachable with an instrument in the hands (design/brands/fretscribe/system.md §1). */
 private val TRANSPORT = 64.dp
 
 /** A control that does nothing where it is looks off as Material draws one: its colour at this opacity. */
 private const val DISABLED_ALPHA = 0.38f
 
 /**
- * The player under the tab (design/fretscribe/system.md §4, Practice player), in its order: Play, back to
+ * The player under the tab (design/brands/fretscribe/system.md §4, Practice player), in its order: Play, back to
  * the start (of the repeat), a bar back and a bar on, where the song is, the speed, and the bars to repeat.
  * It wraps onto as many rows as it needs and never clips. When the recording is not on the phone it says
  * so, and offers to get it from the computer when the computer is there.

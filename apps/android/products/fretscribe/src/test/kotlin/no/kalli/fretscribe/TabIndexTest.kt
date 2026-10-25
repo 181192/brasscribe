@@ -351,8 +351,8 @@ class TabIndexTest {
 
     @Test
     fun theTabsNumbersAreTheDesignTokens() {
-        val tokens = root?.resolve("design/fretscribe/tokens/tokens.json")
-        assumeTrue("design/fretscribe/tokens is not in this checkout", tokens?.isFile == true)
+        val tokens = root?.resolve("design/brands/fretscribe/tokens/tokens.json")
+        assumeTrue("design/brands/fretscribe/tokens is not in this checkout", tokens?.isFile == true)
         val json = kotlinx.serialization.json.Json.parseToJsonElement(tokens!!.readText()) as kotlinx.serialization.json.JsonObject
         fun at(vararg path: String) = path.fold(json as kotlinx.serialization.json.JsonElement) { e, k -> (e as kotlinx.serialization.json.JsonObject).getValue(k) }
         fun number(vararg path: String) = (at(*path, "\$value") as kotlinx.serialization.json.JsonPrimitive).content.toDouble()

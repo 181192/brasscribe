@@ -4,7 +4,7 @@ import SwiftUI
 import Testing
 @testable import BrasscribePlay
 
-/// The design system is linked from design/dist. These fail when a colour set, the display
+/// The design system is linked from design/brands/brasscribe/dist. These fail when a colour set, the display
 /// face or the app icon silently goes missing from the bundle.
 @Suite struct DesignSystemTests {
     @Test(arguments: ["bg", "text", "primary", "onPrimary", "uncertain", "veryUncertain", "cursor", "cursorTint", "loopTint", "adlibTint"])
@@ -32,7 +32,7 @@ import Testing
         #endif
     }
 
-    /// The neutral names (design/tokens/README.md) are the same in every product's generated design;
+    /// The neutral names (design/tooling/README.md) are the same in every product's generated design;
     /// here they read Brasscribe's colour sets. Brasscribe's own roles are on its own type.
     @Test func neutralNamesReadTheProductsDesign() {
         func set(_ name: String) -> Color { Color("Brasscribe/" + name, bundle: ScribeDesign.bundle) }

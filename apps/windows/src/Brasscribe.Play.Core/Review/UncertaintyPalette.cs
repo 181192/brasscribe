@@ -39,7 +39,7 @@ public readonly record struct Rgb(byte R, byte G, byte B)
 public enum ThemeKind { Light, Dark, HighContrast }
 
 /// <summary>
-/// The score colours of design/tokens/tokens.json (the same values as design/dist/windows/BrasscribeTheme.xaml;
+/// The score colours of design/brands/brasscribe/tokens/tokens.json (the same values as design/brands/brasscribe/dist/windows/BrasscribeTheme.xaml;
 /// a test keeps them in step). Used where the notation is drawn outside XAML: alphaTab's glyph and staff
 /// colours, the notehead colour of uncertain notes and the Skia preview. The level is always carried by
 /// shape as well: a "?" above the note, boxed below 0.4. In a Windows contrast theme the app draws
@@ -71,7 +71,7 @@ public sealed record UncertaintyPalette(
         Rgb.Parse("#000000"), Rgb.Parse("#FFFFFF"));
 
     /// <summary>
-    /// Pink light (design/system.md §10): the notation is Light's, but for very uncertain, the same orange a shade
+    /// Pink light (design/brands/brasscribe/system.md §10): the notation is Light's, but for very uncertain, the same orange a shade
     /// darker (BrasscribePinkTheme.xaml), so a note and the preview's "?" match the boxed "?" the XAML draws.
     /// </summary>
     public static readonly UncertaintyPalette PinkLight = Light with { VeryUncertain = Rgb.Parse("#A04300") };

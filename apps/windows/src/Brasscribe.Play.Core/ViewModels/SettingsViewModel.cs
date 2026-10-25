@@ -116,7 +116,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
-    /// <summary>Match system, Light, Dark or (once unlocked) Pink light or Pink dark, for this PC only (design/system.md §10).</summary>
+    /// <summary>Match system, Light, Dark or (once unlocked) Pink light or Pink dark, for this PC only (design/brands/brasscribe/system.md §10).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
     public partial Appearance Appearance { get; set; }
@@ -161,7 +161,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] public partial bool ReduceMotion { get; set; }
     /// <summary>Music stand: Keep the stand controls visible (off by default).</summary>
     [ObservableProperty] public partial bool StandKeepControls { get; set; }
-    /// <summary>Music stand: Turn the pages while playing (on by default; design/music-stand.md §12.2).</summary>
+    /// <summary>Music stand: Turn the pages while playing (on by default; design/brands/brasscribe/music-stand.md §12.2).</summary>
     [ObservableProperty] public partial bool StandTurnPages { get; set; }
     /// <summary>The stand's "Tap the music to show the controls." hint was dismissed; it does not come back.</summary>
     [ObservableProperty] public partial bool StandHintSeen { get; set; }

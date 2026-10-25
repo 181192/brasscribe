@@ -47,7 +47,7 @@ fun appearanceLabel(a: Appearance): String = stringResource(
 )
 
 /**
- * Settings › Display › Appearance (design/system.md §10): a row showing the current choice that opens
+ * Settings › Display › Appearance (design/brands/brasscribe/system.md §10): a row showing the current choice that opens
  * a single-choice dialog (the ListPreference pattern). Choosing applies at once and closes the dialog;
  * focus goes back to the row. With the phone's high contrast on, one line says that it decides.
  */

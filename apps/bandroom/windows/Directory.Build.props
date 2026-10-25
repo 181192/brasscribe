@@ -18,6 +18,6 @@
     <BrasscribeWindowsMinVersion>10.0.22000.0</BrasscribeWindowsMinVersion>
     <!-- The repository root: design/ (theme, icons, the mark) and the pixi workspace are linked from there, never copied. -->
     <RepoRoot>$(MSBuildThisFileDirectory)..\..\..\</RepoRoot>
-    <DesignDir>$(RepoRoot)design\</DesignDir>
+    <DesignDir>$(RepoRoot)design\brands\brasscribe\</DesignDir>
   </PropertyGroup>
 </Project>

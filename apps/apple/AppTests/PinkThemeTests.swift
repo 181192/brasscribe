@@ -5,9 +5,9 @@ import SwiftUI
 import Testing
 @testable import BrasscribePlay
 
-/// The hidden Pink palette (design/system.md §10) on the Mac: the semantic colours switch with the
+/// The hidden Pink palette (design/brands/brasscribe/system.md §10) on the Mac: the semantic colours switch with the
 /// palette, the notation keeps its ink, and, with BRASSCRIBE_PINK_SHOTS set, the layout harness writes
-/// the screens in Pink to design/pink.
+/// the screens in Pink to design/brands/brasscribe/pink.
 @MainActor
 @Suite(.serialized) struct PinkThemeTests {
     private func resolved(_ color: Color, dark: Bool) -> Color.Resolved {
@@ -63,7 +63,7 @@ import Testing
 
     static var shotsDirectory: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .deletingLastPathComponent().deletingLastPathComponent().appending(path: "design/pink")
+            .deletingLastPathComponent().deletingLastPathComponent().appending(path: "design/brands/brasscribe/pink")
     }
 
     private func save(_ rep: NSBitmapImageRep, _ name: String) {

@@ -107,8 +107,8 @@ One shared core, and a thin app per product. Where each part goes, and how to ad
 ## Documentation
 
 - Developer: [verify](docs/dev/verify.md), [release](docs/dev/release.md), [macOS VM](docs/dev/macos-vm.md)
-- Design: [design/README.md](design/README.md), [system](design/system.md),
-  [music stand](design/music-stand.md), [Bandroom](design/server-app.md)
+- Design: [design/README.md](design/README.md), [system](design/brands/brasscribe/system.md),
+  [music stand](design/brands/brasscribe/music-stand.md), [Bandroom](design/shared/server-app.md)
 - Research: [summary and architecture decision](docs/research/00-summary.md),
   [benchmark results](docs/research/10-benchmark-results.md), the rest of [docs/research](docs/research/)
 - Plans: [docs/plan/apps-plan.md](docs/plan/apps-plan.md)

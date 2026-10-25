@@ -2,8 +2,8 @@
 <resources>
     <!-- The names the shared screens are written with. Every app declares each of them again with its own words
          (products/<app>/src/main/res), so these are never shown; OwnWordsTest checks that none is left out. -->
-    <!-- Voice: design/brand/brand.md (a good section leader: calm, specific, on your side), with the
-         replacements of design/reviews/usability-review.md §2. No "transcribe", "engine" or "model". -->
+    <!-- Voice: design/brands/brasscribe/brand/brand.md (a good section leader: calm, specific, on your side), with the
+         replacements of design/brands/brasscribe/reviews/usability-review.md §2. No "transcribe", "engine" or "model". -->
     <string name="app_name" translatable="false">Brasscribe Play</string>
     <string name="brand_name" translatable="false">Brasscribe</string>
     <string name="share_target_label">Make a score with Brasscribe</string>
@@ -327,7 +327,7 @@
     <string name="about_title">About and licences</string>
     <string name="about_text">Brasscribe Play is a non-commercial project. It uses alphaTab (MPL-2.0) for notation and playback with the Sonivox SoundFont (Apache-2.0), sfizz (BSD-2-Clause) for realistic sound, Oboe (Apache-2.0) for audio, JNA (Apache-2.0) to reach its own shared code, and ONNX Runtime (MIT) with SwiftF0, Basic Pitch and Beat This! (MIT) to listen on the phone. ONNX Runtime is Microsoft\'s, and sends usage data and a device identifier to Microsoft, never the recording. A full band on your computer uses MuScriptor (CC BY-NC 4.0), downloaded with your own Hugging Face account.</string>
     <string name="about_font">Headings are set in Instrument Serif (SIL Open Font License 1.1).</string>
-    <!-- Music stand (design/music-stand.md §9) -->
+    <!-- Music stand (design/brands/brasscribe/music-stand.md §9) -->
     <string name="stand_enter">Music stand</string>
     <string name="stand_open_from_library">Open on the music stand</string>
     <!-- Said when a pedal goes back to the start of the repeat. -->

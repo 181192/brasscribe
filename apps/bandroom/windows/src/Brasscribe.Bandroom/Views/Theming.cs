@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Media;
 namespace Brasscribe.Bandroom.Views;
 
 /// <summary>
-/// Appearance (design/system.md §10) on every open window: RequestedTheme on the window's root (never
+/// Appearance (design/brands/brasscribe/system.md §10) on every open window: RequestedTheme on the window's root (never
 /// Application.RequestedTheme, which can't change after start) and the caption buttons of the title bar.
 /// Menus and other popups follow the root they open from. Default follows Windows and every contrast theme.
 /// </summary>

@@ -2,7 +2,7 @@ import AppKit
 import BandroomKit
 import SwiftUI
 
-/// First run: one window, four steps, one decision per step (design/server-app.md §3.2).
+/// First run: one window, four steps, one decision per step (design/shared/server-app.md §3.2).
 struct SetupView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismissWindow) private var dismissWindow

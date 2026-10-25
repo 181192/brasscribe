@@ -19,7 +19,7 @@ note the step number and what you saw, and stop at the first crash.
    - `Views/SeatPickerView.xaml`, `Views/WhatDoYouPlayPage.xaml`: the seat picker
    - `Dialogs/SettingsDialog.xaml`: Appearance, the instrument row and the About version button
    - `Dialogs/ExportDialog.xaml`, `Themes/Styles.xaml`
-   - `design/dist/windows/BrasscribePinkTheme.xaml`: the Pink palette, linked as a Page
+   - `design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml`: the Pink palette, linked as a Page
 2. `dotnet test tests/Brasscribe.Play.Core.Tests` passes with the native core, and so do the CI job's
    smoke test and screen catalogue (`tools/Screenshots/catalogue.ps1`, with Axe.Windows through `tools/ScreenCheck play`).
 3. Start the app with a fresh profile: delete `%LOCALAPPDATA%\Brasscribe\Play\settings.json` first.
@@ -125,7 +125,7 @@ Settings › Accessibility › Text size 200 %, then restart the app.
 2. "Choose what to make": the cards grow, and the "Your part" lines and the tune choice wrap.
 3. "What is this?": the refused card and the percussion note wrap. **Change what I play** is fully
    visible.
-4. The stand: the controls card wraps upwards without clipping (design/music-stand.md §4.1), and the
+4. The stand: the controls card wraps upwards without clipping (design/brands/brasscribe/music-stand.md §4.1), and the
    band's position text stays readable.
 5. Settings: the Appearance box, the instrument row and the About version button stay inside the
    dialog.

@@ -1,7 +1,7 @@
 import BandroomKit
 import SwiftUI
 
-/// Phones and tablets, inside the panel with a Back button (design/server-app.md §8).
+/// Phones and tablets, inside the panel with a Back button (design/shared/server-app.md §8).
 struct PhonesView: View {
     @Environment(AppModel.self) private var app
     @State private var removing: DeviceInfo?

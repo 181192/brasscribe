@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-// Bandroom's small layer over the design tokens (design/system.md, design/server-app.md §7 sizes).
+// Bandroom's small layer over the design tokens (design/brands/brasscribe/system.md, design/shared/server-app.md §7 sizes).
 
 /// Text size for the whole app. macOS has no system text size for third-party windows, so Bandroom has
 /// its own setting (server-app.md §9, 1.4.4).
@@ -145,7 +145,7 @@ extension ButtonStyle where Self == BRButtonStyle {
     static var brPlain: BRButtonStyle { BRButtonStyle(kind: .plain) }
 }
 
-/// The Brasscribe mark (design/brand/logo/mark.svg), drawn from its 64-unit path.
+/// The Brasscribe mark (design/brands/brasscribe/brand/logo/mark.svg), drawn from its 64-unit path.
 struct MarkShape: Shape {
     func path(in rect: CGRect) -> Path {
         let s = min(rect.width, rect.height) / 64

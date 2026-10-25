@@ -90,7 +90,7 @@ public partial class App : Application
 
     internal JsonSettingsStore Settings { get; }
 
-    /// <summary>Settings › Display › Appearance on every window (design/system.md §10).</summary>
+    /// <summary>Settings › Display › Appearance on every window (design/brands/brasscribe/system.md §10).</summary>
     internal ThemeController? Theme { get; private set; }
 
     /// <summary>Other launches with a pairing link are sent to the running app under this key.</summary>

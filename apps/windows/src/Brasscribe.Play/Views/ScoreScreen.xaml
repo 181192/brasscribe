@@ -133,7 +133,7 @@
 
         <!-- The music stand: its band in its own row (it never covers the music) and the control layer over
              the music. Both come before the score in the tree, so Tab from the score wraps to Leave, then
-             the layer (design/music-stand.md §7); ZIndex draws the layer above the music. -->
+             the layer (design/brands/brasscribe/music-stand.md §7); ZIndex draws the layer above the music. -->
         <views:MusicStandBand x:Name="StandBand" Grid.Row="0" Visibility="{x:Bind views:Shown.If(ViewModel.Stand.IsOpen), Mode=OneWay}" />
         <views:MusicStandLayer x:Name="StandLayer" Grid.Row="2" Canvas.ZIndex="1"
                                Visibility="{x:Bind views:Shown.If(ViewModel.Stand.IsOpen), Mode=OneWay}" />

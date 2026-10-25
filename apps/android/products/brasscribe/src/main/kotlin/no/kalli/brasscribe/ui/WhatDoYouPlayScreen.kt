@@ -67,7 +67,7 @@ import no.kalli.scribe.model.Seat
 private data class InstrumentTile(val id: String, @StringRes val name: Int, @StringRes val sub: Int? = null,
                                   @StringRes val spokenName: Int? = null, @StringRes val spokenSub: Int? = null)
 
-/** The tiles in the mockup's order (design/mockups/my-instrument-first-run.html). */
+/** The tiles in the mockup's order (design/brands/brasscribe/mockups/my-instrument-first-run.html). */
 private val TILES = listOf(
     InstrumentTile("bb-cornet", R.string.inst_cornet),
     InstrumentTile("bb-trumpet", R.string.inst_trumpet, R.string.inst_trumpet_sub, spokenSub = R.string.inst_trumpet_sub_spoken),

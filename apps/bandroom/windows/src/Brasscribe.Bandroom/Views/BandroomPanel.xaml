@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The flyout content (design/server-app.md §7), also shown in the "Brasscribe on this PC" window.
+    The flyout content (design/shared/server-app.md §7), also shown in the "Brasscribe on this PC" window.
     Top to bottom is the reading and focus order. Sub-views (Phones and tablets, confirmations) replace
     the main view in place, with Back first.
 -->

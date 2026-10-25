@@ -48,7 +48,7 @@ struct BrasscribePlayApp: App {
 }
 
 /// Settings → Appearance: match the system (the default), or always light or dark. Stored per
-/// device. Increase Contrast still applies on top of either. Pink light and Pink dark (design/system.md
+/// device. Increase Contrast still applies on top of either. Pink light and Pink dark (design/brands/brasscribe/system.md
 /// §10) are hidden until Pink is unlocked from About; they are Light and Dark with the Pink palette.
 enum AppearanceSetting: String, CaseIterable, Identifiable {
     case system, light, dark

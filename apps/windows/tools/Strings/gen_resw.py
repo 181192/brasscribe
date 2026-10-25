@@ -242,7 +242,7 @@ prop("AppearanceBox", "Header", "Appearance", "Utseende")
 prop("AppearanceSystem", "Content", "Match system", "Følg systemet")
 prop("AppearanceLight", "Content", "Light", "Lyst")
 prop("AppearanceDark", "Content", "Dark", "Mørkt")
-# The hidden Pink palette (design/system.md §10): its two items are added in code, last, once it is unlocked from About.
+# The hidden Pink palette (design/brands/brasscribe/system.md §10): its two items are added in code, last, once it is unlocked from About.
 add("Appearance_PinkLight", "Pink light", "Rosa lyst")
 add("Appearance_PinkDark", "Pink dark", "Rosa mørkt")
 add("Pink_Unlocked", "🎺 Pink unlocked", "🎺 Rosa låst opp")
@@ -680,7 +680,7 @@ HEADER = """<?xml version="1.0" encoding="utf-8"?>
 """
 
 
-# ---- the music stand (design/music-stand.md §9) ----
+# ---- the music stand (design/brands/brasscribe/music-stand.md §9) ----
 name("MusicStandButton", "Music stand", "Notestativ")
 tip("MusicStandButton", "The music alone, for playing from the stand (F)", "Bare notene, til å spille fra notestativet (F)")
 help_("MusicStandButton", "F or F11. Esc leaves it.", "F eller F11. Esc går ut.")

@@ -34,7 +34,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The "?" marks on the score lead to their notes (design/system.md §5): a tap on one opens Check the notes at that
+ * The "?" marks on the score lead to their notes (design/brands/brasscribe/system.md §5): a tap on one opens Check the notes at that
  * note. And Check them goes on where the player left Check the notes, not from the start of the queue.
  */
 @RunWith(AndroidJUnit4::class)

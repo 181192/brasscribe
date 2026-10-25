@@ -222,12 +222,12 @@ internal fun tabPalette(c: ScribeColors, own: FretscribeColors) = TabPalette(
 )
 
 /**
- * The tab (design/fretscribe/system.md §3), to read: the page engraved full width, the tuning in a chip
+ * The tab (design/brands/fretscribe/system.md §3), to read: the page engraved full width, the tuning in a chip
  * above it, and under that what there is to check. A "?" stands above every note Fretscribe is not sure
  * of and a boxed "!" above a note with no place; each can be tapped, or reached with the keyboard or a
  * screen reader, and says which note it is. The page gets more lines of fewer bars as it is made larger.
  *
- * It is also where the song is practised (design/fretscribe/flows.md §9): the recording is the sound, a
+ * It is also where the song is practised (design/brands/fretscribe/flows.md §9): the recording is the sound, a
  * cursor stands at the beat it is at and the page follows it, and the player under the tab ([PracticeBar])
  * slows it down with its pitch kept and repeats the bars chosen. Space plays and pauses; with the screen or
  * the tab in focus, the left arrow goes back to the start of the repeat (a bar back when nothing is repeated)

@@ -527,7 +527,7 @@ NB = {
     "Version %@": "Versjon %@",
     "Dark": "Mørkt",
     "Increase contrast is on, so Brasscribe uses its high-contrast colours.": "Øk kontrast er på, så Brasscribe bruker høykontrastfargene.",
-    # the music stand (design/music-stand.md §9)
+    # the music stand (design/brands/brasscribe/music-stand.md §9)
     "%@ · %@ · bar %lld · %@": "%1$@ · %2$@ · takt %3$lld · %4$@",
     "%@ · bar %lld · %@": "%1$@ · takt %2$lld · %3$@",
     "%@, bar %lld of %lld, %@": "%1$@, takt %2$lld av %3$lld, %4$@",

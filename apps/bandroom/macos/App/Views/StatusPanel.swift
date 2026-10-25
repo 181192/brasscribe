@@ -1,7 +1,7 @@
 import BandroomKit
 import SwiftUI
 
-/// The popover content (design/server-app.md §7), also shown as the "Brasscribe on this Mac" window.
+/// The popover content (design/shared/server-app.md §7), also shown as the "Brasscribe on this Mac" window.
 /// Top to bottom is the reading and focus order.
 struct StatusPanel: View {
     @Environment(AppModel.self) private var app

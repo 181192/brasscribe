@@ -166,7 +166,7 @@ fun ScoreScreen(vm: PlayViewModel) {
     var textView by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
     var writtenTip by rememberSaveable { mutableStateOf(false) }
-    // The music stand (design/music-stand.md, ui/MusicStand.kt): the score alone, in pages.
+    // The music stand (design/brands/brasscribe/music-stand.md, ui/MusicStand.kt): the score alone, in pages.
     val ms = rememberMusicStand()
     val performance = ms.open
 

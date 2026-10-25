@@ -7,7 +7,7 @@ namespace Brasscribe.Play.Controls;
 /// <summary>
 /// Theme resources looked up from code for an element's own theme. Application.Current.Resources[key] resolves
 /// theme dictionaries for the app's theme (the system's), so with Appearance set to Light or Dark on the window
-/// root (design/system.md §10) it would hand back the other theme's brush. A contrast theme always wins.
+/// root (design/brands/brasscribe/system.md §10) it would hand back the other theme's brush. A contrast theme always wins.
 /// </summary>
 public static class ThemedResources
 {

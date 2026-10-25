@@ -2,7 +2,7 @@
 
 A menu-bar app that installs the [engine](../../../engine/README.md) on this Mac, keeps it running and
 pairs phones and tablets with it, so Play can make full-band scores. The design is
-[`design/server-app.md`](../../../design/server-app.md); the Windows version is
+[`design/shared/server-app.md`](../../../design/shared/server-app.md); the Windows version is
 [`apps/bandroom/windows`](../windows/README.md).
 
 | Path | What |

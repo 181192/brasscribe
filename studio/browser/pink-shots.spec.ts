@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Screenshots of the Pink palette for design/pink/. Runs only with PINK_SHOTS=<dir>.
+// Screenshots of the Pink palette for design/brands/brasscribe/pink/. Runs only with PINK_SHOTS=<dir>.
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = join(here, "..", "..", "apps", "fixtures", "old-hundredth", "brass-band.musicxml");
 const out = process.env.PINK_SHOTS;

@@ -180,7 +180,7 @@ struct SettingsView: View {
 }
 
 /// The version in About. It looks like plain text, but activating it five times in a row unlocks
-/// Pink in Appearance (design/system.md §10): by tap, click, VoiceOver, Switch Control or the
+/// Pink in Appearance (design/brands/brasscribe/system.md §10): by tap, click, VoiceOver, Switch Control or the
 /// keyboard. On the Mac, Option-activating it unlocks at once. The unlock is shown under the row and
 /// announced once.
 struct VersionButton: View {

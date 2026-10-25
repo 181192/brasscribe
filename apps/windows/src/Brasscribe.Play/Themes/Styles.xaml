@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Brasscribe Play styles on top of the generated design tokens (Themes/BrasscribeTheme.xaml, linked
-    from design/dist/windows). Colours come only from the Bc* brushes; in a Windows contrast theme
+    from design/brands/brasscribe/dist/windows). Colours come only from the Bc* brushes; in a Windows contrast theme
     those map to the user's system colours, and nothing here sets a colour of its own.
 -->
 <ResourceDictionary
@@ -33,7 +33,7 @@
         <ResourceDictionary x:Key="HighContrast" />
     </ResourceDictionary.ThemeDictionaries>
 
-    <!-- Music stand glyphs (Segoe Fluent Icons; design/music-stand.md §8) until design/tokens/icons.json has them. -->
+    <!-- Music stand glyphs (Segoe Fluent Icons; design/brands/brasscribe/music-stand.md §8) until design/tooling/icons.json has them. -->
     <x:String x:Key="BcIconMusicStand">&#xE740;</x:String>
     <x:String x:Key="BcIconPagePrevious">&#xE76B;</x:String>
     <x:String x:Key="BcIconPageNext">&#xE76C;</x:String>
@@ -213,7 +213,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <!-- On = tonal fill, a 1.5 epx ink edge and a check before the label; off = an outline.
-                     Ink fill is kept for the one primary (design/system.md §1). -->
+                     Ink fill is kept for the one primary (design/brands/brasscribe/system.md §1). -->
                 <ControlTemplate TargetType="ToggleButton">
                     <Border x:Name="Chip" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
@@ -359,7 +359,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <!-- On = tonal fill, a 1.5 epx ink edge and a check before the label; off = an outline.
-                     Ink fill is kept for the one primary (design/system.md §1). -->
+                     Ink fill is kept for the one primary (design/brands/brasscribe/system.md §1). -->
                 <ControlTemplate TargetType="ToggleButton">
                     <Border x:Name="Chip" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"

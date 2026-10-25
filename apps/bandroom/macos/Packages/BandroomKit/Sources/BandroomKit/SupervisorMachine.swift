@@ -11,7 +11,7 @@ public enum LaunchFailure: Equatable, Sendable {
     case pixiTooOld(PixiRefusal)
 }
 
-/// The engine's life as Bandroom sees it (design/server-app.md §3.3, §3.7).
+/// The engine's life as Bandroom sees it (design/shared/server-app.md §3.3, §3.7).
 public enum SupervisorPhase: Equatable, Sendable {
     /// Not started yet this session.
     case idle

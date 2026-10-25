@@ -384,7 +384,7 @@ Two different kinds of "unsure" need **different treatments**.
 
 ### 5.1 Pitch/timing uncertainty (the note may be wrong)
 
-> **Superseded in the design** (`design/fretscribe/brand/brand.md`, Colour): the doubt mark is a "?" above the tab column with the numeral in the doubt colour, never an outline, circle or parentheses around the numeral, because those already mean ghost notes, ties and half notes in tab. MusicXML carries doubt as a note colour plus the confidence in `<other-notation>`, never as parentheses.
+> **Superseded in the design** (`design/brands/fretscribe/brand/brand.md`, Colour): the doubt mark is a "?" above the tab column with the numeral in the doubt colour, never an outline, circle or parentheses around the numeral, because those already mean ghost notes, ties and half notes in tab. MusicXML carries doubt as a note colour plus the confidence in `<other-notation>`, never as parentheses.
 
 - Mark the note itself: a **dotted or dashed outline, or a hollow/lighter-weight fret numeral**, plus a small marker in the standard-notation notehead (e.g. a grey ring). Also show a subtle tick above the bar.
 - **Not colour-only.** Colour can reinforce (amber), but the shape must carry the meaning, both for colour-blind users and for B/W PDF.
@@ -404,7 +404,7 @@ Two different kinds of "unsure" need **different treatments**.
 
 ### 5.3 Export behaviour
 
-> **Superseded in the design** (`design/fretscribe/brand/brand.md`, Colour): the doubt mark is a "?" above the tab column with the numeral in the doubt colour, never an outline, circle or parentheses around the numeral, because those already mean ghost notes, ties and half notes in tab. MusicXML carries doubt as a note colour plus the confidence in `<other-notation>`, never as parentheses.
+> **Superseded in the design** (`design/brands/fretscribe/brand/brand.md`, Colour): the doubt mark is a "?" above the tab column with the numeral in the doubt colour, never an outline, circle or parentheses around the numeral, because those already mean ghost notes, ties and half notes in tab. MusicXML carries doubt as a note colour plus the confidence in `<other-notation>`, never as parentheses.
 
 - **PDF**: pitch-uncertain marks optional (default off for "clean print", on for "review print").
 - **MusicXML**: map pitch uncertainty to `<notehead parentheses="yes">` or a `color` attribute, *plus* a note-level `<other-notation>` / processing-instruction carrying the confidence.

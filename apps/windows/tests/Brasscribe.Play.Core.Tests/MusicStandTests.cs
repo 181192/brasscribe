@@ -6,7 +6,7 @@ using Brasscribe.Play.Core.ViewModels;
 
 namespace Brasscribe.Play.Core.Tests;
 
-/// <summary>The music stand's keys, pages, control layer, sizing and view model (design/music-stand.md).</summary>
+/// <summary>The music stand's keys, pages, control layer, sizing and view model (design/brands/brasscribe/music-stand.md).</summary>
 public class MusicStandKeyTests
 {
     [Fact]
@@ -239,7 +239,7 @@ public class StandLayerTests
     public void Space_shows_the_layer_and_a_pedals_page_keys_leave_it(ScoreKey? key, bool shows)
     {
         // A page turner or pedal is a keyboard sending arrows or Page Up/Down: it turns the page with no controls over
-        // the music. Tab (handled on its own, as it moves into the layer) and Space show them (design/music-stand.md §4.2).
+        // the music. Tab (handled on its own, as it moves into the layer) and Space show them (design/brands/brasscribe/music-stand.md §4.2).
         Assert.Equal(shows, StandLayer.ShowsLayer(key));
         if (key is { } k and not ScoreKey.Space and not ScoreKey.Escape)
             Assert.NotNull(ScoreKeyMap.Map(k, KeyModifiers.None, singleKeyShortcuts: true, stand: true));

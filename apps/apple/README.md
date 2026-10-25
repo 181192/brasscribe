@@ -109,7 +109,7 @@ these sizes off screen.
 
 The Playback menu lists the same keys.
 
-In the music stand (`App/Views/MusicStandView.swift`, design/music-stand.md): → ↓ Page Down turn to the
+In the music stand (`App/Views/MusicStandView.swift`, design/brands/brasscribe/music-stand.md): → ↓ Page Down turn to the
 next page and ← ↑ Page Up to the previous one (what Bluetooth page turners send; on the Mac Page Up, Page
 Down, Home and End are key equivalents, because AppKit turns them into scrolling first), Home and End go to the first
 and last page, Option-↓ ↑ move by bar, Space plays and pauses, and Esc or F leaves. Stand screenshots:

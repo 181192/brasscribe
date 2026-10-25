@@ -47,7 +47,7 @@ import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * The music stand (design/music-stand.md) on "Old Hundredth" (apps/fixtures/old-hundredth), opened straight from its MusicXML: a turn keeps the music playing and the place, the
+ * The music stand (design/brands/brasscribe/music-stand.md) on "Old Hundredth" (apps/fixtures/old-hundredth), opened straight from its MusicXML: a turn keeps the music playing and the place, the
  * controls stay while assistive tech or a keyboard is in use, and the keys turn pages. Assistive tech
  * is simulated with AppContainer.assistiveOverride (a real TalkBack cannot be switched on from a test).
  */

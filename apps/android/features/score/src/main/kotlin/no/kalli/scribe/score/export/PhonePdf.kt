@@ -30,7 +30,7 @@ import java.io.OutputStream
  *
  * It runs off the main thread and never touches the score view's alphaTab.
  *
- * [legend] goes under a page with a doubtful note: what its "?" means (design/system.md, the uncertainty legend).
+ * [legend] goes under a page with a doubtful note: what its "?" means (design/brands/brasscribe/system.md, the uncertainty legend).
  */
 class PhonePdf(context: Context, private val legend: String) {
     private val musicFont: Typeface = Typeface.createFromAsset(context.assets, "Bravura.otf")

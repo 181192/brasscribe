@@ -74,7 +74,7 @@ private class Change(val label: String, val tag: String, val ask: Ask? = null, v
 private class Ask(val question: String, val choices: List<Choice>, val selected: String, val pick: (String) -> Change?)
 
 /**
- * "Check the song" (design/fretscribe/flows.md §7), in its first form: what Fretscribe heard, one row per
+ * "Check the song" (design/brands/fretscribe/flows.md §7), in its first form: what Fretscribe heard, one row per
  * finding the result has (tuning, capo, octave, reference pitch, key and tempo, notes marked ?, notes with
  * no place, notes left out and notes added), and Show the tab. A row's button sends the recording to the computer again with that one
  * thing changed; the computer keeps what it already worked out, so only the fingering is done again.

@@ -1,5 +1,5 @@
 """Build App/Localizable.xcstrings (English source, Norwegian bokmål) from the keys Xcode extracted into
-*.stringsdata during the last build, plus the bokmål below (design/server-app.md §10, written, not
+*.stringsdata during the last build, plus the bokmål below (design/shared/server-app.md §10, written, not
 translated).
 
 Usage: python3 scripts/make-strings.py build/DerivedData/Build/Intermediates.noindex

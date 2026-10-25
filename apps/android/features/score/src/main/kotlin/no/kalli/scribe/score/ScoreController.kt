@@ -214,7 +214,7 @@ class ScoreController(
     }
 
     /**
-     * The music stand's layout (design/music-stand.md §3): a fixed number of bars per system, and the
+     * The music stand's layout (design/brands/brasscribe/music-stand.md §3): a fixed number of bars per system, and the
      * stand turns the pages itself, so alphaTab neither scrolls to the cursor nor takes taps or keys (a
      * tap shows the controls, the stand's own surface over the view takes the drags, and a page
      * turner's arrows must not scroll the view by a screen). Null goes back to the ordinary score.

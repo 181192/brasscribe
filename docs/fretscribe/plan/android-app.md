@@ -25,11 +25,11 @@ Brasscribe's files stay in `src/main`; nothing moves. `MainActivity` calls `Prod
 
 **Tokens and theme.** Both apps read the neutral theme (`no.kalli.scribe.design`: `ScribeTheme`,
 `ScribeColors`, the scales), generated for each from its own tokens into its own dist
-(`design/tokens/README.md`). Fretscribe's own roles and tab metrics are `no.kalli.fretscribe.design`. The
+(`design/tooling/README.md`). Fretscribe's own roles and tab metrics are `no.kalli.fretscribe.design`. The
 screens Fretscribe still has from Brasscribe draw a score with colours a tab has no name for; the app
 hands them in (`Product.Theme`: the doubt colour for the very doubtful one, the repeat's band for the
 band behind freely played bars). The design
-is in `design/fretscribe/`, the research and the plan in `docs/fretscribe/`.
+is in `design/brands/fretscribe/`, the research and the plan in `docs/fretscribe/`.
 
 **Tab rendering.** alphaTab from `tab.musicxml`; the `/tab` JSON is the data model for Check the song,
 Fix a note and the screen reader. "?" and boxed "!" are drawn by an overlay of Fretscribe's own
@@ -93,7 +93,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 5. **Every instrument the computer writes tab for.** Your instrument offers the guitar (6, 7, 8 strings), the
    bass (4, 5, 6), the ukulele (soprano, concert or tenor with a high or a low G, and baritone) and the mandolin.
    A ukulele or a mandolin in a full song only works when no guitar plays in it, and What is this? says so.
-6. **Launcher icon.** Drawn from the mark with the art at 64% (`design/fretscribe/brand/build.py`); the
+6. **Launcher icon.** Drawn from the mark with the art at 64% (`design/brands/fretscribe/brand/build.py`); the
    owner has not yet looked at it on a phone's launcher shapes.
 7. **Min SDK** stays 29; portrait practice is an open design question.
 8. **Tab font.** Settled for Android: alphaTab draws with alphaSkia there, and a face registered with

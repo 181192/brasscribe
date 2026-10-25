@@ -17,9 +17,9 @@ mkdir -p "$OUT/assets/logo"
 # Every page is a directory with an index.html, so URLs have no .html.
 cp "$ROOT"/site/{index.html,site.css,lang.js} "$OUT/"
 cp -R "$ROOT/site/guide" "$ROOT/site/research" "$ROOT/site/nb" "$OUT/"
-cp -R "$ROOT/design/dist/web/brasscribe.css" "$ROOT/design/dist/web/fonts.css" "$ROOT/design/dist/web/fonts" "$OUT/assets/"
-cp "$ROOT"/design/dist/icons/web/* "$OUT/"
-cp "$ROOT"/design/brand/logo/{lockup-play,lockup-play-on-dark,mark-brass,mark}.svg "$OUT/assets/logo/"
+cp -R "$ROOT/design/brands/brasscribe/dist/web/brasscribe.css" "$ROOT/design/brands/brasscribe/dist/web/fonts.css" "$ROOT/design/brands/brasscribe/dist/web/fonts" "$OUT/assets/"
+cp "$ROOT"/design/brands/brasscribe/dist/icons/web/* "$OUT/"
+cp "$ROOT"/design/brands/brasscribe/brand/logo/{lockup-play,lockup-play-on-dark,mark-brass,mark}.svg "$OUT/assets/logo/"
 
 # Screenshots of the real apps, made from site/shots.txt by site/make_shots.py.
 cp -R "$ROOT/site/shots" "$OUT/assets/shots"

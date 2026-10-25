@@ -46,7 +46,7 @@ public sealed partial class ScoreViewModel : ObservableObject
 
     public PlayerViewModel Player { get; }
 
-    /// <summary>The music stand: the score alone, in pages (design/music-stand.md).</summary>
+    /// <summary>The music stand: the score alone, in pages (design/brands/brasscribe/music-stand.md).</summary>
     public MusicStandViewModel Stand { get; }
 
     private bool _quietPart;

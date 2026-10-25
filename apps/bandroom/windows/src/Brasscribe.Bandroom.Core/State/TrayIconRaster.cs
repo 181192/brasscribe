@@ -1,7 +1,7 @@
 namespace Brasscribe.Bandroom.Core.State;
 
 /// <summary>
-/// Draws the notification-area icon: the Brasscribe mark (design/brand/logo/mark.svg) plus a badge shape
+/// Draws the notification-area icon: the Brasscribe mark (design/brands/brasscribe/brand/logo/mark.svg) plus a badge shape
 /// per state (§6.1), in one colour, at 16, 20, 24 or 32 px. The badge sits bottom right with a clear ring
 /// cut out of the mark, so the shape reads at 16 px. Returns straight-alpha BGRA rows, top-down.
 /// Drawing is by supersampled inside-tests in the mark's 64-unit space; no graphics library needed.

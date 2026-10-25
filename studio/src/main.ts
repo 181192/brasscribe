@@ -159,7 +159,7 @@ function translateChrome(): void {
 /** The Appearance picker and, while a system contrast setting wins, the line that says so. */
 function renderTheme(): void {
   const select = document.getElementById("theme-select") as HTMLSelectElement;
-  // Pink light and Pink dark are listed last, only once Pink is unlocked (design/system.md §10).
+  // Pink light and Pink dark are listed last, only once Pink is unlocked (design/brands/brasscribe/system.md §10).
   for (const [value, key] of [["pink-light", "app.theme.pinkLight"], ["pink-dark", "app.theme.pinkDark"]] as const) {
     let pink = select.querySelector<HTMLOptionElement>(`option[value="${value}"]`);
     if (pinkUnlocked() && !pink) {

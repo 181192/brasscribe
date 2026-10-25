@@ -73,7 +73,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string? DeviceText { get; set; }
 
-    /// <summary>The plain-language steps of the running profile (design/system.md §5, Progress with steps).</summary>
+    /// <summary>The plain-language steps of the running profile (design/brands/brasscribe/system.md §5, Progress with steps).</summary>
     public System.Collections.ObjectModel.ObservableCollection<TranscriptionStep> Steps { get; } = [];
 
     /// <summary>"STEP 4 OF 6 · SOLOIST WITH ORCHESTRA OR BAND".</summary>
@@ -347,7 +347,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             Percent = Math.Round(fraction * 100);
             EtaText = remaining is { } r ? EtaPhrase(r) : _s["Transcribe_Eta_Unknown"];
             long now = _clock.GetTimestamp();
-            // At most every 10 % or every 10 s, whichever comes first (design/system.md §5).
+            // At most every 10 % or every 10 s, whichever comes first (design/brands/brasscribe/system.md §5).
             bool step = Percent >= _lastAnnouncedPercent + 10;
             if (fraction > 0 && (_lastAnnounce == 0 || step || _clock.GetElapsedTime(_lastAnnounce) >= AnnounceEvery))
             {

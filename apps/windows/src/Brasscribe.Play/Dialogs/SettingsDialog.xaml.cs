@@ -61,7 +61,7 @@ public sealed partial class SettingsDialog : ContentDialog
 
     private void OnCancelSeat(object sender, RoutedEventArgs e) => CloseSeat(null);
 
-    /// <summary>Saves (or not) and puts focus back on the What you play row (design/system.md: focus returns where it came from).</summary>
+    /// <summary>Saves (or not) and puts focus back on the What you play row (design/brands/brasscribe/system.md: focus returns where it came from).</summary>
     private void CloseSeat(Brasscribe.Play.Core.Seats.SeatChoice? choice)
     {
         // Existing scores keep their arrangement; only "your part" in them follows the new answer.
