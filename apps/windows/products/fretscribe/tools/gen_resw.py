@@ -343,6 +343,32 @@ for state, en, nb in [("Looking", "Looking for the recording…", "Ser etter opp
                        "Denne PC-en kan ikke spille av opptaket. Du kan fortsatt lese tabben.")]:
     add(f"Tab_Practice_{state}", en, nb)
 
+# ---- share or print ----
+text_button("ShareButton", "Share or print", "Del eller skriv ut", "Print the tab, or save it as a PDF, MusicXML, MIDI, text or playing instructions (Ctrl+P)",
+            "Skriv ut tabben, eller lagre den som PDF, MusicXML, MIDI, tekst eller spilleveiledning (Ctrl+P)")
+prop("ShareButtonLabel", "Text", "Share or print", "Del eller skriv ut")
+prop("ExportDialog", "Title", "Share or print", "Del eller skriv ut")
+prop("ExportDialog", "PrimaryButtonText", "Print", "Skriv ut")
+prop("ExportDialog", "CloseButtonText", "Close", "Lukk")
+prop("ExportSaveLabel", "Text", "Save …", "Lagre …")
+for f, en, nb, fen, fnb in [("Pdf", "PDF", "PDF", "To print or keep. From Bandroom on your computer.", "Til å skrive ut eller ta vare på. Fra Bandroom på datamaskinen."),
+                            ("MusicXml", "MusicXML", "MusicXML", "Keeps the strings and frets: open it in Guitar Pro, MuseScore or another tab program.",
+                             "Beholder strengene og båndene: åpne den i Guitar Pro, MuseScore eller et annet tabprogram."),
+                            ("Midi", "MIDI", "MIDI", "For other music apps", "For andre musikkapper"),
+                            ("TextTab", "Text tab", "Tab som tekst", "The tab in plain text, for a monospace font", "Tabben som ren tekst, for en skrift med fast bredde"),
+                            ("Instructions", "Playing instructions", "Spilleveiledning", "The tab in words, for a screen reader or a braille display",
+                             "Tabben i ord, for en skjermleser eller en leselist")]:
+    add(f"Tab_Export_{f}", en, nb)
+    add(f"Tab_Export_{f}_For", fen, fnb)
+add("Tab_Export_Save", "Save {0}", "Lagre {0}")
+add("Tab_Export_InstructionsSuffix", "(playing instructions)", "(spilleveiledning)")
+add("Tab_Export_NotFromComputer", "Only for a tab written on your computer.", "Bare for en tab som er skrevet på datamaskinen.")
+add("Tab_Export_NeedsComputer", "Needs Bandroom on your computer, which wrote this tab.", "Krever Bandroom på datamaskinen, som skrev denne tabben.")
+add("Tab_Export_NotMade", "Bandroom on your computer didn't make this one for this tab.", "Bandroom på datamaskinen laget ikke denne for tabben.")
+add("Tab_Export_Saved", "Saved {0}", "Lagret {0}")
+add("Tab_Export_Failed", "{0} couldn't be saved.", "{0} kunne ikke lagres.")
+add("Tab_Export_PrintFailed", "The tab couldn't be printed.", "Tabben kunne ikke skrives ut.")
+
 # ---- errors ----
 add("Error_ChooseAnother", "Choose another recording", "Velg et annet opptak")
 add("Error_TryAgain", "Try again", "Prøv igjen")

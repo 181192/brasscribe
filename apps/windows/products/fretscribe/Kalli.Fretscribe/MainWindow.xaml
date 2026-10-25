@@ -11,6 +11,8 @@
             <!-- Global shortcuts; all use a modifier. -->
             <KeyboardAccelerator Key="O" Modifiers="Control" Invoked="OnImportAccelerator" />
             <KeyboardAccelerator Key="R" Modifiers="Control,Shift" Invoked="OnRecordAccelerator" />
+            <KeyboardAccelerator Key="E" Modifiers="Control" Invoked="OnExportAccelerator" />
+            <KeyboardAccelerator Key="P" Modifiers="Control" Invoked="OnExportAccelerator" />
             <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="OnBackAccelerator" />
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>

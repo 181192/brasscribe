@@ -126,11 +126,11 @@ public partial class App : Application
         // --show NAME [--score DIR]: one screen with sample content, for screenshots (see TabSampleScenes); DIR is a tab fixture folder.
         if (Option("--show") is { } scene)
         {
-            if (await TabSampleScenes.ShowAsync(flow, scene == "settings" ? "home" : scene, Option("--score")) && scene == "settings")
+            if (await TabSampleScenes.ShowAsync(flow, scene == "settings" ? "home" : scene, Option("--score")) && scene is "settings" or "export")
                 window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
                 {
                     await Task.Delay(1500);
-                    await window.OpenSettingsAsync();
+                    await (scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync());
                 });
             return;
         }
@@ -175,7 +175,8 @@ public partial class App : Application
         flow = new TabFlowViewModel(Product.Target,
             new StartViewModel(new WasapiCaptureService(), new MediaFoundationDecoder(), dialogs, announcer, Strings, ui, workDirectory),
             new TranscriptionViewModel(() => flow!.Engine, announcer, Strings, ui),
-            settingsVm, new YourInstrumentStore(settings), practice, EngineFactory, announcer, Strings,
+            settingsVm, new YourInstrumentStore(settings), practice, new TabExportViewModel(dialogs, new ShellPdfPrinter(), announcer, Strings),
+            EngineFactory, announcer, Strings,
             new ScoreLibrary(Path.Combine(workDirectory, "library")));
 
         Theme = new ThemeController(settingsVm, queue, forcedTheme);

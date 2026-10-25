@@ -318,6 +318,18 @@
   <data name="Error_UpdateBandroom_Title" xml:space="preserve">
     <value>Update Bandroom on your computer</value>
   </data>
+  <data name="ExportDialog.CloseButtonText" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ExportDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="ExportDialog.Title" xml:space="preserve">
+    <value>Share or print</value>
+  </data>
+  <data name="ExportSaveLabel.Text" xml:space="preserve">
+    <value>Save …</value>
+  </data>
   <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Play the recording faster; the pitch stays</value>
   </data>
@@ -699,6 +711,15 @@
   <data name="Settings_Link_NotFound" xml:space="preserve">
     <value>Couldn't find Bandroom on {0}. Check that this PC is on the same network as the computer.</value>
   </data>
+  <data name="ShareButton.Content" xml:space="preserve">
+    <value>Share or print</value>
+  </data>
+  <data name="ShareButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Print the tab, or save it as a PDF, MusicXML, MIDI, text or playing instructions (Ctrl+P)</value>
+  </data>
+  <data name="ShareButtonLabel.Text" xml:space="preserve">
+    <value>Share or print</value>
+  </data>
   <data name="ShowTabButton.Content" xml:space="preserve">
     <value>Show the tab</value>
   </data>
@@ -965,6 +986,60 @@
   </data>
   <data name="Tab_Error_ScoreFile" xml:space="preserve">
     <value>{0} is sheet music, not a recording. Fretscribe writes tab from what it hears: open a recording, or record it.</value>
+  </data>
+  <data name="Tab_Export_Failed" xml:space="preserve">
+    <value>{0} couldn't be saved.</value>
+  </data>
+  <data name="Tab_Export_Instructions" xml:space="preserve">
+    <value>Playing instructions</value>
+  </data>
+  <data name="Tab_Export_InstructionsSuffix" xml:space="preserve">
+    <value>(playing instructions)</value>
+  </data>
+  <data name="Tab_Export_Instructions_For" xml:space="preserve">
+    <value>The tab in words, for a screen reader or a braille display</value>
+  </data>
+  <data name="Tab_Export_Midi" xml:space="preserve">
+    <value>MIDI</value>
+  </data>
+  <data name="Tab_Export_Midi_For" xml:space="preserve">
+    <value>For other music apps</value>
+  </data>
+  <data name="Tab_Export_MusicXml" xml:space="preserve">
+    <value>MusicXML</value>
+  </data>
+  <data name="Tab_Export_MusicXml_For" xml:space="preserve">
+    <value>Keeps the strings and frets: open it in Guitar Pro, MuseScore or another tab program.</value>
+  </data>
+  <data name="Tab_Export_NeedsComputer" xml:space="preserve">
+    <value>Needs Bandroom on your computer, which wrote this tab.</value>
+  </data>
+  <data name="Tab_Export_NotFromComputer" xml:space="preserve">
+    <value>Only for a tab written on your computer.</value>
+  </data>
+  <data name="Tab_Export_NotMade" xml:space="preserve">
+    <value>Bandroom on your computer didn't make this one for this tab.</value>
+  </data>
+  <data name="Tab_Export_Pdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="Tab_Export_Pdf_For" xml:space="preserve">
+    <value>To print or keep. From Bandroom on your computer.</value>
+  </data>
+  <data name="Tab_Export_PrintFailed" xml:space="preserve">
+    <value>The tab couldn't be printed.</value>
+  </data>
+  <data name="Tab_Export_Save" xml:space="preserve">
+    <value>Save {0}</value>
+  </data>
+  <data name="Tab_Export_Saved" xml:space="preserve">
+    <value>Saved {0}</value>
+  </data>
+  <data name="Tab_Export_TextTab" xml:space="preserve">
+    <value>Text tab</value>
+  </data>
+  <data name="Tab_Export_TextTab_For" xml:space="preserve">
+    <value>The tab in plain text, for a monospace font</value>
   </data>
   <data name="Tab_Failed" xml:space="preserve">
     <value>This tab can't be shown. Go back and open it again.</value>

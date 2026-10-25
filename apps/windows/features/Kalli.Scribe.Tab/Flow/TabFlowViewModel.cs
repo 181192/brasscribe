@@ -30,9 +30,10 @@ public sealed partial class TabFlowViewModel : ObservableObject
     private int _opening;
 
     public TabFlowViewModel(Target target, StartViewModel start, TranscriptionViewModel transcription, SettingsViewModel settings,
-        YourInstrumentStore instruments, PracticeModel practice, Func<Uri, string?, IEngineClient> engineFactory,
+        YourInstrumentStore instruments, PracticeModel practice, TabExportViewModel export, Func<Uri, string?, IEngineClient> engineFactory,
         IAnnouncer announcer, IStrings strings, ScoreLibrary? library = null)
     {
+        Export = export;
         Target = target;
         Start = start;
         Transcription = transcription;
@@ -121,6 +122,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
         TabPage.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TabPageViewModel.Title)) OnPropertyChanged(nameof(Title));
+            if (e.PropertyName == nameof(TabPageViewModel.IsReady)) OnPropertyChanged(nameof(CanExport));
         };
     }
 
@@ -135,6 +137,22 @@ public sealed partial class TabFlowViewModel : ObservableObject
     public ErrorViewModel Error { get; }
     public LibraryViewModel LibraryView { get; }
 
+    /// <summary>Share or print the tab on screen.</summary>
+    public TabExportViewModel Export { get; }
+
+    /// <summary>The tab on screen: its MusicXML, job and what the job wrote (null when not known).</summary>
+    private (string MusicXml, string? Job, IReadOnlyCollection<string>? Outputs)? _shown;
+
+    /// <summary>Share or print, for the tab on screen: what can be had now, from this PC and the computer.</summary>
+    public void PrepareExport()
+    {
+        if (_shown is not { } shown) return;
+        Export.Prepare(TabPage.Title, shown.MusicXml, shown.Job, shown.Outputs, ComputerThere ? Engine : null);
+    }
+
+    /// <summary>Share or print can be opened: a tab is shown.</summary>
+    public bool CanExport => Screen == TabScreen.Tab && TabPage.IsReady;
+
     /// <summary>The profiles of this app's target that the computer in use has.</summary>
     public ComputerProfiles Profiles { get; } = new();
 
@@ -143,7 +161,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(BackCommand))]
-    [NotifyPropertyChangedFor(nameof(Title))]
+    [NotifyPropertyChangedFor(nameof(Title), nameof(CanExport))]
     public partial TabScreen Screen { get; set; }
 
     partial void OnScreenChanged(TabScreen oldValue, TabScreen newValue)
@@ -275,13 +293,15 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     /// <summary>The tab of the song in hand.</summary>
     private Task ShowTabAsync() => _result is { } r
-        ? OpenTabAsync(r.MusicXml, r.Composition, r.JobId, Path.GetFileNameWithoutExtension(r.Source.DisplayName), r.Source.WavPath)
+        ? OpenTabAsync(r.MusicXml, r.Composition, r.JobId, Path.GetFileNameWithoutExtension(r.Source.DisplayName), r.Source.WavPath, r.Outputs)
         : Task.CompletedTask;
 
     /// <summary>Shows a tab: read at once from its page, with the computer's data for its marks and its beats when it gives them.</summary>
-    private async Task OpenTabAsync(string musicXml, Composition? composition, string? job, string title, string? recording)
+    private async Task OpenTabAsync(string musicXml, Composition? composition, string? job, string title, string? recording,
+        IReadOnlyCollection<string>? outputs = null)
     {
         int opening = ++_opening;
+        _shown = (musicXml, job, outputs);
         TabPage.Reading(title);
         Screen = TabScreen.Tab;
         TabResult? data = null;
@@ -327,6 +347,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
     public async Task ShowTabAsync(string musicXml, TabResult tab, Composition? composition, string title)
     {
         int opening = ++_opening;
+        _shown = (musicXml, null, null);
         TabPage.Reading(title);
         Screen = TabScreen.Tab;
         var sheet = await Task.Run(() => TabSheet.Read(musicXml, tab));
@@ -348,7 +369,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
                 _result = null;
                 _source = null;
                 _libraryId = LibraryView.Store?.AddMade(job.Title ?? item.Title, xml, composition, 1, 0, 0, jobId, evidence).Id;
-                await OpenTabAsync(xml, composition, jobId, job.Title ?? item.Title, null);
+                await OpenTabAsync(xml, composition, jobId, job.Title ?? item.Title, null, job.Outputs);
             }
             catch (EngineException e) when (e.Interface is { } answer)
             {

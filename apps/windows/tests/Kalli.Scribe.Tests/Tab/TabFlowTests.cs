@@ -85,8 +85,25 @@ public class TabFlowTests : TempFolderTest
             ("GET", "/v1/jobs/guitar-line/composition") => FakeHandler.Json(TabFixtures.Text("guitar-line", "composition.json")),
             ("GET", "/v1/jobs/guitar-line/musicxml") => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(TabFixtures.MusicXml("guitar-line")) },
             ("GET", "/v1/jobs/guitar-line/tab") => FakeHandler.Json(TabFixtures.Text("guitar-line", "tab.json")),
+            ("GET", "/v1/jobs/guitar-line/artifacts/tab.txt") => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(TabFixtures.Text("guitar-line", "tab.txt")) },
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         });
+
+    /// <summary>Where Share or print saves: the files it was asked to write, by name.</summary>
+    private sealed class SavingDialogs(string dir) : IFileDialogs
+    {
+        public List<string> Saved { get; } = [];
+        public Task<string?> PickOpenAsync(IEnumerable<string> extensions) => Task.FromResult<string?>(null);
+        public Task<SaveTarget?> PickSaveAsync(string suggestedName, string extension, string description)
+        {
+            string path = Path.Combine(dir, suggestedName);
+            Saved.Add(path);
+            return Task.FromResult<SaveTarget?>(new SaveTarget(File.Create(path), suggestedName));
+        }
+    }
+
+    private SavingDialogs? _dialogs;
+    private SavingDialogs Dialogs => _dialogs ??= new SavingDialogs(Dir);
 
     private (TabFlowViewModel Flow, FakeHandler Computer, SilentPlayers Players) Build(FakeHandler computer, bool firstRun = false)
     {
@@ -103,6 +120,7 @@ public class TabFlowTests : TempFolderTest
         flow = new TabFlowViewModel(Target.Fretted,
             new StartViewModel(new NoCapture(), new CopyDecoder(), new NoDialogs(), said, strings, ui, Path.Combine(Dir, "work")),
             new TranscriptionViewModel(() => flow!.Engine, said, strings, ui), settings, new YourInstrumentStore(store), practice,
+            new TabExportViewModel(Dialogs, null, said, strings),
             (uri, token) => new EngineClient(new HttpClient(computer), uri) { Token = token }, said, strings,
             new ScoreLibrary(Path.Combine(Dir, "library")));
         return (flow, computer, players);
@@ -252,7 +270,7 @@ public class TabFlowTests : TempFolderTest
                 "what-is-this" or "what-is-this-offline" => TabScreen.WhatIsThis,
                 "transcribing" => TabScreen.Transcribing,
                 "check-the-song" => TabScreen.CheckTheSong,
-                "tab" or "tab-full-screen" => TabScreen.Tab,
+                "tab" or "tab-full-screen" or "export" => TabScreen.Tab,
                 _ => TabScreen.Error,
             };
             Assert.Equal(expected, flow.Screen);
@@ -266,5 +284,42 @@ public class TabFlowTests : TempFolderTest
             Assert.Empty(computer.Requests);
         }
         Assert.False(await TabSampleScenes.ShowAsync(Build(Computer()).Flow, "tab", fixture: null));
+    }
+
+    [Fact]
+    public async Task Share_or_print_offers_what_the_job_wrote_and_saves_it()
+    {
+        var (flow, _, _) = Build(Computer());
+        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        await flow.Start.OpenPathAsync(await Take());
+        await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
+        flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.Single(c => c.Recording == Recording.Instrument));
+        flow.WhatIsThis.ContinueCommand.Execute(null);
+        await Until(() => flow.Screen == TabScreen.CheckTheSong && !flow.Check.IsReading);
+        flow.Check.ShowCommand.Execute(null);
+        await Until(() => flow.CanExport);
+
+        flow.PrepareExport();
+        var options = flow.Export.Options.ToDictionary(o => o.Format);
+        // The guitar-line job wrote no PDF and no MIDI (no MuseScore on the computer that made it).
+        Assert.True(options[TabExportFormat.MusicXml].IsAvailable);
+        Assert.True(options[TabExportFormat.TextTab].IsAvailable);
+        Assert.True(options[TabExportFormat.Instructions].IsAvailable);
+        Assert.False(options[TabExportFormat.Pdf].IsAvailable);
+        Assert.Equal("Tab_Export_NotMade", options[TabExportFormat.Pdf].Reason);
+        Assert.False(flow.Export.CanPrint);
+
+        await flow.Export.SaveCommand.ExecuteAsync(options[TabExportFormat.TextTab]);
+        await flow.Export.SaveCommand.ExecuteAsync(options[TabExportFormat.MusicXml]);
+        Assert.Equal(TabFixtures.Text("guitar-line", "tab.txt"), await File.ReadAllTextAsync(Dialogs.Saved[0]));
+        Assert.EndsWith(".musicxml", Dialogs.Saved[1]);
+        Assert.Contains("<score-partwise", await File.ReadAllTextAsync(Dialogs.Saved[1]));
+        Assert.StartsWith("Tab_Export_Saved(", flow.Export.StatusText);
+
+        // Without the computer, only this PC's MusicXML can be had.
+        flow.Settings.Connection.Show(ConnectionState.Offline, ServerNames.Prefix + "Studio PC");
+        flow.PrepareExport();
+        Assert.Equal([TabExportFormat.MusicXml], flow.Export.Options.Where(o => o.IsAvailable).Select(o => o.Format));
+        Assert.Equal("Tab_Export_NeedsComputer", flow.Export.Options.First(o => o.Format == TabExportFormat.TextTab).Reason);
     }
 }

@@ -162,6 +162,12 @@ public sealed partial class TabScreenPage : Page, IScreenPage
         marks[_mark].Focus(FocusState.Keyboard);
     }
 
+    private async void OnShare(object sender, RoutedEventArgs e)
+    {
+        if (App.MainWindowInstance is { } window) await window.ShowExportAsync();
+        ShareButton.Focus(FocusState.Programmatic);
+    }
+
     private async void OnFetch(object sender, RoutedEventArgs e) => await ViewModel.Practice.FetchAsync(_flow.Engine);
 
     /// <summary>Repeat bars: from and to, as numbers; Stop repeating when bars are repeated.</summary>
