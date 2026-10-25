@@ -104,6 +104,7 @@ public partial class FretscribeWordsTests
         foreach (var k in Enum.GetNames<InputBand>()) used.Add($"Start_Level_{k}");
         foreach (var k in Enum.GetNames<CaptureNoticeKind>()) used.Add($"Start_Notice_{k}");
         foreach (var k in TranscriptionViewModel.StepKeys(TabProfiles.Tab)) used.Add($"Transcribe_Step_{k}");
+        foreach (var k in Enum.GetNames<TabExportFormat>()) { used.Add($"Tab_Export_{k}"); used.Add($"Tab_Export_{k}_For"); }
         // What the computer answers for a tab job, in the app's words.
         foreach (var k in new[] { "Error_Unreachable", "Error_Engine", "Error_NeedsPairing", "Error_NotFound", "Error_Options", "Error_Timeout", "Error_TooLarge" })
             used.Add(k);

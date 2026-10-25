@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Kalli.Fretscribe.Dialogs.HelpDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    x:Uid="HelpDialog"
+    DefaultButton="Close">
+    <!-- Help: how Fretscribe works, in a few headed paragraphs, and the keys. -->
+    <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="6" MaxWidth="520">
+            <TextBlock x:Uid="Help1Title" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,4,0,0" />
+            <TextBlock x:Uid="Help1Text" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+            <TextBlock x:Uid="Help2Title" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,12,0,0" />
+            <TextBlock x:Uid="Help2Text" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+            <TextBlock x:Uid="Help3Title" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,12,0,0" />
+            <TextBlock x:Uid="Help3Text" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+            <TextBlock x:Uid="Help4Title" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,12,0,0" />
+            <TextBlock x:Uid="Help4Text" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+            <TextBlock x:Uid="Help5Title" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,12,0,0" />
+            <TextBlock x:Uid="Help5Text" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+            <TextBlock x:Uid="Help6Title" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,12,0,0" />
+            <TextBlock x:Uid="Help6Text" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+            <TextBlock x:Uid="HelpKeysTitle" Style="{StaticResource LabelStyle}" AutomationProperties.HeadingLevel="Level2" Margin="0,12,0,0" />
+            <TextBlock x:Uid="HelpKeysText" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

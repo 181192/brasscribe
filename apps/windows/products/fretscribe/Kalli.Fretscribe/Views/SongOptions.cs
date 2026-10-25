@@ -57,7 +57,7 @@ internal static class SongOptions
             XamlRoot = root,
             RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = s.Format("SongOptions_DeleteTitle", item.Title),
-            Content = s[item.OnComputer ? "SongOptions_DeleteComputer" : "SongOptions_DeleteThisPc"],
+            Content = s[item.OnComputer ? "SongOptions_DeleteComputer" : item.Id.StartsWith("kept:", StringComparison.Ordinal) ? "SongOptions_DeleteKept" : "SongOptions_DeleteThisPc"],
             PrimaryButtonText = s["SongOptions_Delete"],
             CloseButtonText = s["Song_Cancel"],
             DefaultButton = ContentDialogButton.Close,

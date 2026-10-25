@@ -42,7 +42,7 @@ internal static class PlayScan
                 while (app.MainWindowHandle == 0 && !app.HasExited && DateTime.UtcNow < deadline) { Thread.Sleep(500); app.Refresh(); }
                 if (app.HasExited) throw new InvalidOperationException($"Play exited with code {app.ExitCode} before showing a window");
                 if (app.MainWindowHandle == 0) throw new TimeoutException("no window after 90 s");
-                if (scene is "export" or "settings") WaitForDialog(app.MainWindowHandle); // it opens 1.5 s after the screen
+                if (scene is "export" or "settings" or "help") WaitForDialog(app.MainWindowHandle); // it opens 1.5 s after the screen
                 WindowShot.Take(app, app.MainWindowHandle, shot + " (Axe.Windows and Tab)");
                 result.Findings.AddRange(Scan.Axe(app.Id, shot, Path.Combine(scans, "axe")));
                 result.Findings.AddRange(Scan.Keyboard(app.Id, app.MainWindowHandle, shot, out var order));

@@ -12,7 +12,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting.AppContainer;
 namespace Kalli.Fretscribe.Catalogue;
 
 /// <summary>
-/// Every screen of the app with sample content (the scenes of <see cref="TabSampleScenes"/>, and Settings), each in
+/// Every screen of the app with sample content (the scenes of <see cref="TabSampleScenes"/>, Settings and Share or
+/// print), each in
 /// the Appearance choices this run asks for, switched while the screen is open, as a person does
 /// in Settings. For each: a screenshot of the window as it is on screen, the contrast of every
 /// text and icon measured on it, and text cut off. Axe.Windows and the walk with Tab run on the app's own build
@@ -24,9 +25,9 @@ public sealed class ScreenCatalogue
 {
     internal static App App = null!;
 
-    /// <summary>The screens: the sample scenes, then Settings.</summary>
+    /// <summary>The screens: the sample scenes, then Settings and Help.</summary>
     public static IEnumerable<object[]> Screens =>
-        TabSampleScenes.Names.Append("settings").Where(Options.Wanted).Select(s => new object[] { s });
+        TabSampleScenes.Names.Append("settings").Append("help").Where(Options.Wanted).Select(s => new object[] { s });
 
     private static readonly CatalogueRun Run = new();
 
@@ -55,8 +56,14 @@ public sealed class ScreenCatalogue
         string shot = ShotName(scene, variants[0]);
         try
         {
-            Type? dialog = scene == "settings" ? typeof(Kalli.Fretscribe.Dialogs.SettingsDialog) : null;
-            await TabSampleScenes.ShowAsync(main, scene == "settings" ? "home" : scene, Options.Score);
+            Type? dialog = scene switch
+            {
+                "export" => typeof(Kalli.Fretscribe.Dialogs.ExportDialog),
+                "settings" => typeof(Kalli.Fretscribe.Dialogs.SettingsDialog),
+                "help" => typeof(Kalli.Fretscribe.Dialogs.HelpDialog),
+                _ => null,
+            };
+            await TabSampleScenes.ShowAsync(main, scene is "settings" or "help" ? "home" : scene, Options.Score);
             await LoadedAsync(window);
             CheckSystem(settings);
             CheckLanguage();
@@ -72,7 +79,7 @@ public sealed class ScreenCatalogue
                     // Opened in each choice, so it shows that choice (a person changes it in the dialog itself). The
                     // screen without it is taken first: the dialog's picture must not be that one.
                     without = (await TakeAsync(window, main, settings, null, null, shot + " (before its dialog)")).Picture;
-                    var open = window.OpenSettingsAsync();
+                    var open = scene switch { "export" => window.ShowExportAsync(), "help" => window.ShowHelpAsync(), _ => window.OpenSettingsAsync() };
                     if (open.IsCompleted) throw new ScreenNotTakenException("screen not taken: its dialog was not opened (another one is open, or the screen under it is not the one it opens from)");
                 }
                 var taken = await TakeAsync(window, main, settings, dialog, without, shot);

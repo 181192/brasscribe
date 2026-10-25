@@ -91,7 +91,7 @@
     <value>Slutt å vente på at datamaskinen godkjenner denne PC-en</value>
   </data>
   <data name="CancelDialog_Content" xml:space="preserve">
-    <value>Opptaket blir liggende på denne PC-en, så du kan starte på nytt.</value>
+    <value>Opptaket blir liggende i Sangene dine i 30 dager. Du kan starte på nytt fra det.</value>
   </data>
   <data name="CancelDialog_Keep" xml:space="preserve">
     <value>Fortsett</value>
@@ -318,6 +318,18 @@
   <data name="Error_UpdateBandroom_Title" xml:space="preserve">
     <value>Oppdater Bandroom på datamaskinen</value>
   </data>
+  <data name="ExportDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="ExportDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Skriv ut</value>
+  </data>
+  <data name="ExportDialog.Title" xml:space="preserve">
+    <value>Del eller skriv ut</value>
+  </data>
+  <data name="ExportSaveLabel.Text" xml:space="preserve">
+    <value>Lagre …</value>
+  </data>
   <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Spill opptaket raskere; tonehøyden er den samme</value>
   </data>
@@ -380,6 +392,63 @@
   </data>
   <data name="HandBox.Header" xml:space="preserve">
     <value>Hvilken hånd er på halsen?</value>
+  </data>
+  <data name="Help1Text.Text" xml:space="preserve">
+    <value>Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt.</value>
+  </data>
+  <data name="Help1Title.Text" xml:space="preserve">
+    <value>Lag en tab</value>
+  </data>
+  <data name="Help2Text.Text" xml:space="preserve">
+    <value>Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Velg merket for å høre den takten i opptaket sakte.</value>
+  </data>
+  <data name="Help2Title.Text" xml:space="preserve">
+    <value>«?»-merkene</value>
+  </data>
+  <data name="Help3Text.Text" xml:space="preserve">
+    <value>Sett ned farten på opptaket, og gjenta de vanskelige taktene. Tonehøyden er den samme i alle tempoer.</value>
+  </data>
+  <data name="Help3Title.Text" xml:space="preserve">
+    <value>Øv</value>
+  </data>
+  <data name="Help4Text.Text" xml:space="preserve">
+    <value>Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen. Et opptak som ikke ble til en tab, eller som du stoppet, ligger der i 30 dager.</value>
+  </data>
+  <data name="Help4Title.Text" xml:space="preserve">
+    <value>Sangene dine</value>
+  </data>
+  <data name="Help5Text.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger.</value>
+  </data>
+  <data name="Help5Title.Text" xml:space="preserve">
+    <value>Tab skrives på datamaskinen</value>
+  </data>
+  <data name="Help6Text.Text" xml:space="preserve">
+    <value>Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</value>
+  </data>
+  <data name="Help6Title.Text" xml:space="preserve">
+    <value>Lenker og strømmeapper</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Slik virker Fretscribe, og tastene (F1)</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hjelp</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Hjelp</value>
+  </data>
+  <data name="HelpDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="HelpDialog.Title" xml:space="preserve">
+    <value>Hjelp</value>
+  </data>
+  <data name="HelpKeysText.Text" xml:space="preserve">
+    <value>På tabben: Mellomrom spiller og pauser, høyre piltast går én takt fram, og venstre piltast én takt tilbake eller til starten av taktene som gjentas. F11 gir tabben hele skjermen, og Esc går ut. Overalt: Ctrl+O åpner et opptak, Ctrl+Shift+R spiller inn, Ctrl+P deler eller skriver ut tabben, Ctrl+, åpner Innstillinger, Alt+Venstre går tilbake og F1 åpner denne hjelpen.</value>
+  </data>
+  <data name="HelpKeysTitle.Text" xml:space="preserve">
+    <value>Taster</value>
   </data>
   <data name="HomeEmpty.Text" xml:space="preserve">
     <value>Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</value>
@@ -699,6 +768,15 @@
   <data name="Settings_Link_NotFound" xml:space="preserve">
     <value>Fant ikke Bandroom på {0}. Sjekk at denne PC-en er på samme nettverk som datamaskinen.</value>
   </data>
+  <data name="ShareButton.Content" xml:space="preserve">
+    <value>Del eller skriv ut</value>
+  </data>
+  <data name="ShareButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Skriv ut tabben, eller lagre den som PDF, MusicXML, MIDI, tekst eller spilleveiledning (Ctrl+P)</value>
+  </data>
+  <data name="ShareButtonLabel.Text" xml:space="preserve">
+    <value>Del eller skriv ut</value>
+  </data>
   <data name="ShowTabButton.Content" xml:space="preserve">
     <value>Vis tabben</value>
   </data>
@@ -731,6 +809,9 @@
   </data>
   <data name="SongOptions_DeleteComputer" xml:space="preserve">
     <value>Tabben og opptaket slettes fra datamaskinen.</value>
+  </data>
+  <data name="SongOptions_DeleteKept" xml:space="preserve">
+    <value>Opptaket fjernes fra denne PC-en.</value>
   </data>
   <data name="SongOptions_DeleteThisPc" xml:space="preserve">
     <value>Tabben slettes fra denne PC-en. Bandroom på datamaskinen beholder sin kopi.</value>
@@ -966,6 +1047,60 @@
   <data name="Tab_Error_ScoreFile" xml:space="preserve">
     <value>{0} er noter, ikke et opptak. Fretscribe skriver tab fra det den hører: åpne et opptak, eller spill det inn.</value>
   </data>
+  <data name="Tab_Export_Failed" xml:space="preserve">
+    <value>{0} kunne ikke lagres.</value>
+  </data>
+  <data name="Tab_Export_Instructions" xml:space="preserve">
+    <value>Spilleveiledning</value>
+  </data>
+  <data name="Tab_Export_InstructionsSuffix" xml:space="preserve">
+    <value>(spilleveiledning)</value>
+  </data>
+  <data name="Tab_Export_Instructions_For" xml:space="preserve">
+    <value>Tabben i ord, for en skjermleser eller en leselist</value>
+  </data>
+  <data name="Tab_Export_Midi" xml:space="preserve">
+    <value>MIDI</value>
+  </data>
+  <data name="Tab_Export_Midi_For" xml:space="preserve">
+    <value>For andre musikkapper</value>
+  </data>
+  <data name="Tab_Export_MusicXml" xml:space="preserve">
+    <value>MusicXML</value>
+  </data>
+  <data name="Tab_Export_MusicXml_For" xml:space="preserve">
+    <value>Beholder strengene og båndene: åpne den i Guitar Pro, MuseScore eller et annet tabprogram.</value>
+  </data>
+  <data name="Tab_Export_NeedsComputer" xml:space="preserve">
+    <value>Krever Bandroom på datamaskinen, som skrev denne tabben.</value>
+  </data>
+  <data name="Tab_Export_NotFromComputer" xml:space="preserve">
+    <value>Bare for en tab som er skrevet på datamaskinen.</value>
+  </data>
+  <data name="Tab_Export_NotMade" xml:space="preserve">
+    <value>Bandroom på datamaskinen laget ikke denne for tabben.</value>
+  </data>
+  <data name="Tab_Export_Pdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="Tab_Export_Pdf_For" xml:space="preserve">
+    <value>Til å skrive ut eller ta vare på. Fra Bandroom på datamaskinen.</value>
+  </data>
+  <data name="Tab_Export_PrintFailed" xml:space="preserve">
+    <value>Tabben kunne ikke skrives ut.</value>
+  </data>
+  <data name="Tab_Export_Save" xml:space="preserve">
+    <value>Lagre {0}</value>
+  </data>
+  <data name="Tab_Export_Saved" xml:space="preserve">
+    <value>Lagret {0}</value>
+  </data>
+  <data name="Tab_Export_TextTab" xml:space="preserve">
+    <value>Tab som tekst</value>
+  </data>
+  <data name="Tab_Export_TextTab_For" xml:space="preserve">
+    <value>Tabben som ren tekst, for en skrift med fast bredde</value>
+  </data>
   <data name="Tab_Failed" xml:space="preserve">
     <value>Denne tabben kan ikke vises. Gå tilbake og åpne den på nytt.</value>
   </data>
@@ -998,6 +1133,9 @@
   </data>
   <data name="Tab_Instrument_Ukulele" xml:space="preserve">
     <value>Ukulele</value>
+  </data>
+  <data name="Tab_Kept_Row" xml:space="preserve">
+    <value>{0} · Ingen tab ennå</value>
   </data>
   <data name="Tab_KindWithStrings_Bass" xml:space="preserve">
     <value>{0}-strengs bass</value>
@@ -1230,6 +1368,12 @@
   <data name="Tab_What_Song_Desc_Ukulele" xml:space="preserve">
     <value>Et band eller en plate. Dette virker bare når ingen gitar spiller: i en sang kan ikke Fretscribe skille en ukulele fra en gitar.</value>
   </data>
+  <data name="Tab_Where_Computer" xml:space="preserve">
+    <value>Bandroom på {0}</value>
+  </data>
+  <data name="Tab_Where_YourComputer" xml:space="preserve">
+    <value>Bandroom på datamaskinen</value>
+  </data>
   <data name="Tab_Zoom" xml:space="preserve">
     <value>{0} %</value>
   </data>
@@ -1248,14 +1392,11 @@
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Skriver ned tonene</value>
   </data>
-  <data name="TranscribeWhere.Text" xml:space="preserve">
-    <value>På datamaskinen</value>
-  </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
-    <value>Slutte å skrive det ned? Opptaket blir liggende på denne PC-en.</value>
+    <value>Slutte å skrive det ned? Opptaket blir liggende i Sangene dine i 30 dager.</value>
   </data>
   <data name="Transcribe_Cancelled" xml:space="preserve">
-    <value>Stoppet. Opptaket beholdes.</value>
+    <value>Stoppet. Opptaket ligger i Sangene dine.</value>
   </data>
   <data name="Transcribe_Device" xml:space="preserve">
     <value>Kjører på {0}</value>

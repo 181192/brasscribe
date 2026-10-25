@@ -42,7 +42,7 @@ $app = @{
     fretscribe = @{
         Project = "products/fretscribe/Kalli.Fretscribe"; Exe = "Fretscribe.exe"; Title = "Fretscribe for Windows: screen catalogue"
         Content = Join-Path $repo "apps/fixtures/guitar-line"; Pink = $false
-        Scenes = "first-run,your-instrument,home,home-offline,home-update,what-is-this,what-is-this-offline,transcribing,check-the-song,tab,tab-full-screen,error,error-update,settings"
+        Scenes = "first-run,your-instrument,home,home-offline,home-update,what-is-this,what-is-this-offline,transcribing,check-the-song,tab,tab-full-screen,export,error,error-update,settings,help"
     }
 }[$Product]
 

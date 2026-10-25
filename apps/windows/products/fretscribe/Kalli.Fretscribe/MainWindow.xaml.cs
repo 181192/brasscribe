@@ -189,6 +189,21 @@ public sealed partial class MainWindow : Window
         else if (ViewModel.Screen == TabScreen.Home) start.RecordMicrophoneCommand.Execute(null);
     }
 
+    private async void OnExportAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await ShowExportAsync();
+    }
+
+    /// <summary>Share or print, for the tab on screen.</summary>
+    public async Task ShowExportAsync()
+    {
+        if (!ViewModel.CanExport || DialogGate.IsOpen) return;
+        ViewModel.PrepareExport();
+        var dialog = new ExportDialog(ViewModel.Export) { XamlRoot = Content.XamlRoot, RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs };
+        await DialogGate.ShowAsync(dialog);
+    }
+
     private async void OnSettingsAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
@@ -205,6 +220,22 @@ public sealed partial class MainWindow : Window
     }
 
     private async void OnSettingsClick(object sender, RoutedEventArgs e) => await OpenSettingsAsync();
+    private async void OnHelpClick(object sender, RoutedEventArgs e) => await ShowHelpAsync();
+
+    private async void OnHelpAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await ShowHelpAsync();
+    }
+
+    /// <summary>Help; focus returns to the Help button.</summary>
+    public async Task ShowHelpAsync()
+    {
+        if (DialogGate.IsOpen) return;
+        var dialog = new HelpDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs };
+        await DialogGate.ShowAsync(dialog);
+        HelpButton.Focus(FocusState.Programmatic);
+    }
 
     private bool _settingsOpen;
     private string? _waitingLink;

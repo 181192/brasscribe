@@ -41,6 +41,12 @@
                 </StackPanel>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                <Button x:Name="ShareButton" x:Uid="ShareButton" Style="{StaticResource ActionButtonStyle}" Click="OnShare" AccessKey="E">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="{StaticResource FsIconExport}" FontSize="16" />
+                        <TextBlock x:Uid="ShareButtonLabel" />
+                    </StackPanel>
+                </Button>
                 <Button x:Uid="NextMarkButton" Style="{StaticResource ActionButtonStyle}" Click="OnNextMark"
                         Visibility="{x:Bind views:Shown.HasText(ViewModel.Summary), Mode=OneWay}" />
                 <Button x:Uid="ZoomOutButton" Style="{StaticResource IconButtonStyle}" Command="{x:Bind ViewModel.ZoomOutCommand}">

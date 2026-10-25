@@ -91,7 +91,7 @@
     <value>Stop waiting for the computer to allow this PC</value>
   </data>
   <data name="CancelDialog_Content" xml:space="preserve">
-    <value>The recording stays on this PC, so you can start again.</value>
+    <value>The recording stays in Your songs for 30 days. You can start again from it.</value>
   </data>
   <data name="CancelDialog_Keep" xml:space="preserve">
     <value>Keep going</value>
@@ -318,6 +318,18 @@
   <data name="Error_UpdateBandroom_Title" xml:space="preserve">
     <value>Update Bandroom on your computer</value>
   </data>
+  <data name="ExportDialog.CloseButtonText" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ExportDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Print</value>
+  </data>
+  <data name="ExportDialog.Title" xml:space="preserve">
+    <value>Share or print</value>
+  </data>
+  <data name="ExportSaveLabel.Text" xml:space="preserve">
+    <value>Save …</value>
+  </data>
   <data name="FasterButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
     <value>Play the recording faster; the pitch stays</value>
   </data>
@@ -380,6 +392,63 @@
   </data>
   <data name="HandBox.Header" xml:space="preserve">
     <value>Which hand is on the neck?</value>
+  </data>
+  <data name="Help1Text.Text" xml:space="preserve">
+    <value>Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument.</value>
+  </data>
+  <data name="Help1Title.Text" xml:space="preserve">
+    <value>Write down a tab</value>
+  </data>
+  <data name="Help2Text.Text" xml:space="preserve">
+    <value>A “?” above a note means Fretscribe wasn't sure of it. A boxed “!” marks a note your instrument can't play there. Choose the mark to hear that bar of the recording slowly.</value>
+  </data>
+  <data name="Help2Title.Text" xml:space="preserve">
+    <value>The “?” marks</value>
+  </data>
+  <data name="Help3Text.Text" xml:space="preserve">
+    <value>Slow the recording down, and repeat the hard bars. The pitch stays the same at every speed.</value>
+  </data>
+  <data name="Help3Title.Text" xml:space="preserve">
+    <value>Practise</value>
+  </data>
+  <data name="Help4Text.Text" xml:space="preserve">
+    <value>Every tab you make is kept under Your songs, on this PC and on your computer. A recording whose tab couldn't be made, or was stopped, stays there for 30 days.</value>
+  </data>
+  <data name="Help4Title.Text" xml:space="preserve">
+    <value>Your songs</value>
+  </data>
+  <data name="Help5Text.Text" xml:space="preserve">
+    <value>Bandroom on your computer writes down the notes. Open it there, and connect in Settings.</value>
+  </data>
+  <data name="Help5Title.Text" xml:space="preserve">
+    <value>Tabs are written on your computer</value>
+  </data>
+  <data name="Help6Text.Text" xml:space="preserve">
+    <value>Links can't be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.</value>
+  </data>
+  <data name="Help6Title.Text" xml:space="preserve">
+    <value>Links and streaming apps</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>How Fretscribe works, and its keys (F1)</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="HelpDialog.CloseButtonText" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="HelpDialog.Title" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="HelpKeysText.Text" xml:space="preserve">
+    <value>On the tab: Space plays and pauses, the right arrow goes a bar on, and the left arrow a bar back or to the start of the bars being repeated. F11 takes the tab full screen, and Esc leaves it. Everywhere: Ctrl+O opens a recording, Ctrl+Shift+R records, Ctrl+P shares or prints the tab, Ctrl+, opens Settings, Alt+Left goes back and F1 opens this help.</value>
+  </data>
+  <data name="HelpKeysTitle.Text" xml:space="preserve">
+    <value>Keys</value>
   </data>
   <data name="HomeEmpty.Text" xml:space="preserve">
     <value>Nothing written down yet. Record a riff or open a recording.</value>
@@ -699,6 +768,15 @@
   <data name="Settings_Link_NotFound" xml:space="preserve">
     <value>Couldn't find Bandroom on {0}. Check that this PC is on the same network as the computer.</value>
   </data>
+  <data name="ShareButton.Content" xml:space="preserve">
+    <value>Share or print</value>
+  </data>
+  <data name="ShareButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Print the tab, or save it as a PDF, MusicXML, MIDI, text or playing instructions (Ctrl+P)</value>
+  </data>
+  <data name="ShareButtonLabel.Text" xml:space="preserve">
+    <value>Share or print</value>
+  </data>
   <data name="ShowTabButton.Content" xml:space="preserve">
     <value>Show the tab</value>
   </data>
@@ -731,6 +809,9 @@
   </data>
   <data name="SongOptions_DeleteComputer" xml:space="preserve">
     <value>The tab and its recording are deleted from your computer.</value>
+  </data>
+  <data name="SongOptions_DeleteKept" xml:space="preserve">
+    <value>The recording is removed from this PC.</value>
   </data>
   <data name="SongOptions_DeleteThisPc" xml:space="preserve">
     <value>The tab is deleted from this PC. Bandroom on your computer keeps its copy.</value>
@@ -966,6 +1047,60 @@
   <data name="Tab_Error_ScoreFile" xml:space="preserve">
     <value>{0} is sheet music, not a recording. Fretscribe writes tab from what it hears: open a recording, or record it.</value>
   </data>
+  <data name="Tab_Export_Failed" xml:space="preserve">
+    <value>{0} couldn't be saved.</value>
+  </data>
+  <data name="Tab_Export_Instructions" xml:space="preserve">
+    <value>Playing instructions</value>
+  </data>
+  <data name="Tab_Export_InstructionsSuffix" xml:space="preserve">
+    <value>(playing instructions)</value>
+  </data>
+  <data name="Tab_Export_Instructions_For" xml:space="preserve">
+    <value>The tab in words, for a screen reader or a braille display</value>
+  </data>
+  <data name="Tab_Export_Midi" xml:space="preserve">
+    <value>MIDI</value>
+  </data>
+  <data name="Tab_Export_Midi_For" xml:space="preserve">
+    <value>For other music apps</value>
+  </data>
+  <data name="Tab_Export_MusicXml" xml:space="preserve">
+    <value>MusicXML</value>
+  </data>
+  <data name="Tab_Export_MusicXml_For" xml:space="preserve">
+    <value>Keeps the strings and frets: open it in Guitar Pro, MuseScore or another tab program.</value>
+  </data>
+  <data name="Tab_Export_NeedsComputer" xml:space="preserve">
+    <value>Needs Bandroom on your computer, which wrote this tab.</value>
+  </data>
+  <data name="Tab_Export_NotFromComputer" xml:space="preserve">
+    <value>Only for a tab written on your computer.</value>
+  </data>
+  <data name="Tab_Export_NotMade" xml:space="preserve">
+    <value>Bandroom on your computer didn't make this one for this tab.</value>
+  </data>
+  <data name="Tab_Export_Pdf" xml:space="preserve">
+    <value>PDF</value>
+  </data>
+  <data name="Tab_Export_Pdf_For" xml:space="preserve">
+    <value>To print or keep. From Bandroom on your computer.</value>
+  </data>
+  <data name="Tab_Export_PrintFailed" xml:space="preserve">
+    <value>The tab couldn't be printed.</value>
+  </data>
+  <data name="Tab_Export_Save" xml:space="preserve">
+    <value>Save {0}</value>
+  </data>
+  <data name="Tab_Export_Saved" xml:space="preserve">
+    <value>Saved {0}</value>
+  </data>
+  <data name="Tab_Export_TextTab" xml:space="preserve">
+    <value>Text tab</value>
+  </data>
+  <data name="Tab_Export_TextTab_For" xml:space="preserve">
+    <value>The tab in plain text, for a monospace font</value>
+  </data>
   <data name="Tab_Failed" xml:space="preserve">
     <value>This tab can't be shown. Go back and open it again.</value>
   </data>
@@ -998,6 +1133,9 @@
   </data>
   <data name="Tab_Instrument_Ukulele" xml:space="preserve">
     <value>Ukulele</value>
+  </data>
+  <data name="Tab_Kept_Row" xml:space="preserve">
+    <value>{0} · No tab yet</value>
   </data>
   <data name="Tab_KindWithStrings_Bass" xml:space="preserve">
     <value>{0}-string bass</value>
@@ -1230,6 +1368,12 @@
   <data name="Tab_What_Song_Desc_Ukulele" xml:space="preserve">
     <value>A band or a record. This only works when no guitar is playing: in a song, Fretscribe can't tell a ukulele from a guitar.</value>
   </data>
+  <data name="Tab_Where_Computer" xml:space="preserve">
+    <value>Bandroom on {0}</value>
+  </data>
+  <data name="Tab_Where_YourComputer" xml:space="preserve">
+    <value>Bandroom on your computer</value>
+  </data>
   <data name="Tab_Zoom" xml:space="preserve">
     <value>{0}%</value>
   </data>
@@ -1248,14 +1392,11 @@
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Writing down the notes</value>
   </data>
-  <data name="TranscribeWhere.Text" xml:space="preserve">
-    <value>On your computer</value>
-  </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
-    <value>Stop writing it down? The recording stays on this PC.</value>
+    <value>Stop writing it down? The recording stays in Your songs for 30 days.</value>
   </data>
   <data name="Transcribe_Cancelled" xml:space="preserve">
-    <value>Stopped. The recording is kept.</value>
+    <value>Stopped. The recording is in Your songs.</value>
   </data>
   <data name="Transcribe_Device" xml:space="preserve">
     <value>Running on {0}</value>

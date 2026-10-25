@@ -60,6 +60,7 @@ add("SongOptions_Delete", "Delete", "Slett")
 add("SongOptions_DeleteTitle", "Delete {0}?", "Slette {0}?")
 add("SongOptions_DeleteThisPc", "The tab is deleted from this PC. Bandroom on your computer keeps its copy.",
     "Tabben slettes fra denne PC-en. Bandroom på datamaskinen beholder sin kopi.")
+add("SongOptions_DeleteKept", "The recording is removed from this PC.", "Opptaket fjernes fra denne PC-en.")
 add("SongOptions_DeleteComputer", "The tab and its recording are deleted from your computer.",
     "Tabben og opptaket slettes fra datamaskinen.")
 add("Song_EditTitle", "Edit title", "Endre tittel")
@@ -76,6 +77,7 @@ add("Library_Today", "Today", "I dag")
 add("Library_Yesterday", "Yesterday", "I går")
 add("Library_Unavailable", "Not found. Connect the drive it's on to open it.", "Finnes ikke. Koble til disken den ligger på, for å åpne den.")
 add("Tab_Song", "Tab", "Tab")
+add("Tab_Kept_Row", "{0} · No tab yet", "{0} · Ingen tab ennå")
 add("Tab_ToCheck", "{0} notes to check", "{0} toner å sjekke")
 add("Tab_ToCheck_One", "{0} note to check", "{0} tone å sjekke")
 
@@ -198,15 +200,18 @@ add("Tab_TooOld_Mandolin", "Bandroom on your computer is too old to write mandol
 
 # ---- writing down the notes ----
 name("TranscribeProgress", "Writing down the notes", "Skriver ned tonene")
-prop("TranscribeWhere", "Text", "On your computer", "På datamaskinen")
+add("Tab_Where_Computer", "Bandroom on {0}", "Bandroom på {0}")
+add("Tab_Where_YourComputer", "Bandroom on your computer", "Bandroom på datamaskinen")
 text_button("CancelTranscriptionButton", "Cancel", "Avbryt", "Stop writing it down (asks first)", "Slutt å skrive det ned (spør først)")
 prop("TranscribeLeaveNote", "Text", "The tab is in Your songs when it is ready.", "Tabben ligger i Sangene dine når den er klar.")
 add("CancelDialog_Title", "Stop writing it down?", "Slutte å skrive det ned?")
-add("CancelDialog_Content", "The recording stays on this PC, so you can start again.", "Opptaket blir liggende på denne PC-en, så du kan starte på nytt.")
+add("CancelDialog_Content", "The recording stays in Your songs for 30 days. You can start again from it.",
+    "Opptaket blir liggende i Sangene dine i 30 dager. Du kan starte på nytt fra det.")
 add("CancelDialog_Keep", "Keep going", "Fortsett")
 add("CancelDialog_Stop", "Stop", "Stopp")
-add("Transcribe_CancelConfirm", "Stop writing it down? The recording stays on this PC.", "Slutte å skrive det ned? Opptaket blir liggende på denne PC-en.")
-add("Transcribe_Cancelled", "Stopped. The recording is kept.", "Stoppet. Opptaket beholdes.")
+add("Transcribe_CancelConfirm", "Stop writing it down? The recording stays in Your songs for 30 days.",
+    "Slutte å skrive det ned? Opptaket blir liggende i Sangene dine i 30 dager.")
+add("Transcribe_Cancelled", "Stopped. The recording is in Your songs.", "Stoppet. Opptaket ligger i Sangene dine.")
 add("Transcribe_Device", "Running on {0}", "Kjører på {0}")
 add("Transcribe_Done", "The tab is ready", "Tabben er klar")
 add("Transcribe_Error", "Stopped: {0}", "Stoppet: {0}")
@@ -342,6 +347,61 @@ for state, en, nb in [("Looking", "Looking for the recording…", "Ser etter opp
                       ("Unplayable", "This PC can't play the recording. You can still read the tab.",
                        "Denne PC-en kan ikke spille av opptaket. Du kan fortsatt lese tabben.")]:
     add(f"Tab_Practice_{state}", en, nb)
+
+# ---- help ----
+icon_button("HelpButton", "Help", "Hjelp", "How Fretscribe works, and its keys (F1)", "Slik virker Fretscribe, og tastene (F1)")
+prop("HelpDialog", "Title", "Help", "Hjelp")
+prop("HelpDialog", "CloseButtonText", "Close", "Lukk")
+for n, ten, tnb, en, nb in [
+        (1, "Write down a tab", "Lag en tab",
+         "Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument.",
+         "Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt."),
+        (2, "The “?” marks", "«?»-merkene",
+         "A “?” above a note means Fretscribe wasn't sure of it. A boxed “!” marks a note your instrument can't play there. Choose the mark to hear that bar of the recording slowly.",
+         "Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Velg merket for å høre den takten i opptaket sakte."),
+        (3, "Practise", "Øv", "Slow the recording down, and repeat the hard bars. The pitch stays the same at every speed.",
+         "Sett ned farten på opptaket, og gjenta de vanskelige taktene. Tonehøyden er den samme i alle tempoer."),
+        (4, "Your songs", "Sangene dine",
+         "Every tab you make is kept under Your songs, on this PC and on your computer. A recording whose tab couldn't be made, or was stopped, stays there for 30 days.",
+         "Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen. Et opptak som ikke ble til en tab, eller som du stoppet, ligger der i 30 dager."),
+        (5, "Tabs are written on your computer", "Tab skrives på datamaskinen",
+         "Bandroom on your computer writes down the notes. Open it there, and connect in Settings.",
+         "Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger."),
+        (6, "Links and streaming apps", "Lenker og strømmeapper",
+         "Links can't be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.",
+         "Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.")]:
+    prop(f"Help{n}Title", "Text", ten, tnb)
+    prop(f"Help{n}Text", "Text", en, nb)
+prop("HelpKeysTitle", "Text", "Keys", "Taster")
+prop("HelpKeysText", "Text",
+     "On the tab: Space plays and pauses, the right arrow goes a bar on, and the left arrow a bar back or to the start of the bars being repeated. F11 takes the tab full screen, and Esc leaves it. Everywhere: Ctrl+O opens a recording, Ctrl+Shift+R records, Ctrl+P shares or prints the tab, Ctrl+, opens Settings, Alt+Left goes back and F1 opens this help.",
+     "På tabben: Mellomrom spiller og pauser, høyre piltast går én takt fram, og venstre piltast én takt tilbake eller til starten av taktene som gjentas. F11 gir tabben hele skjermen, og Esc går ut. Overalt: Ctrl+O åpner et opptak, Ctrl+Shift+R spiller inn, Ctrl+P deler eller skriver ut tabben, Ctrl+, åpner Innstillinger, Alt+Venstre går tilbake og F1 åpner denne hjelpen.")
+
+# ---- share or print ----
+text_button("ShareButton", "Share or print", "Del eller skriv ut", "Print the tab, or save it as a PDF, MusicXML, MIDI, text or playing instructions (Ctrl+P)",
+            "Skriv ut tabben, eller lagre den som PDF, MusicXML, MIDI, tekst eller spilleveiledning (Ctrl+P)")
+prop("ShareButtonLabel", "Text", "Share or print", "Del eller skriv ut")
+prop("ExportDialog", "Title", "Share or print", "Del eller skriv ut")
+prop("ExportDialog", "PrimaryButtonText", "Print", "Skriv ut")
+prop("ExportDialog", "CloseButtonText", "Close", "Lukk")
+prop("ExportSaveLabel", "Text", "Save …", "Lagre …")
+for f, en, nb, fen, fnb in [("Pdf", "PDF", "PDF", "To print or keep. From Bandroom on your computer.", "Til å skrive ut eller ta vare på. Fra Bandroom på datamaskinen."),
+                            ("MusicXml", "MusicXML", "MusicXML", "Keeps the strings and frets: open it in Guitar Pro, MuseScore or another tab program.",
+                             "Beholder strengene og båndene: åpne den i Guitar Pro, MuseScore eller et annet tabprogram."),
+                            ("Midi", "MIDI", "MIDI", "For other music apps", "For andre musikkapper"),
+                            ("TextTab", "Text tab", "Tab som tekst", "The tab in plain text, for a monospace font", "Tabben som ren tekst, for en skrift med fast bredde"),
+                            ("Instructions", "Playing instructions", "Spilleveiledning", "The tab in words, for a screen reader or a braille display",
+                             "Tabben i ord, for en skjermleser eller en leselist")]:
+    add(f"Tab_Export_{f}", en, nb)
+    add(f"Tab_Export_{f}_For", fen, fnb)
+add("Tab_Export_Save", "Save {0}", "Lagre {0}")
+add("Tab_Export_InstructionsSuffix", "(playing instructions)", "(spilleveiledning)")
+add("Tab_Export_NotFromComputer", "Only for a tab written on your computer.", "Bare for en tab som er skrevet på datamaskinen.")
+add("Tab_Export_NeedsComputer", "Needs Bandroom on your computer, which wrote this tab.", "Krever Bandroom på datamaskinen, som skrev denne tabben.")
+add("Tab_Export_NotMade", "Bandroom on your computer didn't make this one for this tab.", "Bandroom på datamaskinen laget ikke denne for tabben.")
+add("Tab_Export_Saved", "Saved {0}", "Lagret {0}")
+add("Tab_Export_Failed", "{0} couldn't be saved.", "{0} kunne ikke lagres.")
+add("Tab_Export_PrintFailed", "The tab couldn't be printed.", "Tabben kunne ikke skrives ut.")
 
 # ---- errors ----
 add("Error_ChooseAnother", "Choose another recording", "Velg et annet opptak")
