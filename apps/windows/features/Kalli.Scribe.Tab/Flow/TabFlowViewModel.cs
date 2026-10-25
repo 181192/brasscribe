@@ -31,8 +31,9 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     public TabFlowViewModel(Target target, StartViewModel start, TranscriptionViewModel transcription, SettingsViewModel settings,
         YourInstrumentStore instruments, PracticeModel practice, TabExportViewModel export, Func<Uri, string?, IEngineClient> engineFactory,
-        IAnnouncer announcer, IStrings strings, ScoreLibrary? library = null)
+        IAnnouncer announcer, IStrings strings, ScoreLibrary? library = null, KeptTakes? kept = null)
     {
+        Kept = kept;
         Export = export;
         Target = target;
         Start = start;
@@ -59,6 +60,13 @@ public sealed partial class TabFlowViewModel : ObservableObject
         };
         LibraryView = new LibraryViewModel(library, target, () => Engine, settings.Connection, announcer, strings, Subtitle);
         LibraryView.ProblemNoticed += (_, text) => ProblemNoticed?.Invoke(this, text);
+        if (kept is not null)
+        {
+            kept.Prune(DateTimeOffset.Now);
+            LibraryView.MoreRows = KeptRows;
+            kept.Changed += (_, _) => LibraryView.Refresh();
+            LibraryView.Refresh();
+        }
         Screen = settings.FirstRunDone ? TabScreen.Home : TabScreen.FirstRun;
 
         Instrument.Done += (_, _) =>
@@ -89,6 +97,8 @@ public sealed partial class TabFlowViewModel : ObservableObject
         Check.ShowTab += async (_, _) => await ShowTabAsync();
         Transcription.Completed += (_, r) =>
         {
+            // A kept take has its tab now: it is the tab's row from here on.
+            if (Kept?.Of(r.Source) is { } take) KeepSafe(() => Kept.Remove(take.Id));
             _result = r;
             _source = r.Source;
             _libraryId = null;
@@ -98,6 +108,8 @@ public sealed partial class TabFlowViewModel : ObservableObject
         };
         Transcription.FailedWith += (_, failure) =>
         {
+            // The recording is kept in Your songs, to be written down later.
+            KeepTake();
             Error.Show(failure switch
             {
                 TranscriptionFailure.ComputerUnreachable => ErrorKind.ComputerUnreachable,
@@ -136,6 +148,31 @@ public sealed partial class TabFlowViewModel : ObservableObject
     public TabPageViewModel TabPage { get; }
     public ErrorViewModel Error { get; }
     public LibraryViewModel LibraryView { get; }
+
+    /// <summary>The recordings kept in Your songs before they have a tab; null when the app keeps none.</summary>
+    public KeptTakes? Kept { get; }
+
+    private const string KeptPrefix = "kept:";
+
+    /// <summary>The kept takes as rows of Your songs: "Today · No tab yet".</summary>
+    private IEnumerable<(DateTimeOffset, LibraryItem)> KeptRows()
+    {
+        if (Kept is null) yield break;
+        IReadOnlyList<KeptTake> takes;
+        try { takes = Kept.List(); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { yield break; }
+        foreach (var t in takes)
+            yield return (t.Kept, new LibraryItem(KeptPrefix + t.Id, t.Title, _s.Format("Tab_Kept_Row", LibraryViewModel.WhenText(t.Kept, _s))));
+    }
+
+    /// <summary>The recording in hand is kept in Your songs (once), so its tab can be written later.</summary>
+    private void KeepTake()
+    {
+        if (Kept is null || _source is not { } source || !File.Exists(source.WavPath)) return;
+        KeepSafe(() => Kept.Keep(source, DateTimeOffset.Now));
+    }
+
+    private void KeepSafe(Action write) => LibraryView.Keep(write);
 
     /// <summary>Share or print the tab on screen.</summary>
     public TabExportViewModel Export { get; }
@@ -252,9 +289,12 @@ public sealed partial class TabFlowViewModel : ObservableObject
         Screen = TabScreen.Transcribing;
         await Transcription.RunAsync(source, RecordingLabel(options.Recording), profile,
             uploaded => TabSong.Job(new JobCreate(uploaded, profile, RenderAudio: true, Title: title), options, Profiles.Listed), audioId);
-        // Cancelled: back to What is this? with the recording kept.
+        // Cancelled: back to What is this? with the recording kept, here and in Your songs.
         if (!Transcription.IsRunning && Screen == TabScreen.Transcribing && Transcription.ErrorText is null)
+        {
+            if (_result?.Source != source) KeepTake();
             Screen = _result?.Source == source ? TabScreen.CheckTheSong : TabScreen.WhatIsThis;
+        }
     }
 
     /// <summary>What was recorded, in the words of What is this?: "A full song", "Just my instrument".</summary>
@@ -361,6 +401,17 @@ public sealed partial class TabFlowViewModel : ObservableObject
     public async Task OpenLibraryItemAsync(LibraryItem? item)
     {
         if (item is null) return;
+        if (item.Id.StartsWith(KeptPrefix, StringComparison.Ordinal))
+        {
+            // A take kept before it had a tab: What is this? again, with the recording.
+            if (Kept?.Find(item.Id[KeptPrefix.Length..]) is not { } take) return;
+            _result = null;
+            _source = take.Source;
+            WhatIsThis.Open(take.Source, Instrument.Stored, ComputerThere);
+            Screen = TabScreen.WhatIsThis;
+            await AskProfilesAsync();
+            return;
+        }
         if (item.OnComputer && item.JobId is { } jobId)
         {
             try
@@ -412,6 +463,12 @@ public sealed partial class TabFlowViewModel : ObservableObject
             await LibraryView.RefreshComputerAsync();
             return true;
         }
+        if (item.Id.StartsWith(KeptPrefix, StringComparison.Ordinal))
+        {
+            bool renamed = false;
+            KeepSafe(() => { Kept?.Rename(item.Id[KeptPrefix.Length..], cleaned); renamed = Kept is not null; });
+            return renamed;
+        }
         var entry = LibraryView.Store?.Entries.FirstOrDefault(e => e.Id == item.Id);
         if (entry is null || !LibraryView.RenameHere(item.Id, cleaned)) return false;
         if (_libraryId == item.Id && Screen == TabScreen.Tab) TabPage.Title = cleaned;
@@ -420,12 +477,21 @@ public sealed partial class TabFlowViewModel : ObservableObject
     }
 
     /// <summary>"Delete" on a row: this PC's copy, or the run on the computer; the tab on screen closes with its copy.</summary>
-    public Task<bool> DeleteLibraryItemAsync(LibraryItem item) => LibraryView.DeleteAsync(item, removedHere: () =>
+    public Task<bool> DeleteLibraryItemAsync(LibraryItem item)
     {
-        if (_libraryId != item.Id) return;
-        _libraryId = null;
-        if (Screen == TabScreen.Tab) Screen = TabScreen.Home;
-    });
+        if (item.Id.StartsWith(KeptPrefix, StringComparison.Ordinal))
+        {
+            KeepSafe(() => Kept?.Remove(item.Id[KeptPrefix.Length..]));
+            _announcer.Announce(_s.Format("Library_Deleted", item.Title));
+            return Task.FromResult(true);
+        }
+        return LibraryView.DeleteAsync(item, removedHere: () =>
+        {
+            if (_libraryId != item.Id) return;
+            _libraryId = null;
+            if (Screen == TabScreen.Tab) Screen = TabScreen.Home;
+        });
+    }
 
     /// <summary>A row's line in the library: "6-string guitar · Drop D · 3 notes to check · Today".</summary>
     private string Subtitle(LibraryEntry e)

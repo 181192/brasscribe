@@ -73,6 +73,17 @@ public class TabFlowTests : TempFolderTest
     private const string Done = "id: 1\nevent: job\ndata: {\"id\":1,\"run\":\"guitar-line\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n";
 
     /// <summary>A computer that has the tab profile and writes every recording down as the guitar-line fixture.</summary>
+    /// <summary>A computer whose job fails, as one does when it can't write the tab.</summary>
+    private static FakeHandler Failing() => new((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
+    {
+        ("GET", "/v1/health") => FakeHandler.Json(FakeHandler.CurrentHealth),
+        ("GET", "/v1/profiles") => FakeHandler.Json("""[{"name":"tab","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]}]"""),
+        ("POST", "/v1/audio") => FakeHandler.Json("""{"audio_id":"a1","sha256":"00","filename":"take.wav","bytes":4}""", HttpStatusCode.Created),
+        ("POST", "/v1/jobs") => FakeHandler.Json(TabFixtures.Text("guitar-line", "job.json").Replace("\"succeeded\"", "\"running\""), HttpStatusCode.Accepted),
+        ("GET", "/v1/jobs/guitar-line/events") => FakeHandler.Sse("id: 1\nevent: job\ndata: {\"id\":1,\"run\":\"guitar-line\",\"type\":\"job\",\"time\":3,\"status\":\"failed\",\"error\":\"no notes\"}\n\n"),
+        _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+    });
+
     private static FakeHandler Computer(string profiles = """[{"name":"tab","target":"fretted","pipeline":"tab","description":"d","validated":false,"stages":[]},{"name":"solo","target":"brass","pipeline":"A-solo","description":"d","validated":false,"stages":[]}]""") =>
         new((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
         {
@@ -122,7 +133,7 @@ public class TabFlowTests : TempFolderTest
             new TranscriptionViewModel(() => flow!.Engine, said, strings, ui), settings, new YourInstrumentStore(store), practice,
             new TabExportViewModel(Dialogs, null, said, strings),
             (uri, token) => new EngineClient(new HttpClient(computer), uri) { Token = token }, said, strings,
-            new ScoreLibrary(Path.Combine(Dir, "library")));
+            new ScoreLibrary(Path.Combine(Dir, "library")), new KeptTakes(Path.Combine(Dir, "kept")));
         return (flow, computer, players);
     }
 
@@ -321,5 +332,54 @@ public class TabFlowTests : TempFolderTest
         flow.PrepareExport();
         Assert.Equal([TabExportFormat.MusicXml], flow.Export.Options.Where(o => o.IsAvailable).Select(o => o.Format));
         Assert.Equal("Tab_Export_NeedsComputer", flow.Export.Options.First(o => o.Format == TabExportFormat.TextTab).Reason);
+    }
+
+    [Fact]
+    public async Task A_take_whose_tab_was_not_made_is_kept_in_Your_songs_and_opens_What_is_this_again()
+    {
+        var (flow, _, _) = Build(Failing());
+        flow.Settings.Connection.Show(ConnectionState.Connected, ServerNames.Prefix + "Studio PC");
+        await flow.Start.OpenPathAsync(await Take());
+        await Until(() => flow.Screen == TabScreen.WhatIsThis && flow.WhatIsThis.Missing != "Tab_What_Asking");
+        flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.Single(c => c.Recording == Recording.Instrument));
+        flow.WhatIsThis.ContinueCommand.Execute(null);
+        await Until(() => flow.Screen == TabScreen.Error);
+
+        var row = Assert.Single(flow.LibraryView.Items);
+        Assert.StartsWith("kept:", row.Id);
+        Assert.Equal("Tab_Kept_Row(Library_Today)", row.Subtitle);
+        var take = Assert.Single(flow.Kept!.List());
+        Assert.True(File.Exists(take.WavPath));
+
+        // Home, then the row: What is this? again, with the kept recording.
+        flow.BackCommand.Execute(null);
+        await flow.OpenLibraryItemAsync(row);
+        Assert.Equal(TabScreen.WhatIsThis, flow.Screen);
+        Assert.Equal(take.WavPath, flow.WhatIsThis.Source!.WavPath);
+
+        Assert.True(await flow.RenameLibraryItemAsync(row, "Riff"));
+        Assert.Equal("Riff", Assert.Single(flow.LibraryView.Items).Title);
+        Assert.True(await flow.DeleteLibraryItemAsync(flow.LibraryView.Items[0]));
+        Assert.Empty(flow.LibraryView.Items);
+        Assert.Empty(flow.Kept.List());
+    }
+
+    [Fact]
+    public void A_take_kept_longer_than_thirty_days_goes_unless_it_is_in_hand()
+    {
+        var kept = new KeptTakes(Path.Combine(Dir, "kept"));
+        SourceAudio Recording(string name)
+        {
+            string wav = Path.Combine(Dir, name + ".wav");
+            File.WriteAllBytes(wav, [1, 2]);
+            return new SourceAudio(wav, name + ".wav", TimeSpan.FromSeconds(3), null, false);
+        }
+        kept.Keep(Recording("Old"), DateTimeOffset.Now - TimeSpan.FromDays(31));
+        var inHand = kept.Keep(Recording("In hand"), DateTimeOffset.Now - TimeSpan.FromDays(40));
+        kept.Keep(Recording("Fresh"), DateTimeOffset.Now);
+        kept.Prune(DateTimeOffset.Now, inHand: inHand.WavPath);
+        Assert.Equal(["Fresh", "In hand"], kept.List().Select(t => t.Title).Order());
+        // The same recording is kept once.
+        Assert.Equal(inHand.Id, kept.Keep(inHand.Source, DateTimeOffset.Now).Id);
     }
 }

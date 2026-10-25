@@ -60,6 +60,7 @@ add("SongOptions_Delete", "Delete", "Slett")
 add("SongOptions_DeleteTitle", "Delete {0}?", "Slette {0}?")
 add("SongOptions_DeleteThisPc", "The tab is deleted from this PC. Bandroom on your computer keeps its copy.",
     "Tabben slettes fra denne PC-en. Bandroom på datamaskinen beholder sin kopi.")
+add("SongOptions_DeleteKept", "The recording is removed from this PC.", "Opptaket fjernes fra denne PC-en.")
 add("SongOptions_DeleteComputer", "The tab and its recording are deleted from your computer.",
     "Tabben og opptaket slettes fra datamaskinen.")
 add("Song_EditTitle", "Edit title", "Endre tittel")
@@ -76,6 +77,7 @@ add("Library_Today", "Today", "I dag")
 add("Library_Yesterday", "Yesterday", "I går")
 add("Library_Unavailable", "Not found. Connect the drive it's on to open it.", "Finnes ikke. Koble til disken den ligger på, for å åpne den.")
 add("Tab_Song", "Tab", "Tab")
+add("Tab_Kept_Row", "{0} · No tab yet", "{0} · Ingen tab ennå")
 add("Tab_ToCheck", "{0} notes to check", "{0} toner å sjekke")
 add("Tab_ToCheck_One", "{0} note to check", "{0} tone å sjekke")
 
@@ -202,11 +204,13 @@ prop("TranscribeWhere", "Text", "On your computer", "På datamaskinen")
 text_button("CancelTranscriptionButton", "Cancel", "Avbryt", "Stop writing it down (asks first)", "Slutt å skrive det ned (spør først)")
 prop("TranscribeLeaveNote", "Text", "The tab is in Your songs when it is ready.", "Tabben ligger i Sangene dine når den er klar.")
 add("CancelDialog_Title", "Stop writing it down?", "Slutte å skrive det ned?")
-add("CancelDialog_Content", "The recording stays on this PC, so you can start again.", "Opptaket blir liggende på denne PC-en, så du kan starte på nytt.")
+add("CancelDialog_Content", "The recording stays in Your songs for 30 days. You can start again from it.",
+    "Opptaket blir liggende i Sangene dine i 30 dager. Du kan starte på nytt fra det.")
 add("CancelDialog_Keep", "Keep going", "Fortsett")
 add("CancelDialog_Stop", "Stop", "Stopp")
-add("Transcribe_CancelConfirm", "Stop writing it down? The recording stays on this PC.", "Slutte å skrive det ned? Opptaket blir liggende på denne PC-en.")
-add("Transcribe_Cancelled", "Stopped. The recording is kept.", "Stoppet. Opptaket beholdes.")
+add("Transcribe_CancelConfirm", "Stop writing it down? The recording stays in Your songs for 30 days.",
+    "Slutte å skrive det ned? Opptaket blir liggende i Sangene dine i 30 dager.")
+add("Transcribe_Cancelled", "Stopped. The recording is in Your songs.", "Stoppet. Opptaket ligger i Sangene dine.")
 add("Transcribe_Device", "Running on {0}", "Kjører på {0}")
 add("Transcribe_Done", "The tab is ready", "Tabben er klar")
 add("Transcribe_Error", "Stopped: {0}", "Stoppet: {0}")
@@ -356,8 +360,9 @@ for n, ten, tnb, en, nb in [
          "Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Velg merket for å høre den takten i opptaket sakte."),
         (3, "Practise", "Øv", "Slow the recording down, and repeat the hard bars. The pitch stays the same at every speed.",
          "Sett ned farten på opptaket, og gjenta de vanskelige taktene. Tonehøyden er den samme i alle tempoer."),
-        (4, "Your songs", "Sangene dine", "Every tab you make is kept under Your songs, on this PC and on your computer.",
-         "Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen."),
+        (4, "Your songs", "Sangene dine",
+         "Every tab you make is kept under Your songs, on this PC and on your computer. A recording whose tab couldn't be made, or was stopped, stays there for 30 days.",
+         "Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen. Et opptak som ikke ble til en tab, eller som du stoppet, ligger der i 30 dager."),
         (5, "Tabs are written on your computer", "Tab skrives på datamaskinen",
          "Bandroom on your computer writes down the notes. Open it there, and connect in Settings. It is called Brasscribe Bandroom when you install it.",
          "Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger. Den heter Brasscribe Bandroom når du installerer den."),

@@ -91,7 +91,7 @@
     <value>Slutt å vente på at datamaskinen godkjenner denne PC-en</value>
   </data>
   <data name="CancelDialog_Content" xml:space="preserve">
-    <value>Opptaket blir liggende på denne PC-en, så du kan starte på nytt.</value>
+    <value>Opptaket blir liggende i Sangene dine i 30 dager. Du kan starte på nytt fra det.</value>
   </data>
   <data name="CancelDialog_Keep" xml:space="preserve">
     <value>Fortsett</value>
@@ -412,7 +412,7 @@
     <value>Øv</value>
   </data>
   <data name="Help4Text.Text" xml:space="preserve">
-    <value>Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen.</value>
+    <value>Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen. Et opptak som ikke ble til en tab, eller som du stoppet, ligger der i 30 dager.</value>
   </data>
   <data name="Help4Title.Text" xml:space="preserve">
     <value>Sangene dine</value>
@@ -810,6 +810,9 @@
   <data name="SongOptions_DeleteComputer" xml:space="preserve">
     <value>Tabben og opptaket slettes fra datamaskinen.</value>
   </data>
+  <data name="SongOptions_DeleteKept" xml:space="preserve">
+    <value>Opptaket fjernes fra denne PC-en.</value>
+  </data>
   <data name="SongOptions_DeleteThisPc" xml:space="preserve">
     <value>Tabben slettes fra denne PC-en. Bandroom på datamaskinen beholder sin kopi.</value>
   </data>
@@ -1131,6 +1134,9 @@
   <data name="Tab_Instrument_Ukulele" xml:space="preserve">
     <value>Ukulele</value>
   </data>
+  <data name="Tab_Kept_Row" xml:space="preserve">
+    <value>{0} · Ingen tab ennå</value>
+  </data>
   <data name="Tab_KindWithStrings_Bass" xml:space="preserve">
     <value>{0}-strengs bass</value>
   </data>
@@ -1384,10 +1390,10 @@
     <value>På datamaskinen</value>
   </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
-    <value>Slutte å skrive det ned? Opptaket blir liggende på denne PC-en.</value>
+    <value>Slutte å skrive det ned? Opptaket blir liggende i Sangene dine i 30 dager.</value>
   </data>
   <data name="Transcribe_Cancelled" xml:space="preserve">
-    <value>Stoppet. Opptaket beholdes.</value>
+    <value>Stoppet. Opptaket ligger i Sangene dine.</value>
   </data>
   <data name="Transcribe_Device" xml:space="preserve">
     <value>Kjører på {0}</value>

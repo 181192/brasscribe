@@ -68,6 +68,9 @@ public sealed partial class LibraryViewModel : ObservableObject
     /// <summary>Something went wrong that the player should see; the window shows it in its notice bar.</summary>
     public event EventHandler<string>? ProblemNoticed;
 
+    /// <summary>Rows the app keeps elsewhere (a recording kept before it has a result), listed with the others by date.</summary>
+    public Func<IEnumerable<(DateTimeOffset When, LibraryItem Item)>>? MoreRows { get; set; }
+
     /// <summary>
     /// A write to the library that must not end what the player is doing: a full disk or a file another app holds
     /// is said (and shown through <see cref="ProblemNoticed"/>), and what is on screen stays as it is.
@@ -213,6 +216,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             var when = DateTimeOffset.FromUnixTimeMilliseconds((long)(j.Created * 1000)).ToLocalTime();
             rows.Add((when, new LibraryItem("job:" + j.Id, ScoreTitles.Display(j.Title, when, _s), _s.Format("Library_OnComputer", WhenText(when)), true, j.Id)));
         }
+        if (MoreRows is { } more) rows.AddRange(more());
         MarkDuplicateTimes(rows);
         foreach (var (_, item) in rows.OrderByDescending(r => r.When).Take(20)) Items.Add(item);
         HasItems = Items.Count > 0;

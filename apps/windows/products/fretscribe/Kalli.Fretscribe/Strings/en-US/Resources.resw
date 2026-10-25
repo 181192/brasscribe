@@ -91,7 +91,7 @@
     <value>Stop waiting for the computer to allow this PC</value>
   </data>
   <data name="CancelDialog_Content" xml:space="preserve">
-    <value>The recording stays on this PC, so you can start again.</value>
+    <value>The recording stays in Your songs for 30 days. You can start again from it.</value>
   </data>
   <data name="CancelDialog_Keep" xml:space="preserve">
     <value>Keep going</value>
@@ -412,7 +412,7 @@
     <value>Practise</value>
   </data>
   <data name="Help4Text.Text" xml:space="preserve">
-    <value>Every tab you make is kept under Your songs, on this PC and on your computer.</value>
+    <value>Every tab you make is kept under Your songs, on this PC and on your computer. A recording whose tab couldn't be made, or was stopped, stays there for 30 days.</value>
   </data>
   <data name="Help4Title.Text" xml:space="preserve">
     <value>Your songs</value>
@@ -810,6 +810,9 @@
   <data name="SongOptions_DeleteComputer" xml:space="preserve">
     <value>The tab and its recording are deleted from your computer.</value>
   </data>
+  <data name="SongOptions_DeleteKept" xml:space="preserve">
+    <value>The recording is removed from this PC.</value>
+  </data>
   <data name="SongOptions_DeleteThisPc" xml:space="preserve">
     <value>The tab is deleted from this PC. Bandroom on your computer keeps its copy.</value>
   </data>
@@ -1131,6 +1134,9 @@
   <data name="Tab_Instrument_Ukulele" xml:space="preserve">
     <value>Ukulele</value>
   </data>
+  <data name="Tab_Kept_Row" xml:space="preserve">
+    <value>{0} · No tab yet</value>
+  </data>
   <data name="Tab_KindWithStrings_Bass" xml:space="preserve">
     <value>{0}-string bass</value>
   </data>
@@ -1384,10 +1390,10 @@
     <value>On your computer</value>
   </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
-    <value>Stop writing it down? The recording stays on this PC.</value>
+    <value>Stop writing it down? The recording stays in Your songs for 30 days.</value>
   </data>
   <data name="Transcribe_Cancelled" xml:space="preserve">
-    <value>Stopped. The recording is kept.</value>
+    <value>Stopped. The recording is in Your songs.</value>
   </data>
   <data name="Transcribe_Device" xml:space="preserve">
     <value>Running on {0}</value>
