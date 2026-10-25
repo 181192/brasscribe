@@ -173,4 +173,5 @@ public sealed record JobEvent(
 [JsonSerializable(typeof(Composition))]
 [JsonSerializable(typeof(Evidence))]
 [JsonSerializable(typeof(RunUpdate))]
+[JsonSerializable(typeof(TabResult))]
 internal sealed partial class EngineJsonContext : JsonSerializerContext;
