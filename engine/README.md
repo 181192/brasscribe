@@ -167,7 +167,7 @@ After an API change, also refresh the copies made from it: `npm run gen:api` in 
 engine's tests fail while the Android or Windows copy is behind, and Studio's while its types are.
 
 `scripts/check.sh fast engine` and `full engine` are the same tiers
-([docs/dev/verify.md](../docs/dev/verify.md)). Tests that need recordings or reference output under
+([docs/shared/dev/verify.md](../docs/shared/dev/verify.md)). Tests that need recordings or reference output under
 `data/` skip when it is missing.
 
 ## Docker

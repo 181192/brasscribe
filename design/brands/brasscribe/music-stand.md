@@ -2,7 +2,7 @@
 
 **Status:** built in Play for Android and Apple (iPhone, iPad, Mac). Not in Windows Play yet: it waits for a test run on Windows. §2 describes the apps as they were before the stand; the implementation plan (§11) still applies to Windows.
 
-The music stand (nb **Notestativ**) is the score alone, for reading from a stand, a phone clip or a tablet on stage. It replaces Android's "Full screen" and comes to Apple and Windows, which have no such mode today. This spec follows [`system.md`](system.md), [`brand/brand.md`](brand/brand.md) and [`docs/accessibility/`](../../../docs/accessibility/), and targets WCAG 2.2 AA.
+The music stand (nb **Notestativ**) is the score alone, for reading from a stand, a phone clip or a tablet on stage. It replaces Android's "Full screen" and comes to Apple and Windows, which have no such mode today. This spec follows [`system.md`](system.md), [`brand/brand.md`](brand/brand.md) and [`docs/shared/accessibility/`](../../../docs/shared/accessibility/), and targets WCAG 2.2 AA.
 
 | Phone, upright | Phone, on its side | Tablet, on its side | The way in |
 |---|---|---|---|
@@ -57,7 +57,7 @@ These shots come from the emulator (Pixel-size, 411 × 914 dp, with `band.musicx
 
 ## 3. What the stand shows
 
-The stand opens on **your part**: the seat's part from `docs/plan/my-instrument.md` §2.3, else the part shown. It shows one staff at a size chosen for reading at arm's length, in pages.
+The stand opens on **your part**: the seat's part from `docs/brasscribe/plan/my-instrument.md` §2.3, else the part shown. It shows one staff at a size chosen for reading at arm's length, in pages.
 - The part's name is in the position line at the top, as **<your part> (you)**: "Solo Cornet (you)" / «Solokornett (deg)», the my-instrument §3.4 rule. When the shown part is not yours, it is the plain part name, or **All parts** / **Alle stemmer**.
 - **Only my part** / **Bare stemmen min** is a toggle in the layer. On (the default) shows your part alone; off goes back to the parts you had before.
 - **Seat none** (a conductor): there is no "your part". The stand opens on the parts shown, and **Only my part** is hidden, as **Mute my part** is (my-instrument §3.4).

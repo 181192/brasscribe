@@ -4,7 +4,7 @@
 
 Reads listener-N/answers.csv and key.json. Reports the share of judgements preferring the
 realistic tier, per listener and per excerpt, with a one-sided exact binomial p-value
-against chance (50%). The acceptance bar in docs/plan/apps-plan.md is 80%, i.e. at least
+against chance (50%). The acceptance bar in docs/brasscribe/plan/apps-plan.md is 80%, i.e. at least
 20 of 25 judgements for 5 listeners x 5 excerpts.
 """
 

@@ -625,7 +625,7 @@ Takt 1
 ```
 
 - The words follow the talking score of the brass parts
-  ([the spec](../../docs/accessibility/talking-score-spec.md)): bar headings, beat positions
+  ([the spec](../../../docs/shared/accessibility/talking-score-spec.md)): bar headings, beat positions
   ("2 and", "2-og"), note values, and the Norwegian note names (H, B, Ess, Ass). The two languages
   are one table of word pairs in `src/instructions.rs`. This crate does not use the talking score's
   code, which knows the brass band.

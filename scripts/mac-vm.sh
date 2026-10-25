@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The macOS UI tests (they drive a real pointer and keyboard) run in a headless Tart VM, never on
-# the desktop of the Mac you are working on. See docs/dev/macos-vm.md.
+# the desktop of the Mac you are working on. See docs/shared/dev/macos-vm.md.
 #
 #   scripts/mac-vm.sh up                 start (or resume) the VM headless and wait for SSH (provisions it the first time)
 #   scripts/mac-vm.sh test-ui [ONLY]     build for testing on the host, copy the products into the VMs, run the
@@ -41,7 +41,7 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-$HOST_XCODE/Contents/Developer}"
 
 TART="$(command -v tart || true)"
 [ -n "$TART" ] || { [ -x "$HOME/.local/bin/tart" ] && TART="$HOME/.local/bin/tart"; }
-[ -n "$TART" ] || { echo "error: tart not found (see docs/dev/macos-vm.md, Install)" >&2; exit 1; }
+[ -n "$TART" ] || { echo "error: tart not found (see docs/shared/dev/macos-vm.md, Install)" >&2; exit 1; }
 
 log() { printf '[mac-vm] %s\n' "$*" >&2; }
 SSH_OPTS=(-i "$KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR
@@ -422,7 +422,7 @@ EOF
 
 # One VM user at a time across all worktrees and agents: runs queue on a host-wide lock instead of
 # fighting over the two guests. A full test-ui run (no ONLY) needs MAC_VM_FULL=1; everything else
-# runs named classes or tests only (docs/dev/macos-vm.md, "When to use the VM").
+# runs named classes or tests only (docs/shared/dev/macos-vm.md, "When to use the VM").
 LOCK="$HOME/.tart/brasscribe-ui.lock"
 take_lock() {
   local waited=0

@@ -186,8 +186,8 @@ public class ScribeCoreTests
     [SkippableFact]
     public void PassesEveryTalkingScoreVector()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "../../../../../../docs/accessibility/talking-score-vectors.json");
-        Skip.If(!File.Exists(path), "docs/accessibility/talking-score-vectors.json not found next to the build output: run the tests from a checkout");
+        var path = Path.Combine(AppContext.BaseDirectory, "../../../../../../docs/shared/accessibility/talking-score-vectors.json");
+        Skip.If(!File.Exists(path), "docs/shared/accessibility/talking-score-vectors.json not found next to the build output: run the tests from a checkout");
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
         int n = 0;
         foreach (var c in doc.RootElement.GetProperty("cases").EnumerateArray())

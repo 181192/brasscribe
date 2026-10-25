@@ -7,9 +7,9 @@ wasn't sure about, and plays the score back with band sounds so you can practise
 Everything runs on your own devices. A solo line is transcribed on the phone or tablet; a full band
 needs the engine running on a computer on the same network.
 
-[![A 21-second tour: open a recording, Brasscribe writes down the notes, marks the ones it wasn't sure about, then plays the score back](docs/media/brasscribe.gif)](docs/media/brasscribe.mp4)
+[![A 21-second tour: open a recording, Brasscribe writes down the notes, marks the ones it wasn't sure about, then plays the score back](docs/brasscribe/media/brasscribe.gif)](docs/brasscribe/media/brasscribe.mp4)
 
-The tour with sound: [docs/media/brasscribe.mp4](docs/media/brasscribe.mp4).
+The tour with sound: [docs/brasscribe/media/brasscribe.mp4](docs/brasscribe/media/brasscribe.mp4).
 
 Site and user guide: [kalli.no/brasscribe](https://kalli.no/brasscribe/) ·
 How it works: [kalli.no/brasscribe/research](https://kalli.no/brasscribe/research/)
@@ -63,13 +63,13 @@ pixi run studio                       # engine + Studio on http://127.0.0.1:8765
 pixi run serve --lan                  # engine for phones on the LAN, with a pairing code
 ```
 
-Checks come in tiers ([docs/dev/verify.md](docs/dev/verify.md)):
+Checks come in tiers ([docs/shared/dev/verify.md](docs/shared/dev/verify.md)):
 
 | Tier | When | Command |
 |---|---|---|
 | 1 | after every edit | `make check-fast` (or `scripts/check.sh fast [area...]`) |
 | 2 | before pushing a branch | `make check` (or `scripts/check.sh full [area...]`) |
-| 3 | device, audio or UI changes | emulators, the iOS simulator, the macOS VM ([docs/dev/macos-vm.md](docs/dev/macos-vm.md)) |
+| 3 | device, audio or UI changes | emulators, the iOS simulator, the macOS VM ([docs/shared/dev/macos-vm.md](docs/shared/dev/macos-vm.md)) |
 
 Areas: `engine`, `core`, `conformance`, `studio`, `apple`, `android`, `windows`, `core-dotnet`,
 `bandroom-mac`. Without areas, the ones the branch touches.
@@ -78,12 +78,12 @@ The band SoundFonts are not in git; `pixi run fetch-sounds` downloads the pinned
 CLI, logged in). Some tests use recordings and reference output under `data/`, which is not in the
 repository either; without it those tests are skipped.
 
-Releases are built by CI from a tag; `scripts/release.sh X.Y.Z` prepares one ([docs/dev/release.md](docs/dev/release.md)). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
+Releases are built by CI from a tag; `scripts/release.sh X.Y.Z` prepares one ([docs/shared/dev/release.md](docs/shared/dev/release.md)). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Repository layout
 
 One shared core, and a thin app per product. Where each part goes, and how to add a product:
-[docs/plan/scribe-platform.md](docs/plan/scribe-platform.md).
+[docs/shared/plan/scribe-platform.md](docs/shared/plan/scribe-platform.md).
 
 | Path | What | Shared or per product |
 |---|---|---|
@@ -106,13 +106,13 @@ One shared core, and a thin app per product. Where each part goes, and how to ad
 
 ## Documentation
 
-- Developer: [verify](docs/dev/verify.md), [release](docs/dev/release.md), [macOS VM](docs/dev/macos-vm.md)
+- Developer: [verify](docs/shared/dev/verify.md), [release](docs/shared/dev/release.md), [macOS VM](docs/shared/dev/macos-vm.md)
 - Design: [design/README.md](design/README.md), [system](design/brands/brasscribe/system.md),
   [music stand](design/brands/brasscribe/music-stand.md), [Bandroom](design/shared/server-app.md)
-- Research: [summary and architecture decision](docs/research/00-summary.md),
-  [benchmark results](docs/research/10-benchmark-results.md), the rest of [docs/research](docs/research/)
-- Plans: [docs/plan/apps-plan.md](docs/plan/apps-plan.md)
-- Accessibility: [docs/accessibility](docs/accessibility/)
+- Research: [summary and architecture decision](docs/shared/research/00-summary.md),
+  [benchmark results](docs/shared/research/10-benchmark-results.md), the rest of [docs/shared/research](docs/shared/research/)
+- Plans: [docs/brasscribe/plan/apps-plan.md](docs/brasscribe/plan/apps-plan.md)
+- Accessibility: [docs/shared/accessibility](docs/shared/accessibility/)
 
 ## Licence
 

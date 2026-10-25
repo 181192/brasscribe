@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test tiers per area (docs/dev/verify.md).
+# Test tiers per area (docs/shared/dev/verify.md).
 #
 #   scripts/check.sh fast [area...]   tier 1, the inner loop: each area well under a minute warm
 #   scripts/check.sh full [area...]   tier 2, before handing off: the full suites, as CI runs them

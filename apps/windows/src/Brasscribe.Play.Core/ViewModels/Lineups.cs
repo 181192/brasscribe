@@ -79,7 +79,7 @@ public static class Lineups
             ? v.GetString()
             : null;
 
-    /// <summary>The quartet's parts in score order (docs/plan/kvartett.md §1.1), one player each.</summary>
+    /// <summary>The quartet's parts in score order (docs/brasscribe/plan/kvartett.md §1.1), one player each.</summary>
     public static readonly IReadOnlyList<string> QuartetParts = ["1st Cornet", "2nd Cornet", "Tenor Horn", "Euphonium"];
 
     /// <summary>A score whose parts are exactly the quartet's is a quartet (a MusicXML file opened without its Composition).</summary>

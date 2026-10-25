@@ -5,7 +5,7 @@
 //! MusicXML and the text tab, so all three hold the same notes. The same input always gives the
 //! same text.
 //!
-//! The words follow the talking score of the brass parts (`docs/accessibility/talking-score-spec.md`):
+//! The words follow the talking score of the brass parts (`docs/shared/accessibility/talking-score-spec.md`):
 //! bar headings, beat positions ("2 and", "2-og"), note values, and the Norwegian note names (H,
 //! B, Ess, Ass). One [`Lex`] holds both languages, chosen by `lang`: "en", or "nb" or "no", with or
 //! without a region. Strings are named by number, never by note, and accidentals are written as words.

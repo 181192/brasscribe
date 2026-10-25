@@ -1,4 +1,4 @@
-//! Talking-score conformance vectors (docs/accessibility/talking-score-vectors.json),
+//! Talking-score conformance vectors (docs/shared/accessibility/talking-score-vectors.json),
 //! every case in both languages.
 
 use scribe_core::talking_score::{announce, Bar, Context, Part, ScoreNames, Settings};
@@ -42,7 +42,7 @@ fn vector_call(c: &Value, lang: &str) -> String {
 
 #[test]
 fn every_vector_in_both_languages() {
-    let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/accessibility/talking-score-vectors.json");
+    let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/shared/accessibility/talking-score-vectors.json");
     let doc: Value = serde_json::from_str(&std::fs::read_to_string(p).unwrap()).unwrap();
     let cases = doc["cases"].as_array().unwrap();
     let mut failures = Vec::new();

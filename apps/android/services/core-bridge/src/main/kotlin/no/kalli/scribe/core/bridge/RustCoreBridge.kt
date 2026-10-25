@@ -138,7 +138,7 @@ class RustCoreBridge private constructor(val version: String, private val target
 
     override fun partNameNb(name: String): String = corePartNameNb(name)
 
-    /** The core's announcer, fed the same event JSON as docs/accessibility/talking-score-vectors.json. */
+    /** The core's announcer, fed the same event JSON as docs/shared/accessibility/talking-score-vectors.json. */
     override fun announce(stop: TsStop, context: TsContext, settings: TsSettings, lang: Lang): String {
         val json = BrasscribeJson
         val part = stop.part ?: TsPart(context.part.orEmpty())

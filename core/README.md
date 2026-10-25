@@ -147,7 +147,7 @@ side, and the reference whenever it runs, write into emptied directories, so no 
 by an earlier run is compared.
 `uv run python -m unittest discover -s tests` checks the comparisons themselves.
 The talking score also passes every vector in
-`docs/accessibility/talking-score-vectors.json` (`cargo test`, and the .NET
+`docs/shared/accessibility/talking-score-vectors.json` (`cargo test`, and the .NET
 tests through the C ABI). Results go to `data/runs/core-conformance/report.json`.
 
 Reproducing the reference bit for bit needed its numeric details, all covered
@@ -279,4 +279,4 @@ a panic or a hang:
 | --- | --- | --- |
 | `cargo test --profile fast` | `cargo test --release`, the full conformance run | none |
 
-See [docs/dev/verify.md](../docs/dev/verify.md).
+See [docs/shared/dev/verify.md](../docs/shared/dev/verify.md).

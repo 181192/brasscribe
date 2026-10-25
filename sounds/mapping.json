@@ -635,7 +635,7 @@
         "single_voice_gain_db": 0.0
       },
       "balance_lu": 0.0,
-      "note": "The trumpet seat's own part: it takes the lead part in place (docs/plan/trumpet.md), one player."
+      "note": "The trumpet seat's own part: it takes the lead part in place (docs/brasscribe/plan/trumpet.md), one player."
     },
     "1st Cornet": {
       "instrument": "bb-cornet",

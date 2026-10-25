@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Screenshots of the real popover from the menu bar and the Pair window, light and dark, English and bokmål, with
 # canned demo data (Debug build, no engine): scripts/desktop-screenshots.sh OUTDIR
-# It runs the app on the desktop and clicks its menu-bar item, so run it in the macOS VM (docs/dev/macos-vm.md), not on
+# It runs the app on the desktop and clicks its menu-bar item, so run it in the macOS VM (docs/shared/dev/macos-vm.md), not on
 # a Mac in use. The screen catalogue (scripts/screenshots.sh) draws the same screens off screen.
 # Needs Accessibility permission for the terminal (System Events opens the menu-bar item).
 set -euo pipefail

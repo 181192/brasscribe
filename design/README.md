@@ -27,7 +27,7 @@ This folder is the single source for how Brasscribe Play and Studio look, sound 
 - **Icons:** [`tooling/icons.json`](tooling/icons.json) lists every action with its en and nb label and its SF Symbol, Material Symbol and Segoe Fluent glyph.
 
 ```sh
-uv run design/tooling/build.py            # regenerate every brand's dist and docs/accessibility/design-tokens.json
+uv run design/tooling/build.py            # regenerate every brand's dist and docs/shared/accessibility/design-tokens.json
 uv run design/tooling/build.py --check    # CI: exit 1 if anything is stale
 uv run --with pytest pytest design/tooling
 uv run qa/tools/contrast.py --brands     # every brand in every mode (Brasscribe: 76 pairs x 6 modes), exit 1 on failure
@@ -47,7 +47,7 @@ uv run design/brands/fretscribe/brand/build.py  # Fretscribe's Android launcher 
 **Contrast:** all 456 pairs pass (76 pairs in each of the six modes, the hidden Pink pair included). See [`qa/reports/contrast-design-tokens.md`](../qa/reports/contrast-design-tokens.md).
 
 **Accessibility compatibility:**
-- `docs/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.
+- `docs/shared/accessibility/design-tokens.json` is generated from these tokens in its existing shape. The score hues are unchanged; the neutrals are warmer.
 - Its report, [`qa/reports/contrast-tokens.md`](../qa/reports/contrast-tokens.md), shows 84 of 84 pairs passing.
 
 ### Using the tokens per platform
@@ -123,7 +123,7 @@ These are the changes each app needs. The ones marked **(drift)** are places whe
 
 ## Open questions
 
-1. Do brass-band players read "?" and a boxed "?" as "check this note"? This is carried over from `docs/accessibility/visual-design-tokens.md`.
+1. Do brass-band players read "?" and a boxed "?" as "check this note"? This is carried over from `docs/shared/accessibility/visual-design-tokens.md`.
 2. `high-contrast-light` is what a light appearance with more contrast gets on every platform. It has not been tested with low-vision users, nor looked at on a Mac with Increase Contrast turned on in System Settings (the screen catalogues draw it off screen).
 3. Instrument Serif at 28 pt with Dynamic Type AX sizes: confirm on a device that the relative scaling to `largeTitle` stays readable.
 4. The Windows XAML is checked for well-formed XML only; it has not been compiled with WinUI on this machine (no Windows).

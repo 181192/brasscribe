@@ -1,6 +1,6 @@
 # Recording plan: our own brass-band samples
 
-**Why:** no free library we can redistribute has a cornet, flugelhorn, tenor horn, baritone, euphonium or brass-band basses (docs/plan/research-sound-and-mobile-ml.md §1). The realistic tier maps these to trumpet, horn, trombone and tuba with EQ. Recording the real instruments removes that approximation, and we own the licence.
+**Why:** no free library we can redistribute has a cornet, flugelhorn, tenor horn, baritone, euphonium or brass-band basses (docs/shared/plan/research-sound-and-mobile-ml.md §1). The realistic tier maps these to trumpet, horn, trombone and tuba with EQ. Recording the real instruments removes that approximation, and we own the licence.
 
 **Instruments (one player each):**
 

@@ -419,7 +419,7 @@
     <string name="conn_detail_last_seen">Svarte sist: %1$s</string>
     <string name="conn_detail_last_error">Siste feil: %1$s</string>
     <string name="band_sounds_missing">Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet.</string>
-    <!-- Hva spiller du? (docs/plan/my-instrument.md §3.8) -->
+    <!-- Hva spiller du? (docs/brasscribe/plan/my-instrument.md §3.8) -->
     <string name="seat_skip">Ikke nå</string>
     <string name="settings_you">Instrumentet ditt</string>
     <string name="settings_seat">Hva du spiller</string>

@@ -1,6 +1,6 @@
 import Foundation
 
-// Wire types of the engine API (engine/openapi.json, docs/plan/pairing-and-remote-access.md §4.8).
+// Wire types of the engine API (engine/openapi.json, docs/shared/plan/pairing-and-remote-access.md §4.8).
 
 public struct Health: Codable, Sendable, Equatable {
     public var status: String

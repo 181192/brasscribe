@@ -5,7 +5,7 @@ Brasscribe Bandroom installs Brasscribe's engine on a Mac or Windows PC, keeps i
 - It shows how to connect a phone, and lets you restart or stop it.
 - Nobody types a command.
 
-This spec follows [`../brands/brasscribe/system.md`](../brands/brasscribe/system.md), [`../brands/brasscribe/brand/brand.md`](../brands/brasscribe/brand/brand.md) and [`../docs/accessibility/wcag-2.2-aa-checklist.md`](../../docs/accessibility/wcag-2.2-aa-checklist.md). Where they already decide something, this file points to them rather than repeating them.
+This spec follows [`../brands/brasscribe/system.md`](../brands/brasscribe/system.md), [`../brands/brasscribe/brand/brand.md`](../brands/brasscribe/brand/brand.md) and [`../docs/shared/accessibility/wcag-2.2-aa-checklist.md`](../../docs/shared/accessibility/wcag-2.2-aa-checklist.md). Where they already decide something, this file points to them rather than repeating them.
 
 | Menu bar (macOS) | Taskbar corner (Windows) | First run | Pair a phone | Needs attention |
 |---|---|---|---|---|
@@ -129,7 +129,7 @@ Voice rule 4 says model names belong in Studio. The licence step is the **one ex
 - **Settings › Show in the Dock** (off by default) makes Bandroom a regular app with a Dock icon, as a fallback.
 
 ### 3.4 Connect a phone (pair once)
-The model: each phone pairs **once** and gets its own long-lived credential, which can be removed from the computer. The engine-side contract is in `docs/plan/pairing-and-remote-access.md`, which lands with the engine's device-pairing work. The facts this design relies on are listed in §11. Mockup: `../brands/brasscribe/mockups/png/server-pair-*`.
+The model: each phone pairs **once** and gets its own long-lived credential, which can be removed from the computer. The engine-side contract is in `docs/shared/plan/pairing-and-remote-access.md`, which lands with the engine's device-pairing work. The facts this design relies on are listed in §11. Mockup: `../brands/brasscribe/mockups/png/server-pair-*`.
 
 The **Pair a phone** window offers three ways, easiest first. They all end in the same place.
 
@@ -681,7 +681,7 @@ The macOS Local Network dialog is the system's own, so the heads-up names the bu
 | notify.ready | Brasscribe is ready. Phones and tablets can make full-band scores now. | Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå. |
 
 ## 11. What this design assumes from the engine
-The engine contract for pairing is in `docs/plan/pairing-and-remote-access.md` §4. What this design relies on:
+The engine contract for pairing is in `docs/shared/plan/pairing-and-remote-access.md` §4. What this design relies on:
 
 - **Owner endpoints** (`/v1/status`, `/v1/devices`, `/v1/pairing*`): the shell generates a random token at first run, starts the engine with `SCRIBE_ADMIN_TOKEN=<token>` (or `SCRIBE_ADMIN_TOKEN_FILE`, mode 0600) and sends `Authorization: Bearer <token>` on every owner call. While an admin token is set, loopback alone gets 403 there, so a proxy on the same computer cannot manage devices. Loopback trust for Studio stays on (`SCRIBE_TRUST_LOCAL=1`, the default). See plan §4.10.
 - **Status:** `GET /v1/status` returns `server_id`, `server_name`, `version`, `online_devices`, `paired_devices`, `pairing_open`, `jobs_running` and `jobs_queued`. Bandroom polls it every 5 s while the popover or flyout is open, and every 30 s otherwise. A device is online when it was seen in the last 60 s. Paired phones send a heartbeat every 20 s while the app is open.

@@ -16,7 +16,7 @@ Reports per part and for the whole score:
     bars mixing sharps and flats, leaps over an octave
   - empty-bar ratio, and runs of empty bars that should be multi-bar rests in parts
   - colour-only uncertainty: coloured notes with neither a distinct notehead nor a "?" words
-    direction at the same onset in the same part and bar (docs/accessibility/visual-design-tokens.md §2)
+    direction at the same onset in the same part and bar (docs/shared/accessibility/visual-design-tokens.md §2)
   - divisi (chords in a monophonic brass part)
 
 `--bars` lists every flagged bar with reasons. `--range A-B` restricts to bars A..B.

@@ -11,7 +11,7 @@ pixi run scribe bench <suite>[,<suite>...]
 
 Suites score model outputs that already exist next to the eval data (`--mode cached`, the
 default). They compare each metric with `eval/baselines.json` (numbers from
-`docs/research/10-benchmark-results.md`, ±0.01 unless a metric sets its own tolerance). A
+`docs/shared/research/10-benchmark-results.md`, ±0.01 unless a metric sets its own tolerance). A
 suite without its data is reported as skipped, never as passed; `--require-data` turns a skip
 into a failure.
 
@@ -38,7 +38,7 @@ built by `python -m scribe_eval.ci_data --out ci-data`:
 - `eval/fixtures/fast-notes/`: fast runs, repeated notes and two-note alternations rendered from real trumpet
   samples (University of Iowa MIS, VSCO 2 CE; dry and with an OpenAIR church response), with their exact
   reference, oracle beats, and our SwiftF0, Basic Pitch and Beat This! small0 outputs (`fast_notes.py`;
-  docs/plan/fast-notes.md).
+  docs/brasscribe/plan/fast-notes.md).
 
 | Suite | CI | Local only because |
 |---|---|---|

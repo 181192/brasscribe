@@ -15,7 +15,7 @@ internal sealed partial class TalkingScoreJsonContext : JsonSerializerContext;
 
 /// <summary>
 /// The talking-score document and the announcer inputs in their JSON form
-/// (docs/accessibility/talking-score-spec.md §6, snake_case keys), as the Rust core reads and writes them.
+/// (docs/shared/accessibility/talking-score-spec.md §6, snake_case keys), as the Rust core reads and writes them.
 /// </summary>
 public static class TalkingScoreJson
 {

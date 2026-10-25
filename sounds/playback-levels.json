@@ -1,5 +1,5 @@
 {
-  "about": "One loudness target for every Play app (docs/research/12-band-sound.md §11). The band goes through make-up gain and then the soft limiter; the original recording (and any rendered clip played as the band) is measured once, as a whole, and gained to the loudness the band plays that arrangement at (recording.band_estimate); the metronome click peaks at metronome.click_peak_dbfs. sounds/playback_levels.py --vectors writes sounds/output-stage-vectors.json from this file.",
+  "about": "One loudness target for every Play app (docs/shared/research/12-band-sound.md §11). The band goes through make-up gain and then the soft limiter; the original recording (and any rendered clip played as the band) is measured once, as a whole, and gained to the loudness the band plays that arrangement at (recording.band_estimate); the metronome click peaks at metronome.click_peak_dbfs. sounds/playback_levels.py --vectors writes sounds/output-stage-vectors.json from this file.",
   "limiter": {
     "about": "Memoryless soft limiter: y = x for |x| <= threshold, else sign(x) * (threshold + (ceiling - threshold) * tanh((|x| - threshold) / (ceiling - threshold))). No attack or release, so it cannot pump, and below the threshold every part keeps its level.",
     "threshold": 0.8,

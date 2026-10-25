@@ -12,7 +12,7 @@ The owner manages devices on the computer (`/v1/status`, `/v1/devices`,
 configured; with SCRIBE_ADMIN_TOKEN (or _FILE) set they require
 `Authorization: Bearer <admin token>`, because a proxy on the same machine makes
 remote traffic look local. See companion.py, config.py and
-docs/plan/pairing-and-remote-access.md.
+docs/brasscribe/plan/pairing-and-remote-access.md.
 
 Progress is streamed as Server-Sent Events with monotonic ids; reconnect with
 `Last-Event-ID` (or `?after=`) to resume. A comment line is sent every 15 s
@@ -705,7 +705,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
 
     @app.get("/v1/jobs/{job_id}/talking-score", operation_id="getTalkingScore", tags=["results"],
              dependencies=[Depends(auth)],
-             responses={200: {"description": "Talking score (docs/accessibility/talking-score-spec.md): HTML with a "
+             responses={200: {"description": "Talking score (docs/shared/accessibility/talking-score-spec.md): HTML with a "
                                              "heading per part and bar, plain text, or the TalkingScore JSON",
                               "content": {"text/html": {"schema": {"type": "string"}},
                                           "text/plain": {"schema": {"type": "string"}},

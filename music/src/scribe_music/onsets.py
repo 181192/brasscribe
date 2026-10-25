@@ -22,7 +22,7 @@ on the contour, on the piece's own tuning:
    doit passing through the semitones on its way into or out of the held note.
    Vibrato and a scoop never hold still on the other pitch long enough: the thresholds are set on the
    eval set's vibrato (centred and one-sided, to 150 c), scoop, fall, doit and rip controls, dry, in a hall
-   and separated (docs/plan/fast-notes.md).
+   and separated (docs/brasscribe/plan/fast-notes.md).
 3. Octave flips: in three or more touching SwiftF0 notes alternating by exactly an octave, the tracker often
    heard one note in two octaves. The run's octave is the one nearer the notes around it (else the one held
    longer); a note in the other octave folds into its neighbour unless Basic Pitch has it too (within

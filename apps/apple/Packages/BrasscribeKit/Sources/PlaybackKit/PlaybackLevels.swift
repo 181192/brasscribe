@@ -2,7 +2,7 @@ import Foundation
 import ScoreKit
 
 /// The loudness every Play app plays at: sounds/playback-levels.json, which the tests check these
-/// against (docs/research/12-band-sound.md §11).
+/// against (docs/shared/research/12-band-sound.md §11).
 public enum PlaybackLevels {
     /// Soft limiter: linear up to the threshold, tanh towards the ceiling above it.
     public static let limiterThreshold = 0.8
@@ -11,7 +11,7 @@ public enum PlaybackLevels {
     public static let bandPhraseLUFS = -12.0
     /// The full-band phrase as Windows plays it (alphaSynth), and how far Apple's may be from it: Apple's band gain
     /// is fitted on whole arrangements, where its phrase-to-arrangement ratio is 1.9 LU off alphaSynth's
-    /// (docs/research/12-band-sound.md §14).
+    /// (docs/shared/research/12-band-sound.md §14).
     public static let windowsPhraseLUFS = -12.80
     public static let phraseToleranceLU = 1.1
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.

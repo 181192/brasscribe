@@ -1,4 +1,4 @@
-# Verification tiers (docs/dev/verify.md). AREAS= picks areas; by default the ones this branch touches.
+# Verification tiers (docs/shared/dev/verify.md). AREAS= picks areas; by default the ones this branch touches.
 #   make setup          scripts/worktree-setup.sh: links data/, models/, Verovio; prebuilt core
 #   make check-fast     tier 1, the inner loop
 #   make check          tier 2, before handing off: the full suites

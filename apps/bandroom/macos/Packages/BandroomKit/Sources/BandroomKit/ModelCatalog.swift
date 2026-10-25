@@ -1,6 +1,6 @@
 import Foundation
 
-/// The three downloads a full-band score needs (docs/plan/apps-plan.md §7). None of them ship with the app:
+/// The three downloads a full-band score needs (docs/brasscribe/plan/apps-plan.md §7). None of them ship with the app:
 /// each comes from where its makers publish it, and this computer fetches it.
 public enum ModelComponent: String, CaseIterable, Sendable, Codable, Comparable {
     /// BS-RoFormer SW: lifts the soloist out of the band (the `separator` adapter). No stated licence.

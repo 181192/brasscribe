@@ -8,7 +8,7 @@ import no.kalli.scribe.audio.PlaybackLevels
 
 /**
  * alphaTab's synth output with the shared output stage in front of it: every buffer the synth
- * renders gets the make-up gain and the soft limiter before it reaches the device (docs/research/
+ * renders gets the make-up gain and the soft limiter before it reaches the device (docs/shared/research/
  * 12-band-sound.md §11). The master volume stays alphaTab's, for the stop fade, which so runs
  * before the stage as on Apple.
  */

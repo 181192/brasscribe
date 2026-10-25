@@ -50,7 +50,7 @@ class Adapter:
     torch_checkpoints: tuple[str, ...] = ()  # files in ~/.cache/torch/hub/checkpoints
     env: tuple[tuple[str, str], ...] = ()  # default environment for run.sh
     scripts: tuple[str, ...] = ("pyproject.toml", "uv.lock", "run.sh")
-    licence: str | None = None  # weights licence as recorded in docs/plan/apps-plan.md §7
+    licence: str | None = None  # weights licence as recorded in docs/brasscribe/plan/apps-plan.md §7
     dir: str | None = None  # adapter directory when it differs from the name
     entry: str = "run.sh"  # script with the <input> <output> contract
 

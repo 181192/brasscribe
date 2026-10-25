@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace Brasscribe.Play.Views;
 
-/// <summary>"What do you play?" after Get started (docs/plan/my-instrument.md §3.1).</summary>
+/// <summary>"What do you play?" after Get started (docs/brasscribe/plan/my-instrument.md §3.1).</summary>
 public sealed partial class WhatDoYouPlayPage : Page, IScreenPage
 {
     public WhatDoYouPlayPage() => InitializeComponent();

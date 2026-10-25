@@ -20,7 +20,7 @@ subprojects {
     plugins.withId("org.jetbrains.kotlin.jvm") {
         tasks.register("testDebugUnitTest") { dependsOn("test") }
     }
-    // -Pscribe.fast (the inner-loop tier, docs/dev/verify.md): unit tests without the Slow category,
+    // -Pscribe.fast (the inner-loop tier, docs/shared/dev/verify.md): unit tests without the Slow category,
     // in the modules that declare it (JUnit fails to start where the category class is missing).
     // (A product's comes from the flow's src/appScreenTest, with the screen tests that also run on a device.)
     val slow = path.startsWith(":products:") || file("src/test/kotlin/no/kalli/scribe/test/Slow.kt").exists()

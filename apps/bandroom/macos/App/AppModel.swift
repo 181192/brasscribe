@@ -34,7 +34,7 @@ final class AppModel {
     let savedKey: SavedKey
     /// Setup opens at the key step next time (Enter the key again).
     var setupOpensAtKey = false
-    /// The three model downloads (docs/plan/apps-plan.md §7), from their makers' own release URLs.
+    /// The three model downloads (docs/brasscribe/plan/apps-plan.md §7), from their makers' own release URLs.
     let downloader: ModelDownloader
     /// Window requests wait here until SwiftUI's openWindow is available (a reopen event can come first).
     let opener = WindowOpener()

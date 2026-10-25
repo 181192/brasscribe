@@ -436,7 +436,7 @@
     <string name="conn_detail_last_seen">Last answered: %1$s</string>
     <string name="conn_detail_last_error">Last error: %1$s</string>
     <string name="band_sounds_missing">The band sounds are missing. Reinstall Brasscribe Play to hear the band.</string>
-    <!-- What do you play? (docs/plan/my-instrument.md §3.8) -->
+    <!-- What do you play? (docs/brasscribe/plan/my-instrument.md §3.8) -->
     <string name="seat_skip">Not now</string>
     <string name="settings_you">Your instrument</string>
     <string name="settings_seat">What you play</string>

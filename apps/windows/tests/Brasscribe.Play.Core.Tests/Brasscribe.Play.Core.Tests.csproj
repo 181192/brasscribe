@@ -23,7 +23,7 @@
   <ItemGroup>
     <None Include="Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
     <!-- The talking-score conformance vectors, read from docs/ like every other port. -->
-    <None Include="../../../../docs/accessibility/talking-score-vectors.json" Link="Fixtures/talking-score-vectors.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../../../docs/shared/accessibility/talking-score-vectors.json" Link="Fixtures/talking-score-vectors.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

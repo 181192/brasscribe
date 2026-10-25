@@ -32,7 +32,7 @@ Outputs, for Brasscribe (another brand's have its own name and prefix, in its ow
          design/brands/brasscribe/dist/windows/    BrasscribeTheme.xaml, BrasscribePinkTheme.xaml, Assets/Fonts/
          design/brands/brasscribe/dist/web/        brasscribe.css, fonts.css, icons.js, icons/*.svg, fonts/
          design/brands/brasscribe/dist/icon-map.md
-         docs/accessibility/design-tokens.json (the accessibility palette, kept in its existing shape)
+         docs/shared/accessibility/design-tokens.json (the accessibility palette, kept in its existing shape)
 
 Every output is a pure function of the inputs: no timestamps, sorted where order is free.
 """
@@ -180,7 +180,7 @@ def check_tokens() -> None:
                 fail(f"$extensions.*.fonts.{key} names {file}, which is not there")
 
 
-# The accessibility palette (docs/accessibility/design-tokens.json) keeps its three themes;
+# The accessibility palette (docs/shared/accessibility/design-tokens.json) keeps its three themes;
 # qa/reports/contrast-design-tokens.md checks every mode, high-contrast-light included.
 A11Y_MODES = ("light", "dark", "high-contrast")
 

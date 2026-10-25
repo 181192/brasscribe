@@ -42,7 +42,7 @@ def test_every_icon_has_all_platforms_and_sources():
 
 
 def test_compat_file_keeps_its_shape():
-    data = json.loads((build.ROOT / "docs" / "accessibility" / "design-tokens.json").read_text())
+    data = json.loads((build.ROOT / "docs" / "shared" / "accessibility" / "design-tokens.json").read_text())
     assert set(data) >= {"themes", "pairs", "distinguish", "legacy"}
     assert set(data["themes"]) == {"light", "dark", "high-contrast"}
 

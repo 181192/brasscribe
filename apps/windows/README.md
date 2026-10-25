@@ -122,4 +122,4 @@ with its checks; its screenshots are the artefact `windows-screenshots`, to look
 | --- | --- | --- |
 | `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `tools/check-macos.sh` | the app itself, on Windows (CI) |
 
-See [docs/dev/verify.md](../../docs/dev/verify.md).
+See [docs/shared/dev/verify.md](../../docs/shared/dev/verify.md).

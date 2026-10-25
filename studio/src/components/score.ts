@@ -1,6 +1,6 @@
 // <bs-score>: MusicXML score with playback (alphaTab), loop, speed, zoom,
 // part selection, mute/solo, and a talking score (spec in
-// docs/accessibility/talking-score-spec.md) driven from the keyboard.
+// docs/shared/accessibility/talking-score-spec.md) driven from the keyboard.
 import type * as AT from "@coderline/alphatab";
 import { lang, t } from "../i18n";
 import { patchAlphaTab } from "../lib/alphatabfix";

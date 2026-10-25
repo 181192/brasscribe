@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { announce, type Lang, type Request } from "../src/lib/talking";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const vectors = JSON.parse(readFileSync(join(here, "..", "..", "docs", "accessibility", "talking-score-vectors.json"), "utf8")) as {
+const vectors = JSON.parse(readFileSync(join(here, "..", "..", "docs", "shared", "accessibility", "talking-score-vectors.json"), "utf8")) as {
   cases: (Omit<Request, "default_key_fifths" | "total_bars"> & { id: string; expected: Record<Lang, string> })[];
 };
 

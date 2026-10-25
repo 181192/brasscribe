@@ -1,5 +1,5 @@
-// Talking score announcer (docs/accessibility/talking-score-spec.md), checked
-// against docs/accessibility/talking-score-vectors.json. It mirrors the core's
+// Talking score announcer (docs/shared/accessibility/talking-score-spec.md), checked
+// against docs/shared/accessibility/talking-score-vectors.json. It mirrors the core's
 // announce() so Studio speaks the same words as the Play apps.
 
 export type Lang = "en" | "nb";

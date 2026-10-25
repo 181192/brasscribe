@@ -5,7 +5,7 @@ namespace Brasscribe.Play.Core.TalkingScore;
 
 /// <summary>
 /// Builds talking-score announcements in English and Norwegian bokmål following
-/// docs/accessibility/talking-score-spec.md; the conformance vectors are the reference.
+/// docs/shared/accessibility/talking-score-spec.md; the conformance vectors are the reference.
 /// Output never depends on the current culture: numbers are formatted by hand.
 /// </summary>
 public static class Announcer

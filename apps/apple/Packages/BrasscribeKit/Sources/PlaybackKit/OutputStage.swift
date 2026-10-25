@@ -3,7 +3,7 @@ import AVFoundation
 import Foundation
 
 /// The output stage: a gain, then a memoryless soft limiter, the same curve on every Play app
-/// (sounds/playback-levels.json, docs/research/12-band-sound.md §11). The band presets are
+/// (sounds/playback-levels.json, docs/shared/research/12-band-sound.md §11). The band presets are
 /// level-matched to a quiet reference (−24 LUFS body level), so the band needs make-up gain to play
 /// at a normal level; the original recording gets its own stage, gained to the same loudness.
 ///

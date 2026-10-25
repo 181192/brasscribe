@@ -2,7 +2,7 @@ namespace Brasscribe.Play.Core.Playback;
 
 /// <summary>
 /// The loudness every Play app plays at: sounds/playback-levels.json, which the tests check these
-/// against (docs/research/12-band-sound.md §11).
+/// against (docs/shared/research/12-band-sound.md §11).
 /// </summary>
 public static class PlaybackLevels
 {
