@@ -44,6 +44,8 @@ import TabKit
         let light = TabPalette(ink: "#1a1a1a", string: "#8a8a8a", uncertain: "#c0392b", cursor: "#2f6fde", cursorTint: nil)
         let e = try await page.show(musicXML: try Self.fixture("bass-line/tab.musicxml"), palette: light)
         #expect(e.bars.count == 15)
+        #expect(page.networkBlocked)
+        #expect(page.requested.allSatisfy { $0.hasPrefix("\(TabPage.scheme)://") })
         #expect(e.fonts.contains { $0.hasSuffix(":loaded") }, "\(e.fonts)")
         let shot = try await page.webView.takeSnapshot(configuration: WKSnapshotConfiguration())
         #expect(Self.inked(shot, dark: true) > 0.001)
