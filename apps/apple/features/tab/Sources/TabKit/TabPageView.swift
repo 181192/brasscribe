@@ -7,13 +7,26 @@ import WebKit
 public struct TabPageView: View {
     private let page: TabPage
     private let bars: [String]
+    private let unavailable: String
 
-    public init(page: TabPage, bars: [String] = []) {
+    /// [unavailable]: what the screen says, in the product's words, when the page cannot be shown (`TabPage.unavailable`).
+    public init(page: TabPage, unavailable: String, bars: [String] = []) {
         self.page = page
         self.bars = bars
+        self.unavailable = unavailable
     }
 
     public var body: some View {
+        if page.unavailable != nil {
+            Text(unavailable)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            engraved
+        }
+    }
+
+    private var engraved: some View {
         Host(page: page)
             .frame(height: max(page.engraving?.height ?? 0, 1))
             .accessibilityHidden(true)

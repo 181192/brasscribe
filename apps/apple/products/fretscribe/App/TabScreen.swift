@@ -273,7 +273,7 @@ struct TabScreen: View {
         let engraving = page.engraving
         return ScrollView {
             ZStack(alignment: .topLeading) {
-                TabPageView(page: page).allowsHitTesting(false)
+                TabPageView(page: page, unavailable: String(localized: "This tab can't be shown. Go back and open it again.")).allowsHitTesting(false)
                 // Over the page: the tab as one element, and what takes a tap (in full screen a tap shows the controls),
                 // the wheel and the drags, so the web view under it takes none.
                 Color.clear
