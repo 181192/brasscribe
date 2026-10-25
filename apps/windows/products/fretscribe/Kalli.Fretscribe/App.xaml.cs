@@ -159,7 +159,7 @@ public partial class App : Application
         var shortHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(4) }) { Timeout = TimeSpan.FromSeconds(15) };
         // RequestedTheme is never set by the app, so it is Windows' app mode at start-up.
         var settingsVm = new SettingsViewModel(settings, announcer, Strings, vault: CredentialLockerVault.Create(Product.Name, Product.Folder),
-            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, systemDark: RequestedTheme == ApplicationTheme.Dark);
+            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token });
 
         // No overall timeout (the event stream stays open for the whole job), but a LAN address that drops packets must
         // fail within seconds rather than hang on connect.

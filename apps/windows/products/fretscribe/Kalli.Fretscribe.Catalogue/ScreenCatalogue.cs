@@ -44,7 +44,7 @@ public sealed class ScreenCatalogue
         Directory.CreateDirectory(Options.Out);
         var store = new InMemorySettings();
         var variants = Options.VariantsFor(scene);
-        store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(variants[0]));
+        store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(variants[0], null));
         store.Set(nameof(SettingsViewModel.ReduceMotion), true);
         string work = Path.Combine(Path.GetTempPath(), "fretscribe-catalogue", Guid.NewGuid().ToString("N"));
         long crashes = CrashLogLength();
@@ -82,7 +82,7 @@ public sealed class ScreenCatalogue
                     // whose Appearance box shows the choice).
                     if (scene != "settings" && !taken.Picture!.SameAs(first) && ImageDiff.Of(first, taken.Picture!).Changed > ImageDiff.FloorPixels)
                         Run.Findings.Add(new Finding(ShotName(scene, variants[0]), "contrast-theme",
-                            AppearanceSetting.Serialise(variant), "this Appearance choice changed the screen under a contrast theme"));
+                            AppearanceSetting.Serialise(variant, null), "this Appearance choice changed the screen under a contrast theme"));
                 }
                 else
                 {
@@ -158,7 +158,7 @@ public sealed class ScreenCatalogue
     }
 
     private static string ShotName(string scene, Appearance variant) =>
-        Options.Contrast ? $"{scene}--contrast" : $"{scene}--{Options.Prefix}{AppearanceSetting.Serialise(variant)}";
+        Options.Contrast ? $"{scene}--contrast" : $"{scene}--{Options.Prefix}{AppearanceSetting.Serialise(variant, null)}";
 
     // ---- the window ----
 
@@ -421,11 +421,11 @@ public sealed class ScreenCatalogue
 
         public static Appearance[] Variants { get; } =
             (Env("VARIANTS") ?? "light,dark").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(AppearanceSetting.Parse).ToArray();
+                .Select(v => AppearanceSetting.Parse(v, null)).ToArray();
 
-        /// <summary>The choices a screen is taken in: this app has no Pink palette.</summary>
+        /// <summary>The choices a screen is taken in: this app has no hidden palette.</summary>
         public static Appearance[] VariantsFor(string scene) =>
-            Variants.Where(v => !AppearanceSetting.IsPink(v)).DefaultIfEmpty(Appearance.Light).ToArray();
+            Variants.Where(v => !AppearanceSetting.IsHidden(v)).DefaultIfEmpty(Appearance.Light).ToArray();
 
         /// <summary>The tab fixture folder the tab screens are drawn from (SCRIBE_CATALOGUE_FIXTURE).</summary>
         public static string? Score { get; } = Env("FIXTURE");
