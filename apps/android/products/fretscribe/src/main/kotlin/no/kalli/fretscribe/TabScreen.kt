@@ -312,7 +312,7 @@ fun TabScreen(vm: PlayViewModel) {
     var touches by remember { mutableIntStateOf(0) }
     var canZoomIn by remember { mutableStateOf(true) }
     ImmersiveBars(inFocus)
-    BackHandler(enabled = focus.on) { focus = focus.leave() }
+    BackHandler(enabled = inFocus) { focus = focus.leave() }
     // The controls over the tab step aside again while the recording plays, a few seconds after the last touch.
     LaunchedEffect(focus, practice.playing, touches) {
         if (focus.autoHides(practice.playing, readFromTheTop)) {
@@ -416,7 +416,7 @@ fun TabScreen(vm: PlayViewModel) {
             // A key held down sends its press again and again: only the first one counts.
             if (it.type != KeyEventType.KeyDown) false
             else if (it.key == Key.Spacebar && canPlay) { if (it.nativeKeyEvent.repeatCount == 0) practice.toggle(); true }
-            else if (it.key == Key.Escape && focus.on) { focus = focus.leave(); true }
+            else if (it.key == Key.Escape && inFocus) { focus = focus.leave(); true }
             else if (it.key == Key.F && !it.isCtrlPressed && !it.isAltPressed && !it.isMetaPressed && (focus.on || (s != null && s.index.bars > 0))) {
                 if (it.nativeKeyEvent.repeatCount == 0) focus = if (focus.on) focus.leave() else focus.enter()
                 true
@@ -692,7 +692,7 @@ fun TabScreen(vm: PlayViewModel) {
                     Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(touched)) { player() }
                 } else {
                     // Only the small buttons: Play or Pause when there is a recording, and Leave full screen.
-                    Row(Modifier.align(Alignment.BottomEnd).padding(ScribeSpace.s2).background(c.bg.copy(alpha = 0.85f), CircleShape).testTag("fs-tab-focus-minimal"),
+                    Row(Modifier.align(Alignment.BottomEnd).padding(ScribeSpace.s2).background(c.bg, CircleShape).border(1.dp, c.borderStrong, CircleShape).testTag("fs-tab-focus-minimal"),
                         verticalAlignment = Alignment.CenterVertically) {
                         if (canPlay) IconButton(practice::toggle, Modifier.size(48.dp).testTag("fs-tab-focus-play")) {
                             BcIcon(if (practice.playing) DesignR.drawable.ic_bc_pause else DesignR.drawable.ic_bc_play, stringResource(if (practice.playing) R.string.pause else R.string.play))

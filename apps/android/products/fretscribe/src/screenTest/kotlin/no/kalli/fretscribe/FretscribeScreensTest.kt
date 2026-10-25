@@ -133,7 +133,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("check-the-song") { checkTheSong() },
         Entry("tab") { theTab() },
         Entry("tab-full-screen") { theTab(); rule.onNodeWithTag("fs-tab-full-screen").performClick(); waitForTag("fs-tab-focus-minimal", 5_000); rest() },
-        Entry("tab-full-screen-controls", ownOrder = "the controls are drawn over the tab and come first; the tab's image starts in their first row") {
+        Entry("tab-full-screen-controls", apartFromOrder = setOf("fs-tab")) {
             theTab(); rule.onNodeWithTag("fs-tab-full-screen").performClick(); waitForTag("fs-tab-focus-minimal", 5_000)
             rule.onNodeWithTag("fs-tab-scroll").performTouchInput { click(Offset(2f, center.y)) }; waitForTag("fs-practice", 5_000); rest()
         },

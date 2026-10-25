@@ -34,7 +34,9 @@ abstract class ScreenCatalogue : ScreenTest() {
      */
     class Entry(
         val name: String, val steady: Boolean = true, val ownOrder: String? = null,
-        val cutAtLargeText: Set<String> = emptySet(), val notReached: Set<Control> = emptySet(), val open: () -> Unit,
+        val cutAtLargeText: Set<String> = emptySet(), val notReached: Set<Control> = emptySet(),
+        /** Test tags of elements left out of the order comparison (an image that sits outside the scrolling part), and whatever has its bounds; the rest is still compared. */
+        val apartFromOrder: Set<String> = emptySet(), val open: () -> Unit,
     )
 
     /**
@@ -151,7 +153,10 @@ abstract class ScreenCatalogue : ScreenTest() {
                 // Whatever its order, the keyboard reaches everything a finger can act on.
                 missedByTheKeyboard(all).filter { it.words !in notForTheKeyboard && it !in screen.notReached }.takeIf { it.isNotEmpty() }?.let { failed += "${screen.name}: the keyboard never reaches $it; it goes ${all.map(FocusOrder::words)}" }
                 if (screen.ownOrder != null) continue
-                val round = all
+                // (The element is found by its tag; the node the keyboard stops at can be the view under it, with the same bounds.)
+                val apart = rule.onAllNodes(SemanticsMatcher("apart from the order") { it.config.getOrNull(SemanticsProperties.TestTag) in screen.apartFromOrder })
+                    .fetchSemanticsNodes().map { it.boundsInWindow }
+                val round = all.filter { it.boundsInWindow !in apart }
                 val read = FocusOrder.reading(round, scrolling())
                 // (Where on the screen the first Tab lands depends on what was touched last: the round is what is compared.)
                 val reached = round.indexOfFirst { it.id == read.firstOrNull()?.id }.let { at -> if (at <= 0) round else round.drop(at) + round.take(at) }
