@@ -221,7 +221,7 @@ apps/android/scripts/emulator-pool.sh release "$serial"
 
 The export test shares MusicXML, MIDI, the talking-score HTML and the PDF and checks them, plus the braille file when the fixture has the engine's render of it (it has none now; the PDF is then the phone's; Robolectric has no `PdfDocument`, so on the JVM the pages are drawn and the file stands in for it, `JvmPdfPages`, and `PhonePdfDeviceTest` checks the real one on a device; Listen to this bar also needs the engine's MP3, so that test is skipped without one). `audio/src/androidTest/.../RealisticSynthTest.kt` renders sfizz offline. For the SFZ case, pass `-Pandroid.testInstrumentationRunnerArguments.sfz=/data/local/tmp/sounds/cornet-a/cornet-a-sus.sfz` after pushing an instrument there.
 
-Screenshots of the design (light, dark, bokmål and 200% text) are in `docs/screenshots/design/`; the ones from before the design system are in `docs/screenshots/before-design/`.
+Screenshots of the design (light, dark, bokmål and 200% text) are in `docs/screenshots/brasscribe/design/`; the ones from before the design system are in `docs/screenshots/brasscribe/before-design/`.
 
 The TalkBack acceptance script (`qa/screen-reader-scripts/talkback-android.md`) still needs a person with TalkBack on a device. Automated checks cannot hear speech.
 

@@ -4,7 +4,7 @@
 
 | Platform | Files |
 |---|---|
-| Android | `apps/android/docs/screenshots/design/`: all 56 PNGs (en light and dark, nb, 200 % text, and `17-very-uncertain-boxed`) |
+| Android | `apps/android/docs/screenshots/brasscribe/design/`: all 56 PNGs (en light and dark, nb, 200 % text, and `17-very-uncertain-boxed`) |
 | Studio | `studio/docs/screenshots/themes/`: all 52 PNGs (11 views × light, dark, contrast and nb, plus the score crops) |
 | Windows | Code only: `apps/windows/src/Brasscribe.Play/Views/*.xaml`, `Dialogs/*.xaml` and `Strings/*/Resources.resw`. Windows can't render on this Mac, so every Windows verdict below is "in the code, not seen on screen". |
 | Apple | Not yet reviewed. Its screenshots haven't landed. |
