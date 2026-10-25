@@ -151,6 +151,7 @@ run_area() {
     fast:apple) make -C apps/apple package-test-fast ;;
     full:apple) (cd apps/apple/services && swift test --no-parallel) \
                 && (cd apps/apple/features/score && swift test --no-parallel) \
+                && make -C apps/apple alphatab && (cd apps/apple/features/tab && swift test) \
                 && (cd apps/apple/testing/ScreenCatalogue && swift test) \
                 && (cd capture && swift test --no-parallel) \
                 && make -C apps/apple build-for-testing-mac test-mac-unit && apps/apple/scripts/screenshots.sh record ;;
