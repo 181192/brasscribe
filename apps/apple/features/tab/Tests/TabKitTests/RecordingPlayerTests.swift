@@ -38,7 +38,8 @@ struct RecordingPlayerTests {
         let heard = Heard()
         let player = AVRecordingPlayer(file: try tone(), listener: heard, silent: true)
         defer { player.release() }
-        await until(5) { player.duration > 0 }
+        // a simulator just booted can take a while to read even a short file
+        await until(30) { player.duration > 0 }
         #expect(abs(player.duration - 0.5) < 0.05)
         #expect(player.pitchAlgorithm == .spectral)
         player.speed = 1.5
