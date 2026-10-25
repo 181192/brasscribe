@@ -421,7 +421,7 @@ Nothing. `core/` has no networking or storage, and credential handling stays nat
 
 ### Apple (SwiftUI, `apps/apple`)
 
-- Move `companionToken` from `UserDefaults` (`AppModel.swift:50-51`) to the Keychain: `kSecClassGenericPassword`, service `no.brasscribe.engine`, account = `server_id`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Move the old value once, then delete it.
+- Move `companionToken` from `UserDefaults` (`AppModel.swift:50-51`) to the Keychain: `kSecClassGenericPassword`, service `no.kalli.scribe.engine`, account = `server_id`, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. Move the old value once, then delete it.
 - Store the record from §4.5, keyed by `server_id`. The saved "companion URL" becomes `last_address`.
 - `EngineBrowser` reads the TXT `id` and matches it. On launch: try `/v1/devices/me` at `last_address`, then mDNS by id (§4.5).
 - Pair only on 401. Send `platform` (`ios` or `macos`). Scan QR codes (`scribe://pair`) with VisionKit `DataScannerViewController`, and register the URL scheme.
