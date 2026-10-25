@@ -4,7 +4,7 @@
 # AVAudioUnitSampler can load it (the SF3 builds are Ogg-compressed and cannot).
 #
 # Output (gitignored): data/soundfonts/MuseScore_General.sf2 (+ licence).
-# The app finds it via BRASSCRIBE_SOUNDFONT, or copy it to
+# The app finds it via SCRIBE_SOUNDFONT, or copy it to
 # ~/Library/Application Support/Brasscribe/SoundFonts/ (macOS) / the app's Documents.
 set -euo pipefail
 

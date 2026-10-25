@@ -25,7 +25,7 @@ fail() { echo "error: $*" >&2; exit 1; }
 
 xcodegen generate
 rm -rf "$WORK"; mkdir -p "$WORK/Payload" "$(dirname "$OUT")"
-xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
+xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
   -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' \
   -archivePath "$WORK/BrasscribePlay.xcarchive" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" archive

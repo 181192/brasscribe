@@ -147,7 +147,7 @@ codesign -d --entitlements - "$P" | grep -q app-sandbox
 
 `make -C apps/apple install-mac` does the same build locally (hardened runtime off) and checks that the
 installed app stays up. Without UI automation, a quick crash check is
-`swift test --no-parallel --filter 'engineBuildsInASandboxedProcess|OutputStageTests'` in `apps/apple/Packages/BrasscribeKit`
+`swift test --no-parallel --filter 'engineBuildsInASandboxedProcess|OutputStageTests'` in `apps/apple/services`
 (it starts the playback engine in a sandboxed process), then opening the app and looking for a new
 `BrasscribePlay-*.ips` in `~/Library/Logs/DiagnosticReports`.
 

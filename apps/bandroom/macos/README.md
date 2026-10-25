@@ -88,7 +88,7 @@ so it runs on a Mac in use and on CI's macOS runner.
   `takes-<language>.log` says what each screen waited for. Every text is asked to be readable in the picture, in each
   appearance; a text known to fall short can be listed for a while, under its
   issue, in an `Unreadable` list (see [the Play apps' README](../../apple/README.md#screen-catalogue-mac)).
-- **The checks** (the Mac apps' shared package `apps/apple/Packages/ScreenCatalogue`), on the
+- **The checks** (the Mac apps' shared package `apps/apple/testing/ScreenCatalogue`), on the
   accessibility tree SwiftUI builds in the process: every control has a name; Bandroom's own
   buttons, menus and links are at least 24 × 24 pt, and the system's standard controls (switches, checkboxes, radio
   buttons, fields) keep their sizes under WCAG 2.5.8's spacing exception; no text of one line is cut off, and nothing

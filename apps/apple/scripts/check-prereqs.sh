@@ -14,11 +14,11 @@ if [ ! -d "$HERE/../../core/swift/ScribeCore/ScribeFFI.xcframework" ]; then
   exit 1
 fi
 # actool does not follow symlinks inside a catalog, so the app icon set from
-# design/brands/brasscribe/dist is copied into a generated catalog (App/Icon.xcassets, not committed).
+# design/brands/brasscribe/dist is copied into a generated catalog (products/brasscribe/App/Icon.xcassets, not committed).
 ICONS="$HERE/../../design/brands/brasscribe/dist/icons/apple/AppIcon.appiconset"
-mkdir -p "$HERE/App/Icon.xcassets"
-rm -rf "$HERE/App/Icon.xcassets/AppIcon.appiconset"
-cp -R "$ICONS" "$HERE/App/Icon.xcassets/AppIcon.appiconset"
-printf '{\n  "info": { "author": "xcode", "version": 1 }\n}\n' > "$HERE/App/Icon.xcassets/Contents.json"
-# Band sounds for the app bundle (apps/apple/Sounds, not committed).
+mkdir -p "$HERE/products/brasscribe/App/Icon.xcassets"
+rm -rf "$HERE/products/brasscribe/App/Icon.xcassets/AppIcon.appiconset"
+cp -R "$ICONS" "$HERE/products/brasscribe/App/Icon.xcassets/AppIcon.appiconset"
+printf '{\n  "info": { "author": "xcode", "version": 1 }\n}\n' > "$HERE/products/brasscribe/App/Icon.xcassets/Contents.json"
+# Band sounds for the app bundle (products/brasscribe/Sounds, not committed).
 "$HERE/scripts/stage-band-sounds.sh"

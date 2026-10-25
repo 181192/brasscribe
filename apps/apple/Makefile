@@ -2,7 +2,7 @@
 #   make verovio     build Verovio.xcframework (once, ~2 min)
 #   make soundfont   download the baseline SF2 into data/soundfonts
 #   make bandsound   stage the band SoundFont + mapping into Sounds/ (bundled; also run by make project)
-#   make project     generate BrasscribePlay.xcodeproj with XcodeGen
+#   make project     generate products/brasscribe/BrasscribePlay.xcodeproj with XcodeGen
 #   make build       build macOS, iOS Simulator and iPad Simulator
 #   make test        package tests, macOS app unit tests (no UI), app unit + UI tests on an iOS simulator
 #                    (its parts: make package-test, make test-mac-app, make test-iphone)
@@ -25,7 +25,9 @@ IPHONE_DEST ?= $(if $(IPHONE),platform=iOS Simulator$(comma)name=$(IPHONE),$(she
 DERIVED := build/DerivedData
 # Swift suites the fast tier skips (swift test --skip takes a regular expression; see docs/shared/dev/verify.md).
 APPLE_SLOW ?= ArrangementLevelTests|DynamicsLevelTests|RecordingLevelTests
-XCB := xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath $(DERIVED)
+# Brasscribe Play's project (products/brasscribe/project.yml).
+PROJECT := products/brasscribe/BrasscribePlay.xcodeproj
+XCB := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
@@ -42,7 +44,7 @@ bandsound:
 	./scripts/stage-band-sounds.sh
 
 project:
-	xcodegen generate
+	cd products/brasscribe && xcodegen generate
 
 build: project
 	$(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' build
@@ -50,9 +52,9 @@ build: project
 	$(XCB) -scheme BrasscribePlay-iOS -destination 'platform=iOS Simulator,name=$(IPAD)' build
 
 package-test:
-	cd Packages/BrasscribeKit && swift test
-	cd Packages/NotationKit && swift test
-	cd Packages/ScreenCatalogue && swift test
+	cd services && swift test
+	cd features/score && swift test
+	cd testing/ScreenCatalogue && swift test
 	cd ../../capture && swift test
 
 # CI runs the parts apart: package-test and test-mac-app on a pull request, which also builds the iPhone
@@ -60,17 +62,17 @@ package-test:
 test: package-test test-mac-app test-iphone
 
 test-mac-app: project
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' $(SKIP_CATALOGUE) test
+	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' $(SKIP_CATALOGUE) test
 
 test-iphone: project
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' $(TEST_ARGS) test
+	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' $(TEST_ARGS) test
 
 # The macOS UI tests move the real pointer and type real keys. Not part of `make test`: run them
 # only in the macOS VM (scripts/mac-vm.sh test-ui) or in CI. TEST_ARGS adds xcodebuild arguments
 # (-resultBundlePath, -only-testing:…).
 TEST_ARGS ?=
 test-mac-ui: project
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' $(TEST_ARGS) test
+	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS-UITests -destination 'platform=macOS' $(TEST_ARGS) test
 
 # Ad-hoc signatures carry no Team ID, so under the hardened runtime dyld rejects the embedded
 # Verovio.framework; the runtime only matters for notarised Developer ID builds.
@@ -103,7 +105,7 @@ build-for-testing-mac: project
 
 test-mac-unit:
 	@ls $(DERIVED)/Build/Products/BrasscribePlay-macOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-mac
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' \
+	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-macOS -destination 'platform=macOS' \
 	  -only-testing:BrasscribePlayTests_macOS $(SKIP_CATALOGUE) test-without-building
 
 build-for-testing-ios: project
@@ -111,12 +113,12 @@ build-for-testing-ios: project
 
 test-ios-unit:
 	@ls $(DERIVED)/Build/Products/BrasscribePlay-iOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-ios
-	BRASSCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
+	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
 	  -only-testing:BrasscribePlayTests_iOS test-without-building
 
 # Package tests without the slow audio-rendering suites (tier 1). --no-parallel as in package-test:
 # PlaybackKitTests crash (SIGTRAP) when Swift Testing runs them in parallel.
 package-test-fast:
-	cd Packages/BrasscribeKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
-	cd Packages/NotationKit && swift test --no-parallel --skip '$(APPLE_SLOW)'
-	cd Packages/ScreenCatalogue && swift test
+	cd services && swift test --no-parallel --skip '$(APPLE_SLOW)'
+	cd features/score && swift test --no-parallel --skip '$(APPLE_SLOW)'
+	cd testing/ScreenCatalogue && swift test

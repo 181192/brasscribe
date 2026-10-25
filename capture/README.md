@@ -2,7 +2,7 @@
 
 A Core Audio process tap that records what another application is playing, so a
 transcription can start from the sound card instead of a microphone. Brasscribe
-Play for macOS uses the `AudioCapture` library; `brasscribe-capture` is the same
+Play for macOS uses the `AudioCapture` library; `scribe-capture` is the same
 code as a command-line tool.
 
 macOS 26 or newer, Xcode 26 or newer.
@@ -10,7 +10,7 @@ macOS 26 or newer, Xcode 26 or newer.
 ## Build
 
 ```sh
-make            # bin/brasscribe-capture, release, ad-hoc signed
+make            # bin/scribe-capture, release, ad-hoc signed
 make test       # swift test
 make clean
 ```
@@ -23,10 +23,10 @@ Security → Screen & System Audio Recording.
 ## Run
 
 ```sh
-bin/brasscribe-capture --list                                   # apps that can be tapped, and what is playing
-bin/brasscribe-capture --out take.wav                           # global stereo mixdown, stop with Ctrl-C
-bin/brasscribe-capture --out take.wav --seconds 30              # stop after 30 s
-bin/brasscribe-capture --out take.wav --bundle-id com.spotify.client
+bin/scribe-capture --list                                   # apps that can be tapped, and what is playing
+bin/scribe-capture --out take.wav                           # global stereo mixdown, stop with Ctrl-C
+bin/scribe-capture --out take.wav --seconds 30              # stop after 30 s
+bin/scribe-capture --out take.wav --bundle-id com.spotify.client
 ```
 
 Without `--bundle-id` it records everything playing. It stops on `--seconds`,
@@ -38,6 +38,6 @@ playing, or the source is protected content.
 
 ```sh
 make
-bin/brasscribe-capture --out /tmp/take.wav --seconds 30
+bin/scribe-capture --out /tmp/take.wav --seconds 30
 cd .. && pixi run scribe run /tmp/take.wav --out data/runs/capture-check
 ```

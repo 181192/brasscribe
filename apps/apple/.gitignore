@@ -6,5 +6,5 @@ xcuserdata/
 *.xcresult
 .build/
 .swiftpm/
-App/Icon.xcassets/
+products/*/App/Icon.xcassets/
 Sounds/

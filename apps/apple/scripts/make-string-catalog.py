@@ -1,4 +1,4 @@
-"""Build App/Localizable.xcstrings (English source, Norwegian bokmål) from the keys Xcode
+"""Build products/brasscribe/App/Localizable.xcstrings (English source, Norwegian bokmål) from the keys Xcode
 extracted into *.stringsdata during the last build, plus the bokmål table below.
 
 Usage: python3 scripts/make-string-catalog.py build/DerivedData/Build/Intermediates.noindex
@@ -668,7 +668,7 @@ def main(root: str) -> None:
     # the table above wins where both have one
     existing = {}
     try:
-        for k, v in json.load(open("App/Localizable.xcstrings")).get("strings", {}).items():
+        for k, v in json.load(open("products/brasscribe/App/Localizable.xcstrings")).get("strings", {}).items():
             nb = v.get("localizations", {}).get("nb", {}).get("stringUnit", {}).get("value")
             if nb:
                 existing[k] = nb
@@ -685,11 +685,11 @@ def main(root: str) -> None:
             strings[k] = {}
             missing.append(k)
     catalog = {"sourceLanguage": "en", "strings": strings, "version": "1.0"}
-    with open("App/Localizable.xcstrings", "w") as f:
+    with open("products/brasscribe/App/Localizable.xcstrings", "w") as f:
         json.dump(catalog, f, indent=2, ensure_ascii=False, sort_keys=True)
     info = {"sourceLanguage": "en", "version": "1.0",
             "strings": {k: entry(v) for k, v in INFO_NB.items()}}
-    with open("App/InfoPlist.xcstrings", "w") as f:
+    with open("products/brasscribe/App/InfoPlist.xcstrings", "w") as f:
         json.dump(info, f, indent=2, ensure_ascii=False, sort_keys=True)
     print(f"{len(strings)} strings, {len(missing)} without Norwegian", file=sys.stderr)
     for k in missing:

@@ -151,7 +151,7 @@ Nothing compiles in the VM, and the VMs stay up between runs. `test-ui`:
 4. Rsyncs, incrementally, the build products, `apps/fixtures` and `sounds/` into each VM.
 5. Runs `xcodebuild test-without-building -xctestrun …` in each VM, in parallel, with
    `-only-testing` for its share. The fixture reaches the runner as
-   `TEST_RUNNER_BRASSCRIBE_FIXTURES`.
+   `TEST_RUNNER_SCRIBE_FIXTURES`.
 6. Copies each `.xcresult` back to `build/mac-vm/play-<time>/<vm>/`. It then:
    - exports the attachments into `attachments/`. `manifest.json` there maps them to tests. Xcode 27
      keeps a screen recording of each failing test instead of a screenshot, and the script saves

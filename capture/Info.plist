@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleIdentifier</key><string>no.kalli.brasscribe.capture</string>
-  <key>CFBundleName</key><string>brasscribe-capture</string>
-  <key>NSAudioCaptureUsageDescription</key><string>brasscribe records the audio playing on this Mac to transcribe it.</string>
+  <key>CFBundleIdentifier</key><string>no.kalli.scribe.capture</string>
+  <key>CFBundleName</key><string>scribe-capture</string>
+  <key>NSAudioCaptureUsageDescription</key><string>scribe-capture records the audio playing on this Mac to transcribe it.</string>
 </dict>
 </plist>

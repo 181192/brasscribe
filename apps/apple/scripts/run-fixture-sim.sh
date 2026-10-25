@@ -8,15 +8,15 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Develope
 DEVICE="$1"; SHOT="${2:-}"; shift; [ $# -gt 0 ] && shift
 APP="$HERE/build/DerivedData/Build/Products/Debug-iphonesimulator/BrasscribePlay.app"
 cd "$HERE"
-xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribePlay-iOS \
+xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData -scheme BrasscribePlay-iOS \
   -destination "platform=iOS Simulator,name=$DEVICE" build -quiet
 xcrun simctl boot "$DEVICE" 2>/dev/null || true
 xcrun simctl bootstatus "$DEVICE" >/dev/null
 xcrun simctl terminate "$DEVICE" no.kalli.brasscribe 2>/dev/null || true
 xcrun simctl install "$DEVICE" "$APP"
-export SIMCTL_CHILD_BRASSCRIBE_FIXTURES="$ROOT/apps/fixtures/old-hundredth"
-[ -f "$ROOT/data/soundfonts/MuseScore_General.sf2" ] && export SIMCTL_CHILD_BRASSCRIBE_SOUNDFONT="$ROOT/data/soundfonts/MuseScore_General.sf2"
-[ -f "$ROOT/sounds/mapping.json" ] && export SIMCTL_CHILD_BRASSCRIBE_SOUNDS="$ROOT"
+export SIMCTL_CHILD_SCRIBE_FIXTURES="$ROOT/apps/fixtures/old-hundredth"
+[ -f "$ROOT/data/soundfonts/MuseScore_General.sf2" ] && export SIMCTL_CHILD_SCRIBE_SOUNDFONT="$ROOT/data/soundfonts/MuseScore_General.sf2"
+[ -f "$ROOT/sounds/mapping.json" ] && export SIMCTL_CHILD_SCRIBE_SOUNDS="$ROOT"
 xcrun simctl launch "$DEVICE" no.kalli.brasscribe -reset -open-fixture-score "$@"
 if [ -n "$SHOT" ]; then
   sleep "${WAIT:-15}"
