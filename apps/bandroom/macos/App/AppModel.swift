@@ -822,7 +822,7 @@ enum LANAddresses {
 ///   entitlement backed by a Team ID, which an ad-hoc signature doesn't have (Apple TN3137, "On Mac keychain APIs
 ///   and implementations"). Move the key there once Bandroom is signed with a Developer ID.
 struct KeychainStore: SecretStore {
-    static let service = "no.brasscribe.bandroom.huggingface"
+    static let service = "no.kalli.bandroom.huggingface"
 
     func read() -> SecretRead {
         let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: Self.service,

@@ -67,7 +67,7 @@ public enum BandSoundStatus: Sendable, Equatable {
 }
 
 public enum BandSounds {
-    static let log = Logger(subsystem: "no.brasscribe.play", category: "sound")
+    static let log = Logger(subsystem: "no.kalli.brasscribe", category: "sound")
 
     /// The band SoundFont builds in the order this device prefers them. iPhone and iPad get the phone build
     /// (77 MB, which the app bundles for iOS): smaller, for phone memory and download size. The Mac gets the

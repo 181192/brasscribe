@@ -2,7 +2,7 @@
 # the .xcodeproj is not committed.
 name: BrasscribeBandroom
 options:
-  bundleIdPrefix: no.brasscribe
+  bundleIdPrefix: no.kalli
   deploymentTarget:
     macOS: "26.0"
   developmentLanguage: en
@@ -81,7 +81,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Brasscribe Bandroom
-        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.bandroom
+        PRODUCT_BUNDLE_IDENTIFIER: no.kalli.bandroom
         CODE_SIGN_ENTITLEMENTS: App/Bandroom.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
@@ -100,7 +100,7 @@ targets:
         product: ScreenCatalogue
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: no.brasscribe.bandroom.tests
+        PRODUCT_BUNDLE_IDENTIFIER: no.kalli.bandroom.tests
         GENERATE_INFOPLIST_FILE: YES
         # The app's product name has a space, which XcodeGen's default test host leaves out.
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Brasscribe Bandroom.app/Contents/MacOS/Brasscribe Bandroom"

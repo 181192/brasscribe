@@ -12,12 +12,12 @@ xcodebuild -project BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData 
   -destination "platform=iOS Simulator,name=$DEVICE" build -quiet
 xcrun simctl boot "$DEVICE" 2>/dev/null || true
 xcrun simctl bootstatus "$DEVICE" >/dev/null
-xcrun simctl terminate "$DEVICE" no.brasscribe.play 2>/dev/null || true
+xcrun simctl terminate "$DEVICE" no.kalli.brasscribe 2>/dev/null || true
 xcrun simctl install "$DEVICE" "$APP"
 export SIMCTL_CHILD_BRASSCRIBE_FIXTURES="$ROOT/apps/fixtures/old-hundredth"
 [ -f "$ROOT/data/soundfonts/MuseScore_General.sf2" ] && export SIMCTL_CHILD_BRASSCRIBE_SOUNDFONT="$ROOT/data/soundfonts/MuseScore_General.sf2"
 [ -f "$ROOT/sounds/mapping.json" ] && export SIMCTL_CHILD_BRASSCRIBE_SOUNDS="$ROOT"
-xcrun simctl launch "$DEVICE" no.brasscribe.play -reset -open-fixture-score "$@"
+xcrun simctl launch "$DEVICE" no.kalli.brasscribe -reset -open-fixture-score "$@"
 if [ -n "$SHOT" ]; then
   sleep "${WAIT:-15}"
   xcrun simctl io "$DEVICE" screenshot "$SHOT"

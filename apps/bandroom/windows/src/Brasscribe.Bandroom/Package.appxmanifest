@@ -13,7 +13,7 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap uap5 desktop rescap">
 
-  <Identity Name="Brasscribe.Bandroom" Publisher="CN=brasscribe" Version="0.1.0.0" ProcessorArchitecture="x64" />
+  <Identity Name="Kalli.Bandroom" Publisher="CN=brasscribe" Version="0.1.0.0" ProcessorArchitecture="x64" />
 
   <Properties>
     <DisplayName>Brasscribe Bandroom</DisplayName>
@@ -32,7 +32,7 @@
 
   <Applications>
     <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="$targetentrypoint$">
-      <uap:VisualElements DisplayName="Brasscribe Bandroom" Description="Brasscribe on this computer: phones and tablets make full-band scores here."
+      <uap:VisualElements DisplayName="Kalli.Bandroom" Description="Brasscribe on this computer: phones and tablets make full-band scores here."
                           BackgroundColor="transparent" Square150x150Logo="Assets\Square150x150Logo.png"
                           Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" Square71x71Logo="Assets\SmallTile.png"
@@ -41,7 +41,7 @@
       <Extensions>
         <!-- Start at sign-in, on by default after the first run; the argument tells the app not to open its window. -->
         <uap5:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="Windows.FullTrustApplication">
-          <uap5:StartupTask TaskId="BrasscribeBandroom" Enabled="true" DisplayName="Brasscribe Bandroom" />
+          <uap5:StartupTask TaskId="BrasscribeBandroom" Enabled="true" DisplayName="Kalli.Bandroom" />
         </uap5:Extension>
       </Extensions>
     </Application>
