@@ -393,6 +393,63 @@
   <data name="HandBox.Header" xml:space="preserve">
     <value>Hvilken hånd er på halsen?</value>
   </data>
+  <data name="Help1Text.Text" xml:space="preserve">
+    <value>Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt.</value>
+  </data>
+  <data name="Help1Title.Text" xml:space="preserve">
+    <value>Lag en tab</value>
+  </data>
+  <data name="Help2Text.Text" xml:space="preserve">
+    <value>Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Velg merket for å høre den takten i opptaket sakte.</value>
+  </data>
+  <data name="Help2Title.Text" xml:space="preserve">
+    <value>«?»-merkene</value>
+  </data>
+  <data name="Help3Text.Text" xml:space="preserve">
+    <value>Sett ned farten på opptaket, og gjenta de vanskelige taktene. Tonehøyden er den samme i alle tempoer.</value>
+  </data>
+  <data name="Help3Title.Text" xml:space="preserve">
+    <value>Øv</value>
+  </data>
+  <data name="Help4Text.Text" xml:space="preserve">
+    <value>Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen.</value>
+  </data>
+  <data name="Help4Title.Text" xml:space="preserve">
+    <value>Sangene dine</value>
+  </data>
+  <data name="Help5Text.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger. Den heter Brasscribe Bandroom når du installerer den.</value>
+  </data>
+  <data name="Help5Title.Text" xml:space="preserve">
+    <value>Tab skrives på datamaskinen</value>
+  </data>
+  <data name="Help6Text.Text" xml:space="preserve">
+    <value>Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.</value>
+  </data>
+  <data name="Help6Title.Text" xml:space="preserve">
+    <value>Lenker og strømmeapper</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Slik virker Fretscribe, og tastene (F1)</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hjelp</value>
+  </data>
+  <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Hjelp</value>
+  </data>
+  <data name="HelpDialog.CloseButtonText" xml:space="preserve">
+    <value>Lukk</value>
+  </data>
+  <data name="HelpDialog.Title" xml:space="preserve">
+    <value>Hjelp</value>
+  </data>
+  <data name="HelpKeysText.Text" xml:space="preserve">
+    <value>På tabben: Mellomrom spiller og pauser, høyre piltast går én takt fram, og venstre piltast én takt tilbake eller til starten av taktene som gjentas. F11 gir tabben hele skjermen, og Esc går ut. Overalt: Ctrl+O åpner et opptak, Ctrl+Shift+R spiller inn, Ctrl+P deler eller skriver ut tabben, Ctrl+, åpner Innstillinger, Alt+Venstre går tilbake og F1 åpner denne hjelpen.</value>
+  </data>
+  <data name="HelpKeysTitle.Text" xml:space="preserve">
+    <value>Taster</value>
+  </data>
   <data name="HomeEmpty.Text" xml:space="preserve">
     <value>Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</value>
   </data>

@@ -14,6 +14,7 @@
             <KeyboardAccelerator Key="E" Modifiers="Control" Invoked="OnExportAccelerator" />
             <KeyboardAccelerator Key="P" Modifiers="Control" Invoked="OnExportAccelerator" />
             <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="OnBackAccelerator" />
+            <KeyboardAccelerator Key="F1" Invoked="OnHelpAccelerator" />
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -41,10 +42,15 @@
             <Border x:Name="DragRegion" Grid.Column="1" Grid.ColumnSpan="2" Background="Transparent" />
             <TextBlock x:Name="PageTitle" Grid.Column="1" Style="{StaticResource LabelStyle}" FontSize="15" VerticalAlignment="Center"
                        IsHitTestVisible="False" TextTrimming="CharacterEllipsis" />
-            <Button x:Name="SettingsButton" x:Uid="SettingsButton" Grid.Column="3" Style="{StaticResource IconButtonStyle}"
-                    Click="OnSettingsClick" AccessKey="S">
-                <FontIcon Glyph="{StaticResource FsIconSettings}" FontSize="16" />
-            </Button>
+            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4">
+                <Button x:Name="HelpButton" x:Uid="HelpButton" Style="{StaticResource IconButtonStyle}" Click="OnHelpClick" AccessKey="H">
+                    <FontIcon Glyph="{StaticResource FsIconHelp}" FontSize="16" />
+                </Button>
+                <Button x:Name="SettingsButton" x:Uid="SettingsButton" Style="{StaticResource IconButtonStyle}"
+                        Click="OnSettingsClick" AccessKey="S">
+                    <FontIcon Glyph="{StaticResource FsIconSettings}" FontSize="16" />
+                </Button>
+            </StackPanel>
         </Grid>
 
         <!-- Your songs in the pane (on Home and while a tab is written), and the flow steps in a Frame. -->

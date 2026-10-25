@@ -25,9 +25,9 @@ public sealed class ScreenCatalogue
 {
     internal static App App = null!;
 
-    /// <summary>The screens: the sample scenes, then Settings.</summary>
+    /// <summary>The screens: the sample scenes, then Settings and Help.</summary>
     public static IEnumerable<object[]> Screens =>
-        TabSampleScenes.Names.Append("settings").Where(Options.Wanted).Select(s => new object[] { s });
+        TabSampleScenes.Names.Append("settings").Append("help").Where(Options.Wanted).Select(s => new object[] { s });
 
     private static readonly CatalogueRun Run = new();
 
@@ -60,9 +60,10 @@ public sealed class ScreenCatalogue
             {
                 "export" => typeof(Kalli.Fretscribe.Dialogs.ExportDialog),
                 "settings" => typeof(Kalli.Fretscribe.Dialogs.SettingsDialog),
+                "help" => typeof(Kalli.Fretscribe.Dialogs.HelpDialog),
                 _ => null,
             };
-            await TabSampleScenes.ShowAsync(main, scene == "settings" ? "home" : scene, Options.Score);
+            await TabSampleScenes.ShowAsync(main, scene is "settings" or "help" ? "home" : scene, Options.Score);
             await LoadedAsync(window);
             CheckSystem(settings);
             CheckLanguage();
@@ -78,7 +79,7 @@ public sealed class ScreenCatalogue
                     // Opened in each choice, so it shows that choice (a person changes it in the dialog itself). The
                     // screen without it is taken first: the dialog's picture must not be that one.
                     without = (await TakeAsync(window, main, settings, null, null, shot + " (before its dialog)")).Picture;
-                    var open = scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync();
+                    var open = scene switch { "export" => window.ShowExportAsync(), "help" => window.ShowHelpAsync(), _ => window.OpenSettingsAsync() };
                     if (open.IsCompleted) throw new ScreenNotTakenException("screen not taken: its dialog was not opened (another one is open, or the screen under it is not the one it opens from)");
                 }
                 var taken = await TakeAsync(window, main, settings, dialog, without, shot);

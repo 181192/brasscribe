@@ -343,6 +343,34 @@ for state, en, nb in [("Looking", "Looking for the recording…", "Ser etter opp
                        "Denne PC-en kan ikke spille av opptaket. Du kan fortsatt lese tabben.")]:
     add(f"Tab_Practice_{state}", en, nb)
 
+# ---- help ----
+icon_button("HelpButton", "Help", "Hjelp", "How Fretscribe works, and its keys (F1)", "Slik virker Fretscribe, og tastene (F1)")
+prop("HelpDialog", "Title", "Help", "Hjelp")
+prop("HelpDialog", "CloseButtonText", "Close", "Lukk")
+for n, ten, tnb, en, nb in [
+        (1, "Write down a tab", "Lag en tab",
+         "Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument.",
+         "Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt."),
+        (2, "The “?” marks", "«?»-merkene",
+         "A “?” above a note means Fretscribe wasn't sure of it. A boxed “!” marks a note your instrument can't play there. Choose the mark to hear that bar of the recording slowly.",
+         "Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Velg merket for å høre den takten i opptaket sakte."),
+        (3, "Practise", "Øv", "Slow the recording down, and repeat the hard bars. The pitch stays the same at every speed.",
+         "Sett ned farten på opptaket, og gjenta de vanskelige taktene. Tonehøyden er den samme i alle tempoer."),
+        (4, "Your songs", "Sangene dine", "Every tab you make is kept under Your songs, on this PC and on your computer.",
+         "Hver tab du lager, ligger under Sangene dine, på denne PC-en og på datamaskinen."),
+        (5, "Tabs are written on your computer", "Tab skrives på datamaskinen",
+         "Bandroom on your computer writes down the notes. Open it there, and connect in Settings. It is called Brasscribe Bandroom when you install it.",
+         "Bandroom på datamaskinen skriver ned tonene. Åpne den der, og koble til i Innstillinger. Den heter Brasscribe Bandroom når du installerer den."),
+        (6, "Links and streaming apps", "Lenker og strømmeapper",
+         "Links can't be downloaded, and streaming apps usually block recording. A file you own, or the microphone, always works.",
+         "Lenker kan ikke lastes ned, og strømmeapper stopper som regel opptak. En fil du eier, eller mikrofonen, virker alltid.")]:
+    prop(f"Help{n}Title", "Text", ten, tnb)
+    prop(f"Help{n}Text", "Text", en, nb)
+prop("HelpKeysTitle", "Text", "Keys", "Taster")
+prop("HelpKeysText", "Text",
+     "On the tab: Space plays and pauses, the right arrow goes a bar on, and the left arrow a bar back or to the start of the bars being repeated. F11 takes the tab full screen, and Esc leaves it. Everywhere: Ctrl+O opens a recording, Ctrl+Shift+R records, Ctrl+P shares or prints the tab, Ctrl+, opens Settings, Alt+Left goes back and F1 opens this help.",
+     "På tabben: Mellomrom spiller og pauser, høyre piltast går én takt fram, og venstre piltast én takt tilbake eller til starten av taktene som gjentas. F11 gir tabben hele skjermen, og Esc går ut. Overalt: Ctrl+O åpner et opptak, Ctrl+Shift+R spiller inn, Ctrl+P deler eller skriver ut tabben, Ctrl+, åpner Innstillinger, Alt+Venstre går tilbake og F1 åpner denne hjelpen.")
+
 # ---- share or print ----
 text_button("ShareButton", "Share or print", "Del eller skriv ut", "Print the tab, or save it as a PDF, MusicXML, MIDI, text or playing instructions (Ctrl+P)",
             "Skriv ut tabben, eller lagre den som PDF, MusicXML, MIDI, tekst eller spilleveiledning (Ctrl+P)")

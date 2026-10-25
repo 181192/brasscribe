@@ -220,6 +220,22 @@ public sealed partial class MainWindow : Window
     }
 
     private async void OnSettingsClick(object sender, RoutedEventArgs e) => await OpenSettingsAsync();
+    private async void OnHelpClick(object sender, RoutedEventArgs e) => await ShowHelpAsync();
+
+    private async void OnHelpAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await ShowHelpAsync();
+    }
+
+    /// <summary>Help; focus returns to the Help button.</summary>
+    public async Task ShowHelpAsync()
+    {
+        if (DialogGate.IsOpen) return;
+        var dialog = new HelpDialog { XamlRoot = Content.XamlRoot, RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs };
+        await DialogGate.ShowAsync(dialog);
+        HelpButton.Focus(FocusState.Programmatic);
+    }
 
     private bool _settingsOpen;
     private string? _waitingLink;

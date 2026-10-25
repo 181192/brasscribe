@@ -126,11 +126,11 @@ public partial class App : Application
         // --show NAME [--score DIR]: one screen with sample content, for screenshots (see TabSampleScenes); DIR is a tab fixture folder.
         if (Option("--show") is { } scene)
         {
-            if (await TabSampleScenes.ShowAsync(flow, scene == "settings" ? "home" : scene, Option("--score")) && scene is "settings" or "export")
+            if (await TabSampleScenes.ShowAsync(flow, scene is "settings" or "help" ? "home" : scene, Option("--score")) && scene is "settings" or "export" or "help")
                 window.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, async () =>
                 {
                     await Task.Delay(1500);
-                    await (scene == "export" ? window.ShowExportAsync() : window.OpenSettingsAsync());
+                    await (scene switch { "export" => window.ShowExportAsync(), "help" => window.ShowHelpAsync(), _ => window.OpenSettingsAsync() });
                 });
             return;
         }
