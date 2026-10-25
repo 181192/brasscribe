@@ -46,15 +46,21 @@ public sealed partial class SourceKindViewModel : ObservableObject
     };
 
     private readonly IStrings _s;
+    private readonly Target _target;
 
-    public SourceKindViewModel(IStrings s)
+    /// <summary>The choices for an app that makes <paramref name="target"/>: of the engine's profiles, that target's are its own.</summary>
+    public SourceKindViewModel(IStrings s, Target target)
     {
         _s = s;
+        _target = target;
         foreach (var (kind, profile) in Profiles)
             Options.Add(new SourceKindOption(kind, profile, s[$"Kind_{kind}_Label"], s[$"Kind_{kind}_Description"]));
     }
 
     public ObservableCollection<SourceKindOption> Options { get; } = [];
+
+    /// <summary>What this app makes.</summary>
+    public Target Target => _target;
 
     [ObservableProperty] public partial SourceAudio? Source { get; set; }
 
@@ -69,7 +75,7 @@ public sealed partial class SourceKindViewModel : ObservableObject
     {
         try
         {
-            var profiles = (await engine.ListProfilesAsync(ct)).Where(p => p.Target == Product.Target).Select(p => p.Name).ToHashSet();
+            var profiles = (await engine.ListProfilesAsync(ct)).Where(p => _target.Makes(p.Target)).Select(p => p.Name).ToHashSet();
             foreach (var o in Options) o.IsAvailable = profiles.Contains(o.Profile);
         }
         catch (EngineException)

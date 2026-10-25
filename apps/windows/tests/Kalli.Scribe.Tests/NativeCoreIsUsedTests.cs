@@ -28,7 +28,7 @@ public class NativeCoreIsUsedTests
     {
         if (Named is not { } path) return;
         Assert.True(File.Exists(path), $"SCRIBE_FFI_PATH names {path}, which is not there: run scripts/worktree-setup.sh, or build the core");
-        Assert.True(NativeCoreBridge.TryCreate() is not null, $"SCRIBE_FFI_PATH names {path}, but scribe_ffi did not load from it");
+        Assert.True(NativeCoreBridge.TryCreate(Target.Brass) is not null, $"SCRIBE_FFI_PATH names {path}, but scribe_ffi did not load from it");
     }
 
     [Fact]

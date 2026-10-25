@@ -31,11 +31,15 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>Exports a newer core adds; without one of them that feature is left out, not the whole core.</summary>
     internal static readonly string[] OptionalExports = ["sc_seats", "sc_seat_part", "sc_part_sources", "sc_part_name_nb"];
 
-    private NativeCoreBridge(string version, IReadOnlySet<string> optional)
+    private NativeCoreBridge(string version, IReadOnlySet<string> optional, Target target)
     {
         Version = version;
         _optional = optional;
+        _target = target;
     }
+
+    /// <summary>The target whose scores this app shows: the talking score names their parts as it does.</summary>
+    private readonly Target _target;
 
     private readonly IReadOnlySet<string> _optional;
     private IReadOnlyList<SeatInfo>? _seats;
@@ -48,8 +52,8 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     private static bool _resolverSet;
     private static readonly object Gate = new();
 
-    /// <summary>Loads the native core if present; null when it is missing or incompatible.</summary>
-    public static NativeCoreBridge? TryCreate(string? libraryPath = null)
+    /// <summary>Loads the native core if present, for the scores of <paramref name="target"/>; null when it is missing or incompatible.</summary>
+    public static NativeCoreBridge? TryCreate(Target target, string? libraryPath = null)
     {
         libraryPath ??= Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH");
         lock (Gate)
@@ -74,7 +78,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
         try
         {
             nint v = sc_version();
-            try { return new NativeCoreBridge(Marshal.PtrToStringUTF8(v) ?? "native", optional); }
+            try { return new NativeCoreBridge(Marshal.PtrToStringUTF8(v) ?? "native", optional, target); }
             finally { sc_string_free(v); }
         }
         catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
@@ -119,7 +123,7 @@ public sealed partial class NativeCoreBridge : ICoreBridge
     /// <summary>The talking-score document as the core writes it (spec §6 JSON).</summary>
     public string TalkingScoreDocumentJson(string musicXml, string? compositionJson)
     {
-        Check(sc_talking_score_new(musicXml, compositionJson, Product.CoreTarget, out var ts, out var err), err);
+        Check(sc_talking_score_new(musicXml, compositionJson, _target.CoreId, out var ts, out var err), err);
         try
         {
             Check(sc_talking_score_json(ts, out var json, out err), err);

@@ -8,16 +8,16 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI.ViewManagement;
 
-namespace Kalli.Brasscribe.Services;
+namespace Kalli.Scribe.Controls;
 
 /// <summary>
 /// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). The theme is set on each window's root element
 /// (Application.RequestedTheme cannot change after start-up), on open dialogs and flyouts (they live in the
 /// popup layer and don't inherit it), and on the caption buttons. A Windows contrast theme always wins:
 /// the roots then ask for Default and the choice is kept for later.
-/// Pink is a palette on top of a theme: Pink light asks for Light and Pink dark for Dark, and the palette's generated
-/// dictionary (Light and Dark roles) is merged after the Brasscribe theme while either is chosen; the roots flip their
-/// theme once so every ThemeResource looks again.
+/// Pink, in an app that has it, is a palette on top of a theme: Pink light asks for Light and Pink dark for Dark, and
+/// the palette's generated dictionary (Light and Dark roles) is merged after the app's theme while either is chosen;
+/// the roots flip their theme once so every ThemeResource looks again.
 /// </summary>
 public sealed class ThemeController
 {
@@ -27,13 +27,16 @@ public sealed class ThemeController
     private readonly List<Window> _windows = [];
     private readonly RootTheme? _override;
     private readonly bool _overridePink;
-    private const string PinkSource = "ms-appx:///Themes/BrasscribePinkTheme.xaml";
+    private readonly string? _pinkSource;
     private ResourceDictionary? _pink;
 
     /// <param name="forced">"--theme light|dark|pink-light|pink-dark" for screenshots: wins over the stored choice (not over contrast).</param>
-    public ThemeController(SettingsViewModel settings, DispatcherQueue queue, string? forced)
+    /// <param name="pinkSource">The app's Pink palette (an ms-appx URI), or null for an app without one.</param>
+    public ThemeController(SettingsViewModel settings, DispatcherQueue queue, string? forced, string? pinkSource = null)
     {
         _settings = settings;
+        _pinkSource = pinkSource;
+        Current = this;
         _queue = queue;
         var choice = AppearanceSetting.Parse(forced);
         _override = choice == Appearance.System ? null : AppearanceSetting.Resolve(choice, false);
@@ -55,13 +58,16 @@ public sealed class ThemeController
     }
 
     /// <summary>The Pink palette is on the chrome now: the forced theme's, or the setting's; a contrast theme still wins.</summary>
-    private bool UsesPink => _override is null ? _settings.UsesPink : _overridePink && !_settings.HighContrast;
+    private bool UsesPink => _pinkSource is not null && (_override is null ? _settings.UsesPink : _overridePink && !_settings.HighContrast);
+
+    /// <summary>The app's controller: the last one made (an app makes one).</summary>
+    private static ThemeController? Current { get; set; }
 
     /// <summary>The theme roots and popups ask for now.</summary>
-    public ElementTheme Current => (ElementTheme)(_settings.HighContrast ? RootTheme.Default : _override ?? _settings.RootTheme);
+    public ElementTheme Requested => (ElementTheme)(_settings.HighContrast ? RootTheme.Default : _override ?? _settings.RootTheme);
 
     /// <summary>The theme for a new ContentDialog shown in this app.</summary>
-    public static ElementTheme ForDialogs => (Application.Current as App)?.Theme?.Current ?? ElementTheme.Default;
+    public static ElementTheme ForDialogs => Current?.Requested ?? ElementTheme.Default;
 
     /// <summary>Themes a window now and whenever the choice or the contrast theme changes.</summary>
     public void Attach(Window window)
@@ -96,8 +102,8 @@ public sealed class ThemeController
         if (want == has) return false;
         if (want)
         {
-            _pink ??= new ResourceDictionary { Source = new Uri(PinkSource) };
-            merged.Add(_pink); // last, so its colour roles win over BrasscribeTheme.xaml's
+            _pink ??= new ResourceDictionary { Source = new Uri(_pinkSource!) };
+            merged.Add(_pink); // last, so its colour roles win over the app's theme
         }
         else merged.Remove(_pink!);
         return true;
@@ -105,7 +111,7 @@ public sealed class ThemeController
 
     private void Apply(Window window, bool repaint = false)
     {
-        var theme = Current;
+        var theme = Requested;
         if (window.Content is FrameworkElement root)
         {
             Theme(root, theme, repaint);
@@ -128,8 +134,14 @@ public sealed class ThemeController
     }
 
     /// <summary>A colour of the Pink palette for the root's light or dark, while Pink is in use.</summary>
-    private Windows.UI.Color? PinkColor(string key, bool dark) =>
-        UsesPink && _pink?.ThemeDictionaries.TryGetValue(dark ? "Dark" : "Light", out var d) == true
+    private Windows.UI.Color? PinkColor(string key, bool dark) => UsesPink ? ThemeColor(_pink, key, dark) : null;
+
+    /// <summary>A colour role of the app's theme (the last merged dictionary that has it) for light or dark.</summary>
+    private static Windows.UI.Color? AppColor(string key, bool dark) =>
+        Application.Current.Resources.MergedDictionaries.Reverse().Select(d => ThemeColor(d, key, dark)).FirstOrDefault(c => c is not null);
+
+    private static Windows.UI.Color? ThemeColor(ResourceDictionary? dictionary, string key, bool dark) =>
+        dictionary?.ThemeDictionaries.TryGetValue(dark ? "Dark" : "Light", out var d) == true
         && d is ResourceDictionary themed && themed.TryGetValue(key, out var v) && v is Windows.UI.Color c ? c : null;
 
     /// <summary>The minimise/maximise/close glyphs follow the root's theme; a contrast theme keeps the system's.</summary>
@@ -149,9 +161,9 @@ public sealed class ThemeController
             return;
         }
         bool dark = root.ActualTheme == ElementTheme.Dark;
-        // The ink and paper of design/tooling (text, and a hover/pressed wash in the text colour).
-        var fg = PinkColor("ScribeTextColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xED, 0xEB, 0xE6) : ColorHelper.FromArgb(0xFF, 0x1B, 0x1A, 0x17));
-        var muted = PinkColor("ScribeTextMutedColor", dark) ?? (dark ? ColorHelper.FromArgb(0xFF, 0xB4, 0xB0, 0xA7) : ColorHelper.FromArgb(0xFF, 0x5E, 0x5A, 0x52));
+        // The app's text colours (text, and a hover/pressed wash in the text colour).
+        var fg = PinkColor("ScribeTextColor", dark) ?? AppColor("ScribeTextColor", dark) ?? (dark ? Colors.White : Colors.Black);
+        var muted = PinkColor("ScribeTextMutedColor", dark) ?? AppColor("ScribeTextMutedColor", dark) ?? fg;
         bar.ButtonBackgroundColor = Colors.Transparent;
         bar.ButtonInactiveBackgroundColor = Colors.Transparent;
         bar.ButtonForegroundColor = fg;

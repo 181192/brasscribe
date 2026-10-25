@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Code-only WinUI 3 platform services every Windows app uses (no .xaml files): announcements, strings, file
+    dialogs, printing, settings and credential storage, the original recording's player, one dialog at a time.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(ScribeWindowsTfm)</TargetFramework>
+    <TargetPlatformMinVersion>$(ScribeWindowsMinVersion)</TargetPlatformMinVersion>
+    <RootNamespace>Kalli.Scribe.WinUI</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <Platforms>x64;ARM64;AnyCPU</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kalli.Scribe.Services\Kalli.Scribe.Services.csproj" />
+  </ItemGroup>
+</Project>

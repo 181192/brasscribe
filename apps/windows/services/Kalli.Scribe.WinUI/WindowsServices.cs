@@ -8,7 +8,7 @@ using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage.Pickers;
 
-namespace Kalli.Brasscribe.Services;
+namespace Kalli.Scribe.WinUI;
 
 /// <summary>
 /// Speaks through UI Automation notification events (Narrator and NVDA read them). Progress uses
@@ -129,23 +129,19 @@ public sealed class ShellPdfPrinter : IPrinter
     }
 }
 
-/// <summary>Settings in %LOCALAPPDATA%\Brasscribe\Play\settings.json (the app runs unpackaged).</summary>
+/// <summary>Settings in the app's settings.json (the app runs unpackaged).</summary>
 public sealed class JsonSettingsStore : ISettingsStore
 {
     private readonly string _path;
     private readonly Dictionary<string, JsonElement> _values;
 
-    public JsonSettingsStore()
+    public JsonSettingsStore(AppFolder folder)
     {
-        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "settings.json");
+        Directory.CreateDirectory(folder.Root);
+        _path = folder.Settings;
         try { _values = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(File.ReadAllText(_path)) ?? []; }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { _values = []; }
     }
-
-    public static string WorkDirectory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play", "work");
 
     public T Get<T>(string key, T fallback)
     {

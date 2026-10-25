@@ -122,7 +122,7 @@ public sealed class ScreenCatalogue
     }
 
     /// <summary>The app's crash.log (App.WriteCrash): an exception nothing caught while this screen was open.</summary>
-    private static readonly string CrashLog = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play", "crash.log");
+    private static readonly string CrashLog = Product.Folder.CrashLog;
 
     private static long CrashLogLength() => File.Exists(CrashLog) ? new FileInfo(CrashLog).Length : 0;
 
@@ -268,13 +268,13 @@ public sealed class ScreenCatalogue
             var open = VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Select(p => p.Child).OfType<ContentDialog>().ToList();
             if (dialog is null)
             {
-                if (open.Count > 0 || Kalli.Brasscribe.Services.DialogGate.IsOpen) return "a dialog is still open";
+                if (open.Count > 0 || Kalli.Scribe.WinUI.DialogGate.IsOpen) return "a dialog is still open";
             }
             else if (open.Count != 1 || open[0].GetType() != dialog || !open[0].IsLoaded
-                     || !ReferenceEquals(Kalli.Brasscribe.Services.DialogGate.Opened, open[0]))
+                     || !ReferenceEquals(Kalli.Scribe.WinUI.DialogGate.Opened, open[0]))
                 return $"{dialog.Name} has not opened";
 
-            var theme = App.Theme!.Current;
+            var theme = App.Theme!.Requested;
             if (theme != ElementTheme.Default && (root.ActualTheme != theme || open.Any(d => d.ActualTheme != theme)))
                 return $"the theme is not {theme} yet";
             bool pink = Application.Current.Resources.MergedDictionaries
@@ -310,7 +310,7 @@ public sealed class ScreenCatalogue
         List<ContentDialog> Open() => VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Select(p => p.Child).OfType<ContentDialog>().ToList();
         foreach (var d in Open()) d.Hide();
         var clock = Stopwatch.StartNew();
-        while (Open().Count > 0 || Kalli.Brasscribe.Services.DialogGate.IsOpen)
+        while (Open().Count > 0 || Kalli.Scribe.WinUI.DialogGate.IsOpen)
         {
             if (clock.Elapsed > TimeSpan.FromSeconds(10)) return false;
             await Task.Delay(50);

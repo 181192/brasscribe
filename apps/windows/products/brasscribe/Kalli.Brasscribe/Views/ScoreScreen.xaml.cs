@@ -166,8 +166,8 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     public async Task ShowGoToBarAsync()
     {
-        var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs };
-        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && dialog.Bar is { } bar)
+        var dialog = new GoToBarDialog(ViewModel.CurrentBar, Math.Max(1, ViewModel.Player.BarCount)) { XamlRoot = XamlRoot, RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs };
+        if (await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && dialog.Bar is { } bar)
         {
             ViewModel.GoToBar(bar);
         }
@@ -182,14 +182,14 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = strings["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = strings["Score_SaveTitle"],
             CloseButtonText = strings["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Primary,
         };
-        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
+        if (await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) Main.RenameCurrentScore(input.Text);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -699,7 +699,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
     private VideoWindow? _pip;
     private VideoFollower? _follower;
 
-    private Services.MediaPlayerOriginal? Media => ViewModel.Original as Services.MediaPlayerOriginal;
+    private Kalli.Scribe.WinUI.MediaPlayerOriginal? Media => ViewModel.Original as Kalli.Scribe.WinUI.MediaPlayerOriginal;
 
     /// <summary>Shows the original video in the parts panel once a score with a video loads.</summary>
     private void AttachVideo()

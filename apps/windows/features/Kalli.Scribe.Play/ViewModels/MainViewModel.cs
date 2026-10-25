@@ -513,7 +513,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try
         {
-            _computerJobs = [.. (await Engine.ListJobsAsync()).Where(j => j.IsOurs)];
+            _computerJobs = [.. (await Engine.ListJobsAsync()).Where(j => Kind.Target.Makes(j.Target))];
         }
         catch (Exception e) when (e is EngineException or NotSupportedException or HttpRequestException or TaskCanceledException
                                    or System.Text.Json.JsonException)

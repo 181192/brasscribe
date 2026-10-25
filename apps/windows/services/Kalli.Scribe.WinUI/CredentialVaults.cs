@@ -4,18 +4,23 @@ using System.Text.Json;
 using Kalli.Scribe.Engine;
 using Windows.Security.Credentials;
 
-namespace Kalli.Brasscribe.Services;
+namespace Kalli.Scribe.WinUI;
 
-/// <summary>The engine credential in the Windows Credential Locker (PasswordVault): resource "Brasscribe engine", user name = server id.</summary>
-public sealed class CredentialLockerVault : ISecretVault
+/// <summary>
+/// The engine credential in the Windows Credential Locker (PasswordVault): resource "&lt;app&gt; engine", user name =
+/// server id. The locker is the user's, shared by every app: the app's name keeps each app's pairings its own.
+/// </summary>
+public sealed class CredentialLockerVault(string app) : ISecretVault
 {
     private readonly PasswordVault _vault = new();
+
+    private string Own(string resource) => $"{app} {resource}";
 
     public string? Get(string resource, string key)
     {
         try
         {
-            var credential = _vault.Retrieve(resource, key);
+            var credential = _vault.Retrieve(Own(resource), key);
             credential.RetrievePassword();
             return credential.Password;
         }
@@ -25,62 +30,69 @@ public sealed class CredentialLockerVault : ISecretVault
     public void Set(string resource, string key, string secret)
     {
         Remove(resource, key); // Add does not replace an existing entry
-        _vault.Add(new PasswordCredential(resource, key, secret));
+        _vault.Add(new PasswordCredential(Own(resource), key, secret));
     }
 
     public void Remove(string resource, string key)
     {
-        try { _vault.Remove(_vault.Retrieve(resource, key)); }
+        try { _vault.Remove(_vault.Retrieve(Own(resource), key)); }
         catch (COMException) { }
     }
 
     public IReadOnlyList<string> Keys(string resource)
     {
-        try { return _vault.FindAllByResource(resource).Select(c => c.UserName).ToList(); }
+        try { return _vault.FindAllByResource(Own(resource)).Select(c => c.UserName).ToList(); }
         catch (COMException) { return []; } // none stored
     }
 
-    /// <summary>The Credential Locker, or a DPAPI-protected file when the locker can't be used here.</summary>
-    public static ISecretVault Create()
+    /// <summary>The Credential Locker, or a DPAPI-protected file in the app's folder when the locker can't be used here.</summary>
+    public static ISecretVault Create(string app, AppFolder folder)
     {
         try
         {
-            var vault = new CredentialLockerVault();
+            var vault = new CredentialLockerVault(app);
             vault.Keys(EngineCredentials.Resource);
             return vault;
         }
         catch (Exception e) when (e is COMException or TypeLoadException or InvalidCastException or UnauthorizedAccessException)
         {
-            return new DpapiFileVault();
+            return new DpapiFileVault(app, folder);
         }
     }
 }
 
 /// <summary>
-/// Fallback: the secrets in %LOCALAPPDATA%\Brasscribe\Play\credentials.bin, encrypted for the current
-/// Windows user with DPAPI (CryptProtectData), so the file is useless to anyone else or on another PC.
+/// Fallback: the secrets in the app's credentials.bin, encrypted for the current Windows user with DPAPI
+/// (CryptProtectData), so the file is useless to anyone else or on another PC. Resources are stored as
+/// "&lt;app&gt; &lt;resource&gt;", the names the Credential Locker has.
 /// </summary>
-public sealed class DpapiFileVault : ISecretVault
+public sealed class DpapiFileVault(string app, AppFolder folder) : ISecretVault
 {
-    private readonly string _path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play", "credentials.bin");
+    private readonly string _path = folder.Credentials;
+    private readonly string _description = $"{app} {EngineCredentials.Resource}";
 
-    public string? Get(string resource, string key) => Load().GetValueOrDefault(resource + "\n" + key);
+    private string Own(string resource) => $"{app} {resource}";
+
+    public string? Get(string resource, string key) => Load().GetValueOrDefault(Own(resource) + "\n" + key);
 
     public void Set(string resource, string key, string secret)
     {
         var all = Load();
-        all[resource + "\n" + key] = secret;
+        all[Own(resource) + "\n" + key] = secret;
         Save(all);
     }
 
     public void Remove(string resource, string key)
     {
         var all = Load();
-        if (all.Remove(resource + "\n" + key)) Save(all);
+        if (all.Remove(Own(resource) + "\n" + key)) Save(all);
     }
 
-    public IReadOnlyList<string> Keys(string resource) =>
-        Load().Keys.Where(k => k.StartsWith(resource + "\n", StringComparison.Ordinal)).Select(k => k[(resource.Length + 1)..]).ToList();
+    public IReadOnlyList<string> Keys(string resource)
+    {
+        string prefix = Own(resource) + "\n";
+        return Load().Keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal)).Select(k => k[prefix.Length..]).ToList();
+    }
 
     private Dictionary<string, string> Load()
     {
@@ -117,17 +129,17 @@ public sealed class DpapiFileVault : ISecretVault
 
     private const int UiForbidden = 0x1;
 
-    private static byte[] Protect(byte[] data) => Crypt(data, protect: true);
-    private static byte[] Unprotect(byte[] data) => Crypt(data, protect: false);
+    private byte[] Protect(byte[] data) => Crypt(data, _description, protect: true);
+    private static byte[] Unprotect(byte[] data) => Crypt(data, null, protect: false);
 
-    private static byte[] Crypt(byte[] data, bool protect)
+    private static byte[] Crypt(byte[] data, string? description, bool protect)
     {
         var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
         try
         {
             var input = new DataBlob { Size = data.Length, Data = handle.AddrOfPinnedObject() };
             bool ok = protect
-                ? CryptProtectData(ref input, "Brasscribe engine", 0, 0, 0, UiForbidden, out var output)
+                ? CryptProtectData(ref input, description, 0, 0, 0, UiForbidden, out var output)
                 : CryptUnprotectData(ref input, 0, 0, 0, 0, UiForbidden, out output);
             if (!ok) throw new COMException("DPAPI failed", Marshal.GetHRForLastWin32Error());
             try

@@ -114,7 +114,7 @@ public class ReviewRound3Tests(ITestOutputHelper log)
     public void The_golden_is_reviewed_by_group_with_the_native_core()
     {
         Skip.If(Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
-        var native = NativeCoreBridge.TryCreate();
+        var native = NativeCoreBridge.TryCreate(Target.Brass);
         Skip.If(native is null, "SCRIBE_FFI_PATH is set but scribe_ffi did not load from it");
         var golden = Golden(native);
         Skip.If(golden is null, NoGolden);

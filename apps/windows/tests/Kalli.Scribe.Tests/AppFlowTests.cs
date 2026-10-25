@@ -97,7 +97,7 @@ public class AppFlowTests
         MainViewModel? main = null;
         main = new MainViewModel(
             new StartViewModel(new NoCapture(), new CopyDecoder(), new NoDialogs(), said, strings, ui, work),
-            new SourceKindViewModel(strings),
+            new SourceKindViewModel(strings, Target.Brass),
             new TranscriptionViewModel(() => main!.Engine, said, strings, ui),
             new ScoreViewModel(core, new PlayerViewModel(player, said, strings, ui), said, strings),
             new ExportViewModel(new ExportService(), new NoDialogs(), said, strings),

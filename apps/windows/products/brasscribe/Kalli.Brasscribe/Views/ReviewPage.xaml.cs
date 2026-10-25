@@ -122,14 +122,14 @@ public sealed partial class ReviewPage : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = strings["FinishLater_Title"],
             Content = ViewModel.ConfirmText,
             PrimaryButtonText = strings["FinishLater_Confirm"],
             CloseButtonText = strings["FinishLater_Keep"],
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) ViewModel.ConfirmFinishCommand.Execute(null);
+        if (await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) ViewModel.ConfirmFinishCommand.Execute(null);
         else
         {
             ViewModel.CancelFinishCommand.Execute(null);
@@ -180,7 +180,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = strings["ChangeNote_Title"],
             Content = content,
             PrimaryButtonText = strings["ChangeNote_Save"],
@@ -189,7 +189,7 @@ public sealed partial class ReviewPage : Page, IScreenPage
         };
         Update();
         // Save stays on the note: focus goes to "Changed to …" (the change is also announced), else back to Change note….
-        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
+        if (await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary && ViewModel.ChangeNote(shift) && ViewModel.IsChanged)
             ChangedLine.Focus(FocusState.Programmatic);
         else ChangeNoteButton.Focus(FocusState.Programmatic);
     }
