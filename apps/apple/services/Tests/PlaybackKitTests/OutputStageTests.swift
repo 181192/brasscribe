@@ -121,8 +121,8 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
 
     /// The Mac's band SoundFont, or the phone one iPhone and iPad bundle.
     func engine(file: String = "brasscribe-band-16bit.sf2") throws -> PlaybackEngine {
-        var bank = SoundBank.locate(bundle: .main)
-        let (band, status) = BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: [file])
+        withTheBand(); var bank = SoundBank.locate(bundle: .main)
+        withTheBand(); let (band, status) = BandSounds.locateBand(in: BandSounds.candidates(bundle: .main), files: [file])
         bank.band = try #require(band, "\(file): \(status.details)")
         // the room the app ships with: the environment node's hall (no IR file in the bundle)
         let e = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())

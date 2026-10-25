@@ -14,7 +14,7 @@ public enum MusicXMLError: Error, Equatable, CustomStringConvertible {
 
 /// Reads uncompressed score-partwise MusicXML into a `Score`.
 ///
-/// Covers what the brasscribe arranger writes and common exports: multiple parts,
+/// Covers what the core's arrangers write and common exports: multiple parts,
 /// `<chord>`, `<backup>`/`<forward>`, ties, transposing instruments
 /// (`<chromatic>` + `<octave-change>`), unpitched percussion, per-part `<divisions>`
 /// and `<sound tempo>`. Grace notes and cue notes are not played (cue notes still take their time).

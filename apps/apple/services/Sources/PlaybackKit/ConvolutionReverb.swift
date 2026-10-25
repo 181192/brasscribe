@@ -19,7 +19,7 @@ public final class ConvolutionReverbAU: AUAudioUnit {
         componentFlags: AudioComponentFlags.sandboxSafe.rawValue, componentFlagsMask: 0)
 
     static let registered: Void = {
-        AUAudioUnit.registerSubclass(ConvolutionReverbAU.self, as: componentDescription, name: "Brasscribe: Convolution Reverb", version: 1)
+        AUAudioUnit.registerSubclass(ConvolutionReverbAU.self, as: componentDescription, name: "Scribe: Convolution Reverb", version: 1)
     }()
 
     private var inputBus: AUAudioUnitBus!

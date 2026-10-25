@@ -117,12 +117,12 @@ public struct EngineRecord: Codable, Equatable, Sendable {
     public var isProvisional: Bool { serverID.isEmpty }
     public var baseURL: URL? { URL(string: lastAddress) }
 
-    /// The computer's own name: "Studio Mac" from "Brasscribe on Studio Mac".
+    /// The computer's own name: "Studio Mac" from the engine's "Brasscribe on Studio Mac" (`Wire.serverNamePrefix`).
     public var computerName: String { Self.computerName(fromServerName: serverName) }
 
     /// Also drops the " (2)" an mDNS instance name gains after a name clash.
     public static func computerName(fromServerName name: String) -> String {
-        let prefix = "Brasscribe on "
+        let prefix = Wire.serverNamePrefix
         var n = name.hasPrefix(prefix) ? String(name.dropFirst(prefix.count)) : name
         if let r = n.range(of: #" \(\d+\)$"#, options: .regularExpression) { n.removeSubrange(r) }
         return n
@@ -211,7 +211,7 @@ public final class KeychainCredentialStore: CredentialStore, @unchecked Sendable
         if status == errSecItemNotFound {
             var add = q
             add.merge(update) { $1 }
-            add[kSecAttrLabel as String] = record.serverName.isEmpty ? "Brasscribe" : record.serverName
+            add[kSecAttrLabel as String] = record.serverName.isEmpty ? "Bandroom" : record.serverName
             status = SecItemAdd(add as CFDictionary, nil)
         }
         guard status == errSecSuccess else { throw CredentialStoreError.keychain(status) }

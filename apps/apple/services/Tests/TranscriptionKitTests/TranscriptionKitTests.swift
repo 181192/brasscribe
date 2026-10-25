@@ -919,6 +919,15 @@ func enginesWire(_ name: String) throws -> String {
     return try #require(found, "\(name) is not in \(enginesWirePath)")
 }
 
+/// The name the engine is known by on the network starts with the engine's prefix: the app takes the computer's name
+/// from after it.
+@Test(.enabled(if: enginesWireIsRead)) func theServerNamePrefixIsTheEngines() throws {
+    let root = try #require(repository())
+    let discovery = try String(contentsOf: root.appending(path: "engine/src/scribe_engine/discovery.py"), encoding: .utf8)
+    let prefix = discovery.firstMatch(of: try Regex(#"(?m)^PREFIX\s*=\s*"([^"]*)""#))?.output[1].substring.map(String.init)
+    #expect(prefix == Wire.serverNamePrefix)
+}
+
 /// The app's wire constants are the engine's: a change to one without the other fails here.
 @Test(.enabled(if: enginesWireIsRead)) func theWireConstantsAreTheEngines() throws {
     #expect(try enginesWire("INTERFACE_VERSION") == String(Wire.interfaceVersion))

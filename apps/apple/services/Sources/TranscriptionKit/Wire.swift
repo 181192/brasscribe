@@ -9,6 +9,9 @@ public enum Wire {
     /// device, in `GET /v1/devices/me`; when the two differ the app says which of them to update and sends that
     /// engine nothing but those two (`InterfaceMatch`).
     public static let interfaceVersion = 1
+    /// What the engine puts before the computer's name in the name it is known by on the network ("Brasscribe on Studio
+    /// Mac", the engine's `discovery.PREFIX`). It is the engine's: each app says the computer's name in its own words.
+    public static let serverNamePrefix = "Brasscribe on "
 }
 
 /// Whether this app and an engine speak the same interface, and if not, which of the two is behind.
