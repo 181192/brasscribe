@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 

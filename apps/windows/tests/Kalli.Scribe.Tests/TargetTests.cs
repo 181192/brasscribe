@@ -34,22 +34,27 @@ public class TargetTests
 
     /// <summary>
     /// The shared projects (services, features) name no product in what they say or store: each product hands in its
-    /// own names. The engine's name for itself on the network ("Brasscribe on …", <c>ServerNames.Prefix</c>) is the
-    /// one exception, until the engine takes a neutral one.
+    /// own names. The engine's name for itself on the network ("Brasscribe on …", <c>ServerNames.Prefix</c>) and the
+    /// repository's address are the exceptions, until they take neutral ones.
     /// </summary>
     [Fact]
     public void Shared_code_names_no_product()
     {
         var windows = Path.Combine(TestPaths.RepoRoot!, "apps", "windows");
-        var literal = new Regex("\"[^\"\n]*\\b(Brasscribe|Fretscribe)\\b[^\"\n]*\"");
+        var literal = new Regex("\"[^\"\n]*\\b(Brasscribe|Fretscribe)\\b[^\"\n]*\"", RegexOptions.IgnoreCase);
+        // Brasscribe's hidden palette is the product's: shared code knows only that an app may have one.
+        var pink = new Regex("pink", RegexOptions.IgnoreCase);
         var found = new List<string>();
         foreach (var level in new[] { "services", "features" })
             foreach (var file in Directory.EnumerateFiles(Path.Combine(windows, level), "*.cs", SearchOption.AllDirectories))
             {
                 if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")) continue;
-                foreach (var (line, n) in File.ReadLines(file).Select((l, i) => (l, i + 1)))
-                    if (!line.TrimStart().StartsWith("//") && literal.IsMatch(line) && !line.Contains("const string Prefix = "))
+                foreach (var (text, n) in File.ReadLines(file).Select((l, i) => (l, i + 1)))
+                {
+                    string line = text.Replace("github.com/181192/brasscribe", "");
+                    if (!line.TrimStart().StartsWith("//") && ((literal.IsMatch(line) && !line.Contains("const string Prefix = ")) || pink.IsMatch(line)))
                         found.Add($"{Path.GetRelativePath(windows, file)}:{n}");
+                }
             }
         Assert.True(found.Count == 0, "product names in shared code: " + string.Join(", ", found));
     }

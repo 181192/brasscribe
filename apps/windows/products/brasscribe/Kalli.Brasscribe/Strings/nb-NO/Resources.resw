@@ -621,6 +621,9 @@
   <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Hjelp og hurtigtaster</value>
   </data>
+  <data name="HiddenPalette_Unlocked" xml:space="preserve">
+    <value>🎺 Rosa låst opp</value>
+  </data>
   <data name="HomeDropFormats.Text" xml:space="preserve">
     <value>MP3, WAV, M4A, MP4 og de fleste andre formater, eller et MusicXML-partitur</value>
   </data>
@@ -1025,9 +1028,6 @@
   </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Stemmer</value>
-  </data>
-  <data name="Pink_Unlocked" xml:space="preserve">
-    <value>🎺 Rosa låst opp</value>
   </data>
   <data name="PipItem.Text" xml:space="preserve">
     <value>Video i eget vindu</value>

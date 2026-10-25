@@ -11,12 +11,12 @@ using Windows.UI.ViewManagement;
 namespace Kalli.Scribe.Controls;
 
 /// <summary>
-/// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). The theme is set on each window's root element
+/// Settings › Display › Appearance. The theme is set on each window's root element
 /// (Application.RequestedTheme cannot change after start-up), on open dialogs and flyouts (they live in the
 /// popup layer and don't inherit it), and on the caption buttons. A Windows contrast theme always wins:
 /// the roots then ask for Default and the choice is kept for later.
-/// Pink, in an app that has it, is a palette on top of a theme: Pink light asks for Light and Pink dark for Dark, and
-/// the palette's generated dictionary (Light and Dark roles) is merged after the app's theme while either is chosen;
+/// The hidden palette, in an app that has one (<see cref="SettingsViewModel.Palette"/>), sits on top of a theme: its light
+/// asks for Light and its dark for Dark, and its dictionary (Light and Dark roles) is merged after the app's theme while either is chosen;
 /// the roots flip their theme once so every ThemeResource looks again.
 /// </summary>
 public sealed class ThemeController
@@ -26,21 +26,18 @@ public sealed class ThemeController
     private readonly AccessibilitySettings _accessibility = new();
     private readonly List<Window> _windows = [];
     private readonly RootTheme? _override;
-    private readonly bool _overridePink;
-    private readonly string? _pinkSource;
-    private ResourceDictionary? _pink;
+    private readonly bool _overrideHidden;
+    private ResourceDictionary? _hidden;
 
-    /// <param name="forced">"--theme light|dark|pink-light|pink-dark" for screenshots: wins over the stored choice (not over contrast).</param>
-    /// <param name="pinkSource">The app's Pink palette (an ms-appx URI), or null for an app without one.</param>
-    public ThemeController(SettingsViewModel settings, DispatcherQueue queue, string? forced, string? pinkSource = null)
+    /// <param name="forced">"--theme light|dark|&lt;palette&gt;-light|&lt;palette&gt;-dark" for screenshots: wins over the stored choice (not over contrast).</param>
+    public ThemeController(SettingsViewModel settings, DispatcherQueue queue, string? forced)
     {
         _settings = settings;
-        _pinkSource = pinkSource;
         Current = this;
         _queue = queue;
-        var choice = AppearanceSetting.Parse(forced);
+        var choice = AppearanceSetting.Parse(forced, settings.Palette);
         _override = choice == Appearance.System ? null : AppearanceSetting.Resolve(choice, false);
-        _overridePink = AppearanceSetting.IsPink(choice);
+        _overrideHidden = AppearanceSetting.IsHidden(choice);
         // Some Windows setups (a service account, a PC without a signed-in desktop session) refuse the contrast
         // setting or its change event: the app then starts without following a contrast theme, rather than not at all.
         try
@@ -57,8 +54,9 @@ public sealed class ThemeController
         ApplyPalette();
     }
 
-    /// <summary>The Pink palette is on the chrome now: the forced theme's, or the setting's; a contrast theme still wins.</summary>
-    private bool UsesPink => _pinkSource is not null && (_override is null ? _settings.UsesPink : _overridePink && !_settings.HighContrast);
+    /// <summary>The hidden palette is on the chrome now: the forced theme's, or the setting's; a contrast theme still wins.</summary>
+    private bool UsesHidden => _settings.Palette is not null
+        && (_override is null ? _settings.UsesHiddenPalette : _overrideHidden && !_settings.HighContrast);
 
     /// <summary>The app's controller: the last one made (an app makes one).</summary>
     private static ThemeController? Current { get; set; }
@@ -88,24 +86,24 @@ public sealed class ThemeController
 
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is not (nameof(SettingsViewModel.RootTheme) or nameof(SettingsViewModel.UsesPink))) return;
+        if (e.PropertyName is not (nameof(SettingsViewModel.RootTheme) or nameof(SettingsViewModel.UsesHiddenPalette))) return;
         bool repaint = ApplyPalette();
         foreach (var w in _windows.ToList()) Apply(w, repaint);
     }
 
-    /// <summary>Merges the Pink palette in while it is in use, and out otherwise; true when that changed.</summary>
+    /// <summary>Merges the hidden palette in while it is in use, and out otherwise; true when that changed.</summary>
     private bool ApplyPalette()
     {
         var merged = Application.Current.Resources.MergedDictionaries;
-        bool want = UsesPink;
-        bool has = _pink is not null && merged.Contains(_pink);
+        bool want = UsesHidden;
+        bool has = _hidden is not null && merged.Contains(_hidden);
         if (want == has) return false;
         if (want)
         {
-            _pink ??= new ResourceDictionary { Source = new Uri(_pinkSource!) };
-            merged.Add(_pink); // last, so its colour roles win over the app's theme
+            _hidden ??= new ResourceDictionary { Source = new Uri(_settings.Palette!.Source) };
+            merged.Add(_hidden); // last, so its colour roles win over the app's theme
         }
-        else merged.Remove(_pink!);
+        else merged.Remove(_hidden!);
         return true;
     }
 
@@ -133,8 +131,8 @@ public sealed class ThemeController
         element.RequestedTheme = theme;
     }
 
-    /// <summary>A colour of the Pink palette for the root's light or dark, while Pink is in use.</summary>
-    private Windows.UI.Color? PinkColor(string key, bool dark) => UsesPink ? ThemeColor(_pink, key, dark) : null;
+    /// <summary>A colour of the hidden palette for the root's light or dark, while it is in use.</summary>
+    private Windows.UI.Color? HiddenColor(string key, bool dark) => UsesHidden ? ThemeColor(_hidden, key, dark) : null;
 
     /// <summary>A colour role of the app's theme (the last merged dictionary that has it) for light or dark.</summary>
     private static Windows.UI.Color? AppColor(string key, bool dark) =>
@@ -162,8 +160,8 @@ public sealed class ThemeController
         }
         bool dark = root.ActualTheme == ElementTheme.Dark;
         // The app's text colours (text, and a hover/pressed wash in the text colour).
-        var fg = PinkColor("ScribeTextColor", dark) ?? AppColor("ScribeTextColor", dark) ?? (dark ? Colors.White : Colors.Black);
-        var muted = PinkColor("ScribeTextMutedColor", dark) ?? AppColor("ScribeTextMutedColor", dark) ?? fg;
+        var fg = HiddenColor("ScribeTextColor", dark) ?? AppColor("ScribeTextColor", dark) ?? (dark ? Colors.White : Colors.Black);
+        var muted = HiddenColor("ScribeTextMutedColor", dark) ?? AppColor("ScribeTextMutedColor", dark) ?? fg;
         bar.ButtonBackgroundColor = Colors.Transparent;
         bar.ButtonInactiveBackgroundColor = Colors.Transparent;
         bar.ButtonForegroundColor = fg;

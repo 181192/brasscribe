@@ -621,6 +621,9 @@
   <data name="HelpButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Help and keyboard shortcuts</value>
   </data>
+  <data name="HiddenPalette_Unlocked" xml:space="preserve">
+    <value>🎺 Pink unlocked</value>
+  </data>
   <data name="HomeDropFormats.Text" xml:space="preserve">
     <value>MP3, WAV, M4A, MP4 and most other formats, or a MusicXML score</value>
   </data>
@@ -1025,9 +1028,6 @@
   </data>
   <data name="PartPicker.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Parts</value>
-  </data>
-  <data name="Pink_Unlocked" xml:space="preserve">
-    <value>🎺 Pink unlocked</value>
   </data>
   <data name="PipItem.Text" xml:space="preserve">
     <value>Video in its own window</value>

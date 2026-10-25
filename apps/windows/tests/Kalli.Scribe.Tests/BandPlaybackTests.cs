@@ -1,3 +1,4 @@
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 

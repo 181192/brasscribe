@@ -19,11 +19,11 @@ public sealed partial class SettingsDialog : ContentDialog
         ConnectionStatus.Show(viewModel.Connection);
         LanguageBox.SelectedIndex = viewModel.Language switch { "en-US" => 1, "nb-NO" => 2, _ => 0 };
         VerbosityBox.SelectedIndex = (int)viewModel.Verbosity;
-        if (viewModel.PinkUnlocked) AddPinkChoices();
+        if (viewModel.HiddenPaletteUnlocked) AddPinkChoices();
         AppearanceBox.SelectedIndex = (int)viewModel.Appearance;
         AppVersion.Content = App.Strings.Format("Settings_AppVersion", AppVersionText());
-        viewModel.PinkUnlockedNow += OnPinkUnlocked;
-        Closed += (_, _) => viewModel.PinkUnlockedNow -= OnPinkUnlocked;
+        viewModel.HiddenPaletteUnlockedNow += OnPinkUnlocked;
+        Closed += (_, _) => viewModel.HiddenPaletteUnlockedNow -= OnPinkUnlocked;
         ShowSeat();
         // Without the core's seats there is nothing to choose from.
         SeatChangeButton.IsEnabled = main.Seats.IsAvailable;
@@ -98,7 +98,7 @@ public sealed partial class SettingsDialog : ContentDialog
     private void OnPinkUnlocked(object? sender, EventArgs e)
     {
         AddPinkChoices();
-        PinkNote.Text = App.Strings["Pink_Unlocked"];
+        PinkNote.Text = App.Strings["HiddenPalette_Unlocked"];
         PinkNote.Visibility = Visibility.Visible;
         var timer = DispatcherQueue.CreateTimer();
         timer.Interval = TimeSpan.FromSeconds(4);
@@ -110,7 +110,7 @@ public sealed partial class SettingsDialog : ContentDialog
     /// <summary>The items follow the enum's order, so an item's index is its <see cref="Appearance"/>.</summary>
     private void AddPinkChoices()
     {
-        if (AppearanceBox.Items.Count > (int)Appearance.PinkLight) return;
+        if (AppearanceBox.Items.Count > (int)Appearance.HiddenLight) return;
         AppearanceBox.Items.Add(new ComboBoxItem { Content = App.Strings["Appearance_PinkLight"] });
         AppearanceBox.Items.Add(new ComboBoxItem { Content = App.Strings["Appearance_PinkDark"] });
     }

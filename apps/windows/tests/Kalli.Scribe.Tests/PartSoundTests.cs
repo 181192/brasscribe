@@ -2,6 +2,7 @@ using System.Text.Json;
 using AlphaTab.Core.EcmaScript;
 using AlphaTab.Midi;
 using AlphaTab.Synth;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 

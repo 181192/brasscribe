@@ -1,4 +1,5 @@
 using Kalli.Scribe;
+using Kalli.Scribe.Services;
 using Kalli.Scribe.WinUI;
 
 namespace Kalli.Brasscribe;
@@ -18,6 +19,9 @@ internal static class Product
     /// <summary>Another launch with a pairing link is sent to the running app under this key.</summary>
     public const string InstanceKey = "BrasscribePlay";
 
-    /// <summary>The hidden Pink palette, merged in while Pink is chosen.</summary>
-    public const string PinkTheme = "ms-appx:///Themes/BrasscribePinkTheme.xaml";
+    /// <summary>
+    /// The hidden Pink palette (design/brands/brasscribe/system.md §10), merged in while Pink is chosen. Pink light's very
+    /// uncertain is the same orange a shade darker than Light's (BrasscribePinkTheme.xaml); Pink dark's are Dark's.
+    /// </summary>
+    public static readonly HiddenPalette Pink = new("pink", "ms-appx:///Themes/BrasscribePinkTheme.xaml", VeryUncertainLight: "#A04300");
 }

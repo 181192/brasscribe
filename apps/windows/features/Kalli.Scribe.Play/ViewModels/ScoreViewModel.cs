@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Kalli.Scribe.Bridge;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Kalli.Scribe.Scores;
 using Kalli.Scribe.Services;

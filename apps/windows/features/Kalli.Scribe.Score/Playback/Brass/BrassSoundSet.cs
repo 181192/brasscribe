@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace Kalli.Scribe.Playback;
+namespace Kalli.Scribe.Playback.Brass;
 
 /// <summary>
 /// The baseline brass-band sounds: one SoundFont2 per instrument (sounds/ builds them as

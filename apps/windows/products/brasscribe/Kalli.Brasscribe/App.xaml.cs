@@ -2,6 +2,7 @@ using Kalli.Scribe.Audio.Windows;
 using Kalli.Scribe.Bridge;
 using Kalli.Scribe.Engine;
 using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Kalli.Scribe.Services;
 using Kalli.Scribe.ViewModels;
@@ -179,7 +180,7 @@ public partial class App : Application
         var shortHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(4) }) { Timeout = TimeSpan.FromSeconds(15) };
         // RequestedTheme is never set by the app, so it is Windows' app mode at start-up.
         var settingsVm = new SettingsViewModel(settings, announcer, Strings, vault: CredentialLockerVault.Create(Product.Name, Product.Folder),
-            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, systemDark: RequestedTheme == ApplicationTheme.Dark);
+            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, palette: Product.Pink);
 
         // No overall timeout (the event stream stays open for the whole job), but a LAN address that
         // drops packets must fail within seconds rather than hang on connect.
@@ -204,7 +205,7 @@ public partial class App : Application
             LayerCacheRoot = System.IO.Path.Combine(workDirectory, "layers"),
         };
 
-        Theme = new ThemeController(settingsVm, queue, forcedTheme, Product.PinkTheme);
+        Theme = new ThemeController(settingsVm, queue, forcedTheme);
         window = new MainWindow(main, Strings);
         Theme.Attach(window);
         window.Closed += (_, _) =>

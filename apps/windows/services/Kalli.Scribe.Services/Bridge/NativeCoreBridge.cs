@@ -261,7 +261,6 @@ public sealed partial class NativeCoreBridge : ICoreBridge
             }).ToArray()),
             ["part"] = part,
             ["player"] = player,
-            ["seed"] = "brasscribe",
             ["timing"] = "score",
         };
         if (compositionJson is not null) request["composition"] = JsonNode.Parse(compositionJson);

@@ -92,25 +92,30 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         Assert.Contains(items, i => i.Kind == OverlayKind.CursorLine);
     }
 
-    // Pink recolours the chrome; of the notation only Pink light's very uncertain differs (design/brands/brasscribe/system.md §10).
+    // Brasscribe's hidden Pink palette recolours the chrome; of the notation only Pink light's very uncertain differs
+    // (design/brands/brasscribe/system.md §10). The product hands that colour in; it must be the generated theme's.
     [SkippableFact]
     public void Pink_lights_very_uncertain_matches_the_generated_Pink_theme()
     {
         var theme = TestPaths.RepoFile("design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml");
         Skip.If(theme is null, TestPaths.Missing("design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml"));
+        var product = TestPaths.RepoFile("apps/windows/products/brasscribe/Kalli.Brasscribe/Product.cs");
+        Skip.If(product is null, TestPaths.Missing("apps/windows/products/brasscribe/Kalli.Brasscribe/Product.cs"));
+        string given = Regex.Match(File.ReadAllText(product), "VeryUncertainLight: \"(#[0-9A-F]{6})\"").Groups[1].Value;
+        Assert.NotEqual("", given);
         string xaml = File.ReadAllText(theme);
         foreach (var (key, kind) in new[] { ("Light", ThemeKind.Light), ("Dark", ThemeKind.Dark) })
         {
             var dict = Regex.Match(xaml, $"<ResourceDictionary x:Key=\"{key}\">(.*?)</ResourceDictionary>", RegexOptions.Singleline).Groups[1].Value;
             string Color(string name) => "#" + Regex.Match(dict, $"<Color x:Key=\"(?:Scribe|Bc){name}Color\">#FF([0-9A-F]{{6}})</Color>").Groups[1].Value;
-            var pink = UncertaintyPalette.For(kind, pink: true);
+            var pink = UncertaintyPalette.For(kind, given);
             Assert.Equal(Color("VeryUncertain"), pink.VeryUncertain.ToString());
             Assert.Equal(Color("Uncertain"), pink.Uncertain.ToString());
             Assert.Equal(Color("Ink"), pink.Ink.ToString());
             Assert.Equal(pink with { VeryUncertain = UncertaintyPalette.For(kind).VeryUncertain }, UncertaintyPalette.For(kind));
         }
-        Assert.NotEqual(UncertaintyPalette.Light.VeryUncertain, UncertaintyPalette.PinkLight.VeryUncertain);
-        Assert.Same(UncertaintyPalette.Light, UncertaintyPalette.For(ThemeKind.Light, pink: false));
+        Assert.NotEqual(UncertaintyPalette.Light.VeryUncertain, UncertaintyPalette.For(ThemeKind.Light, given).VeryUncertain);
+        Assert.Same(UncertaintyPalette.Light, UncertaintyPalette.For(ThemeKind.Light, null));
     }
 
     [SkippableFact]
