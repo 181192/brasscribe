@@ -55,7 +55,11 @@ jobs:
       python: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.python == 'true' && steps.version.outputs.only != 'true') }}
       core: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.core == 'true' && steps.version.outputs.only != 'true') }}
       studio: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.studio == 'true' && steps.version.outputs.only != 'true') }}
-      android: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.android == 'true' && steps.version.outputs.only != 'true') }}
+      android: ${{ github.event_name != 'pull_request' || ((steps.filter.outputs.android == 'true' || steps.filter.outputs.android_brasscribe == 'true' || steps.filter.outputs.android_fretscribe == 'true') && steps.version.outputs.only != 'true') }}
+      # What both Android apps are built from changed (or this is not a pull request): every module is checked.
+      android_shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.android == 'true' }}
+      # The Android apps to check, as a JSON list: both when what they share changed, else the ones whose own module did.
+      android_apps: ${{ steps.apps.outputs.list }}
       windows_play: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.windows_play == 'true' && steps.version.outputs.only != 'true') }}
       windows_bandroom: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.windows_bandroom == 'true' && steps.version.outputs.only != 'true') }}
       apple_play: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.apple_play == 'true' && steps.version.outputs.only != 'true') }}
@@ -81,11 +85,27 @@ jobs:
             python: ['engine/**', 'docs/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
             studio: ['studio/**', 'docs/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/scribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
-            android: ['apps/android/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json']
+            android: ['apps/android/*', 'apps/android/buildSrc/**', 'apps/android/gradle/**', 'apps/android/scripts/**', 'apps/android/services/**', 'apps/android/features/**', 'apps/android/design/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/accessibility/talking-score-vectors.json']
+            android_brasscribe: ['apps/android/products/brasscribe/**']
+            android_fretscribe: ['apps/android/products/fretscribe/**']
             windows_play: ['apps/windows/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/scribe-core/**', 'core/ffi/**', 'core/targets/**', 'core/bindings/c/**', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'apps/fixtures/old-hundredth/**', 'apps/fixtures/ties-and-trills.musicxml', 'sounds/**', 'engine/src/scribe_engine/static/assets/alphatab/**', 'docs/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml']
             apple_play: ['apps/apple/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tokens/**', 'design/dist/apple/**', 'design/brand/**', 'design/pink/**', 'sounds/**', '.github/workflows/apple.yml']
             apple_bandroom: ['apps/bandroom/macos/**', 'apps/apple/Packages/ScreenCatalogue/**', 'design/tokens/**', 'design/dist/apple/**', 'design/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml']
             windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tokens/**', 'design/dist/windows/**', 'design/dist/icons/windows/**', 'design/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/scribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml']
+
+      # A change in one Android app's own module checks that app only.
+      - name: Which Android apps
+        id: apps
+        env:
+          PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          SHARED: ${{ steps.filter.outputs.android }}
+          BRASSCRIBE: ${{ steps.filter.outputs.android_brasscribe }}
+          FRETSCRIBE: ${{ steps.filter.outputs.android_fretscribe }}
+        run: |
+          apps=()
+          [ "$PULL_REQUEST" != true ] || [ "$SHARED" = true ] || [ "$BRASSCRIBE" = true ] && apps+=('"brasscribe"')
+          [ "$PULL_REQUEST" != true ] || [ "$SHARED" = true ] || [ "$FRETSCRIBE" = true ] && apps+=('"fretscribe"')
+          echo "list=[$(IFS=,; echo "${apps[*]}")]" >> "$GITHUB_OUTPUT"
 
   # The workflows themselves: their syntax, expressions, and the inputs and outputs of the workflows they call.
   workflows:
@@ -325,10 +345,11 @@ jobs:
           path: studio/build/catalogue/test-results
           if-no-files-found: ignore
 
-  # The Android app's tests on the JVM (Robolectric), no emulator, in two jobs side by side: the unit tests
-  # with the screens' flows and their accessibility checks; and the screen catalogues of both apps (every
+  # The Android apps' tests on the JVM (Robolectric), no emulator, in two jobs side by side: the unit tests
+  # with the screens' flows and their accessibility checks; and the screen catalogue of each app (every
   # screen in light, dark, high contrast, 200 % text, on its side and in bokmål, with their checks;
   # apps/android/scripts/screenshots.sh). Their screenshots are an artefact to look at; nothing waits for them.
+  # A pull request that changes only one app's module (apps/android/products/<app>) checks that app alone.
   android:
     name: Android unit and screen tests (Ubuntu 24.04)
     needs: changes
@@ -385,11 +406,30 @@ jobs:
 
       # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
       # threads, and lint beside them on a two-core runner would take that time from them.
-      - name: Unit tests and the screens' tests (both apps, without the screen catalogues)
-        run: ./gradlew testDebugUnitTest -Pscribe.withoutCatalogues --stacktrace
+      # Every module's tests when what the apps share changed; else only the changed app's (its own and the shared
+      # flow's tests, which each app runs).
+      - name: What to check
+        id: tasks
+        env:
+          APPS: ${{ needs.changes.outputs.android_apps }}
+          SHARED: ${{ needs.changes.outputs.android_shared }}
+        run: |
+          apps=$(jq -r '.[]' <<<"$APPS")
+          tests=testDebugUnitTest builds=
+          [ "$SHARED" = true ] || tests=$(for a in $apps; do printf ':products:%s:testDebugUnitTest ' "$a"; done)
+          for a in $apps; do builds+=":products:$a:lintDebug :products:$a:assembleDebug "; done
+          echo "tests=$tests" >> "$GITHUB_OUTPUT"
+          echo "builds=$builds" >> "$GITHUB_OUTPUT"
 
-      - name: Lint and the debug builds (both apps)
-        run: ./gradlew :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug --stacktrace
+      - name: Unit tests and the screens' tests (without the screen catalogues)
+        env:
+          TASKS: ${{ steps.tasks.outputs.tests }}
+        run: ./gradlew $TASKS -Pscribe.withoutCatalogues --stacktrace
+
+      - name: Lint and the debug builds
+        env:
+          TASKS: ${{ steps.tasks.outputs.builds }}
+        run: ./gradlew $TASKS --stacktrace
 
       # Stopped first, so the daemon isn't writing to the directories while they are packed.
       - name: Stop the Gradle daemon
@@ -423,7 +463,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [brasscribe, fretscribe]
+        app: ${{ fromJSON(needs.changes.outputs.android_apps) }}
     env:
       SCREENSHOT_APPS: ${{ matrix.app }}
     defaults:
