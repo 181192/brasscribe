@@ -10,7 +10,8 @@ import PlaybackKit
 
 /// The band sound set the tests play, as Brasscribe Play hands it in.
 let testBand = BandSoundSet(mobile: "brasscribe-band-mobile.sf2", sixteenBit: "brasscribe-band-16bit.sf2",
-                            master: "brasscribe-band.sf2", supportFolder: "Brasscribe/SoundFonts")
+                            master: "brasscribe-band.sf2", supportFolder: "Brasscribe/SoundFonts",
+                                     repositorySounds: "data/sounds/band", repositoryMapping: "sounds")
 
 /// Plays with the band's sounds (`BandSounds.set`), as the app does from launch.
 func withTheBand() { BandSounds.set = testBand }

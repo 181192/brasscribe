@@ -220,6 +220,10 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return request.url!.query?.contains("format=text") == true ? (200, Data("Bar 1".utf8), "text/plain") : (400, Data(), "text/plain")
             case ("GET", "/v1/jobs"):
                 return (200, Data(#"[{"id":"j2","profile":"brass-band","target":"brass","title":"Take","audio_id":"a1","status":"succeeded","progress":1,"stages":[],"outputs":["brass-band.musicxml"],"created":20},{"id":"t1","profile":"tab","target":"fretted","status":"succeeded","progress":1,"stages":[],"outputs":["tab.musicxml"],"created":30},{"id":"x1","profile":"hymn","target":"choir","status":"succeeded","progress":1,"stages":[],"outputs":[],"created":31},{"id":"n1","profile":"gone","target":null,"status":"succeeded","progress":1,"stages":[],"outputs":[],"created":32}]"#.utf8), "application/json")
+            case ("GET", "/v1/jobs/j1/input"):
+                return (200, Data("RIFF take".utf8), "audio/wav")
+            case ("GET", "/v1/jobs/gone/input"):
+                return (404, Data(#"{"detail":"not found"}"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/evidence"):
                 return (200, Data(#"{"models":[{"model":"basic-pitch","name":"Basic Pitch"}],"notes":[{"voice":"melody","start":24,"pitch":67,"confidence":0.5,"onset_s":1.0,"models":[{"model":"basic-pitch","name":"Basic Pitch","pitch":69,"agrees":false}]}]}"#.utf8), "application/json")
             case ("PATCH", "/v1/runs/j1"):
@@ -358,6 +362,21 @@ extension URLRequest {
         let uploads = StubEngine.uploads
         #expect(uploads.count == 1)
         #expect(uploads.first?.contains("\r\n\r\ntrumpet\r\n") == true && uploads.first?.contains("name=\"lead\"") == true)
+    }
+
+    /// A job's recording, as the computer keeps it, is written to the file asked for, over what was there; one the
+    /// computer does not have is the engine's 404, and nothing is written.
+    @Test func aJobsRecordingIsFetchedIntoAFile() async throws {
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
+        let file = FileManager.default.temporaryDirectory.appending(path: "input-\(UUID().uuidString).wav")
+        defer { try? FileManager.default.removeItem(at: file) }
+        try Data("old".utf8).write(to: file)
+        try await svc.jobInput(jobID: "j1", into: file)
+        #expect(try Data(contentsOf: file) == Data("RIFF take".utf8))
+        let missing = FileManager.default.temporaryDirectory.appending(path: "input-\(UUID().uuidString).wav")
+        await #expect(throws: TranscriptionError.http(404, "input")) { try await svc.jobInput(jobID: "gone", into: missing) }
+        #expect(!FileManager.default.fileExists(atPath: missing.path))
     }
 
     @Test func recentScoresEvidenceAndRunManagement() async throws {
