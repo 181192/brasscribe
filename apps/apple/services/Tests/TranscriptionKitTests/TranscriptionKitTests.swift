@@ -955,23 +955,25 @@ func enginesWire(_ name: String) throws -> String {
 }
 
 /// The system reads the link's scheme and the network service from the apps' Info.plist files, not from `Wire`: those,
-/// and the project file they are made from, carry the engine's names too.
-@Test(.enabled(if: enginesWireIsRead)) func theAppsInfoCarriesTheEnginesNames() throws {
+/// and the project files they are made from, carry the engine's names too. Each app has its own scheme beside the
+/// family's, which a sibling hands a pairing link over with.
+@Test(.enabled(if: enginesWireIsRead), arguments: [("brasscribe", "brasscribe"), ("fretscribe", "fretscribe")])
+func theAppsInfoCarriesTheEnginesNames(product: String, own: String) throws {
     let scheme = try enginesWire("PAIRING_SCHEME"), service = try enginesWire("SERVICE_TYPE")
-    let app = try #require(repository()).appending(path: "apps/apple/products/brasscribe")
+    let app = try #require(repository()).appending(path: "apps/apple/products/\(product)")
     for name in ["Info-iOS.plist", "Info-macOS.plist"] {
         let data = try Data(contentsOf: app.appending(path: "App/\(name)"))
         let info = try #require(try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any], "\(name)")
         let schemes = (info["CFBundleURLTypes"] as? [[String: Any]] ?? []).flatMap { $0["CFBundleURLSchemes"] as? [String] ?? [] }
-        #expect(schemes == [scheme], "\(name)")
-        #expect(info["NSBonjourServices"] as? [String] == [service], "\(name)")
+        #expect(schemes == [scheme, own], "\(product) \(name)")
+        #expect(info["NSBonjourServices"] as? [String] == [service], "\(product) \(name)")
     }
     let project = try String(contentsOf: app.appending(path: "project.yml"), encoding: .utf8)
     func lists(_ key: String) throws -> [String] {
         project.matches(of: try Regex("(?m)^\\s*\(key):\\s*\\[([^\\]]*)\\]")).compactMap { $0.output[1].substring }
             .map { $0.trimmingCharacters(in: .whitespaces) }
     }
-    #expect(try lists("CFBundleURLSchemes") == [scheme])
+    #expect(try lists("CFBundleURLSchemes") == ["\(scheme), \(own)"])
     #expect(try lists("NSBonjourServices") == [service])
 }
 

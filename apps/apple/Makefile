@@ -14,6 +14,12 @@
 #                    macOS VM (scripts/mac-vm.sh test-ui, docs/shared/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
 #   make ipa         unsigned Release build for iPhone and iPad (build/brasscribe-play-ios-unsigned.ipa)
+# Fretscribe (products/fretscribe):
+#   make project-fretscribe              generate products/fretscribe/Fretscribe.xcodeproj (fetches alphaTab)
+#   make test-fretscribe-mac             its macOS app's unit tests, without the screen catalogue
+#   scripts/screenshots.sh record fretscribe   its Mac screen catalogue, off screen, with its checks
+#   make build-for-testing-fretscribe-ios  the iPhone simulator app and its tests, built and not run
+#   make ipa-fretscribe                  unsigned Release build for iPhone and iPad (build/fretscribe-ios-unsigned.ipa)
 export DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 ROOT := $(abspath ../..)
 FIXTURES ?= $(ROOT)/apps/fixtures/old-hundredth
@@ -32,7 +38,7 @@ XCB := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
-.PHONY: verovio alphatab soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
+.PHONY: verovio alphatab project-fretscribe build-for-testing-fretscribe-mac test-fretscribe-mac build-for-testing-fretscribe-ios ipa-fretscribe soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
 
 verovio:
@@ -128,3 +134,24 @@ package-test-fast: alphatab
 	cd features/score && swift test --no-parallel --skip '$(APPLE_SLOW)'
 	cd features/tab && swift test
 	cd testing/ScreenCatalogue && swift test
+
+# Fretscribe for Mac, iPhone and iPad (products/fretscribe): no Verovio and no band sounds.
+FS_DERIVED := build/DerivedData-fs
+FS_XCB := xcodebuild -project products/fretscribe/Fretscribe.xcodeproj -derivedDataPath $(FS_DERIVED)
+# The screen catalogue (FretscribeScreensTests) runs through scripts/screenshots.sh record fretscribe.
+FS_SKIP_CATALOGUE := -skip-testing:FretscribeTests_macOS/FretscribeScreensTests
+
+project-fretscribe:
+	cd products/fretscribe && xcodegen generate
+
+build-for-testing-fretscribe-mac: project-fretscribe
+	$(FS_XCB) -scheme Fretscribe-macOS -destination 'platform=macOS' build-for-testing
+
+test-fretscribe-mac: build-for-testing-fretscribe-mac
+	$(FS_XCB) -scheme Fretscribe-macOS -destination 'platform=macOS' $(FS_SKIP_CATALOGUE) $(TEST_ARGS) test-without-building
+
+build-for-testing-fretscribe-ios: project-fretscribe
+	$(FS_XCB) -scheme Fretscribe-iOS -destination '$(IPHONE_DEST)' build-for-testing
+
+ipa-fretscribe:
+	PRODUCT=fretscribe ./scripts/make-ipa.sh

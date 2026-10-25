@@ -42,6 +42,8 @@ What a release ships:
 | `fretscribe-android-universal.apk` | Fretscribe for Android, all CPU types |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
 | `brasscribe-play-ios-unsigned.ipa` | Play for iPhone and iPad, unsigned: a tester signs it with their own Apple account |
+| `fretscribe-macos-arm64.zip` | Fretscribe for Mac (Apple silicon), ad-hoc signed |
+| `fretscribe-ios-unsigned.ipa` | Fretscribe for iPhone and iPad, unsigned, as Play's |
 | `brasscribe-bandroom-macos-arm64.zip` | Bandroom for Mac, ad-hoc signed, with `pixi` and `scribe-core` inside |
 | `brasscribe-bandroom-windows-x64.zip` | Bandroom for Windows, self-contained, with `pixi` and `scribe-core` inside |
 | `brasscribe-play-windows-x64.zip` | Play for Windows, self-contained (preview) |

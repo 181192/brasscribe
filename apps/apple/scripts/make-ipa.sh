@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Builds Brasscribe Play for iPhone and iPad as an unsigned IPA: a Release archive for iOS devices with
+# Builds an app (Brasscribe Play, or Fretscribe with PRODUCT=fretscribe) for iPhone and iPad as an unsigned IPA: a Release archive for iOS devices with
 # code signing off, packed as Payload/<app>.app. There is no Apple Developer account behind the project,
 # so a tester signs the file with their own Apple account, using a sideloading tool, to install it.
 # (Xcode does not sign an existing IPA: with Xcode one builds the app from the source instead.)
 #
-# Usage: scripts/make-ipa.sh [out.ipa]     (default build/brasscribe-play-ios-unsigned.ipa here in apps/apple;
-#                                          a relative path is taken from the directory it is run in)
-# Needs what `make project` needs (Verovio and the core with their iOS device slices), and the phone
-# band SoundFont in data/sounds/band unless IPA_ALLOW_NO_BAND_SOUNDS=1 (a local try-out; never a release).
+# Usage: [PRODUCT=brasscribe|fretscribe] scripts/make-ipa.sh [out.ipa]
+#        (default build/brasscribe-play-ios-unsigned.ipa or build/fretscribe-ios-unsigned.ipa here in apps/apple;
+#        a relative path is taken from the directory it is run in)
+# Brasscribe Play needs what `make project` needs (Verovio and the core with their iOS device slices), and the
+# phone band SoundFont in data/sounds/band unless IPA_ALLOW_NO_BAND_SOUNDS=1 (a local try-out; never a release).
+# Fretscribe needs alphaTab (fetched when its project is generated).
 #
 # The file is checked before it is kept: one app for iPhone and iPad, iOS 26.0 as the oldest system it
 # runs on (and no binary inside that needs a newer one), the texts iOS shows when it asks
@@ -15,22 +17,28 @@
 # simulator), and no signature or provisioning profile left inside.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-OUT="${1:-$HERE/build/brasscribe-play-ios-unsigned.ipa}"
+PRODUCT="${PRODUCT:-brasscribe}"
+case "$PRODUCT" in
+  brasscribe) PROJECT=BrasscribePlay; SCHEME=BrasscribePlay-iOS; NAME=brasscribe-play ;;
+  fretscribe) PROJECT=Fretscribe; SCHEME=Fretscribe-iOS; NAME=fretscribe ;;
+  *) echo "error: unknown PRODUCT $PRODUCT" >&2; exit 2 ;;
+esac
+OUT="${1:-$HERE/build/$NAME-ios-unsigned.ipa}"
 case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 cd "$HERE"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 WORK="$HERE/build/ipa"
-IOS_MIN=26.0   # the deployment target in products/brasscribe/project.yml
+IOS_MIN=26.0   # the deployment target in products/<product>/project.yml
 fail() { echo "error: $*" >&2; exit 1; }
 
-(cd products/brasscribe && xcodegen generate)
+(cd "products/$PRODUCT" && xcodegen generate)
 rm -rf "$WORK"; mkdir -p "$WORK/Payload" "$(dirname "$OUT")"
-xcodebuild -project products/brasscribe/BrasscribePlay.xcodeproj -derivedDataPath build/DerivedData \
-  -scheme BrasscribePlay-iOS -configuration Release -destination 'generic/platform=iOS' \
-  -archivePath "$WORK/BrasscribePlay.xcarchive" \
+xcodebuild -project "products/$PRODUCT/$PROJECT.xcodeproj" -derivedDataPath "build/DerivedData-ipa-$PRODUCT" \
+  -scheme "$SCHEME" -configuration Release -destination 'generic/platform=iOS' \
+  -archivePath "$WORK/$PROJECT.xcarchive" \
   CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" archive
 
-built=$(find "$WORK/BrasscribePlay.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' | head -1)
+built=$(find "$WORK/$PROJECT.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' | head -1)
 [ -n "$built" ] || fail "the archive holds no .app"
 ditto "$built" "$WORK/Payload/$(basename "$built")"
 app="$WORK/Payload/$(basename "$built")"
@@ -72,14 +80,17 @@ done
 signed=$(find "$app" \( -name _CodeSignature -o -name embedded.mobileprovision -o -name '*.entitlements' \) -print)
 [ -z "$signed" ] || fail "signing leftovers in the app: $signed"
 
-if [ -s "$app/Sounds/brasscribe-band-mobile.sf2" ] && [ -s "$app/Sounds/mapping.json" ]; then
+if [ "$PRODUCT" = fretscribe ]; then
+  [ -s "$(find "$app" -name alphaTab.min.js | head -1)" ] || fail "the app has no alphaTab (the tab page)"
+  echo "ok: the tab page with alphaTab"
+elif [ -s "$app/Sounds/brasscribe-band-mobile.sf2" ] && [ -s "$app/Sounds/mapping.json" ]; then
   echo "ok: band sounds ($(du -h "$app/Sounds/brasscribe-band-mobile.sf2" | cut -f1))"
 elif [ -n "${IPA_ALLOW_NO_BAND_SOUNDS:-}" ]; then
   echo "warning: no band SoundFont in the app; it will play the basic tier" >&2
 else
   fail "the app has no band SoundFont (pixi run fetch-sounds, or IPA_ALLOW_NO_BAND_SOUNDS=1 for a try-out)"
 fi
-[ -d "$app/VerovioResources" ] || fail "the app has no VerovioResources (notation fonts)"
+[ "$PRODUCT" = fretscribe ] || [ -d "$app/VerovioResources" ] || fail "the app has no VerovioResources (notation fonts)"
 
 # zip, not ditto: no resource forks or __MACOSX entries; -y keeps symlinks as they are.
 rm -f "$OUT"

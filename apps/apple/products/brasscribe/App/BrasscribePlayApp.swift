@@ -29,12 +29,11 @@ struct BrasscribePlayApp: App {
             RootView()
                 .environment(app).playHost(app)
                 .appAppearance()
-                .onOpenURL { url in
-                    if url.scheme?.lowercased() == Wire.pairScheme {
-                        if let link = PairingLink(url: url) { app.openPairingLink(link) }
-                    } else {
-                        Task { await app.accept(url: url) }
-                    }
+                .pairingLinks(appName: "Brasscribe Play", ownScheme: "brasscribe",
+                              siblings: [SiblingApp(name: "Fretscribe", scheme: "fretscribe")]) { link in
+                    app.openPairingLink(link)
+                } other: { url in
+                    Task { await app.accept(url: url) }
                 }
         }
         #if os(macOS)

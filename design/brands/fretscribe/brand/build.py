@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["pillow>=11"]
 # ///
-"""Build Fretscribe's Android launcher icon and Windows app icons from the mark.
+"""Build Fretscribe's Android launcher icon, its Windows app icons and its Apple app icon from the mark.
 
     uv run design/brands/fretscribe/brand/build.py
 
@@ -19,10 +19,15 @@ and design/brands/fretscribe/dist/icons/windows/Assets, with the names Brasscrib
 app-icon-fullbleed.svg, the small sizes and AppIcon.ico from the rounded tile (favicon-16.svg at 16 and 20 px),
 and the taskbar's unplated sizes as the strings alone in blue ink (the dark taskbar's blue on a dark one).
 Needs rsvg-convert on the PATH.
+
+and design/brands/fretscribe/dist/icons/apple/AppIcon.appiconset, laid out like Brasscribe's: one 1024 image for iPhone and
+iPad (the system rounds it), and every Mac size on a rounded tile with the system's shadow. Needs `rsvg-convert`
+(librsvg) on PATH for the Apple images.
 """
 
 from __future__ import annotations
 
+import json
 import math
 import re
 import shutil
@@ -38,6 +43,7 @@ WINDOWS = HERE.parent / "dist" / "icons" / "windows" / "Assets"
 
 # Blue ink, light and dark (brand.md, Colour): the unplated taskbar icon on a light and on a dark taskbar.
 BLUE_INK = ("#1F5FAD", "#8AB8F2")
+APPLE = HERE.parent / "dist" / "icons" / "apple" / "AppIcon.appiconset"
 
 CANVAS = 108.0   # dp, the adaptive icon layer
 SAFE = 66.0      # dp, the diameter every launcher mask keeps
@@ -161,6 +167,47 @@ def build_windows() -> None:
     print(f"Windows icons written to {WINDOWS.relative_to(HERE.parents[3])}")
 
 
+def apple_svg(d: str, paper: str, ink: str, mac: bool) -> str:
+    """The 1024 master: full bleed for iPhone and iPad; for the Mac an 824 rounded tile with the system's shadow."""
+    if not mac:
+        tile, art = '<rect width="1024" height="1024" fill="{}"/>'.format(ink), 1024 * 0.78
+    else:
+        tile = ('<defs><filter id="shadow" x="-10%" y="-10%" width="120%" height="125%">'
+                '<feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/></filter></defs>'
+                f'<rect x="100" y="100" width="824" height="824" rx="185" fill="{ink}" filter="url(#shadow)"/>'
+                '<rect x="100.5" y="100.5" width="823" height="823" rx="184.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.08"/>')
+        art = 824 * 0.78
+    scale = art / GRID
+    offset = (1024 - art) / 2
+    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">' + tile
+            + f'<g transform="translate({offset:g} {offset:g}) scale({scale:g})"><path fill="{paper}" d="{d}"/></g></svg>\n')
+
+
+def build_apple() -> None:
+    d, paper, ink = mark()
+    if APPLE.exists():
+        shutil.rmtree(APPLE)
+    APPLE.mkdir(parents=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        full, mac = Path(tmp) / "full.svg", Path(tmp) / "mac.svg"
+        full.write_text(apple_svg(d, paper, ink, mac=False))
+        mac.write_text(apple_svg(d, paper, ink, mac=True))
+
+        def render(src: Path, name: str, px: int) -> None:
+            subprocess.run(["rsvg-convert", "-w", str(px), "-h", str(px), str(src), "-o", str(APPLE / name)], check=True)
+
+        images = [{"filename": "ios-1024.png", "idiom": "universal", "platform": "ios", "size": "1024x1024"}]
+        render(full, "ios-1024.png", 1024)
+        for pt in (16, 32, 128, 256, 512):
+            for scale in (1, 2):
+                name = f"mac-{pt}@{scale}x.png"
+                render(mac, name, pt * scale)
+                images.append({"filename": name, "idiom": "mac", "scale": f"{scale}x", "size": f"{pt}x{pt}"})
+    (APPLE / "Contents.json").write_text(json.dumps({"images": images, "info": {"author": "xcode", "version": 1}}, indent=2) + "\n")
+    print(f"app icon written to {APPLE.relative_to(HERE.parents[3])}")
+
+
 if __name__ == "__main__":
     build()
     build_windows()
+    build_apple()

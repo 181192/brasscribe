@@ -1,7 +1,10 @@
-"""Build products/brasscribe/App/Localizable.xcstrings (English source, Norwegian bokmål) from the keys Xcode
-extracted into *.stringsdata during the last build, plus the bokmål table below.
+"""Build a product's Localizable.xcstrings (English source, Norwegian bokmål) from the keys Xcode extracted into
+*.stringsdata during the product's last build, plus its tables: Brasscribe Play's are below, Fretscribe's in
+products/fretscribe/words.json ({"en": …, "nb": …, "info_nb": …}). A word of the shared screens (features/play) that
+a product has no table entry for takes Brasscribe Play's bokmål.
 
 Usage: python3 scripts/make-string-catalog.py build/DerivedData/Build/Intermediates.noindex
+       python3 scripts/make-string-catalog.py build/DerivedData-fs/Build/Intermediates.noindex --product fretscribe
 Keys without a translation are listed on stderr and left for review in Xcode.
 """
 
@@ -641,6 +644,8 @@ NB = {
     "Couldn't lay out the score": "Klarte ikke å sette partituret",
     "The notes are still here: Read aloud and playback work.": "Notene er her fortsatt: Les opp og avspilling virker.",
     "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).": "Brasscribe åpner opptak, videoer og MusicXML-partiturer (.musicxml, .xml eller .mxl).",
+    "Which app should connect to your computer?": "Hvilken app skal kobles til datamaskinen?",
+    "The pairing link is for any of them. Each app connects on its own.": "Tilkoblingslenken gjelder alle. Hver app kobler seg til for seg.",
 }
 
 # Brasscribe's English for the keys of the screens every Play app shares (features/play): their keys name no product,
@@ -680,19 +685,44 @@ def entry(nb: str, en: str | None = None) -> dict:
     return {"localizations": loc}
 
 
-def main(root: str) -> None:
+PRODUCTS = {
+    "brasscribe": ("BrasscribePlay_", "products/brasscribe/App"),
+    "fretscribe": ("Fretscribe_", "products/fretscribe/App"),
+}
+
+
+def main(root: str, product: str = "brasscribe") -> None:
+    global NB, EN, INFO_NB
+    target, app = PRODUCTS[product]
+    if product != "brasscribe":
+        # the shared screens' words fall back on Brasscribe Play's bokmål, then the product's own tables win
+        brass = {}
+        try:
+            for k, v in json.load(open(PRODUCTS["brasscribe"][1] + "/Localizable.xcstrings")).get("strings", {}).items():
+                nb = v.get("localizations", {}).get("nb", {}).get("stringUnit", {}).get("value")
+                if nb:
+                    brass[k] = nb
+        except FileNotFoundError:
+            pass
+        own = json.load(open(f"products/{product}/words.json"))
+        NB = {**brass, **NB, **own["nb"]}
+        EN = own.get("en", {})
+        INFO_NB = own.get("info_nb", {})
     keys = set()
     for f in glob.glob(root + "/**/*.stringsdata", recursive=True):
-        if "BrasscribePlay_" not in f or "Tests" in f:
+        if target not in f or "Tests" in f:
             continue
         for table in json.load(open(f)).get("tables", {}).values():
             keys.update(e["key"] for e in table)
     keys.discard("")
+    if product != "brasscribe":
+        # what only another platform's build says (the iPhone's scanner) is in the product's own table
+        keys.update(own["nb"])
     # translations already in the catalog (added by hand or by other tools) are kept;
     # the table above wins where both have one
     existing = {}
     try:
-        for k, v in json.load(open("products/brasscribe/App/Localizable.xcstrings")).get("strings", {}).items():
+        for k, v in json.load(open(app + "/Localizable.xcstrings")).get("strings", {}).items():
             nb = v.get("localizations", {}).get("nb", {}).get("stringUnit", {}).get("value")
             if nb:
                 existing[k] = nb
@@ -709,11 +739,11 @@ def main(root: str) -> None:
             strings[k] = {}
             missing.append(k)
     catalog = {"sourceLanguage": "en", "strings": strings, "version": "1.0"}
-    with open("products/brasscribe/App/Localizable.xcstrings", "w") as f:
+    with open(app + "/Localizable.xcstrings", "w") as f:
         json.dump(catalog, f, indent=2, ensure_ascii=False, sort_keys=True)
     info = {"sourceLanguage": "en", "version": "1.0",
             "strings": {k: entry(v) for k, v in INFO_NB.items()}}
-    with open("products/brasscribe/App/InfoPlist.xcstrings", "w") as f:
+    with open(app + "/InfoPlist.xcstrings", "w") as f:
         json.dump(info, f, indent=2, ensure_ascii=False, sort_keys=True)
     print(f"{len(strings)} strings, {len(missing)} without Norwegian", file=sys.stderr)
     for k in missing:
@@ -721,4 +751,6 @@ def main(root: str) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    args = sys.argv[1:]
+    product = args[args.index("--product") + 1] if "--product" in args else "brasscribe"
+    main(args[0], product)
