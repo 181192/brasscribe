@@ -305,6 +305,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
     public void ShowWhatIsThis(SourceAudio source, IReadOnlySet<string>? listed)
     {
         _source = source;
+        Profiles.Asking(Settings.EngineUri.ToString());
         Profiles.Answered(Settings.EngineUri.ToString(), listed);
         WhatIsThis.Open(source, Instrument.Stored, ComputerThere);
         Screen = TabScreen.WhatIsThis;
@@ -313,6 +314,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
     /// <summary>Check the song for a tab's facts as given (the sample scenes).</summary>
     public void ShowCheck(TabResult tab, IReadOnlyList<string> stages)
     {
+        Profiles.Asking(Settings.EngineUri.ToString());
         Profiles.Answered(Settings.EngineUri.ToString(), new HashSet<string> { TabProfiles.Tab });
         Check.Show(tab, stages, ComputerThere);
         Screen = TabScreen.CheckTheSong;

@@ -153,10 +153,14 @@ public sealed partial class TabView : UserControl
         _laidOutWidth = ActualWidth;
         _pages.Children.Clear();
         _images.Clear();
+        // alphaTab signs every engraving with "rendered by alphaTab" under the last line: the page ends with the music
+        // (alphaTab is credited in About).
+        double height = layout.Bounds?.StaffSystems.LastOrDefault()?.VisualBounds is { } last ? Math.Min(layout.Height, last.Y + last.H + 16) : layout.Height;
         _surface.Width = layout.Width;
-        _surface.Height = layout.Height;
+        _surface.Height = height;
         _pages.Width = _marks.Width = layout.Width;
-        _pages.Height = _marks.Height = layout.Height;
+        _pages.Height = _marks.Height = height;
+        _pages.Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, layout.Width, height) };
         foreach (var page in layout.Pages)
         {
             var image = new Image { Width = page.Width, Height = page.Height, Stretch = Stretch.Fill };
@@ -226,7 +230,7 @@ public sealed partial class TabView : UserControl
             if (items is not null && i < items.Count) AutomationProperties.SetName(mark, items[i].Label);
             mark.Click += (_, _) => _vm?.PlayBarSlowly(column.Bar);
             Canvas.SetLeft(mark, bounds.X + bounds.W / 2 - 12);
-            Canvas.SetTop(mark, Math.Max(0, bounds.Y - 26));
+            Canvas.SetTop(mark, Math.Max(0, bounds.Y - 30));
             _marks.Children.Add(mark);
         }
     }

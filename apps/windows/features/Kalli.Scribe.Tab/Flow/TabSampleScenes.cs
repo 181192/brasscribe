@@ -25,7 +25,7 @@ public static class TabSampleScenes
     /// <summary>Shows <paramref name="scene"/>. False for an unknown name, or a tab scene without the fixture.</summary>
     public static async Task<bool> ShowAsync(TabFlowViewModel flow, string scene, string? fixture)
     {
-        // A made-up recording for What is this?: the scenes never read it.
+        // A made-up recording for What is this?: there, so the screen can go on, but never read.
         var sample = new SourceAudio(Path.Combine(Path.GetTempPath(), "Guitar line.m4a"), "Guitar line.m4a", new TimeSpan(0, 0, 42), null, false);
         if (scene != "first-run") flow.Settings.FirstRunDone = true;
         // A fixed connection row: the scenes never talk to a computer.
@@ -47,7 +47,10 @@ public static class TabSampleScenes
                 flow.Screen = TabScreen.Home;
                 return true;
             case "what-is-this" or "what-is-this-offline":
+                if (!File.Exists(sample.WavPath)) await File.WriteAllBytesAsync(sample.WavPath, [0]);
                 flow.ShowWhatIsThis(sample, listed: new HashSet<string> { TabProfiles.Tab });
+                // An answer chosen, as the player has it before Continue.
+                flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.FirstOrDefault(c => c.Recording == Recording.Song));
                 return true;
             case "transcribing":
                 flow.Transcription.ShowProgress(SampleTitle, TabProfiles.Tab, "", "Notes", 62, TimeSpan.FromMinutes(1));

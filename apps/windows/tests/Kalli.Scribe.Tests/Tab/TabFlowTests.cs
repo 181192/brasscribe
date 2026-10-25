@@ -238,7 +238,10 @@ public class TabFlowTests : TempFolderTest
             };
             Assert.Equal(expected, flow.Screen);
             if (scene == "tab") Assert.True(flow.TabPage.IsReady && flow.TabPage.Marks.Count >= 0);
-            if (scene == "check-the-song") Assert.NotEmpty(flow.Check.Rows);
+            // The computer is there and has the tab profile: Check the song offers its changes, What is this? its Continue.
+            if (scene == "check-the-song") Assert.Contains(flow.Check.Rows, r => r.HasChange);
+            if (scene == "what-is-this") Assert.Null(flow.WhatIsThis.Missing);
+            if (scene == "what-is-this-offline") Assert.Equal("Tab_What_ConnectFirst", flow.WhatIsThis.Missing);
             // The scenes never talk to a computer.
             Assert.Empty(computer.Requests);
         }
