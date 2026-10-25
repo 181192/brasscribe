@@ -332,7 +332,8 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/Fretscribe"
           dotnet publish products/fretscribe/Kalli.Fretscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -o $out
           if (-not (Test-Path "$out/Fretscribe.exe")) { throw "Fretscribe.exe was not published" }
-          foreach ($f in @("onnxruntime.dll", "scribe_ffi.dll", "SoundFonts")) {
+          # No core and no band sounds. (onnxruntime.dll comes with the Windows App SDK itself, for Windows ML.)
+          foreach ($f in @("scribe_ffi.dll", "SoundFonts", "Models")) {
             if (Test-Path (Join-Path $out $f)) { throw "$f is in the download, and Fretscribe uses none of it" }
           }
           # alphaTab's native Skia imports vcruntime140.dll, so it ships app-locally, as Brasscribe Play's does.
