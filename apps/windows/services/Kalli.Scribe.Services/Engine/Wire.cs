@@ -13,6 +13,13 @@ public static class Wire
     public const string ServiceType = "_scribe._tcp";
 
     /// <summary>
+    /// The start of the name an engine gives itself: its DNS-SD instance name and the <c>server_name</c> of
+    /// <c>GET /v1/health</c> are "Brasscribe on &lt;computer&gt;" (engine/src/scribe_engine/discovery.py, <c>PREFIX</c>).
+    /// It is the engine's word, not this app's, and changes only together with the engine and every client.
+    /// </summary>
+    public const string ServerNamePrefix = "Brasscribe on ";
+
+    /// <summary>
     /// The interface version this app is built for. The engine says its own in <c>GET /v1/health</c> and, to a paired
     /// device, in <c>GET /v1/devices/me</c>; when the two differ the app says which of them to update and sends that
     /// engine nothing but those two (<see cref="InterfaceMatch"/>, <see cref="EngineClient"/>).

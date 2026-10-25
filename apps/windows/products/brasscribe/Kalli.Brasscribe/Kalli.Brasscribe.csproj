@@ -38,6 +38,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\services\Kalli.Scribe.Services\Kalli.Scribe.Services.csproj" />
     <ProjectReference Include="..\..\..\services\Kalli.Scribe.Audio.Windows\Kalli.Scribe.Audio.Windows.csproj" />
+    <ProjectReference Include="..\..\..\services\Kalli.Scribe.WinUI\Kalli.Scribe.WinUI.csproj" />
     <ProjectReference Include="..\..\..\features\Kalli.Scribe.Score\Kalli.Scribe.Score.csproj" />
     <ProjectReference Include="..\..\..\features\Kalli.Scribe.Play\Kalli.Scribe.Play.csproj" />
     <ProjectReference Include="..\..\..\features\Kalli.Scribe.Controls\Kalli.Scribe.Controls.csproj" />

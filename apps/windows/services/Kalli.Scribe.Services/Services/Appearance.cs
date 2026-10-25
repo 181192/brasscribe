@@ -1,11 +1,20 @@
 namespace Kalli.Scribe.Services;
 
 /// <summary>
-/// Settings › Display › Appearance (design/brands/brasscribe/system.md §10). Match system is the default. <see cref="PinkLight"/> and
-/// <see cref="PinkDark"/> are Light and Dark in the hidden Pink palette, listed only once it is unlocked from About.
-/// The order is the Appearance box's.
+/// Settings › Display › Appearance. Match system is the default. <see cref="HiddenLight"/> and <see cref="HiddenDark"/>
+/// are Light and Dark in the app's <see cref="HiddenPalette"/>, listed only in an app that has one, once it is unlocked
+/// from About. The order is the Appearance box's.
 /// </summary>
-public enum Appearance { System, Light, Dark, PinkLight, PinkDark }
+public enum Appearance { System, Light, Dark, HiddenLight, HiddenDark }
+
+/// <summary>
+/// An app's hidden palette: a set of colour roles on top of Light or Dark, unlocked from About. An app without one
+/// offers Match system, Light and Dark only.
+/// </summary>
+/// <param name="Id">How the choice is stored and forced: <c>&lt;id&gt;-light</c> and <c>&lt;id&gt;-dark</c>.</param>
+/// <param name="Source">The palette's resource dictionary (an ms-appx URI), merged in while it is in use.</param>
+/// <param name="VeryUncertainLight">The very uncertain notes' colour in its light version, when it is not Light's.</param>
+public sealed record HiddenPalette(string Id, string Source, string? VeryUncertainLight = null);
 
 /// <summary>The theme a window's root asks for. <see cref="Default"/> lets Windows decide; it maps 1:1 to ElementTheme.</summary>
 public enum RootTheme { Default, Light, Dark }
@@ -19,64 +28,55 @@ public static class AppearanceSetting
     /// <summary>The settings.json key.</summary>
     public const string Key = "Appearance";
 
-    /// <summary>The settings.json key of the Pink unlock (this PC only, like the choice).</summary>
-    public const string PinkUnlockedKey = "PinkUnlocked";
+    /// <summary>The settings.json key of the hidden palette's unlock (this PC only, like the choice).</summary>
+    public const string HiddenUnlockedKey = "HiddenPaletteUnlocked";
 
-    /// <summary>The one Pink choice of earlier versions, which followed the system's light or dark.</summary>
-    public const string LegacyPink = "pink";
-
-    /// <summary>An unknown value is Match system, so an earlier version reads "pink-light" and "pink-dark" as its default.</summary>
-    public static Appearance Parse(string? value) => value?.Trim().ToLowerInvariant() switch
+    /// <summary>An unknown value is Match system, and so is the hidden palette's in an app without it.</summary>
+    public static Appearance Parse(string? value, HiddenPalette? palette)
     {
-        "light" => Appearance.Light,
-        "dark" => Appearance.Dark,
-        "pink-light" => Appearance.PinkLight,
-        "pink-dark" => Appearance.PinkDark,
-        _ => Appearance.System,
-    };
+        string? v = value?.Trim().ToLowerInvariant();
+        if (v == "light") return Appearance.Light;
+        if (v == "dark") return Appearance.Dark;
+        if (palette is not null && v == $"{palette.Id}-light") return Appearance.HiddenLight;
+        if (palette is not null && v == $"{palette.Id}-dark") return Appearance.HiddenDark;
+        return Appearance.System;
+    }
 
-    public static string Serialise(Appearance value) => value switch
+    public static string Serialise(Appearance value, HiddenPalette? palette) => value switch
     {
         Appearance.Light => "light",
         Appearance.Dark => "dark",
-        Appearance.PinkLight => "pink-light",
-        Appearance.PinkDark => "pink-dark",
+        Appearance.HiddenLight when palette is not null => $"{palette.Id}-light",
+        Appearance.HiddenDark when palette is not null => $"{palette.Id}-dark",
         _ => "system",
     };
 
-    /// <summary>
-    /// What an earlier version's "pink" becomes: Pink dark while Windows is dark, else Pink light (also when that is
-    /// unknown). Null for every other value.
-    /// </summary>
-    public static string? Migrate(string? stored, bool? systemDark) =>
-        stored?.Trim().ToLowerInvariant() == LegacyPink ? Serialise(systemDark == true ? Appearance.PinkDark : Appearance.PinkLight) : null;
-
-    public static bool IsPink(Appearance choice) => choice is Appearance.PinkLight or Appearance.PinkDark;
+    public static bool IsHidden(Appearance choice) => choice is Appearance.HiddenLight or Appearance.HiddenDark;
 
     /// <summary>The window root's requested theme: Default under a contrast theme and for Match system.</summary>
     public static RootTheme Resolve(Appearance choice, bool highContrast) => highContrast ? RootTheme.Default : choice switch
     {
-        Appearance.Light or Appearance.PinkLight => RootTheme.Light,
-        Appearance.Dark or Appearance.PinkDark => RootTheme.Dark,
+        Appearance.Light or Appearance.HiddenLight => RootTheme.Light,
+        Appearance.Dark or Appearance.HiddenDark => RootTheme.Dark,
         _ => RootTheme.Default,
     };
 
-    /// <summary>The Pink palette is in use: chosen, and no contrast theme on (that still wins).</summary>
-    public static bool UsesPink(Appearance choice, bool highContrast) => IsPink(choice) && !highContrast;
+    /// <summary>The hidden palette is in use: chosen, and no contrast theme on (that still wins).</summary>
+    public static bool UsesHidden(Appearance choice, bool highContrast) => IsHidden(choice) && !highContrast;
 
-    /// <summary>The choices the Appearance box lists, in order: Pink light and Pink dark last, only once Pink is unlocked.</summary>
-    public static IReadOnlyList<Appearance> Choices(bool pinkUnlocked) =>
-        pinkUnlocked
-            ? [Appearance.System, Appearance.Light, Appearance.Dark, Appearance.PinkLight, Appearance.PinkDark]
+    /// <summary>The choices the Appearance box lists, in order: the hidden palette's two last, only once it is unlocked.</summary>
+    public static IReadOnlyList<Appearance> Choices(bool hiddenUnlocked) =>
+        hiddenUnlocked
+            ? [Appearance.System, Appearance.Light, Appearance.Dark, Appearance.HiddenLight, Appearance.HiddenDark]
             : [Appearance.System, Appearance.Light, Appearance.Dark];
 }
 
 /// <summary>
-/// The way into Pink, on About: activating the version <see cref="Taps"/> times in a row, each within <see cref="Window"/>
+/// The way into the hidden palette, on About: activating the version <see cref="Taps"/> times in a row, each within <see cref="Window"/>
 /// of the one before, unlocks it. A longer pause starts the count again. <see cref="Tap"/> is true exactly once, on the
 /// activation that unlocks; after that it stays false, so the confirmation is said only once.
 /// </summary>
-public sealed class PinkUnlock(bool unlocked, TimeProvider? time = null)
+public sealed class HiddenPaletteUnlock(bool unlocked, TimeProvider? time = null)
 {
     public const int Taps = 5;
     public static readonly TimeSpan Window = TimeSpan.FromMilliseconds(1500);

@@ -97,7 +97,7 @@ public class AppFlowTests
         MainViewModel? main = null;
         main = new MainViewModel(
             new StartViewModel(new NoCapture(), new CopyDecoder(), new NoDialogs(), said, strings, ui, work),
-            new SourceKindViewModel(strings),
+            new SourceKindViewModel(strings, Target.Brass),
             new TranscriptionViewModel(() => main!.Engine, said, strings, ui),
             new ScoreViewModel(core, new PlayerViewModel(player, said, strings, ui), said, strings),
             new ExportViewModel(new ExportService(), new NoDialogs(), said, strings),
@@ -539,6 +539,29 @@ public class AppFlowTests
         Assert.Equal("Needs a recording of the whole group", main.Transcription.ErrorText);
         Assert.Equal(Screen.Error, main.Screen);
         Assert.DoesNotContain(said.Items, i => i.Text.Contains("harmony", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_job_the_app_makes_is_sent_as_it_is_made_and_a_kept_upload_is_not_sent_again()
+    {
+        var engine = Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n");
+        var (main, _) = Build(engine);
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        var source = main.Kind.Source!;
+        TranscriptionResult? done = null;
+        main.Transcription.Completed += (_, r) => done = r;
+
+        await main.Transcription.RunAsync(source, "Just my instrument", "tab", uploaded => new JobCreate(uploaded, "tab", Instrument: "bass-4", Tuning: "drop-d"));
+        var sent = engine.Requests.Last(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!;
+        Assert.Contains("\"audio_id\":\"a1\"", sent);
+        Assert.Contains("\"instrument\":\"bass-4\"", sent);
+        Assert.Contains("\"tuning\":\"drop-d\"", sent);
+        Assert.Equal(("tab", "a1", null), (done!.Profile, done.AudioId, done.Options));
+
+        int uploads = engine.Requests.Count(r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
+        await main.Transcription.RunAsync(source, "Just my instrument", "tab", uploaded => new JobCreate(uploaded, "tab"), audioId: "a1");
+        Assert.Equal(uploads, engine.Requests.Count(r => r.Request.RequestUri!.AbsolutePath == "/v1/audio"));
     }
 
     [Fact]

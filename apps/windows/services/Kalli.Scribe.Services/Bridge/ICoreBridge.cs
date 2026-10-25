@@ -123,5 +123,5 @@ public sealed class ManagedCoreBridge : ICoreBridge
 public static class CoreBridge
 {
     /// <summary>The native core when scribe_ffi loads, otherwise the managed fallback.</summary>
-    public static ICoreBridge Create() => NativeCoreBridge.TryCreate() ?? (ICoreBridge)new ManagedCoreBridge();
+    public static ICoreBridge Create(Target target) => NativeCoreBridge.TryCreate(target) ?? (ICoreBridge)new ManagedCoreBridge();
 }

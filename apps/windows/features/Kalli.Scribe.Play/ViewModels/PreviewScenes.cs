@@ -15,7 +15,7 @@ public static class PreviewScenes
          "choose-output", "score", "part", "export", "error", "error-update", "error-update-app"];
 
     /// <summary>The computer in the sample scenes.</summary>
-    public const string SampleServer = "Brasscribe on Studio PC";
+    public const string SampleServer = Engine.Wire.ServerNamePrefix + "Studio PC";
 
     /// <summary>The piece in the sample scenes: the public-domain fixture in apps/fixtures/old-hundredth.</summary>
     public const string SampleTitle = "Old Hundredth";

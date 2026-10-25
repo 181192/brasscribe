@@ -13,19 +13,17 @@ public sealed record DiscoveredEngine(string Name, Uri BaseAddress, string? Serv
 {
     public string Address => BaseAddress.ToString();
 
-    /// <summary>The computer's name as people know it: the TXT host, else the instance name without "Brasscribe on " and a " (2)" suffix.</summary>
+    /// <summary>The computer's name as people know it: the TXT host, else the instance name without the engine's prefix and a " (2)" suffix.</summary>
     public string ComputerName => Host is { Length: > 0 } h ? h : ServerNames.ComputerName(Name);
 }
 
-/// <summary>Engine display names are always "Brasscribe on &lt;computer&gt;"; the apps put the computer part in their own sentence.</summary>
+/// <summary>Engine display names are always <see cref="Wire.ServerNamePrefix"/> and the computer; the apps put the computer part in their own sentence.</summary>
 public static partial class ServerNames
 {
-    public const string Prefix = "Brasscribe on ";
-
     public static string ComputerName(string? serverName)
     {
         var name = (serverName ?? "").Trim();
-        if (name.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase)) name = name[Prefix.Length..];
+        if (name.StartsWith(Wire.ServerNamePrefix, StringComparison.OrdinalIgnoreCase)) name = name[Wire.ServerNamePrefix.Length..];
         // mDNS adds " (2)" on a name clash; that is not part of the computer's name.
         var m = ClashSuffix().Match(name);
         if (m.Success) name = m.Groups[1].Value;

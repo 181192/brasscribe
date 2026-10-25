@@ -75,11 +75,6 @@ public sealed record Job(
     string? DeviceName = null,
     string? Target = null)
 {
-    /// <summary>The job belongs to this app: its target is the app's. A job without a target, or of a target
-    /// this app does not know, is not.</summary>
-    [JsonIgnore]
-    public bool IsOurs => Target == Product.Target;
-
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;
 }

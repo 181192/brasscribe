@@ -44,7 +44,8 @@ public sealed record EngineCredential(
 /// </summary>
 public sealed class EngineCredentials
 {
-    public const string Resource = "Brasscribe engine";
+    /// <summary>The vault's resource for the engine credentials; each app's vault keeps its own under it.</summary>
+    public const string Resource = "engine";
 
     private const string CurrentKey = "EngineServerId";
 

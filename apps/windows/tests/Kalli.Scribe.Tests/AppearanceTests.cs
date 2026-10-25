@@ -5,7 +5,7 @@ using Kalli.Scribe.ViewModels;
 
 namespace Kalli.Scribe.Tests;
 
-/// <summary>Settings › Display › Appearance (design/brands/brasscribe/system.md §10): Match system, Light, Dark, and Pink light and Pink dark once unlocked; contrast themes win.</summary>
+/// <summary>Settings › Display › Appearance (design/brands/brasscribe/system.md §10): Match system, Light, Dark, and the hidden palette's two once unlocked; contrast themes win.</summary>
 public class AppearanceTests
 {
     private sealed class Silent : IAnnouncer
@@ -26,22 +26,22 @@ public class AppearanceTests
     [InlineData("Dark", Appearance.Dark)]
     [InlineData(" dark ", Appearance.Dark)]
     [InlineData("sepia", Appearance.System)]
-    [InlineData("pink-light", Appearance.PinkLight)]
-    [InlineData("Pink-Dark", Appearance.PinkDark)]
-    [InlineData("pink", Appearance.System)] // an earlier version's value: migrated when settings load
+    [InlineData("pink-light", Appearance.HiddenLight)]
+    [InlineData("Pink-Dark", Appearance.HiddenDark)]
+    [InlineData("pink", Appearance.System)]
     public void Parses_stored_values_and_falls_back_to_match_system(string? stored, Appearance expected) =>
-        Assert.Equal(expected, AppearanceSetting.Parse(stored));
+        Assert.Equal(expected, AppearanceSetting.Parse(stored, Pink));
 
     [Theory]
     [InlineData(Appearance.System, "system")]
     [InlineData(Appearance.Light, "light")]
     [InlineData(Appearance.Dark, "dark")]
-    [InlineData(Appearance.PinkLight, "pink-light")]
-    [InlineData(Appearance.PinkDark, "pink-dark")]
+    [InlineData(Appearance.HiddenLight, "pink-light")]
+    [InlineData(Appearance.HiddenDark, "pink-dark")]
     public void Serialises_to_a_stable_word_that_parses_back(Appearance value, string word)
     {
-        Assert.Equal(word, AppearanceSetting.Serialise(value));
-        Assert.Equal(value, AppearanceSetting.Parse(AppearanceSetting.Serialise(value)));
+        Assert.Equal(word, AppearanceSetting.Serialise(value, Pink));
+        Assert.Equal(value, AppearanceSetting.Parse(AppearanceSetting.Serialise(value, Pink), Pink));
     }
 
     [Theory]
@@ -51,10 +51,10 @@ public class AppearanceTests
     [InlineData(Appearance.System, true, RootTheme.Default)]
     [InlineData(Appearance.Light, true, RootTheme.Default)]
     [InlineData(Appearance.Dark, true, RootTheme.Default)]
-    [InlineData(Appearance.PinkLight, false, RootTheme.Light)]
-    [InlineData(Appearance.PinkDark, false, RootTheme.Dark)]
-    [InlineData(Appearance.PinkLight, true, RootTheme.Default)]
-    [InlineData(Appearance.PinkDark, true, RootTheme.Default)]
+    [InlineData(Appearance.HiddenLight, false, RootTheme.Light)]
+    [InlineData(Appearance.HiddenDark, false, RootTheme.Dark)]
+    [InlineData(Appearance.HiddenLight, true, RootTheme.Default)]
+    [InlineData(Appearance.HiddenDark, true, RootTheme.Default)]
     public void A_contrast_theme_always_wins(Appearance choice, bool highContrast, RootTheme expected) =>
         Assert.Equal(expected, AppearanceSetting.Resolve(choice, highContrast));
 
@@ -71,13 +71,13 @@ public class AppearanceTests
     public void Defaults_to_match_system_and_is_stored_under_its_key()
     {
         var store = new InMemorySettings();
-        var vm = new SettingsViewModel(store, new Silent(), Strings());
+        var vm = new SettingsViewModel(store, new Silent(), Strings(), palette: Pink);
         Assert.Equal(Appearance.System, vm.Appearance);
         Assert.Equal(RootTheme.Default, vm.RootTheme);
 
         vm.Appearance = Appearance.Dark;
         Assert.Equal("dark", store.Get<string?>(AppearanceSetting.Key, null));
-        Assert.Equal(Appearance.Dark, new SettingsViewModel(store, new Silent(), Strings()).Appearance);
+        Assert.Equal(Appearance.Dark, new SettingsViewModel(store, new Silent(), Strings(), palette: Pink).Appearance);
     }
 
     [Fact]
@@ -126,13 +126,31 @@ public class AppearanceTests
             box.Elements().Select(e => (string)e.Attribute(x + "Uid")!).ToArray());
     }
 
-    // ---- Pink (hidden) ----
+    // ---- the hidden palette (Brasscribe's Pink) ----
+
+    private static readonly HiddenPalette Pink = new("pink", "ms-appx:///Themes/Pink.xaml");
 
     [Fact]
-    public void Five_activations_in_a_row_unlock_pink_and_a_pause_starts_again()
+    public void An_app_without_a_hidden_palette_never_lists_or_unlocks_one()
+    {
+        var store = new InMemorySettings();
+        store.Set(AppearanceSetting.Key, "pink-dark");
+        var said = new Silent();
+        var time = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
+        var vm = new SettingsViewModel(store, said, Strings(), time: time);
+        Assert.Equal(Appearance.System, vm.Appearance);
+        for (int i = 0; i < 6; i++) { vm.ActivateVersion(); time.Advance(TimeSpan.FromMilliseconds(300)); }
+        Assert.False(vm.HiddenPaletteUnlocked);
+        Assert.Empty(said.Said);
+        Assert.Equal([Appearance.System, Appearance.Light, Appearance.Dark], vm.AppearanceChoices);
+        Assert.Equal("system", AppearanceSetting.Serialise(Appearance.HiddenDark, null));
+    }
+
+    [Fact]
+    public void Five_activations_in_a_row_unlock_it_and_a_pause_starts_again()
     {
         var time = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
-        var unlock = new PinkUnlock(false, time);
+        var unlock = new HiddenPaletteUnlock(false, time);
         for (int i = 0; i < 4; i++) { Assert.False(unlock.Tap()); time.Advance(TimeSpan.FromMilliseconds(1400)); }
         time.Advance(TimeSpan.FromMilliseconds(200)); // 1.6 s since the fourth: the count starts again
         Assert.False(unlock.Tap());
@@ -149,73 +167,45 @@ public class AppearanceTests
         var store = new InMemorySettings();
         var said = new Silent();
         var time = new Microsoft.Extensions.Time.Testing.FakeTimeProvider();
-        var vm = new SettingsViewModel(store, said, Strings(), time: time);
-        Assert.False(vm.PinkUnlocked);
+        var vm = new SettingsViewModel(store, said, Strings(), time: time, palette: Pink);
+        Assert.False(vm.HiddenPaletteUnlocked);
         Assert.Equal([Appearance.System, Appearance.Light, Appearance.Dark], vm.AppearanceChoices);
         int raised = 0;
-        vm.PinkUnlockedNow += (_, _) => raised++;
+        vm.HiddenPaletteUnlockedNow += (_, _) => raised++;
         for (int i = 0; i < 6; i++) { vm.ActivateVersion(); time.Advance(TimeSpan.FromMilliseconds(300)); }
-        Assert.True(vm.PinkUnlocked);
+        Assert.True(vm.HiddenPaletteUnlocked);
         Assert.Equal(1, raised);
         Assert.Equal(["🎺 Pink unlocked"], said.Said);
-        Assert.Equal([Appearance.System, Appearance.Light, Appearance.Dark, Appearance.PinkLight, Appearance.PinkDark], vm.AppearanceChoices);
+        Assert.Equal([Appearance.System, Appearance.Light, Appearance.Dark, Appearance.HiddenLight, Appearance.HiddenDark], vm.AppearanceChoices);
         Assert.Equal(Appearance.System, vm.Appearance); // nothing switches by itself
-        Assert.True(new SettingsViewModel(store, new Silent(), Strings()).PinkUnlocked);
+        Assert.True(new SettingsViewModel(store, new Silent(), Strings(), palette: Pink).HiddenPaletteUnlocked);
 
         // Pink light and Pink dark pick the theme themselves; a contrast theme still wins, and the choice is kept.
-        vm.Appearance = Appearance.PinkLight;
+        vm.Appearance = Appearance.HiddenLight;
         Assert.Equal(RootTheme.Light, vm.RootTheme);
-        Assert.True(vm.UsesPink);
-        vm.Appearance = Appearance.PinkDark;
+        Assert.True(vm.UsesHiddenPalette);
+        vm.Appearance = Appearance.HiddenDark;
         Assert.Equal(RootTheme.Dark, vm.RootTheme);
         Assert.Equal("pink-dark", store.Get<string?>(AppearanceSetting.Key, null));
         vm.HighContrast = true;
-        Assert.False(vm.UsesPink);
+        Assert.False(vm.UsesHiddenPalette);
         Assert.Equal(RootTheme.Default, vm.RootTheme);
-        Assert.Equal(Appearance.PinkDark, vm.Appearance);
+        Assert.Equal(Appearance.HiddenDark, vm.Appearance);
         vm.Appearance = Appearance.Light;
-        Assert.True(vm.PinkUnlocked); // Pink stays listed
+        Assert.True(vm.HiddenPaletteUnlocked); // Pink stays listed
     }
 
     [Theory]
-    [InlineData("pink-light", Appearance.PinkLight)]
-    [InlineData("pink-dark", Appearance.PinkDark)]
+    [InlineData("pink-light", Appearance.HiddenLight)]
+    [InlineData("pink-dark", Appearance.HiddenDark)]
     public void A_pc_with_pink_chosen_counts_as_unlocked(string stored, Appearance expected)
     {
         var store = new InMemorySettings();
         store.Set(AppearanceSetting.Key, stored);
-        var vm = new SettingsViewModel(store, new Silent(), Strings());
-        Assert.True(vm.PinkUnlocked);
+        var vm = new SettingsViewModel(store, new Silent(), Strings(), palette: Pink);
+        Assert.True(vm.HiddenPaletteUnlocked);
         Assert.Equal(expected, vm.Appearance);
     }
-
-    [Theory]
-    [InlineData(true, Appearance.PinkDark, "pink-dark")]
-    [InlineData(false, Appearance.PinkLight, "pink-light")]
-    [InlineData(null, Appearance.PinkLight, "pink-light")]
-    public void An_earlier_pink_becomes_pink_light_or_dark_by_the_system(bool? systemDark, Appearance expected, string word)
-    {
-        var store = new InMemorySettings();
-        store.Set(AppearanceSetting.Key, "pink");
-        var vm = new SettingsViewModel(store, new Silent(), Strings(), systemDark: systemDark);
-        Assert.Equal(expected, vm.Appearance);
-        Assert.True(vm.UsesPink);
-        Assert.Equal(word, store.Get<string?>(AppearanceSetting.Key, null));
-        // Written down, so an earlier version, which reads the new word as Match system, still lists Pink.
-        Assert.True(store.Get(AppearanceSetting.PinkUnlockedKey, false));
-        Assert.Equal(expected, new SettingsViewModel(store, new Silent(), Strings(), systemDark: !systemDark).Appearance);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("system")]
-    [InlineData("light")]
-    [InlineData("dark")]
-    [InlineData("pink-light")]
-    [InlineData("pink-dark")]
-    [InlineData("sepia")]
-    public void Migration_leaves_every_other_value_alone(string? stored) =>
-        Assert.Null(AppearanceSetting.Migrate(stored, true));
 
     [Theory]
     [InlineData("en-US", "Pink light", "Pink dark", "🎺 Pink unlocked", "Version 1.2")]
@@ -224,6 +214,6 @@ public class AppearanceTests
     {
         IStrings s = new ReswStrings(ReswStrings.Parse(XDocument.Load(Resw(lang))));
         Assert.Equal((pinkLight, pinkDark, unlocked, version),
-            (s["Appearance_PinkLight"], s["Appearance_PinkDark"], s["Pink_Unlocked"], s.Format("Settings_AppVersion", "1.2")));
+            (s["Appearance_PinkLight"], s["Appearance_PinkDark"], s["HiddenPalette_Unlocked"], s.Format("Settings_AppVersion", "1.2")));
     }
 }

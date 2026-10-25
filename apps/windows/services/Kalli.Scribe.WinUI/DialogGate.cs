@@ -1,13 +1,13 @@
 using Microsoft.UI.Xaml.Controls;
 
-namespace Kalli.Brasscribe.Services;
+namespace Kalli.Scribe.WinUI;
 
 /// <summary>
 /// WinUI shows one ContentDialog at a time and throws when a second one opens (a pairing link that
 /// arrives while Go to bar is open, say). Every dialog opens through here: one asked for while another
 /// is open is not shown, and <see cref="ShowAsync"/> answers None.
 /// </summary>
-internal static class DialogGate
+public static class DialogGate
 {
     private static ContentDialog? _open;
 

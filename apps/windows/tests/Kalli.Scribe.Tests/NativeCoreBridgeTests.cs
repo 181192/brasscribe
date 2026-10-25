@@ -24,7 +24,7 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
     private static NativeCoreBridge? Bridge()
     {
         if (Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }) return null;
-        var bridge = NativeCoreBridge.TryCreate();
+        var bridge = NativeCoreBridge.TryCreate(Target.Brass);
         Assert.NotNull(bridge); // the path is set: the library must load
         return bridge;
     }
@@ -288,7 +288,7 @@ public class NativeCoreBridgeTests(ITestOutputHelper log)
     {
         var bridge = Bridge();
         Skip.If(bridge is null, TestPaths.NoNativeCore);
-        Assert.True(CoreBridge.Create().IsNative);
+        Assert.True(CoreBridge.Create(Target.Brass).IsNative);
     }
 
     [Fact]

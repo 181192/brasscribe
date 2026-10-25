@@ -50,7 +50,7 @@ public class TalkingScoreVectorTests
     public void Native_core_matches_vector(string id, string lang)
     {
         Skip.If(Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
-        var core = Bridge.NativeCoreBridge.TryCreate();
+        var core = Bridge.NativeCoreBridge.TryCreate(Target.Brass);
         Assert.NotNull(core);
         var v = Vector(id, lang);
         Assert.Equal(v.Expected, core.Announce(v.Part, v.Bar, v.Event, v.Context, v.Settings));

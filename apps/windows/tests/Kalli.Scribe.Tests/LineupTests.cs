@@ -57,7 +57,7 @@ public class LineupTests
     public void The_core_names_the_quartet_parts_in_norwegian()
     {
         if (Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }) return;
-        var core = NativeCoreBridge.TryCreate()!;
+        var core = NativeCoreBridge.TryCreate(Target.Brass)!;
         Assert.Equal("1. kornett", core.PartNameNb("1st Cornet"));
         Assert.Equal("2. kornett", core.PartNameNb("2nd Cornet"));
         Assert.Equal("Althorn", core.PartNameNb("Tenor Horn"));
@@ -180,7 +180,7 @@ public class LineupTests
     public void The_core_arranges_a_quartet_with_one_player_on_each_part()
     {
         Skip.If(Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }, TestPaths.NoNativeCore);
-        var bridge = NativeCoreBridge.TryCreate();
+        var bridge = NativeCoreBridge.TryCreate(Target.Brass);
         Assert.NotNull(bridge);
         string json = CompositionJson.Serialize(Chorale());
         var composition = bridge.ParseComposition(json);

@@ -9,9 +9,11 @@ a C ABI (`scribe_ffi.dll`).
 services/Kalli.Scribe.Services/        no screens: score model, talking score, the core bridge,
                                        the engine client, capture contracts, the synth's output, library, settings
 services/Kalli.Scribe.Audio.Windows/   WASAPI capture and output, Media Foundation decoding
+services/Kalli.Scribe.WinUI/           Windows services every app uses: strings, announcements, file dialogs, settings,
+                                       credentials, the original's player (code-only WinUI)
 features/Kalli.Scribe.Score/           the score: alphaTab rendering and playback, the music stand's pages, review, export
 features/Kalli.Scribe.Play/            the flow's view models, from the start to the score, settings and export
-features/Kalli.Scribe.Controls/        the notation view (code-only WinUI controls)
+features/Kalli.Scribe.Controls/        the notation view and Settings › Appearance on the windows (code-only WinUI)
 products/brasscribe/Kalli.Brasscribe/  Brasscribe Play: WinUI 3 app (XAML, words, composition root)
 products/brasscribe/Kalli.Brasscribe.Catalogue/  its screen catalogue: the app as its own test host (MSTest)
 products/brasscribe/tools/gen_resw.py  writes its words (Strings/*/Resources.resw)

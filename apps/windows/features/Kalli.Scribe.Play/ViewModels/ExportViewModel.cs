@@ -245,7 +245,7 @@ public sealed partial class ExportViewModel(ExportService exports, IFileDialogs 
             foreach (var f in only) f.IsSelected = true;
             pdf.IsSelected = wasSelected;
 
-            string dir = Path.Combine(Path.GetTempPath(), "Brasscribe", "print");
+            string dir = Path.Combine(Path.GetTempPath(), "scribe-print");
             Directory.CreateDirectory(dir);
             PruneOldPrints(dir);
             foreach (var (format, part, fileName) in plan)

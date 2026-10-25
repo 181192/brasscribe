@@ -32,7 +32,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public SettingsViewModel(ISettingsStore store, IAnnouncer announcer, IStrings strings, IEngineDiscovery? discovery = null,
         ISecretVault? vault = null, Func<Uri, string?, IEngineClient>? clients = null, TimeProvider? time = null,
-        bool? systemDark = null)
+        HiddenPalette? palette = null)
     {
         _store = store;
         _announcer = announcer;
@@ -41,17 +41,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         _clients = clients ?? ((uri, token) => new EngineClient(new HttpClient(), uri) { Token = token });
         _time = time ?? TimeProvider.System;
         Language = store.Get(nameof(Language), "system");
-        // An earlier version's "pink" becomes Pink light or Pink dark by Windows' mode now (systemDark), and the unlock is
-        // written down, so an earlier version (which reads the new value as Match system) still lists Pink.
-        string? appearance = store.Get<string?>(AppearanceSetting.Key, null);
-        if (AppearanceSetting.Migrate(appearance, systemDark) is { } migrated)
-        {
-            store.Set(AppearanceSetting.PinkUnlockedKey, true);
-            store.Set(AppearanceSetting.Key, migrated);
-            appearance = migrated;
-        }
-        Appearance = AppearanceSetting.Parse(appearance);
-        _pinkUnlock = new PinkUnlock(store.Get(AppearanceSetting.PinkUnlockedKey, false) || AppearanceSetting.IsPink(Appearance), _time);
+        Palette = palette;
+        Appearance = AppearanceSetting.Parse(store.Get<string?>(AppearanceSetting.Key, null), palette);
+        _hiddenUnlock = new HiddenPaletteUnlock(
+            palette is not null && (store.Get(AppearanceSetting.HiddenUnlockedKey, false) || AppearanceSetting.IsHidden(Appearance)), _time);
         SingleKeyShortcuts = store.Get(nameof(SingleKeyShortcuts), true);
         ReduceMotion = store.Get(nameof(ReduceMotion), false);
         StandKeepControls = store.Get(nameof(StandKeepControls), false);
@@ -116,45 +109,48 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>"system", "en-US" or "nb-NO".</summary>
     [ObservableProperty] public partial string Language { get; set; }
-    /// <summary>Match system, Light, Dark or (once unlocked) Pink light or Pink dark, for this PC only (design/brands/brasscribe/system.md §10).</summary>
+    /// <summary>Match system, Light, Dark or (once unlocked) the hidden palette's light or dark, for this PC only.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
+    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesHiddenPalette))]
     public partial Appearance Appearance { get; set; }
 
     /// <summary>A Windows contrast theme is on (set by the app from AccessibilitySettings): it decides the colours.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesPink))]
+    [NotifyPropertyChangedFor(nameof(RootTheme), nameof(UsesHiddenPalette))]
     public partial bool HighContrast { get; set; }
 
     /// <summary>What every window root asks for: the choice, or Default while a contrast theme is on.</summary>
     public RootTheme RootTheme => AppearanceSetting.Resolve(Appearance, HighContrast);
 
-    /// <summary>The Pink palette is on the chrome now (chosen, and no contrast theme).</summary>
-    public bool UsesPink => AppearanceSetting.UsesPink(Appearance, HighContrast);
+    /// <summary>The app's hidden palette, or null for an app without one.</summary>
+    public HiddenPalette? Palette { get; }
 
-    private readonly PinkUnlock _pinkUnlock;
+    /// <summary>The hidden palette is on the chrome now (chosen, and no contrast theme).</summary>
+    public bool UsesHiddenPalette => AppearanceSetting.UsesHidden(Appearance, HighContrast);
 
-    /// <summary>Pink is in the Appearance list: unlocked on this PC, or chosen.</summary>
-    public bool PinkUnlocked => _pinkUnlock.IsUnlocked;
+    private readonly HiddenPaletteUnlock _hiddenUnlock;
 
-    /// <summary>The Appearance box's choices, in order (Pink light and Pink dark last once unlocked).</summary>
-    public IReadOnlyList<Appearance> AppearanceChoices => AppearanceSetting.Choices(PinkUnlocked);
+    /// <summary>The hidden palette is in the Appearance list: the app has one, and it is unlocked on this PC or chosen.</summary>
+    public bool HiddenPaletteUnlocked => _hiddenUnlock.IsUnlocked;
 
-    /// <summary>Raised once, when the version in About unlocks Pink.</summary>
-    public event EventHandler? PinkUnlockedNow;
+    /// <summary>The Appearance box's choices, in order (the hidden palette's two last once unlocked).</summary>
+    public IReadOnlyList<Appearance> AppearanceChoices => AppearanceSetting.Choices(HiddenPaletteUnlocked);
+
+    /// <summary>Raised once, when the version in About unlocks the hidden palette.</summary>
+    public event EventHandler? HiddenPaletteUnlockedNow;
 
     /// <summary>
-    /// The version in About was activated (a click, Space or Enter, Narrator): the fifth in a row unlocks Pink, keeps it
-    /// on this PC, and says so once. Nothing switches by itself.
+    /// The version in About was activated (a click, Space or Enter, Narrator): in an app with a hidden palette, the fifth
+    /// in a row unlocks it, keeps it on this PC, and says so once. Nothing switches by itself.
     /// </summary>
     public void ActivateVersion()
     {
-        if (!_pinkUnlock.Tap()) return;
-        _store.Set(AppearanceSetting.PinkUnlockedKey, true);
-        OnPropertyChanged(nameof(PinkUnlocked));
+        if (Palette is null || !_hiddenUnlock.Tap()) return;
+        _store.Set(AppearanceSetting.HiddenUnlockedKey, true);
+        OnPropertyChanged(nameof(HiddenPaletteUnlocked));
         OnPropertyChanged(nameof(AppearanceChoices));
-        _announcer.Announce(_s["Pink_Unlocked"], AnnouncementKind.Important);
-        PinkUnlockedNow?.Invoke(this, EventArgs.Empty);
+        _announcer.Announce(_s["HiddenPalette_Unlocked"], AnnouncementKind.Important);
+        HiddenPaletteUnlockedNow?.Invoke(this, EventArgs.Empty);
     }
 
     [ObservableProperty] public partial bool SingleKeyShortcuts { get; set; }
@@ -205,7 +201,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     partial void OnMatchCodeChanged(string? value) => OnPropertyChanged(nameof(MatchCodeSpoken));
 
     partial void OnLanguageChanged(string value) => _store.Set(nameof(Language), value);
-    partial void OnAppearanceChanged(Appearance value) => _store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(value));
+    partial void OnAppearanceChanged(Appearance value) => _store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(value, Palette));
     partial void OnSingleKeyShortcutsChanged(bool value) => _store.Set(nameof(SingleKeyShortcuts), value);
     partial void OnReduceMotionChanged(bool value) => _store.Set(nameof(ReduceMotion), value);
     partial void OnStandKeepControlsChanged(bool value) => _store.Set(nameof(StandKeepControls), value);

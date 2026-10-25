@@ -52,7 +52,7 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
-            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = s["Score_EditTitle"],
             Content = input,
             PrimaryButtonText = s["Score_SaveTitle"],
@@ -60,7 +60,7 @@ internal static class ScoreOptions
             DefaultButton = ContentDialogButton.Primary,
         };
         input.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = input.Text.Trim().Length > 0;
-        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.RenameLibraryItemAsync(item, input.Text);
+        if (await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.RenameLibraryItemAsync(item, input.Text);
     }
 
     private static async Task DeleteAsync(MainViewModel main, LibraryItem item, XamlRoot root)
@@ -69,14 +69,14 @@ internal static class ScoreOptions
         var dialog = new ContentDialog
         {
             XamlRoot = root,
-            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = s.Format("ScoreOptions_DeleteTitle", item.Title),
             Content = s[item.OnComputer ? "ScoreOptions_DeleteComputer" : "ScoreOptions_DeleteThisPc"],
             PrimaryButtonText = s["ScoreOptions_Delete"],
             CloseButtonText = s["Score_CancelTitle"],
             DefaultButton = ContentDialogButton.Close,
         };
-        if (await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.DeleteLibraryItemAsync(item);
+        if (await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog) == ContentDialogResult.Primary) await main.DeleteLibraryItemAsync(item);
     }
 
     private static string Glyph(string key) => (string)Application.Current.Resources[key];

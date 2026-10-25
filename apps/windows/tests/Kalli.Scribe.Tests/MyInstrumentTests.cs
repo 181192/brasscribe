@@ -157,7 +157,7 @@ public class MyInstrumentTests
         MainViewModel? main = null;
         main = new MainViewModel(
             new StartViewModel(new NoCapture(), new NoDecoder(), new NoDialogs(), said, strings, ui, Path.GetTempPath()),
-            new SourceKindViewModel(strings),
+            new SourceKindViewModel(strings, Target.Brass),
             new TranscriptionViewModel(() => main!.Engine, said, strings, ui),
             new ScoreViewModel(core, new PlayerViewModel(player, said, strings, ui), said, strings),
             new ExportViewModel(new ExportService(), new NoDialogs(), said, strings),
@@ -700,7 +700,7 @@ public class MyInstrumentTests
     public void The_core_answers_the_seat_questions()
     {
         if (Environment.GetEnvironmentVariable("SCRIBE_FFI_PATH") is not { Length: > 0 }) return;
-        var core = NativeCoreBridge.TryCreate()!;
+        var core = NativeCoreBridge.TryCreate(Target.Brass)!;
         var seats = core.Seats();
         Assert.Equal(19, seats.Count);
         Assert.Equal("2nd-cornet", seats[3].Id);

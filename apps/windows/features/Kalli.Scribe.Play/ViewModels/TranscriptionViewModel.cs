@@ -152,13 +152,27 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         RunJobAsync(source, kind.Label, kind.Profile, options ?? ArrangementOptions.Default, audioId: null);
 
     /// <summary>
+    /// Uploads the source, unless the computer already has it (<paramref name="audioId"/>), and runs the job the app
+    /// makes of the upload (<paramref name="job"/> takes its id): the profile's options are the app's.
+    /// </summary>
+    public Task RunAsync(SourceAudio source, string kindLabel, string profile, Func<string, JobCreate> job, string? audioId = null) =>
+        RunJobAsync(source, kindLabel, profile, job, options: null, audioId);
+
+    /// <summary>
     /// Arranges an earlier transcription again with other options (lineup, difficulty, key). The engine
     /// caches every stage by content, so only the arrangement and its exports run again.
     /// </summary>
     public Task RearrangeAsync(TranscriptionResult previous, ArrangementOptions options) =>
         RunJobAsync(previous.Source, previous.Profile ?? "orchestra-with-soloist", previous.Profile ?? "", options, previous.AudioId);
 
-    private async Task RunJobAsync(SourceAudio source, string kindLabel, string profile, ArrangementOptions options, string? audioId)
+    private Task RunJobAsync(SourceAudio source, string kindLabel, string profile, ArrangementOptions options, string? audioId) =>
+        RunJobAsync(source, kindLabel, profile, uploaded => new JobCreate(uploaded, profile, RenderAudio: true,
+            Title: Path.GetFileNameWithoutExtension(source.DisplayName),
+            Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose,
+            Seat: options.Seat, Reads: options.Reads, Lead: options.Lead), options, audioId);
+
+    private async Task RunJobAsync(SourceAudio source, string kindLabel, string profile, Func<string, JobCreate> request,
+        ArrangementOptions? options, string? audioId)
     {
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -196,10 +210,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
                 audioId = (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
             }
 
-            var job = await engine.CreateJobAsync(new JobCreate(audioId, profile, RenderAudio: true,
-                Title: Path.GetFileNameWithoutExtension(source.DisplayName),
-                Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose,
-                Seat: options.Seat, Reads: options.Reads, Lead: options.Lead), ct);
+            var job = await engine.CreateJobAsync(request(audioId), ct);
             _jobId = job.Id;
             estimator.Start();
 

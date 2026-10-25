@@ -43,8 +43,8 @@ public sealed class ScreenCatalogue
         Directory.CreateDirectory(Options.Out);
         var store = new InMemorySettings();
         var variants = Options.VariantsFor(scene);
-        store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(variants[0]));
-        store.Set(AppearanceSetting.PinkUnlockedKey, true);
+        store.Set(AppearanceSetting.Key, AppearanceSetting.Serialise(variants[0], Product.Pink));
+        store.Set(AppearanceSetting.HiddenUnlockedKey, true);
         store.Set(nameof(SettingsViewModel.ReduceMotion), true);
         string work = Path.Combine(Path.GetTempPath(), "brasscribe-catalogue", Guid.NewGuid().ToString("N"));
         long crashes = CrashLogLength();
@@ -87,7 +87,7 @@ public sealed class ScreenCatalogue
                     // whose Appearance box shows the choice).
                     if (scene != "settings" && !taken.Picture!.SameAs(first) && ImageDiff.Of(first, taken.Picture!).Changed > ImageDiff.FloorPixels)
                         Run.Findings.Add(new Finding(ShotName(scene, variants[0]), "contrast-theme",
-                            AppearanceSetting.Serialise(variant), "this Appearance choice changed the screen under a contrast theme"));
+                            AppearanceSetting.Serialise(variant, Product.Pink), "this Appearance choice changed the screen under a contrast theme"));
                 }
                 else
                 {
@@ -122,7 +122,7 @@ public sealed class ScreenCatalogue
     }
 
     /// <summary>The app's crash.log (App.WriteCrash): an exception nothing caught while this screen was open.</summary>
-    private static readonly string CrashLog = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play", "crash.log");
+    private static readonly string CrashLog = Product.Folder.CrashLog;
 
     private static long CrashLogLength() => File.Exists(CrashLog) ? new FileInfo(CrashLog).Length : 0;
 
@@ -165,7 +165,7 @@ public sealed class ScreenCatalogue
     }
 
     private static string ShotName(string scene, Appearance variant) =>
-        Options.Contrast ? $"{scene}--contrast" : $"{scene}--{Options.Prefix}{AppearanceSetting.Serialise(variant)}";
+        Options.Contrast ? $"{scene}--contrast" : $"{scene}--{Options.Prefix}{AppearanceSetting.Serialise(variant, Product.Pink)}";
 
     // ---- the window ----
 
@@ -268,18 +268,18 @@ public sealed class ScreenCatalogue
             var open = VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Select(p => p.Child).OfType<ContentDialog>().ToList();
             if (dialog is null)
             {
-                if (open.Count > 0 || Kalli.Brasscribe.Services.DialogGate.IsOpen) return "a dialog is still open";
+                if (open.Count > 0 || Kalli.Scribe.WinUI.DialogGate.IsOpen) return "a dialog is still open";
             }
             else if (open.Count != 1 || open[0].GetType() != dialog || !open[0].IsLoaded
-                     || !ReferenceEquals(Kalli.Brasscribe.Services.DialogGate.Opened, open[0]))
+                     || !ReferenceEquals(Kalli.Scribe.WinUI.DialogGate.Opened, open[0]))
                 return $"{dialog.Name} has not opened";
 
-            var theme = App.Theme!.Current;
+            var theme = App.Theme!.Requested;
             if (theme != ElementTheme.Default && (root.ActualTheme != theme || open.Any(d => d.ActualTheme != theme)))
                 return $"the theme is not {theme} yet";
             bool pink = Application.Current.Resources.MergedDictionaries
                 .Any(d => d.Source?.OriginalString.EndsWith("BrasscribePinkTheme.xaml", StringComparison.OrdinalIgnoreCase) == true);
-            if (pink != settings.UsesPink) return settings.UsesPink ? "the Pink palette is not merged yet" : "the Pink palette is still merged";
+            if (pink != settings.UsesHiddenPalette) return settings.UsesHiddenPalette ? "the Pink palette is not merged yet" : "the Pink palette is still merged";
             if (!NotationDrawn(root)) return "the notation is not drawn yet";
             return null;
         }
@@ -310,7 +310,7 @@ public sealed class ScreenCatalogue
         List<ContentDialog> Open() => VisualTreeHelper.GetOpenPopupsForXamlRoot(xamlRoot).Select(p => p.Child).OfType<ContentDialog>().ToList();
         foreach (var d in Open()) d.Hide();
         var clock = Stopwatch.StartNew();
-        while (Open().Count > 0 || Kalli.Brasscribe.Services.DialogGate.IsOpen)
+        while (Open().Count > 0 || Kalli.Scribe.WinUI.DialogGate.IsOpen)
         {
             if (clock.Elapsed > TimeSpan.FromSeconds(10)) return false;
             await Task.Delay(50);
@@ -339,9 +339,9 @@ public sealed class ScreenCatalogue
     private static void CheckLanguage()
     {
         if (Options.Run != "nb" || Run.Findings.Any(f => f.Check == "language")) return;
-        string said = App.Strings["Pink_Unlocked"];
+        string said = App.Strings["HiddenPalette_Unlocked"];
         if (said != "🎺 Rosa låst opp")
-            Run.Findings.Add(new Finding("all", "language", "App.Strings[\"Pink_Unlocked\"]",
+            Run.Findings.Add(new Finding("all", "language", "App.Strings[\"HiddenPalette_Unlocked\"]",
                 $"\"{said}\" in the bokmål run (languages: {string.Join(", ", Microsoft.Windows.Globalization.ApplicationLanguages.Languages)}; " +
                 $"override: {Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride})"));
     }
@@ -436,7 +436,7 @@ public sealed class ScreenCatalogue
 
         public static Appearance[] Variants { get; } =
             (Env("VARIANTS") ?? "light,dark").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(AppearanceSetting.Parse).ToArray();
+                .Select(v => AppearanceSetting.Parse(v, Product.Pink)).ToArray();
 
         /// <summary>Screens taken in Pink (SCRIBE_CATALOGUE_PINK_SCENES); all when not set.</summary>
         private static readonly string[]? PinkScenes = Env("PINK_SCENES")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -446,7 +446,7 @@ public sealed class ScreenCatalogue
         public static Appearance[] VariantsFor(string scene) =>
             Contrast || PinkScenes is null || PinkScenes.Contains(scene)
                 ? Variants
-                : Variants.Where(v => !AppearanceSetting.IsPink(v)).DefaultIfEmpty(Appearance.Light).ToArray();
+                : Variants.Where(v => !AppearanceSetting.IsHidden(v)).DefaultIfEmpty(Appearance.Light).ToArray();
 
         public static string? Score { get; } = Env("SCORE");
 

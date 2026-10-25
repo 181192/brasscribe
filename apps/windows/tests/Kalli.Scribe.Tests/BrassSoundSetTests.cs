@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Xunit.Abstractions;
 

@@ -30,14 +30,14 @@ public sealed partial class TranscribingPage : Page, IScreenPage
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
-            RequestedTheme = Kalli.Brasscribe.Services.ThemeController.ForDialogs,
+            RequestedTheme = Kalli.Scribe.Controls.ThemeController.ForDialogs,
             Title = strings["CancelDialog_Title"],
             Content = strings["CancelDialog_Content"],
             PrimaryButtonText = strings["CancelDialog_Stop"],
             CloseButtonText = strings["CancelDialog_Keep"],
             DefaultButton = ContentDialogButton.Close,
         };
-        var result = await Kalli.Brasscribe.Services.DialogGate.ShowAsync(dialog);
+        var result = await Kalli.Scribe.WinUI.DialogGate.ShowAsync(dialog);
         if (result == ContentDialogResult.Primary) await ViewModel.CancelCommand.ExecuteAsync(null);
         else
         {

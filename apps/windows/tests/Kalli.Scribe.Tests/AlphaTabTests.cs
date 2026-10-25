@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using AlphaTab.Core.EcmaScript;
 using AlphaTab.Importer;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Kalli.Scribe.Review;
 using Kalli.Scribe.TalkingScore;

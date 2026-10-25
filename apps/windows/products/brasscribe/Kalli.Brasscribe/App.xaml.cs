@@ -2,10 +2,12 @@ using Kalli.Scribe.Audio.Windows;
 using Kalli.Scribe.Bridge;
 using Kalli.Scribe.Engine;
 using Kalli.Scribe.Export;
+using Kalli.Scribe.Playback.Brass;
 using Kalli.Scribe.Playback;
 using Kalli.Scribe.Services;
 using Kalli.Scribe.ViewModels;
-using Kalli.Brasscribe.Services;
+using Kalli.Scribe.Controls;
+using Kalli.Scribe.WinUI;
 using Microsoft.UI.Xaml;
 
 namespace Kalli.Brasscribe;
@@ -24,7 +26,7 @@ public partial class App : Application
             WriteCrash(e.Exception);
             e.SetObserved();
         };
-        var settings = new JsonSettingsStore();
+        var settings = new JsonSettingsStore(Product.Folder);
         string language = Option("--lang") ?? settings.Get("Language", "system");
         if (language != "system")
         {
@@ -67,9 +69,8 @@ public partial class App : Application
     {
         try
         {
-            var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Brasscribe", "Play");
-            Directory.CreateDirectory(dir);
-            File.AppendAllText(Path.Combine(dir, "crash.log"), $"{DateTimeOffset.Now:O} {e}{Environment.NewLine}");
+            Directory.CreateDirectory(Product.Folder.Root);
+            File.AppendAllText(Product.Folder.CrashLog, $"{DateTimeOffset.Now:O} {e}{Environment.NewLine}");
         }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
@@ -93,9 +94,6 @@ public partial class App : Application
     /// <summary>Settings › Display › Appearance on every window (design/brands/brasscribe/system.md §10).</summary>
     internal ThemeController? Theme { get; private set; }
 
-    /// <summary>Other launches with a pairing link are sent to the running app under this key.</summary>
-    private const string InstanceKey = "BrasscribePlay";
-
     /// <summary>
     /// The screen catalogue (products/brasscribe/Kalli.Brasscribe.Catalogue) takes over the start here when the app is built as its
     /// test host (-p:ScribeCatalogue=true); in the app itself this has no body and is compiled away.
@@ -115,7 +113,7 @@ public partial class App : Application
 
         var queue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
         // --theme light|dark|pink-light|pink-dark: a fixed theme for screenshots; otherwise the Appearance setting decides.
-        var (main, settingsVm) = Compose(Settings, JsonSettingsStore.WorkDirectory, Option("--theme"));
+        var (main, settingsVm) = Compose(Settings, Product.Folder.Work, Option("--theme"));
         var window = _window!;
         window.HeartbeatEnabled = !preview;
         window.Activate();
@@ -161,7 +159,7 @@ public partial class App : Application
         var ui = new DispatcherQueueDispatcher(queue);
         var announcer = new UiaAnnouncer(() => window?.AnnouncerHost, queue);
         var dialogs = new WinFileDialogs(() => window is null ? 0 : WinRT.Interop.WindowNative.GetWindowHandle(window));
-        var core = CoreBridge.Create();
+        var core = CoreBridge.Create(Product.Target);
 
         var synthOut = new BufferedSynthOutput();
         var player = new AlphaTabScorePlayer(synthOut);
@@ -181,8 +179,8 @@ public partial class App : Application
         // Heartbeats and pairing share one client with short timeouts; the credential is in the Credential Locker.
         var shortHttp = new HttpClient(new SocketsHttpHandler { ConnectTimeout = TimeSpan.FromSeconds(4) }) { Timeout = TimeSpan.FromSeconds(15) };
         // RequestedTheme is never set by the app, so it is Windows' app mode at start-up.
-        var settingsVm = new SettingsViewModel(settings, announcer, Strings, vault: CredentialLockerVault.Create(),
-            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, systemDark: RequestedTheme == ApplicationTheme.Dark);
+        var settingsVm = new SettingsViewModel(settings, announcer, Strings, vault: CredentialLockerVault.Create(Product.Name, Product.Folder),
+            clients: (uri, token) => new EngineClient(shortHttp, uri) { Token = token }, palette: Product.Pink);
 
         // No overall timeout (the event stream stays open for the whole job), but a LAN address that
         // drops packets must fail within seconds rather than hang on connect.
@@ -195,7 +193,7 @@ public partial class App : Application
         MainViewModel? main = null;
         main = new MainViewModel(
             new StartViewModel(new WasapiCaptureService(), new MediaFoundationDecoder(), dialogs, announcer, Strings, ui, workDirectory),
-            new SourceKindViewModel(Strings),
+            new SourceKindViewModel(Strings, Product.Target),
             new TranscriptionViewModel(() => main!.Engine, announcer, Strings, ui),
             score,
             new ExportViewModel(new ExportService(), dialogs, announcer, Strings, new ShellPdfPrinter()),
@@ -249,7 +247,7 @@ public partial class App : Application
     {
         try
         {
-            var keyed = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey(InstanceKey);
+            var keyed = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey(Product.InstanceKey);
             if (keyed.IsCurrent || pairingLink is null) return false;
             await keyed.RedirectActivationToAsync(Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs());
             Environment.Exit(0);
