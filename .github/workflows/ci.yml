@@ -82,7 +82,7 @@ jobs:
         with:
           filters: |
             workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
-            python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Brasscribe.Play.Core.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
+            python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
             studio: ['studio/**', 'docs/shared/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/scribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
             android: ['apps/android/*', 'apps/android/buildSrc/**', 'apps/android/gradle/**', 'apps/android/scripts/**', 'apps/android/services/**', 'apps/android/features/**', 'apps/android/design/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/shared/accessibility/talking-score-vectors.json']
@@ -242,7 +242,7 @@ jobs:
       - name: Play for Windows core logic
         env:
           SCRIBE_FFI_PATH: ${{ github.workspace }}/core/target/release/libscribe_ffi.so
-        run: dotnet test apps/windows/tests/Brasscribe.Play.Core.Tests
+        run: dotnet test apps/windows/tests/Kalli.Scribe.Tests
 
       - name: The Windows screen catalogues' picture checks
         run: dotnet test apps/windows/tools/ScreenCheck.Tests

@@ -9,7 +9,7 @@ note the step number and what you saw, and stop at the first crash.
 ## 0. Build
 
 1. In `apps/windows`, build the Rust core as the Windows CI job does, then run
-   `dotnet build src/Brasscribe.Play -c Debug -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=<path to scribe_ffi.dll>"`.
+   `dotnet build products/brasscribe/Kalli.Brasscribe -c Debug -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=<path to scribe_ffi.dll>"`.
    It must compile with no XAML errors. The XAML compiler runs only on Windows, and these files have
    never been compiled there:
    - `Views/ChooseOutputPage.xaml`: "Who played this?", the "Your part" lines and the tune choice
@@ -20,7 +20,7 @@ note the step number and what you saw, and stop at the first crash.
    - `Dialogs/SettingsDialog.xaml`: Appearance, the instrument row and the About version button
    - `Dialogs/ExportDialog.xaml`, `Themes/Styles.xaml`
    - `design/brands/brasscribe/dist/windows/BrasscribePinkTheme.xaml`: the Pink palette, linked as a Page
-2. `dotnet test tests/Brasscribe.Play.Core.Tests` passes with the native core, and so do the CI job's
+2. `dotnet test tests/Kalli.Scribe.Tests` passes with the native core, and so do the CI job's
    smoke test and screen catalogue (`tools/Screenshots/catalogue.ps1`, with Axe.Windows through `tools/ScreenCheck play`).
 3. Start the app with a fresh profile: delete `%LOCALAPPDATA%\Brasscribe\Play\settings.json` first.
 

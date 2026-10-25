@@ -1,0 +1,72 @@
+using System.Collections.ObjectModel;
+using Kalli.Scribe.Services;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace Kalli.Scribe.ViewModels;
+
+/// <summary>What went wrong, for the error screen.</summary>
+public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable, UpdateApp, UpdateBandroom }
+
+/// <summary>
+/// An error with a way forward (design/brands/brasscribe/system.md §5, Errors with recovery): the title says what
+/// happened, the reason why, numbered steps what to do, and the buttons are the way out, the most
+/// likely fix first. The recording is never lost, and the screen says so. Commands and codes for the
+/// band's tech person sit behind a "Details" disclosure, never in the body.
+/// </summary>
+public sealed partial class ErrorViewModel(IStrings s) : ObservableObject
+{
+    [ObservableProperty] public partial ErrorKind Kind { get; set; }
+    [ObservableProperty] public partial string Title { get; set; } = "";
+    [ObservableProperty] public partial string Reason { get; set; } = "";
+    [ObservableProperty] public partial string PrimaryLabel { get; set; } = "";
+    [ObservableProperty] public partial string SecondaryLabel { get; set; } = "";
+    [ObservableProperty] public partial string DetailsHeading { get; set; } = "";
+    [ObservableProperty] public partial string Details { get; set; } = "";
+
+    /// <summary>"Get the update" when the way forward is a newer app or a newer Brasscribe on the computer; else empty.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLink))]
+    public partial string LinkLabel { get; set; } = "";
+    [ObservableProperty] public partial string LinkHelp { get; set; } = "";
+
+    /// <summary>The page <see cref="LinkLabel"/> opens: where the newest of both is.</summary>
+    [ObservableProperty] public partial Uri? LinkUri { get; set; }
+
+    public bool HasLink => LinkLabel.Length > 0;
+
+    public ObservableCollection<string> Steps { get; } = [];
+
+    /// <summary>The most likely fix (Try again).</summary>
+    public event EventHandler? Retry;
+
+    /// <summary>The other way out (Choose another recording).</summary>
+    public event EventHandler? Alternative;
+
+    public void Show(ErrorKind kind, string? technical)
+    {
+        Kind = kind;
+        string k = kind.ToString();
+        Title = s[$"Error_{k}_Title"];
+        Reason = s[$"Error_{k}_Reason"];
+        Steps.Clear();
+        foreach (var n in new[] { 1, 2, 3 })
+            if (s[$"Error_{k}_Step{n}"] is { Length: > 0 } step && step != $"Error_{k}_Step{n}") Steps.Add($"{n}. {step}");
+        PrimaryLabel = s["Error_TryAgain"];
+        SecondaryLabel = s["Error_ChooseAnother"];
+        bool update = kind is ErrorKind.UpdateApp or ErrorKind.UpdateBandroom;
+        LinkUri = update ? Engine.ConnectionMonitor.LatestRelease : null;
+        LinkHelp = update ? s["Error_GetUpdate_Help"] : "";
+        LinkLabel = update ? s["Error_GetUpdate"] : "";
+        DetailsHeading = s["Error_DetailsHeading"];
+        Details = kind == ErrorKind.ComputerUnreachable
+            ? s.Format("Error_ComputerUnreachable_Details", technical ?? "")
+            : technical ?? "";
+    }
+
+    [RelayCommand]
+    private void TryAgain() => Retry?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private void ChooseAnother() => Alternative?.Invoke(this, EventArgs.Empty);
+}

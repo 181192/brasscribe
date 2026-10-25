@@ -1,0 +1,572 @@
+using System.Collections.ObjectModel;
+using Kalli.Scribe.Scores;
+using Kalli.Scribe.Services;
+using Kalli.Scribe.TalkingScore;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace Kalli.Scribe.ViewModels;
+
+/// <summary>One note Brasscribe wasn't sure about, as the review list shows it.</summary>
+public sealed partial class ReviewItem : ObservableObject
+{
+    public ReviewItem(int part, string partName, int barIndex, int eventIndex, int barNumber, TsEvent ev, string label, string listName,
+        bool isMine = false, bool isAccompaniment = false)
+    {
+        IsMine = isMine;
+        IsAccompaniment = isAccompaniment;
+        Part = part;
+        PartName = partName;
+        BarIndex = barIndex;
+        EventIndex = eventIndex;
+        BarNumber = barNumber;
+        Event = ev;
+        Label = label;
+        ListName = listName;
+    }
+
+    public int Part { get; }
+    public string PartName { get; }
+    public int BarIndex { get; }
+    public int EventIndex { get; }
+    public int BarNumber { get; }
+    public TsEvent Event { get; }
+    /// <summary>"G, half note".</summary>
+    public string Label { get; }
+    /// <summary>"Bar 14 · G", with the level for screen readers in <see cref="AccessibleName"/>.</summary>
+    public string ListName { get; }
+    /// <summary>In the player's own part.</summary>
+    public bool IsMine { get; }
+    /// <summary>In an accompaniment layer (drums, orchestra, strings): checked last.</summary>
+    public bool IsAccompaniment { get; }
+    public bool IsVeryUncertain => Event.IsVeryUncertain;
+    /// <summary>A review group of several notes (Composition.review): one item stands for all of them.</summary>
+    public bool IsGroup => Event.ReviewGroup >= 0 && Event.ReviewNotes > 1;
+    public int NoteCount => Event.ReviewGroup >= 0 ? Math.Max(1, Event.ReviewNotes) : 1;
+    /// <summary>The bar index of the item's last note (the group's range on the staff).</summary>
+    public int EndBarIndex => Event.ReviewGroup >= 0 && Event.ReviewEndBar >= BarIndex ? Event.ReviewEndBar : BarIndex;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOpen))]
+    public partial bool IsKept { get; set; }
+
+    [ObservableProperty] public partial bool IsCurrent { get; set; }
+    [ObservableProperty] public partial string AccessibleName { get; set; } = "";
+
+    public bool IsOpen => !IsKept;
+}
+
+/// <summary>A part heading in the review list with its notes.</summary>
+public sealed record ReviewGroup(string PartName, IReadOnlyList<ReviewItem> Items);
+
+/// <summary>Which notes the review goes through: the player's own part first, or every part.</summary>
+public enum ReviewScope { MyPart, AllParts }
+
+/// <summary>What one transcriber heard at the note: "SwiftF0 · Same, G" or "Basic Pitch · A".</summary>
+public sealed record EvidenceRow(string Name, string Heard, bool Agrees)
+{
+    public bool Differs => !Agrees;
+    public string AccessibleName => $"{Name}: {Heard}";
+}
+
+/// <summary>A pitch to change the note to in "Change note…", as a shift from the written note.</summary>
+public sealed record NoteChoice(string Label, int Shift);
+
+/// <summary>
+/// "Check the notes": one uncertain note at a time (design/brands/brasscribe/system.md §5, Review list). The note is
+/// shown with its bar, part, name and duration, the level in words and what else it could be; the
+/// player listens to the bar, keeps the note (the "?" goes) or skips it. "Finish later" asks first,
+/// because the notes left keep their marks; the score view offers "Check them" to come back.
+/// Triage (usability review 2, P1-10): it starts in the player's own part with the very uncertain
+/// notes first, the count follows the chosen scope, and accompaniment layers come last. A kept note
+/// is written to the Composition, so it stays kept when the score is arranged again.
+/// </summary>
+public sealed partial class ReviewViewModel : ObservableObject
+{
+    private readonly ScoreViewModel score;
+    private readonly IAnnouncer announcer;
+    private readonly IStrings s;
+    private List<ReviewItem> _all = [];
+
+    public ReviewViewModel(ScoreViewModel score, IAnnouncer announcer, IStrings s)
+    {
+        this.score = score;
+        this.announcer = announcer;
+        this.s = s;
+        score.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ScoreViewModel.IsListeningToBar))
+            {
+                OnPropertyChanged(nameof(IsListening));
+                OnPropertyChanged(nameof(ListenLabel));
+            }
+        };
+    }
+
+    /// <summary>The bar is playing: the Listen button says "Stop" (same place, same size).</summary>
+    public bool IsListening => score.IsListeningToBar;
+
+    /// <summary>"Listen to this bar", or "Stop" while it plays (also the button's accessible name).</summary>
+    public string ListenLabel => s[IsListening ? "Review_Stop" : "Review_Listen"];
+
+    public ObservableCollection<ReviewGroup> Groups { get; } = [];
+
+    /// <summary>The notes in the chosen scope, in checking order.</summary>
+    public IReadOnlyList<ReviewItem> Items { get; private set; } = [];
+
+    /// <summary>Every uncertain note of the score.</summary>
+    public IReadOnlyList<ReviewItem> AllItems => _all;
+
+    /// <summary>With many marks: "Most of these are probably right. Start with the 12 very unsure ones."</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLead))]
+    public partial string LeadText { get; set; } = "";
+
+    public bool HasLead => LeadText.Length > 0;
+
+    /// <summary>"Keep the rest of this bar (3)": the other open notes in the current note's bar and part.</summary>
+    [ObservableProperty] public partial string KeepBarText { get; set; } = "";
+    [ObservableProperty] public partial bool CanKeepBar { get; set; }
+
+    /// <summary>"Check your part first: 12 notes in Solo Cornet, 4 very unsure".</summary>
+    [ObservableProperty] public partial string TriageText { get; set; } = "";
+
+    /// <summary>"Your part (12)" and "All parts (215)", the scope choices.</summary>
+    [ObservableProperty] public partial string MyPartScopeLabel { get; set; } = "";
+    [ObservableProperty] public partial string AllPartsScopeLabel { get; set; } = "";
+    [ObservableProperty] public partial bool HasMyPart { get; set; }
+    [ObservableProperty] public partial ReviewScope Scope { get; set; } = ReviewScope.MyPart;
+
+    /// <summary>
+    /// The player's part was arranged from the harmony, so it has no notes of theirs to check: "Your part is
+    /// arranged" stands in place of an empty Yours list, until "Check the other parts".
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsList))]
+    public partial bool ShowsArrangedNotice { get; set; }
+
+    public bool ShowsList => !ShowsArrangedNotice;
+
+    /// <summary>"Your part is arranged", or "Your part is empty" when nothing in the recording gave it notes.</summary>
+    [ObservableProperty] public partial string ArrangedTitle { get; set; } = "";
+
+    /// <summary>"Nobody played the Euphonium part on its own in the recording, so …" (or why it is empty).</summary>
+    [ObservableProperty] public partial string ArrangedBody { get; set; } = "";
+
+    /// <summary>"Show my part": the score, on the player's part.</summary>
+    public event EventHandler? ShowMyPartRequested;
+
+    /// <summary>"Check the other parts": the list of every part's notes.</summary>
+    [RelayCommand]
+    private void CheckOtherParts()
+    {
+        ShowsArrangedNotice = false;
+        if (Scope != ReviewScope.AllParts) Scope = ReviewScope.AllParts;
+    }
+
+    [RelayCommand]
+    private void ShowMyPart() => ShowMyPartRequested?.Invoke(this, EventArgs.Empty);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCurrent))]
+    public partial ReviewItem? Current { get; set; }
+
+    public bool HasCurrent => Current is not null;
+
+    [ObservableProperty] public partial string Heading { get; set; } = "";
+    [ObservableProperty] public partial string Overline { get; set; } = "";
+    [ObservableProperty] public partial string NoteLine { get; set; } = "";
+    [ObservableProperty] public partial string LevelLine { get; set; } = "";
+    [ObservableProperty] public partial string CountHeading { get; set; } = "";
+    [ObservableProperty] public partial string FinishLaterText { get; set; } = "";
+
+    /// <summary>True while the "Finish later?" confirmation is shown.</summary>
+    [ObservableProperty] public partial bool IsConfirmingFinish { get; set; }
+
+    [ObservableProperty] public partial string ConfirmText { get; set; } = "";
+
+    /// <summary>The note has evidence: how sure Brasscribe is and what each transcriber heard.</summary>
+    [ObservableProperty] public partial bool HasEvidence { get; set; }
+    [ObservableProperty] public partial double ConfidencePercent { get; set; }
+    [ObservableProperty] public partial string ConfidenceText { get; set; } = "";
+    public ObservableCollection<EvidenceRow> Heard { get; } = [];
+
+    /// <summary>Notes not yet kept, in every part.</summary>
+    public int Left => _all.Count(i => !i.IsKept);
+
+    /// <summary>Raised when the player is done here (all kept, or finishing later confirmed).</summary>
+    public event EventHandler? Finished;
+
+    /// <summary>Raised when <see cref="Current"/> changes, so the view can draw its bars.</summary>
+    public event EventHandler<ReviewItem>? CurrentChanged;
+
+    /// <summary>Collects the uncertain notes of the loaded score and starts in the player's own part.</summary>
+    public void Load(ReviewScope? scope = null)
+    {
+        var all = new List<ReviewItem>();
+        int mine = score.MyPartIndex;
+        if (score.Document is { } doc)
+        {
+            var settings = new TalkingScoreSettings(score.Language, score.ConcertPitch ? PitchMode.Concert : PitchMode.Written);
+            for (int p = 0; p < doc.Parts.Count; p++)
+            {
+                var part = doc.Parts[p];
+                string partName = settings.Nb ? part.NameNb ?? part.Name : part.Name;
+                for (int b = 0; b < part.Bars.Count; b++)
+                    for (int e = 0; e < part.Bars[b].Events.Count; e++)
+                    {
+                        var ev = part.Bars[b].Events[e];
+                        if (!ev.IsUncertain || ev.Tie is { Stop: true }) continue;
+                        string label = Announcer.NoteLabel(ev, settings);
+                        string pitch = label.Split(',')[0];
+                        var item = new ReviewItem(p, partName, b, e, part.Bars[b].Number, ev, label, s.Format("Review_ListItem", part.Bars[b].Number, pitch),
+                            p == mine, IsAccompaniment(part, ev));
+                        item.AccessibleName = s.Format(item.IsVeryUncertain ? "Review_ListItemVeryUncertain" : "Review_ListItemUncertain",
+                            part.Bars[b].Number, pitch);
+                        all.Add(item);
+                    }
+            }
+        }
+        _all = all;
+        var myItems = all.Where(i => i.IsMine).ToList();
+        HasMyPart = myItems.Count > 0;
+        MyPartScopeLabel = s.Format("Review_ScopeMine", myItems.Count);
+        AllPartsScopeLabel = s.Format("Review_ScopeAll", all.Count);
+        TriageText = HasMyPart ? s.Format("Review_Triage", myItems.Count, myItems[0].PartName, myItems.Count(i => i.IsVeryUncertain)) : "";
+        IsConfirmingFinish = false;
+        ShowsArrangedNotice = !HasMyPart && all.Count > 0 && scope is null && score.MyPartSourceIsArranged;
+        bool empty = score.MyPartSourceIsEmpty;
+        ArrangedTitle = ShowsArrangedNotice ? s[empty ? "Review_EmptyTitle" : "Review_ArrangedTitle"] : "";
+        ArrangedBody = ShowsArrangedNotice ? s.Format(empty ? "Review_EmptyBody" : "Review_ArrangedBody", score.MyPartLabel) : "";
+        // Said once, politely, as the review opens (WCAG 4.1.3).
+        if (ShowsArrangedNotice) announcer.Announce(ArrangedTitle + ". " + ArrangedBody);
+        var wanted = scope ?? (HasMyPart ? ReviewScope.MyPart : ReviewScope.AllParts);
+        if (Scope != wanted) Scope = wanted; // applies the scope
+        else Apply();
+    }
+
+    partial void OnScopeChanged(ReviewScope value) => Apply();
+
+    /// <summary>More marks than this and the review leads with "Most of these are probably right" (usability review 3, P1-A).</summary>
+    public const int ManyMarks = 50;
+
+    /// <summary>
+    /// Order: your part, the other brass parts, accompaniment last; in each part the very unsure
+    /// notes first, then the rest by bar.
+    /// </summary>
+    private void Apply()
+    {
+        var inScope = Scope == ReviewScope.MyPart && HasMyPart ? _all.Where(i => i.IsMine) : _all;
+        var ordered = inScope
+            .OrderBy(i => i.IsMine ? 0 : i.IsAccompaniment ? 2 : 1)
+            .ThenBy(i => i.Part)
+            .ThenBy(i => i.IsVeryUncertain ? 0 : 1)
+            .ThenBy(i => i.BarIndex).ThenBy(i => i.EventIndex)
+            .ToList();
+        int veryUnsure = ordered.Count(i => i.IsVeryUncertain);
+        // When most places are very unsure, "most of these are probably right" would not be true.
+        LeadText = ordered.Count <= ManyMarks || veryUnsure == 0 ? ""
+            : veryUnsure * 2 > ordered.Count ? s.Format(veryUnsure == 1 ? "Review_LeadStartOne" : "Review_LeadStart", veryUnsure)
+            : s.Format(veryUnsure == 1 ? "Review_LeadManyOne" : "Review_LeadMany", veryUnsure);
+        Items = ordered;
+        Groups.Clear();
+        string accompaniment = s["Review_Accompaniment"].ToUpperInvariant();
+        foreach (var g in ordered.GroupBy(i => i.IsAccompaniment ? accompaniment : i.PartName.ToUpperInvariant()))
+            Groups.Add(new ReviewGroup(g.Key, g.ToList()));
+        CountHeading = s.Format(ordered.Count == 1 ? "Review_CountOne" : "Review_Count", ordered.Count).ToUpperInvariant();
+        OnPropertyChanged(nameof(Items));
+        Select(ordered.FirstOrDefault(i => !i.IsKept) ?? ordered.FirstOrDefault());
+    }
+
+    /// <summary>Accompaniment: drum parts, and notes that come only from the backing layers (orchestra, strings, hits, drums).</summary>
+    private static bool IsAccompaniment(TsPart part, TsEvent ev) =>
+        part.Percussion || ev.Kind == EventKind.Unpitched
+        || ev.Sources.Count > 0 && ev.Sources.All(src => src is "strings" or "drums" or "hits" or "orchestra" or "harmony");
+
+    public void Select(ReviewItem? item)
+    {
+        score.StopListening(announce: false);
+        if (Current is { } old) old.IsCurrent = false;
+        Current = item;
+        NotifyChange();
+        UpdateTexts();
+        if (item is null) return;
+        item.IsCurrent = true;
+        score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
+        CurrentChanged?.Invoke(this, item);
+    }
+
+    [RelayCommand]
+    private void Keep()
+    {
+        if (Current is not { } item) return;
+        KeepItem(item);
+        announcer.Announce(s.Format("Review_Kept", item.BarNumber, Left));
+        MoveNext(item);
+    }
+
+    /// <summary>Keeps one item: a whole review group, or one note when the score has no groups.</summary>
+    private void KeepItem(ReviewItem item)
+    {
+        score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
+        if (item.Event.ReviewGroup >= 0) score.KeepGroup(item.Part, item.Event);
+        else
+        {
+            score.KeepCurrent();
+            score.KeepInComposition(item.Event);
+        }
+        item.IsKept = true;
+    }
+
+    /// <summary>Keeps every open note in the current note's bar (the note itself included) and goes on.</summary>
+    [RelayCommand]
+    private void KeepRestOfBar()
+    {
+        if (Current is not { } item) return;
+        var bar = _all.Where(i => !i.IsKept && i.Part == item.Part && i.BarIndex == item.BarIndex).ToList();
+        foreach (var i in bar) KeepItem(i);
+        announcer.Announce(s.Format("Review_KeptBar", bar.Count, item.BarNumber, Left));
+        MoveNext(item);
+    }
+
+    [RelayCommand]
+    private void Skip()
+    {
+        if (Current is not { } item) return;
+        MoveNext(item);
+    }
+
+    /// <summary>
+    /// "Listen to this bar", or "Stop" while it plays. A note changed here plays from the score, so the
+    /// player hears the new note; otherwise the recording plays when it is loaded.
+    /// </summary>
+    [RelayCommand]
+    private void Listen()
+    {
+        if (score.IsListeningToBar)
+        {
+            score.StopListening();
+            return;
+        }
+        if (Current is not { } item) return;
+        score.FocusEvent(item.Part, item.BarIndex, item.EventIndex);
+        if (IsChanged) score.ListenToScoreBar();
+        else score.ListenToBarCommand.Execute(null);
+    }
+
+    /// <summary>
+    /// Changed notes by <see cref="ChangeKey"/>, for "Changed to D5 (was C5)" and Undo: the score's own, so
+    /// they are kept with it and come back when it is opened again.
+    /// </summary>
+    private Dictionary<string, ReviewChange> _changes => score.ReviewChanges;
+
+    private void PersistChanges() => score.PersistReviewChanges?.Invoke(_changes);
+
+    /// <summary>The same note across reloads: its Composition note, else its place in the MusicXML.</summary>
+    private static string ChangeKey(ReviewItem item) =>
+        item.Event.CompositionVoiceId is { } voice && item.Event.CompositionNoteStart is { } start
+            ? $"{voice}@{start}"
+            : $"{item.Part}#{item.Event.MusicXmlNoteIndex}";
+
+    /// <summary>The current note was changed in this review (it stays open until Keep).</summary>
+    public bool IsChanged => Current is { } item && _changes.ContainsKey(ChangeKey(item));
+
+    /// <summary>"Changed to D5 (was C5)" on the card while the current note is changed.</summary>
+    public string ChangedText => Current is { } item && _changes.TryGetValue(ChangeKey(item), out var c)
+        ? s.Format("Review_ChangedFrom", PitchNameAt(item, 0, octave: true), WasName(item, c)) : "";
+
+    /// <summary>
+    /// What Brasscribe wrote, as the card named it while the part still writes the note there; after another
+    /// band or key, named again from the note as it is written now.
+    /// </summary>
+    private string WasName(ReviewItem item, ReviewChange c) =>
+        c.WrittenMidi is { } w && item.Event.Written is { } now && Announcer.Midi(now) - c.Shift == w
+            ? c.Was : PitchNameAt(item, -c.Shift, octave: true);
+
+    /// <summary>
+    /// "Change note…" → Save: moves the note by <paramref name="shift"/> semitones, saves the score and
+    /// stays on the note, so the player can listen, change it again or undo. The note keeps its "?"
+    /// until Keep. Returns false for no change or when the note could not be changed.
+    /// </summary>
+    public bool ChangeNote(int shift)
+    {
+        if (shift == 0 || Current is not { } selected) return false;
+        string key = ChangeKey(selected);
+        var before = _changes.GetValueOrDefault(key);
+        string was = before is not null ? WasName(selected, before) : PitchNameAt(selected, 0, octave: true);
+        int? writtenMidi = before is not null ? before.WrittenMidi : selected.Event.Written is { } w ? Announcer.Midi(w) : null;
+        if (!Move(selected, shift)) return false;
+        int total = (before?.Shift ?? 0) + shift;
+        if (total == 0) _changes.Remove(key);
+        else _changes[key] = new ReviewChange(was, total, writtenMidi);
+        PersistChanges();
+        NotifyChange();
+        announcer.Announce(total == 0 ? s.Format("Review_ChangeUndone", was) : ChangedText);
+        return true;
+    }
+
+    /// <summary>"Undo change": the note goes back to what Brasscribe wrote, and stays open.</summary>
+    [RelayCommand]
+    private void UndoChange()
+    {
+        if (Current is not { } selected || !_changes.TryGetValue(ChangeKey(selected), out var change)) return;
+        if (!Move(selected, -change.Shift)) return;
+        string was = WasName(selected, change);
+        _changes.Remove(ChangeKey(selected));
+        PersistChanges();
+        NotifyChange();
+        announcer.Announce(s.Format("Review_ChangeUndone", was));
+    }
+
+    /// <summary>Writes the note moved by <paramref name="shift"/>, reloads the review and selects the same note again.</summary>
+    private bool Move(ReviewItem selected, int shift)
+    {
+        score.StopListening(announce: false);
+        if (!score.CorrectPitch(selected.Part, selected.BarIndex, selected.EventIndex, shift)) return false;
+        string key = ChangeKey(selected);
+        var kept = _all.Where(i => i.IsKept).Select(ChangeKey).ToHashSet();
+        Load(Scope);
+        foreach (var i in _all) i.IsKept = kept.Contains(ChangeKey(i));
+        Select(Items.FirstOrDefault(x => ChangeKey(x) == key) ?? _all.FirstOrDefault(x => ChangeKey(x) == key));
+        return true;
+    }
+
+    private void NotifyChange()
+    {
+        OnPropertyChanged(nameof(IsChanged));
+        OnPropertyChanged(nameof(ChangedText));
+    }
+
+    /// <summary>The current note moved by <paramref name="shift"/> semitones, named as the review shows it.</summary>
+    public string ChangeLabel(int shift) => Current is { } item ? PitchNameAt(item, shift) : "";
+
+    /// <summary>What the transcribers heard at the current note, as choices for "Change note…".</summary>
+    public IReadOnlyList<NoteChoice> ChangeChoices()
+    {
+        if (Current is not { } item || EvidenceFor(item) is not { } evidence) return [];
+        return evidence.Models.Where(m => m.Pitch is not null)
+            .Select(m => new NoteChoice($"{m.Name}: {PitchNameAt(item, m.Pitch!.Value - evidence.Pitch)}", m.Pitch!.Value - evidence.Pitch))
+            .ToList();
+    }
+
+    /// <summary>The evidence behind a review item: its Composition note, matched by voice, start and pitch class.</summary>
+    private Engine.NoteEvidence? EvidenceFor(ReviewItem item)
+    {
+        var ev = item.Event;
+        if (score.Evidence is not { } evidence || ev.CompositionVoiceId is not { } voice || ev.CompositionNoteStart is not { } start) return null;
+        var pitch = ev.Concert ?? ev.Written;
+        return pitch is null ? null : evidence.NoteAt(voice, start, Announcer.Midi(pitch));
+    }
+
+    /// <summary>"G", "B♭" (Norwegian "G", "B"): the note as shown (written or concert) moved by <paramref name="shift"/>.</summary>
+    private string PitchNameAt(ReviewItem item, int shift, bool octave = false)
+    {
+        bool concert = score.ConcertPitch;
+        var ev = item.Event;
+        var shown = concert ? ev.Concert ?? ev.Written : ev.Written ?? ev.Concert;
+        if (shown is null || score.Document is not { } doc) return "";
+        if (shift == 0) return Announcer.PitchLabel(shown, Nb) + (octave ? shown.Octave.ToString() : "");
+        var part = doc.Parts[item.Part];
+        int fifths = part.Bars[item.BarIndex].KeyFifths;
+        if (concert) fifths = Announcer.ConcertKey(fifths, part.Transpose);
+        var spelled = MusicXmlNoteEditor.Spell(Announcer.Midi(shown) + shift, fifths);
+        return Announcer.PitchLabel(spelled, Nb) + (octave ? spelled.Octave.ToString() : "");
+    }
+
+    private bool Nb => s.Language.StartsWith("nb", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>"an A", "a B" in English; Norwegian names the note bare.</summary>
+    private string WithArticle(string name) =>
+        Nb || name.Length == 0 ? name : (name[0] is 'A' or 'E' or 'F' ? "an " : "a ") + name;
+
+    /// <summary>"Finish later (9 left)": asks first while notes are left; with none left it finishes.</summary>
+    [RelayCommand]
+    private void FinishLater()
+    {
+        if (Left == 0)
+        {
+            Finish();
+            return;
+        }
+        ConfirmText = s.Format(Left == 1 ? "Review_FinishConfirmOne" : "Review_FinishConfirm", Left);
+        IsConfirmingFinish = true;
+        announcer.Announce(ConfirmText, AnnouncementKind.Important);
+    }
+
+    [RelayCommand]
+    private void ConfirmFinish()
+    {
+        IsConfirmingFinish = false;
+        Finish();
+    }
+
+    [RelayCommand]
+    private void CancelFinish() => IsConfirmingFinish = false;
+
+    private void Finish()
+    {
+        score.RefreshUncertain();
+        Finished?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>After your part is done, the review goes on with the other parts before finishing.</summary>
+    private void MoveNext(ReviewItem from)
+    {
+        int i = Items.ToList().IndexOf(from);
+        var next = Items.Skip(i + 1).FirstOrDefault(x => !x.IsKept) ?? Items.Take(i).FirstOrDefault(x => !x.IsKept);
+        if (next is null && Scope == ReviewScope.MyPart && _all.Any(x => !x.IsKept))
+        {
+            announcer.Announce(s["Review_MyPartDone"], AnnouncementKind.Important);
+            Scope = ReviewScope.AllParts;
+            return;
+        }
+        if (next is null)
+        {
+            Select(null);
+            announcer.Announce(s["Review_AllDone"], AnnouncementKind.Important);
+            Finish();
+            return;
+        }
+        Select(next);
+        announcer.Announce(Heading + ". " + NoteLine);
+    }
+
+    private void UpdateTexts()
+    {
+        FinishLaterText = s.Format("Review_FinishLater", Left);
+        Heard.Clear();
+        if (Current is not { } item)
+        {
+            Heading = Overline = NoteLine = LevelLine = ConfidenceText = "";
+            HasEvidence = false;
+            return;
+        }
+        int inBar = _all.Count(i => !i.IsKept && i.Part == item.Part && i.BarIndex == item.BarIndex);
+        CanKeepBar = inBar > 1;
+        KeepBarText = s.Format("Review_KeepBar", inBar);
+        int index = Items.ToList().IndexOf(item) + 1;
+        Overline = s.Format("Review_Overline", index, Items.Count, item.PartName).ToUpperInvariant();
+        int endBar = score.Document?.Parts[item.Part].Bars[item.EndBarIndex].Number ?? item.BarNumber;
+        Heading = endBar > item.BarNumber ? s.Format("Review_BarsHeading", item.BarNumber, endBar) : s.Format("Review_BarHeading", item.BarNumber);
+        NoteLine = s.Format(score.ConcertPitch ? "Review_NoteConcert" : "Review_NoteWritten", item.Label);
+        if (item.IsGroup) NoteLine = s.Format("Review_GroupLine", item.NoteCount, NoteLine);
+        var evidence = EvidenceFor(item);
+        HasEvidence = evidence is not null;
+        if (evidence is not null)
+        {
+            ConfidencePercent = Math.Round(Math.Clamp(evidence.Confidence, 0, 1) * 100);
+            ConfidenceText = Screens.Percent(ConfidencePercent, s.Language);
+            foreach (var m in evidence.Models)
+            {
+                string heard = m.Pitch is not { } p ? s["Review_HeardNothing"]
+                    : m.Agrees ? s.Format("Review_HeardSame", PitchNameAt(item, p - evidence.Pitch))
+                    : PitchNameAt(item, p - evidence.Pitch);
+                Heard.Add(new EvidenceRow(m.Name, heard, m.Agrees));
+            }
+        }
+        LevelLine = evidence?.AlternativeShift is { } shift
+            ? s.Format("Review_LevelAlternative", s[item.IsVeryUncertain ? "Review_WordVeryUncertain" : "Review_WordUncertain"],
+                WithArticle(PitchNameAt(item, shift)))
+            : s[item.IsVeryUncertain ? "Review_LevelVeryUncertain" : "Review_LevelUncertain"];
+    }
+}

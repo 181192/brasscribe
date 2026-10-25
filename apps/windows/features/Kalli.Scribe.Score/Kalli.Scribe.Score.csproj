@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The score as every app shows and plays it: alphaTab rendering and playback, the music stand's pages, the
+       notes to check and export. Logic and state only. Platform-neutral. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Kalli.Scribe</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="AlphaTab" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\Kalli.Scribe.Services\Kalli.Scribe.Services.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kalli.Scribe.Play" />
+    <InternalsVisibleTo Include="Kalli.Scribe.Tests" />
+  </ItemGroup>
+</Project>

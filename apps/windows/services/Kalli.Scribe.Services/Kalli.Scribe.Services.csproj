@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- What every app uses and that has no screens: the score model, the talking score, the core bridge, the engine
+       client, capture contracts, the synth's output stage, the library and settings. Platform-neutral: builds and tests on macOS, Linux and Windows. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Kalli.Scribe</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="AlphaTab" />
+    <!-- Managed ONNX Runtime API only. The host picks the native build: CPU in tests, DirectML in the app. -->
+    <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Kalli.Scribe.Score" />
+    <InternalsVisibleTo Include="Kalli.Scribe.Play" />
+    <InternalsVisibleTo Include="Kalli.Scribe.Tests" />
+  </ItemGroup>
+</Project>

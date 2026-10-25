@@ -6,12 +6,16 @@ over the OpenAPI contract. The symbolic logic comes from the Rust core through
 a C ABI (`scribe_ffi.dll`).
 
 ```
-src/Brasscribe.Play/                 WinUI 3 app (XAML, services, composition root)
-src/Brasscribe.Play.Core/            Composition model, talking score, the core bridge
-src/Brasscribe.Play.Audio.Windows/   WASAPI loopback capture
-src/Brasscribe.Play.Controls/        score and transport controls
-tests/Brasscribe.Play.Core.Tests/    xunit
-tests/Brasscribe.Play.Catalogue/     screen catalogue: the app as its own test host (MSTest), every screen and its checks
+services/Kalli.Scribe.Services/        no screens: score model, talking score, the core bridge,
+                                       the engine client, capture contracts, the synth's output, library, settings
+services/Kalli.Scribe.Audio.Windows/   WASAPI capture and output, Media Foundation decoding
+features/Kalli.Scribe.Score/           the score: alphaTab rendering and playback, the music stand's pages, review, export
+features/Kalli.Scribe.Play/            the flow's view models, from the start to the score, settings and export
+features/Kalli.Scribe.Controls/        the notation view (code-only WinUI controls)
+products/brasscribe/Kalli.Brasscribe/  Brasscribe Play: WinUI 3 app (XAML, words, composition root)
+products/brasscribe/Kalli.Brasscribe.Catalogue/  its screen catalogue: the app as its own test host (MSTest)
+products/brasscribe/tools/gen_resw.py  writes its words (Strings/*/Resources.resw)
+tests/Kalli.Scribe.Tests/              xunit, for services and features
 tools/ScreenCheck/                   the catalogues' tool: Axe.Windows and Tab from outside, Bandroom's catalogue, the verdict
 tools/ScreenCheck.Core/              its checks on pictures and the findings (any OS; tests in tools/ScreenCheck.Tests)
 tools/Screenshots/catalogue.ps1      runs the catalogue with its checks
@@ -42,11 +46,11 @@ cargo build --release --locked -p scribe-ffi
 $dll = Resolve-Path target/release/scribe_ffi.dll
 
 cd ../apps/windows
-dotnet restore Brasscribe.Play.slnx -p:Platform=x64
-dotnet build src/Brasscribe.Play -c Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=$dll"
+dotnet restore Scribe.slnx -p:Platform=x64
+dotnet build products/brasscribe/Kalli.Brasscribe -c Release -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=$dll"
 ```
 
-The exe lands in `src/Brasscribe.Play/bin/Release/net10.0-windows10.0.22000.0/win-x64/BrasscribePlay.exe`,
+The exe lands in `products/brasscribe/Kalli.Brasscribe/bin/Release/net10.0-windows10.0.22000.0/win-x64/BrasscribePlay.exe`,
 with `scribe_ffi.dll` beside it — the app will not start without it.
 
 The band sounds are bundled as `SoundFonts\brasscribe-band.sf2` (the 16-bit build, 191 MB with `sounds-2026.09.30`) when
@@ -57,7 +61,7 @@ are missing. Release builds in CI fetch it first and stop if they cannot.
 ## Run
 
 ```powershell
-src/Brasscribe.Play/bin/Release/net10.0-windows10.0.22000.0/win-x64/BrasscribePlay.exe
+products/brasscribe/Kalli.Brasscribe/bin/Release/net10.0-windows10.0.22000.0/win-x64/BrasscribePlay.exe
 ```
 
 Open a MusicXML score (for example `apps/fixtures/old-hundredth/brass-band.musicxml`, a
@@ -78,7 +82,7 @@ read, never a reason to update.
 ## Test
 
 ```powershell
-dotnet test tests/Brasscribe.Play.Core.Tests -c Release
+dotnet test tests/Kalli.Scribe.Tests -c Release
 ```
 
 Set `SCRIBE_FFI_PATH` to the built DLL to include the native-core tests
@@ -114,12 +118,12 @@ its C header, of `apps/fixtures/` the two scores the tests open), and on every p
 checks: `release.yml` calls `windows.yml` for the release builds. It is part of
 `CI result`. The screen catalogue takes every screen in Light, Dark, Pink, bokmål, a contrast theme and 200 % text
 with its checks; its screenshots are the artefact `windows-screenshots`, to look at:
-[tests/Brasscribe.Play.Catalogue/README.md](tests/Brasscribe.Play.Catalogue/README.md).
+[products/brasscribe/Kalli.Brasscribe.Catalogue/README.md](products/brasscribe/Kalli.Brasscribe.Catalogue/README.md).
 
 ## Test tiers
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
 | --- | --- | --- |
-| `dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow'` | `tools/check-macos.sh` | the app itself, on Windows (CI) |
+| `dotnet test tests/Kalli.Scribe.Tests --filter 'Category!=Slow'` | `tools/check-macos.sh` | the app itself, on Windows (CI) |
 
 See [docs/shared/dev/verify.md](../../docs/shared/dev/verify.md).

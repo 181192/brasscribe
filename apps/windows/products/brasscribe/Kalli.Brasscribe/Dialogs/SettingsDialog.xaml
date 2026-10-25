@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Kalli.Brasscribe.Dialogs.SettingsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:engine="using:Kalli.Scribe.Engine"
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:views="using:Kalli.Brasscribe.Views"
+    x:Uid="SettingsDialog"
+    DefaultButton="Close">
+    <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" MinWidth="420">
+            <!-- Your instrument: the first section. The row shows the answer; Change opens the same questions as the
+                 first run right here (a dialog can't open another), and nothing changes until Save. -->
+            <TextBlock x:Uid="SettingsYouHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <Grid ColumnSpacing="12" x:Name="SeatRow">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Uid="SeatRowLabel" Style="{StaticResource LabelStyle}" />
+                    <TextBlock x:Name="SeatValue" Style="{StaticResource BodyStyle}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button x:Name="SeatChangeButton" x:Uid="SeatChangeButton" Grid.Column="1" Style="{StaticResource ActionButtonStyle}" MinHeight="44"
+                        VerticalAlignment="Center" Click="OnChangeSeat" />
+            </Grid>
+            <StackPanel x:Name="SeatEditor" Spacing="12" Visibility="Collapsed">
+                <views:SeatPickerView x:Name="SeatPicker" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Uid="SeatSaveButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnSaveSeat" />
+                    <Button x:Uid="SeatConductSettingsButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnConductSeat" />
+                    <Button x:Uid="SeatCancelButton" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Click="OnCancelSeat" />
+                </StackPanel>
+                <TextBlock x:Name="SeatHint" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+            <TextBlock x:Uid="SeatCaption" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+
+            <TextBlock x:Uid="SettingsLanguageHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <ComboBox x:Name="LanguageBox" x:Uid="LanguageBox" SelectionChanged="OnLanguageChanged" HorizontalAlignment="Stretch">
+                <ComboBoxItem x:Uid="LanguageSystem" Tag="system" />
+                <ComboBoxItem Content="English" Tag="en-US" />
+                <ComboBoxItem Content="Norsk bokmål" Tag="nb-NO" />
+            </ComboBox>
+            <TextBlock x:Uid="LanguageRestartNote" Style="{StaticResource MutedStyle}" />
+
+            <TextBlock x:Uid="SettingsAccessibilityHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <!-- Appearance (design/brands/brasscribe/system.md §10): one native choice, applied at once, stored on this PC. The header
+                 names the combo box for UIA, which reads the selected item as its value ("Appearance, Dark").
+                 A contrast theme always wins; the box stays enabled and the line below says why. -->
+            <ComboBox x:Name="AppearanceBox" x:Uid="AppearanceBox" SelectionChanged="OnAppearanceChanged" HorizontalAlignment="Stretch">
+                <ComboBoxItem x:Uid="AppearanceSystem" />
+                <ComboBoxItem x:Uid="AppearanceLight" />
+                <ComboBoxItem x:Uid="AppearanceDark" />
+            </ComboBox>
+            <TextBlock x:Uid="AppearanceContrastNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind ViewModel.HighContrast, Mode=OneWay}" />
+            <ToggleSwitch x:Uid="SingleKeySwitch" IsOn="{x:Bind ViewModel.SingleKeyShortcuts, Mode=TwoWay}" />
+            <ToggleSwitch x:Uid="ReduceMotionSwitch" IsOn="{x:Bind ViewModel.ReduceMotion, Mode=TwoWay}" />
+            <!-- The music stand (design/brands/brasscribe/music-stand.md §9). Opening on turning the phone is a phone setting, not here. -->
+            <TextBlock x:Uid="SettingsStandHeading" Style="{StaticResource LabelStyle}" Margin="0,8,0,0" AutomationProperties.HeadingLevel="Level3" />
+            <ToggleSwitch x:Uid="StandTurnPagesSwitch" IsOn="{x:Bind ViewModel.StandTurnPages, Mode=TwoWay}" />
+            <ToggleSwitch x:Uid="StandKeepControlsSwitch" IsOn="{x:Bind ViewModel.StandKeepControls, Mode=TwoWay}" />
+            <TextBlock x:Uid="StandPedalNote" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+            <ComboBox x:Name="VerbosityBox" x:Uid="VerbosityBox" SelectionChanged="OnVerbosityChanged" HorizontalAlignment="Stretch">
+                <ComboBoxItem x:Uid="VerbosityBrief" />
+                <ComboBoxItem x:Uid="VerbosityStandard" />
+                <ComboBoxItem x:Uid="VerbosityFull" />
+            </ComboBox>
+
+            <TextBlock x:Uid="SettingsEngineHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <!-- The same status row as Home. -->
+            <views:ConnectionRow x:Name="ConnectionStatus" ActionInvoked="OnConnectionAction" />
+            <Button x:Uid="FindEnginesButton" Click="OnFindEngines" />
+            <ListView x:Uid="DiscoveredEnginesList" ItemsSource="{x:Bind ViewModel.DiscoveredEngines}" SelectionMode="None"
+                      IsItemClickEnabled="True" ItemClick="OnEngineClicked">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="engine:DiscoveredEngine">
+                        <StackPanel Padding="0,6" AutomationProperties.Name="{x:Bind ComputerName}">
+                            <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ComputerName}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <TextBox x:Name="PairingCodeBox" x:Uid="PairingCodeBox" Text="{x:Bind ViewModel.PairingCode, Mode=TwoWay}" InputScope="Number" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Uid="ConnectButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnConnect" />
+                <Button x:Uid="AskComputerButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnAskComputer"
+                        Visibility="{x:Bind views:Shown.Not(ViewModel.IsAsking), Mode=OneWay}" />
+            </StackPanel>
+            <!-- Approve on the computer: the match code large, read digit by digit; no countdown. -->
+            <StackPanel Spacing="4" Visibility="{x:Bind ViewModel.IsAsking, Mode=OneWay}">
+                <TextBlock x:Uid="MatchCodeLabel" Style="{StaticResource MutedStyle}" />
+                <TextBlock Style="{StaticResource NumericStyle}" FontSize="40" Text="{x:Bind ViewModel.MatchCode, Mode=OneWay}"
+                           AutomationProperties.Name="{x:Bind ViewModel.MatchCodeSpoken, Mode=OneWay}" IsTextSelectionEnabled="True" />
+                <Button x:Uid="CancelAskButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnCancelAsk" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource BodyStyle}" Text="{x:Bind ViewModel.EngineStatus, Mode=OneWay}" TextWrapping="Wrap"
+                       AutomationProperties.LiveSetting="Polite" />
+            <!-- Where the update is, when connecting or pairing stopped because one of the two must be updated. -->
+            <HyperlinkButton x:Name="EngineUpdateLink" Padding="6,4" Margin="-6,0,0,0" MinHeight="44"
+                             NavigateUri="{x:Bind ViewModel.EngineStatusLink, Mode=OneWay}"
+                             Content="{x:Bind ViewModel.EngineStatusLinkLabel}"
+                             AutomationProperties.HelpText="{x:Bind ViewModel.EngineStatusLinkHelp}"
+                             Visibility="{x:Bind ViewModel.HasEngineStatusLink, Mode=OneWay}" />
+            <Button x:Uid="UnpairButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnUnpair"
+                    Visibility="{x:Bind ViewModel.IsPaired, Mode=OneWay}" />
+            <!-- Addresses, the server id and when it last answered: only for the band's tech person. -->
+            <Expander x:Uid="EngineDetails" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <StackPanel Spacing="8">
+                    <TextBox x:Uid="EngineAddressBox" Text="{x:Bind ViewModel.EngineAddress, Mode=TwoWay}" InputScope="Url" />
+                    <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.Connection.DetailsText, Mode=OneWay}"
+                               IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                </StackPanel>
+            </Expander>
+
+            <TextBlock x:Uid="SettingsAboutHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
+            <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
+            <TextBlock x:Name="CoreVersion" Style="{StaticResource MutedStyle}" />
+            <!-- The version is an ordinary button (click, Space, Enter, Narrator): five in a row unlock the hidden Pink
+                 appearance (design/brands/brasscribe/system.md §10). Nothing about it hints that it does more. -->
+            <Button x:Name="AppVersion" Style="{StaticResource PlainButtonStyle}" MinHeight="44" Padding="0" Click="OnVersion" />
+            <TextBlock x:Name="PinkNote" Style="{StaticResource LabelStyle}" Visibility="Collapsed" />
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>

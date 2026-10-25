@@ -7,20 +7,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Authors>brasscribe</Authors>
-    <Product>Brasscribe Play</Product>
     <Company>brasscribe</Company>
     <Copyright>Copyright (c) 2026 Kristoffer-Andre Kalliainen</Copyright>
     <PackageLicenseExpression>MIT OR Apache-2.0</PackageLicenseExpression>
     <!-- Lets the Windows-only projects compile against reference assemblies on macOS and Linux. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <!-- Windows target: Windows 11 (build 22000) is the oldest system the app runs on. -->
-    <BrasscribeWindowsTfm>net10.0-windows10.0.22000.0</BrasscribeWindowsTfm>
-    <BrasscribeWindowsMinVersion>10.0.22000.0</BrasscribeWindowsMinVersion>
+    <ScribeWindowsTfm>net10.0-windows10.0.22000.0</ScribeWindowsTfm>
+    <ScribeWindowsMinVersion>10.0.22000.0</ScribeWindowsMinVersion>
   </PropertyGroup>
-  <!-- The screen catalogue (tests/Brasscribe.Play.Catalogue) is the app built with -p:BrasscribeCatalogue=true: it
+  <!-- The screen catalogue (products/brasscribe/Kalli.Brasscribe.Catalogue) is the app built with -p:ScribeCatalogue=true: it
        builds into bin/catalogue and obj/catalogue, so it never mixes with the app's own build, and leaves the app's
        build folders out of its sources. -->
-  <PropertyGroup Condition="'$(BrasscribeCatalogue)' == 'true'">
+  <PropertyGroup Condition="'$(ScribeCatalogue)' == 'true'">
     <BaseIntermediateOutputPath>obj\catalogue\</BaseIntermediateOutputPath>
     <BaseOutputPath>bin\catalogue\</BaseOutputPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>

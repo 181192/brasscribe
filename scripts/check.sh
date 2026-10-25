@@ -160,7 +160,7 @@ run_area() {
     fast:android) (cd apps/android && ./gradlew testDebugUnitTest -Pscribe.fast --console=plain -q) ;;
     full:android) (cd apps/android && ./gradlew testDebugUnitTest :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug -Pscribe.withoutCatalogues --console=plain \
                      && scripts/screenshots.sh record) ;;
-    fast:windows) (cd apps/windows && dotnet test tests/Brasscribe.Play.Core.Tests --filter 'Category!=Slow') ;;
+    fast:windows) (cd apps/windows && dotnet test tests/Kalli.Scribe.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Scribe.Core.Tests && dotnet test) ;;
     fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/Packages/ScreenCatalogue && swift test) ;;

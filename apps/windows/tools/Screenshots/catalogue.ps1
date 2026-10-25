@@ -1,4 +1,4 @@
-# Brasscribe Play for Windows' screen catalogue (tests/Brasscribe.Play.Catalogue): every screen in Light, Dark, Pink
+# Brasscribe Play for Windows' screen catalogue (products/brasscribe/Kalli.Brasscribe.Catalogue): every screen in Light, Dark, Pink
 # light, Pink dark, bokmål, a Windows contrast theme and 200 % text, with its checks (contrast measured from the
 # picture, cut-off text, Axe.Windows, Tab), and a screenshot of each. Windows only; meant for CI, since the contrast
 # theme, the text size and animation effects (off for every run) are this user's Windows settings for the length of
@@ -33,22 +33,22 @@ function Log($text) { Write-Host "catalogue: $text" }
 
 # The catalogue build of the app: its exe.
 function Build-Catalogue($dir, $ffi) {
-    $props = @("-c", $Configuration, "-p:Platform=x64", "-p:RuntimeIdentifier=win-x64", "-p:BrasscribeCatalogue=true")
+    $props = @("-c", $Configuration, "-p:Platform=x64", "-p:RuntimeIdentifier=win-x64", "-p:ScribeCatalogue=true")
     if ($ffi) { $props += "-p:ScribeFfiDll=$ffi" }
-    dotnet build (Join-Path $dir "src/Brasscribe.Play") @props | Out-Host
+    dotnet build (Join-Path $dir "products/brasscribe/Kalli.Brasscribe") @props | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "the catalogue build failed in $dir" }
-    $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe (Join-Path $dir "src/Brasscribe.Play/bin/catalogue") | Select-Object -First 1
+    $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe (Join-Path $dir "products/brasscribe/Kalli.Brasscribe/bin/catalogue") | Select-Object -First 1
     if (-not $exe) { throw "the catalogue build left no BrasscribePlay.exe in $dir" }
     $exe.FullName
 }
 
 # One run of the catalogue exe: $run is en, nb, contrast or text200. Returns false when it could not run.
 function Invoke-Run($exe, $shots, $run, $variants, $score) {
-    $env:BRASSCRIBE_CATALOGUE_OUT = $shots
-    $env:BRASSCRIBE_CATALOGUE_RUN = $run
-    $env:BRASSCRIBE_CATALOGUE_VARIANTS = $variants
-    $env:BRASSCRIBE_CATALOGUE_SCORE = $score
-    $env:BRASSCRIBE_CATALOGUE_LANG = if ($run -eq "nb") { "nb-NO" } else { "" }
+    $env:SCRIBE_CATALOGUE_OUT = $shots
+    $env:SCRIBE_CATALOGUE_RUN = $run
+    $env:SCRIBE_CATALOGUE_VARIANTS = $variants
+    $env:SCRIBE_CATALOGUE_SCORE = $score
+    $env:SCRIBE_CATALOGUE_LANG = if ($run -eq "nb") { "nb-NO" } else { "" }
     $appArgs = @("--results-directory", (Join-Path $shots "results"), "--report-trx", "--report-trx-filename", "catalogue-$run.trx")
     $started = Get-Date
     & $exe @appArgs | Out-Host
@@ -78,7 +78,7 @@ function System-State([string[]] $what) {
 function Invoke-Catalogue($exe, $shots, $score) {
     if (Test-Path $shots) { Remove-Item -Recurse -Force $shots }
     New-Item -ItemType Directory -Force -Path $shots | Out-Null
-    $env:BRASSCRIBE_CATALOGUE_PINK_SCENES = "first-run,home,score,review,export,settings"
+    $env:SCRIBE_CATALOGUE_PINK_SCENES = "first-run,home,score,review,export,settings"
     # No animation effects while the screens are taken (Settings > Accessibility > Visual effects): a dialog, a page or
     # a theme change is on screen at once instead of fading or sliding in. The app reads it when it starts.
     System-State @("--animations", "off", "--keep", $script:animationsKeep)
@@ -109,7 +109,7 @@ $shots = Join-Path $Out "shots"
 Log "taking them, with the checks"
 $exe = Build-Catalogue $windows $FfiDll
 $taken = Invoke-Catalogue $exe $shots $score
-& $script:screenCheck verdict --dir $shots --known (Join-Path $windows "tests/Brasscribe.Play.Catalogue/known-findings.json") `
+& $script:screenCheck verdict --dir $shots --known (Join-Path $windows "products/brasscribe/Kalli.Brasscribe.Catalogue/known-findings.json") `
     --title "Play for Windows: screen catalogue" --summary (Join-Path $Out "findings.md") | Out-Host
 $checks = $LASTEXITCODE
 if (-not $taken -and $checks -ne 3) { $checks = 3 }

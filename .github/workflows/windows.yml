@@ -98,18 +98,18 @@ jobs:
       - name: Core tests
         if: ${{ !inputs.release }}
         run: >
-          dotnet test tests/Brasscribe.Play.Core.Tests -c $env:CONFIGURATION
+          dotnet test tests/Kalli.Scribe.Tests -c $env:CONFIGURATION
           --logger "trx;LogFileName=core.trx" --results-directory "$env:RUNNER_TEMP/test-results"
 
       - name: Build app (WinUI 3, unpackaged, x64)
         if: ${{ !inputs.release }}
-        run: dotnet build src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH"
+        run: dotnet build products/brasscribe/Kalli.Brasscribe -c $env:CONFIGURATION -p:Platform=x64 -p:RuntimeIdentifier=win-x64 "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH"
 
       - name: Locate the exe
         if: ${{ !inputs.release }}
         id: exe
         run: |
-          $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe src/Brasscribe.Play/bin | Select-Object -First 1
+          $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe products/brasscribe/Kalli.Brasscribe/bin | Select-Object -First 1
           if (-not $exe) { throw "BrasscribePlay.exe was not built" }
           if (-not (Test-Path (Join-Path $exe.DirectoryName "scribe_ffi.dll"))) { throw "scribe_ffi.dll is not next to the exe" }
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
@@ -132,7 +132,7 @@ jobs:
           Write-Host "Window: $($p.MainWindowTitle)"
           Stop-Process -Id $p.Id -Force
 
-      # The screen catalogue (tests/Brasscribe.Play.Catalogue): every screen on the public-domain Old Hundredth fixture in
+      # The screen catalogue (products/brasscribe/Kalli.Brasscribe.Catalogue): every screen on the public-domain Old Hundredth fixture in
       # Light, Dark, Pink light, Pink dark, bokmål, a contrast theme and 200 % text, with its checks (contrast, cut-off
       # text, Axe.Windows, Tab). 2 (the checks found something) and 3 (a screen not taken, or one that was not the
       # screen asked for) fail the step. The screenshots are an artefact to look at; nothing waits for them.
@@ -201,7 +201,7 @@ jobs:
         if: ${{ inputs.release }}
         run: |
           $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
-          dotnet publish src/Brasscribe.Play -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH" -o $out
+          dotnet publish products/brasscribe/Kalli.Brasscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
           if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
           # ONNX Runtime's onnxruntime_providers_shared.dll imports vcruntime140.dll, so it ships app-locally

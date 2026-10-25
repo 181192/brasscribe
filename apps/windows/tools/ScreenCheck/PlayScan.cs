@@ -5,7 +5,7 @@ namespace Brasscribe.ScreenCheck;
 /// <summary>
 /// The Axe.Windows rules and the walk with Tab on every screen of Play for Windows, one start of the app each
 /// (--show SCENE --theme light, sample content). The screenshots and the other checks are the catalogue's, taken in
-/// one process (tests/Brasscribe.Play.Catalogue); these two run against the app's own build, since the app built as
+/// one process (products/brasscribe/Kalli.Brasscribe.Catalogue); these two run against the app's own build, since the app built as
 /// the catalogue's test host ended (an access violation) while Axe.Windows read it. The findings are named after
 /// the screenshot of the same screen in Light, and written as catalogue-scan.json next to the screenshots.
 /// </summary>
