@@ -68,6 +68,13 @@
             <SolidColorBrush x:Key="FsCursorTintBrush" Color="{StaticResource FsCursorTintColor}"/>
             <SolidColorBrush x:Key="FsSelectionTintBrush" Color="{StaticResource FsSelectionTintColor}"/>
             <SolidColorBrush x:Key="FsSelectionEdgeBrush" Color="{StaticResource FsSelectionEdgeColor}"/>
+            <Color x:Key="SystemAccentColor">#FF1B1D21</Color>
+            <Color x:Key="SystemAccentColorDark1">#FF1B1D21</Color>
+            <Color x:Key="SystemAccentColorDark2">#FF282A2E</Color>
+            <Color x:Key="SystemAccentColorDark3">#FF36373A</Color>
+            <Color x:Key="SystemAccentColorLight1">#FF282A2E</Color>
+            <Color x:Key="SystemAccentColorLight2">#FF36373A</Color>
+            <Color x:Key="SystemAccentColorLight3">#FF5E5F60</Color>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <Color x:Key="ScribeBgColor">#FF15171A</Color>
@@ -130,6 +137,13 @@
             <SolidColorBrush x:Key="FsCursorTintBrush" Color="{StaticResource FsCursorTintColor}"/>
             <SolidColorBrush x:Key="FsSelectionTintBrush" Color="{StaticResource FsSelectionTintColor}"/>
             <SolidColorBrush x:Key="FsSelectionEdgeBrush" Color="{StaticResource FsSelectionEdgeColor}"/>
+            <Color x:Key="SystemAccentColor">#FFECEAE4</Color>
+            <Color x:Key="SystemAccentColorDark1">#FFDBD9D4</Color>
+            <Color x:Key="SystemAccentColorDark2">#FFCAC8C4</Color>
+            <Color x:Key="SystemAccentColorDark3">#FFB8B7B4</Color>
+            <Color x:Key="SystemAccentColorLight1">#FFF2F0EC</Color>
+            <Color x:Key="SystemAccentColorLight2">#FFECEAE4</Color>
+            <Color x:Key="SystemAccentColorLight3">#FFF7F7F4</Color>
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <StaticResource x:Key="ScribeBgColor" ResourceKey="SystemColorWindowColor"/>

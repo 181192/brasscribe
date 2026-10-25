@@ -78,6 +78,13 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+            <Color x:Key="SystemAccentColor">#FF1B1A17</Color>
+            <Color x:Key="SystemAccentColorDark1">#FF1B1A17</Color>
+            <Color x:Key="SystemAccentColorDark2">#FF282724</Color>
+            <Color x:Key="SystemAccentColorDark3">#FF363532</Color>
+            <Color x:Key="SystemAccentColorLight1">#FF282724</Color>
+            <Color x:Key="SystemAccentColorLight2">#FF363532</Color>
+            <Color x:Key="SystemAccentColorLight3">#FF5E5D5A</Color>
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
             <Color x:Key="ScribeBgColor">#FF131210</Color>
@@ -150,6 +157,13 @@
             <SolidColorBrush x:Key="BcModel2Brush" Color="{StaticResource BcModel2Color}"/>
             <SolidColorBrush x:Key="BcModel3Brush" Color="{StaticResource BcModel3Color}"/>
             <SolidColorBrush x:Key="BcModel4Brush" Color="{StaticResource BcModel4Color}"/>
+            <Color x:Key="SystemAccentColor">#FFEDEBE6</Color>
+            <Color x:Key="SystemAccentColorDark1">#FFDCDAD5</Color>
+            <Color x:Key="SystemAccentColorDark2">#FFCAC8C4</Color>
+            <Color x:Key="SystemAccentColorDark3">#FFB9B7B3</Color>
+            <Color x:Key="SystemAccentColorLight1">#FFF2F1EE</Color>
+            <Color x:Key="SystemAccentColorLight2">#FFEDEBE6</Color>
+            <Color x:Key="SystemAccentColorLight3">#FFF8F7F5</Color>
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <StaticResource x:Key="ScribeBgColor" ResourceKey="SystemColorWindowColor"/>
