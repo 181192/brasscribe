@@ -14,4 +14,4 @@ scribe-core = { path = "../scribe-core" }
 target-brass = { path = "../targets/brass" }
 target-fretted = { path = "../targets/fretted" }
 serde_json.workspace = true
-zip = { version = "8", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
