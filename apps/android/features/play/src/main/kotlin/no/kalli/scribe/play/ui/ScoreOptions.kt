@@ -13,7 +13,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,9 +76,9 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
                 OutlinedTextField(draft, { draft = it }, label = { Text(stringResource(R.string.score_title)) }, singleLine = true)
             },
             confirmButton = {
-                TextButton({ vm.renameEntry(entry, draft); renaming = false }, enabled = draft.isNotBlank()) { Text(stringResource(R.string.save)) }
+                PlainButton(stringResource(R.string.save), { vm.renameEntry(entry, draft); renaming = false }, enabled = draft.isNotBlank())
             },
-            dismissButton = { TextButton({ renaming = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { PlainButton(stringResource(R.string.cancel), { renaming = false }) },
         )
     }
     if (deleting) {
@@ -88,9 +87,9 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
             title = { Text(stringResource(R.string.delete_score_title, entry.title)) },
             text = { Text(stringResource(if (entry.onComputer) R.string.delete_score_computer else R.string.delete_score_phone)) },
             confirmButton = {
-                TextButton({ vm.deleteEntry(entry); deleting = false }) { Text(stringResource(R.string.delete), color = c.error) }
+                PlainButton(stringResource(R.string.delete), { vm.deleteEntry(entry); deleting = false }, destructive = true)
             },
-            dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { PlainButton(stringResource(R.string.cancel), { deleting = false }) },
         )
     }
 }
@@ -135,11 +134,9 @@ fun KeptRecordingRow(vm: PlayViewModel, k: no.kalli.scribe.play.KeptRecording, e
             title = { Text(stringResource(R.string.delete_score_title, name)) },
             text = { Text(stringResource(R.string.kept_delete_text)) },
             confirmButton = {
-                TextButton({ vm.deleteKept(k); deleting = false }, Modifier.semantics { testTag = "kept-delete-confirm" }) {
-                    Text(stringResource(R.string.delete), color = c.error)
-                }
+                PlainButton(stringResource(R.string.delete), { vm.deleteKept(k); deleting = false }, Modifier.semantics { testTag = "kept-delete-confirm" }, destructive = true)
             },
-            dismissButton = { TextButton({ deleting = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { PlainButton(stringResource(R.string.cancel), { deleting = false }) },
         )
     }
 }

@@ -294,6 +294,17 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
         return whole.width - shown.width > 1f || whole.height - shown.height > 1f
     }
 
+    /**
+     * Everything a finger can act on is at least 48 dp each way (system.md §1, rule 7), in view or scrolled out of it.
+     * The accessibility checks pass a target of 24 dp, which a thumb in a rehearsal room does not.
+     */
+    protected fun assertTargetsAre48Dp(except: Set<String> = emptySet()) {
+        val min = 48 * rule.density.density - 0.5f
+        val small = actionable().filter { it.size.width < min || it.size.height < min }
+            .map { "${FocusOrder.words(it)} (${(it.size.width / rule.density.density).toInt()} x ${(it.size.height / rule.density.density).toInt()} dp)" }
+        assertEquals("targets under 48 dp", emptyList<String>(), small.filter { s -> except.none { s.startsWith(it) } })
+    }
+
     /** A control a finger can act on: what it says, and what it is. */
     data class Control(val words: String, val role: Role? = null) {
         override fun toString() = if (role != null) "$words ($role)" else words

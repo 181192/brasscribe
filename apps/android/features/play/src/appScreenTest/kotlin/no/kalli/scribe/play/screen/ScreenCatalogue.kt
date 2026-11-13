@@ -17,7 +17,7 @@ import org.junit.experimental.categories.Category
 /**
  * Every screen of an app, one after the other, as a phone can show it: light, dark, high contrast, 200 %
  * text, on its side, and in bokmål. Each is opened, checked by the accessibility checks, and kept as a
- * screenshot ([shots]/<screen>-<how>.png) that a later run compares with. At 200 % no text may be cut off
+ * screenshot ([shots]/<screen>-<how>.png) that a later run compares with. Every target is at least 48 dp. At 200 % no text may be cut off
  * or ellipsized, and with the keyboard the focus goes through a screen in the order it is read.
  *
  * An app's catalogue names its [screens]: a new screen is added there, and is then in every one of these.
@@ -96,7 +96,7 @@ abstract class ScreenCatalogue : ScreenTest() {
     @Test
     fun light() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
-        onEveryScreen("light")
+        onEveryScreen("light") { assertTargetsAre48Dp() }
     }
 
     @Test
