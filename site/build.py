@@ -17,7 +17,7 @@ site/shared/figures.py, or the product's own figures.py), {{data <file> <path/to
 {{say <key>}} (the words of a key, where an element cannot take them), and the research pages' measurements,
 figures, citations and cross-references ({{data <key> [format]}}, {{chart …}}, {{cite …}}, {{ref …}} and more:
 site/research.py, which also checks the papers once every page is written). What a macro draws differently in the
-two languages is swapped as a whole. A page's header may name `styles:` and `scripts:`.
+two languages is swapped as a whole; a number or a reference it prints differently is swapped where it stands. A page's header may name `styles:` and `scripts:`.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ OUT = SITE / "_site"
 LANGS = ("en", "nb")
 # 2x width per kind of screenshot, as site/shared/make_shots.py writes them.
 SHOT_WIDTH = {"phone": 600, "tablet": 720, "desktop": 1440, "mac": 1440}
-BLOCKS = {"shot", "figure", "downloads"}  # macros that draw something; the others give a word or an address
+BLOCKS = {"shot", "figure", "downloads", "chart", "pipeline", "references", "figuretables"}  # macros that draw something; the others give a word or an address
 
 
 def load(path: Path):
@@ -139,7 +139,7 @@ class Page:
         self.site, self.product, self.name, self.source = site, product, name, source
         self.dir = posixpath.join(product.mount, product.served(name))
         self.lang = "en"
-        self.meta, self.body, self.used, self.slots, self.plain = {}, {}, set(), {}, False
+        self.meta, self.body, self.used, self.slots, self.plain, self.inline = {}, {}, set(), {}, False, {}
         self.whole = bool(source and source.parent.name in LANGS)  # one whole file per language
         own = words(lambda lang: product.dir / "pages" / f"{name}.{lang}.toml") if source and not self.whole else {lang: {} for lang in LANGS}
         self.own = set(own["en"])
@@ -285,8 +285,9 @@ class Page:
         sys.exit(f"{self.dir}: unknown macro {{{{{name}}}}}")
 
     def macros(self, text: str) -> str:
-        """Run the macros of a text. What a drawing macro gives differently in Norwegian becomes a slot the script swaps."""
-        if self.plain:  # a whole body in one language: its macros are written in that language as they stand
+        """Run the macros of a text. What a drawing macro gives differently in Norwegian becomes a slot the script swaps;
+        a word or a number that reads differently (0.66, 0,66) becomes a span with its Norwegian by key."""
+        if self.plain:  # words or a whole body in one language: its macros are written in that language as they stand
             return re.sub(r"\{\{(\w+)([^{}]*)\}\}", lambda m: self.macro(m.group(1), m.group(2)), text)
 
         def run(m: re.Match) -> str:
@@ -297,7 +298,14 @@ class Page:
                 made[lang] = self.macro(name, rest)
             self.lang = "en"
             if name not in BLOCKS:
-                return made["en"]
+                if made["nb"] == made["en"]:
+                    return made["en"]
+                if text.rfind("<", 0, m.start()) > text.rfind(">", 0, m.start()):
+                    sys.exit(f"{self.dir}: {{{{{name}{rest}}}}} stands in an attribute and reads differently in Norwegian; "
+                             "give the attribute its words by key (data-t-<attribute>)")
+                key = f"macro.{len(self.inline) + 1}"
+                self.inline[key] = made["nb"]
+                return f'<span data-t="{key}">{made["en"]}</span>'
             # A block keeps the indentation of the line its macro stands on.
             before = text[text.rfind("\n", 0, m.start()) + 1:m.start()]
             shown = made["en"].replace("\n", "\n" + before) if before.isspace() else made["en"]
@@ -331,10 +339,11 @@ class Page:
         """English into every data-t element and data-t-<attribute>; the Norwegian of each into `nb`."""
         def both(key: str) -> dict:
             said = {}
+            was, self.plain = self.plain, True  # words are in one language, and so is what their macros give
             for lang in LANGS:
                 self.lang = lang
                 said[lang] = self.links(" " + self.macros(str(self.say(key))))[1:]
-            self.lang = "en"
+            self.lang, self.plain = "en", was
             return said
 
         def element(m: re.Match) -> str:
@@ -416,8 +425,6 @@ class Page:
             for lang in LANGS:
                 # While a language is written, the page is that language's page: its body, its numbering.
                 self.lang, self.plain, self.body = lang, True, sources[lang]
-                for kept in ("figures", "paper"):  # the research pages number their figures and sources from one in each language
-                    self.__dict__.pop(kept, None)
                 bodies[lang] = self.links(self.macros(self.body).replace("@lang/", "@/"))
             self.lang, self.plain, self.body = "en", False, sources
             nb["main"] = bodies["nb"].rstrip()
@@ -476,6 +483,7 @@ class Page:
             page = self.macros(page)
         page = self.links(self.fill(page, nb))
         nb["slots"] = {k: self.links(" " + v)[1:] for k, v in self.slots.items()}
+        nb["t"] |= {k: self.links(" " + v)[1:] for k, v in self.inline.items()}
         if "main" in nb:
             nb["main"] = self.links(nb["main"])
         nb["title"], nb["description"] = titles["nb"]

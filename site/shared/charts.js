@@ -227,10 +227,14 @@
     if (list && window.matchMedia && window.matchMedia("(max-width: 900px)").matches) list.open = false;
   }
 
+  // The figures that are drawn and answer. The page puts a figure's markup back when the language changes (a copy
+  // of what was drawn, without the chart behind it), so a figure is known by itself, not by how it looks.
+  var live = new WeakSet();
   function start() {
-    fold();
-    Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart]:not(.is-live)"), function (figure) {
-      try { new Chart(figure); } catch (e) {
+    Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart]"), function (figure) {
+      if (live.has(figure)) return;
+      figure.querySelector(".chart-plot").textContent = "";
+      try { new Chart(figure); live.add(figure); } catch (e) {
         // The table stays: a figure never ends up empty.
         figure.classList.remove("is-live");
         figure.querySelector(".chart-plot").hidden = true;
@@ -238,7 +242,8 @@
       }
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+  function first() { fold(); start(); }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", first); else first();
   // On paper each figure shows its first view (the caption says so; the other views are tabulated in the appendix).
   window.addEventListener("beforeprint", function () {
     Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart].is-live .chart-views"), function (set) {
@@ -246,6 +251,6 @@
       if (!first.checked) { first.checked = true; first.dispatchEvent(new Event("change")); }
     });
   });
-  // A page that swaps its content for another language puts new figures in: draw those.
+  // A page that changes language puts each figure in again, in that language: draw those.
   document.addEventListener("scribe:lang", start);
 })();
