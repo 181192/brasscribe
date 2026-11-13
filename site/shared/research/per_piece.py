@@ -60,6 +60,9 @@ def main() -> None:
             rows = [score(load_notes(s / "reference.json"), load_notes(s / f"{model}.mid")) for s in songs]
             for metric in metrics:
                 keep(suite, f"{model}.{metric}", [r[metric] for r in rows])
+            # Precision and recall behind each F-measure: means over the pieces, which the baselines do not hold.
+            for metric in ("onset_p", "onset_r", "onset100_p", "onset100_r"):
+                out[suite][f"{model}.{metric}"] = round(sum(r[metric] for r in rows) / len(rows), 3)
             # Recall per voice of the quartet: a mean over the pieces, which no suite gates.
             for voice in "SATB":
                 for metric in (f"recall_{voice}", f"recall100_{voice}"):

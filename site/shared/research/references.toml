@@ -139,5 +139,16 @@ text = 'MuseScore General SoundFont, version 0.2.0. [Online]. Available: <a href
 note_en = 'MIT. Rendered with FluidSynth (LGPL-2.1).'
 note_nb = 'MIT. Gjengitt med FluidSynth (LGPL-2.1).'
 
-[mdbeatthis]
-text = 'md_beat_this, software repository. [Online]. Available: <a href="https://github.com/fosfrancesco/md_beat_this">https://github.com/fosfrancesco/md_beat_this</a>. Accessed: 13 Nov. 2026.'
+[foscarin2026mdbeat]
+text = 'F. Foscarin, F. Korzeniowski, and R. Vogl, “Masked diffusion enables coherent beat tracking,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2026, arXiv: <a href="https://arxiv.org/abs/2608.04624">2608.04624</a>.'
+note_en = 'Software and pretrained models: <a href="https://github.com/fosfrancesco/md_beat_this">md_beat_this</a>, CC BY-NC 4.0.'
+note_nb = 'Programvare og forhåndstrente modeller: <a href="https://github.com/fosfrancesco/md_beat_this">md_beat_this</a>, CC BY-NC 4.0.'
+
+[sayegh1989fingering]
+text = 'S. I. Sayegh, “Fingering for string instruments with the optimum path paradigm,” <i>Computer Music Journal</i>, vol. 13, no. 3, 1989, doi: <a href="https://doi.org/10.2307/3680014">10.2307/3680014</a>.'
+
+[heijink2002guitar]
+text = 'H. Heijink and R. G. J. Meulenbroek, “On the complexity of classical guitar playing: Functional adaptations to task constraints,” <i>Journal of Motor Behavior</i>, vol. 34, no. 4, pp. 339–351, 2002, doi: <a href="https://doi.org/10.1080/00222890209601952">10.1080/00222890209601952</a>.'
+
+[burlet2013robotaba]
+text = 'G. Burlet and I. Fujinaga, “Robotaba guitar tablature transcription framework,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2013. [Online]. Available: <a href="https://archives.ismir.net/ismir2013/paper/000217.pdf">https://archives.ismir.net/ismir2013/paper/000217.pdf</a>. Accessed: 13 Nov. 2026.'

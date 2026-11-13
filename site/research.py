@@ -66,9 +66,11 @@ NBSP = chr(0xA0)  # between a number and its unit, and between thousands in Norw
 OPS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
 WORDS = {
     "en": {"figure": "Figure", "table": "Table", "datatable": "Data table", "measure": "Measure", "n": "Measured on", "range": "lowest–highest",
+           "first": "Shown here: {view}; the other views, with n per view, are tabulated in the appendix of data tables.",
            "fig": "Figure", "eq": "Eq.", "sd": "SD", "ci": "95 % CI", "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values.",
            "tap": "Tap a row for its exact values."},
     "nb": {"figure": "Figur", "table": "Tabell", "datatable": "Datatabell", "measure": "Mål", "n": "Målt på", "range": "laveste–høyeste",
+           "first": "Vist her: {view}; de andre visningene, med n per visning, står i vedlegget med datatabeller.",
            "fig": "Figur", "eq": "ligning", "sd": "SA", "ci": "95 % KI", "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene.",
            "tap": "Trykk på en rad for de nøyaktige verdiene."},
 }
@@ -95,7 +97,7 @@ class Numbers:
         self.converted = {f.stem: json.loads(f.read_text()) for f in sorted((ROOT / "convert" / "reports").glob("*.json"))}
 
     def get(self, key: str) -> float:
-        if key.endswith(("@min", "@max", "@sd", "@lo", "@hi", "@n", "@mean")):  # of the pieces behind a mean
+        if "@" in key:  # of the pieces behind a mean: @min @max @sd @lo @hi @n @mean, or @0.60-0.75: how many lie in a range
             key, _, end = key.rpartition("@")
             head, _, rest = key.partition("/")
             suite, _, name = rest.partition("/")
@@ -107,6 +109,9 @@ class Numbers:
                 sys.exit(f"research: no per-piece values for '{key}'")
             if end in ("lo", "hi"):
                 return interval(pieces)[end == "hi"]
+            if "-" in end:
+                low, _, high = end.partition("-")
+                return sum(float(low) <= value <= float(high) for value in pieces)
             return {"min": min, "max": max, "sd": statistics.stdev, "n": len, "mean": statistics.fmean}[end](pieces)
         head, _, rest = key.partition("/")
         group, _, name = rest.partition("/")
@@ -311,6 +316,8 @@ def finish(out: Path) -> None:
     for page in sorted(out.rglob("index.html")):
         text = page.read_text()
         found = re.search(r'<p class="abstract-text">(.*?)</p>', text, re.S)
+        if '<article class="paper"' in text and not found:
+            sys.exit(f"research: {page.relative_to(out)} is a paper without an abstract (<p class=\"abstract-text\">)")
         if found:
             count = len(re.sub(r"<[^>]+>", " ", found.group(1)).split())
             if not 150 <= count <= 250:
@@ -405,6 +412,8 @@ def chart(spec: dict, name: str, page) -> str:
         sizes = [("", sizes[0][1])]
     measured_on = (' <span class="chart-n"><i>n</i>: ' + e(" · ".join(f"{label}: {size}" if label else size for label, size in sizes)) + ".</span>") if sizes else ""
     source = fill(spec["source"], lang, how)
+    # On paper a figure shows its first view; the others are in the appendix of data tables.
+    several = f' <span class="print-only">{w["first"].format(view=e(views[0]["l"]))}</span>' if len(views) > 1 else ""
     data["words"]["tap"] = w["tap"]
     if not re.fullmatch(r"[a-z0-9-]+", name):
         sys.exit(f"research: a figure's name is its id in the page, so '{name}' must be lower-case letters, digits and hyphens")
@@ -414,7 +423,7 @@ def chart(spec: dict, name: str, page) -> str:
             f'<div class="chart-plot" hidden></div>\n'
             f'<details class="chart-data" open>\n<summary>{w["datatable"]}</summary>\n{chr(10).join(tables)}\n</details>\n'
             f'<figcaption><b>{w["figure"]} {page.figures}.</b> <span class="chart-title" id="fig-{name}-title">{fill(spec["title"], lang, how)}.</span> '
-            f'{fill(spec["caption"], lang, how)}{measured_on} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
+            f'{fill(spec["caption"], lang, how)}{measured_on}{several} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
             f'<script type="application/json">{json.dumps(data, ensure_ascii=False).replace("</", "<\\/")}</script>\n</figure>')
     return whole(made, name)
 

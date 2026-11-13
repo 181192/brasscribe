@@ -239,6 +239,13 @@
     });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+  // On paper each figure shows its first view (the caption says so; the other views are tabulated in the appendix).
+  window.addEventListener("beforeprint", function () {
+    Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart].is-live .chart-views"), function (set) {
+      var first = set.querySelector("input");
+      if (!first.checked) { first.checked = true; first.dispatchEvent(new Event("change")); }
+    });
+  });
   // A page that swaps its content for another language puts new figures in: draw those.
   document.addEventListener("scribe:lang", start);
 })();

@@ -104,6 +104,14 @@
   /* A paper on paper: each figure is its plot, as drawn, and its data table; nothing to operate. */
   .chart { break-inside: avoid; border-color: #999; background: none; }
   .chart-controls .chart-views, .chart-tip, .chart .chart-data { display: none; }
+  .paper .to-top, .to-top { display: none; }
+  /* The plot scales to the paper's width by its viewBox, and the series differ without colour:
+     the second is lighter and outlined, the third hollow. */
+  .chart-svg { width: 100% !important; height: auto !important; }
+  .chart-bar.s2, .chart-mean.s2 { fill-opacity: 0.35; stroke: var(--chart-2); stroke-width: 1.5; }
+  .chart-bar.s3, .chart-mean.s3 { fill: #fff; stroke: var(--chart-3); stroke-width: 1.5; }
+  .chart i.s2 { opacity: 0.45; outline: 1.5px solid var(--chart-2); }
+  .chart i.s3 { background: #fff; outline: 1.5px solid var(--chart-3); }
   .print-only .table-scroll { overflow: visible; }
   .print-only table { font-size: 9pt; }
   .paper .measures > li, .paper pre.bibtex { break-inside: avoid; }
@@ -147,4 +155,4 @@
 .paper pre.bibtex code { background: none; border: 0; padding: 0; }
 .paper table caption { font-weight: 400; }
 .paper li code, .paper td code, .paper p code { overflow-wrap: anywhere; }
-@media not print { .print-only { display: none; } }
+@media not print { .print-only { display: none !important; } }
