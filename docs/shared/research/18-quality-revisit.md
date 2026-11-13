@@ -235,6 +235,28 @@ not piano-only or that is evaluated on triplets. Fine-tuning on brass was not re
 ## 5. The top weakness that remains
 
 The beat grid under free or slow playing. Half the notes of a brass ensemble are written on the wrong beat
-because of a handful of events a piece (a fermata, a half-level choice), while the notes themselves and the
-slots within the beat are right 83 to 93 % of the time. The cheapest real gain is not a model: it is letting the
-player mark a hold and fix the level, and re-quantizing from there.
+because of a handful of events a piece, while the notes themselves and the slots within the beat are right 83 to
+93 % of the time.
+
+What a correction by the player would recover, measured with the answer known (written position, reference
+notes, Beat This!'s beats as the start; "holds" takes the tracker's surplus beats out of every gap of two
+notated beats or more in which no part starts a note):
+
+| | as tracked | best level (×2, ×3, ÷2, ÷3) | holds marked | level and holds | the better of two trackers, per piece |
+|---|---|---|---|---|---|
+| Chorales | 0.490 | 0.563 (1 piece of 10 changes) | 0.591 (20 holds) | 0.658 | 0.599 |
+| URMP | 0.445 | 0.471 (2 of 8) | 0.432 (3 holds) | 0.457 | 0.641 |
+
+- Marking the holds is worth the most on hymn tunes and nothing elsewhere; one piece gets worse when a long note
+  that is no fermata is treated as one, so a hold must be the player's mark, not a rule.
+- The level is wrong less often than it looks: `choose_level` and the bar-line clean-up already take most of
+  it.
+- On URMP what is left is beats put in or left out along the way (Fugue, Arioso, Chorale, Air). Neither
+  correction reaches that. A second tracker does, on some pieces: offering the player "the other beat" is worth
+  more there than any single correction, and the notes cannot choose between the two grids by themselves (the
+  grid the onsets fit best, the more regular one and the one with more onsets on 8ths were each tried: 0.43 to
+  0.51 on the chorales and 0.47 to 0.48 on URMP, under md_beat_this alone).
+
+So the order for the engine is: a second set of beats to choose from, then the player's marks (hold, level,
+first downbeat, beats in a bar), each applied to the cached transcription without running a model again. None
+of that is built.
