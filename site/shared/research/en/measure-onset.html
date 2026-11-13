@@ -1,0 +1,14 @@
+  <li>
+    <h3>Onset F1 and its tolerance</h3>
+    <svg class="mv" viewBox="0 0 280 84" role="img" aria-label="A time line: a played note with a window of 50 and of 100 milliseconds around its start. A written note 30 ms late counts at both tolerances, one 80 ms late only at 100 ms, and one far away is an extra note.">
+      <rect class="win" x="90" y="24" width="100" height="26" opacity="0.45"/><rect class="win" x="115" y="24" width="50" height="26"/>
+      <line class="bold" x1="10" y1="50" x2="270" y2="50"/><line class="bold" x1="140" y1="16" x2="140" y2="50"/>
+      <text class="strong" x="140" y="11" text-anchor="middle">played</text>
+      <text class="txt" x="118" y="35">±50</text><text class="txt" x="192" y="35">±100 ms</text>
+      <circle class="ok" cx="155" cy="50" r="5"/><circle class="ok" cx="180" cy="50" r="5"/><circle class="bad" cx="245" cy="50" r="5"/>
+      <text class="txt" x="155" y="68" text-anchor="middle">+30</text><text class="txt" x="180" y="68" text-anchor="middle">+80</text><text class="txt" x="245" y="68" text-anchor="middle">extra</text>
+      <text class="strong" x="155" y="81" text-anchor="middle">✓ ✓</text><text class="strong" x="180" y="81" text-anchor="middle">✓</text><text class="strong" x="245" y="81" text-anchor="middle">✗</text>
+    </svg>
+    <p>A written note is <em>right</em> when a played note has the same pitch and starts within the tolerance: 50 ms is the usual choice, and we also report 100 ms because a soft brass attack speaks late. <b>Precision</b> is the share of the written notes that are right, <b>recall</b> the share of the played notes that were found, and F1 combines the two. Note ends are ignored unless a figure says otherwise.</p>
+    <p class="formula">F1 = 2 · precision · recall / (precision + recall)</p>
+  </li>

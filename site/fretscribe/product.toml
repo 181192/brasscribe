@@ -82,6 +82,7 @@ nav = [
   ["Home", "@lang/"],
   ["User guide", "@lang/guide/"],
   ["Download", "@lang/download/"],
+  ["How it works", "@lang/research/"],
 ]
 
 [en.card]
@@ -152,6 +153,7 @@ nav = [
   ["Forside", "@lang/"],
   ["Brukerveiledning", "@lang/guide/"],
   ["Last ned", "@lang/download/"],
+  ["Slik virker det", "@lang/research/"],
 ]
 
 [nb.card]

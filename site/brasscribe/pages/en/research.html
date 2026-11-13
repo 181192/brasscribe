@@ -33,7 +33,7 @@ scripts: charts.js
       <p class="overline">Research</p>
       <h1>From a recording to a brass-band score</h1>
       <p class="lead">What Brasscribe does to a recording, how each step was measured, and where the result is still wrong.</p>
-      <p class="byline">Brasscribe project · Every number and figure on this page is read from the repository's benchmark files when the site is built, so it changes when they do</p>
+      <p class="byline">Brasscribe project · Every number and figure on this page is read from the repository's benchmark files when the site is built, so it changes when they do · <a href="@fretscribe/research/">The same for tab: Fretscribe's paper</a></p>
     </header>
 
     <section id="abstract" class="abstract" aria-labelledby="abstract-title">
@@ -134,7 +134,13 @@ scripts: charts.js
     <section id="measures" aria-labelledby="measures-title">
       <h2 id="measures-title"><span class="secno">5</span> Measures</h2>
       <p class="plain"><span class="plain-label">In short</span>Hearing a note and writing it in the right place are different things, and they are measured apart. All measures run from 0 to 1; higher is better.</p>
-      {{part measures}}
+      <ul class="measures">
+      {{part measure-onset}}
+      {{part measure-position}}
+      {{part measure-written}}
+      {{part measure-metre}}
+      {{part measure-doubt}}
+      </ul>
       <p><strong>The gate.</strong> <code>scribe bench</code> scores every suite again from stored model outputs and fails when a number has moved by more than the tolerance in <code>eval/baselines.json</code>; counts such as crossing parts are held exactly. Most figures on this page read the same file the gate reads. The others say so in their source line: the reports of the model conversions, and a few numbers that were measured once and are kept with their sources in <code>measured.toml</code>.</p>
     </section>
 

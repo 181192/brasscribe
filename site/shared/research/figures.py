@@ -536,4 +536,198 @@ FIGURES = {
             [("rule", ("Share or print", "Del eller skriv ut"), (["MusicXML · PDF · MIDI · MP3 · talking score"], ["MusicXML · PDF · MIDI · MP3 · talende noter"]))],
         ],
     },
+    # ------------------------------------------------------------------------------- fretted
+    "tab-notes": {
+        "title": ("A bass is heard well and a guitar alone fairly well; a guitar inside a song scores {fretted/guitar-tab/song.onset_f1}",
+                  "En bass blir hørt godt og en gitar alene ganske godt; en gitar inne i en låt får {fretted/guitar-tab/song.onset_f1}"),
+        "holds": ["fretted/bass-tab/song.onset_f1 > 0.8", "fretted/bass-tab/instrument.onset_f1 > 0.8", "fretted/guitar-tab/report.solo.onset_f1 > 0.7",
+                  "fretted/guitar-tab/report.comp.onset_f1 > 0.7", "fretted/guitar-tab/song.onset_f1 < 0.5"],
+        "sub": ("Notes found: right pitch, and the start within 50 ms.", "Toner funnet: riktig tonehøyde, og starten innen 50 ms."),
+        "axis": ("Onset F1 at 50 ms: 0 = nothing right, 1 = every played note found and no extra ones",
+                 "Onset-F1 ved 50 ms: 0 = ingenting riktig, 1 = alle spilte toner funnet og ingen ekstra"),
+        "series": [("The instrument alone", "Instrumentet alene"), ("In a song, separated first", "I en låt, separert først")],
+        "view_label": ("Evidence", "Belegg"),
+        "views": [
+            {"label": ("Recordings and Slakh", "Opptak og Slakh"),
+             "note": ("GuitarSet and IDMT-SMT-Guitar are real guitars. The Slakh songs are synthesized, the basses included.",
+                      "GuitarSet og IDMT-SMT-Guitar er ekte gitarer. Slakh-låtene er syntetiske, også bassene."),
+             "rows": [
+                 {"label": ("Bass (Slakh)", "Bass (Slakh)"), "keys": [F + "bass-tab/instrument.onset_f1", F + "bass-tab/song.onset_f1"],
+                  "n": ("{fretted/bass-tab/song.tracks|int} songs", "{fretted/bass-tab/song.tracks|int} låter")},
+                 {"label": ("Guitar, single lines (GuitarSet)", "Gitar, enkeltlinjer (GuitarSet)"), "keys": [F + "guitar-tab/report.solo.onset_f1", None],
+                  "n": ("{fretted/guitar-tab/report.solo.excerpts|int} takes by three players the rules were not set on", "{fretted/guitar-tab/report.solo.excerpts|int} opptak av tre gitarister reglene ikke er stilt inn på")},
+                 {"label": ("Guitar, chords (GuitarSet)", "Gitar, akkorder (GuitarSet)"), "keys": [F + "guitar-tab/report.comp.onset_f1", None],
+                  "n": ("{fretted/guitar-tab/report.comp.excerpts|int} takes by the same three players", "{fretted/guitar-tab/report.comp.excerpts|int} opptak av de samme tre gitaristene")},
+                 {"label": ("Guitar, licks and pieces (IDMT-SMT-Guitar)", "Gitar, licks og stykker (IDMT-SMT-Guitar)"), "keys": [F + "guitar-tab/idmt.report.onset_f1", None],
+                  "n": ("{fretted/guitar-tab/idmt.report.excerpts|int} recordings, only reported", "{fretted/guitar-tab/idmt.report.excerpts|int} opptak, bare rapportert")},
+                 {"label": ("Guitar (Slakh)", "Gitar (Slakh)"), "keys": [None, F + "guitar-tab/song.onset_f1"],
+                  "n": ("{fretted/guitar-tab/song.excerpts|int} guitars in songs", "{fretted/guitar-tab/song.excerpts|int} gitarer i låter")}]},
+            {"label": ("Rendered passages, held out", "Syntetiske passasjer, holdt utenfor"),
+             "note": ("Written for the test and played by a sampler, one preset each: weak evidence, and all there is for ukulele and mandolin.",
+                      "Skrevet for testen og spilt av en sampler, én lyd hver: svakt belegg, og alt som finnes for ukulele og mandolin."),
+             "rows": [{"label": label, "keys": [F + f"{suite}/{group}.instrument.onset_f1", F + f"{suite}/{group}.song.onset_f1"],
+                       "n": (f"{{fretted/{suite}/{group}.instrument.excerpts|int}} passages", f"{{fretted/{suite}/{group}.instrument.excerpts|int}} passasjer")}
+                      for label, suite, group in (
+                          (("Ukulele, high G", "Ukulele, høy G"), "ukulele-tab", "ukulele_high_g_heldout"),
+                          (("Ukulele, low G", "Ukulele, lav G"), "ukulele-tab", "ukulele_low_g_heldout"),
+                          (("Baritone ukulele", "Barytonukulele"), "ukulele-tab", "ukulele_baritone_heldout"),
+                          (("Mandolin", "Mandolin"), "mandolin-tab", "mandolin_heldout"),
+                          (("Guitar, nylon strings", "Gitar, nylonstrenger"), "guitar-rendered-tab", "guitar_nylon_heldout"),
+                          (("Guitar, clean electric", "Gitar, ren elektrisk"), "guitar-rendered-tab", "guitar_clean_heldout"))]},
+        ],
+        "caption": ("Notes found per instrument, alone and inside a song. The tolerance is 50 ms here; Brasscribe's headline figures use 100 ms, "
+                    "so the two papers' numbers are not on the same footing.",
+                    "Toner funnet per instrument, alene og inne i en låt. Toleransen er 50 ms her; hovedtallene til Brasscribe bruker 100 ms, "
+                    "så tallene i de to artiklene står ikke på samme grunnlag."),
+        "source": ("<code>eval/baselines.json</code>, suites bass-tab, guitar-tab, ukulele-tab, mandolin-tab and guitar-rendered-tab (all run locally, not in CI).",
+                   "<code>eval/baselines.json</code>, suitene bass-tab, guitar-tab, ukulele-tab, mandolin-tab og guitar-rendered-tab (alle kjøres lokalt, ikke i CI)."),
+    },
+    "tab-strings": {
+        "title": ("On single-note lines, fewer than half of the right notes are on the string the guitarist used",
+                  "På enkeltlinjer står under halvparten av de riktige tonene på den strengen gitaristen brukte"),
+        "holds": ["fretted/guitar-tab/report.solo.string_agreement < 0.5", "fretted/guitar-tab/tune.solo.string_agreement < 0.5",
+                  "fretted/guitar-tab/idmt.report.string_agreement < 0.5", "fretted/guitar-tab/report.comp.string_agreement > 0.6"],
+        "format": "pct",
+        "sub": ("Where the tab puts a note against where it was played, on guitars recorded with a pickup per string.",
+                "Hvor tabben setter en tone, mot hvor den ble spilt, på gitarer tatt opp med én mikrofon per streng."),
+        "axis": ("Share of notes on the player's string", "Andel toner på musikerens streng"),
+        "series": [("Of the notes heard right", "Av tonene som ble hørt riktig"), ("Of all the notes played", "Av alle tonene som ble spilt")],
+        "view_label": ("Players", "Gitarister"),
+        "views": [{"label": label, "note": note, "rows": [
+            {"label": text, "keys": [F + f"guitar-tab/{group}.string_agreement", F + f"guitar-tab/{group}.string_recall"],
+             "n": (f"{{fretted/guitar-tab/{group}.excerpts|int}} recordings", f"{{fretted/guitar-tab/{group}.excerpts|int}} opptak")}
+            for text, group in ((("Single lines (GuitarSet)", "Enkeltlinjer (GuitarSet)"), f"{split}.solo"), (("Chords (GuitarSet)", "Akkorder (GuitarSet)"), f"{split}.comp"),
+                                (("Licks and pieces (IDMT-SMT-Guitar)", "Licks og stykker (IDMT-SMT-Guitar)"), f"idmt.{split}"))]}
+            for label, note, split in (
+                (("Only reported", "Bare rapportert"), ("Players the rules were not set on.", "Gitarister reglene ikke er stilt inn på."), "report"),
+                (("The rules were set on these", "Reglene er stilt inn på disse"), ("Players whose recordings were looked at while the rules were chosen.", "Gitarister med opptak vi så på mens reglene ble valgt."), "tune"))],
+        "caption": ("String and fret. A chord leaves the hand few choices, so its strings are often the player's; a single line can be played in many "
+                    "places, and the tab chooses the easiest hand movement, which is often not the player's choice.",
+                    "Streng og bånd. En akkord gir hånden få valg, så strengene blir ofte musikerens; en enkeltlinje kan spilles mange steder, og "
+                    "tabben velger den letteste håndbevegelsen, som ofte ikke er musikerens valg."),
+        "source": ("<code>eval/baselines.json</code>, suite guitar-tab, <code>string_agreement</code> and <code>string_recall</code>.",
+                   "<code>eval/baselines.json</code>, suiten guitar-tab, <code>string_agreement</code> og <code>string_recall</code>."),
+    },
+    "tab-doubt": {
+        "title": ("A ? on a tab is usually on a wrong note, but most wrong notes have none",
+                  "Et ? på en tab står som regel på en gal tone, men de fleste gale toner har ikke noe"),
+        "holds": [f"fretted/{k}.doubt_recall < 0.4" for k in ("bass-tab/song", "bass-tab/instrument", "guitar-tab/report.solo", "guitar-tab/report.comp", "guitar-tab/song")]
+                 + [f"fretted/{k}.doubt_precision > 0.7" for k in ("bass-tab/song", "bass-tab/instrument", "guitar-tab/report.solo", "guitar-tab/report.comp", "guitar-tab/song")],
+        "format": "pct",
+        "sub": ("Of the notes marked ?, the share that are wrong; and of the wrong notes, the share that are marked.",
+                "Av tonene merket ?: andelen som er gale; og av de gale tonene: andelen som er merket."),
+        "axis": SHARE_AXIS,
+        "series": [("Marks that sit on a wrong note (precision)", "Merker som står på en gal tone (presisjon)"), ("Wrong notes that are marked (recall)", "Gale toner som er merket (recall)")],
+        "views": [{"label": ("Recordings and Slakh", "Opptak og Slakh"), "rows": [
+            {"label": label, "keys": [F + f"{key}.doubt_precision", F + f"{key}.doubt_recall"], "n": (f"{{fretted/{key}.{count}|int}} {en}", f"{{fretted/{key}.{count}|int}} {nb}")}
+            for label, key, count, en, nb in (
+                (("Bass in a song", "Bass i en låt"), "bass-tab/song", "tracks", "songs", "låter"),
+                (("Bass alone", "Bass alene"), "bass-tab/instrument", "tracks", "songs", "låter"),
+                (("Guitar, single lines", "Gitar, enkeltlinjer"), "guitar-tab/report.solo", "excerpts", "recordings", "opptak"),
+                (("Guitar, chords", "Gitar, akkorder"), "guitar-tab/report.comp", "excerpts", "recordings", "opptak"),
+                (("Guitar in a song", "Gitar i en låt"), "guitar-tab/song", "excerpts", "guitars", "gitarer"))]}],
+        "caption": ("Doubt marks on tabs. A wrong note here is one with the wrong pitch or start; the marks say nothing about the string.",
+                    "Tvilsmerker på tabber. En gal tone er her en med feil tonehøyde eller start; merkene sier ingenting om strengen."),
+        "source": ("<code>eval/baselines.json</code>, suites bass-tab and guitar-tab, <code>doubt_precision</code> and <code>doubt_recall</code>.",
+                   "<code>eval/baselines.json</code>, suitene bass-tab og guitar-tab, <code>doubt_precision</code> og <code>doubt_recall</code>."),
+    },
+    "tab-tempo": {
+        "title": ("The beats in a bar are nearly always right in common metres; the tempo is right for six to nine recordings in ten",
+                  "Slagene i takten er nesten alltid riktige i vanlige taktarter; tempoet er riktig for seks til ni av ti opptak"),
+        "holds": [f"fretted/{k}.meter_ok > 0.9" for k in ("bass-tab/song", "bass-tab/instrument", "guitar-tab/report.solo", "guitar-tab/report.comp", "guitar-tab/song")]
+                 + [f"fretted/{k}.tempo_ok >= 0.6" for k in ("bass-tab/song", "bass-tab/instrument", "guitar-tab/report.solo", "guitar-tab/report.comp", "guitar-tab/song")]
+                 + [f"fretted/{k}.tempo_ok < 0.95" for k in ("bass-tab/song", "bass-tab/instrument", "guitar-tab/report.solo", "guitar-tab/report.comp", "guitar-tab/song")],
+        "format": "pct",
+        "sub": ("Share of recordings whose tab has the reference's tempo, within 4 %, and its number of beats in a bar.",
+                "Andel opptak der tabben har fasitens tempo, innen 4 %, og fasitens antall slag i takten."),
+        "axis": ("Share of recordings", "Andel av opptakene"),
+        "series": [("Tempo right", "Riktig tempo"), ("Beats in a bar right", "Riktig antall slag i takten")],
+        "views": [{"label": ("Recordings and Slakh", "Opptak og Slakh"), "rows": [
+            {"label": label, "keys": [F + f"{key}.tempo_ok", F + f"{key}.meter_ok"], "n": (f"{{fretted/{key}.{count}|int}} {en}", f"{{fretted/{key}.{count}|int}} {nb}")}
+            for label, key, count, en, nb in (
+                (("Bass in a song", "Bass i en låt"), "bass-tab/song", "tracks", "songs", "låter"),
+                (("Bass alone", "Bass alene"), "bass-tab/instrument", "tracks", "songs", "låter"),
+                (("Guitar, single lines", "Gitar, enkeltlinjer"), "guitar-tab/report.solo", "excerpts", "recordings", "opptak"),
+                (("Guitar, chords", "Gitar, akkorder"), "guitar-tab/report.comp", "excerpts", "recordings", "opptak"),
+                (("Guitar in a song", "Gitar i en låt"), "guitar-tab/song", "excerpts", "guitars", "gitarer"))]}],
+        "caption": ("Tempo and metre of the tab. Nearly all of these recordings are in four; the text below gives the result on other metres.",
+                    "Tempo og taktart i tabben. Nesten alle disse opptakene går i fire; teksten under gir resultatet for andre taktarter."),
+        "source": ("<code>eval/baselines.json</code>, suites bass-tab and guitar-tab, <code>tempo_ok</code> and <code>meter_ok</code>.",
+                   "<code>eval/baselines.json</code>, suitene bass-tab og guitar-tab, <code>tempo_ok</code> og <code>meter_ok</code>."),
+    },
+    "tab-phone": {
+        "title": ("A bass through a microphone that loses the low end: {fretted/bass-tab/phone.hp0.onset_f1} with the full sound, "
+                  "{fretted/bass-tab/phone.hp200.onset_f1} without everything under 200 Hz, {fretted/bass-tab/phone.hp300.onset_f1} at 300 Hz",
+                  "En bass gjennom en mikrofon som mister bunnen: {fretted/bass-tab/phone.hp0.onset_f1} med full lyd, "
+                  "{fretted/bass-tab/phone.hp200.onset_f1} uten alt under 200 Hz, {fretted/bass-tab/phone.hp300.onset_f1} ved 300 Hz"),
+        "holds": ["fretted/bass-tab/phone.hp0.onset_f1 > fretted/bass-tab/phone.hp100.onset_f1", "fretted/bass-tab/phone.hp100.onset_f1 > fretted/bass-tab/phone.hp200.onset_f1",
+                  "fretted/bass-tab/phone.hp200.onset_f1 > fretted/bass-tab/phone.hp300.onset_f1"],
+        "sub": ("The bass alone, with its lowest sound filtered away as a small microphone would, before anything listens.",
+                "Bassen alene, med den dypeste lyden filtrert bort slik en liten mikrofon ville gjort, før noe lytter."),
+        "axis": ("Onset F1 at 50 ms", "Onset-F1 ved 50 ms"),
+        "series": [("Onset F1", "Onset-F1")],
+        "views": [{"label": ("Bass alone", "Bass alene"), "rows": [
+            {"label": label, "keys": [F + f"bass-tab/phone.hp{cut}.onset_f1"], "n": (f"{{fretted/bass-tab/phone.hp{cut}.tracks|int}} bass lines", f"{{fretted/bass-tab/phone.hp{cut}.tracks|int}} basslinjer")}
+            for cut, label in ((0, ("Full sound", "Full lyd")), (100, ("Nothing under 100 Hz", "Ingenting under 100 Hz")),
+                               (200, ("Nothing under 200 Hz", "Ingenting under 200 Hz")), (300, ("Nothing under 300 Hz (steeper filter)", "Ingenting under 300 Hz (brattere filter)")))]}],
+        "caption": ("A filter stands in for the microphone: no phone was used. The lowest string of a bass sounds at 41 Hz, so every cut removes "
+                    "the note's own pitch and leaves its overtones.",
+                    "Et filter står i stedet for mikrofonen: ingen telefon er brukt. Den dypeste strengen på en bass klinger på 41 Hz, så hvert kutt "
+                    "fjerner tonens egen tonehøyde og lar overtonene stå igjen."),
+        "source": ("<code>eval/baselines.json</code>, suite bass-tab, the <code>phone</code> part.", "<code>eval/baselines.json</code>, suiten bass-tab, delen <code>phone</code>."),
+    },
+    "tab-heldout": {
+        "title": ("Chords found in single-line playing: {fretted/guitar-tab/tune.solo.chord_recall|pct} on the players the rules were set on, "
+                  "{fretted/guitar-tab/report.solo.chord_recall|pct} on the others",
+                  "Akkorder funnet i enkeltlinjespill: {fretted/guitar-tab/tune.solo.chord_recall|pct} hos gitaristene reglene er stilt inn på, "
+                  "{fretted/guitar-tab/report.solo.chord_recall|pct} hos de andre"),
+        "holds": ["fretted/guitar-tab/report.solo.chord_recall < fretted/guitar-tab/tune.solo.chord_recall", "fretted/guitar-tab/report.solo.chord_recall < 0.5"],
+        "format": "pct",
+        "sub": ("The same measure on the three players whose recordings shaped the rules and on the three who were only reported.",
+                "Det samme målet for de tre gitaristene opptakene formet reglene etter, og for de tre som bare er rapportert."),
+        "axis": ("Share of the played chord notes that were found (recall)", "Andel av de spilte akkordtonene som ble funnet (recall)"),
+        "series": [("Players the rules were set on", "Gitarister reglene er stilt inn på"), ("Players only reported", "Gitarister som bare er rapportert")],
+        "view_label": ("Measure", "Mål"),
+        "views": [{"label": label, "axis": axis, "rows": [
+            {"label": text, "keys": [F + f"guitar-tab/tune.{kind}.{key}", F + f"guitar-tab/report.{kind}.{key}"],
+             "n": (f"{{fretted/guitar-tab/report.{kind}.excerpts|int}} recordings in each group", f"{{fretted/guitar-tab/report.{kind}.excerpts|int}} opptak i hver gruppe")}
+            for text, kind in ((("Single lines", "Enkeltlinjer"), "solo"), (("Chords", "Akkorder"), "comp"))]}
+            for label, key, axis in (
+                (("Chord notes found", "Akkordtoner funnet"), "chord_recall", ("Share of the played chord notes that were found (recall)", "Andel av de spilte akkordtonene som ble funnet (recall)")),
+                (("Written chord notes that are right", "Skrevne akkordtoner som er riktige"), "chord_precision", ("Share of the written chord notes that are right (precision)", "Andel av de skrevne akkordtonene som er riktige (presisjon)")),
+                (("Notes found", "Toner funnet"), "onset_f1", ("Onset F1 at 50 ms", "Onset-F1 ved 50 ms")))],
+        "caption": ("What a held-out group is for. A chord is three or more notes that start together; single-line takes have few of them, so the "
+                    "first row rests on few notes.",
+                    "Hva en gruppe holdt utenfor er til for. En akkord er tre eller flere toner som starter samtidig; opptak av enkeltlinjer har få, "
+                    "så den første raden hviler på få toner."),
+        "source": ("<code>eval/baselines.json</code>, suite guitar-tab, the <code>tune</code> and <code>report</code> groups.",
+                   "<code>eval/baselines.json</code>, suiten guitar-tab, gruppene <code>tune</code> og <code>report</code>."),
+    },
+    "fret-pipeline": {
+        "title": ("The Fretscribe pipeline", "Fretscribes arbeidsflyt"),
+        "desc": ("Stages from recording to tab. Learned models (outlined in the brand colour) separate the instrument from a song, find beats and "
+                 "find notes. Rules then clean the notes, put them on the beat grid and choose a string and a fret for each. Dashed stages are "
+                 "where the player decides.",
+                 "Stegene fra opptak til tab. Lærte modeller (med ramme i merkefargen) skiller instrumentet ut av en låt, finner slag og finner "
+                 "toner. Regler rydder så i tonene, setter dem på slagrutenettet og velger streng og bånd for hver. Stiplede steg er der "
+                 "musikeren bestemmer."),
+        "legend": [("Learned model", "Lært modell"), ("Rule (same input, same output)", "Regel (samme inn, samme ut)"), ("The player decides", "Musikeren bestemmer")],
+        "caption": ("From recording to tab. Tuning, capo and playing style only affect the last rule, so another tuning gives a new tab without "
+                    "listening again.",
+                    "Fra opptak til tab. Stemming, capo og spillestil påvirker bare den siste regelen, så en annen stemming gir en ny tab uten å "
+                    "lytte på nytt."),
+        "rows": [
+            [("rule", ("Recording", "Opptak"), (["a file or the microphone"], ["en fil eller mikrofonen"]))],
+            [("human", ("What is this?", "Hva er dette?"), (["just my instrument · a full song; which instrument"], ["bare instrumentet mitt · en hel låt; hvilket instrument"]))],
+            [("model", ("Separate", "Skill ut"), (["a song only:", "BS-RoFormer SW"], ["bare for en låt:", "BS-RoFormer SW"])),
+             ("model", ("Beats", "Slag"), (["Beat This!", "on the recording"], ["Beat This!", "på opptaket"]))],
+            [("model", ("Notes", "Toner"), (["Basic Pitch; SwiftF0 as a", "second opinion on one line"], ["Basic Pitch; SwiftF0 som en", "ekstra vurdering av én linje"])),
+             ("rule", ("Metre, tempo, key", "Taktart, tempo, toneart"), (["beats in a bar,", "the beat to count"], ["slag i takten,", "slaget å telle"]))],
+            [("rule", ("Clean the notes", "Rydd i tonene"), (["overtones out · the instrument's range · bass octave check"], ["overtoner ut · instrumentets omfang · oktavsjekk for bass"]))],
+            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantization and written lengths"], ["kvantisering og skrevne lengder"]))],
+            [("rule", ("A string and a fret for every note", "Streng og bånd for hver tone"), (["the easiest path for the hand along the neck"], ["den letteste veien for hånden langs halsen"]))],
+            [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["listen to the recording at those places"], ["hør på opptaket på de stedene"]))],
+            [("rule", ("The tab", "Tabben"), (["MusicXML · PDF · MIDI · text · instructions in words"], ["MusicXML · PDF · MIDI · tekst · instruksjoner i ord"]))],
+        ],
+    },
 }

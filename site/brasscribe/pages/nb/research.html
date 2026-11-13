@@ -33,7 +33,7 @@ scripts: charts.js
       <p class="overline">Forskning</p>
       <h1>Fra et opptak til noter for brassband</h1>
       <p class="lead">Hva Brasscribe gjør med et opptak, hvordan hvert steg er målt, og hvor resultatet fortsatt er feil.</p>
-      <p class="byline">Brasscribe-prosjektet · Alle tall og figurer på denne siden leses fra målefilene i repositoriet når nettstedet bygges, så de endrer seg når filene gjør det</p>
+      <p class="byline">Brasscribe-prosjektet · Alle tall og figurer på denne siden leses fra målefilene i repositoriet når nettstedet bygges, så de endrer seg når filene gjør det · <a href="@fretscribe/research/">Det samme for tab: Fretscribes artikkel</a></p>
     </header>
 
     <section id="abstract" class="abstract" aria-labelledby="abstract-title">
@@ -134,7 +134,13 @@ scripts: charts.js
     <section id="measures" aria-labelledby="measures-title">
       <h2 id="measures-title"><span class="secno">5</span> Mål</h2>
       <p class="plain"><span class="plain-label">Kort fortalt</span>Å høre en tone og å skrive den på riktig sted er to forskjellige ting, og de måles hver for seg. Alle målene går fra 0 til 1; høyere er bedre.</p>
-      {{part measures}}
+      <ul class="measures">
+      {{part measure-onset}}
+      {{part measure-position}}
+      {{part measure-written}}
+      {{part measure-metre}}
+      {{part measure-doubt}}
+      </ul>
       <p><strong>Sperren.</strong> <code>scribe bench</code> regner ut hver målesuite på nytt fra lagrede modellresultater og feiler når et tall har flyttet seg mer enn toleransen i <code>eval/baselines.json</code>; antall, som kryssende stemmer, holdes nøyaktig. De fleste figurene på denne siden leser den samme filen som sperren. De andre sier det i kildelinjen: rapportene fra modellkonverteringene, og noen få tall som er målt én gang og ligger med kildene sine i <code>measured.toml</code>.</p>
     </section>
 
