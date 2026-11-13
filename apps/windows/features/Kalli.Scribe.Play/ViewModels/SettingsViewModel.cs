@@ -333,7 +333,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void SayUpdate(InterfaceAnswer answer, Uri address, string? serverName)
     {
         Say(ConnectionMonitor.UpdateText(_s, answer, address.IsLoopback, serverName));
-        EngineStatusLink = ConnectionMonitor.LatestRelease;
+        EngineStatusLink = Downloads.For(answer, address.IsLoopback);
         Connection.Kick();
         Connection.Start();
     }

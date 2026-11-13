@@ -23,6 +23,14 @@ import no.kalli.scribe.design.ScribeTheme
 const val BANDROOM_DOWNLOAD = "https://github.com/181192/brasscribe/releases/latest"
 
 /**
+ * The app's own file in the latest release, for when the app is the one to update: the build for this phone's
+ * processor when a release has one (64-bit ARM), else the build for every processor. The browser downloads it
+ * and the phone offers to install it over this one.
+ */
+fun appDownload(product: no.kalli.scribe.play.Product, abis: Array<String> = android.os.Build.SUPPORTED_ABIS): String =
+    "$BANDROOM_DOWNLOAD/download/${product.releaseFile}-${if (abis.firstOrNull() == "arm64-v8a") "arm64-v8a" else "universal"}.apk"
+
+/**
  * Get Bandroom, on the pairing screen and in Help: what the program is called, the address to type on the computer
  * (the text can be selected and copied), and a button that opens it in the phone's browser. A phone with no browser
  * says so on the status line; the address is still there to type.

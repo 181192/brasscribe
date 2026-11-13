@@ -711,4 +711,23 @@ public class InterfaceVersionTests
         Assert.Contains("tok-1", studio.Tokens);
         OnlyTheNumberWasAsked(lan);
     }
+
+    [Fact]
+    public void The_update_is_the_file_to_download_where_this_pc_can_use_it_and_the_page_elsewhere()
+    {
+        const string latest = "https://github.com/181192/brasscribe/releases/latest";
+        var before = (Downloads.AppFile, Downloads.DesktopFile);
+        try
+        {
+            Downloads.AppFile = "fretscribe-windows-x64.zip"; // as the app says at its start
+            Downloads.DesktopFile = "brasscribe-bandroom-windows-x64.zip";
+            Assert.Equal($"{latest}/download/fretscribe-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false).AbsoluteUri);
+            // An older Bandroom on this PC: Bandroom for Windows. On another computer, which may be a Mac: the page.
+            Assert.Equal($"{latest}/download/brasscribe-bandroom-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: true).AbsoluteUri);
+            Assert.Equal(latest, Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: false).AbsoluteUri);
+            Downloads.AppFile = null; // code outside an app
+            Assert.Equal(latest, Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false).AbsoluteUri);
+        }
+        finally { (Downloads.AppFile, Downloads.DesktopFile) = before; }
+    }
 }

@@ -13,6 +13,12 @@ internal static class Product
     /// <summary>It arranges for a band.</summary>
     public static Target Target => Target.Brass;
 
+    /// <summary>The app's file in a release, where an outdated app is sent for its update.</summary>
+    public const string ReleaseFile = "brasscribe-play-windows-x64.zip";
+
+    /// <summary>Bandroom's file for Windows in a release, where an outdated Bandroom on this PC is updated from.</summary>
+    public const string BandroomReleaseFile = "brasscribe-bandroom-windows-x64.zip";
+
     /// <summary>Settings, the work folder, the crash log: %LOCALAPPDATA%\Brasscribe\Play.</summary>
     public static readonly AppFolder Folder = new(Path.Combine("Brasscribe", "Play"));
 

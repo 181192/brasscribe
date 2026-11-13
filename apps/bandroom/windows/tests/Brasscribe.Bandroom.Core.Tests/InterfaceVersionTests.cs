@@ -554,4 +554,8 @@ public sealed class InterfaceVersionTests : IDisposable
         Assert.False(vm.CanPair);
         Assert.Equal("Brasscribe on this PC is older than this copy of Bandroom, and they only work together when both are up to date.", vm.EmptyDevicesText);
     }
+
+    [Fact]
+    public void The_newest_Bandroom_is_its_own_file_in_the_latest_release() =>
+        Assert.Equal("https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-windows-x64.zip", Wire.LatestBandroom);
 }
