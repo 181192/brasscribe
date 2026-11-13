@@ -37,7 +37,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, bass_tab, build_info, history, inspection, profiles, tab, targets, wire
+from . import __version__, bass_tab, build_info, history, inspection, profiles, runner, tab, targets, wire
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
 from .adapters import host_device
@@ -82,20 +82,6 @@ class CachedStaticFiles(StaticFiles):
         response = super().file_response(*args, **kwargs)
         response.headers["Cache-Control"] = self.cache_control
         return response
-
-
-def missing_message(name: str, reason: str) -> str:
-    """Why a succeeded job has no `name`, and what to do on the computer, for a player to read."""
-    from scribe_music import musescore
-
-    if reason == "musescore-not-installed":
-        return (f"{name} was not made: MuseScore is not installed on the computer that runs the engine. "
-                "Install MuseScore 4 there and run the job again.")
-    if reason == "musescore-not-starting":
-        return (f"{name} was not made: MuseScore was started on the computer and did not get going. "
-                f"{musescore.advice()} Then run the job again.")
-    return (f"{name} was not made: MuseScore ran on the computer and did not write it. Run the job again; if it "
-            "happens again, open the job's MusicXML in MuseScore there to see what it says.")
 
 
 def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
@@ -223,8 +209,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def missing_of(job: Job) -> list[m.MissingOutput]:
         """What the job lacks, without a file that is there after all."""
         have = set(outputs_of(job))
-        return [m.MissingOutput(name=x["name"], reason=x["reason"], message=missing_message(x["name"], x["reason"]))
-                for x in job.missing if x["name"] not in have]
+        return [m.MissingOutput(**x) for x in runner.missing_told(job.missing) if x["name"] not in have]
 
     def target_of(job: Job) -> targets.Target | None:
         return targets.of_run(job.profile, jobs.run_dir(job.id) / "outputs")

@@ -80,7 +80,9 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     the export stage's `export.json`), asking for the file answers 404 with the same words, and the next job
     tries again. A band job on a computer without MuseScore lists its PDF, MIDI and MP3 the same way. A
     MuseScore that is started and does not get going (no file written, no processor time used) is stopped after
-    half a minute, not at the conversion's ten-minute limit.
+    half a minute and started once more, with a minute to get going (a healthy MuseScore can be held at its
+    first launch); it is given up on after that, about a minute and a half in, not at the conversion's
+    ten-minute limit.
   - The same tab is also written as text, by the same crate from the same request: `tab.txt` for a monospace
     font (a page, a message), and `tab-instructions.en.txt` and `tab-instructions.nb.txt`, the tab in words bar
     by bar and beat by beat, for a screen reader or a braille display

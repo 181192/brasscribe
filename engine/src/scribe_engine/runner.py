@@ -169,7 +169,7 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         if out is not None and manifest["status"] == "succeeded":
             (Path(out) / "manifest.json").write_text(json.dumps(manifest, indent=1))
         on_event({"type": "job", "status": manifest["status"], "error": manifest.get("error"),
-                  **({"missing": manifest["missing"]} if manifest.get("missing") else {})})
+                  **({"missing": missing_told(manifest["missing"])} if manifest.get("missing") else {})})
         events_file.close()
     return manifest
 
@@ -200,6 +200,34 @@ def missing_outputs(results: dict) -> list[dict]:
         return []
     return ([{"name": name, "reason": "musescore-not-installed"} for name in said.get("skipped", [])]
             + [{"name": name, "reason": said.get("reason") or "musescore-failed"} for name in said.get("missing", [])])
+
+
+MISSING_REASONS = ("musescore-not-installed", "musescore-not-starting", "musescore-failed")
+
+
+def missing_message(name: str, reason: str) -> str:
+    """Why a succeeded job has no `name`, and what to do on the computer, for a player to read."""
+    from scribe_music import musescore
+
+    if reason == "musescore-not-installed":
+        return (f"{name} was not made: MuseScore is not installed on the computer that runs the engine. "
+                "Install MuseScore 4 there and send the recording again.")
+    if reason == "musescore-not-starting":
+        return (f"{name} was not made: MuseScore was started on the computer and did not get going. "
+                f"{musescore.advice()} Then send the recording again.")
+    return (f"{name} was not made: MuseScore ran on the computer and did not write it. Send the recording again; "
+            "if it happens again, open the score's MusicXML in MuseScore there to see what it says.")
+
+
+def missing_told(missing: list[dict]) -> list[dict]:
+    """A manifest's `missing` as clients are told it, in the job's event and in the job itself: name, reason
+    and message. A reason this engine does not know (a manifest written by another version) is told as
+    `musescore-failed`: the file is missing all the same, and the list of reasons is closed for clients."""
+    told = []
+    for x in missing:
+        reason = x.get("reason") if x.get("reason") in MISSING_REASONS else "musescore-failed"
+        told.append({"name": x["name"], "reason": reason, "message": missing_message(x["name"], reason)})
+    return told
 
 
 def diff_manifests(old: dict, new: dict) -> dict:

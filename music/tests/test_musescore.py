@@ -134,7 +134,8 @@ def test_on_macos_musescore_runs_in_a_home_of_its_own(tmp_path, monkeypatch, pla
 def _stand_in(tmp_path, monkeypatch, body: str):
     monkeypatch.setattr(musescore, "LOCK_FILE", tmp_path / "mscore.flock")
     exe = tmp_path / "mscore"
-    exe.write_text(f"#!{sys.executable}\nimport json, sys, time\n{body}")
+    starts = tmp_path / "starts"
+    exe.write_text(f"#!{sys.executable}\nimport json, sys, time\nopen({str(starts)!r}, 'a').write('x')\n{body}")
     exe.chmod(0o755)
     monkeypatch.setattr(musescore, "binary", lambda: str(exe))
 
@@ -148,9 +149,33 @@ def test_a_musescore_that_does_not_get_going_is_stopped_within_seconds(tmp_path,
     started = time.monotonic()
     with pytest.raises(musescore.NotStarting, match="did not get going"):
         musescore.convert_many([(tmp_path / "a.musicxml", tmp_path / "a.pdf")], timeout=120.0)
-    assert time.monotonic() - started < 30
+    waited = time.monotonic() - started
+    assert 6 <= waited < 30  # two starts, each given up on within seconds, the second given twice as long
+    assert len((tmp_path / "starts").read_text()) == 2
     with musescore._lock():  # and the next conversion is not kept waiting for it
         pass
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
+def test_a_musescore_held_at_its_first_start_is_started_once_more(tmp_path, monkeypatch):
+    """A healthy MuseScore can sit without working at its first launch (macOS checks an app after an install or
+    an update). It is not failed for that: the second start does the conversion."""
+    _stand_in(tmp_path, monkeypatch, """import pathlib
+first = len((pathlib.Path(sys.argv[0]).parent / "starts").read_text()) == 1
+if first:
+    time.sleep(120)
+for e in json.load(open(sys.argv[sys.argv.index("-j") + 1])):
+    open(e["out"], "w").write("written")
+""")
+    monkeypatch.setattr(musescore, "START_PATIENCE", 2.0)
+    assert musescore.convert_many([(tmp_path / "a.musicxml", tmp_path / "a.pdf")], timeout=120.0) == []
+    assert (tmp_path / "a.pdf").read_text() == "written"
+
+
+def test_the_advice_blames_nothing_it_cannot_know():
+    said = musescore.advice()
+    assert said.startswith("Open MuseScore once on the computer")
+    assert "allow the app" not in said.split(".")[0]
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
