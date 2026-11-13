@@ -77,3 +77,7 @@ to the decimals it is stored with (0.6 for 0.5948) and still passes the gate, so
 half (0.8125, stored as 0.812 or 0.813) is not flipped by measuring it again. A changed value is
 written with three decimals, rounded half to even. Metrics of skipped suites and parts, and keys the
 file does not hold, are left alone.
+
+The public research pages print these numbers and state findings about them (`site/README.md`,
+"Research pages and figures"). After a baseline change, run `site/build.sh`: it fails where a sentence
+or a figure's title no longer holds, and says which.

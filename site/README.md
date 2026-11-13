@@ -69,6 +69,29 @@ engine answered and no number is typed into a page:
 The product then has its pages, its download page, its place in the bar above every page and its
 sheet on the family page.
 
+## Research pages and figures
+
+A product's research page (`pages/<lang>/research.html`) types no number. It names a measurement and
+the build prints it: from `eval/baselines.json` (the numbers `scribe bench` gates), from
+`convert/reports/` (the converted models' benchmarks), or from `shared/research/measured/measured.toml`
+(numbers measured once that exist only in prose under `docs/`, each with its source). So the page
+follows the baselines. `site/research.py` lists the macros (`{{data <key>}}`, `{{span}}`, `{{holds}}`,
+`{{chart}}`, `{{pipeline}}`, `{{part}}`) and the keys.
+
+- **A sentence that depends on a number says so.** `{{holds <key> < 0.5}}` prints nothing and fails the
+  build when it stops being true; a figure's `holds` does the same for its title. When the build fails
+  there, the numbers have moved past what the words say: rewrite the words, then the rule.
+- **Figures** are described in `shared/research/figures.py` (words in English and Norwegian, rows that
+  name their measurements). The build writes each as a data table with its numbers; `shared/charts.js`
+  draws the chart from the same numbers and folds the table away, so the table is also what a browser
+  without scripts shows. `shared/charts.css` holds the series colours, which were checked for colour
+  blindness on each brand's page colour, light and dark. A page that shows a figure names both files in
+  its header (`styles: charts.css`, `scripts: charts.js`); any page may.
+- **The spread behind a mean** (a dot per piece) comes from `shared/research/measured/per-piece.json`, made
+  by `shared/research/per_piece.py` on a machine with the eval data. The build leaves a spread out when
+  its mean no longer matches the baseline, so run the script again after a deliberate baseline change.
+- **Parts** in `shared/research/<lang>/` are shared by the products' research pages.
+
 ## Download links
 
 No page names a version or writes a release URL. Pages use `{{file <name>}}` and `{{releases}}`,

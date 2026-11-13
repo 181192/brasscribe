@@ -1,0 +1,40 @@
+# Numbers the research pages show that are not in eval/baselines.json: counts that describe an eval
+# set, and measurements that were made once and are recorded only in prose under docs/.
+# Each table says where its numbers come from. A number that cannot be traced to a run is not here.
+# site/research.py reads this file: a page prints a value with {{data m/<table>/<field>}}.
+
+[datasets]
+# Counted from the repository and the benchmark doc.
+source = "eval/fixtures/choralebricks-solo (one <stem>.notes.csv per stem); docs/shared/research/10-benchmark-results.md, 'Song benchmark: Slakh trumpet-lead tracks'"
+choralebricks_solo_stems = 93     # find eval/fixtures/choralebricks-solo -name '*.notes.csv' | wc -l
+slakh_trumpet_songs = 2           # BabySlakh Track00006 and Track00014
+
+[solo_vote]
+# Notes per agreement class behind the precisions gated in the solo-vote suite.
+source = "docs/shared/research/10-benchmark-results.md, 'Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)'"
+command = "python -m scribe_eval.solo_vote_bench"
+dataset = "Mega-53 solo stems of the 10 ChoraleBricks brass quartets and Slakh Track00006 and Track00014"
+n_all = 193
+n_mus_sw = 110
+n_bp_sw = 578
+n_sw = 297
+n_bp_mus = 14
+
+[jobs]
+# Whole jobs on the computer, every stage forced to run, one stage at a time.
+source = "docs/shared/research/13-performance-audit.md, 'M5. Engine stage timings from run manifests', stage parallelism 1"
+command = "SCRIBE_STAGE_PARALLELISM=1 pixi run scribe run --profile <solo|brass-band> --cold all <recording>"
+machine = "Apple M-series Mac, macOS 26"
+band_audio_s = 247      # the whole test recording: beats, MuScriptor, Basic Pitch, arrange, export
+band_s = 95.6
+solo_audio_s = 30       # beats, SwiftF0, Basic Pitch, MuScriptor, contour, arrange, export
+solo_s_fast = 21.4
+solo_s_slow = 23.2
+
+[triplets]
+# Share of notes the dense quantizer puts on their true slot; computed onsets with timing jitter, no audio.
+source = "docs/brasscribe/plan/fast-notes.md, '8.2 Triplets with timing jitter', table 'Dense probe', column 'After'"
+command = "python docs/shared/research/fastnotes/dense_probe.py"
+dataset = "computed onsets: triplet eighths at 100 BPM with 15 ms jitter; sextuplets at 100 BPM with 10 ms jitter"
+triplet_eighths = 0.97
+sextuplets = 0.94
