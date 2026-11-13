@@ -310,13 +310,19 @@ import TranscriptionKit
                 if let score = x.probes["scoreArea"] {
                     let edge = x.probes["partsColumn"]?.minX ?? x.content.width
                     #expect(score.maxX <= edge + 1, "\(name) at \(x.size): the score's page area is \(score.maxX - edge) pt wider than its column")
-                    // and the pages inside it, and the player's bar under it, are as wide as it is
-                    for inside in ["scorePages", "playerBar"] {
-                        if let frame = x.probes[inside] {
-                            #expect(abs(frame.width - score.width) <= 1, "\(name) at \(x.size): \(inside) is \(frame.width) pt wide in a column of \(score.width)")
-                        } else {
-                            Issue.record("\(name) at \(x.size): no \(inside)")
-                        }
+                    // the player's bar under it and the pages inside it are as wide as what the scroll view shows:
+                    // the area itself, less a scroll bar where the Mac always shows one (the bar is docked beside it)
+                    if let bar = x.probes["playerBar"] {
+                        #expect(bar.width <= score.width + 1 && bar.width >= score.width - 20,
+                                "\(name) at \(x.size): the player's bar is \(bar.width) pt wide under a score area of \(score.width)")
+                    } else {
+                        Issue.record("\(name) at \(x.size): no player's bar")
+                    }
+                    if let pages = x.probes["scorePages"] {
+                        #expect(pages.width <= score.width + 1 && pages.width >= score.width - 20,
+                                "\(name) at \(x.size): the pages are \(pages.width) pt wide in a score area of \(score.width)")
+                    } else {
+                        Issue.record("\(name) at \(x.size): no pages")
                     }
                 } else {
                     Issue.record("\(name) at \(x.size): no score area")
