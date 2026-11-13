@@ -89,6 +89,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -870,10 +871,10 @@ private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int
                       onPractice: (() -> Unit)? = null) {
     val c = ScribeTheme.colors
     Surface(
-        Modifier.fillMaxWidth().padding(horizontal = ScreenMargin, vertical = ScribeSpace.s2).navigationBarsPadding(),
+        Modifier.fillMaxWidth().padding(horizontal = ScreenMargin, vertical = ScribeSpace.s2).navigationBarsPadding().semantics { testTag = "player" },
         shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = BorderStroke(1.dp, c.border), shadowElevation = 1.dp,
     ) {
-        Column(Modifier.padding(ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+        Column(Modifier.padding(horizontal = ScribeSpace.s2, vertical = ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             Transport(controller, st, onBar, Modifier.fillMaxWidth())
             // At large text the practice chips sit behind one Practice button (system.md §2).
             var practice by rememberSaveable { mutableStateOf(false) }
@@ -883,8 +884,13 @@ private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                     if (myPart != null) PracticeChip(stringResource(R.string.mute_my_part), myPart in st.muted, { controller.setMuted(myPart, myPart !in st.muted) },
                         icon = DesignR.drawable.ic_bc_play_along)
-                    PracticeChip(stringResource(R.string.practice), st.speed != 100 || st.loop != null || st.countIn || st.metronome, onPractice,
-                        icon = DesignR.drawable.ic_bc_speed, role = Role.Button, trailingIcon = DesignR.drawable.ic_bc_choose)
+                    // On a narrow phone with larger text the two chips would take a row each, and the score would lose it:
+                    // Practice is then its icon and the arrow, with its name to be read by.
+                    val practiceName = stringResource(R.string.practice)
+                    val iconOnly = LocalDensity.current.fontScale >= 1.3f && androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 400
+                    PracticeChip(if (iconOnly) "" else practiceName, st.speed != 100 || st.loop != null || st.countIn || st.metronome, onPractice,
+                        Modifier.semantics { testTag = "practice" }, icon = DesignR.drawable.ic_bc_speed, role = Role.Button,
+                        accessibleName = practiceName.takeIf { iconOnly }, trailingIcon = DesignR.drawable.ic_bc_choose)
                 }
                 return@Column
             }
@@ -899,7 +905,8 @@ private fun PlayerBar(controller: ScoreController, st: ScoreUiState, myPart: Int
 @Composable
 private fun Transport(controller: ScoreController, st: ScoreUiState, onBar: (Int) -> Unit, modifier: Modifier = Modifier) {
     val c = ScribeTheme.colors
-    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
+    // (The buttons carry their own space around their icons: a narrow phone with larger text needs the rest for "Bar 12 of 48".)
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
         FilledIconButton(
             controller::togglePlay, Modifier.size(56.dp).semantics { testTag = "play" }, shape = CircleShape,
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = c.primary, contentColor = c.onPrimary),
@@ -907,7 +914,7 @@ private fun Transport(controller: ScoreController, st: ScoreUiState, onBar: (Int
         IconButton({ onBar(-1) }, Modifier.size(48.dp)) { BcIcon(DesignR.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
         IconButton({ onBar(1) }, Modifier.size(48.dp)) { BcIcon(DesignR.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar)) }
         Column(Modifier.padding(start = ScribeSpace.s1)) {
-            Text(stringResource(R.string.bar_of, st.bar, st.totalBars), style = ScribeNumericStyle.copy(fontWeight = FontWeight.SemiBold))
+            Text(stringResource(R.string.bar_of, st.bar, st.totalBars), style = ScribeNumericStyle.copy(fontWeight = FontWeight.SemiBold), modifier = Modifier.semantics { testTag = "bar-of" })
             BeatCounter(st.beat, st.beatsInBar)
         }
     }
