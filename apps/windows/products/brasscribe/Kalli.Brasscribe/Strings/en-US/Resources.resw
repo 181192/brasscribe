@@ -42,9 +42,6 @@
   <data name="AboutText.Text" xml:space="preserve">
     <value>Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1). Listening on this PC uses Microsoft's ONNX Runtime (MIT), which sends usage data to Microsoft through Windows' diagnostic data, never the recording.</value>
   </data>
-  <data name="LicencesButton.Content" xml:space="preserve">
-    <value>Third-party licences</value>
-  </data>
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Some bars have no steady beat (ad lib.). Their rhythms are approximate.</value>
   </data>
@@ -809,6 +806,9 @@
   </data>
   <data name="Library_Yesterday" xml:space="preserve">
     <value>Yesterday</value>
+  </data>
+  <data name="LicencesButton.Content" xml:space="preserve">
+    <value>Third-party licences</value>
   </data>
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Which band?</value>

@@ -520,6 +520,7 @@ name("EngineDetails", "Details for whoever set up the computer", "Detaljer for d
 prop("EngineAddressBox", "Header", "Address", "Adresse")
 prop("EngineAddressBox", "PlaceholderText", "http://127.0.0.1:8765", "http://127.0.0.1:8765")
 prop("SettingsAboutHeading", "Text", "About", "Om")
+prop("LicencesButton", "Content", "Third-party licences", "Tredjepartslisenser")
 prop("AboutText", "Text", "Fretscribe is a non-commercial project. Tab and notation: alphaTab (MPL-2.0). The faces are Atkinson Hyperlegible Next (SIL OFL 1.1) and Fretscribe Tab (SIL OFL 1.1).",
      "Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1).")
 add("Settings_AppVersion", "Version {0}", "Versjon {0}")

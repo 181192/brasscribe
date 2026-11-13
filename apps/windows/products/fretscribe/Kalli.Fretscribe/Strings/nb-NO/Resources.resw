@@ -42,9 +42,6 @@
   <data name="AboutText.Text" xml:space="preserve">
     <value>Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1).</value>
   </data>
-  <data name="LicencesButton.Content" xml:space="preserve">
-    <value>Tredjepartslisenser</value>
-  </data>
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Fretscribe</value>
   </data>
@@ -557,6 +554,9 @@
   </data>
   <data name="Library_Yesterday" xml:space="preserve">
     <value>I går</value>
+  </data>
+  <data name="LicencesButton.Content" xml:space="preserve">
+    <value>Tredjepartslisenser</value>
   </data>
   <data name="MatchCodeLabel.Text" xml:space="preserve">
     <value>Datamaskinen viser det samme tallet</value>
