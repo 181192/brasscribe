@@ -99,6 +99,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import no.kalli.scribe.play.ui.theme.productColors
 import no.kalli.scribe.design.ScribeSpace
@@ -186,6 +187,13 @@ fun ReviewScreen(vm: PlayViewModel) {
     val todo = items.map { it.head }
     val veryCount = items.count { it.very }
     val listState = rememberLazyListState()
+    // Where the title and the words about the part leave the note's card cut off (a small phone, large text, a phone
+    // on its side), the screen opens at the card: the note is what is checked, and the card says which of how many.
+    LaunchedEffect(Unit) {
+        val shown = androidx.compose.runtime.snapshotFlow { listState.layoutInfo }.first { it.visibleItemsInfo.isNotEmpty() }
+        val card = shown.visibleItemsInfo.firstOrNull { it.index == NOTE_ITEM }
+        if (card == null || card.offset + card.size > shown.viewportEndOffset) listState.scrollToItem(NOTE_ITEM)
+    }
     val scope = rememberCoroutineScope()
     val focus = remember(view) { HashMap<Int, FocusRequester>() }
     val bars = view.bars
@@ -240,21 +248,29 @@ fun ReviewScreen(vm: PlayViewModel) {
     fun finish() { vm.stopListening(); vm.afterReview() }
 
     PlayScaffold(
-        title = null, onBack = vm::back, backLabel = composition.title.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.home), status = status, scroll = false,
+        title = null, onBack = vm::back,
+        // (A narrow phone has room for the arrow and Finish later, not for the score's name between them.)
+        backLabel = (composition.title.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.home))
+            .takeIf { current == null || androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 360 },
+        status = status, scroll = false,
         actions = { if (current != null) PlainButton(stringResource(R.string.review_finish_later, todo.size), { confirmLater = true }) },
         bottom = {
             if (current != null) {
-                PrimaryButton(stringResource(R.string.review_keep_next), { keep(current) }, icon = DesignR.drawable.ic_bc_mark_checked)
+                val keepButton = @Composable { PrimaryButton(stringResource(R.string.review_keep_next), { keep(current) }, icon = DesignR.drawable.ic_bc_mark_checked) }
                 // While a third of the notes carry a "?" (review 3, P1-A), a whole bar can be kept at once.
                 val restOfBar = items.filter { it.head.bar == current.bar }
                 val skipButton = @Composable { m: Modifier -> SecondaryButton(stringResource(R.string.review_skip), { advance(current.index) }, m, icon = DesignR.drawable.ic_bc_skip) }
-                if (restOfBar.size > 1) Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
-                    skipButton(Modifier.weight(1f))
-                    OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
-                        vm.markCheckedAll(voiceId, restOfBar.flatMap { g -> g.members.map { it.index } }, todo.size - restOfBar.size)
-                        picked = null
-                    }, Modifier.weight(1.4f))
-                } else skipButton(Modifier)
+                if (restOfBar.size > 1) {
+                    keepButton()
+                    Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+                        skipButton(Modifier.weight(1f))
+                        OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
+                            vm.markCheckedAll(voiceId, restOfBar.flatMap { g -> g.members.map { it.index } }, todo.size - restOfBar.size)
+                            picked = null
+                        }, Modifier.weight(1.4f))
+                    }
+                // Keep and Skip share a row where both fit on a line, so the note above them keeps the height.
+                } else SideBySideIfTheyFit { keepButton(); skipButton(Modifier) }
             } else PrimaryButton(stringResource(
                 // A solo goes straight to its score; other takes are asked how the score should be.
                 if (result?.let { no.kalli.brasscribe.Brasscribe.afterReview(it) } == no.kalli.scribe.play.Screen.SCORE) R.string.output_apply else R.string.review_continue,
@@ -291,7 +307,6 @@ fun ReviewScreen(vm: PlayViewModel) {
                             else -> ""
                         })
                     } else Lead(stringResource(R.string.review_lead))
-                    Legend()
                     if (voices.size > 1) PartChips(voices, voiceId, composition, checkedMap, vm, lang, mine) { voiceId = it }
                 }
             }
@@ -371,6 +386,8 @@ fun ReviewScreen(vm: PlayViewModel) {
                     )
                 }
             }
+            // What the marks mean, under the note it is first needed for.
+            item { Legend() }
             item {
                 val rest = todo.filter { it != current }
                 if (rest.isNotEmpty()) Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
@@ -490,7 +507,10 @@ private fun voiceOfPart(vm: PlayViewModel, r: no.kalli.scribe.play.Transcription
 private const val MANY_MARKS = 50
 
 /** The items above the bar list in the review LazyColumn (header, note card, still to check, label). */
-private const val HEADER_ITEMS = 4
+private const val HEADER_ITEMS = 5
+
+/** Where the note being checked is in the list: after the title and the words about the part. */
+private const val NOTE_ITEM = 1
 
 /** "Written G4, minim" for a note event. */
 @Composable
@@ -544,7 +564,7 @@ private fun NoteCard(
                     Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                     Text(stringResource(R.string.review_position, position, total), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 }
-                snippet()
+                Box(Modifier.tagged("review-bar")) { snippet() }
                 Text(noteLine(e, lang), style = MaterialTheme.typography.titleMedium)
                 // After Save: what the note is now and what Brasscribe wrote. It keeps its "?" until Keep.
                 if (changed != null) Text(changed, style = MaterialTheme.typography.titleMedium, modifier = Modifier.tagged("note-changed"))
