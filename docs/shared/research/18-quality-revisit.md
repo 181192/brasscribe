@@ -191,7 +191,12 @@ held out. Two measurements:
   inputs. Held out, recall at 8 % marked fell from 0.32 to 0.28, 0.23 and 0.25; on the fitting data nothing
   moved. Not kept. Sixty wrong notes are too few to choose features on.
 
-What this needs is more wrong notes with a reference from recordings the model has not seen (the tuba's
+The next lever by count: 34 of the 105 wrong notes have the right pitch and a late or early onset, and none is
+marked. A doubt about timing (the transcribers disagreeing on the onset, or the distance to the grid before
+snapping) is aimed at a third of the errors, and was not tried. The held-out numbers are reproduced by
+`quality/marks_held_out.py`.
+
+What this also needs is more wrong notes with a reference from recordings the model has not seen (the tuba's
 semitone errors above all), and a decision on whether a late onset should carry a mark at all. Refitting the
 shipped model without the ChoraleBricks parts would make `q_hit` honest, and changes every solo note's
 confidence, so it comes with new reference outputs.
