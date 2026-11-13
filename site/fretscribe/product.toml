@@ -50,8 +50,8 @@ file = "fretscribe-windows-x64.zip"
 group = "windows"
 label_en = "Fretscribe for Windows"
 label_nb = "Fretscribe for Windows"
-en = "Fretscribe for Windows 11 (x64)"
-nb = "Fretscribe for Windows 11 (x64)"
+en = "Fretscribe for Windows 11 (x64), a preview: not yet tried by hand on a Windows PC"
+nb = "Fretscribe for Windows 11 (x64), en forhåndsversjon: ikke prøvd for hånd på en Windows-PC ennå"
 
 [en]
 name = "Fretscribe"
@@ -67,7 +67,7 @@ nav = [
 title = "Turn a recording into tab."
 does = "Play a riff, record a song or open a file. Fretscribe writes it down as tab for your instrument and tuning, shows what it heard before any fret is written, and lets you practise with the recording."
 for = "Guitar, bass, ukulele and mandolin players who read tab."
-platforms = ["Android", "iPhone and iPad", "Mac", "Windows"]
+platforms = ["Android", "iPhone and iPad (test build)", "Mac", "Windows (preview)"]
 shot = "tab"
 shot_alt = "A bass tab in Fretscribe on a phone: Bass line in standard tuning, bar 1 marked, a question mark over a doubtful note, and the player below with Speed and Repeat bars."
 
@@ -92,7 +92,7 @@ nav = [
 title = "Gjør et opptak om til tab."
 does = "Spill et riff, ta opp en sang eller åpne en fil. Fretscribe skriver det ned som tab for instrumentet og stemmingen din, viser hva den hørte før noe bånd blir skrevet, og lar deg øve med tabben."
 for = "Deg som spiller gitar, bass, ukulele eller mandolin og leser tab."
-platforms = ["Android", "iPhone og iPad", "Mac", "Windows"]
+platforms = ["Android", "iPhone og iPad (testversjon)", "Mac", "Windows (forhåndsversjon)"]
 shot = "tab"
 shot_alt = "En basstab i Fretscribe på en telefon: Bass line i standardstemming, takt 1 markert, et spørsmålstegn over en usikker tone, og avspilleren under med Tempo og Gjenta takter."
 

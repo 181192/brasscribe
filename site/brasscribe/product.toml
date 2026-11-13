@@ -70,7 +70,7 @@ nav = [
 title = "A score for your band, from any recording."
 does = "Play it, record a rehearsal or open a file. Brasscribe writes down the parts for your brass band, marks the notes it wasn't sure about, and lets you practise along with the band."
 for = "Brass band players, section leaders and conductors."
-platforms = ["iPhone and iPad", "Mac", "Android", "Windows"]
+platforms = ["iPhone and iPad (test build)", "Mac", "Android", "Windows (preview)"]
 shot = "part"
 shot_alt = "The Solo Cornet part of Old Hundredth on iPhone, as written for B flat, with question marks over the uncertain notes and the player below."
 
@@ -99,7 +99,7 @@ nav = [
 title = "Partitur til bandet ditt, fra hvilket som helst opptak."
 does = "Spill det, ta opp en øvelse eller åpne en fil. Brasscribe skriver ned stemmene til brassbandet ditt, merker tonene den var usikker på, og lar deg øve sammen med bandet."
 for = "Brassbandmusikere, gruppeledere og dirigenter."
-platforms = ["iPhone og iPad", "Mac", "Android", "Windows"]
+platforms = ["iPhone og iPad (testversjon)", "Mac", "Android", "Windows (forhåndsversjon)"]
 shot = "part"
 shot_alt = "Solokornettstemmen til Old Hundredth på iPhone, skrevet for B, med spørsmålstegn over de usikre tonene og avspilleren under."
 
