@@ -281,6 +281,7 @@
     <string name="fs_tab_note_close">Close</string>
     <!-- Under a mark's note: the bar repeats at 60 % with the practice player, and the next "?" on the page. -->
     <string name="fs_tab_note_slowly">Play this bar slowly</string>
+    <string name="fs_tab_note_slowly_brief">Slowly</string>
     <string name="fs_tab_note_next">Next ?</string>
     <!-- What Next ? is called, without the mark a screen reader may leave out, and its state at the last one. -->
     <string name="fs_tab_note_next_name">Next uncertain note</string>
@@ -313,6 +314,8 @@
     <string name="fs_practice_repeat">Repeat bars</string>
     <string name="fs_practice_repeat_on">Repeating %1$s–%2$s</string>
     <string name="fs_practice_repeat_on_one">Repeating %1$s</string>
+    <string name="fs_practice_repeat_brief">Repeat</string>
+    <string name="fs_practice_repeat_bars_brief">%1$s–%2$s</string>
     <string name="fs_practice_repeat_tip">The recording plays these bars again and again.</string>
     <string name="fs_practice_repeat_pickup">Bar 0 is the pickup bar.</string>
     <string name="fs_practice_bar_earlier">%1$s: one bar earlier</string>

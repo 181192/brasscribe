@@ -507,7 +507,8 @@ fun PracticeChip(label: String, on: Boolean, onClick: () -> Unit, modifier: Modi
     ) {
         if (on && role == Role.Switch) BcIcon(DesignR.drawable.ic_bc_done, null, Modifier.size(18.dp))
         else if (icon != null) BcIcon(icon, null, Modifier.size(20.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = c.text, maxLines = 1,
+        // (A chip that is its icon alone has a name to be read by, and no words to draw.)
+        if (label.isNotEmpty()) Text(label, style = MaterialTheme.typography.labelLarge, color = c.text, maxLines = 1,
             modifier = if (accessibleName != null) Modifier.clearAndSetSemantics {} else Modifier)
         if (trailingIcon != null) BcIcon(trailingIcon, null, Modifier.size(20.dp))
     }

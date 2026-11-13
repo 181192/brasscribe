@@ -379,14 +379,18 @@ fun TabScreen(vm: PlayViewModel) {
             IconButton({ told = null }, Modifier.size(48.dp).testTag("fs-tab-note-close")) { BcIcon(DesignR.drawable.ic_bc_close, stringResource(R.string.fs_tab_note_close)) }
         }
         if (noteInOneRow) {
-            // Low on height (a phone on its side): one row, Play this bar slowly as an icon that keeps its name.
+            // Low on height (a phone on its side): one row, Play this bar slowly as one word that keeps its name.
             Row(
                 Modifier.fillMaxWidth().padding(start = ScribeSpace.s4, end = ScribeSpace.s1),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
             ) {
                 note(Modifier.weight(1f))
-                if (canPlay) IconButton({ practice.playBarSlowly(column.bar) }, Modifier.size(48.dp).testTag("fs-tab-note-slowly")) {
-                    BcIcon(DesignR.drawable.ic_bc_play, slowly)
+                // (With a word of its own: the bare triangle is Play, one row up.)
+                if (canPlay) TextButton({ practice.playBarSlowly(column.bar) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-slowly").semantics { contentDescription = slowly },
+                    shape = ScribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = c.text)) {
+                    BcIcon(DesignR.drawable.ic_bc_play, null)
+                    Spacer(Modifier.size(ScribeSpace.s1))
+                    Text(stringResource(R.string.fs_tab_note_slowly_brief), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
                 }
                 if (showNext) nextButton()
                 close()
@@ -674,6 +678,7 @@ fun TabScreen(vm: PlayViewModel) {
             val player: @Composable () -> Unit = {
                 PracticeBar(practice, s.index.measures, place, follows = clock != null,
                     canFetch = r.jobId != null && remember(practice.recording) { vm.container.engine() != null },
+                    withNote = noteShown,
                     onFetch = { vm.container.engine()?.let(practice::fetch) })
             }
             Box(Modifier.fillMaxSize()) {
@@ -741,7 +746,9 @@ fun TabScreen(vm: PlayViewModel) {
                     }
                 }
                 // The player, under the tab and after it in the keyboard's and a screen reader's order: the recording is the sound.
-                if (!inFocus) Box(Modifier.fillMaxWidth().onSizeChanged { playerHeight = it.height }) { player() }
+                // On a phone on its side a note that is open takes the player's place (it has Play this bar slowly, and the
+                // player is back when it closes): with both, the staff of the note being checked would be cut.
+                if (!inFocus && !(noteInOneRow && noteShown)) Box(Modifier.fillMaxWidth().onSizeChanged { playerHeight = it.height }) { player() }
             }
             }
         }
