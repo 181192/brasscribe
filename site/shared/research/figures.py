@@ -78,8 +78,10 @@ FIGURES = {
                    "stykkene fra <code>site/shared/research/measured/per-piece.json</code>."),
     },
     "rhythm": {
-        "title": ("With the score's beats nearly every note lands in its place; with tracked beats under half do",
-                  "Med partiturets slag havner nesten alle toner på plass; med slag sporet fra opptaket under halvparten"),
+        "title": ("With reference beats nearly every note is written at its place in the bar; with tracked beats "
+                  "{brass/quant-urmp/beat_this.position_acc|pct} to {brass/quant-chorales/beat_this.position_acc|pct} are on average, with wide variation between pieces",
+                  "Med referanseslag skrives nesten alle toner på riktig plass i takten; med sporede slag gjelder det i gjennomsnitt "
+                  "{brass/quant-urmp/beat_this.position_acc|pct} til {brass/quant-chorales/beat_this.position_acc|pct}, med stor variasjon mellom stykkene"),
         "holds": ["brass/quant-chorales/beat_this.position_acc < 0.5", "brass/quant-urmp/beat_this.position_acc < 0.5",
                   "brass/quant-chorales/reference_beats.position_acc >= 0.9", "brass/quant-urmp/reference_beats.position_acc >= 0.9"],
         "format": "pct",
