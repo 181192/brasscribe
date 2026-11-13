@@ -376,23 +376,25 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
     return sure if _heard(second, note, note["pitch"]) else UNCONFIRMED
 
 
-# A bar of two tracked beats whose onsets divide the beat in three is a real two (6/8 counted in two): of
-# the onsets off the beat, COMPOUND_SHARE or more lie within COMPOUND_NEAR of a third of the beat, not of a
-# half or a quarter, and there are at least COMPOUND_ONSETS of them. The share is above every two-beat-bar
-# take of GuitarSet's players 00 to 02 (their highest is 0.75). Swing and shuffles divide the beat in three
-# too, but play its second third only (long-short): of the onsets near a third, COMPOUND_BOTH or more lie on
-# each of the two. GuitarSet's jazz takes with a share of 0.7 or more put at most 0.10 of them on the first
-# third as the tab profile reads their notes (five takes of players 00 to 05: three of the players the rules
-# are set on, two held out; shares up to 0.84 when tracked in four), and at most 0.16 as the bass line reads
-# them (eight takes: six and two). At lower shares, which COMPOUND_SHARE already turns down, they put up to 0.5
-# there.
-# A rendered 12/8 shuffle puts 0.02 there, three eighths to the beat 0.5, and a jig's
-# long-short-then-three-eighths a third. A 6/8 tune played mostly long-short is read as a shuffle (two simple
-# beats, written two bars to the bar of four): the two cannot be told apart by where the onsets fall.
-COMPOUND_SHARE = 0.8
+# A bar of two tracked beats whose onsets divide the beat in three is a real two (6/8 counted in two). Each
+# onset off the beat counts for the subdivision it is nearest to (a quarter, a third, a half, two thirds, three
+# quarters) when it lies within COMPOUND_NEAR of it; counted for every subdivision in reach instead, a third heard
+# 10 ms early was also a quarter, and straight 6/8 at 100 BPM was lost in four takes of five. Of the onsets
+# counted, COMPOUND_SHARE or more are on a third, and there are at least COMPOUND_ONSETS of them. The share is
+# above every two-beat-bar take of GuitarSet (the highest is 0.82, players 00 to 05) and above the one bass line
+# in four that is tracked in two and played in triplets throughout (0.90); three eighths to the beat, rendered,
+# reach 0.98, and with 10 ms of jitter on every onset they stay above it at 72 to 132 BPM.
+# Swing and shuffles divide the beat in three too, but play its second third only (long-short): of the onsets
+# on a third, COMPOUND_BOTH or more lie on each of the two. GuitarSet's jazz takes put at most 0.10 of them on
+# the first third as the tab profile reads their notes, and at most 0.16 as the bass line reads them; a rendered
+# 12/8 shuffle puts 0.02 there, three eighths to the beat 0.5, and a jig's long-short-then-three-eighths a third.
+# A 6/8 tune played mostly long-short is read as a shuffle (two simple beats, written two bars to the bar of
+# four): the two cannot be told apart by where the onsets fall.
+COMPOUND_SHARE = 0.92
 COMPOUND_NEAR = 0.07
 COMPOUND_ONSETS = 12
 COMPOUND_BOTH = 0.25
+COMPOUND_SLOTS = np.array([1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4])  # where an onset off the beat can sit
 
 
 def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
@@ -400,9 +402,12 @@ def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
     from scribe_music.quantize import BeatMap
 
     at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
-    first, second = int(np.sum(np.abs(at - 1 / 3) <= COMPOUND_NEAR)), int(np.sum(np.abs(at - 2 / 3) <= COMPOUND_NEAR))
+    nearest = np.abs(at[:, None] - COMPOUND_SLOTS[None, :])
+    slot = np.argmin(nearest, axis=1)
+    slot = np.where(nearest[np.arange(len(at)), slot] <= COMPOUND_NEAR, slot, -1)
+    first, second = int(np.sum(slot == 1)), int(np.sum(slot == 3))
     thirds = first + second
-    twos = int(np.sum((np.abs(at - 0.5) <= COMPOUND_NEAR) | (np.abs(at - 0.25) <= COMPOUND_NEAR) | (np.abs(at - 0.75) <= COMPOUND_NEAR)))
+    twos = int(np.sum((slot == 0) | (slot == 2) | (slot == 4)))
     return (thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
             and min(first, second) >= COMPOUND_BOTH * thirds)
 

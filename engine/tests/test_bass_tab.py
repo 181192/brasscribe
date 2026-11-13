@@ -1368,6 +1368,17 @@ def test_a_bar_of_two_beats_divided_in_three_stays_two():
     jig = [{"pitch": 50 + k, "onset": (2 * i + at) * beat, "offset": (2 * i + at + 0.3) * beat}
            for i in range(16) for k, at in enumerate((0, 2 / 3, 1, 4 / 3, 5 / 3))]
     assert bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in jig]))
+    # Each onset 10 ms off, early or late: a third heard early is still a third, not also a quarter.
+    for bpm in (72, 100, 132):
+        beat = 60 / bpm
+        grid = np.arange(34) * beat
+        rng = np.random.default_rng(bpm)
+        for _ in range(20):
+            heard = np.array([(i + k / 3) * beat for i in range(32) for k in range(3)]) + rng.choice((-0.01, 0.01), 96)
+            assert bass_tab.compound(grid, heard), bpm
+        straight = np.array([(i + k / 4) * beat for i in range(32) for k in range(4)]) + rng.choice((-0.01, 0.01), 128)
+        assert not bass_tab.compound(grid, straight), bpm
+    beat = 60 / 72
     few = six_eight[:9]  # too few onsets off the beat to say
     assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in few]))
     assert bass_tab.bar_beats(2) == 4 and bass_tab.bar_beats(3, beats[:, 0], np.array([n["onset"] for n in six_eight])) == 3
