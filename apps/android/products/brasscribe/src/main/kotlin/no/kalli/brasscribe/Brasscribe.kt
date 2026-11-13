@@ -31,6 +31,7 @@ object Brasscribe : Product {
 
     /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
     override val opensScores = true
+    override val musicStand = true
 
     /** Without a PDF from the computer (a score made or changed on the phone), the phone lays out the PDF itself. */
     override val phonePdf = true
