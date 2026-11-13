@@ -1,5 +1,5 @@
-title = "User guide · Brasscribe Play"
-description = "How to make a score for your brass band with Brasscribe Play: open or record, check the notes, choose the output, practise and print."
+title = "User guide · Brasscribe"
+description = "How to make a score for your brass band with Brasscribe: open or record, check the notes, choose the output, practise and print."
 
 
 [top]
@@ -22,8 +22,8 @@ li14 = "<a href=\"#credits\">Sounds and credits</a>"
 [get_started]
 p1 = "User guide"
 h11 = "Get started"
-p2 = "Brasscribe Play turns a recording into a score for your brass band. This guide walks through it once, from the recording to the printed parts."
-p3 = "Brasscribe Play runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet. Android phones, Macs and Windows PCs can <a href=\"#download\">download it</a> (Windows as a preview). For iPhone and iPad there is a <a href=\"#download-ios\">test build</a> that the band's tech person signs and puts on the device."
+p2 = "Brasscribe turns a recording into a score for your brass band. This guide walks through it once, from the recording to the printed parts."
+p3 = "Brasscribe runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet. Android phones, Macs and Windows PCs can <a href=\"#download\">download it</a> (Windows as a preview). For iPhone and iPad there is a <a href=\"#download-ios\">test build</a> that the band's tech person signs and puts on the device."
 p4 = "The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href=\"#instrument\">what you play</a>. It asks for the microphone only when you first record."
 p5 = "<strong>Solo or full band?</strong> A full band is always written by Bandroom on your computer, on the same Wi-Fi as the phone. Today a single instrument is written by Bandroom too, on every device; Android writes solos on the phone itself again from the next release. See <a href=\"#computer\">Bandroom on your computer</a>."
 
@@ -34,7 +34,7 @@ li1 = "<strong>Android:</strong> the apps need Android 16 or newer. Allow instal
 li2 = "<strong>Mac:</strong> the apps need macOS 26 or newer. They are not notarised yet. Unzip, move the app to Applications and open it once. macOS stops it; open <strong>System Settings › Privacy &amp; Security</strong>, choose <strong>Open Anyway</strong> and confirm. To update, replace the old app in Applications; your scores and settings stay."
 li3 = "<strong>Windows:</strong> the apps are not signed yet. Unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>. To update, replace the folder; your scores and settings stay."
 h31 = "iPhone and iPad (test build)"
-p2 = "Brasscribe Play is not in the App Store. The file <code>brasscribe-play-ios-unsigned.ipa</code> is the app for iPhone and iPad without a signature, and an iPhone or iPad does not install an app that is not signed. So you sign it yourself, with your own Apple Account (Apple ID). A free account is enough. This is a job for the band's tech person."
+p2 = "Brasscribe is not in the App Store. The file <code>brasscribe-play-ios-unsigned.ipa</code> is the app for iPhone and iPad without a signature, and an iPhone or iPad does not install an app that is not signed. So you sign it yourself, with your own Apple Account (Apple ID). A free account is enough. This is a job for the band's tech person."
 li4 = "<strong>Which devices:</strong> an iPhone with iOS 26 or newer, or an iPad with iPadOS 26 or newer."
 li5 = "<strong>Sign and install:</strong> use a sideloading tool on a computer: a program that signs the file with your Apple Account and puts the app on the iPhone or iPad. Xcode cannot sign this file. With Xcode on a Mac you build the app from the <a href=\"https://github.com/181192/brasscribe#readme\">source code on GitHub</a> instead."
 li6 = "<strong>The first time:</strong> the device asks you to turn on <strong>Developer Mode</strong> (<strong>Settings › Privacy &amp; Security</strong>) and to trust your account under <strong>Settings › General › VPN &amp; Device Management</strong>."
@@ -42,7 +42,7 @@ li7 = "<strong>Scores come from the computer at first:</strong> a newly installe
 li8 = "<strong>Seven days:</strong> a signature from a free Apple Account lasts 7 days. After that the app does not open until you sign it again. Sign with the same account and the same tool, and your scores and settings stay."
 li9 = "<strong>A few apps:</strong> a free Apple Account can keep only a few apps like this on a device at a time."
 li10 = "<strong>Not tried on a device yet:</strong> the file is built and checked for every release, but nobody has installed it on an iPhone or iPad this way yet, so reports are welcome."
-p3 = "<strong>Windows:</strong> Bandroom for Windows is in the table above. It is built on Windows for every release, but has not been tried by hand on a Windows PC yet, so reports are welcome. Brasscribe Play for Windows is in the table as a preview: it is still in testing, and it has the music stand, the Appearance setting and <em>What do you play?</em>."
+p3 = "<strong>Windows:</strong> Bandroom for Windows is in the table above. It is built on Windows for every release, but has not been tried by hand on a Windows PC yet, so reports are welcome. Brasscribe for Windows is in the table as a preview: it is still in testing, and it has the music stand, the Appearance setting and <em>What do you play?</em>."
 shot1 = "Home on iPhone: Open a recording and Record with the microphone, with Your scores below: Old Hundredth, Deep Harmony and Abide with Me, each with its band, its 12 bars and any notes left to check."
 shot2 = "What is this? for a 4-minute recording, with its four choices."
 shot3 = "Making the score: the current step as a heading, the percentage, the time left, a list of all steps, and Cancel."

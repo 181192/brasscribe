@@ -4,15 +4,15 @@
 brand = "Brasscribe, overview"
 
 [footer]
-line = "Brasscribe Play and Brasscribe Studio"
+line = "Brasscribe and Brasscribe Studio"
 note = "Notation engraved with Verovio (LGPL-3.0) and alphaTab (MPL-2.0). Band sounds from VSCO 2 CE, the University of Iowa samples and MuseScore MS Basic: <a href=\"@/guide/#credits\">credits</a>. Display type: Instrument Serif (OFL). <a href=\"https://github.com/181192/brasscribe\">Source</a>"
 
 [take]
 title = "Ich steh an deiner Krippe hier"
 
 [download]
-title = "Download · Brasscribe Play"
-description = "Download Brasscribe Play for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
-heading = "Download Brasscribe Play"
-lead = "Brasscribe Play is in early testing: it is not in any app store, and your device will warn you the first time, so each device below shows how to get past it. You also need Bandroom, for a computer on the same Wi-Fi: it writes the scores."
+title = "Download · Brasscribe"
+description = "Download Brasscribe for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
+heading = "Download Brasscribe"
+lead = "Brasscribe is in early testing: it is not in any app store, and your device will warn you the first time, so each device below shows how to get past it. You also need Bandroom, for a computer on the same Wi-Fi: it writes the scores."
 more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@/guide/#download\">guide</a> has the steps in full."

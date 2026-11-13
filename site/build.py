@@ -354,14 +354,12 @@ class Page:
     def chrome(self) -> tuple[str, str]:
         """What stands around every page: the family bar and the product's own row above, the footer below."""
         p, site = self.product, self.site
-        # The bar is the way down: the line, the app, the page. Each step is a link up, the last is where you are.
-        page_keys = {"guide": "nav.guide", "download": "nav.download", "how-it-works": "nav.how"}
+        # The bar is the way down: the line first, then its apps with the one you are in marked. Each is one tap away.
         leaf = posixpath.relpath(self.dir.strip("/") or ".", p.mount or ".")
-        steps = [f'<li><a class="family-mark" href="@family/"{" aria-current=\"page\"" if p.family else ""}>{site.mark}<span data-t="bar.all"></span></a></li>']
-        if not p.family:
-            steps.append(f'<li><a href="@/"{" aria-current=\"page\"" if leaf == "." else ""}>{p.data["name"]}</a></li>')
-            if leaf in page_keys:
-                steps.append(f'<li class="path-page"><a href="./" aria-current="page" data-t="{page_keys[leaf]}"></a></li>')
+        apps = "".join(f'<a href="@{q.id}/"{(" aria-current=\"page\"" if leaf == "." else " aria-current=\"true\"") if q is p else ""}>{q.data["name"]}</a>'
+                       for q in site.products.values())
+        steps = [f'<li><a class="family-mark" href="@family/"{" aria-current=\"page\"" if p.family else ""}>{site.mark}<span data-t="bar.all"></span></a></li>',
+                 f'<li class="path-apps">{apps}</li>']
         bar = f"""<div class="family-bar">
   <div class="wrap">
     <nav class="family-path" data-t-aria-label="bar.path">
@@ -376,10 +374,7 @@ class Page:
             brand = ""
             items = [(key, href) for key, href in p.data.get("nav", [])]
         else:
-            logo = p.data["logo"]
-            logos = "".join(f'<img class="logo-{theme}" src="@/assets/logo/{Path(logo[theme]).name}" alt="" width="{logo["width"]}" height="{logo["height"]}">'
-                            for theme in ("light", "dark"))
-            brand = f'\n    <span class="brand" aria-hidden="true">{logos}</span>'  # the bar above names the app; "Overview" leads home
+            brand = f'\n    <span class="brand" aria-hidden="true">{p.data["name"]}</span>'  # the bar above names the app for everyone
             # The same pages in the same order for every product.
             items = [("nav.overview", "@/"), ("nav.guide", "@/guide/"), ("nav.download", "@/download/"), ("nav.how", "@/how-it-works/")]
             items = [(key, href) for key, href in items if href == "@/" or href.strip("@/") in {p.served(n) for n in p.pages()}]

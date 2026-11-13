@@ -76,7 +76,7 @@ The site has three levels, with the same names everywhere: **Scribe** (the line,
 its **apps** (Brasscribe, Fretscribe; a new app is a new folder), and each app's **devices** (the
 app for Android, iPhone and iPad, Mac and Windows, and the programs on the computer: Bandroom, and
 Studio where an app has it). The bar at the top is the way down and back up, the same on every
-page: Scribe › the app › the page, and the language. Under it each app has the same row: Overview,
+page: Scribe › its apps, with the one you are in marked, and the language. Under it each app has the same row: Overview,
 Guide, Download, How it works. The family home shows the line first and the apps as its members;
 every app's front page has the same "on your devices" section, one card for each entry of
 `[[platforms]]` in its `product.toml` (what it does by itself, what it needs Bandroom for, where
