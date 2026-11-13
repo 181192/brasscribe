@@ -45,6 +45,7 @@ struct NotationView: View {
                     // The pages are engraved to this width. Pinning it here keeps the
                     // fixed-width pages from raising the window's minimum size.
                     .frame(width: max(0, geo.size.width), alignment: .topLeading)
+                    .layoutProbe("scorePages")
                     .clipped()
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(Text("Score pages"))
@@ -54,7 +55,7 @@ struct NotationView: View {
                 .onAppear {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
-                    model.viewWidth = geo.size.width - 16
+                    model.viewWidth = PracticeModel.engravedWidth(forPageArea: geo.size.width)
                     if hsize == .compact, model.shownPart == nil, !model.openedOnMyPart, LaunchOptions.screen != "score" {
                         model.openedOnMyPart = true
                         model.shownPart = model.myPart
@@ -62,9 +63,7 @@ struct NotationView: View {
                         model.relayout()
                     }
                 }
-                .onChange(of: geo.size.width) { _, w in
-                    if abs(w - 16 - model.viewWidth) > 40 { model.viewWidth = w - 16; model.relayout() }
-                }
+                .onChange(of: geo.size.width) { _, w in model.pageAreaChanged(to: w) }
                 .onChange(of: model.layoutVersion) { _, _ in
                     // after (re)engraving, show the current bar
                     DispatchQueue.main.async { proxy.scrollTo(target(model.pageNumber(forBar: model.currentBar)), anchor: .top) }

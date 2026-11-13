@@ -305,6 +305,22 @@ import TranscriptionKit
                     #expect(parts.maxX <= x.content.width + 1, "\(name) at \(x.size): the parts column runs off the window")
                     #expect(parts.height <= x.content.height + 1, "\(name) at \(x.size): the parts column is taller than the window")
                 }
+                // The score's page area ends where its column does: pages are engraved to its width, so an area
+                // that runs on under the parts column (or off the window) puts the music's right edge out of sight.
+                if let score = x.probes["scoreArea"] {
+                    let edge = x.probes["partsColumn"]?.minX ?? x.content.width
+                    #expect(score.maxX <= edge + 1, "\(name) at \(x.size): the score's page area is \(score.maxX - edge) pt wider than its column")
+                    // and the pages inside it, and the player's bar under it, are as wide as it is
+                    for inside in ["scorePages", "playerBar"] {
+                        if let frame = x.probes[inside] {
+                            #expect(abs(frame.width - score.width) <= 1, "\(name) at \(x.size): \(inside) is \(frame.width) pt wide in a column of \(score.width)")
+                        } else {
+                            Issue.record("\(name) at \(x.size): no \(inside)")
+                        }
+                    }
+                } else {
+                    Issue.record("\(name) at \(x.size): no score area")
+                }
                 let toggles = x.probes.filter { $0.key.hasPrefix("onlyThis-") }.values
                 for t in toggles { #expect(t.height <= 36, "\(name) at \(x.size): Only this wraps (\(t.height) pt)") }
             }
