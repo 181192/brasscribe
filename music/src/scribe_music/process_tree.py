@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 import signal
 import subprocess
+import sys
+from pathlib import Path
 
 
 def descendants(pid: int) -> list[int]:
@@ -43,6 +45,16 @@ def _clock(text: str) -> float | None:
         return None
 
 
+def _proc_seconds(pid: int) -> float | None:
+    """One process's user and system time from /proc (Linux), to the clock tick: `ps` rounds to whole seconds,
+    which hides the little a starved process gets done on a small machine."""
+    try:
+        after_name = Path(f"/proc/{pid}/stat").read_text().rpartition(")")[2].split()
+        return (int(after_name[11]) + int(after_name[12])) / os.sysconf("SC_CLK_TCK")
+    except (OSError, ValueError, IndexError):
+        return None
+
+
 def _cpu_seconds_posix(pid: int) -> float | None:
     try:
         out = subprocess.run(["ps", "-A", "-o", "pid=,ppid=,time="], capture_output=True, text=True, timeout=10).stdout
@@ -59,10 +71,12 @@ def _cpu_seconds_posix(pid: int) -> float | None:
                 children.setdefault(int(fields[1]), []).append(int(fields[0]))
     if pid not in used:
         return None
+    exact = sys.platform.startswith("linux")
     total, todo = 0.0, [pid]
     while todo:
         p = todo.pop()
-        total += used[p]
+        finer = _proc_seconds(p) if exact else None
+        total += used[p] if finer is None else finer
         todo += children.get(p, [])
     return total
 

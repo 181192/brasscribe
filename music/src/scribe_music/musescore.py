@@ -9,7 +9,9 @@ judged by the output files existing, never by the exit code.
 
 A MuseScore that is not getting going (it waits for a folder it may not open, or shows a dialog of its
 own) writes nothing and uses no processor time. That is noticed after `START_PATIENCE` seconds instead of
-at the conversion's time limit: it is stopped and `NotStarting` is raised.
+at the conversion's time limit: it is stopped and started once more, since a healthy MuseScore can be held
+that long too (macOS checks an app at its first launch after an install or an update, and the app uses no
+processor time meanwhile). When the second start does not get going either, `NotStarting` is raised.
 
 On macOS MuseScore runs with a home folder of its own (see `_environment`), so it never opens the
 user's Documents folder and never waits for the system to ask permission for it.
@@ -92,13 +94,14 @@ class NotStarting(RuntimeError):
 
 
 def advice() -> str:
-    """What to do about a MuseScore that does not get going, for whoever reads the job's result."""
+    """What to do about a MuseScore that does not get going, for whoever reads the job's result. The cause is
+    not known from here, so nothing is blamed: the first step shows it."""
+    opened = ("Open MuseScore once on the computer and check that it starts without asking anything, and that "
+              "the folders in its Preferences > Folders exist and can be opened.")
     if sys.platform == "darwin":
-        return ("On this Mac, open System Settings > Privacy & Security > Files and Folders and allow the app that "
-                "runs the engine to use the Documents folder. Then open MuseScore once and check that it starts "
-                "without asking anything, and that the folders in its Preferences > Folders exist.")
-    return ("Open MuseScore once and check that it starts without asking anything, and that the folders in its "
-            "Preferences > Folders exist and can be opened.")
+        return (f"{opened} If the Mac has asked whether the app that runs the engine may use the Documents "
+                "folder, allow it in System Settings > Privacy & Security > Files and Folders.")
+    return opened
 
 
 @contextmanager
@@ -197,7 +200,8 @@ def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: 
                  cancel: threading.Event | None = None) -> list[Path]:
     """Run all conversions in one MuseScore launch. Returns the outputs that are missing afterwards.
     Setting `cancel` stops it: a running MuseScore is killed and Cancelled is raised. A MuseScore that does
-    not get going is stopped after START_PATIENCE seconds and NotStarting is raised."""
+    not get going is stopped after START_PATIENCE seconds and started once more; NotStarting is raised when
+    that start does not get going either."""
     exe = binary()
     entries: list[dict] = []
     expected: list[Path] = []
@@ -224,8 +228,12 @@ def convert_many(jobs: Iterable[Job], style: Path | str | None = None, timeout: 
             job_file = tmp / f"job{i}.json"
             job_file.write_text(json.dumps(batch))
             cmd = [exe] + (["-S", str(Path(style).resolve())] if style else []) + ["-j", str(job_file)]
+            outputs = [Path(e["out"]) for e in batch]
             with _lock(cancel):
-                _run(cmd, timeout, cancel, env, outputs=[Path(e["out"]) for e in batch], patience=START_PATIENCE)
+                try:
+                    _run(cmd, timeout, cancel, env, outputs=outputs, patience=START_PATIENCE)
+                except NotStarting:  # once more: the first start of a healthy MuseScore can be held this long
+                    _run(cmd, timeout, cancel, env, outputs=outputs, patience=START_PATIENCE)
     finally:
         _remove(tmp)
     return [p for p in expected if not p.exists()]

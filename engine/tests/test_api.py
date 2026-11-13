@@ -125,11 +125,21 @@ def test_a_job_without_its_pdf_says_which_file_and_why(settings, audio, monkeypa
         r = client.get(f"/v1/jobs/{job_id}/pdf")
         assert r.status_code == 404 and r.json()["detail"] == job["missing"][0]["message"]
         events = sse(client.get(f"/v1/jobs/{job_id}/events").text)
-        assert events[-1]["data"]["missing"] == [{"name": "brass-band.pdf", "reason": "musescore-not-installed"},
-                                         {"name": "brass-band.mid", "reason": "musescore-not-starting"}]
+        assert events[-1]["data"]["missing"] == job["missing"]  # the event says it as the job does
+        assert "send the recording again" in job["missing"][0]["message"]  # what a player with a phone can do
     with TestClient(create_app(settings)) as again:  # another engine process: the run comes from its manifest
         assert again.get(f"/v1/jobs/{job_id}").json()["missing"] == job["missing"]
         assert [j["missing"] for j in again.get("/v1/jobs").json() if j["id"] == job_id] == [job["missing"]]
+    # A manifest with a reason this engine does not know (written by another version) still lists: the file
+    # is told as not written.
+    manifest = settings.runs_dir / job_id / "manifest.json"
+    said = json.loads(manifest.read_text())
+    said["missing"][1]["reason"] = "musescore-on-holiday"
+    manifest.write_text(json.dumps(said))
+    with TestClient(create_app(settings)) as later:
+        listed = later.get("/v1/jobs")
+        assert listed.status_code == 200
+        assert [x["reason"] for j in listed.json() if j["id"] == job_id for x in j["missing"]] == ["musescore-not-installed", "musescore-failed"]
 
 
 def test_errors(client):
