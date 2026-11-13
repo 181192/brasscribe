@@ -189,7 +189,10 @@ fun ReviewScreen(vm: PlayViewModel) {
     val listState = rememberLazyListState()
     // Where the title and the words about the part leave the note's card cut off (a small phone, large text, a phone
     // on its side), the screen opens at the card: the note is what is checked, and the card says which of how many.
+    // (Not past the notice that the player's own part is arranged, which has its own ways on.)
+    val noticeAbove = mine.arranged && mine.part != null
     LaunchedEffect(Unit) {
+        if (noticeAbove) return@LaunchedEffect
         val shown = androidx.compose.runtime.snapshotFlow { listState.layoutInfo }.first { it.visibleItemsInfo.isNotEmpty() }
         val card = shown.visibleItemsInfo.firstOrNull { it.index == NOTE_ITEM }
         if (card == null || card.offset + card.size > shown.viewportEndOffset) listState.scrollToItem(NOTE_ITEM)
