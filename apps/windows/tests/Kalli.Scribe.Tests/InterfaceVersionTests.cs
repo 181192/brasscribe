@@ -345,7 +345,7 @@ public class InterfaceVersionTests
 
         Assert.True(rig.Monitor.HasAction);
         Assert.Equal("Get the update", rig.Monitor.ActionText);
-        Assert.StartsWith("Opens the page", rig.Monitor.ActionHelp);
+        Assert.Equal("Opens your browser to get the newest version", rig.Monitor.ActionHelp);
         Assert.Equal("https://github.com/181192/brasscribe/releases/tag/bandroom-latest", rig.Monitor.ActionUri!.AbsoluteUri);
         Assert.Equal(rig.Time.GetUtcNow(), rig.Monitor.LastOk);
         Assert.Contains("Last answered: ", rig.Monitor.DetailsText);
@@ -557,11 +557,11 @@ public class InterfaceVersionTests
         Assert.Equal(0, studio.Pairings);
         Assert.False(vm.IsPaired);
         OnlyTheNumberWasAsked(lan);
-        // Not words only: the pairing screen offers the page with the update, as the status row does.
+        // Not words only: the pairing screen offers the update, as the status row does.
         Assert.True(vm.HasEngineStatusLink);
         Assert.Equal(ConnectionMonitor.LatestRelease, vm.EngineStatusLink);
         Assert.Equal("Get the update", vm.EngineStatusLinkLabel);
-        Assert.StartsWith("Opens the page", vm.EngineStatusLinkHelp);
+        Assert.Equal("Opens your browser to get the newest version", vm.EngineStatusLinkHelp);
 
         // After the update the pairing goes through, and the link is gone with the sentence.
         studio.InterfaceVersion = Wire.InterfaceVersion;
