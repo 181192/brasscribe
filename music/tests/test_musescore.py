@@ -149,7 +149,8 @@ def test_a_musescore_that_does_not_get_going_is_stopped_within_seconds(tmp_path,
     started = time.monotonic()
     with pytest.raises(musescore.NotStarting, match="did not get going"):
         musescore.convert_many([(tmp_path / "a.musicxml", tmp_path / "a.pdf")], timeout=120.0)
-    assert time.monotonic() - started < 30  # two starts, each given up on within seconds
+    waited = time.monotonic() - started
+    assert 6 <= waited < 30  # two starts, each given up on within seconds, the second given twice as long
     assert len((tmp_path / "starts").read_text()) == 2
     with musescore._lock():  # and the next conversion is not kept waiting for it
         pass
