@@ -14,6 +14,7 @@ Contents
 - MuseScore MS Basic SoundFont (band sounds) (MIT)
 - Instrument Serif font (OFL-1.1)
 - pixi (BSD-3-Clause)
+- Music-Source-Separation-Training (inference code) (MIT)
 - ChoraleBricks (derived test data) (CC-BY-4.0)
 
 ========================================
@@ -195,6 +196,16 @@ Licence: BSD-3-Clause
 Copyright (c) 2023, prefix.dev GmbH. All rights reserved.
 
 The unmodified program, which sets up Brasscribe's tools on this computer. What it installs there (Python and its packages, from conda-forge and PyPI) comes with its own licence files, in the tools' folder.
+
+========================================
+
+Music-Source-Separation-Training (inference code)
+https://github.com/ZFTurbo/Music-Source-Separation-Training
+Licence: MIT
+
+Copyright (c) 2024 Roman Solovyev (ZFTurbo)
+
+The code that runs the instrument separator, at the revision apps/bandroom/macos/scripts/stage-workspace.sh names, without its tests and docs. Its weights are not included: Bandroom downloads them from where their makers publish them. (Bandroom for Windows does not carry this code; there the engine fetches it on first use.)
 
 ========================================
 

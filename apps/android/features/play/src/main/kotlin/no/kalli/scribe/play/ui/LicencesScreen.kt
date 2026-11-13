@@ -14,7 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import no.kalli.scribe.design.ScribeSpace
 import no.kalli.scribe.design.ScribeTheme
 import no.kalli.scribe.play.PlayViewModel
@@ -29,8 +31,8 @@ import no.kalli.scribe.play.PlayViewModel
 /** The app's file of third-party licences in its assets, written by scripts/licences.py (licences/README.md). */
 const val LICENCES_ASSET = "licences/third-party.txt"
 
-/** A line of its own between two parts of the file. */
-private val RULE = Regex("=+")
+/** A line of its own between two parts of the file: exactly this, so that a line of "=" inside a notice is not one. */
+private val RULE = "=".repeat(40)
 
 /**
  * The file as the paragraphs it is shown in: its first line is the screen's title and is left out, a rule is
@@ -40,7 +42,7 @@ fun licenceParagraphs(text: String): List<LicencePart> {
     val parts = mutableListOf<LicencePart>()
     var afterRule = false
     text.trim().split(Regex("\\n\\s*\\n")).drop(1).forEach { paragraph ->
-        if (RULE.matches(paragraph.trim())) {
+        if (paragraph.trim() == RULE) {
             parts += LicencePart(null, heading = false)
             afterRule = true
         } else if (afterRule) {
@@ -66,13 +68,16 @@ data class LicencePart(val text: String?, val heading: Boolean)
 fun LicencesScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val assets = LocalContext.current.assets
-    val parts = remember { licenceParagraphs(assets.open(LICENCES_ASSET).bufferedReader().use { it.readText() }) }
+    // A long file: read and split off the main thread. The list takes its tag when the text is in it.
+    val parts by produceState<List<LicencePart>?>(null) {
+        value = withContext(Dispatchers.IO) { licenceParagraphs(assets.open(LICENCES_ASSET).bufferedReader().use { it.readText() }) }
+    }
     PlayScaffold(title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status, scroll = false) {
         SelectionContainer {
-            LazyColumn(Modifier.fillMaxSize().testTag("licences"), contentPadding = PaddingValues(bottom = ScribeSpace.s5),
+            LazyColumn(Modifier.fillMaxSize().testTag(if (parts == null) "licences-loading" else "licences"), contentPadding = PaddingValues(bottom = ScribeSpace.s5),
                 verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
                 item { ScreenTitle(stringResource(R.string.licences_title)) }
-                items(parts) { part ->
+                items(parts.orEmpty()) { part ->
                     when {
                         part.text == null -> HorizontalDivider(thickness = 1.dp, color = ScribeTheme.colors.border)
                         part.heading -> Text(part.text, style = MaterialTheme.typography.titleMedium,

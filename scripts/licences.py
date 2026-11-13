@@ -92,6 +92,20 @@ def reflow(text: str) -> str:
     return "\n\n".join(out)
 
 
+def upstream_files(app: str, m: dict) -> list[tuple[dict, Path]]:
+    """The notice files a component's makers publish with it, for the version this app carries: the version
+    is read from the build's own pin, so a new version asks for its own file."""
+    out = []
+    for c in m["components"]:
+        for u in c.get("upstream", []):
+            if app in u["apps"]:
+                pin = re.search(u["version_is"], (ROOT / u["version_in"]).read_text(encoding="utf-8"), re.M)
+                if not pin:
+                    raise SystemExit(f"licences: {u['version_in']} no longer names the version of {c['id']}")
+                out.append((c, HERE / "upstream" / u["file"].format(version=pin.group(1))))
+    return out
+
+
 def render(app: str, m: dict, cargo: dict) -> str:
     parts = [c for c in m["components"] if app in c["apps"]]
     texts: list[str] = []
@@ -116,6 +130,14 @@ def render(app: str, m: dict, cargo: dict) -> str:
         texts += [t for t in c["texts"] if t not in texts]
     for t in texts:
         out += ["", RULE, "", f"Licence text: {t}", "", reflow((HERE / "texts" / f"{t}.txt").read_text(encoding="utf-8"))]
+    for c, path in upstream_files(app, m):
+        if not path.exists():
+            raise SystemExit(f"licences: {path.relative_to(ROOT)} is missing: the build names a version of {c['name']} whose "
+                             f"notices are not here. Save the file its makers publish for that version ({c['url']}) under that name")
+        notices = reflow(path.read_text(encoding="utf-8"))
+        if RULE in notices.split("\n"):
+            raise SystemExit(f"licences: {path.relative_to(ROOT)} has a line that is this file's own rule; give RULE another length")
+        out += ["", RULE, "", f"Notices published with {c['name']}", "", notices]
     return "\n".join(line.rstrip() for line in "\n".join(out).split("\n")) + "\n"
 
 
@@ -126,16 +148,24 @@ def build() -> dict[Path, str]:
 
 # ---------------------------------------------------------------- what the builds depend on
 
-def gradle_modules() -> list[str]:
-    return sorted(set(re.findall(r'module\s*=\s*"([^"]+)"', GRADLE_CATALOGUE.read_text(encoding="utf-8"))))
+# Each gives the names a build depends on, with the file that names them.
+
+def gradle_modules() -> dict[str, str]:
+    where = str(GRADLE_CATALOGUE.relative_to(ROOT))
+    return {n: where for n in re.findall(r'module\s*=\s*"([^"]+)"', GRADLE_CATALOGUE.read_text(encoding="utf-8"))}
 
 
-def nuget_packages() -> list[str]:
-    return sorted({p for f in NUGET_VERSIONS for p in re.findall(r'<PackageVersion\s+Include="([^"]+)"', f.read_text(encoding="utf-8"))})
+def nuget_packages() -> dict[str, str]:
+    found: dict[str, list[str]] = {}
+    for f in NUGET_VERSIONS:
+        for p in re.findall(r'<PackageVersion\s+Include="([^"]+)"', f.read_text(encoding="utf-8")):
+            found.setdefault(p, []).append(str(f.relative_to(ROOT)))
+    return {p: " and ".join(files) for p, files in found.items()}
 
 
-def npm_packages() -> list[str]:
-    return sorted(json.loads(NPM_PACKAGE.read_text(encoding="utf-8")).get("dependencies", {}))
+def npm_packages() -> dict[str, str]:
+    where = str(NPM_PACKAGE.relative_to(ROOT))
+    return {n: where for n in json.loads(NPM_PACKAGE.read_text(encoding="utf-8")).get("dependencies", {})}
 
 
 def locked_crates() -> list[str]:
@@ -144,9 +174,9 @@ def locked_crates() -> list[str]:
     return sorted({re.search(r'name = "([^"]+)"', b).group(1) for b in blocks if "source = " in b})
 
 
-def uncovered(kind: str, names: list[str], m: dict) -> list[str]:
+def uncovered(kind: str, names: dict[str, str], m: dict) -> dict[str, str]:
     patterns = [p for c in m["components"] for p in c.get("covers", {}).get(kind, [])] + m["not_shipped"].get(kind, [])
-    return [n for n in names if not any(fnmatch.fnmatchcase(n, p) for p in patterns)]
+    return {n: where for n, where in names.items() if not any(fnmatch.fnmatchcase(n, p) for p in patterns)}
 
 
 def problems() -> list[str]:
@@ -167,10 +197,13 @@ def problems() -> list[str]:
     for c in m["components"]:
         if not c["apps"]:
             found.append(f"{c['id']} is in no app: remove it")
-    for kind, names, where in (("maven", gradle_modules(), GRADLE_CATALOGUE), ("nuget", nuget_packages(), NUGET_VERSIONS[0].parent),
-                               ("npm", npm_packages(), NPM_PACKAGE)):
-        for n in uncovered(kind, names, m):
-            found.append(f"{n} ({where.relative_to(ROOT)}) is not in licences/components.json: add it to the component "
+    used = {path.name for app in m["apps"] for _, path in upstream_files(app, m)}
+    unused = sorted(p.name for p in (HERE / "upstream").glob("*") if p.name not in used)
+    if unused:
+        found.append(f"licences/upstream holds files no app's version asks for: {', '.join(unused)}")
+    for kind, names in (("maven", gradle_modules()), ("nuget", nuget_packages()), ("npm", npm_packages())):
+        for n, where in sorted(uncovered(kind, names, m).items()):
+            found.append(f"{n} ({where}) is not in licences/components.json: add it to the component "
                          f"it belongs to (covers.{kind}) with its licence, or to not_shipped.{kind} when no app ships it")
     locked = set(locked_crates())
     if locked != set(cargo):

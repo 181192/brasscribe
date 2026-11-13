@@ -11,9 +11,10 @@ import java.io.File
 class LicencesTest {
     @Test
     fun aFileIsShownAsHeadingsParagraphsAndDividers() {
+        val rule = "=".repeat(40)
         val file = "Third-party licences: An app\n\nWhat this is.\n\nContents\n\n- A font (OFL-1.1)\n\n" +
-            "========\n\nA font\nhttps://example.org/font\nLicence: OFL-1.1\n\nCopyright someone.\n\n" +
-            "========\n\nLicence text: OFL-1.1\n\nFirst paragraph.\n\nSecond paragraph.\n"
+            "$rule\n\nA font\nhttps://example.org/font\nLicence: OFL-1.1\n\nCopyright someone.\n\n" +
+            "$rule\n\nLicence text: OFL-1.1\n\nFirst paragraph.\n\nSecond paragraph.\n"
         assertEquals(
             listOf(
                 LicencePart("What this is.", false), LicencePart("Contents", true), LicencePart("- A font (OFL-1.1)", false),
@@ -24,6 +25,11 @@ class LicencesTest {
             ),
             licenceParagraphs(file),
         )
+    }
+
+    @Test
+    fun aLineOfEqualsInsideANoticeIsNotADivider() {
+        assertEquals(listOf(LicencePart("========", false), LicencePart("A notice.", false)), licenceParagraphs("Title\n\n========\n\nA notice.\n"))
     }
 
     /** Both apps' own files: each names what it ships, and carries the text of every licence it names. */

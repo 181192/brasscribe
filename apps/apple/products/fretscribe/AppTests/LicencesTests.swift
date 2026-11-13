@@ -6,8 +6,8 @@ import Testing
 @MainActor struct LicencesTests {
     @Test func aFileIsShownAsHeadingsParagraphsAndDividers() {
         let file = "Third-party licences: An app\n\nWhat this is.\n\nContents\n\n- A font (OFL-1.1)\n\n"
-            + "========\n\nA font\nhttps://example.org/font\nLicence: OFL-1.1\n\nCopyright someone.\n\n"
-            + "========\n\nLicence text: OFL-1.1\n\nFirst paragraph.\n\nSecond paragraph.\n"
+            + "\(ThirdPartyLicencesView.rule)\n\nA font\nhttps://example.org/font\nLicence: OFL-1.1\n\nCopyright someone.\n\n"
+            + "\(ThirdPartyLicencesView.rule)\n\nLicence text: OFL-1.1\n\nFirst paragraph.\n\nSecond paragraph.\n"
         #expect(ThirdPartyLicencesView.parts(of: file) == [
             .paragraph("What this is."), .heading("Contents"), .paragraph("- A font (OFL-1.1)"),
             .rule, .heading("A font"), .paragraph("https://example.org/font\nLicence: OFL-1.1"), .paragraph("Copyright someone."),

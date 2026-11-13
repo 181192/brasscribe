@@ -5,12 +5,14 @@ import SwiftUI
 struct ThirdPartyLicencesView: View {
     /// The file's name among the resources, without ".txt".
     let resource: String
+    /// The file as it is shown, read and split once, off the main thread.
+    @State private var parts: [Part] = []
 
     var body: some View {
         ScrollView {
             // A long text: only the paragraphs on screen are laid out.
             LazyVStack(alignment: .leading, spacing: Space.s3) {
-                ForEach(Array(Self.parts(of: text).enumerated()), id: \.offset) { _, part in
+                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
                     switch part {
                     case .rule: Divider()
                     case .heading(let words):
@@ -27,10 +29,12 @@ struct ThirdPartyLicencesView: View {
         }
         .pageBackground()
         .navigationTitle(Text("Third-party licences"))
-    }
-
-    private var text: String {
-        Bundle.main.url(forResource: resource, withExtension: "txt").flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
+        .task(id: resource) {
+            let file = Bundle.main.url(forResource: resource, withExtension: "txt")
+            parts = await Task.detached {
+                Self.parts(of: file.flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? "")
+            }.value
+        }
     }
 
     enum Part: Equatable, Sendable {
@@ -39,14 +43,17 @@ struct ThirdPartyLicencesView: View {
         case paragraph(String)
     }
 
-    /// The file as it is shown: its first line is the screen's title and is left out, a line of "=" is a divider,
+    /// The line between two parts of the file: exactly this, so that a line of "=" inside a notice is not one.
+    nonisolated static let rule = String(repeating: "=", count: 40)
+
+    /// The file as it is shown: its first line is the screen's title and is left out, a rule is a divider,
     /// and the first line after one is that part's heading.
     nonisolated static func parts(of text: String) -> [Part] {
         var parts: [Part] = []
         var afterRule = false
         let paragraphs = text.components(separatedBy: "\n\n").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         for paragraph in paragraphs.dropFirst() where !paragraph.isEmpty {
-            if paragraph.allSatisfy({ $0 == "=" }) {
+            if paragraph == rule {
                 parts.append(.rule)
                 afterRule = true
             } else if afterRule {

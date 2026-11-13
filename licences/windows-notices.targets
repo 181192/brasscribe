@@ -1,0 +1,30 @@
+<Project>
+  <!--
+    The notice files Microsoft publishes with what a Windows app carries, copied as they come into Licences\ next
+    to the app's own third-party.txt (which names them): the Windows App SDK's licence and third-party notices from
+    its package, and the .NET runtime's from the runtime pack a self-contained build carries. Imported by each
+    Windows app; the app's project references Microsoft.WindowsAppSDK with GeneratePathProperty.
+  -->
+  <Target Name="_ScribeNoticeFiles" DependsOnTargets="ResolveFrameworkReferences">
+    <ItemGroup>
+      <_ScribeNetRuntimePack Include="@(ResolvedRuntimePack)" Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_ScribeNetRuntimeDir>@(_ScribeNetRuntimePack->'%(PackageDirectory)')</_ScribeNetRuntimeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\license.txt" Name="WindowsAppSDK-license.txt" />
+      <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\NOTICE.txt" Name="WindowsAppSDK-NOTICE.txt" />
+      <_ScribeNotice Include="$(_ScribeNetRuntimeDir)\LICENSE.TXT" Name="dotnet-runtime-LICENSE.txt" Condition="'$(_ScribeNetRuntimeDir)' != ''" />
+      <_ScribeNotice Include="$(_ScribeNetRuntimeDir)\THIRD-PARTY-NOTICES.TXT" Name="dotnet-runtime-THIRD-PARTY-NOTICES.txt" Condition="'$(_ScribeNetRuntimeDir)' != ''" />
+    </ItemGroup>
+    <Error Condition="'$(PkgMicrosoft_WindowsAppSDK)' == ''" Text="The Windows App SDK's package folder is not known: its PackageReference needs GeneratePathProperty=&quot;true&quot;, so that its notices can be shipped." />
+    <Error Condition="!Exists('%(_ScribeNotice.FullPath)')" Text="%(_ScribeNotice.FullPath) is missing: the package no longer carries this notice file. Find where it is now and update licences/windows-notices.targets." />
+  </Target>
+  <Target Name="ScribeNoticesNextToTheApp" AfterTargets="Build" DependsOnTargets="_ScribeNoticeFiles">
+    <Copy SourceFiles="@(_ScribeNotice)" DestinationFiles="@(_ScribeNotice->'$(OutDir)Licences\%(Name)')" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="ScribeNoticesInThePublishedApp" AfterTargets="Publish" DependsOnTargets="_ScribeNoticeFiles">
+    <Copy SourceFiles="@(_ScribeNotice)" DestinationFiles="@(_ScribeNotice->'$(PublishDir)Licences\%(Name)')" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

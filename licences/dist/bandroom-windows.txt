@@ -14,6 +14,7 @@ Contents
 - MuseScore MS Basic SoundFont (band sounds) (MIT)
 - Instrument Serif font (OFL-1.1)
 - Windows App SDK (Microsoft software licence terms)
+- .NET runtime (MIT)
 - CommunityToolkit.Mvvm (MIT)
 - QRCoder (MIT)
 - pixi (BSD-3-Clause)
@@ -195,7 +196,16 @@ Windows App SDK
 https://github.com/microsoft/WindowsAppSDK
 Licence: Microsoft software licence terms
 
-Copyright (c) Microsoft Corporation. The terms (license.txt) and Microsoft's third-party notices (NOTICE.txt) are in the package, https://www.nuget.org/packages/Microsoft.WindowsAppSDK.
+Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsAppSDK-license.txt and WindowsAppSDK-NOTICE.txt beside this one, as they come in the package.
+
+========================================
+
+.NET runtime
+https://github.com/dotnet/runtime
+Licence: MIT
+
+Copyright (c) .NET Foundation and Contributors. All rights reserved.
+The app carries the runtime it runs on. The runtime's own third-party notices are the file dotnet-runtime-THIRD-PARTY-NOTICES.txt beside this one, as it comes in the runtime's package.
 
 ========================================
 

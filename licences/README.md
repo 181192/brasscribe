@@ -7,6 +7,8 @@ that the list does not know.
 | | |
 |---|---|
 | `components.json` | Every component: its licence, the copyright lines that go with it, a note where one is needed (a modification, where the source is), and the apps that carry it. `sets` names groups of apps; `not_shipped` names the dependencies no app ships (tests and build tools). |
+| `upstream/` | Notice files that a component's makers publish with it and that are too long to retype (ONNX Runtime's third-party notices), one per version. A component's `upstream` names the file and where the build pins the version; when the build moves to a new version, `check` asks for that version's file. |
+| `windows-notices.targets` | Imported by the three Windows apps: copies the Windows App SDK's and the .NET runtime's own licence and notice files from their packages into `Licences\` beside the app's file, which names them. The release builds fail when one is missing. |
 | `cargo.json` | The Rust crates of `core/Cargo.lock` with their licences, written by `scripts/licences.py sync-cargo`. |
 | `texts/` | Each licence's text, once. |
 | `dist/<app>.txt` | What each app ships, written by `scripts/licences.py build`. Committed; the builds take them from here. |

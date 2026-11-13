@@ -26,7 +26,61 @@
       "licence": "LGPL-3.0-or-later",
       "texts": ["LGPL-3.0", "GPL-3.0"],
       "notice": ["By the Verovio contributors (RISM Digital Center)."],
-      "note": "Built from the unmodified source as a separate dynamic framework, so it can be replaced with another build of Verovio. The source is at the address above.",
+      "note": "Built from the unmodified source as a separate dynamic framework, so it can be replaced with another build of Verovio. The exact source is the release and commit that apps/apple/scripts/build-verovio.sh names, at the address above. The libraries below, down to the CRC tables, are compiled into it from the copies it carries.",
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "verovio-pugixml",
+      "name": "pugixml (in Verovio)",
+      "url": "https://pugixml.org",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (C) 2006-2026, by Arseny Kapoulkine"],
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "verovio-midifile",
+      "name": "midifile (in Verovio)",
+      "url": "https://github.com/craigsapp/midifile",
+      "licence": "BSD-2-Clause",
+      "texts": ["BSD-2-Clause"],
+      "notice": ["Copyright (c) 1999-2018, Craig Stuart Sapp. All rights reserved."],
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "verovio-jsonxx",
+      "name": "jsonxx (in Verovio)",
+      "url": "https://github.com/hjiang/jsonxx",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2010 Hong Jiang"],
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "verovio-tuning",
+      "name": "Surge tuning library (in Verovio)",
+      "url": "https://github.com/surge-synthesizer/tuning-library",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright 2019-2020, Paul Walker"],
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "verovio-miniz",
+      "name": "miniz-cpp and miniz (in Verovio)",
+      "url": "https://github.com/kkzi/miniz-cpp",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["miniz-cpp: Copyright (c) 2014-2017 Thomas Fussell", "miniz: Copyright 2013-2014 RAD Game Tools and Valve Software. Copyright 2010-2014 Rich Geldreich and Tenacious Software LLC."],
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "verovio-crc",
+      "name": "CRC tables by Michael Barr (in Verovio)",
+      "url": "https://github.com/rism-digital/verovio",
+      "licence": "Public domain, with its notice kept",
+      "texts": [],
+      "notice": ["Copyright (c) 2000 by Michael Barr. This software is placed into the public domain and may be used for any purpose. However, this notice must not be changed or removed and no warranty is either expressed or implied by its publication or distribution."],
       "apps": ["brasscribe-apple"]
     },
     {
@@ -84,7 +138,7 @@
       "licence": "BSD-3-Clause",
       "texts": ["BSD-3-Clause"],
       "notice": ["Copyright (c) 2011 Google Inc. All rights reserved."],
-      "note": "Skia carries further third-party code of its own; its notices are in its source tree under third_party.",
+      "note": "Skia carries further third-party code of its own; alphaSkia's packages ship no notice file for it, and Skia publishes its notices in its source tree, under third_party.",
       "apps": ["brasscribe-android", "fretscribe-android", "brasscribe-windows", "fretscribe-windows"]
     },
     {
@@ -382,8 +436,22 @@
       "url": "https://github.com/spotify/basic-pitch",
       "licence": "Apache-2.0",
       "texts": ["Apache-2.0"],
-      "notice": ["Copyright 2022 Spotify AB"],
-      "apps": ["brasscribe-android"]
+      "notice": [
+        "Basic Pitch",
+        "Copyright 2022 Spotify AB",
+        "",
+        "This product includes software developed at Spotify AB (http://www.spotify.com/).",
+        "",
+        "This product includes software from Librosa (ISC). Copyright (C) 2013--2017, librosa development team.",
+        "This product includes software from mir_eval (MIT). Copyright (C) 2014 Colin Raffel",
+        "This product includes software from numpy (BSD). Copyright (C) 2005-2022, NumPy Developers.",
+        "This product includes software from pretty-midi (MIT). Copyright (C) 2014 Colin Raffel",
+        "This product includes software from resampy (ISC). Copyright (C) 2016, Brian McFee",
+        "This product includes software from scipy (BSD). Copyright (C) 2001-2002 Enthought, Inc. 2003-2022, SciPy Developers",
+        "This product includes software from tensorflow (Apache 2.0). Copyright (C) 2019 Google, LLC"
+      ],
+      "apps": ["brasscribe-android"],
+      "note": "The lines above are the notice Basic Pitch is published with. The app carries its model only, changed from the published one: in ONNX form with the batch fixed to 1 and the padding of its convolutions written out. The weights are unchanged."
     },
     {
       "id": "beat-this",
@@ -401,9 +469,13 @@
       "licence": "MIT",
       "texts": ["MIT"],
       "notice": ["Copyright (c) Microsoft Corporation"],
-      "note": "Microsoft's build, as published. It contains further third-party software; Microsoft's notices for it are in ThirdPartyNotices.txt at the address above. In Fretscribe for Windows only its managed library is present.",
+      "note": "Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries. In Fretscribe for Windows only its managed library is present.",
       "apps": ["brasscribe-android", "brasscribe-windows", "fretscribe-windows"],
-      "covers": {"maven": ["com.microsoft.onnxruntime:*"], "nuget": ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.Managed"]}
+      "covers": {"maven": ["com.microsoft.onnxruntime:*"], "nuget": ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.Managed"]},
+      "upstream": [
+        {"apps": ["brasscribe-android"], "file": "onnxruntime-{version}-ThirdPartyNotices.txt", "version_in": "apps/android/gradle/libs.versions.toml", "version_is": "^onnxruntime = \"([^\"]+)\""},
+        {"apps": ["brasscribe-windows"], "file": "onnxruntime-{version}-ThirdPartyNotices.txt", "version_in": "apps/windows/Directory.Packages.props", "version_is": "<OnnxRuntimeVersion>([^<]+)</OnnxRuntimeVersion>"}
+      ]
     },
     {
       "id": "directml",
@@ -522,9 +594,21 @@
       "url": "https://github.com/microsoft/WindowsAppSDK",
       "licence": "Microsoft software licence terms",
       "texts": [],
-      "notice": ["Copyright (c) Microsoft Corporation. The terms (license.txt) and Microsoft's third-party notices (NOTICE.txt) are in the package, https://www.nuget.org/packages/Microsoft.WindowsAppSDK."],
+      "notice": ["Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsAppSDK-license.txt and WindowsAppSDK-NOTICE.txt beside this one, as they come in the package."],
       "apps": ["@windows-play", "bandroom-windows"],
       "covers": {"nuget": ["Microsoft.WindowsAppSDK"]}
+    },
+    {
+      "id": "dotnet-runtime",
+      "name": ".NET runtime",
+      "url": "https://github.com/dotnet/runtime",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": [
+        "Copyright (c) .NET Foundation and Contributors. All rights reserved.",
+        "The app carries the runtime it runs on. The runtime's own third-party notices are the file dotnet-runtime-THIRD-PARTY-NOTICES.txt beside this one, as it comes in the runtime's package."
+      ],
+      "apps": ["@windows-play", "bandroom-windows"]
     },
     {
       "id": "vcruntime",
@@ -574,6 +658,16 @@
       "notice": ["Copyright (c) 2023, prefix.dev GmbH. All rights reserved."],
       "note": "The unmodified program, which sets up Brasscribe's tools on this computer. What it installs there (Python and its packages, from conda-forge and PyPI) comes with its own licence files, in the tools' folder.",
       "apps": ["@bandroom"]
+    },
+    {
+      "id": "msst",
+      "name": "Music-Source-Separation-Training (inference code)",
+      "url": "https://github.com/ZFTurbo/Music-Source-Separation-Training",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2024 Roman Solovyev (ZFTurbo)"],
+      "note": "The code that runs the instrument separator, at the revision apps/bandroom/macos/scripts/stage-workspace.sh names, without its tests and docs. Its weights are not included: Bandroom downloads them from where their makers publish them. (Bandroom for Windows does not carry this code; there the engine fetches it on first use.)",
+      "apps": ["bandroom-mac"]
     },
     {
       "id": "choralebricks",

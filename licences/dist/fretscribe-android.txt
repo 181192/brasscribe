@@ -67,7 +67,7 @@ Licence: BSD-3-Clause
 
 Copyright (c) 2011 Google Inc. All rights reserved.
 
-Skia carries further third-party code of its own; its notices are in its source tree under third_party.
+Skia carries further third-party code of its own; alphaSkia's packages ship no notice file for it, and Skia publishes its notices in its source tree, under third_party.
 
 ========================================
 

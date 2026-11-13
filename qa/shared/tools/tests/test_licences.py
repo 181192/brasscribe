@@ -44,9 +44,28 @@ def test_every_app_file_carries_the_text_of_each_licence_it_names():
 
 
 def test_a_new_dependency_that_is_in_neither_list_is_reported(monkeypatch):
-    monkeypatch.setattr(licences, "gradle_modules", lambda: ["androidx.core:core-ktx", "org.example:new-library"])
-    monkeypatch.setattr(licences, "nuget_packages", lambda: ["AlphaTab", "New.Package"])
+    monkeypatch.setattr(licences, "gradle_modules", lambda: {"androidx.core:core-ktx": "catalogue", "org.example:new-library": "catalogue"})
+    monkeypatch.setattr(licences, "nuget_packages", lambda: {"AlphaTab": "apps/windows", "New.Package": "apps/bandroom/windows/Directory.Packages.props"})
     monkeypatch.setattr(licences, "locked_crates", lambda: sorted([*json.loads((ROOT / "licences/cargo.json").read_text())["crates"], "new-crate"]))
     found = "\n".join(licences.problems())
     assert "org.example:new-library" in found and "New.Package" in found and "new: new-crate" in found
     assert "androidx.core:core-ktx" not in found and "AlphaTab (" not in found
+    assert "New.Package (apps/bandroom/windows/Directory.Packages.props)" in found
+
+
+def test_a_published_notice_file_follows_the_version_the_build_names(monkeypatch, tmp_path):
+    m = licences.manifest()
+    text = licences.build()[licences.DIST / "brasscribe-android.txt"]
+    (_, path), = licences.upstream_files("brasscribe-android", m)
+    assert path.exists() and "\nNotices published with ONNX Runtime\n" in text
+    assert licences.upstream_files("fretscribe-android", m) == []
+    # A new version in the build asks for that version's file.
+    pin = tmp_path / "libs.versions.toml"
+    pin.write_text('onnxruntime = "9.9.9"\n')
+    monkeypatch.setattr(licences, "ROOT", tmp_path)
+    for c in m["components"]:
+        for u in c.get("upstream", []):
+            u["version_in"] = "libs.versions.toml"
+            u["version_is"] = '^onnxruntime = "([^"]+)"'
+    (_, path), = licences.upstream_files("brasscribe-android", m)
+    assert path.name == "onnxruntime-9.9.9-ThirdPartyNotices.txt"
