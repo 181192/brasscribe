@@ -32,24 +32,26 @@ STEMS = ("{m/datasets/choralebricks_solo_stems|int} single-instrument recordings
 
 
 def transcription(suite, rows):
-    return [{"label": label, "keys": [f"{B}{suite}/{model}.onset100_f1" if "100" in has else None,
-                                      f"{B}{suite}/{model}.onset_f1" if "50" in has else None]} for label, model, has in rows]
+    return [{"label": label, "keys": [f"{B}{suite}/{model}.onset_f1" if "50" in has else None,
+                                      f"{B}{suite}/{model}.onset100_f1" if "100" in has else None]} for label, model, has in rows]
 
 
 FIGURES = {
     # ------------------------------------------------------------------------------- brass
     "notes-found": {
-        "title": ("The best model scores {brass/chorales-transcription/muscriptor-medium.onset100_f1} on brass quartets and "
-                  "{brass/urmp-transcription/muscriptor-medium.onset100_f1} on chamber brass",
-                  "Den beste modellen får {brass/chorales-transcription/muscriptor-medium.onset100_f1} på brasskvartetter og "
-                  "{brass/urmp-transcription/muscriptor-medium.onset100_f1} på kammerbrass"),
+        "title": ("The best model reaches an onset F-measure of {brass/chorales-transcription/muscriptor-medium.onset_f1} on brass quartets and "
+                  "{brass/urmp-transcription/muscriptor-medium.onset_f1} on chamber brass at ±50 ms, and "
+                  "{brass/chorales-transcription/muscriptor-medium.onset100_f1} and {brass/urmp-transcription/muscriptor-medium.onset100_f1} at ±100 ms",
+                  "Den beste modellen oppnår et F-mål for ansats på {brass/chorales-transcription/muscriptor-medium.onset_f1} på brasskvartetter og "
+                  "{brass/urmp-transcription/muscriptor-medium.onset_f1} på kammerbrass ved ±50 ms, og "
+                  "{brass/chorales-transcription/muscriptor-medium.onset100_f1} og {brass/urmp-transcription/muscriptor-medium.onset100_f1} ved ±100 ms"),
         "holds": ["brass/chorales-transcription/muscriptor-medium.onset100_f1 > brass/chorales-transcription/basic-pitch.onset100_f1",
                   "brass/urmp-transcription/muscriptor-medium.onset100_f1 > brass/urmp-transcription/basic-pitch.onset100_f1",
                   "brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1 > brass/slakh-transcription/muscriptor-medium.onset100_f1"],
-        "sub": ("Notes found in the whole recording, every part at once. A dot is one piece; the ringed dot is the mean.",
-                "Toner funnet i hele opptaket, alle stemmer samtidig. En prikk er ett stykke; prikken med ring er snittet."),
+        "sub": ("Notes found in the whole recording, every part at once. A dot is one piece, the ringed dot the mean, the thick bar its 95 % confidence interval.",
+                "Toner funnet i hele opptaket, alle stemmer samtidig. En prikk er ett stykke, prikken med ring gjennomsnittet, den tykke streken 95 % konfidensintervall."),
         "axis": F1_AXIS,
-        "series": [("Onset within 100 ms", "Ansats innen 100 ms"), ("Onset within 50 ms", "Ansats innen 50 ms")],
+        "series": [("Onset within ±50 ms (standard)", "Ansats innen ±50 ms (standard)"), ("Onset within ±100 ms (relaxed)", "Ansats innen ±100 ms (romsligere)")],
         "view_label": RECORDINGS,
         "views": [
             {"label": CHORALES, "note": CHORALES_NOTE, "n": CHORALES_N,
@@ -57,8 +59,8 @@ FIGURES = {
             {"label": URMP, "note": URMP_NOTE, "n": URMP_N,
              "rows": transcription("urmp-transcription", [("MuScriptor medium", "muscriptor-medium", "100 50"), ("Basic Pitch", "basic-pitch", "100 50")])},
             {"label": ("Trumpet over a band", "Trompet over et band"),
-             "note": ("Slakh: synthesized songs with a trumpet lead. Only the 100 ms score is gated.",
-                      "Slakh: syntetiske låter med trompet i front. Bare 100 ms-målet er låst."),
+             "note": ("Slakh: synthesised songs with a trumpet lead. Only the ±100 ms result is stored for this set.",
+                      "Slakh: syntetiske låter med trompet i front. Bare resultatet ved ±100 ms er lagret for dette settet."),
              "n": ("{m/datasets/slakh_trumpet_songs|int} songs", "{m/datasets/slakh_trumpet_songs|int} låter"),
              "rows": transcription("slakh-transcription", [
                  (("Separated first, then MuScriptor", "Separert først, så MuScriptor"), "pipeB-sw-muscriptor", "100"),
@@ -81,10 +83,10 @@ FIGURES = {
         "holds": ["brass/quant-chorales/beat_this.position_acc < 0.5", "brass/quant-urmp/beat_this.position_acc < 0.5",
                   "brass/quant-chorales/reference_beats.position_acc >= 0.9", "brass/quant-urmp/reference_beats.position_acc >= 0.9"],
         "format": "pct",
-        "sub": ("The correct notes are given to the quantizer, so only the beat grid differs. A dot is one piece: with tracked beats the "
-                "pieces spread over almost the whole scale.",
-                "Kvantiseringen får de riktige tonene, så bare slagrutenettet er ulikt. En prikk er ett stykke: med sporede slag sprer "
-                "stykkene seg over nesten hele skalaen."),
+        "sub": ("The correct notes are given to the quantiser, so only the beat grid differs. A dot is one piece, the ringed dot the mean, the thick bar its 95 % confidence interval: with tracked "
+                "beats the pieces spread over almost the whole scale.",
+                "Kvantiseringen får de riktige tonene, så bare slagrutenettet er ulikt. En prikk er ett stykke, prikken med ring gjennomsnittet, den tykke streken 95 % konfidensintervall: med "
+                "sporede slag sprer stykkene seg over nesten hele skalaen."),
         "axis": ("Share of the reference notes written as the score has them", "Andel av referansetonene skrevet slik partituret har dem"),
         "series": [("Beats given (from the score)", "Slag gitt (fra partituret)"), ("Beats tracked (Beat This!)", "Slag sporet (Beat This!)")],
         "view_label": RECORDINGS,
@@ -526,13 +528,13 @@ FIGURES = {
              ("rule", ("Metrical level", "Metrisk nivå"), (["the beat a player", "would count"], ["slaget en musiker", "ville telt"]))],
             [("rule", ("Vote and confidence", "Avstemning og sikkerhet"), (["agreement between models", "→ which notes get a ?"], ["enighet mellom modellene", "→ hvilke toner som får ?"])),
              ("rule", ("Bar lines, free time", "Taktstreker, fri rytme"), (["downbeat cleanup,", "ad lib. passages"], ["opprydding i enere,", "ad lib.-partier"]))],
-            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantization, 24 ticks per beat"], ["kvantisering, 24 trinn per slag"]))],
+            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantisation, 24 ticks per beat"], ["kvantisering, 24 trinn per slag"]))],
             [("rule", ("Durations", "Lengder"), (["note ends from the pitch contour; staccato"], ["toneslutt fra tonehøydekurven; staccato"]))],
             [("rule", ("Spelling and key", "Tonenavn og toneart"), (["ps13 at concert pitch · Krumhansl–Kessler"], ["ps13 i klingende tonehøyde · Krumhansl–Kessler"]))],
             [("rule", ("Harmony", "Harmoni"), (["the chord tones of each beat"], ["akkordtonene i hvert slag"]))],
             [("rule", ("Arrange", "Arranger"), (["full band · small band · quartet"], ["fullt band · lite band · kvartett"]))],
             [("rule", ("Difficulty", "Vanskelighetsgrad"), (["as played · standard · easier"], ["som spilt · standard · enklere"]))],
-            [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["grouped review, your part first"], ["gruppevis gjennomgang, din stemme først"]))],
+            [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["grouped review, the player's own part first"], ["gruppevis gjennomgang, din stemme først"]))],
             [("rule", ("Share or print", "Del eller skriv ut"), (["MusicXML · PDF · MIDI · MP3 · talking score"], ["MusicXML · PDF · MIDI · MP3 · talende noter"]))],
         ],
     },
@@ -549,7 +551,7 @@ FIGURES = {
         "view_label": ("Evidence", "Belegg"),
         "views": [
             {"label": ("Recordings and Slakh", "Opptak og Slakh"),
-             "note": ("GuitarSet and IDMT-SMT-Guitar are real guitars. The Slakh songs are synthesized, the basses included.",
+             "note": ("GuitarSet and IDMT-SMT-Guitar are real guitars. The Slakh songs are synthesised, the basses included.",
                       "GuitarSet og IDMT-SMT-Guitar er ekte gitarer. Slakh-låtene er syntetiske, også bassene."),
              "rows": [
                  {"label": ("Bass (Slakh)", "Bass (Slakh)"), "keys": [F + "bass-tab/instrument.onset_f1", F + "bass-tab/song.onset_f1"],
@@ -747,7 +749,7 @@ FIGURES = {
             [("model", ("Notes", "Toner"), (["Basic Pitch; SwiftF0 as a", "second opinion on one line"], ["Basic Pitch; SwiftF0 som en", "ekstra vurdering av én linje"])),
              ("rule", ("Metre, tempo, key", "Taktart, tempo, toneart"), (["beats in a bar,", "the beat to count"], ["slag i takten,", "slaget å telle"]))],
             [("rule", ("Clean the notes", "Rydd i tonene"), (["overtones out · the instrument's range · bass octave check"], ["overtoner ut · instrumentets omfang · oktavsjekk for bass"]))],
-            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantization and written lengths"], ["kvantisering og skrevne lengder"]))],
+            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantisation and written lengths"], ["kvantisering og skrevne lengder"]))],
             [("rule", ("A string and a fret for every note", "Streng og bånd for hver tone"), (["the easiest path for the hand along the neck"], ["den letteste veien for hånden langs halsen"]))],
             [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["listen to the recording at those places"], ["hør på opptaket på de stedene"]))],
             [("rule", ("The tab", "Tabben"), (["MusicXML · PDF · MIDI · text · instructions in words"], ["MusicXML · PDF · MIDI · tekst · instruksjoner i ord"]))],

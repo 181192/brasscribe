@@ -102,7 +102,7 @@
     });
     this.canvas.textContent = "";
     var root = svg("svg", { "class": "chart-svg" + (animate ? " is-new" : ""), width: W, role: "group",
-      "aria-label": this.figure.querySelector(".chart-title").textContent + ". " + view.l }, this.canvas);
+      "aria-label": this.figure.querySelector(".chart-title").textContent + " " + view.l }, this.canvas);
     var probe = svg("text", { "class": "chart-label", x: 0, y: -99 }, root);
     var grid = svg("g", { "aria-hidden": "true" }, root), rows = svg("g", null, root);
     var y = view.mark ? 18 : 6;
@@ -130,6 +130,7 @@
         if (cell.p) {
           var lo = Math.min.apply(null, cell.p), hi = Math.max.apply(null, cell.p);
           svg("line", { "class": "chart-range" + cls, x1: at(lo), x2: at(hi), y1: cy, y2: cy }, g);
+          svg("line", { "class": "chart-ci" + cls, x1: at(cell.ci[0]), x2: at(cell.ci[1]), y1: cy, y2: cy }, g);  // 95 % interval of the mean
           cell.p.forEach(function (p) { svg("circle", { "class": "chart-piece" + cls, cx: at(p), cy: cy, r: 3 }, g); });
         }
         if (dots) {
@@ -180,7 +181,7 @@
     row.c.forEach(function (cell, s) {
       if (!cell) return;
       var text = (view.s.length > 1 ? view.s[s] + ": " : "") + cell.t;
-      if (cell.p) text += " (" + d.words.range + " " + cell.lo + "–" + cell.hi + ")";
+      if (cell.p) text += " (" + d.words.sd + " " + cell.sd + ", " + d.words.ci + " " + cell.cit + ", " + d.words.range + " " + cell.lo + "–" + cell.hi + ")";
       parts.push(text);
     });
     if (row.n) parts.push(row.n);
@@ -197,7 +198,7 @@
       htm("i", "s" + (s + 1), null, line);
       htm("b", null, cell.t, line);
       if (names.length > 1) htm("span", null, names[s], line);
-      if (cell.p) htm("span", "chart-tip-range", d.words.range + ": " + cell.lo + "–" + cell.hi, line);
+      if (cell.p) htm("span", "chart-tip-range", d.words.sd + " " + cell.sd + " · " + d.words.ci + " " + cell.cit + " · " + d.words.range + " " + cell.lo + "–" + cell.hi, line);
     });
     if (at.row.n) htm("p", "chart-tip-n", at.row.n, tip);
     tip.classList.add("is-on");

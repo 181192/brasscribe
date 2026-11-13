@@ -1,5 +1,8 @@
   <li>
-    <h3>Onset F1 and its tolerance</h3>
+    <h3>Note-level precision, recall and F-measure</h3>
+    <p>Notes are evaluated as in mir_eval {{cite raffel2014mireval}}, which implements the MIREX note-tracking convention {{cite bay2009mirex}}. An estimated note matches a reference note when its onset lies within ±50 ms of the reference onset and its pitch within ±50 cents; each note is matched at most once. With <var>TP</var> matched notes, <var>FP</var> unmatched estimated notes and <var>FN</var> unmatched reference notes:</p>
+    <p class="eq" id="eq-prf"><span><var>P</var> = <var>TP</var> / (<var>TP</var> + <var>FP</var>), &nbsp; <var>R</var> = <var>TP</var> / (<var>TP</var> + <var>FN</var>), &nbsp; <var>F</var> = 2<var>PR</var> / (<var>P</var> + <var>R</var>)</span> <span class="eqno">{{label eq:prf}}</span></p>
+    <p>Offsets are ignored unless stated. Where they are used (onset+offset F-measure), the offset must also lie within max(50 ms, 20 % of the reference note's duration). We also report <var>F</var> with a ±100 ms onset tolerance, and say so wherever it is used: softly attacked brass notes are detected late relative to their annotated onsets, and deviations of that size are absorbed when the notes are quantised.</p>
     <svg class="mv" viewBox="0 0 280 84" role="img" aria-label="A time line: a played note with a window of 50 and of 100 milliseconds around its start. A written note 30 ms late counts at both tolerances, one 80 ms late only at 100 ms, and one far away is an extra note.">
       <rect class="win" x="90" y="24" width="100" height="26" opacity="0.45"/><rect class="win" x="115" y="24" width="50" height="26"/>
       <line class="bold" x1="10" y1="50" x2="270" y2="50"/><line class="bold" x1="140" y1="16" x2="140" y2="50"/>
@@ -9,6 +12,4 @@
       <text class="txt" x="155" y="68" text-anchor="middle">+30</text><text class="txt" x="180" y="68" text-anchor="middle">+80</text><text class="txt" x="245" y="68" text-anchor="middle">extra</text>
       <text class="strong" x="155" y="81" text-anchor="middle">✓ ✓</text><text class="strong" x="180" y="81" text-anchor="middle">✓</text><text class="strong" x="245" y="81" text-anchor="middle">✗</text>
     </svg>
-    <p>A written note is <em>right</em> when a played note has the same pitch and starts within the tolerance: 50 ms is the usual choice, and we also report 100 ms because a soft brass attack speaks late. <b>Precision</b> is the share of the written notes that are right, <b>recall</b> the share of the played notes that were found, and F1 combines the two. Note ends are ignored unless a figure says otherwise.</p>
-    <p class="formula">F1 = 2 · precision · recall / (precision + recall)</p>
   </li>
