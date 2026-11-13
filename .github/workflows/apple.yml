@@ -140,12 +140,15 @@ jobs:
           make build-for-testing-ios IPHONE_DEST="$dest"
 
       # The tab feature's tests on the iPhone simulator as well: its page is a web view, and WebKit on iOS draws and
-      # loads differently from the Mac's.
+      # loads differently from the Mac's. The simulator is started and waited for first: xcodebuild begins the tests
+      # as soon as it can install them, while the simulator's own services (media, WebKit) are still starting, and
+      # a test that waits for one of them then fails for that.
       - name: Test the tab feature on the iPhone simulator
         working-directory: apps/apple/features/tab
         run: |
           make -C ../.. alphatab
           dest=$(../../scripts/newest-iphone.sh)
+          xcrun simctl bootstatus "${dest##*id=}" -b
           xcodebuild -scheme TabKit -destination "$dest" -derivedDataPath ../../build/DerivedData-tab test -quiet
 
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
