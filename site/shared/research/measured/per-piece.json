@@ -2,7 +2,7 @@
  "provenance": {
   "what": "Per-piece values of metrics whose means are gated in eval/baselines.json, in the order of the eval set's pieces; the size of each set; and, as single numbers, each model's mean recall per voice of the quartets (S, A, T, B), which the scorer reports and no suite gates; and the beat F-measure of the tracked beats per piece (\u00b170 ms), not gated.",
   "command": "pixi run python site/shared/research/per_piece.py",
-  "commit": "1d1b9e3e",
+  "commit": "752b9c6c",
   "data": "data/eval/choralebricks-brass4 and data/eval/urmp-brass with the cached model outputs the baselines were taken from"
  },
  "suites": {
@@ -243,6 +243,54 @@
     0.967,
     0.755,
     0.513
+   ],
+   "md_beat_this.beat_f": [
+    0.756,
+    0.951,
+    0.766,
+    0.949,
+    0.82,
+    0.64,
+    0.95,
+    0.95,
+    0.724,
+    0.951
+   ],
+   "md_beat_this.position_acc": [
+    0.203,
+    0.986,
+    0.14,
+    1.0,
+    0.251,
+    0.046,
+    0.99,
+    0.523,
+    0.269,
+    0.846
+   ],
+   "md_beat_this.subdivision_acc": [
+    0.978,
+    0.986,
+    0.928,
+    1.0,
+    1.0,
+    0.555,
+    0.99,
+    1.0,
+    0.991,
+    0.969
+   ],
+   "md_beat_this.duration_acc": [
+    0.797,
+    0.944,
+    0.706,
+    0.905,
+    0.839,
+    0.0,
+    0.914,
+    0.942,
+    0.852,
+    0.808
    ]
   },
   "quant-urmp": {
@@ -316,6 +364,46 @@
     0.62,
     0.717,
     0.645
+   ],
+   "md_beat_this.beat_f": [
+    0.64,
+    0.912,
+    0.992,
+    0.495,
+    0.97,
+    0.758,
+    0.954,
+    0.619
+   ],
+   "md_beat_this.position_acc": [
+    0.949,
+    0.371,
+    0.951,
+    0.009,
+    0.996,
+    0.35,
+    0.942,
+    0.025
+   ],
+   "md_beat_this.subdivision_acc": [
+    0.949,
+    0.937,
+    0.951,
+    0.4,
+    1.0,
+    0.702,
+    0.942,
+    0.499
+   ],
+   "md_beat_this.duration_acc": [
+    0.778,
+    0.67,
+    0.287,
+    0.453,
+    0.657,
+    0.562,
+    0.322,
+    0.305
    ]
   }
  }

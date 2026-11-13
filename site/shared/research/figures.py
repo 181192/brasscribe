@@ -487,6 +487,35 @@ FIGURES = {
                     "{brass/solo-vote/vote2.onset100_r}."),
         "source": ("<code>eval/baselines.json</code>, suite solo-vote (runs locally).", "<code>eval/baselines.json</code>, suiten solo-vote (kjøres lokalt)."),
     },
+    "beats": {
+        "title": ("By the beat F-measure the two trackers are close; the candidate places more notes at their notated position on average, "
+                  "and both vary widely between pieces",
+                  "Etter F-målet for slag ligger de to sporerne nær hverandre; kandidaten plasserer i gjennomsnitt flere toner på den noterte "
+                  "plassen, og begge varierer mye mellom stykkene"),
+        "holds": ["p/quant-chorales/md_beat_this.position_acc > brass/quant-chorales/beat_this.position_acc",
+                  "p/quant-urmp/md_beat_this.position_acc > brass/quant-urmp/beat_this.position_acc"],
+        "sub": ("The tracked beats themselves, and what they do to the notes. A dot is one piece, the ringed dot the mean, the thick bar its "
+                "95 % confidence interval.",
+                "De sporede slagene selv, og hva de gjør med tonene. En prikk er ett stykke, prikken med ring gjennomsnittet, den tykke streken "
+                "95 % konfidensintervall."),
+        "axis": ("F-measure or share, 0 to 1", "F-mål eller andel, 0 til 1"),
+        "series": [("Beat This! (in use)", "Beat This! (i bruk)"), ("md_beat_this, model run1 (candidate under evaluation)", "md_beat_this, modell run1 (kandidat under evaluering)")],
+        "view_label": RECORDINGS,
+        "views": [{"label": label, "note": note, "n": n, "rows": [
+            {"label": ("Beat F-measure, ±70 ms, against quarter-note beats from the score alignment", "F-mål for slag, ±70 ms, mot firedelsslag fra partiturjusteringen"),
+             "keys": [f"p/{suite}/beat_this.beat_f", f"p/{suite}/md_beat_this.beat_f"]},
+            {"label": ("Reference notes written at their notated position in the bar", "Referansetoner skrevet på den noterte plassen i takten"),
+             "keys": [f"{B}{suite}/beat_this.position_acc", f"p/{suite}/md_beat_this.position_acc"]}]}
+            for label, note, n, suite in ((CHORALES, CHORALES_NOTE, CHORALES_N, "quant-chorales"), (URMP, URMP_NOTE, URMP_N, "quant-urmp"))],
+        "caption": ("Beat tracking on the brass mixtures, by the standard beat measure of mir_eval and by its effect on rhythm quantisation "
+                    "(reference notes quantised on the tracked beats). The candidate is not part of the released system.",
+                    "Slagsporing på messingmiksene, etter standardmålet for slag i mir_eval og etter virkningen på rytmekvantiseringen "
+                    "(referansetoner kvantisert på de sporede slagene). Kandidaten er ikke en del av det utgitte systemet."),
+        "source": ("<code>site/shared/research/measured/per-piece.json</code>, computed by <code>per_piece.py</code> from the beat files stored beside each "
+                   "mixture; the position accuracy of Beat This! is the gated value of quant-chorales and quant-urmp.",
+                   "<code>site/shared/research/measured/per-piece.json</code>, beregnet av <code>per_piece.py</code> fra slagfilene som ligger ved hver miks; "
+                   "plasseringsnøyaktigheten for Beat This! er den låste verdien i quant-chorales og quant-urmp."),
+    },
     "durations": {
         "title": ("Written note lengths: right for about nine in ten chorale notes and about two in three in chamber music, whichever rule is used",
                   "Skrevne tonelengder: riktige for omtrent ni av ti koraltoner og omtrent to av tre i kammermusikk, uansett regel"),

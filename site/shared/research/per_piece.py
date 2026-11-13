@@ -75,10 +75,20 @@ def main() -> None:
                 keep(suite, f"{name}.{key}", [r[key] for r in rows])
         # The tracker's beats themselves, by the field's measure: F-measure within ±70 ms (mir_eval.beat), against
         # quarter-note beats interpolated from the notated positions of the reference notes. Not gated.
-        out[suite]["beat_this.beat_f"] = [
-            round(float(mir_eval.beat.f_measure(mir_eval.beat.trim_beats(np.unique(reference_beats(s))),
-                                                mir_eval.beat.trim_beats(np.unique(np.loadtxt(s / "beat-this.beats")[:, 0])))), 3)
-            for s in songs if (s / "beat-this.beats").exists()]
+        # The same for a candidate tracker where its beats are stored beside the mix (md-beat-this.beats: md_beat_this,
+        # model run1), with the note positions its beats give, scored as the gated ones are.
+        for tracker, beats in (("beat_this", "beat-this.beats"), ("md_beat_this", "md-beat-this.beats")):
+            have = [s for s in songs if (s / beats).exists()]
+            if len(have) != len(songs):
+                continue
+            out[suite][f"{tracker}.beat_f"] = [
+                round(float(mir_eval.beat.f_measure(mir_eval.beat.trim_beats(np.unique(reference_beats(s))),
+                                                    mir_eval.beat.trim_beats(np.unique(np.loadtxt(s / beats)[:, 0])))), 3)
+                for s in have]
+            if tracker != "beat_this":
+                rows = [evaluate(s, None, beats) for s in have]
+                for key in QUANT_KEYS:
+                    out[suite][f"{tracker}.{key}"] = [round(r[key], 3) for r in rows]
 
     commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     doc = {

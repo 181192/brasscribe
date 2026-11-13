@@ -138,3 +138,6 @@ text = 'A. Wiggins and Y. Kim, “Guitar tablature estimation with a convolution
 text = 'MuseScore General SoundFont, version 0.2.0. [Online]. Available: <a href="https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/">https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/</a>. Accessed: 13 Nov. 2026.'
 note_en = 'MIT. Rendered with FluidSynth (LGPL-2.1).'
 note_nb = 'MIT. Gjengitt med FluidSynth (LGPL-2.1).'
+
+[mdbeatthis]
+text = 'md_beat_this, software repository. [Online]. Available: <a href="https://github.com/fosfrancesco/md_beat_this">https://github.com/fosfrancesco/md_beat_this</a>. Accessed: 13 Nov. 2026.'

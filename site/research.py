@@ -123,12 +123,17 @@ class Numbers:
             value = {"m": self.measured, "p": self.pieces}[head][group][name] if head in ("m", "p") else self.targets[head][group][name]
         except KeyError:
             sys.exit(f"research: no measurement '{key}'")
+        if isinstance(value, list):  # per-piece values without a gated mean: the key is their mean
+            return statistics.fmean(value)
         return float(value["value"] if isinstance(value, dict) else value)
 
     def spread(self, key: str) -> list[float] | None:
         """The per-piece values behind a gated mean, unless the mean has moved since they were made."""
         head, _, rest = key.partition("/")
         suite, _, name = rest.partition("/")
+        if head == "p":
+            values = self.pieces.get(suite, {}).get(name)
+            return values if isinstance(values, list) else None
         values = self.pieces.get(suite, {}).get(name) if head in self.targets else None
         if not isinstance(values, list):
             return None
