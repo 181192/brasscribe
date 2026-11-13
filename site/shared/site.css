@@ -38,6 +38,8 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
    Fretscribe's ruled paper and on the family home, in light and in dark. */
 /* It stays at the top of the window, so the way home and the language are always in reach. */
 .site-header { display: contents; }
+/* Not on a low or much enlarged window, where it would cover too much of the page (WCAG 1.4.10). */
+@media (max-height: 480px) { .family-bar { position: static !important; } }
 .family-bar { position: sticky; top: 0; z-index: 20; --bar: var(--family-bar); --bar-text: var(--family-bar-text); --bar-muted: var(--family-bar-muted); background: var(--bar); color: var(--bar-text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .family-bar .wrap { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 52px; }
 .family-path { flex: 1 1 auto; min-width: 0; }
@@ -301,7 +303,7 @@ tbody th { font-weight: 600; }
 
 /* Guide layout */
 .guide { display: grid; grid-template-columns: 240px minmax(0, 720px); gap: var(--scribe-space-12); padding: var(--scribe-space-12) 0 var(--scribe-space-16); }
-.toc { position: sticky; top: var(--scribe-space-4); align-self: start; max-height: calc(100vh - 32px); overflow-y: auto; font-size: var(--scribe-type-callout-size); }
+.toc { position: sticky; top: calc(52px + var(--scribe-space-4)); align-self: start; max-height: calc(100vh - 84px); overflow-y: auto; font-size: var(--scribe-type-callout-size); }
 .toc-title { font-family: var(--scribe-font-text); font-size: var(--scribe-type-caption-size); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--scribe-text-muted); margin: 0 0 var(--scribe-space-2) var(--scribe-space-3); }
 .toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--scribe-space-1); }
 .toc a { display: flex; align-items: center; min-height: 40px; padding: 0 var(--scribe-space-3); border-radius: var(--scribe-radius-sm); text-decoration: none; color: var(--scribe-text-muted); }
