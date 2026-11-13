@@ -112,9 +112,8 @@ tied = " Bundet til tonen før."
 doubt = " Brasscribe var ikke sikker på denne tonen."
 
 [needs]
-title = "Dette <em>trenger du.</em>"
-lead = "I dag skriver Brasscribe partiturene på datamaskinen din, ikke på telefonen. Velg enheten din for å se hva den gjør alene, og hva den trenger datamaskinen til."
-computer = "<strong>En datamaskin med Bandroom</strong>, på samme Wi-Fi som telefonen: en Mac fra 2020 eller nyere, eller en PC med Windows 11. Bandroom er gratis, og i dag skriver det alle partiturer, også for ett instrument alene. Android-telefoner skriver ett enkelt instrument selv igjen fra neste utgivelse."
+title = "Brasscribe på <em>enhetene dine.</em>"
+lead = "Appen til telefonen, nettbrettet, Mac-en eller PC-en, og Bandroom til datamaskinen. I dag skriver Brasscribe partiturene på datamaskinen, ikke på telefonen: hver enhet under sier hva den gjør alene."
 unsigned = "<strong>Enheten din advarer deg første gang.</strong> Appene ligger ikke i noen appbutikk ennå; <a href=\"@/download/\">nedlastingssiden</a> viser hvordan du kommer forbi advarselen."
 private = "<strong>Opptaket forlater aldri ditt eget nettverk.</strong> Det går fra telefonen til din egen datamaskin og ingen andre steder. Første gang Bandroom starter, trenger det internett for å laste ned det den trenger for å lytte (rundt 10 GB). For fullt band trenger den også en gratis konto der lyttemodellen lastes ned; <a href=\"@/guide/#computer\">veiledningen</a> viser hvordan."
 setup = "Sett opp datamaskinen"

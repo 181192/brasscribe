@@ -14,6 +14,9 @@ section + section { border-top: 0; }
 
 /* The two apps, each at work in its own colours and type. */
 .apps { padding: 0 0 var(--scribe-space-12); }
+.apps > .wrap > h2 { margin-bottom: var(--scribe-space-5); }
+.app-devices { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
+.app-devices a { color: var(--scribe-text-muted); display: inline-block; min-height: 24px; }
 .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--scribe-space-6); }
 .app {
   display: flex; flex-direction: column; overflow: hidden;
@@ -25,8 +28,8 @@ section + section { border-top: 0; }
 .app .strip-controls, .app .strip figcaption { padding: 0 var(--scribe-space-5); }
 .app-text { padding: var(--scribe-space-6) var(--scribe-space-5) var(--scribe-space-6); margin-top: auto; }
 /* The app's name stands over its strip: on a phone the name is read before the music. */
-.app h2 { font-family: var(--scribe-font-display); font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 400; letter-spacing: -0.01em; margin: 0; padding: 0 var(--scribe-space-5); height: 4.5rem; display: flex; align-items: center; color: var(--scribe-brand-text); }
-.app[data-brand="fretscribe"] h2 { font-weight: 600; font-size: clamp(1.8rem, 4.4vw, 2.4rem); }
+.app h3 { font-family: var(--scribe-font-display); font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 400; letter-spacing: -0.01em; margin: 0; padding: 0 var(--scribe-space-5); height: 4.5rem; display: flex; align-items: center; color: var(--scribe-brand-text); }
+.app[data-brand="fretscribe"] h3 { font-weight: 600; font-size: clamp(1.8rem, 4.4vw, 2.4rem); }
 .app .button { min-height: 48px; }
 
 /* Which one is for you: two answers, each in its app's colours. */

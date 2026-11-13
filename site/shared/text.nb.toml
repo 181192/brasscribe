@@ -3,7 +3,7 @@
 
 [bar]
 skip = "Hopp til innholdet"
-apps = "Scribe-appene"
+path = "Du er her"
 all = "Scribe"
 noscript = "På engelsk: den norske versjonen trenger JavaScript."
 
@@ -36,11 +36,10 @@ tab_label = "Tab av {title}, {bars} takter, i {tuning}."
 tab_scroll = "Tabben. Rull sidelengs for å lese videre."
 pick = "Velg et tall i tabben for å se hvor ellers den tonen kan spilles. Piltastene går fra tone til tone."
 as_text = "Den samme tabben som ren tekst ({tuning})"
-platform = "Enhet"
-table = "Dette gjør {name} på hver enhet"
-alone = "Virker alene"
-with_bandroom = "Trenger Bandroom på datamaskinen"
-which_device = "Hvilken enhet har du?"
+alone = "Alene"
+does = "Dette gjør den"
+with_bandroom = "Med Bandroom"
+get = "Last ned for {name}"
 hear_recording = "Opptaket"
 hear_written = "De skrevne notene"
 hear = "Det du hører"
@@ -62,7 +61,7 @@ title = "Windows"
 note = "For Windows 11 (x64). Ikke signert ennå: pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>."
 
 [groups.bandroom]
-title = "Bandroom, til datamaskinen"
+title = "Bandroom, på datamaskinen"
 note = "Bandroom kjører på din egen Mac eller PC og skriver ned notene for appen på telefonen, over ditt eget nettverk. Ett Bandroom betjener alle Scribe-appene. <a href=\"@/guide/#computer\">Slik setter du det opp</a>."
 
 [groups.tools]

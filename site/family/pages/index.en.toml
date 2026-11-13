@@ -4,10 +4,11 @@ description = "Brasscribe writes a brass band score from a recording. Fretscribe
 [hero]
 brass = "A score for your band."
 fret = "A tab for your guitar."
-lead = "Two apps that listen to a recording and write down what was played. Below, each one is doing it, on a real recording."
+lead = "Scribe is a line of apps that listen to a recording and write down what was played. There are two apps so far; below, each one is doing it, on a real recording."
 
 [apps]
-label = "The apps"
+label = "The Scribe apps"
+devices = "For Android, iPhone and iPad, Mac and Windows, with Bandroom on your computer"
 download = "Download"
 
 [apps.brass]

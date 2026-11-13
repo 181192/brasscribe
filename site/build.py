@@ -354,12 +354,18 @@ class Page:
     def chrome(self) -> tuple[str, str]:
         """What stands around every page: the family bar and the product's own row above, the footer below."""
         p, site = self.product, self.site
-        here = lambda q: ' aria-current="page"' if q is p else ""
-        switch = "".join(f'<a href="@{q.id}/"{here(q)}>{q.data["name"]}</a>' for q in site.products.values())
+        # The bar is the way down: the line, the app, the page. Each step is a link up, the last is where you are.
+        page_keys = {"guide": "nav.guide", "download": "nav.download", "how-it-works": "nav.how"}
+        leaf = posixpath.relpath(self.dir.strip("/") or ".", p.mount or ".")
+        steps = [f'<li><a class="family-mark" href="@family/"{" aria-current=\"page\"" if p.family else ""}>{site.mark}<span data-t="bar.all"></span></a></li>']
+        if not p.family:
+            steps.append(f'<li><a href="@/"{" aria-current=\"page\"" if leaf == "." else ""}>{p.data["name"]}</a></li>')
+            if leaf in page_keys:
+                steps.append(f'<li class="path-page"><a href="./" aria-current="page" data-t="{page_keys[leaf]}"></a></li>')
         bar = f"""<div class="family-bar">
   <div class="wrap">
-    <nav class="family-switch" data-t-aria-label="bar.apps">
-      <a class="family-mark" href="@family/"{here(site.family)}>{site.mark}<span data-t="bar.all"></span></a>{switch}
+    <nav class="family-path" data-t-aria-label="bar.path">
+      <ol>{"".join(steps)}</ol>
     </nav>
     <button type="button" class="lang-switch" data-lang-switch hidden></button>
     <noscript><span class="lang-note" data-t="bar.noscript"></span></noscript>
@@ -390,6 +396,7 @@ class Page:
 """
         foot = f"""<footer class="site-footer">
   <div class="wrap">
+    <span class="footer-line"><a href="@family/" data-t="bar.all"></a>: {", ".join(f'<a href="@{q.id}/">{q.data["name"]}</a>' for q in site.products.values())}</span>
     <span data-t="footer.line"></span>
     <span data-t="{"footer.note" if self.whole else self.meta.get("footer", "footer.note")}"></span>
   </div>
