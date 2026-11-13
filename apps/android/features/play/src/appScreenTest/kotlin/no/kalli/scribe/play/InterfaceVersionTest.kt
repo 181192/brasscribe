@@ -177,9 +177,10 @@ class InterfaceVersionTest : ScreenTest() {
         assertEquals(android.content.Intent.ACTION_VIEW, started?.action)
         assertEquals(no.kalli.scribe.play.ui.appDownload(container.product), started?.data?.toString())
         val file = container.product.releaseFile
-        assertEquals("https://github.com/181192/brasscribe/releases/latest/download/$file-arm64-v8a.apk",
+        val latest = "https://github.com/181192/brasscribe/releases/download/${container.product.releaseProduct}-latest"
+        assertEquals("$latest/$file-arm64-v8a.apk",
             no.kalli.scribe.play.ui.appDownload(container.product, arrayOf("arm64-v8a", "armeabi-v7a")))
-        assertEquals("https://github.com/181192/brasscribe/releases/latest/download/$file-universal.apk",
+        assertEquals("$latest/$file-universal.apk",
             no.kalli.scribe.play.ui.appDownload(container.product, arrayOf("x86_64")))
     }
 

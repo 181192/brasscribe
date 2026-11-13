@@ -13,6 +13,9 @@ internal static class Product
     /// <summary>It arranges for a band.</summary>
     public static Target Target => Target.Brass;
 
+    /// <summary>The product's name in the releases (brasscribe-vX.Y.Z; its newest files are in brasscribe-latest).</summary>
+    public const string ReleaseProduct = "brasscribe";
+
     /// <summary>The app's file in a release, where an outdated app is sent for its update.</summary>
     public const string ReleaseFile = "brasscribe-play-windows-x64.zip";
 

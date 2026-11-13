@@ -423,14 +423,17 @@ final class AppModel: PlayHost {
         ask(PendingSource(audioURL: url, title: title))
     }
 
-    /// Brasscribe Play and Bandroom are downloaded from the repository's latest release.
-    let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
-    /// Brasscribe Play's own file in the latest release (`PlayHost.appDownload`).
+    /// The repository's releases. Each product is released on its own, and its newest files are always in its release
+    /// PRODUCT-latest, so no address names a version: every download address the app has starts here.
+    static let releases = "https://github.com/181192/brasscribe/releases"
+    /// Bandroom, the program for the computer, is downloaded from the page of its newest release.
+    let downloads = URL(string: "\(AppModel.releases)/tag/bandroom-latest")!
+    /// Brasscribe Play's own file in its newest release, or that release's page (`PlayHost.appDownload`).
     var appDownload: URL {
         #if os(macOS)
-        downloads.appending(path: "download/brasscribe-play-macos-arm64.zip")
+        URL(string: "\(AppModel.releases)/download/brasscribe-latest/brasscribe-play-macos-arm64.zip")!
         #else
-        downloads
+        URL(string: "\(AppModel.releases)/tag/brasscribe-latest")!
         #endif
     }
 

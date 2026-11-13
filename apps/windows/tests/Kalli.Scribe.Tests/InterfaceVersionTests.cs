@@ -346,7 +346,7 @@ public class InterfaceVersionTests
         Assert.True(rig.Monitor.HasAction);
         Assert.Equal("Get the update", rig.Monitor.ActionText);
         Assert.StartsWith("Opens the page", rig.Monitor.ActionHelp);
-        Assert.Equal("https://github.com/181192/brasscribe/releases/latest", rig.Monitor.ActionUri!.AbsoluteUri);
+        Assert.Equal("https://github.com/181192/brasscribe/releases/tag/bandroom-latest", rig.Monitor.ActionUri!.AbsoluteUri);
         Assert.Equal(rig.Time.GetUtcNow(), rig.Monitor.LastOk);
         Assert.Contains("Last answered: ", rig.Monitor.DetailsText);
         // The stored record keeps its last good check: the next launch does not start from "Connected".
@@ -715,19 +715,19 @@ public class InterfaceVersionTests
     [Fact]
     public void The_update_is_the_file_to_download_where_this_pc_can_use_it_and_the_page_elsewhere()
     {
-        const string latest = "https://github.com/181192/brasscribe/releases/latest";
-        var before = (Downloads.AppFile, Downloads.DesktopFile);
+        const string releases = "https://github.com/181192/brasscribe/releases";
+        var before = (Downloads.AppProduct, Downloads.AppFile, Downloads.DesktopFile);
         try
         {
-            Downloads.AppFile = "fretscribe-windows-x64.zip"; // as the app says at its start
+            (Downloads.AppProduct, Downloads.AppFile) = ("fretscribe", "fretscribe-windows-x64.zip"); // as the app says at its start
             Downloads.DesktopFile = "brasscribe-bandroom-windows-x64.zip";
-            Assert.Equal($"{latest}/download/fretscribe-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false).AbsoluteUri);
-            // An older Bandroom on this PC: Bandroom for Windows. On another computer, which may be a Mac: the page.
-            Assert.Equal($"{latest}/download/brasscribe-bandroom-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: true).AbsoluteUri);
-            Assert.Equal(latest, Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: false).AbsoluteUri);
-            Downloads.AppFile = null; // code outside an app
-            Assert.Equal(latest, Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false).AbsoluteUri);
+            Assert.Equal($"{releases}/download/fretscribe-latest/fretscribe-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false).AbsoluteUri);
+            // An older Bandroom on this PC: Bandroom for Windows. On another computer, which may be a Mac: its page.
+            Assert.Equal($"{releases}/download/bandroom-latest/brasscribe-bandroom-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: true).AbsoluteUri);
+            Assert.Equal($"{releases}/tag/bandroom-latest", Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: false).AbsoluteUri);
+            (Downloads.AppProduct, Downloads.AppFile) = (null, null); // code outside an app
+            Assert.Equal(Downloads.LatestRelease, Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false));
         }
-        finally { (Downloads.AppFile, Downloads.DesktopFile) = before; }
+        finally { (Downloads.AppProduct, Downloads.AppFile, Downloads.DesktopFile) = before; }
     }
 }

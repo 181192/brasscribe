@@ -166,18 +166,18 @@ import TranscriptionKit
     }
 }
 
-/// Where the update is: the latest release, never a version by name.
+/// Where Bandroom is: the page of its newest release, never a version by name.
 @Test @MainActor func theUpdateIsAtTheLatestRelease() {
-    #expect(AppModel().downloads.absoluteString == "https://github.com/181192/brasscribe/releases/latest")
+    #expect(AppModel().downloads.absoluteString == "https://github.com/181192/brasscribe/releases/tag/bandroom-latest")
 }
 
 /// When this app is the one to update, a Mac goes straight to the app's own file in the latest release; an iPhone
 /// or iPad, which cannot open a release's unsigned archive, goes to the page.
 @Test @MainActor func anOutdatedAppIsSentToItsOwnFile() {
     #if os(macOS)
-    #expect(AppModel().appDownload.absoluteString == "https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-macos-arm64.zip")
+    #expect(AppModel().appDownload.absoluteString == "https://github.com/181192/brasscribe/releases/download/brasscribe-latest/brasscribe-play-macos-arm64.zip")
     #else
-    #expect(AppModel().appDownload == AppModel().downloads)
+    #expect(AppModel().appDownload.absoluteString == "https://github.com/181192/brasscribe/releases/tag/brasscribe-latest")
     #endif
 }
 

@@ -152,14 +152,17 @@ final class FretscribeModel: PlayHost {
 
     // MARK: PlayHost
 
-    /// Fretscribe and Bandroom are downloaded from the repository's latest release.
-    let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
-    /// Fretscribe's own file in the latest release (`PlayHost.appDownload`).
+    /// The repository's releases. Each product is released on its own, and its newest files are always in its release
+    /// PRODUCT-latest, so no address names a version: every download address the app has starts here.
+    static let releases = "https://github.com/181192/brasscribe/releases"
+    /// Bandroom, the program for the computer, is downloaded from the page of its newest release.
+    let downloads = URL(string: "\(FretscribeModel.releases)/tag/bandroom-latest")!
+    /// Fretscribe's own file in its newest release, or that release's page (`PlayHost.appDownload`).
     var appDownload: URL {
         #if os(macOS)
-        downloads.appending(path: "download/fretscribe-macos-arm64.zip")
+        URL(string: "\(FretscribeModel.releases)/download/fretscribe-latest/fretscribe-macos-arm64.zip")!
         #else
-        downloads
+        URL(string: "\(FretscribeModel.releases)/tag/fretscribe-latest")!
         #endif
     }
 

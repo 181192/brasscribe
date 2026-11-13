@@ -557,5 +557,5 @@ public sealed class InterfaceVersionTests : IDisposable
 
     [Fact]
     public void The_newest_Bandroom_is_its_own_file_in_the_latest_release() =>
-        Assert.Equal("https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-windows-x64.zip", Wire.LatestBandroom);
+        Assert.Equal("https://github.com/181192/brasscribe/releases/download/bandroom-latest/brasscribe-bandroom-windows-x64.zip", Wire.LatestBandroom);
 }
