@@ -164,6 +164,38 @@ reaches the rule, and it has no long-short (trochaic) 6/8 passage.
 | Nearest-subdivision count for 6/8 with the share kept at 0.8, 0.85 or 0.9 | `guitar-tab` `tune.solo.meter_ok` 0.967 → 0.956, `report.comp.meter_ok` 1.0 → 0.978 (0.8); `bass-tab` `instrument.meter_ok` 0.923 → 0.846 (all three) | 0.92 |
 | Basic Pitch writing notes down to 58 ms (its default drops everything under 128 ms), for tabs | Raw onset F1 on GuitarSet: recall +4 to +7 points, precision −7; with notes under 128 ms kept only when heard at 0.5 or more, through the tab profile: GuitarSet `onset_f1` tune 0.825 → 0.828 (single lines), 0.722 → 0.739 (comping), report 0.853 → 0.870, 0.721 → 0.735; IDMT-SMT-Guitar 0.699 → 0.712 and 0.719 → 0.741; rendered guitar, ukulele and mandolin within ±0.006; bass lines 0.83 → 0.79 mean (no amplitude rule there) | A real gain of 1.3 to 2.2 points on recorded guitars, not landed: it needs every cached Basic Pitch output of the tab sets made again under new names (about 850 files) and the bass kept on the default. The adapter change is one option (`--minimum-note-length`); the rule is two constants in `tab.played_notes` |
 
+### The "?" marks on a solo line: what they miss
+
+`solo-instruments` reports that a "?" sits on 17 to 33 % of the wrong notes of a seat's take (`q_hit`). The 93
+ChoraleBricks parts it is scored on are in the set the confidence model was fitted on, so that number is not
+held out. Two measurements:
+
+- **What the wrong notes are** (all 93 parts, 4 176 written notes, 105 wrong at 100 ms):
+
+| Wrong note | Count | Marked |
+|---|---|---|
+| right pitch, onset 100 to 250 ms off | 34 | 0 |
+| one or two semitones off (30 of them the tuba) | 48 | 13 |
+| a held note heard as two | 14 | 1 |
+| an octave off | 2 | 0 |
+| no note there at all | 7 | 7 |
+
+  The marks find the notes that are not there. They do not find a wrong semitone that both transcribers agree on
+  (confidence 0.94 at the median), and a late onset is not something the model was asked about.
+- **Held out for real.** Fitted on the URMP parts and the separated stems only and scored on the ChoraleBricks
+  parts (1 346 candidate notes, 60 wrong): marking 8 % of the notes catches 0.32 of the wrong ones at a
+  precision of 0.18. On the bench's own split (odd recordings of the same sets) the same model catches 0.65 at
+  0.60. The model does not carry from one set of recordings to another.
+- **Tried:** how far the SwiftF0 contour sits from the written semitone over the note (median distance after
+  taking out the recording's own tuning, and the share of frames nearer another semitone), as one and two more
+  inputs. Held out, recall at 8 % marked fell from 0.32 to 0.28, 0.23 and 0.25; on the fitting data nothing
+  moved. Not kept. Sixty wrong notes are too few to choose features on.
+
+What this needs is more wrong notes with a reference from recordings the model has not seen (the tuba's
+semitone errors above all), and a decision on whether a late onset should carry a mark at all. Refitting the
+shipped model without the ChoraleBricks parts would make `q_hit` honest, and changes every solo note's
+confidence, so it comes with new reference outputs.
+
 ## 4. Not run: models worth a bench
 
 Only the first was run, and only on the 18 brass ensemble recordings; the others are listed in the order they
