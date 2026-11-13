@@ -49,8 +49,8 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 .family-path a:hover { color: var(--bar-text); background: rgb(255 255 255 / 0.08); }
 .family-path a[aria-current] { color: var(--bar-text); }
 .family-path a:focus-visible, .lang-switch:focus-visible { outline: 2px solid var(--bar-text); outline-offset: -2px; }
-/* On a phone the path ends at the app: the row under the bar says which of its pages this is. */
-@media (max-width: 600px) { .family-path .path-page { display: none; } }
+.family-path .path-apps { gap: 2px; }
+.family-path .path-apps a[aria-current] { background: rgb(255 255 255 / 0.14); }
 .family-mark .mark-pen { flex: none; }
 .lang-switch {
   flex: none; min-height: 36px; padding: 0 14px; border-radius: var(--scribe-radius-full); cursor: pointer;
@@ -80,13 +80,7 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 /* Under it, the app's own row: its name and its pages, the same pages in the same order for every app. */
 .product-nav { border-bottom: 1px solid var(--scribe-border); background: var(--scribe-bg); }
 .product-nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 0 var(--scribe-space-6); min-height: 56px; }
-.brand { display: inline-flex; align-items: center; flex: none; }
-.brand img { height: 30px; width: auto; }
-.logo-dark { display: none !important; }
-@media (prefers-color-scheme: dark) {
-  .logo-light { display: none !important; }
-  .logo-dark { display: block !important; }
-}
+.brand { flex: none; font-family: var(--scribe-font-display); font-size: 1.5rem; line-height: 1; color: var(--scribe-text); }
 /* The pages stay on one line; on a narrow screen the line scrolls sideways and the logo steps aside. */
 .product-nav nav { display: flex; align-items: center; gap: 0 var(--scribe-space-5); min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .product-nav nav::-webkit-scrollbar { display: none; }

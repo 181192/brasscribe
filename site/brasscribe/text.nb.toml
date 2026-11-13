@@ -4,15 +4,15 @@
 brand = "Brasscribe, oversikt"
 
 [footer]
-line = "Brasscribe Play og Brasscribe Studio"
+line = "Brasscribe og Brasscribe Studio"
 note = "Noter satt med Verovio (LGPL-3.0) og alphaTab (MPL-2.0). Bandlyder fra VSCO 2 CE, University of Iowa-samlingen og MuseScore MS Basic: <a href=\"@/guide/#credits\">kreditering</a>. Overskrifter: Instrument Serif (OFL). <a href=\"https://github.com/181192/brasscribe\">Kildekode</a>"
 
 [take]
 title = "Ich steh an deiner Krippe hier"
 
 [download]
-title = "Last ned · Brasscribe Play"
-description = "Last ned Brasscribe Play for Android, iPhone, iPad, Mac og Windows, og Bandroom til datamaskinen. Lenkene henter alltid den nyeste utgivelsen."
-heading = "Last ned Brasscribe Play"
-lead = "Brasscribe Play er i tidlig testing: den ligger ikke i noen appbutikk, og enheten din advarer deg første gang, så hver enhet under viser hvordan du kommer forbi det. Du trenger også Bandroom, til en datamaskin på samme Wi-Fi: det er den som skriver partiturene."
+title = "Last ned · Brasscribe"
+description = "Last ned Brasscribe for Android, iPhone, iPad, Mac og Windows, og Bandroom til datamaskinen. Lenkene henter alltid den nyeste utgivelsen."
+heading = "Last ned Brasscribe"
+lead = "Brasscribe er i tidlig testing: den ligger ikke i noen appbutikk, og enheten din advarer deg første gang, så hver enhet under viser hvordan du kommer forbi det. Du trenger også Bandroom, til en datamaskin på samme Wi-Fi: det er den som skriver partiturene."
 more = "Alt ligger også i <a href=\"{{releases}}\">siste utgivelse på GitHub</a>. <a href=\"@/guide/#download\">Veiledningen</a> har alle stegene."

@@ -17,42 +17,42 @@ height = 32
 [[downloads]]
 file = "brasscribe-play-android-arm64-v8a.apk"
 group = "android"
-label_en = "Brasscribe Play for Android"
-label_nb = "Brasscribe Play for Android"
-en = "Brasscribe Play for most Android phones and tablets"
-nb = "Brasscribe Play for de fleste Android-telefoner og -nettbrett"
+label_en = "Brasscribe for Android"
+label_nb = "Brasscribe for Android"
+en = "Brasscribe for most Android phones and tablets"
+nb = "Brasscribe for de fleste Android-telefoner og -nettbrett"
 
 [[downloads]]
 file = "brasscribe-play-android-universal.apk"
 group = "android"
 label_en = "Every type of processor"
 label_nb = "Alle typer prosessorer"
-en = "Brasscribe Play for Android, every type of processor"
-nb = "Brasscribe Play for Android, alle typer prosessorer"
+en = "Brasscribe for Android, every type of processor"
+nb = "Brasscribe for Android, alle typer prosessorer"
 
 [[downloads]]
 file = "brasscribe-play-ios-unsigned.ipa"
 group = "ios"
-label_en = "Brasscribe Play for iPhone and iPad"
-label_nb = "Brasscribe Play for iPhone og iPad"
-en = "Brasscribe Play for iPhone and iPad, a <a href=\"@/guide/#download-ios\">test version</a> that needs a few steps with your Apple account"
-nb = "Brasscribe Play for iPhone og iPad, en <a href=\"@/guide/#download-ios\">testversjon</a> som trenger noen steg med Apple-kontoen din"
+label_en = "Brasscribe for iPhone and iPad"
+label_nb = "Brasscribe for iPhone og iPad"
+en = "Brasscribe for iPhone and iPad, a <a href=\"@/guide/#download-ios\">test version</a> that needs a few steps with your Apple account"
+nb = "Brasscribe for iPhone og iPad, en <a href=\"@/guide/#download-ios\">testversjon</a> som trenger noen steg med Apple-kontoen din"
 
 [[downloads]]
 file = "brasscribe-play-macos-arm64.zip"
 group = "mac"
-label_en = "Brasscribe Play for Mac"
-label_nb = "Brasscribe Play for Mac"
-en = "Brasscribe Play for a Mac from 2020 or later"
-nb = "Brasscribe Play for Mac fra 2020 eller nyere"
+label_en = "Brasscribe for Mac"
+label_nb = "Brasscribe for Mac"
+en = "Brasscribe for a Mac from 2020 or later"
+nb = "Brasscribe for Mac fra 2020 eller nyere"
 
 [[downloads]]
 file = "brasscribe-play-windows-x64.zip"
 group = "windows"
-label_en = "Brasscribe Play for Windows"
-label_nb = "Brasscribe Play for Windows"
-en = "Brasscribe Play for Windows 11 (x64), an early version, not tested on a real PC yet"
-nb = "Brasscribe Play for Windows 11 (x64), en tidlig versjon, ikke testet på en ekte PC ennå"
+label_en = "Brasscribe for Windows"
+label_nb = "Brasscribe for Windows"
+en = "Brasscribe for Windows 11 (x64), an early version, not tested on a real PC yet"
+nb = "Brasscribe for Windows 11 (x64), en tidlig versjon, ikke testet på en ekte PC ennå"
 
 # What each device does by itself and what it needs the computer for: the table on the front page.
 [[platforms]]
