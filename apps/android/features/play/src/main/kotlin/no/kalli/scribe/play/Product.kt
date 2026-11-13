@@ -32,6 +32,9 @@ interface Product {
     /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
     val opensScores: Boolean
 
+    /** A result can be read on the music stand: the library's rows offer to open it there. */
+    val musicStand: Boolean
+
     /** Without a PDF from the computer (a result made or changed on the phone), the phone lays out the PDF itself. */
     val phonePdf: Boolean
 

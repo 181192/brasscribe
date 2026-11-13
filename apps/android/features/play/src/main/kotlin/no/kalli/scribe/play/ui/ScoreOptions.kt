@@ -27,7 +27,7 @@ import no.kalli.scribe.design.ScribeTheme
 import no.kalli.scribe.play.PlayViewModel
 import no.kalli.scribe.play.ScoreEntry
 
-/** The "more" icon on a score row: Edit title, Open on the music stand, Check the notes, Delete. */
+/** The "more" icon on a score row: Edit title, Open on the music stand (in an app that has one), Check the notes, Delete. */
 @Composable
 fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
     var menu by remember { mutableStateOf(false) }
@@ -48,7 +48,7 @@ fun ScoreOptionsButton(vm: PlayViewModel, entry: ScoreEntry) {
                 leadingIcon = { BcIcon(DesignR.drawable.ic_bc_text_size, null) },
                 onClick = { menu = false; draft = entry.title; renaming = true },
             )
-            if (opensHere) DropdownMenuItem(
+            if (opensHere && vm.container.product.musicStand) DropdownMenuItem(
                 text = { Text(stringResource(R.string.stand_open_from_library)) },
                 leadingIcon = { BcIcon(R.drawable.ic_stand_music_stand, null) },
                 onClick = { menu = false; vm.openEntry(entry, stand = true) },

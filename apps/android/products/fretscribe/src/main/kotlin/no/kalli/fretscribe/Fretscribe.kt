@@ -66,6 +66,7 @@ object Fretscribe : Product {
      * view. It comes back once an imported tab opens there.
      */
     override val opensScores = false
+    override val musicStand = false
 
     /** A tab's PDF comes from the computer only. */
     override val phonePdf = false
