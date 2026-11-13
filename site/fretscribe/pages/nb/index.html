@@ -4,39 +4,74 @@ description: Spill et riff, ta opp en sang eller åpne en fil. Fretscribe og Ban
 og_title: Fretscribe
 og_description: Gjør et opptak om til tab.
 og_image: @/assets/shots/tab-en-light.png
+styles: showcase.css
+scripts: showcase.js
 -->
   <section class="hero">
-    <div class="wrap hero-grid">
-      <div>
-        <h1>Gjør et opptak om til <em>tab.</em></h1>
-        <p class="lead">Spill et riff, ta opp en sang eller åpne en fil du har. Fretscribe skriver det ned som tab for instrumentet og stemmingen din, viser deg hva den hørte før et eneste bånd er skrevet, og lar deg øve med opptaket.</p>
-        <div class="actions">
-          <a class="button primary" href="@lang/guide/#get-started">Kom i gang</a>
-          <a class="button secondary" href="@lang/download/">Last ned</a>
-        </div>
-        <p class="platforms-label" id="platforms">Kjører på</p>
-        <ul class="platforms" aria-labelledby="platforms">
-          <li>Android</li>
-          <li>iPhone og iPad (testversjon)</li>
-          <li>Mac</li>
-          <li>Windows (forhåndsversjon)</li>
-        </ul>
-        <p class="muted needs-note">Hver tab skrives av <a href="#needs">Bandroom på din egen datamaskin</a>.</p>
+    <div class="wrap">
+      <h1>Gjør et opptak om til <em>tab.</em></h1>
+      <p class="lead">Spill et riff, ta opp en sang eller åpne en fil du har. Fretscribe skriver det ned som tab for instrumentet og stemmingen din, viser deg hva den hørte før et eneste bånd er skrevet, og lar deg øve med opptaket.</p>
+      <div class="actions">
+        <a class="button primary" href="@lang/guide/#get-started">Kom i gang</a>
+        <a class="button secondary" href="@lang/download/">Last ned</a>
       </div>
-      <div class="phones" role="group" aria-label="Fretscribe på en telefon">
-        <div class="phone-frame">
-          {{shot tab sizes="(max-width: 900px) 42vw, 260px" alt="En basstab i Fretscribe: Bass line i standardstemming uten capo, takt 1 markert, et spørsmålstegn over en tone i takt 3 og et utropstegn over en i takt 7. Under tabben avspilleren: spill, start på nytt, forrige og neste takt, Takt 1, slag 1, Tempo 100 % og Gjenta takter." load="high"}}
-        </div>
-        <div class="phone-frame">
-          {{shot songs sizes="(max-width: 900px) 42vw, 260px" alt="Hjem i Fretscribe: Gjør et opptak om til tab, Ikke tilkoblet med Koble til, Åpne et opptak, Spill inn med mikrofonen og Spill inn det som spilles, og Sangene dine med Bass line, 4-strengs bass, standard, 2 toner å sjekke."}}
-        </div>
-      </div>
+      <p class="muted needs-note">Hver tab skrives av <a href="#needs">Bandroom på din egen datamaskin</a>.</p>
+    </div>
+    {{figure strip fixture="apps/fixtures/bass-line-marks"}}
+  </section>
+
+  <section id="steps" aria-labelledby="steps-title">
+    <div class="wrap">
+      <h2 id="steps-title">Fra lyd til tab, <em>ett steg om gangen.</em></h2>
+      <p class="lead">Dette er det motoren hadde på hvert steg for de første taktene av linjen over. Ingenting her er tegnet for hånd.</p>
+      {{figure stages fixture="apps/fixtures/bass-line-marks"}}
     </div>
   </section>
 
-  <section id="how" aria-labelledby="how-title">
+  <section id="try" aria-labelledby="try-title">
     <div class="wrap">
-      <h2 id="how-title">Fra opptak til tab, <em>ett spørsmål om gangen.</em></h2>
+      <h2 id="try-title">De samme tonene, <em>din stemming.</em></h2>
+      <p class="lead">En oppdiktet gitarlinje, slik motoren skrev den. I standardstemming har to toner ingen plass på halsen, den ene en dyp D: linjen høres ut som Drop D. Bytt stemming eller sett på en capo. Tonene er de samme; strengene og båndene er løserens egne for hvert valg.</p>
+      {{figure tabdemo data="site/fretscribe/data/tab-demo.json" fixture="apps/fixtures/guitar-line"}}
+    </div>
+  </section>
+
+  <section id="sure" aria-labelledby="sure-title">
+    <div class="wrap">
+      <h2 id="sure-title">Hvor sikker <em>er den?</em></h2>
+      <p class="lead">En tone Fretscribe er usikker på, får et <span class="uncertain"><strong>?</strong></span>. Vi måler to ting ved de merkene, på opptak der vi kjenner de riktige tonene.</p>
+      <ul class="rates">
+        <li>
+          <h3>Bass</h3>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_precision"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_precision as="percent"}}</span> av 100 merkede toner var feil. Når den tviler på en tone, har den som regel grunn til det.</p>
+          </div>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_recall" kind="found"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_recall as="percent"}}</span> av 100 gale toner hadde et merke. De fleste gale tonene blir ikke merket.</p>
+          </div>
+        </li>
+        <li>
+          <h3>Gitar</h3>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_precision"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_precision as="percent"}}</span> av 100 merkede toner var feil. Når den tviler på en tone, har den som regel grunn til det.</p>
+          </div>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_recall" kind="found"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_recall as="percent"}}</span> av 100 gale toner hadde et merke. De fleste gale tonene blir ikke merket.</p>
+          </div>
+        </li>
+      </ul>
+      <p>Et merke er altså verdt å sjekke, og en tone uten merke kan også være feil. En tab fra et opptak er et utkast: stol mer på ørene dine enn på den.</p>
+      <p class="source">Målt på bass- og gitarstemmer plukket ut av hele sanger (Slakh-utdragene), og låst i <code>eval/baselines.json</code>: en endring som gjør disse dårligere, blir ikke gitt ut.</p>
+    </div>
+  </section>
+
+  <section id="app" aria-labelledby="app-title">
+    <div class="wrap">
+      <h2 id="app-title">I appen, <em>ett spørsmål om gangen.</em></h2>
       <p class="lead">Fretscribe spør om én ting om gangen. Ingenting vises som bånd før du har sett hva den hørte.</p>
       <ol class="flow">
         <li>
@@ -48,91 +83,42 @@ og_image: @/assets/shots/tab-en-light.png
         </li>
         <li>
           <div class="phone-frame">
-            {{shot what-is-this sizes="(max-width: 520px) 44vw, 232px" alt="Hva er dette? for Bass line.wav, med to valg: Bare instrumentet mitt, ett instrument som spiller uten noe annet, og En hel sang, et band eller en plate der Fretscribe plukker ut bassen. På datamaskinen din: Bandroom skriver ned tonene, opptaket sendes ikke til nettet." load="lazy"}}
+            {{shot what-is-this sizes="(max-width: 520px) 44vw, 232px" alt="Hva er dette? for Bass line.wav, med to valg: Bare instrumentet mitt, ett instrument som spiller uten noe annet, og En hel sang, et band eller en plate der Fretscribe plukker ut bassen." load="lazy"}}
           </div>
           <h3>Hva er dette?</h3>
-          <p>Bare instrumentet ditt, eller en hel sang der stemmen din plukkes ut. Så skriver Bandroom på datamaskinen ned tonene.</p>
+          <p>Bare instrumentet ditt, eller en hel sang der stemmen din plukkes ut.</p>
         </li>
         <li>
           <div class="phone-frame">
-            {{shot check sizes="(max-width: 520px) 44vw, 232px" alt="Sjekk sangen: Stemming, høres ut som Drop D, skrevet for standard, med Bruk Drop D. Oktav, skrevet én oktav lavere enn det ble hørt. Kammertone, litt høyere enn A = 440. Toneart og tempo, e-moll, 100, 2/4. 2 toner merket med spørsmålstegn. Vis tabben." load="lazy"}}
+            {{shot check sizes="(max-width: 520px) 44vw, 232px" alt="Sjekk sangen: Stemming, høres ut som Drop D, skrevet for standard, med Bruk Drop D. Oktav, skrevet én oktav lavere enn det ble hørt. Kammertone. Toneart og tempo. 2 toner merket med spørsmålstegn. Vis tabben." load="lazy"}}
           </div>
           <h3>Sjekk sangen</h3>
           <p>Stemmingen den hørte, oktaven, tonearten og tempoet. Er én av dem feil, blir alle båndene feil, så du får se dem først.</p>
         </li>
         <li>
           <div class="phone-frame">
-            {{shot tab sizes="(max-width: 520px) 44vw, 232px" alt="Tabben til Bass line, med stemming og capo øverst, 2 toner merket med spørsmålstegn, og avspilleren under." load="lazy"}}
+            {{shot note sizes="(max-width: 520px) 44vw, 232px" alt="En tone med spørsmålstegn valgt i tabben: Takt 3, slag 2, 3. streng, bånd 2, H. Fretscribe er ikke sikker på denne. Med Spill denne takten sakte og Neste." load="lazy"}}
           </div>
-          <h3>Tabben</h3>
-          <p>Stemmen din som tab, med avspilleren under og de usikre tonene merket.</p>
+          <h3>Øv</h3>
+          <p>Tempo spiller opptaket saktere, Gjenta takter spiller de vanskelige om igjen, og en usikker tone spiller takten sin sakte.</p>
         </li>
       </ol>
     </div>
   </section>
 
-  <section aria-labelledby="practise-title">
-    <div class="wrap hero-grid reverse">
-      <div class="phones single">
-        <div class="phone-frame">
-          {{shot note sizes="(max-width: 900px) 60vw, 280px" alt="En tone med spørsmålstegn valgt i tabben: Takt 3, slag 2, 3. streng, bånd 2, H. Fretscribe er ikke sikker på denne. Med Spill denne takten sakte og Neste." load="lazy"}}
-        </div>
-      </div>
-      <div>
-        <h2 id="practise-title">Les den, og <em>spill med.</em></h2>
-        <p>Tabben er til å øve med, ikke bare til å se på.</p>
-        <ul class="ticks">
-          <li>Avspilleren spiller opptaket ditt og følger tabben, takt og slag.</li>
-          <li><strong>Tempo</strong> spiller opptaket saktere, og <strong>Gjenta takter</strong> spiller de vanskelige om og om igjen.</li>
-          <li>Fullskjerm lar bare tabben stå igjen, for når telefonen står på forsterkeren.</li>
-          <li>En tone Fretscribe var usikker på, får et <span class="uncertain"><strong>?</strong></span>. Velg den for å høre takten sakte og avgjøre selv.</li>
-          <li>Merkene finner noen av de gale tonene, ikke de fleste. En tab fra et opptak er et utkast: stol mer på ørene dine enn på den.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section id="instrument" aria-labelledby="instrument-title">
-    <div class="wrap hero-grid">
-      <div>
-        <h2 id="instrument-title">Skrevet for <em>instrumentet ditt.</em></h2>
-        <p>De samme tonene ligger på forskjellige steder på en bass, en sjustrenger og en ukulele. Fretscribe spør én gang hva du spiller, og får hver tab skrevet for det.</p>
-        <ul class="ticks">
-          <li>Gitar, bass, ukulele og mandolin, med det antallet strenger du har.</li>
-          <li>Din vanlige stemming, og capo når du bruker det.</li>
-          <li>Venstrehendte instrumenter, og instrumenter som spilles opp ned.</li>
-          <li>Når et opptak høres ut som en annen stemming enn din, sier Sjekk sangen fra og tilbyr den.</li>
-        </ul>
-      </div>
-      <div class="phones single">
-        <div class="phone-frame">
-          {{shot instrument sizes="(max-width: 900px) 60vw, 280px" alt="Instrumentet ditt: Instrument, bass. Strenger, 4 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre." load="lazy"}}
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section id="needs" aria-labelledby="needs-title">
-    <div class="wrap hero-grid reverse">
-      <div class="phones single">
-        <div class="phone-frame">
-          {{shot computer sizes="(max-width: 900px) 60vw, 280px" alt="Bandroom på datamaskinen, i innstillingene til Fretscribe: Ikke tilkoblet. Åpne Bandroom på datamaskinen, den heter Brasscribe Bandroom i listen over programmer, og velg Koble til en telefon. Skann koden på datamaskinen, eller skriv inn den sekssifrede koden, eller Spør på datamaskinen i stedet." load="lazy"}}
-        </div>
-      </div>
-      <div>
-        <h2 id="needs-title">Dette trenger du</h2>
-        <p>Fretscribe skriver ikke tabber på egen hånd:</p>
-        <ul class="ticks">
-          <li><strong>En datamaskin med Bandroom</strong>, på samme Wi-Fi som telefonen: en Mac med Apple-prosessor og macOS 26 eller nyere, eller en PC med Windows 11. Bandroom er gratis, og det skriver hver tab, både for ett instrument og for en hel sang.</li>
-          <li><strong>Fretscribe-appen</strong> på det nyeste systemet eller det forrige: Android 17 eller 16, iOS, iPadOS og macOS 27 eller 26, eller Windows 11.</li>
-          <li><strong>Uten datamaskinen</strong> åpner appen fortsatt tabbene du har laget, til å lese og øve med. Den kan ikke skrive en ny.</li>
-          <li><strong>Nedlastingene er ikke signert ennå</strong> og ligger ikke i noen appbutikk. Hver enhet trenger noen ekstra steg første gang, og <a href="@lang/download/">nedlastingssiden</a> sier hvilke.</li>
-        </ul>
-        <p>Opptaket forlater aldri ditt eget nettverk: det går fra telefonen til din egen datamaskin og ingen andre steder. Første gang Bandroom starter, trenger det internett for å laste ned det det lytter med. Bandroom er det samme programmet som Brasscribe bruker, så én datamaskin betjener begge appene.</p>
-        <div class="actions">
-          <a class="button outline" href="@lang/guide/#computer">Sett opp datamaskinen</a>
-          <a class="button outline" href="@family/">Se alle appene</a>
-        </div>
+    <div class="wrap">
+      <h2 id="needs-title">Dette trenger du</h2>
+      <p class="lead">Fretscribe skriver ikke tabber på egen hånd. Velg enheten din for å se hva den gjør alene, og hva den trenger datamaskinen til.</p>
+      {{figure platforms}}
+      <ul class="ticks needs-list">
+        <li><strong>En datamaskin med Bandroom</strong>, på samme Wi-Fi som telefonen: en Mac med Apple-prosessor og macOS 27 eller 26, eller en PC med Windows 11. Bandroom er gratis, og det skriver hver tab.</li>
+        <li><strong>Nedlastingene er ikke signert ennå</strong> og ligger ikke i noen appbutikk. Hver enhet trenger noen ekstra steg første gang, og <a href="@lang/download/">nedlastingssiden</a> sier hvilke.</li>
+        <li><strong>Opptaket forlater aldri ditt eget nettverk.</strong> Det går fra telefonen til din egen datamaskin og ingen andre steder. Første gang Bandroom starter, trenger det internett for å laste ned det det lytter med.</li>
+      </ul>
+      <div class="actions">
+        <a class="button outline" href="@lang/guide/#computer">Sett opp datamaskinen</a>
+        <a class="button outline" href="@family/">Se alle appene</a>
       </div>
     </div>
   </section>

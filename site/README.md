@@ -39,6 +39,24 @@ is made from the product's `[[downloads]]` unless the product has a `download.ht
 `site/build.py`'s first lines list the link roots (`@/`, `@lang/`, `@family/`, `@<product>/`) and
 the macros (`{{shot}}`, `{{file}}`, `{{releases}}`, `{{downloads}}`).
 
+## Figures and numbers
+
+A front page's figures are drawn at build time from files in the repository, so a page shows what the
+engine answered and no number is typed into a page:
+
+- `{{figure <name> …}}` calls a function in `shared/figures.py` (or in the product's own `figures.py`):
+  the strip under the headline, the steps from sound to written music, the tab viewer, a measured rate
+  as squares of a hundred, the device table. Their words are in `figures.py` and in the product's
+  `product.toml` (`[[<lang>.stages]]`, `[<lang>.tabdemo]`, `[[platforms]]`).
+- `{{data <file> <path/to/value> as="percent"}}` prints a number from a JSON file, such as a gated
+  rate in `eval/baselines.json`.
+- A page names the stylesheets and scripts it needs in its header (`styles:`, `scripts:`); the build
+  copies them from the product's folder or from `shared/`. `shared/showcase.css` and `showcase.js`
+  belong to the figures. Every figure is complete without the script, which only adds what moves.
+- `<product>/data/` is served as `assets/data/`. Fretscribe's `data/tab-demo.json` is made by
+  `fretscribe/make_demo.py`, which asks the core's solver for each tuning and capo the viewer offers;
+  run it again when the guitar fixture or the solver changes.
+
 ## Adding a product
 
 1. `site/<product>/product.toml`: copy Fretscribe's and change it. `brand` points at the product's

@@ -19,3 +19,11 @@ h1 em, h2 em { font-weight: 700; }
 .phone-frame img { aspect-ratio: 600 / 1304; }
 
 .needs-note { margin: var(--scribe-space-5) 0 0; font-size: var(--scribe-type-callout-size); }
+
+/* The front page: the headline over the strip, which runs the full width of the page like a ruled line. */
+.hero { padding-bottom: 0; background: linear-gradient(180deg, var(--scribe-brand-tint), var(--scribe-bg) 60%); }
+.hero .lead { max-width: 34em; }
+.hero .strip { margin-top: var(--scribe-space-8); }
+.hero .strip-controls, .hero .strip figcaption { max-width: 1120px; margin-left: auto; margin-right: auto; padding: 0 var(--scribe-space-6); }
+.hero .strip figcaption { padding-bottom: var(--scribe-space-10); }
+.needs-list { margin-top: var(--scribe-space-6); max-width: 46em; }
