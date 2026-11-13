@@ -412,7 +412,7 @@ public sealed class InterfaceVersionTests : IDisposable
         var problems = ctl.Build().Inputs.Problems;
         // Not "this copy can't update it": Try again runs the update, and it may well go through.
         Assert.Equal([ProblemKind.UpdateFailed, ProblemKind.UpdateEngine], problems.Select(p => p.Kind));
-        Assert.Equal("The update didn't finish, and the previous version was put back.", problems[0].Why);
+        Assert.Equal("The update didn't finish. The previous version was put back and is running.", problems[0].Why);
         Assert.Null(ctl.Api);
 
         // The update tried again and done, and the engine is still older: now this copy can't.
@@ -422,16 +422,24 @@ public sealed class InterfaceVersionTests : IDisposable
     }
 
     [Theory]
-    [InlineData("en", "The update didn't finish, and the previous version was put back.",
-        "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.")]
-    [InlineData("nb", "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake.",
-        "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
-    public void A_failed_update_does_not_say_that_the_previous_version_runs(string language, string failed, string refused)
+    [InlineData("en", PutBackEngine.Running, "The update didn't finish. The previous version was put back and is running.",
+        "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.")]
+    [InlineData("en", PutBackEngine.NotRunning, "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.",
+        "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.")]
+    [InlineData("nb", PutBackEngine.Running, "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører.",
+        "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
+    [InlineData("nb", PutBackEngine.NotRunning, "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført.",
+        "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
+    [InlineData("en", PutBackEngine.Starting, "The update didn't finish. The previous version was put back and is starting.",
+        "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.")]
+    [InlineData("nb", PutBackEngine.Starting, "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter.",
+        "Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
+    public void A_failed_update_says_whether_the_previous_version_runs(string language, PutBackEngine running, string failed, string refused)
     {
-        // It may not: it has another interface version, or this app can no longer start it.
+        // It may not: this app can no longer start it, or it was started and gave up. Or it is on its way up.
         var s = language == "nb" ? Strings.Nb : Strings.En;
-        Assert.Equal(failed, s["Update_Failed_Why"]);
-        Assert.Equal(refused, s["Update_Refused_Why"]);
+        Assert.Equal(failed, Problems.UpdateFailed(s, "details", running).Why);
+        Assert.Equal(refused, Problems.UpdateRefused(s, new PixiRefusal(">=0.80", "0.79.0", "words"), running).Why);
     }
 
     [Fact]

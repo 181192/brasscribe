@@ -184,7 +184,7 @@ public sealed class PixiRefusalTests : IDisposable
         Assert.Equal(DisplayState.NeedsAttention, info.State);
         Assert.Equal(ProblemKind.UpdateRefused, info.Problem!.Kind);
         Assert.Equal(title, info.Problem.Title);
-        Assert.Equal(s["Update_Refused_Why"], info.StatusSub);
+        Assert.Equal(s["Update_Refused_Why_Running"], info.StatusSub);
         Assert.Equal(fix, info.PrimaryLabel);
         Assert.DoesNotContain(snap.Inputs.Problems, p => p.Kind == ProblemKind.PixiTooOld);
 

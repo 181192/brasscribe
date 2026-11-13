@@ -112,7 +112,7 @@ struct StatusPanel: View {
                 BrassProgress(fraction: Double(n) / 100)
             }
         case .attention(let p):
-            ProblemCard(title: Strings.problemTitle(p), why: Strings.problemWhy(p), symbol: "exclamationmark.triangle.fill",
+            ProblemCard(title: Strings.problemTitle(p), why: Strings.problemWhy(p, engine: PutBackEngine(phase: app.phase)), symbol: "exclamationmark.triangle.fill",
                         tint: Color.Scribe.warning)
             if app.isBusy, let job = app.monitor.job { NowCard(job: job) }
         case .error:

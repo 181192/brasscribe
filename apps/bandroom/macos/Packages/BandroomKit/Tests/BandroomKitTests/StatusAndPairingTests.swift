@@ -77,6 +77,51 @@ import Testing
         #expect(running == [0, 1])
     }
 
+    /// A restart for a new setting must not take a job with it. The regular check is up to half a minute old, so
+    /// the engine is asked at that moment, and a job that only waits counts too.
+    @Test func aJobSentSinceTheLastCheckIsSeenWhenTheEngineIsAskedNow() async {
+        let engine = FakeEngine(), clock = TestClock()
+        let m = StatusMonitor(now: { clock.now }, sleep: { _ in })
+        var changes: [Int] = []
+        m.onJobsChanged = { changes.append($0) }
+        m.client = engine
+        await m.tick()
+        #expect(!m.hasJobs)
+        engine.statusValue.jobsQueued = 1  // a phone sends a recording
+        clock.advance(2)
+        await m.tick()  // not due yet: the regular check still says nothing is being made
+        #expect(!m.hasJobs)
+        #expect(await m.hasJobsNow() == true)
+        #expect(SettingRestart.decide(busy: true) == .afterTheJob)  // so the restart waits for it
+        #expect(changes == [0, 0])  // told of the waiting job, so a restart held for it is not forgotten
+        engine.statusValue.jobsQueued = 0
+        #expect(await m.hasJobsNow() == false)
+        #expect(SettingRestart.decide(busy: false) == .restartNow)
+        #expect(changes == [0, 0, 0])
+    }
+
+    /// An engine that does not answer in time has not said that nothing is being made: its last answer may be
+    /// from before a job arrived. The restart is neither done nor dropped; it is decided at the next answer.
+    @Test func anEngineThatDoesNotAnswerIsNotRestartedOnItsLastAnswer() async {
+        let engine = FakeEngine(), clock = TestClock()
+        let m = StatusMonitor(now: { clock.now }, sleep: { _ in })
+        var answers = 0
+        m.onAnswered = { answers += 1 }
+        m.client = engine
+        await m.tick()
+        #expect(!m.hasJobs && answers == 1)
+        engine.statusValue.jobsRunning = 1  // a phone's recording is taken, and the computer is too busy to answer
+        engine.failAll = true
+        #expect(await m.hasJobsNow() == nil)
+        #expect(!m.hasJobs)  // the old answer still says nothing is being made
+        #expect(SettingRestart.decide(busy: nil) == .atTheNextAnswer)
+        #expect(answers == 1)  // no answer, so nothing decides on it
+        engine.failAll = false
+        clock.advance(60)
+        await m.tick()
+        #expect(answers == 2 && m.hasJobs)  // the next answer is where it is decided: the job is seen
+    }
+
     @Test func withoutAnEngineNothingIsBeingMade() async {
         let engine = FakeEngine()
         engine.statusValue.jobsRunning = 1

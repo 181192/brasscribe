@@ -160,6 +160,7 @@ final class AppModel {
         }
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
         monitor.onJobsChanged = { [weak self] n in self?.jobsChanged(n) }
+        monitor.onAnswered = { [weak self] in self?.engineAnswered() }
         savedKey.onChange = { [weak self] _ in self?.huggingFaceKeyChanged() }
         log.write("Bandroom \(Bundle.main.shortVersion) starting; data \(paths.data.path); source \(source)")
         // HF_TOKEN in the environment wins, so there's nothing to read then.
@@ -452,7 +453,8 @@ final class AppModel {
 
     /// The engine's phase; a screenshot demo pretends it runs.
     var phase: SupervisorPhase { demo ? .running : supervisor.phase }
-    var isBusy: Bool { (monitor.status?.jobsRunning ?? 0) > 0 }
+    /// A job is running or waiting, as of the last check.
+    var isBusy: Bool { monitor.hasJobs }
     var serverName: String { monitor.status?.serverName ?? "Brasscribe on \(supervisor.configuration.computerName)" }
     var hostName: String { ComputerName.host(fromServerName: serverName) }
 
@@ -484,6 +486,28 @@ final class AppModel {
         monitor.client = nil
         pairing.client = nil
         supervisor.restart()
+    }
+
+    /// Restart for a new setting (the key, the name phones see), but never under a job. The engine is asked now:
+    /// the last check can be half a minute old, and a restart takes a job that a phone sent since with it. With a
+    /// job there, the restart waits for it.
+    func restartUnlessBusy() {
+        guard phase == .running else { return restartNow() }  // not answering yet: no job to lose
+        restartWhenDone = true
+        Task { [weak self] in
+            guard let self else { return }
+            switch SettingRestart.decide(busy: await self.monitor.hasJobsNow()) {
+            case .restartNow: if self.restartWhenDone { self.restartNow() }
+            case .afterTheJob: self.logger.write("a job is running or waiting: the engine restarts with the new setting after it")
+            case .atTheNextAnswer: self.logger.write("the engine did not answer: it restarts with the new setting once it says that nothing is being made")
+            }
+        }
+    }
+
+    /// The engine answered a check: a restart that waits (for a job to end, or for this answer) goes ahead when
+    /// nothing is being made.
+    private func engineAnswered() {
+        if restartWhenDone && !isBusy { restartNow() }
     }
 
     func tryAgain() {
@@ -637,7 +661,7 @@ final class AppModel {
         guard !demo else { return }
         switch supervisor.useHuggingFaceKey(savedKey.value, environment: environment, busy: isBusy) {
         case .none: break
-        case .restartNow: restartNow()
+        case .restartNow: restartUnlessBusy()
         case .restartWhenDone: restartWhenDone = true
         }
     }
@@ -665,7 +689,7 @@ final class AppModel {
         supervisor.configuration.computerName = shownComputerName
         logger.write("name shown to phones: \(shownComputerName)")
         guard isRunning else { return }
-        if isBusy { restartWhenDone = true } else { restartNow() }
+        restartUnlessBusy()
     }
 
     // MARK: menu-bar icon and the Dock (§3.3)
@@ -741,9 +765,6 @@ final class AppModel {
 
     private func jobsChanged(_ running: Int) {
         if running > 0 { holdSleep() } else { releaseSleep() }
-        if running == 0 && restartWhenDone {
-            restartNow()
-        }
     }
 
     /// Don't idle-sleep while a score is being made; never blocks lid-close or a sleep the user asks for.

@@ -8,8 +8,9 @@ public enum Problem: Equatable, Sendable {
     case missingDownload([ModelComponent])
     case noFreePort
     /// The app was updated but its engine couldn't be. The previous one is back, and runs when this app can still
-    /// start it (`EngineSource.startsAfterUpdate`); when it can't, nothing runs, and when its interface version is
-    /// not this Bandroom's, phones can't use it. The fix tries the update again.
+    /// start it (`EngineSource.startsAfterUpdate`); when it can't, or it was started and gave up, nothing runs, and
+    /// when its interface version is not this Bandroom's, phones can't use it. The words say which. The fix tries
+    /// the update again.
     case updateFailed
     /// As `updateFailed`, because pixi refused the new workspace (too old for it). The fix is a newer Bandroom. With
     /// no engine running because a start was refused, the problem is `pixiTooOld`.
@@ -27,6 +28,14 @@ public enum Problem: Equatable, Sendable {
     /// Shown even while setting up: setup can't get past it.
     public var outranksSetup: Bool {
         if case .pixiTooOld = self { true } else { false }
+    }
+
+    /// An update of the engine that did not finish, whatever stopped it.
+    public var isFailedUpdate: Bool {
+        switch self {
+        case .updateFailed, .updateRefused: true
+        default: false
+        }
     }
 
     /// pixi's refusal behind this problem, for the tech person.
@@ -64,7 +73,11 @@ public enum DisplayState: Equatable, Sendable {
         switch phase {
         case .failed(.noFreePort): return .attention(.noFreePort)
         case .failed(.notInstalled): return .attention(.missingDownload([]))
-        case .failed: return .error
+        case .failed:
+            // The engine that gave up is the previous one, put back by an update that failed: the update's problem
+            // shows, since its fix runs the update again. Error's Try again would only start the same engine again.
+            if let update = problems.first(where: \.isFailedUpdate) { return .attention(update) }
+            return .error
         default: break
         }
         if let first = problems.first { return .attention(first) }
@@ -85,5 +98,19 @@ public enum DisplayState: Equatable, Sendable {
     /// The busy badge is a pie that changes in 8 steps, never animated (§9, 2.3.3).
     public static func pieStep(percent: Int) -> Int {
         max(0, min(8, Int((Double(percent) / 12.5).rounded(.down))))
+    }
+}
+
+/// What the engine that was put back after a failed update is doing, for the words of that problem: it may run,
+/// be on its way up (just started again, or waiting to be), or not run at all.
+public enum PutBackEngine: Equatable, Sendable {
+    case running, starting, notRunning
+
+    public init(phase: SupervisorPhase) {
+        switch phase {
+        case .running: self = .running
+        case .starting, .waitingToRetry, .stopping(then: .restart): self = .starting
+        case .idle, .stopped, .failed, .stopping: self = .notRunning
+        }
     }
 }

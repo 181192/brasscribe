@@ -78,8 +78,12 @@ public final class StatusMonitor {
 
     /// Called for each pairing request seen for the first time.
     @ObservationIgnored public var onNewRequest: ((PairRequestInfo) -> Void)?
-    /// Called when the number of running jobs changes (for the sleep assertion and "restart when done").
+    /// Called with the number of running jobs when that number or the number waiting changes (for the sleep
+    /// assertion and "restart when done").
     @ObservationIgnored public var onJobsChanged: ((Int) -> Void)?
+    /// Called each time the engine has answered a check, after the answer is in `status` (a restart that waits
+    /// for an answer is decided again here: `onJobsChanged` is silent while the numbers stay the same).
+    @ObservationIgnored public var onAnswered: (() -> Void)?
 
     @ObservationIgnored public var client: (any EngineAPI)? {
         didSet { if client == nil { clear() } else { refreshDue = true; requestsDue = true; healthDue = true } }
@@ -142,11 +146,13 @@ public final class StatusMonitor {
     /// Asks for a refresh on the next tick (after an action such as Remove).
     public func setNeedsRefresh() { refreshDue = true; requestsDue = true }
 
-    public func refresh() async {
-        guard let client else { return }
+    /// False when the engine did not answer (or there is none to ask).
+    @discardableResult
+    public func refresh() async -> Bool {
+        guard let client else { return false }
         do {
             let s = try await client.status()
-            let previousRunning = status?.jobsRunning
+            let previous = status.map { [$0.jobsRunning, $0.jobsQueued] }
             status = s
             reachable = true
             failedRefreshes = 0
@@ -160,12 +166,26 @@ public final class StatusMonitor {
             } else {
                 job = nil
             }
-            if previousRunning != s.jobsRunning { onJobsChanged?(s.jobsRunning) }
+            if previous != [s.jobsRunning, s.jobsQueued] { onJobsChanged?(s.jobsRunning) }
+            onAnswered?()
+            return true
         } catch {
             reachable = false
             failedRefreshes += 1
+            return false
         }
     }
+
+    /// Whether the engine has a job running or waiting, asked now. The last regular check can be half a minute old,
+    /// and a job a phone sent since would be lost with an engine that is restarted on that answer. Nil when the
+    /// engine did not answer: what it said last is no answer to this, least of all from a computer too busy to
+    /// reply because it has just taken a job.
+    public func hasJobsNow() async -> Bool? {
+        await refresh() ? hasJobs : nil
+    }
+
+    /// As of the last answer.
+    public var hasJobs: Bool { (status?.jobsRunning ?? 0) + (status?.jobsQueued ?? 0) > 0 }
 
     public func refreshRequests() async {
         guard let client, let list = try? await client.pairingRequests() else { return }

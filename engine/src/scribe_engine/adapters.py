@@ -24,6 +24,7 @@ import os
 import platform
 import sys
 import shutil
+import signal
 import subprocess
 import threading
 import time
@@ -107,6 +108,21 @@ LIGHT_TIMEOUT_S = 3600.0
 
 class AdapterError(RuntimeError):
     pass
+
+
+def stopped_from_outside(name: str, returncode: int) -> str | None:
+    """What to say of a model that ended on a signal it was sent, not on an error of its own: None for any
+    other ending. The engine and its models are stopped together when the program that runs the engine
+    restarts it or quits, so the model ends before the engine has said why."""
+    if os.name == "nt" or returncode >= 0:
+        return None
+    if -returncode in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+        return (f"{name} was stopped: the program on the computer restarted or quit while this was being made. "
+                "Send the recording again.")
+    if -returncode == signal.SIGKILL:
+        return (f"{name} was stopped before it finished. A computer that runs out of memory stops a program "
+                "this way: close other programs there and send the recording again.")
+    return None
 
 
 class AdapterCancelled(AdapterError):
@@ -240,7 +256,8 @@ class AdapterRegistry:
                     kill_tree(proc)
                     raise
             if proc.returncode != 0:
-                raise AdapterError(f"{name} failed ({proc.returncode}): {(stderr or stdout)[-2000:]}")
+                raise AdapterError(stopped_from_outside(name, proc.returncode)
+                                   or f"{name} failed ({proc.returncode}): {(stderr or stdout)[-2000:]}")
 
         if a.heavy:
             def blocked():

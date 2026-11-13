@@ -65,7 +65,9 @@ public static class StateRules
     /// </summary>
     public static DisplayState Resolve(StateInputs i)
     {
-        if (i.Engine == EngineState.Error) return DisplayState.Error;
+        // An engine that gave up after an update that failed is the previous one, put back: the update's problem
+        // shows, since its fix runs the update again. Error's Try again would only start the same engine again.
+        if (i.Engine == EngineState.Error) return FailedUpdate(i) is null ? DisplayState.Error : DisplayState.NeedsAttention;
         if (i.Problems.Count > 0) return DisplayState.NeedsAttention;
         if (i.Updating) return DisplayState.Updating;
         if (!i.SetupComplete && i.Engine is not (EngineState.Running or EngineState.Starting)) return DisplayState.SettingUp;
@@ -74,6 +76,9 @@ public static class StateRules
         if (i.Engine == EngineState.Running) return DisplayState.Running;
         return DisplayState.Stopped;
     }
+
+    private static Problem? FailedUpdate(StateInputs i) =>
+        i.Problems.FirstOrDefault(p => p.Kind is ProblemKind.UpdateFailed or ProblemKind.UpdateRefused);
 
     public static TrayBadge Badge(DisplayState s) => s switch
     {
@@ -95,7 +100,8 @@ public static class StateRules
     public static DisplayInfo Describe(StateInputs i, IStrings s)
     {
         var state = Resolve(i);
-        var problem = state == DisplayState.NeedsAttention ? i.Problems[0] : null;
+        var problem = state != DisplayState.NeedsAttention ? null
+            : i.Engine == EngineState.Error ? FailedUpdate(i) : i.Problems[0];
         double fraction = state is DisplayState.SettingUp or DisplayState.Updating ? i.SetupFraction : i.JobFraction ?? 0;
         int pct = Percent(fraction);
         string tooltip = state switch
@@ -153,6 +159,16 @@ public static class StateRules
 }
 
 /// <summary>The Needs-attention problems Bandroom can detect itself.</summary>
+/// <summary>What the engine that was put back after a failed update is doing, for the words of that problem. The
+/// names end the string keys (Update_Failed_Why_Running, …).</summary>
+public enum PutBackEngine
+{
+    Running,
+    /// <summary>Just started again, or waiting to be.</summary>
+    Starting,
+    NotRunning,
+}
+
 public static class Problems
 {
     public static Problem NoFreePort(IStrings s) =>
@@ -168,17 +184,20 @@ public static class Problems
 
     /// <summary>
     /// The app was updated but its engine couldn't be. The previous one is back, and runs when this app can still
-    /// start it; when it can't, nothing runs. The fix tries the update again.
+    /// start it; when it can't, or it was started and gave up, nothing runs. The words say which. The fix tries the
+    /// update again.
     /// </summary>
-    public static Problem UpdateFailed(IStrings s, string details) =>
-        new(ProblemKind.UpdateFailed, s["Update_Failed_Title"], s["Update_Failed_Why"], s["Primary_TryAgain"], details);
+    public static Problem UpdateFailed(IStrings s, string details, PutBackEngine engine) =>
+        new(ProblemKind.UpdateFailed, s["Update_Failed_Title"],
+            s["Update_Failed_Why_" + engine], s["Primary_TryAgain"], details);
 
     /// <summary>
     /// The update failed because pixi refused the new workspace (too old for it). The previous engine is back, so it
-    /// is not "can't start"; the fix is a newer Bandroom.
+    /// is not "can't start"; the words say whether it runs, and the fix is a newer Bandroom.
     /// </summary>
-    public static Problem UpdateRefused(IStrings s, PixiRefusal refusal) =>
-        new(ProblemKind.UpdateRefused, s["Update_Failed_Title"], s["Update_Refused_Why"], s["Pixi_Fix"],
+    public static Problem UpdateRefused(IStrings s, PixiRefusal refusal, PutBackEngine engine) =>
+        new(ProblemKind.UpdateRefused, s["Update_Failed_Title"],
+            s["Update_Refused_Why_" + engine], s["Pixi_Fix"],
             $"pixi {refusal.Found} refused the updated engine workspace (it requires pixi '{refusal.Required}'): {refusal.Message}");
 
     /// <summary>

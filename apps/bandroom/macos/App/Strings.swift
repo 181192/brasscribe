@@ -48,9 +48,9 @@ enum Strings {
         switch why {
         case nil: String(localized: "It tried to start three times. Recordings on your phones are safe.")
         case .spawn: String(localized: "It couldn't be started. Recordings on your phones are safe.")
-        case .noFreePort: problemWhy(.noFreePort)
-        case .notInstalled: problemWhy(.missingDownload([]))
-        case .pixiTooOld(let r): problemWhy(.pixiTooOld(r))
+        case .noFreePort: problemWhy(.noFreePort, engine: .notRunning)
+        case .notInstalled: problemWhy(.missingDownload([]), engine: .notRunning)
+        case .pixiTooOld(let r): problemWhy(.pixiTooOld(r), engine: .notRunning)
         }
     }
 
@@ -81,13 +81,25 @@ enum Strings {
         }
     }
 
-    static func problemWhy(_ p: Problem) -> String {
+    /// `engine`: what the engine is doing, for the problems whose words depend on it (a failed update leaves the
+    /// previous engine running, starting, or nothing).
+    static func problemWhy(_ p: Problem, engine: PutBackEngine) -> String {
         switch p {
         case .lowDisk(let gb): String(localized: "\(gb) GB free. Brasscribe needs 3 GB to make a score.")
         case .missingDownload(let missing): notDownloaded(missing)
         case .noFreePort: String(localized: "Another program on this computer is in the way.")
-        case .updateFailed: String(localized: "The update didn't finish, and the previous version was put back.")
-        case .updateRefused: String(localized: "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.")
+        case .updateFailed:
+            switch engine {
+            case .running: String(localized: "The update didn't finish. The previous version was put back and is running.")
+            case .starting: String(localized: "The update didn't finish. The previous version was put back and is starting.")
+            case .notRunning: String(localized: "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.")
+            }
+        case .updateRefused:
+            switch engine {
+            case .running: String(localized: "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.")
+            case .starting: String(localized: "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.")
+            case .notRunning: String(localized: "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.")
+            }
         case .notResponding: String(localized: "It is running but hasn't answered for a while. Restarting it usually helps.")
         case .pixiTooOld: String(localized: "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.")
         case .interfaceMismatch(let behind, let fix): interfaceMismatch(behind, fix: fix)

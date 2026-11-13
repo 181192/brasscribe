@@ -191,6 +191,7 @@
         }
       }
     },
+    "A heading": {},
     "About Brasscribe Bandroom": {
       "localizations": {
         "nb": {
@@ -371,6 +372,8 @@
         }
       }
     },
+    "Big enough": {},
+    "Bottom": {},
     "Brasscribe can't start": {
       "localizations": {
         "nb": {
@@ -971,6 +974,7 @@
         }
       }
     },
+    "First": {},
     "For when the Brasscribe mark is hidden in the menu bar, for example behind the camera notch.": {
       "localizations": {
         "nb": {
@@ -1251,6 +1255,7 @@
         }
       }
     },
+    "Lower": {},
     "Make scores on this computer": {
       "localizations": {
         "nb": {
@@ -1321,6 +1326,7 @@
         }
       }
     },
+    "Named": {},
     "Needs about 15 GB · %lld GB free": {
       "localizations": {
         "nb": {
@@ -1841,6 +1847,7 @@
         }
       }
     },
+    "Second": {},
     "Separating the instruments": {
       "localizations": {
         "nb": {
@@ -2211,12 +2218,32 @@
         }
       }
     },
-    "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.": {
+    "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
+            "value": "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
+          }
+        }
+      }
+    },
+    "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
+          }
+        }
+      }
+    },
+    "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
           }
         }
       }
@@ -2241,12 +2268,32 @@
         }
       }
     },
-    "The update didn't finish, and the previous version was put back.": {
+    "The update didn't finish. The previous version was put back and is running.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake."
+            "value": "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører."
+          }
+        }
+      }
+    },
+    "The update didn't finish. The previous version was put back and is starting.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter."
+          }
+        }
+      }
+    },
+    "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført."
           }
         }
       }
@@ -2331,6 +2378,7 @@
         }
       }
     },
+    "Top": {},
     "Try again": {
       "localizations": {
         "nb": {
@@ -2371,6 +2419,7 @@
         }
       }
     },
+    "Upper": {},
     "Use this name": {
       "localizations": {
         "nb": {
@@ -2451,6 +2500,7 @@
         }
       }
     },
+    "Words that wrap onto a second line when the window is narrow, as they should.": {},
     "Work load": {
       "localizations": {
         "nb": {

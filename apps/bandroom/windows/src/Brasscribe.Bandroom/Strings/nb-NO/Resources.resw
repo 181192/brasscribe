@@ -44,11 +44,23 @@
   <data name="Update_Failed_Title" xml:space="preserve">
     <value>Brasscribe fikk ikke fullført oppdateringen</value>
   </data>
-  <data name="Update_Refused_Why" xml:space="preserve">
-    <value>Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
+  <data name="Update_Refused_Why_Running" xml:space="preserve">
+    <value>Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
   </data>
-  <data name="Update_Failed_Why" xml:space="preserve">
-    <value>Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake.</value>
+  <data name="Update_Refused_Why_Starting" xml:space="preserve">
+    <value>Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
+  </data>
+  <data name="Update_Refused_Why_NotRunning" xml:space="preserve">
+    <value>Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.</value>
+  </data>
+  <data name="Update_Failed_Why_Running" xml:space="preserve">
+    <value>Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører.</value>
+  </data>
+  <data name="Update_Failed_Why_Starting" xml:space="preserve">
+    <value>Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter.</value>
+  </data>
+  <data name="Update_Failed_Why_NotRunning" xml:space="preserve">
+    <value>Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført.</value>
   </data>
   <data name="Status_Setup" xml:space="preserve">
     <value>Gjøres klar</value>

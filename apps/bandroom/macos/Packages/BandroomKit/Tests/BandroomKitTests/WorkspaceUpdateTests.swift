@@ -407,8 +407,15 @@ import Testing
         // Not started, the supervisor stays at rest and the update's problem is what shows, with its own fix.
         #expect(DisplayState.resolve(setupPercent: nil, phase: .idle, updating: false, problems: [.updateFailed], jobPercent: nil)
                 == .attention(.updateFailed))
-        // Started anyway, it would exit until the supervisor gives up, and that error comes before every problem.
-        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(nil), updating: false, problems: [.updateFailed], jobPercent: nil)
+        // Judged startable and started, it can still exit until the supervisor gives up (an install that stopped
+        // after it had written the command). The update's problem still shows: its Try again runs the update,
+        // where Error's would only start the same engine again.
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(nil), updating: false, problems: [.lowDisk(freeGB: 1), .updateFailed], jobPercent: nil)
+                == .attention(.updateFailed))
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(.spawn("gone")), updating: false, problems: [.updateFailed], jobPercent: nil)
+                == .attention(.updateFailed))
+        // Without a failed update, an engine that gave up is the error it was.
+        #expect(DisplayState.resolve(setupPercent: nil, phase: .failed(nil), updating: false, problems: [.lowDisk(freeGB: 1)], jobPercent: nil)
                 == .error)
     }
 

@@ -23,10 +23,19 @@ ROWS = [
     ("Status_Updating_Sub", "Back in about a minute. Phones reconnect by themselves.", "Tilbake om et minutt. Telefonene kobler seg til igjen selv."),
     ("Update_Progress", "Updating Brasscribe… {0}%.", "Oppdaterer Brasscribe … {0} %."),  # (+) the engine after an app update
     ("Update_Failed_Title", "Brasscribe couldn't finish updating", "Brasscribe fikk ikke fullført oppdateringen"),  # (+)
-    ("Update_Refused_Why", "The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.",
-     "Den forrige versjonen er satt tilbake: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),  # (+)
-    ("Update_Failed_Why", "The update didn't finish, and the previous version was put back.",
-     "Oppdateringen ble ikke fullført, og den forrige versjonen er satt tilbake."),  # (+)
+    # (+) whether the previous engine runs is said, since it may not: this app can no longer start it, or it gave up
+    ("Update_Refused_Why_Running", "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.",
+     "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
+    ("Update_Refused_Why_Starting", "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.",
+     "Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
+    ("Update_Refused_Why_NotRunning", "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.",
+     "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
+    ("Update_Failed_Why_Running", "The update didn't finish. The previous version was put back and is running.",
+     "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører."),
+    ("Update_Failed_Why_Starting", "The update didn't finish. The previous version was put back and is starting.",
+     "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter."),
+    ("Update_Failed_Why_NotRunning", "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.",
+     "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført."),
     ("Status_Setup", "Setting up", "Gjøres klar"),
     ("Status_Error", "Stopped unexpectedly", "Stoppet uventet"),
     ("Now_Heading", "Now", "Nå"),

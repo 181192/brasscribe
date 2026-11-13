@@ -391,7 +391,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     {
         _vm.Apply(snap);
         _tray?.Update(_vm.Badge, _vm.PieEighths, _vm.Tooltip);
-        if (_restartWhenIdle && !_vm.IsBusy && _supervisor?.State == EngineState.Running)
+        if (_restartWhenIdle && !_vm.HasJobs && _supervisor?.State == EngineState.Running)
         {
             _restartWhenIdle = false;
             _ = _supervisor.RestartAsync();
@@ -401,7 +401,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             _trayLogged = true;
             _log?.Write(_tray.IsShown ? "bandroom: notification-area icon added" : "bandroom: notification-area icon failed: " + _tray.LastError);
         }
-        KeepAwake.Set(_vm.IsBusy);
+        KeepAwake.Set(_vm.HasJobs);
     }
 
     // ----- Demo mode: screenshots and the accessibility scan -----
@@ -754,7 +754,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private void RestartWhenIdle()
     {
         if (_supervisor?.State != EngineState.Running) return; // the next start reads the new settings
-        if (_vm.IsBusy) _restartWhenIdle = true;
+        if (_vm.HasJobs) _restartWhenIdle = true;
         else _ = _supervisor.RestartAsync();
     }
 
