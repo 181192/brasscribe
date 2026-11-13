@@ -93,6 +93,10 @@ the page follows the baselines. `site/research.py` lists the keys and the macros
   made by `shared/research/per_piece.py` on a machine with the eval data. The build fails when a spread's
   mean no longer matches its baseline, so run the script again with a deliberate baseline change.
 - **Parts** in `shared/research/<lang>/` are shared by the products' research pages.
+- **The keyboard is tested in a browser** by `shared/research/tests/keyboard.mjs` (its first lines say how
+  to run it): every row of every view of every chart is reached with the arrow keys, and Escape clears
+  the readout. Run it after a change to `shared/charts.js`. The build itself refuses one known cause of a
+  dead keyboard: a part of a chart stored under the name of one of the chart's methods.
 
 ## Download links
 

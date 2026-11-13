@@ -33,7 +33,7 @@ scripts: charts.js
       <p class="overline">Research</p>
       <h1>From a recording to a brass-band score</h1>
       <p class="lead">What Brasscribe does to a recording, how each step was measured, and where the result is still wrong.</p>
-      <p class="byline">Brasscribe project · Every number and figure on this page is read from the repository's benchmark files when the site is built, so it changes when they do</p>
+      <p class="byline">Brasscribe project · Every number and figure on this page is read from the repository's benchmark files when the site is built, so it changes when they do · <a href="@fretscribe/research/">The same for tab: Fretscribe's paper</a></p>
     </header>
 
     <section id="abstract" class="abstract" aria-labelledby="abstract-title">
@@ -53,7 +53,7 @@ scripts: charts.js
       <p>A British-style brass band has 18 parts on a contest score, from soprano cornet to B♭ bass and percussion; Norwegian bands use the same layout. Most of the instruments share one family sound and double each other constantly. That is the hard case for every model we know of: none knows the band's instruments, and none tells several players of one instrument apart.</p>
       <p>Three constraints shaped the work:</p>
       <ul class="ticks">
-        <li><strong>The musician's own devices.</strong> Recordings are not sent to a cloud service. A full band is processed on the musician's computer. On Android the app writes a solo by itself. On Windows, iPhone, iPad and Mac every score comes from the computer: the app does not yet have what it needs to write one alone.</li>
+        <li><strong>The musician's own devices.</strong> Recordings are not sent to a cloud service. A full band is processed on the musician's computer. In the builds released today every score, a solo included, is written on the musician's computer, on every platform. On Android the app writes a solo by itself in builds that bundle the listening models; the builds released so far did not bundle them. On iPhone, iPad and Mac the models are not in the app yet, and Windows has no such path.</li>
         <li><strong>Doubt is shown.</strong> A note the system doubts carries a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span>, by shape and colour, and the musician checks the marked notes in groups. <a href="#doubt">Section 6.6</a> measures how much those marks catch.</li>
         <li><strong>Measured, then gated.</strong> A stage is chosen by benchmark on recordings with known correct notes, and a gate fails the build when a number moves.</li>
       </ul>
@@ -84,9 +84,9 @@ scripts: charts.js
             <tr><th scope="col">Model</th><th scope="col">Used for</th><th scope="col">Runs on</th><th scope="col">Licence</th></tr>
           </thead>
           <tbody>
-            <tr><th scope="row">SwiftF0<sup><a href="#ref-5">[5]</a></sup></th><td>The pitch of one line: the spine of a solo, and where each note ends</td><td>Phone and computer</td><td>MIT</td></tr>
-            <tr><th scope="row">Basic Pitch<sup><a href="#ref-4">[4]</a></sup></th><td>A second opinion on every note; the only note model in a draft made on the phone</td><td>Phone and computer</td><td>Apache-2.0</td></tr>
-            <tr><th scope="row">Beat This!<sup><a href="#ref-8">[8]</a></sup></th><td>Beats and downbeats (the small checkpoint on phones, the final one on the computer)</td><td>Phone and computer</td><td>MIT, code and weights</td></tr>
+            <tr><th scope="row">SwiftF0<sup><a href="#ref-5">[5]</a></sup></th><td>The pitch of one line: the spine of a solo, and where each note ends</td><td>Computer; Android phone in builds that bundle the models</td><td>MIT</td></tr>
+            <tr><th scope="row">Basic Pitch<sup><a href="#ref-4">[4]</a></sup></th><td>A second opinion on every note; the only note model in a draft made on the phone</td><td>Computer; Android phone in builds that bundle the models</td><td>Apache-2.0</td></tr>
+            <tr><th scope="row">Beat This!<sup><a href="#ref-8">[8]</a></sup></th><td>Beats and downbeats (the small checkpoint on phones, the final one on the computer)</td><td>Computer; Android phone in builds that bundle the models</td><td>MIT, code and weights</td></tr>
             <tr><th scope="row">MuScriptor medium<sup><a href="#ref-3">[3]</a></sup></th><td>The main note model for a whole band or a mix</td><td>Computer</td><td>CC BY-NC 4.0, non-commercial; gated, each user downloads it</td></tr>
             <tr><th scope="row">BS-RoFormer SW<sup><a href="#ref-11">[11]</a><a href="#ref-25">[25]</a></sup></th><td>Splits a pop or rock song into stems before the notes are found</td><td>Computer</td><td>Code MIT; no licence stated for the weights</td></tr>
             <tr><th scope="row">Mega-53<sup><a href="#ref-13">[13]</a></sup></th><td>Lifts a soloist, the bass and the drums out of an orchestra</td><td>Computer</td><td>Code MIT; no licence stated for the weights</td></tr>
@@ -134,7 +134,13 @@ scripts: charts.js
     <section id="measures" aria-labelledby="measures-title">
       <h2 id="measures-title"><span class="secno">5</span> Measures</h2>
       <p class="plain"><span class="plain-label">In short</span>Hearing a note and writing it in the right place are different things, and they are measured apart. All measures run from 0 to 1; higher is better.</p>
-      {{part measures}}
+      <ul class="measures">
+      {{part measure-onset}}
+      {{part measure-position}}
+      {{part measure-written}}
+      {{part measure-metre}}
+      {{part measure-doubt}}
+      </ul>
       <p><strong>The gate.</strong> <code>scribe bench</code> scores every suite again from stored model outputs and fails when a number has moved by more than the tolerance in <code>eval/baselines.json</code>; counts such as crossing parts are held exactly. Most figures on this page read the same file the gate reads. The others say so in their source line: the reports of the model conversions, and a few numbers that were measured once and are kept with their sources in <code>measured.toml</code>.</p>
     </section>
 

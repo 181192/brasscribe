@@ -52,8 +52,18 @@ WORDS = {
 }
 
 
+def script_guard() -> None:
+    """charts.js keeps a chart's parts on the chart object, beside its methods. A part named as a method hides the
+    method (a legend kept as `key` once stopped every arrow key), so the build refuses such a name."""
+    text = (SITE / "shared" / "charts.js").read_text()
+    clash = set(re.findall(r"Chart\.prototype\.(\w+)\s*=", text)) & set(re.findall(r"\bthis\.(\w+)\s*=[^=]", text))
+    if clash:
+        sys.exit(f"research: site/shared/charts.js assigns this.{sorted(clash)[0]}, which hides the method of that name")
+
+
 class Numbers:
     def __init__(self) -> None:
+        script_guard()
         base = json.loads((ROOT / "eval" / "baselines.json").read_text())
         self.tolerance = base["tolerance"]
         self.targets = {t: {s: v["metrics"] for s, v in body["suites"].items()} for t, body in base["targets"].items()}

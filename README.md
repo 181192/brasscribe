@@ -5,9 +5,10 @@ file, and Brasscribe writes out the parts for a brass band (MusicXML, PDF, MIDI)
 wasn't sure about, and plays the score back with band sounds so you can practise along.
 
 Everything runs on your own devices. A full band, and every tab, needs the engine running on a computer
-on the same network (Bandroom installs and runs it). A solo line is transcribed by the app itself on
-Android and Windows; on iPhone, iPad and Mac the on-device models are not in the app yet, so a solo
-goes through the computer too.
+on the same network (Bandroom installs and runs it). In the builds released today a solo line goes
+through the computer too, on every platform. On Android the app transcribes a solo by itself in builds that bundle the
+listening models (the builds released so far did not); on iPhone, iPad and
+Mac the on-device models are not in the app yet, and Play for Windows has no on-device path.
 
 [![A 21-second tour: open a recording, Brasscribe writes down the notes, marks the ones it wasn't sure about, then plays the score back](docs/brasscribe/media/brasscribe.gif)](docs/brasscribe/media/brasscribe.mp4)
 

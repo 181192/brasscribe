@@ -1,0 +1,14 @@
+  <li>
+    <h3>Onset-F1 og toleransen</h3>
+    <svg class="mv" viewBox="0 0 280 84" role="img" aria-label="En tidslinje: en spilt tone med et vindu på 50 og på 100 millisekunder rundt starten. En skrevet tone 30 ms for sent teller ved begge toleransene, en 80 ms for sent bare ved 100 ms, og en langt unna er en ekstra tone.">
+      <rect class="win" x="90" y="24" width="100" height="26" opacity="0.45"/><rect class="win" x="115" y="24" width="50" height="26"/>
+      <line class="bold" x1="10" y1="50" x2="270" y2="50"/><line class="bold" x1="140" y1="16" x2="140" y2="50"/>
+      <text class="strong" x="140" y="11" text-anchor="middle">spilt</text>
+      <text class="txt" x="118" y="35">±50</text><text class="txt" x="192" y="35">±100 ms</text>
+      <circle class="ok" cx="155" cy="50" r="5"/><circle class="ok" cx="180" cy="50" r="5"/><circle class="bad" cx="245" cy="50" r="5"/>
+      <text class="txt" x="155" y="68" text-anchor="middle">+30</text><text class="txt" x="180" y="68" text-anchor="middle">+80</text><text class="txt" x="245" y="68" text-anchor="middle">ekstra</text>
+      <text class="strong" x="155" y="81" text-anchor="middle">✓ ✓</text><text class="strong" x="180" y="81" text-anchor="middle">✓</text><text class="strong" x="245" y="81" text-anchor="middle">✗</text>
+    </svg>
+    <p>En skrevet tone er <em>riktig</em> når en spilt tone har samme tonehøyde og starter innenfor toleransen: 50 ms er det vanlige valget, og vi oppgir også 100 ms fordi en myk messingansats kommer sent. <b>Presisjon</b> er andelen av de skrevne tonene som er riktige, <b>recall</b> andelen av de spilte tonene som ble funnet, og F1 slår de to sammen. Toneslutt telles ikke med mindre figuren sier det.</p>
+    <p class="formula">F1 = 2 · presisjon · recall / (presisjon + recall)</p>
+  </li>

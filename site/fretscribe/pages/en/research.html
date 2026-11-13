@@ -1,0 +1,192 @@
+<!--
+title: From a recording to tab · Fretscribe research
+description: How Fretscribe writes tab from a recording, and how well: the pipeline, the datasets, each measure defined, results for bass, guitar, ukulele and mandolin, and what fails.
+main_class: wrap guide
+styles: charts.css
+scripts: charts.js
+-->
+  <nav class="toc toc-article" aria-labelledby="toc-title">
+    <details class="toc-fold" open>
+    <summary id="toc-title" class="toc-title">In this paper</summary>
+    <ol>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#problem">1. The problem</a></li>
+      <li><a href="#pipeline">2. The pipeline</a></li>
+      <li><a href="#data">3. Data</a></li>
+      <li><a href="#measures">4. Measures</a></li>
+      <li><a href="#results">5. Results</a></li>
+      <li><a href="#errors">6. Where it fails</a></li>
+      <li><a href="#performance">7. Speed</a></li>
+      <li><a href="#limitations">8. Limitations</a></li>
+      <li><a href="#next">9. What is next</a></li>
+      <li><a href="#references">References</a></li>
+    </ol>
+    </details>
+  </nav>
+
+  <article class="paper">
+    <header>
+      <p class="overline">Research</p>
+      <h1>From a recording to tab</h1>
+      <p class="lead">What Fretscribe does to a recording, how each step was measured, and where the tab is still wrong.</p>
+      <p class="byline">Fretscribe project · Every number and figure on this page is read from the repository's benchmark file when the site is built, so it changes when the file does · <a href="@brasscribe/research/">The same for brass-band scores: Brasscribe's paper</a></p>
+    </header>
+
+    <section id="abstract" class="abstract" aria-labelledby="abstract-title">
+      <h2 id="abstract-title">Abstract</h2>
+      <p><strong>In plain words:</strong> Fretscribe hears a bass line well and a guitar on its own fairly well. A guitar inside a full song is mostly beyond it. The frets it writes are playable, but often not the ones the player used, and its question marks catch a minority of the mistakes.</p>
+      <p>Fretscribe writes tablature for bass, guitar, ukulele and mandolin from a recording. Learned models find the beats and the notes, after separating the instrument from the mix when the recording is a whole song. Rules then clean the notes, put them on the beat grid, and choose a string and a fret for every note by the easiest path for the hand. No model was trained for this. Measured with a 50 ms tolerance, a bass scores onset F1 {{span fretted/bass-tab/song.onset_f1 fretted/bass-tab/instrument.onset_f1}} on {{data fretted/bass-tab/song.tracks int}} synthesized songs, and a real guitar played alone {{span fretted/guitar-tab/report.solo.onset_f1 fretted/guitar-tab/report.comp.onset_f1}} on players the rules were not set on. A guitar inside a synthesized song scores {{data fretted/guitar-tab/song.onset_f1}}. Of the correctly heard notes of a single-line guitar part, {{data fretted/guitar-tab/report.solo.string_agreement pct}} are written on the string the player used, and {{data fretted/guitar-tab/report.comp.string_agreement pct}} in chord playing. The tempo is right for {{span fretted/bass-tab/song.tempo_ok fretted/bass-tab/instrument.tempo_ok fretted/guitar-tab/report.solo.tempo_ok fretted/guitar-tab/report.comp.tempo_ok fretted/guitar-tab/song.tempo_ok pct}} of the bass and guitar recordings. A doubt mark is on a wrong note {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision fretted/guitar-tab/report.solo.doubt_precision fretted/guitar-tab/report.comp.doubt_precision fretted/guitar-tab/song.doubt_precision pct}} of the time, but only {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall fretted/guitar-tab/report.solo.doubt_recall fretted/guitar-tab/report.comp.doubt_recall fretted/guitar-tab/song.doubt_recall pct}} of the wrong notes are marked. Every tab that was scored is playable as written. The evidence for ukulele and mandolin is a handful of synthesized passages. None of this has been measured on a recording made with a phone.</p>
+      {{holds fretted/bass-tab/song.violations <= 0}}{{holds fretted/bass-tab/instrument.violations <= 0}}{{holds fretted/guitar-tab/report.solo.violations <= 0}}{{holds fretted/guitar-tab/report.comp.violations <= 0}}{{holds fretted/guitar-tab/song.violations <= 0}}
+    </section>
+
+    {{chart tab-notes}}
+
+    <section id="problem" aria-labelledby="problem-title">
+      <h2 id="problem-title"><span class="secno">1</span> The problem</h2>
+      <p class="plain"><span class="plain-label">In short</span>A player hears a riff and wants to know where to put their fingers. The notes are half of the answer; the string and the fret are the other half, and a recording does not say them.</p>
+      <p>Tablature shows where a note is played: a line for each string and a fret number on it. Writing tab from sound has two problems on top of ordinary transcription. First, the same pitch can usually be played in several places on the neck, and nothing in a microphone recording says which one was used. Second, the instrument is rarely alone: in a song it sits under a voice, drums and other instruments, and a guitar plays chords whose notes ring over each other.</p>
+      <p>Fretscribe runs on the player's own devices, as <a href="@brasscribe/research/">Brasscribe</a> does, and shares its listening models and its rules for rhythm. Every tab is written on the player's computer: the app on the phone records, sends the recording there and shows the tab, and carries no listening models. This paper covers what is specific to tab and reports the tab results.</p>
+    </section>
+
+    <section id="pipeline" aria-labelledby="pipeline-title">
+      <h2 id="pipeline-title"><span class="secno">2</span> The pipeline</h2>
+      <p class="plain"><span class="plain-label">In short</span>Models find the notes, rules choose where the fingers go. The tuning can be changed afterwards without listening again.</p>
+
+      {{pipeline fret-pipeline}}
+
+      <h3>Which model does what</h3>
+      <ul>
+        <li><strong>BS-RoFormer SW</strong><sup><a href="#ref-4">[4]</a></sup> separates a whole song into stems, and the instrument's stem is listened to. It has stems for bass and for guitar. It has none for a ukulele or a mandolin, which are read from the guitar stem. The step is left out when the recording is the instrument alone.</li>
+        <li><strong>Beat This!</strong><sup><a href="#ref-3">[3]</a></sup> finds the beats and downbeats.</li>
+        <li><strong>Basic Pitch</strong><sup><a href="#ref-1">[1]</a></sup> finds the notes. <strong>SwiftF0</strong><sup><a href="#ref-2">[2]</a></sup> gives a second opinion; it follows one line, so its opinion counts only where one note sounds at a time.</li>
+      </ul>
+      <h3>From notes to a tab</h3>
+      <p>Rules remove overtones that the note model heard as notes, drop notes the instrument cannot play, and, for a bass, check whether a line heard an octave too high was really played there. The notes then go on the beat grid with written lengths, by the same rules as in Brasscribe. Each note then gets a confidence between 0 and 1. It is set by rule, not by a fitted model as in Brasscribe: 0.5 plus half of the loudness Basic Pitch reports for the note. A note is put in doubt, and carries a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span>, when it is faint and, in a single line, SwiftF0 did not hear it at that pitch; or, in a chord, when it is faint, or rather faint and not heard again within a short time. The thresholds were set by hand.</p>
+      <p>The fingering is a search, not a model. Notes that start together are placed together, each on its own string, within what a hand can span. Every candidate has a cost: how far the fingers stretch, how high up the neck the hand sits, and how far the hand must move from the previous notes, measured in millimetres along the neck so that the same rule fits a bass and a ukulele. The cheapest path through the whole passage is the tab. The same notes always give the same tab, and a separate check confirms that every position can be played. Open strings and known chord shapes also enter the cost. A note that cannot be fingered together with the others is left out until the tab can be played, so that every tab is playable holds by construction: {{span fretted/guitar-tab/report.solo.unplayable_dropped fretted/guitar-tab/report.comp.unplayable_dropped pct}} of the notes on GuitarSet are left out, and {{span fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_high_g_heldout_dev.song.unplayable_dropped fretted/ukulele-tab/ukulele_low_g_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_low_g_heldout_dev.song.unplayable_dropped fretted/ukulele-tab/ukulele_baritone_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_baritone_heldout_dev.song.unplayable_dropped fretted/mandolin-tab/mandolin_heldout_dev.instrument.unplayable_dropped fretted/mandolin-tab/mandolin_heldout_dev.song.unplayable_dropped pct}} on the rendered strummed passages for ukulele and mandolin.</p>
+    </section>
+
+    <section id="data" aria-labelledby="data-title">
+      <h2 id="data-title"><span class="secno">3</span> Data</h2>
+      <p class="plain"><span class="plain-label">In short</span>Real, annotated guitar recordings exist, and they are used. For bass, the lines come from synthesized songs. For ukulele and mandolin we found no annotated recordings at all.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Table 1">
+        <table>
+          <caption>Table 1. Evaluation sets. <span class="src">Source: <code>eval/README.md</code> and the benchmark modules in <code>eval/scribe_eval/</code>; sizes from <code>eval/baselines.json</code>.</span></caption>
+          <thead><tr><th scope="col">Set</th><th scope="col">What it is</th><th scope="col">Size used</th><th scope="col">Licence</th><th scope="col">Used for</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">GuitarSet<sup><a href="#ref-5">[5]</a></sup></th><td>Real acoustic guitar, six players, each tune played once as chords and once as a single line; a pickup per string, so every note has its string</td><td>{{data fretted/guitar-tab/tune.solo.excerpts int}} + {{data fretted/guitar-tab/tune.comp.excerpts int}} takes by three players, {{data fretted/guitar-tab/report.solo.excerpts int}} + {{data fretted/guitar-tab/report.comp.excerpts int}} by the other three</td><td>CC BY 4.0</td><td>The rules were set on the first three players; the numbers quoted are from the other three</td></tr>
+            <tr><th scope="row">IDMT-SMT-Guitar<sup><a href="#ref-6">[6]</a></sup></th><td>Real guitars: licks and short pieces, with string annotations</td><td>{{data fretted/guitar-tab/idmt.tune.excerpts int}} recordings with the tuning material, {{data fretted/guitar-tab/idmt.report.excerpts int}} only reported</td><td>CC BY-NC-ND 4.0</td><td>A second opinion on other guitars</td></tr>
+            <tr><th scope="row">Slakh<sup><a href="#ref-7">[7]</a></sup></th><td>Synthesized songs with every instrument's notes. Bass lines and guitars, in the mix and alone</td><td>{{data fretted/bass-tab/song.tracks int}} songs with one bass; {{data fretted/guitar-tab/song.excerpts int}} guitars in songs</td><td>Not checked for redistribution</td><td>Bass, and instruments inside a song. Development data</td></tr>
+            <tr><th scope="row">Low bass lines</th><td>Lines written for the test at the bottom of a four- and a five-string bass, played by a sampler</td><td>{{data fretted/bass-tab/low_e.song.tracks int}} + {{data fretted/bass-tab/low_b.song.tracks int}} lines</td><td>Our own; SoundFont MIT<sup><a href="#ref-9">[9]</a></sup></td><td>The register Slakh's lines never reach</td></tr>
+            <tr><th scope="row">Ukulele, mandolin and guitar passages</th><td>Chords, scales and melodies written for the test and played by a sampler, alone and under bass and drums</td><td>{{data fretted/ukulele-tab/ukulele_high_g.instrument.excerpts int}} passages and {{data fretted/ukulele-tab/ukulele_high_g_heldout.instrument.excerpts int}} held-out ones per instrument group (melodies and picked passages), and {{data fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.excerpts int}} strummed or chord-melody ones scored apart</td><td>Our own; SoundFont MIT</td><td>All the evidence there is for ukulele and mandolin</td></tr>
+            <tr><th scope="row">Passages in other metres</th><td>One instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4, played by a sampler</td><td>{{data fretted/meter-tab/excerpts int}} passages</td><td>Our own; SoundFont MIT</td><td>The bar length</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Tuning and reporting apart.</strong> No model is trained. The rules have thresholds, and for guitar they were chosen on three of GuitarSet's six players and are quoted here for the other three, so a threshold does not meet the recordings it was chosen on. <a href="#heldout">Section 5.6</a> shows what that separation is worth. For bass there is no such split: the Slakh set is development data, and one threshold of the octave check was chosen on the very set that scores it. The rendered passages have held-out groups, with exceptions that <code>eval/README.md</code> lists rule by rule.</p>
+      <p><strong>What is missing.</strong> No real recording of a bass, a ukulele or a mandolin with its notes. No recording made with a phone. No tab suite runs in CI: all of them need data or models that are not in the repository, so they are run by hand on one computer.</p>
+    </section>
+
+    <section id="measures" aria-labelledby="measures-title">
+      <h2 id="measures-title"><span class="secno">4</span> Measures</h2>
+      <p class="plain"><span class="plain-label">In short</span>Was the note heard, is it on the string the player used, and does the tab warn where it is wrong? All measures run from 0 to 1; higher is better.</p>
+      <ul class="measures">
+      {{part measure-onset}}
+      {{part measure-string}}
+      {{part measure-doubt}}
+      {{part measure-metre}}
+      </ul>
+      <p><strong>Also reported.</strong> <em>Tempo</em>: the share of recordings whose tab is within 4 % of the reference tempo. <em>Chord recall and precision</em>: the same as for notes, counted only over notes that start three or more together. <em>Playable</em>: a hard gate, not a score: a tab with a position that cannot be played fails the benchmark. All onset measures on this page use the 50 ms tolerance.</p>
+    </section>
+
+    <section id="results" aria-labelledby="results-title">
+      <h2 id="results-title"><span class="secno">5</span> Results</h2>
+      <p class="plain"><span class="plain-label">In short</span>Bass is the best case. A guitar alone is usable as a draft. A guitar in a song is not there yet. The frets are a suggestion.</p>
+
+      <h3 id="found">5.1 Notes found</h3>
+      <p>The figure for this is <a href="#fig-tab-notes">the one under the abstract</a>.</p>
+      <p>A bass line is one note at a time in a register of its own, and it survives separation from a song: {{data fretted/bass-tab/song.onset_f1}} in the mix against {{data fretted/bass-tab/instrument.onset_f1}} alone. At the very bottom of a five-string bass it drops to {{span fretted/bass-tab/low_b.song.onset_f1 fretted/bass-tab/low_b.instrument.onset_f1}}. A real guitar alone scores {{data fretted/guitar-tab/report.solo.onset_f1}} on single lines and {{data fretted/guitar-tab/report.comp.onset_f1}} on chords, where notes ring over each other. Inside a song the guitar scores {{data fretted/guitar-tab/song.onset_f1}}. The second view holds the rendered passages; their scores are high, and they are the weakest evidence on the page. Its held-out groups contain melodies and picked passages only. The third view holds the strummed and chord-melody passages of the same groups, on which one rule was chosen: the ukuleles score {{span fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_high_g_heldout_dev.song.onset_f1 fretted/ukulele-tab/ukulele_low_g_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_low_g_heldout_dev.song.onset_f1 fretted/ukulele-tab/ukulele_baritone_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_baritone_heldout_dev.song.onset_f1}}, and the mandolin {{data fretted/mandolin-tab/mandolin_heldout_dev.instrument.onset_f1}} alone and {{data fretted/mandolin-tab/mandolin_heldout_dev.song.onset_f1}} in a song, with octave errors of {{span fretted/mandolin-tab/mandolin_heldout_dev.instrument.octave_err_rate fretted/mandolin-tab/mandolin_heldout_dev.song.octave_err_rate pct}}. No held-out rendered passage tests chords.</p>
+
+      <h3 id="strings">5.2 String and fret</h3>
+      {{chart tab-strings}}
+      <p>The tab is always playable, but it is not a record of what the guitarist did. In chords, where the hand has few choices, {{data fretted/guitar-tab/report.comp.string_agreement pct}} of the right notes are on the player's string. On single lines it is {{data fretted/guitar-tab/report.solo.string_agreement pct}}: the search prefers the least movement, and players choose positions for tone, for the next phrase, or from habit. Counted against everything that was played, {{data fretted/guitar-tab/report.solo.string_recall pct}} of a single line's notes are both heard and on the player's string.</p>
+
+      <h3 id="tempo">5.3 Tempo and metre</h3>
+      {{chart tab-tempo}}
+      <p>These recordings are almost all in four, and the tab has the right number of beats in a bar for {{span fretted/bass-tab/song.meter_ok fretted/bass-tab/instrument.meter_ok fretted/guitar-tab/report.solo.meter_ok fretted/guitar-tab/report.comp.meter_ok fretted/guitar-tab/song.meter_ok pct}} of them. On the {{data fretted/meter-tab/excerpts int}} passages written in other metres, the bar is right for {{data fretted/meter-tab/meter_ok pct}}. Tempo fails more often, in part by a factor of two: counting half or double tempo as right, the share for single guitar lines rises from {{data fretted/guitar-tab/report.solo.tempo_ok pct}} to {{data fretted/guitar-tab/report.solo.tempo_ok_level pct}}.{{holds fretted/guitar-tab/report.solo.tempo_ok_level > fretted/guitar-tab/report.solo.tempo_ok}}</p>
+
+      <h3 id="doubt">5.4 The doubt marks</h3>
+      {{chart tab-doubt}}
+      <p>The marks point at real problems and leave most problems unmarked, as in Brasscribe. On a bass, {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision pct}} of the marked notes are wrong, and {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall pct}} of the wrong notes are marked. A tab without a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span> is not a checked tab.</p>
+
+      <h3 id="phone">5.5 A bass through a small microphone</h3>
+      {{chart tab-phone}}
+      <p>People record with phones, and a small microphone passes little of a bass's lowest octave. This test removes the low end with a filter before anything listens. Up to a 200 Hz cut the line is still found, at a lower score. With a steeper cut at 300 Hz the score collapses and octave errors rise: {{data fretted/bass-tab/phone.hp300.octave_err_rate pct}} of the played notes are missed with a written note an octave or two away, against {{data fretted/bass-tab/phone.hp0.octave_err_rate pct}} with the full sound. The octave check moved {{data fretted/bass-tab/phone.hp300.line_moved pct}} of the lines whole at that cut, and none up to 200 Hz; that shift is the collapse.{{holds fretted/bass-tab/phone.hp200.line_moved <= 0}}{{holds fretted/bass-tab/phone.hp300.octave_err_rate > fretted/bass-tab/phone.hp200.octave_err_rate}} This is a filter on synthesized basses, not a phone in a room.</p>
+
+      <h3 id="heldout">5.6 What the held-out players show</h3>
+      {{chart tab-heldout}}
+      <p>Most measures hold up on the players the rules never saw. One does not: chord notes inside single-line playing. Without the split that number would have been quoted as {{data fretted/guitar-tab/tune.solo.chord_recall pct}}. The bass numbers, the low bass lines and most of the rendered passages have no such split, and should be read with that in mind.</p>
+    </section>
+
+    <section id="errors" aria-labelledby="errors-title">
+      <h2 id="errors-title"><span class="secno">6</span> Where it fails</h2>
+      <p class="plain"><span class="plain-label">In short</span>An instrument inside a song, the string a note is played on, and the bottom of a bass.</p>
+      <ul>
+        <li><strong>Inside a song.</strong> A guitar in a mix scores {{data fretted/guitar-tab/song.onset_f1}}, with {{data fretted/guitar-tab/song.chord_recall pct}} of its chord notes found. It is no higher where the song has a single guitar ({{data fretted/guitar-tab/song_one.onset_f1}}).{{holds fretted/guitar-tab/song_one.onset_f1 < 0.5}}</li>
+        <li><strong>Strings.</strong> Fewer than half of a single line's right notes are on the player's string (<a href="#strings">5.2</a>).</li>
+        <li><strong>Octave errors</strong> are few on a bass in a song ({{data fretted/bass-tab/song.octave_err_rate pct}} of played notes) and grow at the bottom of a five-string ({{span fretted/bass-tab/low_b.song.octave_err_rate fretted/bass-tab/low_b.instrument.octave_err_rate pct}}) and when the low end is missing (<a href="#phone">5.5</a>). On guitar chords the rate is {{data fretted/guitar-tab/report.comp.octave_err_rate pct}}.</li>
+        <li><strong>Chords.</strong> In chord playing {{data fretted/guitar-tab/report.comp.chord_recall pct}} of the chord notes are found, and {{data fretted/guitar-tab/report.comp.chord_precision pct}} of the chord notes written are right.</li>
+        <li><strong>Tempo</strong> is wrong for up to four recordings in ten (<a href="#tempo">5.3</a>).</li>
+        <li><strong>Tremolo.</strong> A mandolin melody picked in fast repeated notes scores {{span fretted/mandolin-tab/mandolin_tremolo.instrument.onset_f1 fretted/mandolin-tab/mandolin_heldout_tremolo.instrument.onset_f1}} alone, and {{data fretted/mandolin-tab/mandolin_tremolo.song.onset_f1}} and {{data fretted/mandolin-tab/mandolin_heldout_tremolo.song.onset_f1}} in a song, on one rendered passage each.</li>
+        <li><strong>Notes removed in cleaning.</strong> The overtones and faint notes that the cleaning removes amount to {{span fretted/mandolin-tab/mandolin_tremolo.instrument.leftovers_dropped fretted/mandolin-tab/mandolin_tremolo.song.leftovers_dropped pct}} of the notes written in the tremolo passages and {{span fretted/guitar-tab/idmt.tune.leftovers_dropped fretted/guitar-tab/idmt.report.leftovers_dropped pct}} on IDMT-SMT-Guitar, against {{span fretted/guitar-tab/report.solo.leftovers_dropped fretted/guitar-tab/report.comp.leftovers_dropped pct}} on GuitarSet's held-out players.</li>
+      </ul>
+    </section>
+
+    <section id="performance" aria-labelledby="performance-title">
+      <h2 id="performance-title"><span class="secno">7</span> Speed</h2>
+      <p class="plain"><span class="plain-label">In short</span>Not measured for tab.</p>
+      <p>A tab job runs the same models as Brasscribe: the separator for a whole song, Beat This!, Basic Pitch and SwiftF0. <a href="@brasscribe/research/#performance">Brasscribe's paper</a> gives the time and memory of each model on one laptop. No whole tab job has been timed, and nothing has been timed on a phone.</p>
+    </section>
+
+    <section id="limitations" aria-labelledby="limitations-title">
+      <h2 id="limitations-title"><span class="secno">8</span> Limitations</h2>
+      <p class="plain"><span class="plain-label">In short</span>Real recordings for guitar only, nothing in CI, and nothing recorded with a phone.</p>
+      <ul>
+        <li><strong>Bass, ukulele and mandolin are measured on synthesized sound only.</strong> For ukulele and mandolin it is one sampled instrument each and a few passages, which the benchmark itself calls weak evidence.</li>
+        <li><strong>No tab benchmark runs in CI.</strong> The numbers are gated when someone runs the benchmark by hand on a computer with the data.</li>
+        <li><strong>Development data.</strong> Only the guitar rules have players that were kept apart (<a href="#heldout">5.6</a>).</li>
+        <li><strong>No phone recordings.</strong> The microphone test is a filter (<a href="#phone">5.5</a>).</li>
+        <li><strong>String agreement is only known for guitar,</strong> because only the guitar sets say which string was played.</li>
+        <li><strong>The doubt marks judge pitch and start only.</strong> They do not cover the string, the rhythm or the tempo.</li>
+        <li><strong>Playing techniques</strong> such as bends, slides and hammer-ons are not scored by any benchmark here.</li>
+        <li><strong>Common time.</strong> Nearly all recordings are in four; the result in other metres rests on {{data fretted/meter-tab/excerpts int}} rendered passages.</li>
+      </ul>
+    </section>
+
+    <section id="next" aria-labelledby="next-title">
+      <h2 id="next-title"><span class="secno">9</span> What is next</h2>
+      <ul>
+        <li><strong>Real recordings</strong> of bass, ukulele and mandolin with their notes, and recordings made with phones.</li>
+        <li><strong>The guitar in a song.</strong></li>
+        <li><strong>Strings a player would choose,</strong> measured against GuitarSet's strings.</li>
+        <li><strong>A tab benchmark in CI</strong> on data that may be redistributed.</li>
+        <li><strong>Timing</strong> of whole tab jobs, on a computer and on phones.</li>
+      </ul>
+    </section>
+
+    <section id="references" aria-labelledby="references-title">
+      <h2 id="references-title">References</h2>
+      <ol class="refs">
+        <li id="ref-1">R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-Brocal, S. Ewert. A Lightweight Instrument-Agnostic Model for Polyphonic Note Transcription and Multipitch Estimation. <i>ICASSP</i> 2022. <a href="https://arxiv.org/abs/2203.09893">arXiv:2203.09893</a>. Apache-2.0.</li>
+        <li id="ref-2">L. Nieradzik. SwiftF0: Fast and Accurate Monophonic Pitch Detection. Preprint, 2025. <a href="https://arxiv.org/abs/2508.18440">arXiv:2508.18440</a>. MIT.</li>
+        <li id="ref-3">F. Foscarin, J. Schlüter, G. Widmer. Beat this! Accurate beat tracking without DBN postprocessing. <i>ISMIR</i> 2024. <a href="https://arxiv.org/abs/2407.21658">arXiv:2407.21658</a>. MIT, code and weights.</li>
+        <li id="ref-4">W.-T. Lu, J.-C. Wang, Q. Kong, Y.-N. Hung. Music Source Separation with Band-Split RoPE Transformer. <i>ICASSP</i> 2024. <a href="https://arxiv.org/abs/2309.02612">arXiv:2309.02612</a>. Checkpoint BS-RoFormer SW: python-audio-separator, <a href="https://github.com/nomadkaraoke/python-audio-separator">github.com/nomadkaraoke/python-audio-separator</a>; code MIT, no licence stated for the weights.</li>
+        <li id="ref-5">Q. Xi, R. M. Bittner, J. Pauwels, X. Ye, J. P. Bello. GuitarSet: A Dataset for Guitar Transcription. <i>ISMIR</i> 2018. Data: <a href="https://doi.org/10.5281/zenodo.3371780">doi:10.5281/zenodo.3371780</a>. CC BY 4.0.</li>
+        <li id="ref-6">C. Kehling, J. Abeßer, C. Dittmar, G. Schuller. Automatic Tablature Transcription of Electric Guitar Recordings by Estimation of Score- and Instrument-Related Parameters. <i>DAFx</i> 2014. IDMT-SMT-Guitar, data: <a href="https://doi.org/10.5281/zenodo.7544110">doi:10.5281/zenodo.7544110</a>. CC BY-NC-ND 4.0.</li>
+        <li id="ref-7">E. Manilow, G. Wichern, P. Seetharaman, J. Le Roux. Cutting Music Source Separation Some Slakh. <i>IEEE WASPAA</i> 2019. <a href="https://doi.org/10.1109/WASPAA.2019.8937170">doi:10.1109/WASPAA.2019.8937170</a>. Downloaded on request; its terms for redistribution have not been checked.</li>
+        <li id="ref-8">C. Raffel, B. McFee, E. J. Humphrey et al. mir_eval: A Transparent Implementation of Common MIR Metrics. <i>ISMIR</i> 2014. The note measures on this page are computed with it.</li>
+        <li id="ref-9">MuseScore General SoundFont (MIT) and FluidSynth: the sampled instruments and the player behind the rendered passages. <a href="https://github.com/musescore/MuseScore/tree/master/share/sound">github.com/musescore/MuseScore</a></li>
+      </ol>
+      <p class="muted">In the repository: <a href="https://github.com/181192/brasscribe/blob/main/eval/baselines.json">the gated numbers</a> · <a href="https://github.com/181192/brasscribe/blob/main/eval/README.md">how the benchmarks run and what was tuned on what</a> · <a href="https://github.com/181192/brasscribe/blob/main/core/targets/fretted/README.md">how strings and frets are chosen</a></p>
+      <p class="to-top"><a href="#main">Back to top</a></p>
+    </section>
+  </article>
