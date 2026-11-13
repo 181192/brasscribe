@@ -197,11 +197,11 @@ fun OutlineButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     ) { ButtonContent(text, icon) }
 }
 
-/** Plain text buttons (Skip, Change, Done in a bar), 48 dp tall. */
+/** Plain text buttons (Skip, Change, Done in a bar, a dialog's answers), 48 dp tall. [destructive]: one that deletes or throws away, in the error colour. */
 @Composable
-fun PlainButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun PlainButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, destructive: Boolean = false) {
     TextButton(onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = ScribeButtonShape,
-        colors = ButtonDefaults.textButtonColors(contentColor = ScribeTheme.colors.text)) {
+        colors = ButtonDefaults.textButtonColors(contentColor = if (destructive) ScribeTheme.colors.error else ScribeTheme.colors.text)) {
         Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }

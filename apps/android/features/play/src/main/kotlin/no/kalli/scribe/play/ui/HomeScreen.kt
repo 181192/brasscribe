@@ -372,7 +372,7 @@ fun RecordScreen(vm: PlayViewModel) {
             onDismissRequest = { confirmDiscard = false },
             title = { Text(stringResource(R.string.record_discard_title)) },
             text = { Text(stringResource(R.string.record_discard_text)) },
-            confirmButton = { PlainButton(stringResource(R.string.record_discard_confirm), { confirmDiscard = false; if (!stopping) discard() }) },
+            confirmButton = { PlainButton(stringResource(R.string.record_discard_confirm), { confirmDiscard = false; if (!stopping) discard() }, destructive = true) },
             dismissButton = { PlainButton(stringResource(R.string.record_discard_keep), { confirmDiscard = false }) },
         )
     }
