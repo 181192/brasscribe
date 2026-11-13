@@ -1,0 +1,104 @@
+# Fretscribe on the public site. Read by site/build.py; site/README.md explains the fields.
+mount = "fretscribe"
+brand = "design/brands/fretscribe"
+css = "fretscribe.css"
+styles = ["ruled-paper.css"]            # what only Fretscribe's pages look like
+favicon = "brand/logo-mark.svg"
+marks = ["brand/logo-mark.svg", "brand/logo-mark-dark.svg"]
+staff_lines = 6                         # a tab: six lines on the family page's sheet
+
+[logo]
+light = "brand/lockup.svg"
+dark = "brand/lockup-dark.svg"
+width = 222
+height = 32
+
+[[downloads]]
+file = "fretscribe-android-arm64-v8a.apk"
+group = "android"
+label_en = "Fretscribe for Android"
+label_nb = "Fretscribe for Android"
+en = "Fretscribe for most Android phones and tablets"
+nb = "Fretscribe for de fleste Android-telefoner og -nettbrett"
+
+[[downloads]]
+file = "fretscribe-android-universal.apk"
+group = "android"
+label_en = "Every type of processor"
+label_nb = "Alle typer prosessorer"
+en = "Fretscribe for Android, every type of processor"
+nb = "Fretscribe for Android, alle typer prosessorer"
+
+[[downloads]]
+file = "fretscribe-ios-unsigned.ipa"
+group = "ios"
+label_en = "Fretscribe for iPhone and iPad"
+label_nb = "Fretscribe for iPhone og iPad"
+en = "Fretscribe for iPhone and iPad, a <a href=\"@lang/guide/#download-ios\">test build</a> that you sign yourself"
+nb = "Fretscribe for iPhone og iPad, en <a href=\"@lang/guide/#download-ios\">testversjon</a> som du signerer selv"
+
+[[downloads]]
+file = "fretscribe-macos-arm64.zip"
+group = "mac"
+label_en = "Fretscribe for Mac"
+label_nb = "Fretscribe for Mac"
+en = "Fretscribe for a Mac with Apple silicon"
+nb = "Fretscribe for Mac med Apple-prosessor"
+
+[[downloads]]
+file = "fretscribe-windows-x64.zip"
+group = "windows"
+label_en = "Fretscribe for Windows"
+label_nb = "Fretscribe for Windows"
+en = "Fretscribe for Windows 11 (x64)"
+nb = "Fretscribe for Windows 11 (x64)"
+
+[en]
+name = "Fretscribe"
+footer = "Fretscribe, an early version"
+footer_note = "Tab engraved with alphaTab (MPL-2.0). Type: Atkinson Hyperlegible Next (OFL). <a href=\"https://github.com/181192/brasscribe\">Source</a>"
+nav = [
+  ["Home", "@lang/"],
+  ["User guide", "@lang/guide/"],
+  ["Download", "@lang/download/"],
+]
+
+[en.card]
+title = "Turn a recording into tab."
+does = "Play a riff, record a song or open a file. Fretscribe writes it down as tab for your instrument and tuning, shows what it heard before any fret is written, and lets you practise with the recording."
+for = "Guitar, bass, ukulele and mandolin players who read tab."
+platforms = ["Android", "iPhone and iPad", "Mac", "Windows"]
+shot = "tab"
+shot_alt = "A bass tab in Fretscribe on a phone: Bass line in standard tuning, bar 1 marked, a question mark over a doubtful note, and the player below with Speed and Repeat bars."
+
+[en.download]
+title = "Download · Fretscribe"
+description = "Download Fretscribe for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
+heading = "Download Fretscribe"
+lead = "Fretscribe is an early version: it is not in any app store, and the downloads are not signed yet, so each device below says how to install it anyway. You need two downloads: the app for your device, and Bandroom for a computer on the same Wi-Fi, which writes every tab."
+more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@lang/guide/#download\">user guide</a> has the steps in full."
+
+[nb]
+name = "Fretscribe"
+footer = "Fretscribe, en tidlig versjon"
+footer_note = "Tab satt med alphaTab (MPL-2.0). Skrift: Atkinson Hyperlegible Next (OFL). <a href=\"https://github.com/181192/brasscribe\">Kildekode</a>"
+nav = [
+  ["Forside", "@lang/"],
+  ["Brukerveiledning", "@lang/guide/"],
+  ["Last ned", "@lang/download/"],
+]
+
+[nb.card]
+title = "Gjør et opptak om til tab."
+does = "Spill et riff, ta opp en sang eller åpne en fil. Fretscribe skriver det ned som tab for instrumentet og stemmingen din, viser hva den hørte før noe bånd blir skrevet, og lar deg øve med tabben."
+for = "Deg som spiller gitar, bass, ukulele eller mandolin og leser tab."
+platforms = ["Android", "iPhone og iPad", "Mac", "Windows"]
+shot = "tab"
+shot_alt = "En basstab i Fretscribe på en telefon: Bass line i standardstemming, takt 1 markert, et spørsmålstegn over en usikker tone, og avspilleren under med Tempo og Gjenta takter."
+
+[nb.download]
+title = "Last ned · Fretscribe"
+description = "Last ned Fretscribe for Android, iPhone, iPad, Mac og Windows, og Bandroom til datamaskinen. Lenkene henter alltid den nyeste utgivelsen."
+heading = "Last ned Fretscribe"
+lead = "Fretscribe er en tidlig versjon: den ligger ikke i noen appbutikk, og nedlastingene er ikke signert ennå, så hver enhet under sier hvordan du installerer likevel. Du trenger to nedlastinger: appen til enheten din, og Bandroom til en datamaskin på samme Wi-Fi, som skriver hver tab."
+more = "Alt ligger også i <a href=\"{{releases}}\">siste utgivelse på GitHub</a>. <a href=\"@lang/guide/#download\">Brukerveiledningen</a> har alle stegene."

@@ -1,4 +1,5 @@
-/* Brasscribe site. Colours, type and spacing come from assets/brasscribe.css (design tokens). */
+/* Every product's pages. Colours, type and spacing come from the product's design tokens (assets/<brand>.css),
+   so each product wears its own brand; what only one product's pages look like is in that product's own CSS. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -50,6 +51,14 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
   border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-full);
 }
 .site-nav a.lang-switch:hover { box-shadow: none; background: var(--scribe-surface); }
+
+/* The family's apps, above every product's header. */
+.family-bar { background: var(--scribe-surface); border-bottom: 1px solid var(--scribe-border); font-size: var(--scribe-type-caption-size); }
+.family-bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--scribe-space-5); }
+.family-bar a { display: inline-flex; align-items: center; min-height: 36px; text-decoration: none; color: var(--scribe-text-muted); }
+.family-bar a:hover { color: var(--scribe-text); text-decoration: underline; }
+.family-bar a[aria-current] { color: var(--scribe-text); font-weight: 600; }
+.family-bar a:first-child { margin-right: auto; }
 
 /* Type */
 h1, h2, .display {
@@ -264,7 +273,20 @@ tbody th { font-weight: 600; }
 @media (min-width: 901px) {
   .guide figure.phone:not(.pair) { float: right; width: 220px; margin: var(--scribe-space-2) 0 var(--scribe-space-6) var(--scribe-space-8); }
 }
+.guide figure.phone .phone-frame { max-width: 240px; }
+.guide figure.pair .phone-frame { width: 50%; max-width: 220px; }
 .to-top { font-size: var(--scribe-type-callout-size); }
+
+/* Download page: a group per device, made from the product's list of release files. */
+main.downloads { max-width: 820px; padding-top: var(--scribe-space-12); padding-bottom: var(--scribe-space-16); }
+.download-groups { margin-top: var(--scribe-space-10); }
+.download-groups section { padding: var(--scribe-space-8) 0; border-top: 1px solid var(--scribe-border); }
+.download-groups h2 { font-size: var(--scribe-type-title-1-size); margin-bottom: var(--scribe-space-4); }
+.download-files { list-style: none; padding: 0; margin: 0 0 var(--scribe-space-4); display: grid; gap: var(--scribe-space-3); }
+.download-files li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-2) var(--scribe-space-4); }
+.download-files .button { min-width: min(100%, 300px); overflow-wrap: anywhere; text-align: center; padding-top: var(--scribe-space-2); padding-bottom: var(--scribe-space-2); }
+.download-files .muted { flex: 1 1 240px; font-size: var(--scribe-type-callout-size); }
+.download-groups p { font-size: var(--scribe-type-callout-size); margin: 0; }
 
 /* Footer */
 .site-footer { border-top: 1px solid var(--scribe-border); padding: var(--scribe-space-10) 0; color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
@@ -309,11 +331,11 @@ tbody th { font-weight: 600; }
 }
 
 @media print {
-  .site-header, .toc, .skip, .actions, .site-footer { display: none; }
+  .site-header, .family-bar, .toc, .skip, .actions, .site-footer { display: none; }
   .guide { display: block; }
 }
 
-/* Research article (site/brasscribe/research/, site/brasscribe/nb/research/) */
+/* Research article (a product's research page) */
 .paper { max-width: 70ch; }
 .paper h1 { font-size: clamp(2.25rem, 5vw, 3.5rem); }
 .paper h2 { font-size: clamp(1.75rem, 3.4vw, 2.25rem); }

@@ -1,0 +1,21 @@
+/* Fretscribe's pages: Ruled Paper. The tokens (assets/fretscribe.css) carry the colours and the type;
+   this is what the shared stylesheet does differently for this brand. */
+
+/* The display face is set at weight 600 from 28 px and up (design/brands/fretscribe/brand/brand.md). */
+h1, h2, .display { font-weight: 600; letter-spacing: -0.015em; }
+h1 { font-size: clamp(2.25rem, 5.6vw, 3.75rem); }
+h2 { font-size: clamp(1.75rem, 3.6vw, 2.5rem); }
+h1 em, h2 em { font-weight: 700; }
+
+/* The hero's screens lie on a ruled page: a rule every 28 px. */
+.hero .phones {
+  padding: var(--scribe-space-8) var(--scribe-space-5); border-radius: var(--scribe-radius-sm);
+  border: 1px solid var(--scribe-border);
+  background: repeating-linear-gradient(180deg, var(--scribe-surface-raised) 0 27px, var(--scribe-border) 27px 28px);
+}
+@media (forced-colors: active) { .hero .phones { background: none; } }
+
+/* The phone screenshots here are Android screens: 9:20, where the shared frame assumes an iPhone. */
+.phone-frame img { aspect-ratio: 600 / 1304; }
+
+.needs-note { margin: var(--scribe-space-5) 0 0; font-size: var(--scribe-type-callout-size); }

@@ -1,0 +1,109 @@
+/* The family page: a desk with one sheet per app. The page itself is neutral: system type, grey ink.
+   Each sheet (and each line of the headline) carries data-brand, and inside it every token is that
+   product's own (assets/brands.css), so the apps look like themselves side by side. */
+
+:root {
+  --scribe-bg: #ECEAE5;
+  --scribe-surface: #E2E0DA;
+  --scribe-surface-raised: #F7F6F3;
+  --scribe-text: #1A1B1C;
+  --scribe-text-muted: #4E5156;
+  --scribe-border: #D3D0C8;
+  --scribe-border-strong: #76736C;
+  --scribe-primary: #1A1B1C;
+  --scribe-on-primary: #F7F6F3;
+  --scribe-brand: #1A1B1C;
+  --scribe-brand-text: #1A1B1C;
+  --scribe-brand-tint: #F7F6F3;
+  --scribe-focus: #1A1B1C;
+  --scribe-font-display: var(--scribe-font-text);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --scribe-bg: #0B0B0C;
+    --scribe-surface: #17181A;
+    --scribe-surface-raised: #1F2023;
+    --scribe-text: #ECEBE7;
+    --scribe-text-muted: #B3B1AB;
+    --scribe-border: #2C2D30;
+    --scribe-border-strong: #85837D;
+    --scribe-primary: #ECEBE7;
+    --scribe-on-primary: #0B0B0C;
+    --scribe-brand: #ECEBE7;
+    --scribe-brand-text: #ECEBE7;
+    --scribe-brand-tint: #1F2023;
+    --scribe-focus: #ECEBE7;
+  }
+}
+
+h2 { font-weight: 650; letter-spacing: -0.02em; font-size: clamp(1.6rem, 3.4vw, 2.25rem); }
+.brand-text { font-weight: 650; font-size: 1.0625rem; color: var(--scribe-text); min-height: 44px; }
+section + section { border-top: 0; }
+
+/* The headline: one line in each app's own voice. */
+.family-hero { padding: var(--scribe-space-12) 0 var(--scribe-space-8); }
+.family-hero h1 { font-size: clamp(2.35rem, 7.2vw, 4.5rem); line-height: 1.08; margin-bottom: var(--scribe-space-6); }
+.voice { display: block; font-family: var(--scribe-font-display); color: var(--scribe-brand-text); }
+.voice[data-brand="fretscribe"] { font-weight: 600; font-size: 0.86em; letter-spacing: -0.02em; line-height: 1.25; }
+
+/* The sheets. */
+.sheets { padding: 0 0 var(--scribe-space-12); }
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: var(--scribe-space-6); }
+.sheet {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--scribe-space-6);
+  background: var(--scribe-bg); color: var(--scribe-text); font-family: var(--scribe-font-text);
+  border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-sm);
+  box-shadow: var(--scribe-elevation-2);
+  padding: calc(var(--scribe-space-8) + (var(--lines) - 1) * 9px) var(--scribe-space-6) var(--scribe-space-6);
+  overflow: hidden;
+}
+/* What the app writes on: five lines for a score, six for a tab. */
+.sheet::before {
+  content: ""; position: absolute; left: 0; right: 0; top: var(--scribe-space-5);
+  height: calc((var(--lines) - 1) * 9px + 1px);
+  background: repeating-linear-gradient(180deg, var(--scribe-line) 0 1px, transparent 1px 9px);
+  opacity: 0.4;
+}
+.sheet-logo { margin: 0 0 var(--scribe-space-5); }
+.sheet-logo img { height: 28px; width: auto; }
+.sheet h2 { font-family: var(--scribe-font-display); font-size: clamp(1.75rem, 4.4vw, 2.4rem); line-height: 1.1; letter-spacing: -0.01em; font-weight: 400; margin-bottom: var(--scribe-space-3); }
+.sheet[data-brand="fretscribe"] h2 { font-weight: 600; font-size: clamp(1.6rem, 4vw, 2.1rem); }
+.sheet dl { margin: var(--scribe-space-5) 0 0; display: grid; gap: var(--scribe-space-2) var(--scribe-space-4); grid-template-columns: max-content minmax(0, 1fr); font-size: var(--scribe-type-callout-size); }
+.sheet dt { color: var(--scribe-text-muted); padding-top: 2px; }
+.sheet dd { margin: 0; }
+.sheet .platforms { gap: var(--scribe-space-2); }
+.sheet .platforms li { padding: 2px var(--scribe-space-3); font-weight: 400; }
+.sheet .button { min-height: 48px; }
+.sheet-shot { display: flex; justify-content: center; }
+.sheet-shot .phone-frame { width: 56%; max-width: 240px; }
+.sheet-shot .phone-frame img { aspect-ratio: 600 / 1304; }
+@media (min-width: 560px) {
+  .sheet { grid-template-columns: minmax(0, 1fr) 190px; align-items: start; }
+  .sheet-shot .phone-frame { width: 100%; }
+}
+@media (forced-colors: active) { .sheet { border: 1px solid CanvasText; } .sheet::before { display: none; } }
+
+/* What the apps share. */
+.together { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: var(--scribe-space-12); align-items: center; }
+.together figure { margin: 0; }
+.diagram-home { max-width: 340px; }
+.diagram .net { fill: var(--scribe-surface-raised); stroke: var(--scribe-border-strong); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.diagram-home .box.model { fill: var(--scribe-bg); stroke: var(--scribe-text); stroke-width: 1.75; }
+.diagram-home .box { fill: none; stroke-dasharray: 2 4; }
+.diagram-home .box.model { stroke-dasharray: none; }
+.diagram-home .lbl { letter-spacing: 0; font-size: 13px; fill: var(--scribe-text-muted); }
+.story { margin: var(--scribe-space-6) 0 0; }
+.story dt { font-weight: 650; margin-top: var(--scribe-space-5); }
+.story dd { margin: var(--scribe-space-1) 0 0; color: var(--scribe-text-muted); max-width: 34em; }
+#needs { padding-top: 0; }
+#needs table { max-width: 52rem; }
+#needs tbody th { width: 40%; }
+.plain { list-style: none; padding: 0; margin: var(--scribe-space-5) 0 0; display: grid; gap: var(--scribe-space-2); max-width: 52rem; color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
+.plain strong { color: var(--scribe-text); }
+#bandroom { padding-top: 0; }
+.after-actions { margin-top: var(--scribe-space-5); font-size: var(--scribe-type-callout-size); }
+@media (max-width: 900px) {
+  .together { grid-template-columns: minmax(0, 1fr); gap: var(--scribe-space-8); }
+  .family-hero { padding-top: var(--scribe-space-8); }
+}
+@media (forced-colors: active) { .diagram .net { fill: Canvas; stroke: CanvasText; } }

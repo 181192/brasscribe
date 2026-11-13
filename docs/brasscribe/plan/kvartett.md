@@ -237,9 +237,9 @@ Every table must resolve "1st Cornet" and "Tenor Horn". If one doesn't, the resu
 - `docs/shared/research/10-benchmark-results.md`: a "Quartet arrangement" section with the numbers
 - `music/README.md`, `core/README.md`, `eval/README.md`, `docs/brasscribe/plan/apps-plan.md`: mention the third lineup
 - `design/brands/brasscribe/mockups/choose-output.html:42-43,74-75` and `design/brands/brasscribe/mockups/png/choose-output-*.png`: third card
-- `site/brasscribe/guide/index.html:172`, `site/brasscribe/nb/guide/index.html:170`, `site/brasscribe/nb/index.html:132-136`, `site/brasscribe/shots/output-*.png`: "Full brass band, small band or quartet"
+- `site/brasscribe/pages/en/guide.html:172`, `site/brasscribe/pages/nb/guide.html:170`, `site/brasscribe/pages/nb/index.html:132-136`, `site/brasscribe/shots/output-*.png`: "Full brass band, small band or quartet"
 
-This change also fixes an inconsistency in the picker strings. The small band is "Lite korps" on Apple (`make-string-catalog.py:143`, `:197`) and on the nb site (`site/brasscribe/nb/index.html:132,136`, `site/brasscribe/nb/guide/index.html:164`), but "Lite band" on Android, Windows and in the mockup. Every surface gets **«Lite band»**, because this change edits the same strings anyway. The new label is "Kvartett" everywhere.
+This change also fixes an inconsistency in the picker strings. The small band is "Lite korps" on Apple (`make-string-catalog.py:143`, `:197`) and on the nb site (`site/brasscribe/pages/nb/index.html:132,136`, `site/brasscribe/pages/nb/guide.html:164`), but "Lite band" on Android, Windows and in the mockup. Every surface gets **«Lite band»**, because this change edits the same strings anyway. The new label is "Kvartett" everywhere.
 
 ### 2.10 Share or print, and the disabled card
 
