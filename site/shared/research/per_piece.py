@@ -58,6 +58,11 @@ def main() -> None:
             rows = [score(load_notes(s / "reference.json"), load_notes(s / f"{model}.mid")) for s in songs]
             for metric in metrics:
                 keep(suite, f"{model}.{metric}", [r[metric] for r in rows])
+            # Recall per voice of the quartet: a mean over the pieces, which no suite gates.
+            for voice in "SATB":
+                for metric in (f"recall_{voice}", f"recall100_{voice}"):
+                    if all(metric in r for r in rows):
+                        out[suite][f"{model}.{metric}"] = round(sum(r[metric] for r in rows) / len(rows), 3)
     for suite, label in QUANT.items():
         songs = _songs(DATA / "eval" / SETS[label])
         out.setdefault(suite, {})["pieces"] = len(songs)
@@ -70,7 +75,9 @@ def main() -> None:
     commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     doc = {
         "provenance": {
-            "what": "Per-piece values of metrics whose means are gated in eval/baselines.json, in the order of the eval set's pieces.",
+            "what": "Per-piece values of metrics whose means are gated in eval/baselines.json, in the order of the eval set's pieces; "
+                    "the size of each set; and, as single numbers, each model's mean recall per voice of the quartets (S, A, T, B), "
+                    "which the scorer reports and no suite gates.",
             "command": "pixi run python site/shared/research/per_piece.py",
             "commit": commit,
             "data": "data/eval/choralebricks-brass4 and data/eval/urmp-brass with the cached model outputs the baselines were taken from",

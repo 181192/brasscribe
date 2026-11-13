@@ -17,7 +17,8 @@ only in prose under docs/, each with where it came from, or p/<suite>/pieces and
 size of an eval set, counted by site/shared/research/per_piece.py, or c/<model>/<backend>.<field> in
 convert/reports/<model>.json (a converted model's benchmark; s_per_min and peak_gb are derived from its
 rtf and peak_rss_mb). per_piece.py also writes the value of every piece behind a gated mean
-(site/shared/research/measured/per-piece.json), which the charts show.
+(site/shared/research/measured/per-piece.json), which the charts show; <key>@min and <key>@max are the
+lowest and the highest of them.
 
 The figures themselves are described in site/shared/research/figures.py.
 """
@@ -27,6 +28,7 @@ from __future__ import annotations
 import html
 import json
 import operator
+import re
 import runpy
 import sys
 import tomllib
@@ -42,9 +44,9 @@ NBSP = chr(0xA0)  # between a number and its unit, and between thousands in Norw
 OPS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
 WORDS = {
     "en": {"figure": "Figure", "table": "Data table", "measure": "Measure", "n": "Measured on", "range": "lowest–highest",
-           "source": "Source"},
+           "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values."},
     "nb": {"figure": "Figur", "table": "Datatabell", "measure": "Mål", "n": "Målt på", "range": "laveste–høyeste",
-           "source": "Kilde"},
+           "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene."},
 }
 
 
@@ -59,6 +61,12 @@ class Numbers:
         self.converted = {f.stem: json.loads(f.read_text()) for f in sorted((ROOT / "convert" / "reports").glob("*.json"))}
 
     def get(self, key: str) -> float:
+        if key.endswith(("@min", "@max")):  # the lowest or the highest piece behind a mean
+            key, _, end = key.rpartition("@")
+            pieces = self.spread(key)
+            if pieces is None:
+                sys.exit(f"research: no per-piece values for '{key}'")
+            return min(pieces) if end == "min" else max(pieces)
         head, _, rest = key.partition("/")
         group, _, name = rest.partition("/")
         try:
@@ -66,6 +74,9 @@ class Numbers:
                 if name == "threshold_f1":  # the parity a conversion must reach before the apps use it
                     return float(self.converted[group][name])
                 backend, _, field = name.rpartition(".")
+                if field == "parity":  # as convert/summarize.py: the lowest of the F1 scores against the reference framework
+                    entry = self.converted[group]["parity"][backend]
+                    return min(entry[k]["f1"] for k in ("note_f1", "beat_f1", "downbeat_f1", "swift_f0_note_f1", "basic_pitch_note_f1") if k in entry)
                 run = self.converted[group]["benchmarks"][backend]
                 return {"s_per_min": lambda: run["rtf"] * 60, "peak_gb": lambda: run["peak_rss_mb"] / 1024}.get(field, lambda: run[field])()
             value = {"m": self.measured, "p": self.pieces}[head][group][name] if head in ("m", "p") else self.targets[head][group][name]
@@ -77,12 +88,12 @@ class Numbers:
         """The per-piece values behind a gated mean, unless the mean has moved since they were made."""
         head, _, rest = key.partition("/")
         suite, _, name = rest.partition("/")
-        values = self.pieces.get(suite, {}).get(name) if head == "brass" else None
+        values = self.pieces.get(suite, {}).get(name) if head in self.targets else None
         if not isinstance(values, list):
             return None
         if abs(sum(values) / len(values) - self.get(key)) > self.tolerance:
-            print(f"research: per-piece values of {key} are stale; run site/shared/research/per_piece.py", file=sys.stderr)
-            return None
+            sys.exit(f"research: the per-piece values of {key} no longer average to its baseline, so the figures would show "
+                     "dots that are not behind the mean. Run site/shared/research/per_piece.py on a machine with the eval data.")
         return values
 
 
@@ -101,8 +112,9 @@ def rounded(value: float, decimals: int) -> str:
 
 
 def fmt(value: float, how: str, lang: str) -> str:
-    if how == "pct":
-        text = f"{rounded(round(value * 100, 6), 0)}{NBSP}%"
+    if how == "pct":  # under 10 %, one decimal where there is one: 0.4 % is not 0 %
+        percent = round(value * 100, 6)
+        text = f"{rounded(percent, 1 if 0 < percent < 10 and percent % 1 else 0)}{NBSP}%"
     elif how in ("sec", "gb"):  # a duration or a size: as many decimals as its magnitude needs
         text = f"{rounded(value, 2 if value < 1 else 1 if value < 10 else 0)}{NBSP}{'s' if how == 'sec' else 'GB'}"
     elif how == "int":
@@ -170,6 +182,7 @@ def chart(spec: dict, name: str, page) -> str:
     views = []
     for view in spec["views"]:
         how, top, rows = view.get("format", spec.get("format", "f2")), view.get("max", spec.get("max", 1)), []
+        log = view.get("scale") == "log"  # (lowest, highest) in powers of ten: for values that span several of them
         if top == "auto":  # the first round number at or over the largest value, so every bar fits and the ticks are whole
             largest = max(num.get(k) for row in view["rows"] for k in row["keys"] if k)
             top = next(n for n in (1, 2, 4, 8, 12, 16, 20, 24, 32, 40, 60, 80, 120, 160, 240, 320, 480, 960) if n >= largest)
@@ -179,29 +192,36 @@ def chart(spec: dict, name: str, page) -> str:
                 if key is None:
                     cells.append(None)
                     continue
-                value, pieces = num.get(key), num.spread(key)
+                value, pieces = num.get(key), num.spread(key) if spec.get("spread", True) else None
                 cell = {"v": value, "t": fmt(value, how, lang)}
                 if pieces:
                     cell |= {"p": pieces, "lo": fmt(min(pieces), how, lang), "hi": fmt(max(pieces), how, lang)}
                 cells.append(cell)
             rows.append({"l": pick(row["label"], lang), "n": fill(row.get("n", view.get("n", "")), lang, "int"), "c": cells})
         tick = "int" if how in ("sec", "gb") else "pct" if how == "pct" else "f2"
+        ticks = [{"v": top * i / 4, "t": fmt(top * i / 4, tick, lang)} for i in range(5)]
+        if log:
+            low, top = view["log"]
+            ticks = [{"v": 10.0 ** e, "t": fmt(10.0 ** e, how, lang)} for e in range(low, top + 1)]
+            low, top = 10.0 ** low, 10.0 ** top
+        sizes = {row["n"] for row in rows}
+        mark = view.get("mark", spec.get("mark"))
         views.append({"l": pick(view["label"], lang), "note": fill(view.get("note", ""), lang, how), "rows": rows, "max": top,
-                      "axis": pick(view.get("axis", spec.get("axis")), lang),
-                      "ticks": [{"v": top * i / 4, "t": fmt(top * i / 4, tick, lang)} for i in range(5)]})
+                      "min": low if log else 0, "log": log, "n": sizes.pop() if len(sizes) == 1 else None,
+                      "mark": {"v": num.get(mark[0]), "t": fill(mark[1], lang, how)} if mark else None,
+                      "axis": pick(view.get("axis", spec.get("axis")), lang), "ticks": ticks})
     how = spec.get("format", "f2")
     data = {"series": series, "views": views,
             "viewLabel": pick(spec.get("view_label", ""), lang),
-            "words": {"range": w["range"]}}
+            "words": {"range": w["range"], "hint": w["hint"]}}
 
     tables = []
     spread = any(c and "p" in c for v in views for r in v["rows"] for c in r["c"])
     for view in views:
-        sizes = {row["n"] for row in view["rows"]}
-        shared = sizes.pop() if len(sizes) == 1 else None  # one answer for every row goes under the caption, not in a column
+        shared = view["n"]  # one answer for every row goes under the caption, not in a column
         head = [f'<th scope="col">{w["measure"]}</th>']
-        for name in series:
-            head.append(f'<th scope="col" class="num">{e(name)}</th>')
+        for label in series:
+            head.append(f'<th scope="col" class="num">{e(label)}</th>')
             if spread:
                 head.append(f'<th scope="col" class="num">{w["range"]}</th>')
         if shared is None:
@@ -222,6 +242,8 @@ def chart(spec: dict, name: str, page) -> str:
                       f'<caption>{caption}</caption>\n<thead><tr>{"".join(head)}</tr></thead>\n'
                       f'<tbody>\n{chr(10).join(body)}\n</tbody>\n</table>\n</div>')
     source = fill(spec["source"], lang, how)
+    if not re.fullmatch(r"[a-z0-9-]+", name):
+        sys.exit(f"research: a figure's name is its id in the page, so '{name}' must be lower-case letters, digits and hyphens")
     return (f'<figure class="chart" id="fig-{name}" aria-labelledby="fig-{name}-title" data-chart data-brand="{page.product.id}">\n'
             f'<p class="chart-title" id="fig-{name}-title">{fill(spec["title"], lang, how)}</p>\n'
             f'<p class="chart-sub">{fill(spec["sub"], lang, how)}</p>\n'

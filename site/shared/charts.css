@@ -30,13 +30,14 @@
 .chart-views label { position: relative; display: inline-flex; }
 .chart-views input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .chart-views span {
-  display: inline-flex; align-items: center; min-height: 36px; padding: 0 var(--scribe-space-3);
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--scribe-space-4);
   border: 1px solid var(--scribe-border-strong); border-radius: 999px; font-size: var(--scribe-type-callout-size);
 }
 .chart-views input:checked + span { background: var(--scribe-primary); color: var(--scribe-on-primary); border-color: var(--scribe-primary); }
 .chart-views input:focus-visible + span { outline: 2px solid var(--scribe-focus); outline-offset: 2px; }
 .chart-key { display: flex; flex-wrap: wrap; gap: var(--scribe-space-1) var(--scribe-space-4); list-style: none; padding: 0; margin: 0; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
 .chart-key li { display: inline-flex; align-items: center; gap: var(--scribe-space-2); margin: 0; }
+.chart-key li[hidden] { display: none; }
 .chart-key i, .chart-tip i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; flex: none; }
 .chart i.s1 { background: var(--chart-1); } .chart i.s2 { background: var(--chart-2); } .chart i.s3 { background: var(--chart-3); }
 .chart-note { min-height: 1.4em; margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
@@ -46,6 +47,9 @@
 .chart-grid.zero { stroke: var(--chart-zero); }
 .chart-tick, .chart-axis { fill: var(--scribe-text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .chart-label { fill: var(--scribe-text); font-size: 14px; }
+.chart-count { fill: var(--scribe-text-muted); font-size: 12px; }
+.chart-mark { stroke: var(--scribe-text); stroke-width: 1.5; }
+.chart-mark-label { fill: var(--scribe-text); font-size: 12px; font-weight: 600; }
 .chart-value { fill: var(--scribe-text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .chart-hit { fill: transparent; }
 .chart-row { outline: none; cursor: default; }
@@ -65,19 +69,20 @@
 @keyframes chart-grow { from { transform: scaleX(0.6); } }
 @keyframes chart-fade { from { opacity: 0; } }
 
+/* The exact values of the row under the pointer or the keyboard. It keeps its room, so the page never jumps. */
 .chart-tip {
-  position: absolute; left: var(--scribe-space-2); z-index: 2; max-width: min(340px, calc(100% - 2 * var(--scribe-space-2)));
-  padding: var(--scribe-space-2) var(--scribe-space-3); border-radius: var(--scribe-radius-sm); pointer-events: none;
-  background: var(--scribe-primary); color: var(--scribe-on-primary); font-size: var(--scribe-type-caption-size); line-height: 1.45;
-  box-shadow: 0 2px 10px rgb(0 0 0 / 0.25);
+  min-height: 5.6em; margin-top: var(--scribe-space-3); padding: var(--scribe-space-2) var(--scribe-space-3);
+  border-left: 3px solid var(--scribe-border-strong); background: var(--scribe-surface);
+  border-radius: 0 var(--scribe-radius-sm) var(--scribe-radius-sm) 0;
+  font-size: var(--scribe-type-caption-size); line-height: 1.45; color: var(--scribe-text-muted);
 }
+.chart-tip.is-on { color: var(--scribe-text); border-left-color: var(--scribe-brand); }
 .chart-tip p { margin: 0; }
 .chart-tip-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--scribe-space-2); }
 .chart-tip-row b { font-size: var(--scribe-type-callout-size); font-variant-numeric: tabular-nums; }
-.chart-tip-row i { align-self: center; height: 3px; outline: 1px solid var(--scribe-on-primary); }
-.chart-tip-range { flex-basis: 100%; padding-left: 22px; opacity: 0.85; }
+.chart-tip-row i { align-self: center; height: 3px; }
+.chart-tip-range, .chart-tip-n { color: var(--scribe-text-muted); }
 .chart-tip-title { font-weight: 600; }
-.chart-tip-n { opacity: 0.85; }
 
 .chart-data { margin-top: var(--scribe-space-3); font-size: var(--scribe-type-callout-size); }
 .chart-data summary { display: inline-flex; align-items: center; min-height: 36px; cursor: pointer; color: var(--scribe-brand-text); font-weight: 600; }

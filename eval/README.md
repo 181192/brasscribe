@@ -80,4 +80,5 @@ file does not hold, are left alone.
 
 The public research pages print these numbers and state findings about them (`site/README.md`,
 "Research pages and figures"). After a baseline change, run `site/build.sh`: it fails where a sentence
-or a figure's title no longer holds, and says which.
+or a figure's title no longer holds, or where the per-piece values behind a figure no longer match
+(`site/shared/research/per_piece.py` makes them again), and says which.
