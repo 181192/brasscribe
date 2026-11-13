@@ -1,14 +1,19 @@
 # Screenshots used on the site, one slot per line. `uv run --with pillow python site/shared/make_shots.py fretscribe`
 # turns them into site/fretscribe/shots/<slot>-<en|nb>-<light|dark>[-1x].<avif|webp> (plus a .png for light).
 # Columns: slot  kind  en-light  en-dark  nb-light  nb-dark   ("-" = none: the page shows the English or the light one).
-# Kinds are in site/shared/make_shots.py. Screens come from Fretscribe for Android's screen catalogue.
+# Kinds are in site/shared/make_shots.py. The screens are from Fretscribe for Android's screen catalogue
+# (apps/android/scripts/screenshots.sh record, or CI's android-screenshots-fretscribe): copy the ones listed
+# here to $A when a screen changes, then run the script.
 # Only screens showing an invented song ("Bass line"), or no song at all.
 # To swap a shot, change its paths here, run the script, and update the alt text on the pages.
 A=apps/android/docs/screenshots/fretscribe
-home          phone    $A/02-home-light.png                   $A/02-home-dark.png                   $A/02-home-nb.png             -
-instrument    phone    $A/03-your-instrument-light.png        $A/03-your-instrument-dark.png        $A/03-your-instrument-nb.png  -
-tuning        phone    $A/03-your-instrument-tuning-light.png $A/03-your-instrument-tuning-dark.png -                             -
-what-is-this  phone    $A/05-what-is-this-light.png           -                                     $A/05-what-is-this-nb.png     -
-writing       phone    $A/06-writing-down-light.png           -                                     $A/06-writing-down-nb.png     -
-check         phone    $A/07-check-the-song-findings-light.png $A/07-check-the-song-findings-dark.png -                           -
-tab           phone    $A/08-the-tab-light.png                -                                     -                             -
+home          phone    $A/home-light.png             $A/home-dark.png             $A/home-nb.png             -
+songs         phone    $A/home-with-a-song-light.png $A/home-with-a-song-dark.png $A/home-with-a-song-nb.png -
+instrument    phone    $A/your-instrument-light.png  $A/your-instrument-dark.png  $A/your-instrument-nb.png  -
+what-is-this  phone    $A/what-is-this-light.png     $A/what-is-this-dark.png     $A/what-is-this-nb.png     -
+check         phone    $A/check-the-song-light.png   $A/check-the-song-dark.png   $A/check-the-song-nb.png   -
+tab           phone    $A/tab-light.png              $A/tab-dark.png              $A/tab-nb.png              -
+note          phone    $A/tab-note-light.png         $A/tab-note-dark.png         $A/tab-note-nb.png         -
+repeat        phone    $A/practice-repeat-light.png  $A/practice-repeat-dark.png  $A/practice-repeat-nb.png  -
+full-screen   phone    $A/tab-full-screen-light.png  $A/tab-full-screen-dark.png  $A/tab-full-screen-nb.png  -
+computer      phone    $A/computer-light.png         $A/computer-dark.png         $A/computer-nb.png         -

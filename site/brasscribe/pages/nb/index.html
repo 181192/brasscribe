@@ -199,7 +199,8 @@ footer: Noter satt med Verovio (LGPL-3.0) og alphaTab (MPL-2.0). Bandlyder fra V
       <div>
         <p class="overline">Hvor det lages</p>
         <h2 id="computer-title">Telefonen, og <em>datamaskinen din.</em></h2>
-        <p>Soloer lages rett på telefonen. For et fullt brassband gjør Brasscribe på datamaskinen det tunge arbeidet og sender partituret tilbake til telefonen over Wi-Fi hjemme. På Mac kjører Brasscribe Bandroom dette fra menylinjen.</p>
+        <p>Et fullt brassband skrives alltid av Bandroom, et gratis program på din egen Mac eller Windows-PC, på samme Wi-Fi som telefonen. Det gjør det tunge arbeidet og sender partituret tilbake. Ett enkelt instrument skrives av appen selv på Android og på en Windows-PC. På iPhone, iPad og Mac har ikke appen med seg det den lytter med ennå, så en solo går også gjennom datamaskinen.</p>
+        <p>Et partitur du allerede har, åpnes, spilles og skrives ut uten datamaskinen. Play krever Android 16, iOS eller iPadOS 26, macOS 26 eller Windows 11, eller nyere. Den ligger ikke i noen appbutikk, og nedlastingene er ikke signert ennå; <a href="@lang/download/">nedlastingssiden</a> sier hvordan du installerer hver av dem likevel.</p>
         <p>Åpne innstillingene i appen, så dukker datamaskinen opp av seg selv. Skriv inn den sekssifrede koden den viser, så er du koblet til.</p>
         <p>På selve datamaskinen kan du åpne hvilket som helst partitur i nettleseren og spille det, gjenta takter, endre tempoet og skru av eller spille én stemme alene.</p>
         <div class="actions">
@@ -262,7 +263,7 @@ footer: Noter satt med Verovio (LGPL-3.0) og alphaTab (MPL-2.0). Bandlyder fra V
         <li class="card">
           <h3>Bli enige om tonene</h3>
           <p>En tone transkribentene er enige om, er nesten alltid riktig. En tone bare én av dem hørte, er ofte feil. Hvor enige de er, blir tonens sikkerhet, og sikkerheten avgjør spørsmålstegnene <span class="q uncertain" aria-hidden="true">?</span>.</p>
-          <p class="tech">Tonene kobles på starttid og tonehøyde. Sikkerheten er en sannsynlighet for at tonen er riktig, lært fra opptak der vi kjenner tonene. Under omtrent 0,76 får tonen ?, under 0,4 ? i boks. I rene opptak blir rundt 9&nbsp;% av tonene merket, og merkene fanger rundt to tredjedeler av feilene. <a href="@lang/research/#systemet">Slik regnes det ut</a>.</p>
+          <p class="tech">Tonene kobles på starttid og tonehøyde. Sikkerheten er en sannsynlighet for at tonen er riktig, lært fra opptak der vi kjenner tonene. Under omtrent 0,76 får tonen ?, under 0,4 ? i boks. I målingene våre på enkeltinstrumenter i messing har mellom én av seks og én av tre av de gale tonene et merke, og ingen på horn, så en tone uten merke kan også være feil. <a href="@lang/research/#systemet">Slik regnes det ut</a>.</p>
         </li>
         <li class="card">
           <h3>Skriv det ned</h3>
@@ -316,7 +317,7 @@ footer: Noter satt med Verovio (LGPL-3.0) og alphaTab (MPL-2.0). Bandlyder fra V
       <details>
         <summary>Detaljer for teknikeren i bandet</summary>
         <p>Motoren kjører hvert opptak som en graf av steg (puls, lydspor, transkribering, arrangement, eksport). Hvert steg mellomlagres etter en hash av inndata, innstillinger og kode, så når du endrer toneart eller band, kjøres bare arrangementet på nytt. Hver lydmodell kjører i sitt eget isolerte Python-miljø bak en filbasert kontrakt: lyd inn, MIDI eller JSON ut.</p>
-        <p>Musikkreglene er skrevet én gang i Python som referanse og portert til Rust for appene på iPhone, iPad, Mac, Android og Windows. En samsvarstest sjekker at Rust-versjonen gir identiske partiturer, MusicXML og talende partiturer. En solo lages helt på telefonen. De tunge modellene for separasjon og transkribering kjører på din egen datamaskin.</p>
+        <p>Musikkreglene er skrevet én gang i Python som referanse og portert til Rust for appene på iPhone, iPad, Mac, Android og Windows. En samsvarstest sjekker at Rust-versjonen gir identiske partiturer, MusicXML og talende partiturer. En solo kan lages helt på en Android-telefon eller en Windows-PC. De tunge modellene for separasjon og transkribering kjører på din egen datamaskin.</p>
         <p>Forskningsnotatene, målingene og kildekoden ligger i <a href="https://github.com/181192/brasscribe">kodelageret</a>.</p>
       </details>
 
@@ -333,6 +334,19 @@ footer: Noter satt med Verovio (LGPL-3.0) og alphaTab (MPL-2.0). Bandlyder fra V
       <div class="actions">
         <a class="button primary" href="@lang/guide/#download">Last ned</a>
         <a class="button outline" href="https://github.com/181192/brasscribe">Se kildekoden</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="fretscribe" aria-labelledby="fretscribe-title">
+    <div class="wrap">
+      <div class="reading">
+        <h2 id="fretscribe-title">Spiller du gitar eller bass? <em>Da er det Fretscribe.</em></h2>
+        <p>Fretscribe er Brasscribes søsken for gitar, bass, ukulele og mandolin: den gjør et opptak om til tab, i din stemming. Den bruker det samme Bandroom på datamaskinen, så én datamaskin betjener begge appene.</p>
+        <div class="actions">
+          <a class="button outline" href="@fretscribe/">Se Fretscribe</a>
+          <a class="button outline" href="@family/">Alle appene</a>
+        </div>
       </div>
     </div>
   </section>

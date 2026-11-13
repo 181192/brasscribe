@@ -17,3 +17,5 @@ h1 em, h2 em { font-weight: 700; }
 
 /* The phone screenshots here are Android screens: 9:20, where the shared frame assumes an iPhone. */
 .phone-frame img { aspect-ratio: 600 / 1304; }
+
+.needs-note { margin: var(--scribe-space-5) 0 0; font-size: var(--scribe-type-callout-size); }

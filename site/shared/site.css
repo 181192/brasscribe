@@ -274,6 +274,7 @@ tbody th { font-weight: 600; }
   .guide figure.phone:not(.pair) { float: right; width: 220px; margin: var(--scribe-space-2) 0 var(--scribe-space-6) var(--scribe-space-8); }
 }
 .guide figure.phone .phone-frame { max-width: 240px; }
+.guide figure.pair .phone-frame { width: 50%; max-width: 220px; }
 .to-top { font-size: var(--scribe-type-callout-size); }
 
 /* Download page: a group per device, made from the product's list of release files. */

@@ -4,8 +4,10 @@ A score for your brass band, from any recording. Play something, record a rehear
 file, and Brasscribe writes out the parts for a brass band (MusicXML, PDF, MIDI), marks the notes it
 wasn't sure about, and plays the score back with band sounds so you can practise along.
 
-Everything runs on your own devices. A solo line is transcribed on the phone or tablet; a full band
-needs the engine running on a computer on the same network.
+Everything runs on your own devices. A full band, and every tab, needs the engine running on a computer
+on the same network (Bandroom installs and runs it). A solo line is transcribed by the app itself on
+Android and Windows; on iPhone, iPad and Mac the on-device models are not in the app yet, so a solo
+goes through the computer too.
 
 [![A 21-second tour: open a recording, Brasscribe writes down the notes, marks the ones it wasn't sure about, then plays the score back](docs/brasscribe/media/brasscribe.gif)](docs/brasscribe/media/brasscribe.mp4)
 
@@ -19,6 +21,7 @@ How it works: [kalli.no/brasscribe/research](https://kalli.no/brasscribe/researc
 | App | Platforms | What it does | Source |
 |---|---|---|---|
 | **Brasscribe Play** | Android, Mac, iPhone and iPad, Windows | Records or opens a take, shows and plays the score, your own part on a music stand | [apps/android](apps/android/README.md), [apps/apple](apps/apple/README.md), [apps/windows](apps/windows/README.md) |
+| **Fretscribe** | Android, Mac, iPhone and iPad, Windows | An early version: a recording written down as a tab for guitar, bass, ukulele or mandolin by Bandroom on your computer, to read and practise with | the same folders, `products/fretscribe` |
 | **Brasscribe Bandroom** | Mac, Windows | Installs and runs the engine in the background, so phones and tablets can make full-band scores | [apps/bandroom/macos](apps/bandroom/macos/README.md), [apps/bandroom/windows](apps/bandroom/windows/README.md) |
 | **Studio** | Browser | The engine's own web interface: runs, scores, benchmarks, model and dataset views | [studio](studio/README.md) |
 | **Engine** | Python | Transcription pipeline, arranger and the HTTP service the apps talk to | [engine](engine/README.md) |
@@ -32,7 +35,8 @@ The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
 - Fretscribe for Android, an early version (`fretscribe-android-arm64-v8a.apk` for most devices,
   `-universal.apk` for all): a recording written down as a tab for guitar, bass, ukulele or mandolin,
   by Bandroom on your computer.
-- Fretscribe for Mac (`fretscribe-macos-arm64.zip`), an early version, as Fretscribe for Android does it.
+- Fretscribe for Mac (`fretscribe-macos-arm64.zip`) and for Windows (`fretscribe-windows-x64.zip`), an early
+  version, as Fretscribe for Android does it.
 - Play for Mac and Bandroom for Mac (Apple silicon). They are not notarised: the first time, open the
   app, then go to **System Settings › Privacy & Security** and choose **Open Anyway**. They need macOS 26 or newer.
 - Bandroom for Windows (x64), and Play for Windows as a preview. They are not signed: if SmartScreen

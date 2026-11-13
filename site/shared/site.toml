@@ -51,7 +51,7 @@ title = "Android"
 note = "Needs Android 16 or newer. Allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and what you have made stays. Most phones and tablets take the first file."
 [en.groups.ios]
 title = "iPhone and iPad"
-note = "Not in the App Store yet. This is a test build without a signature, which you sign with your own Apple Account before it installs: <a href=\"@lang/guide/#download-ios\">how to sign and install it</a>."
+note = "Needs iOS or iPadOS 26 or newer. Not in the App Store yet. This is a test build without a signature, which you sign with your own Apple Account before it installs: <a href=\"@lang/guide/#download-ios\">how to sign and install it</a>."
 [en.groups.mac]
 title = "Mac"
 note = "Needs macOS 26 or newer and Apple silicon. Not notarised yet: unzip, move the app to Applications and open it once, then choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>."
@@ -70,7 +70,7 @@ title = "Android"
 note = "Krever Android 16 eller nyere. Tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og det du har laget blir liggende. De fleste telefoner og nettbrett bruker den første filen."
 [nb.groups.ios]
 title = "iPhone og iPad"
-note = "Ligger ikke i App Store ennå. Dette er en testversjon uten signatur, som du signerer med din egen Apple-konto før den kan installeres: <a href=\"@lang/guide/#download-ios\">slik signerer og installerer du den</a>."
+note = "Krever iOS eller iPadOS 26 eller nyere. Ligger ikke i App Store ennå. Dette er en testversjon uten signatur, som du signerer med din egen Apple-konto før den kan installeres: <a href=\"@lang/guide/#download-ios\">slik signerer og installerer du den</a>."
 [nb.groups.mac]
 title = "Mac"
 note = "Krever macOS 26 eller nyere og Apple-prosessor. Ikke notarisert ennå: pakk ut, flytt appen til Programmer og åpne den én gang, og velg så <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>."

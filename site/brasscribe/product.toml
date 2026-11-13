@@ -78,7 +78,7 @@ shot_alt = "The Solo Cornet part of Old Hundredth on iPhone, as written for B fl
 title = "Download · Brasscribe Play"
 description = "Download Brasscribe Play for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
 heading = "Download Brasscribe Play"
-lead = "Brasscribe Play is in early testing, so there is no store listing yet. Choose your device; the links always get the newest release."
+lead = "Brasscribe Play is in early testing: it is not in any app store, and the downloads are not signed yet, so each device below says how to install it anyway. For a full band you also need Bandroom, for a computer on the same Wi-Fi."
 more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@lang/guide/#download\">user guide</a> has the steps in full."
 
 [nb]
@@ -107,5 +107,5 @@ shot_alt = "Solokornettstemmen til Old Hundredth på iPhone, skrevet for B, med 
 title = "Last ned · Brasscribe Play"
 description = "Last ned Brasscribe Play for Android, iPhone, iPad, Mac og Windows, og Bandroom til datamaskinen. Lenkene henter alltid den nyeste utgivelsen."
 heading = "Last ned Brasscribe Play"
-lead = "Brasscribe Play er i tidlig testing og ligger ikke i noen appbutikk ennå. Velg enheten din; lenkene henter alltid den nyeste utgivelsen."
+lead = "Brasscribe Play er i tidlig testing: den ligger ikke i noen appbutikk, og nedlastingene er ikke signert ennå, så hver enhet under sier hvordan du installerer likevel. For et fullt band trenger du også Bandroom, til en datamaskin på samme Wi-Fi."
 more = "Alt ligger også i <a href=\"{{releases}}\">siste utgivelse på GitHub</a>. <a href=\"@lang/guide/#download\">Brukerveiledningen</a> har alle stegene."

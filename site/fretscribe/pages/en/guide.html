@@ -22,7 +22,12 @@ main_class: wrap guide
     <section id="get-started">
       <h1>Get started</h1>
       <p class="lead">Fretscribe turns a recording into tab for guitar, bass, ukulele or mandolin. This guide walks through it once, from the recording to the tab you practise with.</p>
-      <p>You need two things: the Fretscribe app on your phone, tablet or computer, and <a href="#computer">Bandroom on a Mac or PC</a>, which does the listening. Fretscribe is an early version, so there is no store listing yet: you <a href="#download">download it</a> here.</p>
+      <p>You need two things:</p>
+      <ul>
+        <li><strong>The Fretscribe app</strong> on Android 16 or newer, iOS or iPadOS 26 or newer, macOS 26 or newer, or Windows 11.</li>
+        <li><strong><a href="#computer">Bandroom on a computer</a></strong> on the same Wi-Fi: a Mac with Apple silicon, or a PC with Windows 11. Bandroom writes every tab. Without it the app opens the tabs you have made, and cannot write a new one.</li>
+      </ul>
+      <p>Fretscribe is an early version. It is not in any app store and the downloads are not signed yet, so each device needs a few extra steps the first time: see <a href="#download">Download</a>.</p>
       <p>The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href="#instrument">what you play</a>. It asks for the microphone only when you first record.</p>
     </section>
 
@@ -33,7 +38,7 @@ main_class: wrap guide
       <ul>
         <li><strong>Android:</strong> needs Android 16 or newer. Allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and your songs stay.</li>
         <li><strong>Mac:</strong> needs macOS 26 or newer. The apps are not notarised yet. Unzip, move the app to Applications and open it once. macOS stops it; open <strong>System Settings › Privacy &amp; Security</strong>, choose <strong>Open Anyway</strong> and confirm.</li>
-        <li><strong>Windows:</strong> the apps are not signed yet. Unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
+        <li><strong>Windows:</strong> needs Windows 11 (x64). The apps are not signed yet. Unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
       </ul>
       <h3 id="download-ios">iPhone and iPad (test build)</h3>
       <p>Fretscribe is not in the App Store. The file <code>fretscribe-ios-unsigned.ipa</code> is the app without a signature, and an iPhone or iPad does not install an app that is not signed. So you sign it yourself, with your own Apple Account; a free account is enough, and a free signature lasts seven days. The steps are the same as for Brasscribe Play: <a href="@brasscribe/guide/#download-ios">how to sign and install a test build</a>, with Fretscribe's file in place of Brasscribe's.</p>
@@ -41,14 +46,19 @@ main_class: wrap guide
 
     <section id="computer">
       <h2>Your computer</h2>
-      <p>Bandroom on your computer (a Mac or PC) writes down the notes and sends the tab to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else.</p>
-      <p>On a Mac with Apple silicon or a Windows PC (x64), install Bandroom from the <a href="#download">download</a>. It is the same program Brasscribe uses, and it runs quietly in the background. The first run downloads what it needs, about 10 GB, so keep about 15 GB free; the internet is needed only for these downloads. <a href="@brasscribe/guide/#computer">Brasscribe's guide</a> has the first run in full.</p>
+      <figure class="phone">
+        <div class="phone-frame">
+          {{shot computer sizes="240px" alt="Bandroom on your computer, in Settings: Not connected. Open Bandroom on your computer, it is Brasscribe Bandroom in the list of programs, and choose Pair a phone. Scan the code on the computer, a field for the six-digit code, Ask on the computer instead, and Connect." load="lazy"}}
+        </div>
+      </figure>
+      <p>Bandroom on your computer writes down the notes and sends the tab to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else.</p>
+      <p>On a Mac with Apple silicon (macOS 26 or newer) or a PC with Windows 11 (x64), install Bandroom from the <a href="#download">download</a>. In the list of programs it is called Brasscribe Bandroom: it is the same program Brasscribe uses, and it runs quietly in the background. The first run downloads what it needs, about 10 GB, so keep about 15 GB free; the internet is needed only for these downloads. <a href="@brasscribe/guide/#computer">Brasscribe's guide</a> has the first run in full.</p>
       <p>Then connect your phone:</p>
       <ol>
-        <li>On the computer, choose <strong>Pair a phone</strong>. It shows a six-digit code and a QR code.</li>
+        <li>On the computer, open Bandroom and choose <strong>Pair a phone</strong>. It shows a six-digit code and a QR code.</li>
         <li>Put your phone on the same Wi-Fi as the computer.</li>
-        <li>In Fretscribe, choose <strong>Connect</strong> on Home.</li>
-        <li>Scan the code on the computer with the phone's camera, or type the six digits.</li>
+        <li>In Fretscribe, choose <strong>Connect</strong> on Home, or open Settings, then <strong>Bandroom on your computer</strong>.</li>
+        <li>Choose <strong>Scan the code on the computer</strong>, or type the six digits and choose <strong>Connect</strong>. <strong>Ask on the computer instead</strong> lets you say yes on the computer.</li>
       </ol>
       <p>You do this once for each phone or tablet. Until it is done, Home says <strong>Not connected</strong>, and Fretscribe cannot write a tab.</p>
     </section>
@@ -57,7 +67,7 @@ main_class: wrap guide
       <h2>Your instrument</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot instrument sizes="240px" alt="Your instrument: Instrument, Guitar. Strings, 6 strings. Usual tuning, Standard. Which hand is on the neck? Left hand on the neck, most players. You read, Tab. Not now at the top, Continue at the bottom." load="lazy"}}
+          {{shot instrument sizes="240px" alt="Your instrument: Instrument, Bass. Strings, 4 strings. Usual tuning, Standard. Which hand is on the neck? Left hand on the neck, most players. You read, Tab. Save at the bottom." load="lazy"}}
         </div>
       </figure>
       <p>Fretscribe asks this once and remembers it for your tabs. You can change it in Settings, and <strong>Not now</strong> starts you on a guitar in standard tuning.</p>
@@ -74,7 +84,7 @@ main_class: wrap guide
       <h2>Open or record</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot home sizes="240px" alt="Home: Not connected, with Connect. Open a recording. Record with the microphone, play a riff or a whole song. Record what's playing, from another app on this phone. Open a tab, a MusicXML file from MuseScore or Guitar Pro. Your songs below." load="lazy"}}
+          {{shot home sizes="240px" alt="Home: Not connected, Fretscribe needs your computer to write a tab, with Connect. Open a recording. Record with the microphone, play a riff or a whole song. Record what's playing, from another app on this phone. Your songs below, with nothing written down yet." load="lazy"}}
         </div>
       </figure>
       <p>On Home, choose one:</p>
@@ -82,16 +92,15 @@ main_class: wrap guide
         <li><strong>Open a recording:</strong> a sound file you have.</li>
         <li><strong>Record with the microphone:</strong> play a riff or a whole song.</li>
         <li><strong>Record what's playing:</strong> what another app on the phone is playing.</li>
-        <li><strong>Open a tab:</strong> a MusicXML file from MuseScore or Guitar Pro, to read and practise with.</li>
       </ul>
-      <p>Fretscribe cannot download from a link. Record what's playing, or open a file you have. What you have written down is under <strong>Your songs</strong>.</p>
+      <p>Fretscribe cannot download from a link. Record what's playing, or open a file you have. It does not open sheet music or tab files yet. What you have written down is under <strong>Your songs</strong>, each with its instrument, its tuning and the notes left to check.</p>
     </section>
 
     <section id="what-is-this">
       <h2>What is this?</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot what-is-this sizes="240px" alt="What is this? Just my instrument, a recording of the bass alone. A full song, a band or a record, Fretscribe picks out the bass. On your computer: Fretscribe on your computer writes down the notes. Nothing goes online." load="lazy"}}
+          {{shot what-is-this sizes="240px" alt="What is this? Just my instrument, one instrument playing, with nothing else. A full song, a band or a record, Fretscribe picks out the bass. On your computer: Bandroom on your computer writes down the notes. The recording is not sent online." load="lazy"}}
         </div>
       </figure>
       <p>Fretscribe asks what the recording is, because it listens differently to each:</p>
@@ -99,14 +108,14 @@ main_class: wrap guide
         <li><strong>Just my instrument:</strong> your instrument playing alone.</li>
         <li><strong>A full song:</strong> a band or a record. Fretscribe picks out your instrument's part.</li>
       </ul>
-      <p>Then it writes down the notes. The screen names each step and shows how far it has come: listening for the beat, writing down the notes, placing them in bars, choosing strings and frets, laying out the tab. Keep Fretscribe open until the tab is ready, or choose <strong>Cancel</strong>.</p>
+      <p>Then Bandroom on your computer writes down the notes. The screen names each step and shows how far it has come: listening for the beat, writing down the notes, placing them in bars, choosing strings and frets, laying out the tab. Keep Fretscribe open until the tab is ready, or choose <strong>Cancel</strong>.</p>
     </section>
 
     <section id="check">
       <h2>Check the song</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot check sizes="240px" alt="Check the song: Tuning, sounds like Drop D, written for Standard, with Use Drop D. Octave, written one octave lower than it was heard, with Write it as it was heard. Reference pitch, a little sharp of concert pitch. Key and tempo. Notes to check, 3 notes marked with a question mark. Show the tab." load="lazy"}}
+          {{shot check sizes="240px" alt="Check the song: Tuning, sounds like Drop D, written for Standard, with Use Drop D. Octave, written one octave lower than it was heard, with Write it as it was heard. Reference pitch, a little sharp of concert pitch. Key and tempo. Notes to check, 2 notes marked with a question mark. Show the tab." load="lazy"}}
         </div>
       </figure>
       <p>Before any tab, Fretscribe shows what it heard. If something here is wrong, the frets are wrong too, so look it over:</p>
@@ -123,19 +132,23 @@ main_class: wrap guide
 
     <section id="tab">
       <h2>Read and practise</h2>
-      <figure class="phone">
+      <figure class="phone pair">
         <div class="phone-frame">
-          {{shot tab sizes="240px" alt="The tab of Bass line: the part, Bass (you), and Music stand at the top, fifteen bars of tab, and the player with play, previous and next bar, Bar 1 of 15, Mute my part and Practice." load="lazy"}}
+          {{shot tab sizes="220px" alt="The tab of Bass line: Standard, no capo, and the tempo at the top. 2 notes marked with a question mark, Check them, and 1 note with no place. The tab, with a question mark over a note in bar 3 and an exclamation mark in bar 7. The player: play, start again, previous and next bar, Bar 1, beat 1, Speed 100% and Repeat bars." load="lazy"}}
+        </div>
+        <div class="phone-frame">
+          {{shot repeat sizes="220px" alt="Repeat bars: the recording plays these bars again and again. From bar 1, to bar 4, Repeat bars 1 to 4, Cancel." load="lazy"}}
         </div>
       </figure>
-      <p>The tab shows your part, with the tuning at the top. The player sits below it:</p>
+      <p>The tab shows your part, with the tuning and the capo at the top. The player sits below it:</p>
       <ul>
-        <li><strong>Play</strong> plays the recording and follows the tab, bar by bar. The arrows go to the previous and the next bar.</li>
-        <li><strong>Mute my part</strong> takes your instrument out, so you play it yourself.</li>
-        <li><strong>Practice</strong> has <strong>Speed</strong>, to slow the recording down, and <strong>Repeat bars</strong>, for the hard ones.</li>
-        <li><strong>Music stand</strong> fills the screen with the tab.</li>
-        <li>From a full song, the menu at the top chooses which part you read.</li>
+        <li><strong>Play</strong> plays your recording and follows the tab, bar and beat. The arrows go to the previous and the next bar.</li>
+        <li><strong>Speed</strong> plays the recording slower or faster.</li>
+        <li><strong>Repeat bars</strong> plays the bars you choose again and again.</li>
+        <li>The buttons at the top make the tab larger or smaller, or fill the screen with it.</li>
       </ul>
+      <p>A note Fretscribe was not sure about has a <span class="uncertain"><strong>?</strong></span> over it. Choose the note, or <strong>Check them</strong>, and Fretscribe says where it is and offers <strong>Play this bar slowly</strong>, so you can hear it yourself. A <strong>!</strong> marks a note that has no place on your instrument as it is tuned.</p>
+      <p>The marks find some of the wrong notes, not most of them, so a note without a mark can still be wrong. You cannot change a single note in the app yet. A wrong tuning or octave is put right in <a href="#check">Check the song</a>, and the computer writes the tab again.</p>
       <!--slot open-a-picture: how to open a picture of sheet music or tab goes here once it is in a release. -->
     </section>
 

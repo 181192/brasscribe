@@ -95,6 +95,11 @@ section + section { border-top: 0; }
 .story { margin: var(--scribe-space-6) 0 0; }
 .story dt { font-weight: 650; margin-top: var(--scribe-space-5); }
 .story dd { margin: var(--scribe-space-1) 0 0; color: var(--scribe-text-muted); max-width: 34em; }
+#needs { padding-top: 0; }
+#needs table { max-width: 52rem; }
+#needs tbody th { width: 40%; }
+.plain { list-style: none; padding: 0; margin: var(--scribe-space-5) 0 0; display: grid; gap: var(--scribe-space-2); max-width: 52rem; color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
+.plain strong { color: var(--scribe-text); }
 #bandroom { padding-top: 0; }
 .after-actions { margin-top: var(--scribe-space-5); font-size: var(--scribe-type-callout-size); }
 @media (max-width: 900px) {

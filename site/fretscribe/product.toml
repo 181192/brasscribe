@@ -65,17 +65,17 @@ nav = [
 
 [en.card]
 title = "Turn a recording into tab."
-does = "Play a riff, record a song or open a file. Fretscribe writes it down as tab for your instrument and tuning, shows what it heard before any fret is written, and lets you practise with it."
+does = "Play a riff, record a song or open a file. Fretscribe writes it down as tab for your instrument and tuning, shows what it heard before any fret is written, and lets you practise with the recording."
 for = "Guitar, bass, ukulele and mandolin players who read tab."
 platforms = ["Android", "iPhone and iPad", "Mac", "Windows"]
 shot = "tab"
-shot_alt = "A bass tab in Fretscribe on a phone: fifteen bars in standard tuning, bar 1 highlighted, and the player below with Mute my part and Practice."
+shot_alt = "A bass tab in Fretscribe on a phone: Bass line in standard tuning, bar 1 marked, a question mark over a doubtful note, and the player below with Speed and Repeat bars."
 
 [en.download]
 title = "Download · Fretscribe"
 description = "Download Fretscribe for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
 heading = "Download Fretscribe"
-lead = "Fretscribe is an early version, so there is no store listing yet. Choose your device; the links always get the newest release. You also need Bandroom on a computer: it writes down the notes."
+lead = "Fretscribe is an early version: it is not in any app store, and the downloads are not signed yet, so each device below says how to install it anyway. You need two downloads: the app for your device, and Bandroom for a computer on the same Wi-Fi, which writes every tab."
 more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@lang/guide/#download\">user guide</a> has the steps in full."
 
 [nb]
@@ -94,11 +94,11 @@ does = "Spill et riff, ta opp en sang eller åpne en fil. Fretscribe skriver det
 for = "Deg som spiller gitar, bass, ukulele eller mandolin og leser tab."
 platforms = ["Android", "iPhone og iPad", "Mac", "Windows"]
 shot = "tab"
-shot_alt = "En basstab i Fretscribe på en telefon: femten takter i standardstemming, takt 1 markert, og avspilleren under med Demp stemmen min og Øv."
+shot_alt = "En basstab i Fretscribe på en telefon: Bass line i standardstemming, takt 1 markert, et spørsmålstegn over en usikker tone, og avspilleren under med Tempo og Gjenta takter."
 
 [nb.download]
 title = "Last ned · Fretscribe"
 description = "Last ned Fretscribe for Android, iPhone, iPad, Mac og Windows, og Bandroom til datamaskinen. Lenkene henter alltid den nyeste utgivelsen."
 heading = "Last ned Fretscribe"
-lead = "Fretscribe er en tidlig versjon og ligger ikke i noen appbutikk ennå. Velg enheten din; lenkene henter alltid den nyeste utgivelsen. Du trenger også Bandroom på en datamaskin: det er den som skriver ned tonene."
+lead = "Fretscribe er en tidlig versjon: den ligger ikke i noen appbutikk, og nedlastingene er ikke signert ennå, så hver enhet under sier hvordan du installerer likevel. Du trenger to nedlastinger: appen til enheten din, og Bandroom til en datamaskin på samme Wi-Fi, som skriver hver tab."
 more = "Alt ligger også i <a href=\"{{releases}}\">siste utgivelse på GitHub</a>. <a href=\"@lang/guide/#download\">Brukerveiledningen</a> har alle stegene."

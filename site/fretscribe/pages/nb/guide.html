@@ -22,7 +22,12 @@ main_class: wrap guide
     <section id="get-started">
       <h1>Kom i gang</h1>
       <p class="lead">Fretscribe gjør et opptak om til tab for gitar, bass, ukulele eller mandolin. Denne veiledningen går gjennom det én gang, fra opptaket til tabben du øver med.</p>
-      <p>Du trenger to ting: Fretscribe-appen på telefonen, nettbrettet eller datamaskinen, og <a href="#computer">Bandroom på en Mac eller PC</a>, som gjør lyttingen. Fretscribe er en tidlig versjon og ligger ikke i noen appbutikk ennå: du <a href="#download">laster den ned</a> her.</p>
+      <p>Du trenger to ting:</p>
+      <ul>
+        <li><strong>Fretscribe-appen</strong> på Android 16 eller nyere, iOS eller iPadOS 26 eller nyere, macOS 26 eller nyere, eller Windows 11.</li>
+        <li><strong><a href="#computer">Bandroom på en datamaskin</a></strong> på samme Wi-Fi: en Mac med Apple-prosessor, eller en PC med Windows 11. Bandroom skriver hver tab. Uten det åpner appen tabbene du har laget, men kan ikke skrive en ny.</li>
+      </ul>
+      <p>Fretscribe er en tidlig versjon. Den ligger ikke i noen appbutikk, og nedlastingene er ikke signert ennå, så hver enhet trenger noen ekstra steg første gang: se <a href="#download">Last ned</a>.</p>
       <p>Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og spør så <a href="#instrument">hva du spiller</a>. Den ber om mikrofonen først når du spiller inn.</p>
     </section>
 
@@ -33,7 +38,7 @@ main_class: wrap guide
       <ul>
         <li><strong>Android:</strong> krever Android 16 eller nyere. Tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og sangene dine blir liggende.</li>
         <li><strong>Mac:</strong> krever macOS 26 eller nyere. Appene er ikke notarisert ennå. Pakk ut, flytt appen til Programmer og åpne den én gang. macOS stopper den; gå til <strong>Systeminnstillinger › Personvern og sikkerhet</strong>, velg <strong>Åpne likevel</strong> og bekreft.</li>
-        <li><strong>Windows:</strong> appene er ikke signert ennå. Pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>.</li>
+        <li><strong>Windows:</strong> krever Windows 11 (x64). Appene er ikke signert ennå. Pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>.</li>
       </ul>
       <h3 id="download-ios">iPhone og iPad (testversjon)</h3>
       <p>Fretscribe ligger ikke i App Store. Filen <code>fretscribe-ios-unsigned.ipa</code> er appen uten signatur, og en iPhone eller iPad installerer ikke en app som ikke er signert. Derfor signerer du den selv, med din egen Apple-konto; en gratis konto holder, og en gratis signatur varer i sju dager. Stegene er de samme som for Brasscribe Play: <a href="@brasscribe/guide/#download-ios">slik signerer og installerer du en testversjon</a>, med Fretscribes fil i stedet for Brasscribes.</p>
@@ -41,14 +46,19 @@ main_class: wrap guide
 
     <section id="computer">
       <h2>Datamaskinen din</h2>
-      <p>Bandroom på datamaskinen (en Mac eller PC) skriver ned tonene og sender tabben til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder.</p>
-      <p>På en Mac med Apple-prosessor eller en Windows-PC (x64) installerer du Bandroom fra <a href="#download">nedlastingen</a>. Det er det samme programmet som Brasscribe bruker, og det kjører stille i bakgrunnen. Første gang laster det ned det det trenger, rundt 10 GB, så sørg for rundt 15 GB ledig plass; internett trengs bare for disse nedlastingene. <a href="@brasscribe/guide/#computer">Brasscribes veiledning</a> har hele den første oppstarten.</p>
+      <figure class="phone">
+        <div class="phone-frame">
+          {{shot computer sizes="240px" alt="Bandroom på datamaskinen, i Innstillinger: Ikke tilkoblet. Åpne Bandroom på datamaskinen, den heter Brasscribe Bandroom i listen over programmer, og velg Koble til en telefon. Skann koden på datamaskinen, et felt for den sekssifrede koden, Spør på datamaskinen i stedet, og Koble til." load="lazy"}}
+        </div>
+      </figure>
+      <p>Bandroom på datamaskinen skriver ned tonene og sender tabben til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder.</p>
+      <p>På en Mac med Apple-prosessor (macOS 26 eller nyere) eller en PC med Windows 11 (x64) installerer du Bandroom fra <a href="#download">nedlastingen</a>. I listen over programmer heter det Brasscribe Bandroom: det er det samme programmet som Brasscribe bruker, og det kjører stille i bakgrunnen. Første gang laster det ned det det trenger, rundt 10 GB, så sørg for rundt 15 GB ledig plass; internett trengs bare for disse nedlastingene. <a href="@brasscribe/guide/#computer">Brasscribes veiledning</a> har hele den første oppstarten.</p>
       <p>Så kobler du til telefonen:</p>
       <ol>
-        <li>Velg <strong>Koble til en telefon</strong> på datamaskinen. Den viser en sekssifret kode og en QR-kode.</li>
+        <li>Åpne Bandroom på datamaskinen og velg <strong>Koble til en telefon</strong>. Den viser en sekssifret kode og en QR-kode.</li>
         <li>Sett telefonen på samme Wi-Fi som datamaskinen.</li>
-        <li>Velg <strong>Koble til</strong> på Hjem i Fretscribe.</li>
-        <li>Skann koden på datamaskinen med kameraet på telefonen, eller skriv inn de seks sifrene.</li>
+        <li>Velg <strong>Koble til</strong> på Hjem i Fretscribe, eller åpne Innstillinger og så <strong>Bandroom på datamaskinen</strong>.</li>
+        <li>Velg <strong>Skann koden på datamaskinen</strong>, eller skriv inn de seks sifrene og velg <strong>Koble til</strong>. Med <strong>Spør på datamaskinen i stedet</strong> svarer du ja på datamaskinen.</li>
       </ol>
       <p>Dette gjør du én gang for hver telefon eller hvert nettbrett. Før det er gjort, står det <strong>Ikke tilkoblet</strong> på Hjem, og Fretscribe kan ikke skrive en tab.</p>
     </section>
@@ -57,7 +67,7 @@ main_class: wrap guide
       <h2>Instrumentet ditt</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot instrument sizes="240px" alt="Instrumentet ditt: Instrument, gitar. Strenger, 6 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Ikke nå øverst, Fortsett nederst." load="lazy"}}
+          {{shot instrument sizes="240px" alt="Instrumentet ditt: Instrument, bass. Strenger, 4 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre nederst." load="lazy"}}
         </div>
       </figure>
       <p>Fretscribe spør om dette én gang og husker det til tabbene dine. Du kan endre det i Innstillinger, og <strong>Ikke nå</strong> starter deg på gitar i standardstemming.</p>
@@ -74,7 +84,7 @@ main_class: wrap guide
       <h2>Åpne eller spill inn</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot home sizes="240px" alt="Hjem: Ikke tilkoblet, med Koble til. Åpne et opptak. Spill inn med mikrofonen, spill et riff eller en hel sang. Spill inn det som spilles, fra en annen app på telefonen. Åpne en tab, en MusicXML-fil fra MuseScore eller Guitar Pro. Sangene dine under." load="lazy"}}
+          {{shot home sizes="240px" alt="Hjem: Ikke tilkoblet, Fretscribe trenger datamaskinen din for å skrive en tab, med Koble til. Åpne et opptak. Spill inn med mikrofonen, spill et riff eller en hel sang. Spill inn det som spilles, fra en annen app på telefonen. Sangene dine under, der ingenting er skrevet ned ennå." load="lazy"}}
         </div>
       </figure>
       <p>Velg én på Hjem:</p>
@@ -82,16 +92,15 @@ main_class: wrap guide
         <li><strong>Åpne et opptak:</strong> en lydfil du har.</li>
         <li><strong>Spill inn med mikrofonen:</strong> spill et riff eller en hel sang.</li>
         <li><strong>Spill inn det som spilles:</strong> det en annen app på telefonen spiller.</li>
-        <li><strong>Åpne en tab:</strong> en MusicXML-fil fra MuseScore eller Guitar Pro, til å lese og øve med.</li>
       </ul>
-      <p>Fretscribe kan ikke laste ned fra en lenke. Spill inn det som spilles, eller åpne en fil du har. Det du har skrevet ned, ligger under <strong>Sangene dine</strong>.</p>
+      <p>Fretscribe kan ikke laste ned fra en lenke. Spill inn det som spilles, eller åpne en fil du har. Den åpner ikke note- eller tabfiler ennå. Det du har skrevet ned, ligger under <strong>Sangene dine</strong>, hver med instrumentet, stemmingen og tonene som gjenstår å sjekke.</p>
     </section>
 
     <section id="what-is-this">
       <h2>Hva er dette?</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot what-is-this sizes="240px" alt="Hva er dette? Bare instrumentet mitt, et opptak av bassen alene. En hel sang, et band eller en plate, Fretscribe plukker ut bassen. På datamaskinen din: Fretscribe på datamaskinen skriver ned tonene. Ingenting sendes til nettet." load="lazy"}}
+          {{shot what-is-this sizes="240px" alt="Hva er dette? Bare instrumentet mitt, ett instrument som spiller, uten noe annet. En hel sang, et band eller en plate, Fretscribe plukker ut bassen. På datamaskinen din: Bandroom på datamaskinen skriver ned tonene. Opptaket sendes ikke til nettet." load="lazy"}}
         </div>
       </figure>
       <p>Fretscribe spør hva opptaket er, fordi den lytter forskjellig til hvert av dem:</p>
@@ -99,14 +108,14 @@ main_class: wrap guide
         <li><strong>Bare instrumentet mitt:</strong> instrumentet ditt alene.</li>
         <li><strong>En hel sang:</strong> et band eller en plate. Fretscribe plukker ut stemmen til instrumentet ditt.</li>
       </ul>
-      <p>Så skriver den ned tonene. Skjermen sier hva hvert steg er og viser hvor langt den har kommet: lytter etter pulsen, skriver ned tonene, plasserer dem i takter, velger strenger og bånd, setter opp tabben. Ha Fretscribe åpen til tabben er klar, eller velg <strong>Avbryt</strong>.</p>
+      <p>Så skriver Bandroom på datamaskinen ned tonene. Skjermen sier hva hvert steg er og viser hvor langt den har kommet: lytter etter pulsen, skriver ned tonene, plasserer dem i takter, velger strenger og bånd, setter opp tabben. Ha Fretscribe åpen til tabben er klar, eller velg <strong>Avbryt</strong>.</p>
     </section>
 
     <section id="check">
       <h2>Sjekk sangen</h2>
       <figure class="phone">
         <div class="phone-frame">
-          {{shot check sizes="240px" alt="Sjekk sangen, vist på engelsk: Stemming, høres ut som Drop D, skrevet for standard, med Bruk Drop D. Oktav, skrevet én oktav lavere enn den ble hørt, med Skriv den slik den ble hørt. Kammertone, litt over. Toneart og tempo. Toner å sjekke, 3 toner merket med spørsmålstegn. Vis tabben." load="lazy"}}
+          {{shot check sizes="240px" alt="Sjekk sangen: Stemming, høres ut som Drop D, skrevet for standard, med Bruk Drop D. Oktav, skrevet én oktav lavere enn den ble hørt, med Skriv den slik den ble hørt. Kammertone, litt over. Toneart og tempo. Toner å sjekke, 2 toner merket med spørsmålstegn. Vis tabben." load="lazy"}}
         </div>
       </figure>
       <p>Før du får noen tab, viser Fretscribe hva den hørte. Er noe feil her, blir båndene feil også, så se over:</p>
@@ -123,19 +132,23 @@ main_class: wrap guide
 
     <section id="tab">
       <h2>Les og øv</h2>
-      <figure class="phone">
+      <figure class="phone pair">
         <div class="phone-frame">
-          {{shot tab sizes="240px" alt="Tabben til Bass line, vist på engelsk: stemmen, Bass (deg), og Notestativ øverst, femten takter tab, og avspilleren med spill, forrige og neste takt, takt 1 av 15, Demp stemmen min og Øv." load="lazy"}}
+          {{shot tab sizes="220px" alt="Tabben til Bass line: Standard, uten capo, og tempoet øverst. 2 toner merket med spørsmålstegn, Sjekk dem, og 1 tone uten plass. Tabben, med et spørsmålstegn over en tone i takt 3 og et utropstegn i takt 7. Avspilleren: spill, start på nytt, forrige og neste takt, Takt 1, slag 1, Tempo 100 % og Gjenta takter." load="lazy"}}
+        </div>
+        <div class="phone-frame">
+          {{shot repeat sizes="220px" alt="Gjenta takter: opptaket spiller disse taktene om og om igjen. Fra takt 1, til takt 4, og Avbryt." load="lazy"}}
         </div>
       </figure>
-      <p>Tabben viser stemmen din, med stemmingen øverst. Avspilleren ligger under:</p>
+      <p>Tabben viser stemmen din, med stemmingen og capoen øverst. Avspilleren ligger under:</p>
       <ul>
-        <li><strong>Spill</strong> spiller opptaket og følger tabben, takt for takt. Pilene går til forrige og neste takt.</li>
-        <li><strong>Demp stemmen min</strong> tar bort instrumentet ditt, så du spiller det selv.</li>
-        <li><strong>Øv</strong> har <strong>Tempo</strong>, for å spille opptaket saktere, og <strong>Gjenta takter</strong>, for de vanskelige.</li>
-        <li><strong>Notestativ</strong> fyller skjermen med tabben.</li>
-        <li>Fra en hel sang velger menyen øverst hvilken stemme du leser.</li>
+        <li><strong>Spill</strong> spiller opptaket ditt og følger tabben, takt og slag. Pilene går til forrige og neste takt.</li>
+        <li><strong>Tempo</strong> spiller opptaket saktere eller raskere.</li>
+        <li><strong>Gjenta takter</strong> spiller taktene du velger, om og om igjen.</li>
+        <li>Knappene øverst gjør tabben større eller mindre, eller fyller skjermen med den.</li>
       </ul>
+      <p>En tone Fretscribe var usikker på, har et <span class="uncertain"><strong>?</strong></span> over seg. Velg tonen, eller <strong>Sjekk dem</strong>, så sier Fretscribe hvor den er og tilbyr <strong>Spill denne takten sakte</strong>, så du kan høre selv. Et <strong>!</strong> merker en tone som ikke har noen plass på instrumentet ditt slik det er stemt.</p>
+      <p>Merkene finner noen av de gale tonene, ikke de fleste, så en tone uten merke kan også være feil. Du kan ikke endre en enkelt tone i appen ennå. Feil stemming eller oktav retter du i <a href="#check">Sjekk sangen</a>, og datamaskinen skriver tabben på nytt.</p>
       <!--slot open-a-picture: hvordan du åpner et bilde av noter eller tab, kommer her når det er i en utgivelse. -->
     </section>
 
