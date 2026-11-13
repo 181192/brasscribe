@@ -452,7 +452,8 @@ final class AppModel {
 
     /// The engine's phase; a screenshot demo pretends it runs.
     var phase: SupervisorPhase { demo ? .running : supervisor.phase }
-    var isBusy: Bool { (monitor.status?.jobsRunning ?? 0) > 0 }
+    /// A job is running or waiting, as of the last check.
+    var isBusy: Bool { monitor.hasJobs }
     var serverName: String { monitor.status?.serverName ?? "Brasscribe on \(supervisor.configuration.computerName)" }
     var hostName: String { ComputerName.host(fromServerName: serverName) }
 
@@ -484,6 +485,23 @@ final class AppModel {
         monitor.client = nil
         pairing.client = nil
         supervisor.restart()
+    }
+
+    /// Restart for a new setting (the key, the name phones see), but never under a job. The engine is asked now:
+    /// the last check can be half a minute old, and a restart takes a job that a phone sent since with it. With a
+    /// job there, the restart waits for it.
+    func restartUnlessBusy() {
+        guard phase == .running else { return restartNow() }  // not answering yet: no job to lose
+        restartWhenDone = true
+        Task { [weak self] in
+            guard let self else { return }
+            let busy = await self.monitor.hasJobsNow()
+            if busy {
+                self.logger.write("a job is running or waiting: the engine restarts with the new setting after it")
+            } else if self.restartWhenDone {
+                self.restartNow()
+            }
+        }
     }
 
     func tryAgain() {
@@ -637,7 +655,7 @@ final class AppModel {
         guard !demo else { return }
         switch supervisor.useHuggingFaceKey(savedKey.value, environment: environment, busy: isBusy) {
         case .none: break
-        case .restartNow: restartNow()
+        case .restartNow: restartUnlessBusy()
         case .restartWhenDone: restartWhenDone = true
         }
     }
@@ -665,7 +683,7 @@ final class AppModel {
         supervisor.configuration.computerName = shownComputerName
         logger.write("name shown to phones: \(shownComputerName)")
         guard isRunning else { return }
-        if isBusy { restartWhenDone = true } else { restartNow() }
+        restartUnlessBusy()
     }
 
     // MARK: menu-bar icon and the Dock (§3.3)
@@ -741,7 +759,7 @@ final class AppModel {
 
     private func jobsChanged(_ running: Int) {
         if running > 0 { holdSleep() } else { releaseSleep() }
-        if running == 0 && restartWhenDone {
+        if running == 0 && !isBusy && restartWhenDone {
             restartNow()
         }
     }

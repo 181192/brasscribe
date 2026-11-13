@@ -295,7 +295,10 @@ public sealed class BandroomController
         if (refusal is not null) problems.Add(Problems.PixiTooOld(_s, refusal));
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
         if (UpdateFailure is { } failure && !Updating)
-            problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused) : Problems.UpdateFailed(_s, failure));
+        {
+            bool running = _sup.State == EngineState.Running;
+            problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused, running) : Problems.UpdateFailed(_s, failure, running));
+        }
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));
         // After an update that failed: that problem says why the previous engine runs, and its fix is the update. The
         // update has not been tried to its end then, so this copy may still be able to do it.

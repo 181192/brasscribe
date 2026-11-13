@@ -333,7 +333,7 @@ public sealed class WorkspaceUpdateTests : IDisposable
         Assert.Equal("Updating Brasscribe… 30%. Back in about a minute. Phones reconnect by themselves.", info.StatusSub);
         Assert.StartsWith("Oppdaterer Brasscribe … 30 %.", StateRules.Describe(updating, Strings.Nb).StatusSub);
 
-        var failed = new StateInputs(EngineState.Running, true, 1, false, [Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1")], null, 0);
+        var failed = new StateInputs(EngineState.Running, true, 1, false, [Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1", engineRunning: true)], null, 0);
         info = StateRules.Describe(failed, Strings.En);
         Assert.Equal(DisplayState.NeedsAttention, info.State);
         Assert.Equal(ProblemKind.UpdateFailed, info.Problem?.Kind);
@@ -347,9 +347,25 @@ public sealed class WorkspaceUpdateTests : IDisposable
         Assert.Equal(DisplayState.NeedsAttention, info.State);
         Assert.Equal(ProblemKind.UpdateFailed, info.Problem?.Kind);
         Assert.Equal(PrimaryAction.Fix, info.Primary);
-        // Had it been started, its exits would end in Error, which comes first and whose Try again only starts it again.
-        info = StateRules.Describe(failed with { Engine = EngineState.Error }, Strings.En);
+        // Judged startable and started, it can still exit until the supervisor gives up (an install that stopped after
+        // it had written the engine's command). The update's problem still shows, behind whatever else is wrong: its
+        // Try again runs the update, where Error's would only start the same engine again.
+        var lowDisk = Problems.LowDisk(Strings.En, 1L << 30, "data");
+        var gaveUp = failed with
+        {
+            Engine = EngineState.Error,
+            Problems = [lowDisk, Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1", engineRunning: false)],
+        };
+        info = StateRules.Describe(gaveUp, Strings.En);
+        Assert.Equal(DisplayState.NeedsAttention, info.State);
+        Assert.Equal(ProblemKind.UpdateFailed, info.Problem?.Kind);
+        Assert.Equal(PrimaryAction.Fix, info.Primary);
+        Assert.Equal("Try again", info.PrimaryLabel);
+        Assert.Equal("The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.", info.StatusSub);
+        // Without a failed update, an engine that gave up is the error it was.
+        info = StateRules.Describe(gaveUp with { Problems = [lowDisk] }, Strings.En);
         Assert.Equal(DisplayState.Error, info.State);
+        Assert.Equal(PrimaryAction.TryAgain, info.Primary);
         Assert.Equal(PrimaryAction.TryAgain, info.Primary);
     }
 

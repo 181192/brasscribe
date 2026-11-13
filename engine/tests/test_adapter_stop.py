@@ -102,6 +102,46 @@ def test_a_model_past_its_time_limit_is_stopped(settings, audio, tmp_path, monke
     assert gone(wait_for(pid_file))
 
 
+@pytest.mark.skipif(os.name == "nt", reason="signals")
+def test_a_model_stopped_from_outside_says_so_in_plain_words(settings, audio, tmp_path, monkeypatch):
+    """The program that runs the engine stops it and its models together (a restart, a quit): the model ends on
+    the signal before the engine has cancelled the job. The job's error says what happened and what to do, not
+    a bare exit code."""
+    import signal
+    import subprocess
+
+    pid_file = tmp_path / "model.pid"
+    monkeypatch.setenv("FAKE_HANG", str(pid_file))
+    _, adapters = session(settings)
+    raised: list[BaseException] = []
+
+    def go():
+        try:
+            adapters.run("swift-f0", audio, tmp_path / "out.mid")
+        except BaseException as e:  # noqa: BLE001 - checked below
+            raised.append(e)
+
+    t = threading.Thread(target=go)
+    t.start()
+    child = wait_for(pid_file)
+    launcher = int(subprocess.run(["ps", "-o", "ppid=", "-p", str(child)], capture_output=True, text=True).stdout)
+    for pid in (launcher, child):  # the whole group is told to stop, as when the engine's own is
+        os.kill(pid, signal.SIGTERM)
+    t.join(15)
+    assert not t.is_alive() and isinstance(raised[0], AdapterError)
+    assert str(raised[0]) == ("swift-f0 was stopped: the program on the computer restarted or quit while this was "
+                              "being made. Send the recording again.")
+
+
+def test_only_a_signal_counts_as_stopped_from_outside():
+    from scribe_engine.adapters import stopped_from_outside
+
+    assert stopped_from_outside("beat-this", 3) is None and stopped_from_outside("beat-this", 0) is None
+    if os.name != "nt":
+        assert "ran out of memory" in stopped_from_outside("beat-this", -9)
+        assert stopped_from_outside("beat-this", -11) is None  # a crash of its own keeps its code and its output
+
+
 def test_time_limits_by_weight(settings):
     from scribe_engine.adapters import HEAVY_TIMEOUT_S, LIGHT_TIMEOUT_S
 

@@ -44,11 +44,17 @@
   <data name="Update_Failed_Title" xml:space="preserve">
     <value>Brasscribe couldn't finish updating</value>
   </data>
-  <data name="Update_Refused_Why" xml:space="preserve">
-    <value>The previous version was put back: this copy of Bandroom came with a setup tool that is too old for the update.</value>
+  <data name="Update_Refused_Why_Running" xml:space="preserve">
+    <value>The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.</value>
   </data>
-  <data name="Update_Failed_Why" xml:space="preserve">
-    <value>The update didn't finish, and the previous version was put back.</value>
+  <data name="Update_Refused_Why_NotRunning" xml:space="preserve">
+    <value>The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.</value>
+  </data>
+  <data name="Update_Failed_Why_Running" xml:space="preserve">
+    <value>The update didn't finish. The previous version was put back and is running.</value>
+  </data>
+  <data name="Update_Failed_Why_NotRunning" xml:space="preserve">
+    <value>The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.</value>
   </data>
   <data name="Status_Setup" xml:space="preserve">
     <value>Setting up</value>

@@ -78,7 +78,8 @@ public final class StatusMonitor {
 
     /// Called for each pairing request seen for the first time.
     @ObservationIgnored public var onNewRequest: ((PairRequestInfo) -> Void)?
-    /// Called when the number of running jobs changes (for the sleep assertion and "restart when done").
+    /// Called with the number of running jobs when that number or the number waiting changes (for the sleep
+    /// assertion and "restart when done").
     @ObservationIgnored public var onJobsChanged: ((Int) -> Void)?
 
     @ObservationIgnored public var client: (any EngineAPI)? {
@@ -146,7 +147,7 @@ public final class StatusMonitor {
         guard let client else { return }
         do {
             let s = try await client.status()
-            let previousRunning = status?.jobsRunning
+            let previous = status.map { [$0.jobsRunning, $0.jobsQueued] }
             status = s
             reachable = true
             failedRefreshes = 0
@@ -160,12 +161,23 @@ public final class StatusMonitor {
             } else {
                 job = nil
             }
-            if previousRunning != s.jobsRunning { onJobsChanged?(s.jobsRunning) }
+            if previous != [s.jobsRunning, s.jobsQueued] { onJobsChanged?(s.jobsRunning) }
         } catch {
             reachable = false
             failedRefreshes += 1
         }
     }
+
+    /// Whether the engine has a job running or waiting, asked now. The last regular check can be half a minute old,
+    /// and a job a phone sent since would be lost with an engine that is restarted on that answer. An engine that
+    /// does not answer is judged by what it said last.
+    public func hasJobsNow() async -> Bool {
+        await refresh()
+        return hasJobs
+    }
+
+    /// As of the last answer.
+    public var hasJobs: Bool { (status?.jobsRunning ?? 0) + (status?.jobsQueued ?? 0) > 0 }
 
     public func refreshRequests() async {
         guard let client, let list = try? await client.pairingRequests() else { return }

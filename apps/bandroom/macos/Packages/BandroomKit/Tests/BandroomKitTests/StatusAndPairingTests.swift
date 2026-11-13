@@ -77,6 +77,27 @@ import Testing
         #expect(running == [0, 1])
     }
 
+    /// A restart for a new setting must not take a job with it. The regular check is up to half a minute old, so
+    /// the engine is asked at that moment, and a job that only waits counts too.
+    @Test func aJobSentSinceTheLastCheckIsSeenWhenTheEngineIsAskedNow() async {
+        let engine = FakeEngine(), clock = TestClock()
+        let m = StatusMonitor(now: { clock.now }, sleep: { _ in })
+        var changes: [Int] = []
+        m.onJobsChanged = { changes.append($0) }
+        m.client = engine
+        await m.tick()
+        #expect(!m.hasJobs)
+        engine.statusValue.jobsQueued = 1  // a phone sends a recording
+        clock.advance(2)
+        await m.tick()  // not due yet: the regular check still says nothing is being made
+        #expect(!m.hasJobs)
+        #expect(await m.hasJobsNow())
+        #expect(changes == [0, 0])  // told of the waiting job, so a restart held for it is not forgotten
+        engine.statusValue.jobsQueued = 0
+        #expect(await !m.hasJobsNow())
+        #expect(changes == [0, 0, 0])
+    }
+
     @Test func withoutAnEngineNothingIsBeingMade() async {
         let engine = FakeEngine()
         engine.statusValue.jobsRunning = 1
