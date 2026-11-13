@@ -587,7 +587,11 @@ jobs:
           $all = @(Get-CimInstance Win32_Process)
           $engineProcs = @($all | Where-Object { $_.ProcessId -eq $engine.pid })
           for ($i = 0; $i -lt $engineProcs.Count; $i++) {
-            $engineProcs += @($all | Where-Object { $_.ParentProcessId -eq $engineProcs[$i].ProcessId -and $_.ProcessId -notin $engineProcs.ProcessId })
+            # A child was started after its parent. Windows uses process ids again, so a process that is older than
+            # the one its parent id now names is a leftover of an earlier owner of that id (the compiler server of
+            # the build before this step), not part of the engine.
+            $parent = $engineProcs[$i]
+            $engineProcs += @($all | Where-Object { $_.ParentProcessId -eq $parent.ProcessId -and $_.CreationDate -ge $parent.CreationDate -and $_.ProcessId -notin $engineProcs.ProcessId })
           }
           $engineProcs | Format-Table ProcessId, ParentProcessId, Name -AutoSize
           if ($engineProcs.Count -lt 2) { throw "expected pixi and its python child, found $($engineProcs.Count) processes" }
