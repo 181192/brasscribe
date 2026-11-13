@@ -377,7 +377,7 @@ class SendBassTabFlowTest : ScreenTest() {
         // Its row's menu has none of the actions that would open it; a tab's row has them.
         val now = System.currentTimeMillis()
         assertEquals(listOf("Edit title", "Delete"), menuOf(ScoreEntry("job:band-1", "Old Hundredth", now, "brass-band", jobId = "band-1", target = "brass")))
-        assertEquals(listOf("Edit title", "Open on the music stand", "Check the song", "Delete"),
+        assertEquals(listOf("Edit title", "Check the song", "Delete"),
             menuOf(ScoreEntry("job:tab-1", "Bass line", now, "bass-tab", jobId = "tab-1", target = "fretted")))
     }
 
