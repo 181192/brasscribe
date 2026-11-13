@@ -390,6 +390,15 @@ def chart(spec: dict, name: str, page) -> str:
         tables.append(f'<div class="table-scroll" tabindex="0" role="region" aria-label="{e(w["datatable"])}: {e(view["l"])}">\n<table>\n'
                       f'<caption>{caption}</caption>\n<thead><tr>{"".join(head)}</tr></thead>\n'
                       f'<tbody>\n{chr(10).join(body)}\n</tbody>\n</table>\n</div>')
+    # What was measured on, inside the caption: per view where the rows share it, per row where they do not.
+    sizes = []
+    for view in views:
+        size = view["n"] or "; ".join(f'{row["l"]}: {row["n"]}' for row in view["rows"] if row["n"])
+        if size:
+            sizes.append((view["l"], size))
+    if len({size for _, size in sizes}) == 1:  # the same for every view: said once
+        sizes = [("", sizes[0][1])]
+    measured_on = (' <span class="chart-n"><i>n</i>: ' + e(" · ".join(f"{label}: {size}" if label else size for label, size in sizes)) + ".</span>") if sizes else ""
     source = fill(spec["source"], lang, how)
     data["words"]["tap"] = w["tap"]
     if not re.fullmatch(r"[a-z0-9-]+", name):
@@ -400,7 +409,7 @@ def chart(spec: dict, name: str, page) -> str:
             f'<div class="chart-plot" hidden></div>\n'
             f'<details class="chart-data" open>\n<summary>{w["datatable"]}</summary>\n{chr(10).join(tables)}\n</details>\n'
             f'<figcaption><b>{w["figure"]} {page.figures}.</b> <span class="chart-title" id="fig-{name}-title">{fill(spec["title"], lang, how)}.</span> '
-            f'{fill(spec["caption"], lang, how)} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
+            f'{fill(spec["caption"], lang, how)}{measured_on} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
             f'<script type="application/json">{json.dumps(data, ensure_ascii=False).replace("</", "<\\/")}</script>\n</figure>')
     return whole(made, name)
 
