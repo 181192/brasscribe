@@ -305,6 +305,28 @@ import TranscriptionKit
                     #expect(parts.maxX <= x.content.width + 1, "\(name) at \(x.size): the parts column runs off the window")
                     #expect(parts.height <= x.content.height + 1, "\(name) at \(x.size): the parts column is taller than the window")
                 }
+                // The score's page area ends where its column does: pages are engraved to its width, so an area
+                // that runs on under the parts column (or off the window) puts the music's right edge out of sight.
+                if let score = x.probes["scoreArea"] {
+                    let edge = x.probes["partsColumn"]?.minX ?? x.content.width
+                    #expect(score.maxX <= edge + 1, "\(name) at \(x.size): the score's page area is \(score.maxX - edge) pt wider than its column")
+                    // the player's bar under it and the pages inside it are as wide as what the scroll view shows:
+                    // the area itself, less a scroll bar where the Mac always shows one (the bar is docked beside it)
+                    if let bar = x.probes["playerBar"] {
+                        #expect(bar.width <= score.width + 1 && bar.width >= score.width - 20,
+                                "\(name) at \(x.size): the player's bar is \(bar.width) pt wide under a score area of \(score.width)")
+                    } else {
+                        Issue.record("\(name) at \(x.size): no player's bar")
+                    }
+                    if let pages = x.probes["scorePages"] {
+                        #expect(pages.width <= score.width + 1 && pages.width >= score.width - 20,
+                                "\(name) at \(x.size): the pages are \(pages.width) pt wide in a score area of \(score.width)")
+                    } else {
+                        Issue.record("\(name) at \(x.size): no pages")
+                    }
+                } else {
+                    Issue.record("\(name) at \(x.size): no score area")
+                }
                 let toggles = x.probes.filter { $0.key.hasPrefix("onlyThis-") }.values
                 for t in toggles { #expect(t.height <= 36, "\(name) at \(x.size): Only this wraps (\(t.height) pt)") }
             }

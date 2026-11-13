@@ -333,6 +333,29 @@ final class PracticeModel {
 
     // MARK: engraving
 
+    /// How long the page area keeps a new width before the score is engraved to it: a window being dragged
+    /// changes width many times a second, and each engraving takes a moment.
+    static let widthSettles: Duration = .milliseconds(250)
+    @ObservationIgnored private var widthTask: Task<Void, Never>?
+
+    /// The width the pages are engraved to in a page area this wide (its margins come off).
+    static func engravedWidth(forPageArea width: CGFloat) -> CGFloat { width - 16 }
+
+    /// The score's page area has this width now. The pages are engraved to the width that is visible: once it
+    /// has stayed the same for a moment, whatever the size of the change. A score left at an earlier width
+    /// would run under whatever stands beside it, or leave room unused.
+    func pageAreaChanged(to width: CGFloat) {
+        let target = Self.engravedWidth(forPageArea: width)
+        widthTask?.cancel()
+        guard abs(target - viewWidth) >= 1 else { return }
+        widthTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.widthSettles)
+            guard !Task.isCancelled, let self else { return }
+            self.viewWidth = target
+            self.relayout()
+        }
+    }
+
     func relayout() {
         let xml: String
         do { xml = try piece.musicXML() } catch { loadError = error.localizedDescription; return }

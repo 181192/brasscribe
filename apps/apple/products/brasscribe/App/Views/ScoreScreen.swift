@@ -153,7 +153,7 @@ struct PracticeView: View {
             .accessibilitySortPriority(StackedAccessibility.header)
             Divider().overlay(Color.Scribe.border)
             ZStack(alignment: .bottomTrailing) {
-                NotationView(model: model)
+                NotationView(model: model).layoutProbe("scoreArea")
                 VStack(alignment: .trailing, spacing: Space.s3) {
                     if let player = model.video, showVideo {
                         VideoPiP(player: player)
@@ -170,7 +170,7 @@ struct PracticeView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 if let missing = model.bandSoundsMissing { BandSoundsMissingLine(details: missing.details) }
-                PlayerBar(model: model, wide: wide)
+                PlayerBar(model: model, wide: wide).layoutProbe("playerBar")
             }
             // the phone's chrome grows to about twice the default text size; past that the music keeps its room
             .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)

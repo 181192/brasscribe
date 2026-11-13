@@ -2,6 +2,9 @@ import NotationKit
 import ScoreKit
 import SVGRender
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 /// The engraved score, drawn natively from Verovio's SVG with the score tokens, with one
 /// accessibility element per part per bar (label = talking-score description), rotors for
@@ -13,6 +16,17 @@ struct NotationView: View {
     @Environment(AppModel.self) private var app
     @Namespace private var rotorNS
     @State private var lastScrolledBar = -1
+    /// The width the scroll view shows its pages in: its own width, less the scroll bar where the Mac always
+    /// shows one (System Settings › Appearance › Show scroll bars: Always, or a mouse without a trackpad). Pages as
+    /// wide as the scroll view itself would end under that scroll bar.
+    private func pageWidth(in width: CGFloat) -> CGFloat {
+        #if os(macOS)
+        let bar = NSScroller.preferredScrollerStyle == .legacy ? NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy) : 0
+        return max(0, width - bar)
+        #else
+        return max(0, width)
+        #endif
+    }
 
     /// The first page scrolls to the very top, so the part view's header shows with it.
     private func target(_ page: Int) -> String {
@@ -44,7 +58,8 @@ struct NotationView: View {
                     .padding(.vertical, ScribeDesign.Space.s2)
                     // The pages are engraved to this width. Pinning it here keeps the
                     // fixed-width pages from raising the window's minimum size.
-                    .frame(width: max(0, geo.size.width), alignment: .topLeading)
+                    .frame(width: pageWidth(in: geo.size.width), alignment: .topLeading)
+                    .layoutProbe("scorePages")
                     .clipped()
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel(Text("Score pages"))
@@ -54,7 +69,7 @@ struct NotationView: View {
                 .onAppear {
                     // Engrave once the width is known; phones open on the musician's own
                     // part, which is readable at that width.
-                    model.viewWidth = geo.size.width - 16
+                    model.viewWidth = PracticeModel.engravedWidth(forPageArea: pageWidth(in: geo.size.width))
                     if hsize == .compact, model.shownPart == nil, !model.openedOnMyPart, LaunchOptions.screen != "score" {
                         model.openedOnMyPart = true
                         model.shownPart = model.myPart
@@ -62,9 +77,7 @@ struct NotationView: View {
                         model.relayout()
                     }
                 }
-                .onChange(of: geo.size.width) { _, w in
-                    if abs(w - 16 - model.viewWidth) > 40 { model.viewWidth = w - 16; model.relayout() }
-                }
+                .onChange(of: pageWidth(in: geo.size.width)) { _, w in model.pageAreaChanged(to: w) }
                 .onChange(of: model.layoutVersion) { _, _ in
                     // after (re)engraving, show the current bar
                     DispatchQueue.main.async { proxy.scrollTo(target(model.pageNumber(forBar: model.currentBar)), anchor: .top) }

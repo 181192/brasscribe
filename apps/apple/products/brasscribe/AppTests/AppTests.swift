@@ -34,6 +34,38 @@ func fixtureDir() -> URL? {
     #expect(free.first?.lowerBound == 0)
 }
 
+/// The score is engraved to the width of its page area that is visible: after any change that stays, small ones
+/// too (a panel beside it that grows by a few points), and once for a window that is being dragged.
+@Test(.enabled(if: fixtureDir() != nil)) @MainActor func theScoreIsEngravedToTheWidthItsPageAreaSettlesAt() async throws {
+    let dir = try #require(fixtureDir())
+    let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
+    let comp = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
+    let r = TranscriptionResult(jobID: "fixture", composition: comp, musicXML: xml, available: [.musicXML, .pdf])
+    let p = try Piece.create(title: "Test", profile: .orchestraWithSoloist, result: r, original: nil, video: nil, fixtureDirectory: dir)
+    defer { p.delete() }
+    let m = PracticeModel(piece: p, score: try p.loadScore(), composition: p.loadComposition(), seat: .notSet)
+    m.viewWidth = PracticeModel.engravedWidth(forPageArea: 679)
+    #expect(m.viewWidth == 663)
+
+    // 37 pt wider, less than the 40 pt a change once had to be: still engraved to.
+    m.pageAreaChanged(to: 716)
+    #expect(m.viewWidth == 663)  // not before it has stayed
+    try await Task.sleep(for: PracticeModel.widthSettles * 3)
+    #expect(m.viewWidth == 700)
+
+    // A drag: many widths in a row, engraved once, to the last.
+    for w in stride(from: 716.0, through: 900.0, by: 23.0) { m.pageAreaChanged(to: w) }
+    m.pageAreaChanged(to: 900)
+    try await Task.sleep(for: PracticeModel.widthSettles * 3)
+    #expect(m.viewWidth == 884)
+
+    // Back to the width it has before the moment is over: nothing to engrave.
+    m.pageAreaChanged(to: 1000)
+    m.pageAreaChanged(to: 900)
+    try await Task.sleep(for: PracticeModel.widthSettles * 3)
+    #expect(m.viewWidth == 884)
+}
+
 @Test(.enabled(if: fixtureDir() != nil)) @MainActor func pieceRoundTripsAndPracticeModelLoads() throws {
     let dir = try #require(fixtureDir())
     let xml = try Data(contentsOf: dir.appending(path: "brass-band.musicxml"))
