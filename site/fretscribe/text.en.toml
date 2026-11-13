@@ -1,0 +1,18 @@
+# Words every page of Fretscribe uses. The same keys are in text.nb.toml.
+
+[nav]
+brand = "Fretscribe, overview"
+
+[footer]
+line = "Fretscribe, an early version"
+note = "Tab drawn with alphaTab (MPL-2.0). Type: Atkinson Hyperlegible Next (OFL). <a href=\"https://github.com/181192/brasscribe\">Source</a>"
+
+[take]
+title = "Canon progression"
+
+[download]
+title = "Download · Fretscribe"
+description = "Download Fretscribe for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
+heading = "Download Fretscribe"
+lead = "Fretscribe is an early version: it is not in any app store, and your device will warn you the first time, so each device below shows how to get past it. You need two downloads: the app for your device, and Bandroom for a computer on the same Wi-Fi, which writes every tab."
+more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@/guide/#download\">guide</a> has the steps in full."

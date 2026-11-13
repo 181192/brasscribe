@@ -1,0 +1,71 @@
+title = "Scribe: partitur til bandet, tab til gitaren"
+description = "Brasscribe skriver partitur for brassband fra et opptak. Fretscribe skriver tab for gitar, bass, ukulele og mandolin. Begge virker på dine egne enheter, og opptaket forlater aldri ditt eget nettverk."
+
+[hero]
+brass = "Partitur til bandet ditt."
+fret = "Tab til gitaren din."
+lead = "To apper som lytter til et opptak og skriver ned det som ble spilt. Under ser du begge gjøre det, på et ekte opptak."
+
+[apps]
+label = "Appene"
+download = "Last ned"
+
+[apps.brass]
+title = "Brasscribe"
+text = "Ta opp en øvelse eller åpne en fil. Brasscribe skriver en stemme til hver musiker i brassbandet, merker tonene den var usikker på, og spiller med mens du øver."
+see = "Se Brasscribe"
+
+[apps.fret]
+title = "Fretscribe"
+text = "Spill et riff eller åpne et opptak. Fretscribe skriver det ned som tab for instrumentet og stemmingen din, og spiller opptaket mens du øver."
+see = "Se Fretscribe"
+
+[which]
+title = "Hvilken passer for deg?"
+both = "Begge er gratis, begge finnes for Android, iPhone og iPad, Mac og Windows, og du kan ha begge: de deler den samme hjelperen på datamaskinen."
+
+[which.brass]
+if = "Du spiller i brassband"
+then = "Brasscribe"
+get = "Partitur og en stemme til hver plass, skrevet for B eller Ess."
+shot = "Solokornett-stemmen i Brasscribe på en telefon, med spørsmålstegn over de usikre tonene og avspilleren under."
+
+[which.fret]
+if = "Du spiller gitar, bass, ukulele eller mandolin"
+then = "Fretscribe"
+get = "Tab i din stemming, med opptaket å spille sammen med."
+shot = "En tab i Fretscribe på en telefon, med avspilleren under."
+
+[together]
+title = "Telefonen spør. Datamaskinen lytter."
+lead = "Å plukke enkelttoner ut av et opptak er tungt arbeid, mer enn en telefon bør gjøre på bussen. Derfor deler appene én hjelper: <strong>Bandroom</strong>, et gratis program på din egen Mac eller PC."
+diagram = "Hvor opptaket ditt går: fra appen på telefonen til Bandroom på datamaskinen, og partituret eller tabben kommer tilbake, alt inne i ditt eget nettverk. Ingenting går til internett."
+
+[together.computer]
+title = "Bandroom på datamaskinen"
+text = "Gjør lyttingen og skrivingen: hvert bandpartitur og hver tab, i dag. Ett Bandroom betjener begge appene og alle telefonene du kobler til."
+
+[together.phone]
+title = "Appen på telefonen"
+text = "Spiller inn, åpner filer, viser partituret eller tabben og spiller sammen med deg. Koble til én gang; etterpå finner den datamaskinen selv."
+
+[together.private]
+title = "Privat og lokalt"
+text = "Opptaket forlater aldri ditt eget nettverk: det går fra telefonen til din egen datamaskin og ingen andre steder. Første gang Bandroom starter, trenger det internett for å laste ned det den trenger for å lytte (rundt 10 GB). For Brasscribes bandpartiturer trenger den også en gratis konto der lyttemodellen lastes ned; veiledningen viser hvordan."
+
+[together.d]
+network = "Ditt eget nettverk"
+internet = "Internett: ingenting sendes"
+phone = "Appen på telefonen"
+phone_does = "spiller inn, viser, spiller med"
+up = "opptak"
+down = "partitur eller tab"
+computer = "Bandroom på datamaskinen"
+computer_does = "lytter og skriver det ned"
+
+[bandroom]
+title = "Hent Bandroom"
+text = "For Mac fra 2020 eller nyere eller PC med Windows 11. Det kjører stille i bakgrunnen, og første gang det starter, laster det ned rundt 10 GB. Datamaskinen advarer deg første gang; veiledningene viser hvordan du kommer forbi det."
+mac = "Bandroom for Mac"
+windows = "Bandroom for Windows"
+setup = "Oppsett og tilkobling av telefon står i <a href=\"@brasscribe/guide/#computer\">Brasscribes veiledning</a> og <a href=\"@fretscribe/guide/#computer\">Fretscribes veiledning</a>."

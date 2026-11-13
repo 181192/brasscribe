@@ -1,0 +1,20 @@
+{
+ "title": "Canon progression",
+ "work": "A fingerpicked accompaniment over the chord progression of Pachelbel's Canon, in C",
+ "seconds": 15.2,
+ "source": "GuitarSet (Q. Xi, R. Bittner, J. Pauwels, X. Ye, J. P. Bello), CC BY 4.0, https://doi.org/10.5281/zenodo.3371780",
+ "track": "04_SS3-98-C_comp_mic.wav",
+ "track_sha256": "ffd315c2999a31d800ac707d330e661aa58cc2d4b6d3dd99230326860d11ca68",
+ "excerpt_samples_sha256": "5285468a350592cd56167eed88ece6ed3220095a4f2e387dd7e0b5df779a973a",
+ "profile": "tab",
+ "instrument": "guitar-6",
+ "recording": "instrument",
+ "stages": [
+  "arrange",
+  "beats",
+  "export",
+  "notes",
+  "transcribe.guitar.basic-pitch",
+  "transcribe.guitar.swift-f0"
+ ]
+}

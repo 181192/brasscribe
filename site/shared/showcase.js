@@ -11,20 +11,43 @@ const make = (name, attributes = {}, parent) => {
   return el;
 };
 
+// What a figure's controls stand at is kept here, so that a change of language, which draws the figure again,
+// leaves it as it stood: the same step, tuning, note, device and place in the recording.
+const memory = new Map();
+const remember = (el, kind) => {
+  const key = `${kind}${[...document.querySelectorAll(`[data-${kind}]`)].indexOf(el)}`;
+  if (!memory.has(key)) memory.set(key, {});
+  return memory.get(key);
+};
+// The controls have their place on the page from the start, and are shown once they work.
+const ready = (el) => el.querySelectorAll(".await-js").forEach((x) => x.classList.remove("await-js"));
+
 // The strip: sound on the right of the pen, written music on the left. --t is how far it has run, in px.
+// Play gives the recording itself, or, with the other button, the notes that were written from it.
 function strip(el) {
   const d = JSON.parse(el.dataset.strip);
   const stage = el.querySelector(".strip-stage");
   const range = el.querySelector("input[type=range]");
   const out = el.querySelector("output");
   const button = el.querySelector("[data-strip-play]");
-  el.querySelector(".strip-controls").hidden = false;
+  const hear = [...el.querySelectorAll("[data-hear]")];
+  const kept = remember(el, "strip");
+  ready(el);
   // `quiet` is the run it makes by itself when it comes into view: no sound, and the button still says Play.
   let t = 0, from = 0, started = 0, playing = false, quiet = false, frame = 0, audio = null, voices = [];
+  let mode = kept.mode ?? "recording", recording = null;
 
+  // Tab runs straight in time; engraved notation does not, and brings its own seconds-to-pixels points.
+  const px = (seconds) => {
+    if (!d.map) return seconds * d.pps;
+    const found = d.map.findIndex(([at]) => at >= seconds);
+    const i = Math.max(1, found < 0 ? d.map.length - 1 : found);
+    const [t0, x0] = d.map[i - 1], [t1, x1] = d.map[i];
+    return t1 === t0 ? x1 : x0 + ((x1 - x0) * (Math.min(seconds, t1) - t0)) / (t1 - t0);
+  };
   const set = (seconds, byHand) => {
-    t = Math.max(0, Math.min(d.dur, seconds));
-    stage.style.setProperty("--t", (t * d.pps).toFixed(1));
+    t = kept.t = Math.max(0, Math.min(d.dur, seconds));
+    stage.style.setProperty("--t", px(t).toFixed(1));
     if (!byHand) range.value = t;
     const beat = Math.max(0, d.beats.findLastIndex((b) => b <= t));
     out.textContent = d.barBeat.replace("{bar}", Math.floor(beat / d.perBar) + 1).replace("{beat}", (beat % d.perBar) + 1);
@@ -33,12 +56,13 @@ function strip(el) {
   const stop = () => {
     playing = quiet = false;
     cancelAnimationFrame(frame);
+    recording?.pause();
     for (const v of voices) try { v.stop(); } catch {}
     voices = [];
     button.textContent = d.play;
   };
-  // The notes as the engine wrote them, as plucks: a way to hear the tab, not the take.
-  const sound = () => {
+  // The notes that were written, as plain tones: a way to hear what is on the page beside the recording.
+  const written = () => {
     audio ??= new AudioContext();
     audio.resume();
     const now = audio.currentTime + 0.05;
@@ -47,10 +71,14 @@ function strip(el) {
       const at = now + on - t, hold = Math.max(0.3, length);
       const gain = audio.createGain();
       gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(0.2, at + 0.012);
+      if (d.voice === "brass") {
+        // Blown, not plucked: the note holds until it ends.
+        gain.gain.exponentialRampToValueAtTime(0.1, at + 0.04);
+        gain.gain.setValueAtTime(0.1, at + hold - 0.06);
+      } else gain.gain.exponentialRampToValueAtTime(0.2, at + 0.012);
       gain.gain.exponentialRampToValueAtTime(0.0001, at + hold);
       gain.connect(audio.destination);
-      // A low string is below what a phone's speaker gives: its octave sounds along.
+      // A low note is below what a phone's speaker gives: its octave sounds along.
       for (const [octave, type] of [[1, "triangle"], [2, "sine"]]) {
         const osc = audio.createOscillator();
         osc.type = type;
@@ -63,7 +91,8 @@ function strip(el) {
     }
   };
   const run = (now) => {
-    set(from + (now - started) / 1000);
+    // The recording keeps its own time; without it the clock does.
+    set(playing && !quiet && mode === "recording" && recording && !recording.paused ? recording.currentTime : from + (now - started) / 1000);
     if (t >= d.dur) return stop();
     frame = requestAnimationFrame(run);
   };
@@ -75,25 +104,43 @@ function strip(el) {
     started = performance.now();
     if (withSound) {
       button.textContent = d.pause;
-      sound();
+      if (mode === "recording" && el.dataset.audio) {
+        recording ??= new Audio(new URL(el.dataset.audio, location.href));
+        recording.currentTime = t;
+        recording.play().catch(() => {});
+      } else written();
     }
     frame = requestAnimationFrame(run);
   };
   button.addEventListener("click", () => {
+    kept.touched = true;
     if (playing && !quiet) return stop();
     // During the quiet run the button says Play, and Play it is: sound from where the strip is now.
     if (playing) stop();
     play(true);
   });
+  for (const b of hear) {
+    b.addEventListener("click", () => {
+      const was = playing && !quiet;
+      if (playing) stop();
+      mode = kept.mode = b.dataset.hear;
+      hear.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      if (was) play(true);
+    });
+  }
   range.addEventListener("input", () => {
     if (playing) stop();
+    kept.touched = true;
     set(+range.value, true);
   });
   document.addEventListener("visibilitychange", () => document.hidden && playing && stop());
+  // When the language changes, the strip is drawn again: this one must fall silent.
+  document.addEventListener("scribe:lang", () => !el.isConnected && stop());
 
   // Once, when it comes into view, it writes itself out without sound. Not when motion is unwanted.
-  set(calm.matches ? d.dur * 0.4 : 0);
-  if (!calm.matches) {
+  hear.forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.hear === mode)));
+  set(kept.touched ? kept.t : calm.matches ? d.dur * 0.4 : 0);
+  if (!calm.matches && !kept.touched) {
     const seen = new IntersectionObserver((entries) => {
       if (!entries[0].isIntersecting) return;
       seen.disconnect();
@@ -132,9 +179,10 @@ function stages(list) {
   const foot = document.createElement("div");
   foot.className = "stages-foot";
   foot.append(previous, next);
-  let current = 0;
+  const kept = remember(list, "stages");
+  let current = kept.step ?? 0;
   const show = (i) => {
-    current = Math.max(0, Math.min(items.length - 1, i));
+    current = kept.step = Math.max(0, Math.min(items.length - 1, i));
     items.forEach((item, k) => (item.hidden = k !== current));
     buttons.forEach((b, k) => {
       if (k === current) b.setAttribute("aria-current", "step");
@@ -145,37 +193,26 @@ function stages(list) {
     previous.setAttribute("aria-disabled", String(current === 0));
     next.setAttribute("aria-disabled", String(current === items.length - 1));
   };
-  // Every step takes the height of the tallest, so the buttons under them stay where they are.
-  const settle = () => {
-    list.style.minHeight = "";
-    items.forEach((item) => (item.hidden = false));
-    list.classList.remove("live");
-    const tallest = Math.max(...items.map((item) => item.offsetHeight));
-    list.classList.add("live");
-    list.style.minHeight = `${tallest}px`;
-    show(current);
-  };
+  // The buttons stand over the step, so they stay where they are when a taller or a shorter step comes.
   list.setAttribute("aria-live", "polite");
-  list.before(nav);
-  list.after(foot);
-  settle();
-  let width = innerWidth;
-  addEventListener("resize", () => width !== innerWidth && ((width = innerWidth), settle()));
-  document.fonts?.ready.then(settle);
+  list.before(nav, foot);
+  list.classList.add("live");
+  show(current);
 }
 
 // The device table: choosing a device shows its row alone.
 function matrix(el) {
   const pick = el.querySelector(".matrix-pick");
   const buttons = [...pick.querySelectorAll("button")];
-  pick.hidden = false;
-  for (const b of buttons) {
-    b.addEventListener("click", () => {
-      const on = b.getAttribute("aria-pressed") !== "true";
-      buttons.forEach((x) => x.setAttribute("aria-pressed", String(x === b && on)));
-      for (const row of el.querySelectorAll("tbody tr")) row.hidden = on && row.dataset.device !== b.dataset.device;
-    });
-  }
+  const kept = remember(el, "matrix");
+  ready(el);
+  const choose = (device) => {
+    kept.device = device;
+    buttons.forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.device === device)));
+    for (const row of el.querySelectorAll("tbody tr")) row.hidden = !!device && row.dataset.device !== device;
+  };
+  for (const b of buttons) b.addEventListener("click", () => choose(b.getAttribute("aria-pressed") === "true" ? null : b.dataset.device));
+  if (kept.device) choose(kept.device);
 }
 
 // The tab viewer: the same notes in another tuning, as the core's solver placed them, and for the note that
@@ -190,8 +227,8 @@ async function tabdemo(el) {
   const x = notes.map((g) => g.getAttribute("transform").match(/translate\(([\d.]+)/)[1]);
   const perBeat = demo.ticks_per_beat, perBar = demo.meter.beats * perBeat;
   let variant = demo.variants[demo.default], chosen = -1;
-  el.querySelector(".tabdemo-controls").hidden = false;
-  el.querySelector(".tabdemo-hint").hidden = false;
+  const kept = remember(el, "tabdemo");
+  ready(el);
   // A note that no tuning here has a place for: a sound that was heard, not a note that was played.
   const nowhere = demo.notes.map((_, i) => Object.values(demo.variants).every((v) => v.places[i][2]));
 
@@ -218,7 +255,8 @@ async function tabdemo(el) {
     const place = variant.places[i], spots = others(place);
     neck.hidden = place[2] === 1 || (place[0] === null && !spots.length);
     if (neck.hidden) return;
-    const strings = variant.open.length, frets = Math.max(12, ...spots.map(([, f]) => f), place[1] ?? 0);
+    // one fret more than the highest place, so no dot sits on the picture's edge
+    const strings = variant.open.length, frets = Math.max(12, ...spots.map(([, f]) => f), place[1] ?? 0) + 1;
     const fw = 22, top = 12, gap = 13, left = 26, width = left + frets * fw + 12, height = top + gap * (strings - 1) + 26;
     const picture = make("svg", { viewBox: `0 0 ${width} ${height}`, width, height, class: "tab-ink neck-ink", role: "img", "aria-label": w.neck });
     for (let f = 0; f <= frets; f++) make("path", { class: f === 0 ? "nut" : "fret-wire", d: `M${left + f * fw} ${top}V${top + gap * (strings - 1)}` }, picture);
@@ -233,6 +271,8 @@ async function tabdemo(el) {
   };
   const draw = () => {
     variant = demo.variants[`${tuning.value}/${capo ? capo.value : 0}`];
+    kept.tuning = tuning.value;
+    kept.capo = capo?.value;
     let lost = 0, left = 0;
     notes.forEach((g, i) => {
       const [string, fret, gone] = variant.places[i];
@@ -244,15 +284,15 @@ async function tabdemo(el) {
       g.querySelector("text").textContent = out || fret;
       g.setAttribute("aria-label", out ? `${at(i)} ${out}` : `${at(i)} ${where(string, fret)}`);
     });
-    svg.setAttribute("aria-label", fill(config.label, { title: demo.title, bars: config.bars, tuning: variant.tuning }));
+    svg.setAttribute("aria-label", fill(config.label, { title: config.title, bars: config.bars, tuning: variant.tuning }));
     const summary = fill(lost > 1 ? w.summary_lost : lost ? w.summary_lost_one : w.summary,
-      { tuning: variant.tuning, capo: capo ? capo.selectedOptions[0].textContent.toLowerCase() : config.noCapo, lost })
+      { tuning: variant.tuning, lost })
       + (left ? " " + fill(w.summary_left, { left }) : "");
     status.textContent = chosen < 0 ? summary : describe(chosen);
     if (chosen >= 0) drawNeck(chosen);
   };
   const choose = (i, focus) => {
-    chosen = i;
+    chosen = kept.chosen = i;
     notes.forEach((g, k) => {
       g.classList.toggle("chosen", k === i);
       g.setAttribute("aria-pressed", String(k === i));
@@ -283,20 +323,117 @@ async function tabdemo(el) {
   svg.setAttribute("role", "group");
   tuning.addEventListener("change", draw);
   capo?.addEventListener("change", draw);
+  // After a change of language it stands as it stood.
+  const before = kept.chosen;
+  if (kept.tuning) tuning.value = kept.tuning;
+  if (capo && kept.capo) capo.value = kept.capo;
   draw();
+  if (before !== undefined) choose(before, false);
 }
 
-const start = (selector, enhance) => document.querySelectorAll(selector).forEach((el) => enhance(el));
-// A viewer's data is fetched when it is about to be seen.
-const lazily = (selector, enhance) => start(selector, (el) => {
-  const near = new IntersectionObserver((entries) => {
-    if (!entries[0].isIntersecting) return;
-    near.disconnect();
-    enhance(el).catch(() => {});
-  }, { rootMargin: "600px" });
-  near.observe(el);
-});
-start("[data-strip]", strip);
-start("[data-stages]", stages);
-start("[data-matrix]", matrix);
-lazily("[data-tabdemo]", tabdemo);
+// The part viewer: every player's part under each other, or one of them alone, and for the note that is chosen
+// what it is, in words.
+async function partview(el) {
+  const config = JSON.parse(el.dataset.partview), w = config.words, lang = config.lang, kept = remember(el, "partview");
+  const score = await (await fetch(el.dataset.src + "score.json")).json();
+  const select = el.querySelector("[data-part]"), status = el.querySelector("[data-status]"), scroll = el.querySelector(".tabdemo-scroll");
+  const drawings = [...scroll.querySelectorAll("svg[data-part]")];
+  const all = score.parts.flatMap((part) => part.notes.map((n) => n[3])).filter(Boolean).length;
+  let notes = [];
+  ready(el);
+  const said = (part, n) => {
+    const [, , , doubt, bar, beat, within, step, alter, type, dots, tied] = n;
+    const pitch = (alter > 0 ? w.sharp : alter < 0 ? w.flat : w.natural)["CDEFGAB".indexOf(step)];
+    const value = dots ? fill(w.dotted, { value: w[`value_${type}`] }) : w[`value_${type}`];
+    return fill(w.said, { name: part.name[lang], bar, beat: fill(within === "0/1" ? w.beat : w.beat_half, { beat }), pitch, value,
+      tied: tied ? w.tied : "", doubt: doubt ? w.doubt : "" });
+  };
+  const summary = () => {
+    const part = score.parts.find((p) => p.id === select.value);
+    if (!part) return fill(w.start_all, { n: score.parts.length, doubt: all });
+    const doubt = part.notes.filter((n) => n[3]).length;
+    return fill(w.start, { name: part.name[lang], instrument: part.instrument[lang], doubt: doubt ? fill(w.some, { n: doubt }) : w.none });
+  };
+  const choose = (i, focus) => {
+    kept.chosen = i;
+    notes.forEach(({ g }, k) => {
+      g.classList.toggle("chosen", k === i);
+      g.setAttribute("aria-pressed", String(k === i));
+      g.tabIndex = k === i ? 0 : -1;
+    });
+    const { g, text } = notes[i];
+    if (focus) g.focus({ preventScroll: true });
+    // The chosen note is brought whole into the scroller, wherever the arrow keys took it.
+    const box = g.getBoundingClientRect(), frame = scroll.getBoundingClientRect();
+    if (box.left < frame.left + 16 || box.right > frame.right - 16) {
+      scroll.scrollBy({ left: box.left + box.width / 2 - (frame.left + frame.width / 2), behavior: calm.matches ? "auto" : "smooth" });
+    }
+    status.textContent = text;
+  };
+  // Every note of every part is a button, once; which of them can be reached follows the parts that are shown.
+  const every = drawings.flatMap((svg) => {
+    const part = score.parts.find((p) => p.id === svg.dataset.part);
+    svg.setAttribute("role", "group");
+    return [...svg.querySelectorAll("g.note")].map((g, i) => {
+      // A note is a small thing to hit: its whole box, and a little more, takes the pointer.
+      const box = g.getBBox(), text = said(part, part.notes[i]);
+      g.prepend(make("rect", { x: box.x - 90, y: box.y - 90, width: box.width + 180, height: box.height + 180, rx: 60, class: "hit" }));
+      g.setAttribute("role", "button");
+      g.setAttribute("aria-pressed", "false");
+      g.setAttribute("aria-label", text);
+      const note = { g, text, svg };
+      g.addEventListener("click", () => choose(notes.indexOf(note), true));
+      g.addEventListener("keydown", (e) => {
+        const i = notes.indexOf(note), by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (by) choose(Math.max(0, Math.min(notes.length - 1, i + by)), true);
+        else if (e.key === "Enter" || e.key === " ") choose(i, true);
+        else return;
+        e.preventDefault();
+      });
+      return note;
+    });
+  });
+  const show = () => {
+    kept.part = select.value;
+    for (const svg of drawings) svg.style.display = select.value === "all" || svg.dataset.part === select.value ? "" : "none";
+    notes = every.filter(({ svg }) => svg.style.display !== "none");
+    every.forEach(({ g }) => {
+      g.classList.remove("chosen");
+      g.setAttribute("aria-pressed", "false");
+      g.tabIndex = -1;
+    });
+    if (notes.length) notes[0].g.tabIndex = 0;
+    status.textContent = summary();
+  };
+  select.addEventListener("change", () => {
+    delete kept.chosen;
+    show();
+  });
+  // After a change of language it stands as it stood: the same part, the same note.
+  const chosen = kept.chosen;
+  if (kept.part) select.value = kept.part;
+  show();
+  if (chosen !== undefined && notes[chosen]) choose(chosen, false);
+}
+
+// Everything in a part of the page that can be played with. The whole page at first; after the language changes,
+// the parts whose words were swapped, which are new elements.
+const within = (root, selector) => [...(root.matches?.(selector) ? [root] : []), ...root.querySelectorAll(selector)];
+function enhance(root) {
+  const lazily = (selector, make) => within(root, selector).forEach((el) => {
+    // A viewer's data is fetched when it is about to be seen.
+    const near = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting) return;
+      near.disconnect();
+      make(el).catch(() => {});
+    }, { rootMargin: "600px" });
+    near.observe(el);
+  });
+  within(root, "[data-strip]").forEach(strip);
+  within(root, "[data-stages]").forEach(stages);
+  within(root, "[data-matrix]").forEach(matrix);
+  lazily("[data-tabdemo]", tabdemo);
+  lazily("[data-partview]", partview);
+}
+enhance(document);
+document.addEventListener("scribe:lang", (e) => e.detail.replaced.forEach(enhance));

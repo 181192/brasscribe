@@ -1,0 +1,136 @@
+title = "Brasscribe: a score for your band, from any recording"
+description = "Record a rehearsal or open a file. Brasscribe writes down a part for every player in your brass band, marks the notes it wasn't sure of, and plays along while you practise."
+
+[hero]
+title = "A score for your band, from <em>any recording.</em>"
+lead = "Record a rehearsal or open a file, and Brasscribe writes down a part for every player in the band."
+get = "Download"
+see = "See it work"
+strip_label = "A brass quartet's recording, as a sound wave on the right, becomes the {part} part on the left as it passes the pen: {notes} notes in {bars} bars, {doubt} of them with a question mark."
+strip_note = "A real recording: two trumpets, a baritone and a tuba playing the opening of Bach's <i lang=\"de\">Ich steh an deiner Krippe hier</i>, from <a href=\"https://doi.org/10.5281/zenodo.20849469\">ChoraleBricks</a> (CC BY 4.0). Brasscribe wrote the parts, question marks included. Play gives you the recording, or the notes it wrote."
+
+[get]
+title = "What you <em>get.</em>"
+lead = "The whole band's music on paper, and a way to practise it."
+
+[[get.items]]
+title = "A part for every player"
+text = "Full brass band, a small band or a quartet. Each part in its range, written for B flat or E flat as the player reads it."
+[[get.items]]
+title = "Honest question marks"
+text = "A note it was not sure of gets a ?. You hear that bar, keep the note or change it, and go on to the next."
+[[get.items]]
+title = "The band to practise with"
+text = "The score plays back with band sounds. Mute your own part, slow it down, repeat the hard bars."
+[[get.items]]
+title = "Your part on the stand"
+text = "Your own part fills the screen, with page turns from a pedal. Print it, or share the score as PDF, MusicXML or MIDI."
+[[get.items]]
+title = "Readable and audible"
+text = "Large text, dark mode, a talking score that reads the music aloud, and braille music for those who use it."
+[[get.items]]
+title = "For the band's tech person"
+text = "Studio, in a browser on the computer, shows every step of how a score came to be."
+
+[[screens.items]]
+shot = "home"
+alt = "Home on iPhone: Open a recording and Record with the microphone, with Your scores below."
+title = "Open or record"
+text = "Open a recording you have, or record the rehearsal with the microphone."
+[[screens.items]]
+shot = "what-is-this"
+alt = "What is this? with four choices: One instrument, Brass band, Soloist with orchestra or band, and Pop or rock."
+title = "What is this?"
+text = "One instrument, a brass band, a soloist with band, or pop and rock. Your answer decides how Brasscribe listens."
+[[screens.items]]
+shot = "review"
+alt = "Check the notes: bar 2 of Solo Cornet, written F sharp, uncertain, with Listen to this bar, Change note, Skip and Keep."
+title = "Check the notes"
+text = "The notes with a ?, one at a time: listen, keep or change."
+[[screens.items]]
+shot = "part"
+alt = "The Solo Cornet part on iPhone with question marks over the uncertain notes and the player below. Mute my part is on."
+title = "Your part"
+text = "Your own part as written for your instrument, with the band playing around you."
+
+[steps]
+title = "From sound to score, <em>step by step.</em>"
+lead = "The first bars of the recording above, at each step on the way."
+
+[[steps.items]]
+title = "The recording"
+text = "A rehearsal, a concert, a file you have. This is how loud the quartet is, moment by moment."
+alt = "A sound wave: long brass notes, one after another."
+[[steps.items]]
+title = "Finding the beat"
+text = "First the pulse. Brasscribe heard {tempo} beats a minute, {beats} to the bar: a line on every beat, heavier where a bar begins."
+alt = "The same sound wave with a line on every beat and a heavier line at each bar."
+[[steps.items]]
+title = "Hearing the notes"
+text = "Two listeners go through the sound, each writing down every note it hears, from the tuba at the bottom to the cornet at the top. Where they agree, the note is safe."
+alt = "Notes as blocks, low notes at the bottom and high at the top, in two colours: one for each listener, mostly on top of each other."
+[[steps.items]]
+title = "Placing the notes"
+text = "Nobody plays exactly on the beat. Each note moves from where it was heard, the dotted outline, to the rhythm a player would read. A note the listeners did not agree on keeps its doubt."
+alt = "The same notes, each now starting on a beat, with a dotted outline where it was heard; one at the top is in the colour of doubt."
+[[steps.items]]
+title = "Writing it down"
+text = "The tune becomes notes on a staff, named in the right key and written as the cornet reads it: {notes} notes, {doubt} of them with a question mark."
+alt = "The first bars of the 1st Cornet part in notation, with a question mark over the first two notes."
+[[steps.items]]
+title = "A part for every player"
+text = "The notes are shared out over the band: here {parts} parts, each in its range, with rests where a player has nothing to play."
+alt = "The first bars of four parts under each other: 1st Cornet, 2nd Cornet, Tenor Horn and Euphonium."
+
+[try]
+title = "Every player gets <em>a part.</em>"
+lead = "The four parts Brasscribe wrote for the recording above. Look at them together or choose one, then choose a note to read what it is."
+part = "Show"
+all = "All {n} parts"
+scroll = "The parts. Scroll sideways to read on."
+pick = "Choose a note to read what it is. The arrow keys move from note to note."
+
+[try.words]
+start_all = "{n} parts, one for each player. {doubt} notes have a question mark."
+start = "{name}, written for {instrument}. {doubt}"
+none = "No note has a question mark."
+some = "{n} notes have a question mark."
+part_label = "{name}, {instrument}: {notes} notes in {bars} bars."
+said = "{name}, bar {bar}, {beat}: {pitch}, {value}.{tied}{doubt}"
+beat = "beat {beat}"
+beat_half = "halfway through beat {beat}"
+natural = ["C", "D", "E", "F", "G", "A", "B"]
+sharp = ["C sharp", "D sharp", "E sharp", "F sharp", "G sharp", "A sharp", "B sharp"]
+flat = ["C flat", "D flat", "E flat", "F flat", "G flat", "A flat", "B flat"]
+value_whole = "semibreve"
+value_half = "minim"
+value_quarter = "crotchet"
+value_eighth = "quaver"
+value_16th = "semiquaver"
+dotted = "dotted {value}"
+tied = " Tied to the note before."
+doubt = " Brasscribe was not sure of this note."
+
+[needs]
+title = "What you <em>need.</em>"
+lead = "Today Brasscribe writes its scores on your computer, not on the phone. Choose your device to see what it does alone, and what it needs the computer for."
+computer = "<strong>A computer with Bandroom</strong>, on the same Wi-Fi as the phone: a Mac from 2020 or later, or a PC with Windows 11. Bandroom is free, and today it writes every score, also for one instrument alone. Android phones write a single instrument by themselves again from the next release."
+unsigned = "<strong>Your device will warn you the first time.</strong> The apps are not in any app store yet; the <a href=\"@/download/\">download page</a> shows how to get past the warning."
+private = "<strong>Your recording never leaves your own network.</strong> It goes from your phone to your own computer and nowhere else. The first time Bandroom starts it needs the internet, to download what it needs to listen (about 10 GB). For a full band it also needs a free account where the listening model is downloaded; the <a href=\"@/guide/#computer\">guide</a> shows how."
+setup = "Set up your computer"
+
+[sure]
+title = "How sure <em>is it?</em>"
+lead = "When one brass instrument plays alone, Brasscribe gets nearly every note right. It puts a <b class=\"uncertain\">?</b> over the notes it was not sure of, but a wrong note can slip through without one. Low instruments are the hardest."
+group = "<b>{name}</b> alone: about 1 wrong note in {n} slips through without a ?."
+alt_group = "Two hundred notes as dots; {k} stand out as wrong notes with no question mark."
+source = "We measured this on slow hymn tunes, one player at a time: the recordings we tuned on. A rehearsal will be worse."
+end = "So check the ? notes first, then read the part through with your ears open, the bass parts most of all. A full band is harder to hear than one instrument, and its score is a draft for a musician to finish."
+how = "How we measured this"
+
+[getit]
+title = "Get <em>Brasscribe.</em>"
+lead = "Free, and in early testing: there is no store listing yet, so you download it here, for Android, iPhone and iPad, Mac and Windows."
+download = "Download"
+guide = "Read the guide"
+family = "See the Scribe apps"

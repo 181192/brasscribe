@@ -1,0 +1,125 @@
+title = "Fretscribe: turn a recording into tab"
+description = "Play a riff, record a song or open a file. Fretscribe writes it down as tab for guitar, bass, ukulele or mandolin, in your tuning, and you practise along with the recording."
+
+[hero]
+title = "Turn a recording into <em>tab.</em>"
+lead = "Play a riff or open a recording, and Fretscribe writes it down as tab for your instrument and your tuning."
+get = "Download"
+see = "See it work"
+strip_label = "A guitarist's recording, as a sound wave on the right, becomes tab on the left as it passes the pen: {notes} notes in {bars} bars, {doubt} of them with a question mark."
+strip_note = "A real recording: a guitarist picking the chords of Pachelbel's Canon, from <a href=\"https://doi.org/10.5281/zenodo.3371780\">GuitarSet</a> (CC BY 4.0). Fretscribe wrote the tab, question marks included. Play gives you the recording, or the notes it wrote."
+
+[get]
+title = "What you <em>get.</em>"
+lead = "A tab you can read at once, and practise with."
+
+[[get.items]]
+title = "Tab for your instrument"
+text = "Guitar, bass, ukulele or mandolin, with the strings you have and the tuning you play in."
+[[get.items]]
+title = "A look before it writes"
+text = "First it shows the tuning, the key and the tempo it heard. If one of them is off, you put it right before a single fret is written."
+[[get.items]]
+title = "Honest question marks"
+text = "A note it is not sure of gets a ?. Choose it, and it plays that bar slowly so you can hear for yourself."
+[[get.items]]
+title = "Something to practise with"
+text = "Your recording plays along with the tab, slower if you like, and repeats the bars you choose."
+
+[[screens.items]]
+shot = "home"
+alt = "Home in Fretscribe: Open a recording, Record with the microphone and Record what's playing."
+title = "Open or record"
+text = "Open a recording you have, play into the microphone, or record what another app on the phone is playing."
+[[screens.items]]
+shot = "what-is-this"
+alt = "What is this? with two choices: Just my instrument, and A full song, where Fretscribe picks out the bass."
+title = "What is this?"
+text = "Just your instrument, or a full song where your part is picked out."
+[[screens.items]]
+shot = "check"
+alt = "Check the song: the tuning it heard, the octave, the key and tempo, 2 notes marked with a question mark, and Show the tab."
+title = "Check the song"
+text = "The tuning, the key and the tempo it heard, before anything is written as frets."
+[[screens.items]]
+shot = "note"
+alt = "A note with a question mark chosen in the tab, with Play this bar slowly and Next."
+title = "Practise"
+text = "Slow the recording down, repeat the hard bars, and check the notes with a ?."
+
+[steps]
+title = "From sound to tab, <em>step by step.</em>"
+lead = "The first bars of the recording above, at each step on the way."
+
+[[steps.items]]
+title = "The recording"
+text = "A riff into the microphone, or a file you have. This is how loud the guitar is, moment by moment."
+alt = "A sound wave: picked notes, each loud at first and dying away."
+[[steps.items]]
+title = "Finding the beat"
+text = "First the pulse. Fretscribe heard {tempo} beats a minute, {beats} to the bar: a line on every beat, heavier where a bar begins."
+alt = "The same sound wave with a line on every beat and a heavier line at each bar."
+[[steps.items]]
+title = "Hearing the notes"
+text = "Two listeners go through the sound. One hears whole chords, the other follows a single line. Each block is a note one of them heard, higher notes higher up."
+alt = "One bar of notes as blocks, higher notes higher up: many from the first listener, a few from the second in another colour."
+[[steps.items]]
+title = "Placing the notes"
+text = "Nobody plays exactly on the beat. Each note moves from where it was heard, the dotted outline, to the nearest place you would read it."
+alt = "The same bar: each note now starts on a beat or between two, with a dotted outline where it was heard."
+[[steps.items]]
+title = "Choosing strings and frets"
+text = "Every note can be played in several places on the neck. Fretscribe picks the places where the hand moves least: here {open} of the {notes} notes are on open strings."
+alt = "Two bars as tab: fret numbers on {strings} string lines."
+
+[try]
+title = "The same notes, <em>your tuning.</em>"
+lead = "The tab of the recording above. Change the tuning: the notes stay, the frets move. Choose a number to see every place that note can be played."
+
+[try.words]
+summary = "{tuning}: every note has a place on the neck."
+summary_lost = "{tuning}: {lost} notes have no place on the neck."
+summary_lost_one = "{tuning}: one note has no place on the neck."
+summary_left = "{left} more are left out here (–)."
+at = "Bar {bar}, beat {beat}, {name}:"
+place = "{string} string, fret {fret}"
+also = "It can also be played on the {places}."
+could = "It can be played on the {places}."
+or = ", or the "
+only = "There is no other place for it."
+lost = "it has no place on the neck in this tuning."
+nowhere = "no tuning here has a place for it."
+left = "it is left out here."
+doubt = "Fretscribe is not sure about this note."
+neck = "The neck: the filled dot is the place in the tab, the rings are the other places for this note."
+legend_doubt = "Fretscribe is not sure"
+legend_lost = "no place on the neck"
+legend_left = "left out"
+ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th"]
+names = ["C", "C sharp", "D", "E flat", "E", "F", "F sharp", "G", "G sharp", "A", "B flat", "B"]
+
+[needs]
+title = "What you <em>need.</em>"
+lead = "Fretscribe does not write tabs by itself. Choose your device to see what it does alone, and what it needs your computer for."
+computer = "<strong>A computer with Bandroom</strong>, on the same Wi-Fi as the phone: a Mac from 2020 or later, or a PC with Windows 11. Bandroom is free, and it writes every tab."
+unsigned = "<strong>Your device will warn you the first time.</strong> The apps are not in any app store yet; the <a href=\"@/download/\">download page</a> shows how to get past the warning."
+private = "<strong>Your recording never leaves your own network.</strong> It goes from your phone to your own computer and nowhere else. The first time Bandroom starts it needs the internet, to download what it needs to listen (about 10 GB)."
+setup = "Set up your computer"
+
+[sure]
+title = "How sure <em>is it?</em>"
+lead = "When Fretscribe puts a <b class=\"uncertain\">?</b> over a note, it is usually right to. But it misses many wrong notes."
+doubted = "<b>{name}:</b> about {n} in 10 notes with a ? really were wrong."
+wrong = "<b>{name}:</b> only about {n} in 10 wrong notes got a ?."
+alt_doubted = "Ten notes with a question mark; {n} of them are wrong."
+alt_wrong = "Ten wrong notes; {n} of them have a question mark."
+source = "We measured this on bass lines and guitar parts picked out of full songs played by a computer, where the right notes are known. Your recording can do better or worse."
+end = "So check the ? notes first, then trust your ears for the rest."
+how = "How we measured this"
+
+[getit]
+title = "Get <em>Fretscribe.</em>"
+lead = "Free, and an early version: there is no store listing yet, so you download it here, for Android, iPhone and iPad, Mac and Windows."
+download = "Download"
+guide = "Read the guide"
+family = "See the Scribe apps"

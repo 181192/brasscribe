@@ -1,0 +1,81 @@
+<!--
+styles: showcase.css
+scripts: showcase.js
+-->
+  <section class="hero" id="top">
+    <div class="wrap">
+      <h1 data-t="hero.title"></h1>
+      <p class="lead" data-t="hero.lead"></p>
+      <div class="actions">
+        <a class="button primary" href="@/download/" data-t="hero.get"></a>
+        <a class="button secondary" href="#steps" data-t="hero.see"></a>
+      </div>
+    </div>
+    {{figure hero}}
+  </section>
+
+  <section id="get" aria-labelledby="get-title">
+    <div class="wrap">
+      <h2 id="get-title" data-t="get.title"></h2>
+      <p class="lead" data-t="get.lead"></p>
+      {{figure gets}}
+      {{figure screens}}
+    </div>
+  </section>
+
+  <section id="steps" aria-labelledby="steps-title">
+    <div class="wrap">
+      <h2 id="steps-title" data-t="steps.title"></h2>
+      <p class="lead" data-t="steps.lead"></p>
+      {{figure steps}}
+    </div>
+  </section>
+
+  <section id="try" aria-labelledby="try-title">
+    <div class="wrap">
+      <h2 id="try-title" data-t="try.title"></h2>
+      <p class="lead" data-t="try.lead"></p>
+      {{figure viewer}}
+    </div>
+  </section>
+
+  <section id="needs" aria-labelledby="needs-title">
+    <div class="wrap">
+      <h2 id="needs-title" data-t="needs.title"></h2>
+      <p class="lead" data-t="needs.lead"></p>
+      {{figure devices}}
+      <ul class="ticks needs-list">
+        <li data-t="needs.computer"></li>
+        <li data-t="needs.unsigned"></li>
+        <li data-t="needs.private"></li>
+      </ul>
+      <div class="actions">
+        <a class="button outline" href="@/guide/#computer" data-t="needs.setup"></a>
+      </div>
+    </div>
+  </section>
+
+  <section id="sure" aria-labelledby="sure-title">
+    <div class="wrap">
+      <h2 id="sure-title" data-t="sure.title"></h2>
+      <p class="lead" data-t="sure.lead"></p>
+      {{figure rates}}
+      <p class="sure-source" data-t="sure.source"></p>
+      <p class="sure-end" data-t="sure.end"></p>
+      {{figure measured}}
+    </div>
+  </section>
+
+  <section id="getit" class="getit" aria-labelledby="getit-title">
+    <div class="wrap">
+      <h2 id="getit-title" data-t="getit.title"></h2>
+      <p class="lead" data-t="getit.lead"></p>
+      <div class="actions">
+        <a class="button primary" href="@/download/" data-t="getit.download"></a>
+        <a class="button outline" href="@/guide/" data-t="getit.guide"></a>
+        <a class="button outline" href="@family/" data-t="getit.family"></a>
+      </div>
+    </div>
+  </section>
+  <!--slot open-a-picture: when an app can open a picture of sheet music, its section goes before "getit".
+      Say nothing about it on the site before it is in a release. -->

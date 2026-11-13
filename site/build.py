@@ -1,28 +1,30 @@
-"""Build the public site into site/_site. Standard library only (Python 3.11+).
+"""Build the public site into site/_site. Standard library only (Python 3.12+).
 
-Every folder in site/ with a product.toml is a product: its pages (pages/<lang>/<name>.html, the
-inside of <main> under a small header), its screenshots (shots/, made by site/shared/make_shots.py)
-and its data. The layout around the pages, the download page and the family page's product sheets
-come from here, so a new product is a new folder. site/README.md says what goes in it.
+The family page (site/family) is the site's home; every other folder in site/ with a product.toml is a
+product, served under its own name with the same pages at the same names. site/README.md says what goes where.
 
-In pages and in product.toml, links are written from a root and made relative here, so the built
-site works under any path or host:
-  @/…          the product's own folder (assets, icons)
-  @lang/…      the product's pages in the page's language
-  @family/…    the family page, @<product>/… another product, in the page's language
-Macros: {{shot <slot> sizes="…" alt="…" [load="lazy|high"]}}, {{file <name>}} (the download URL of a
-release file), {{releases}}, {{downloads}} (the table of release files), {{products}} (family page),
-{{figure <name> …}} (a figure drawn from the repository's data: site/shared/figures.py, or the product's
-own figures.py), {{data <file> <path/to/value> [as="percent"]}} (a number from a JSON file in the repository), and
-the research pages' measurements, figures, citations and cross-references ({{data <key> [format]}}, {{chart …}},
-{{cite …}}, {{ref …}} and more: site/research.py, which also checks the papers once every page is written).
-A page's header may name `styles:` and `scripts:` (files in the product's folder or in site/shared).
+One address per page, in both languages. A page is its structure (pages/<name>.html) and its words, kept
+apart: <name>.en.toml and <name>.nb.toml beside it, over the product's text.<lang>.toml, over
+site/shared/text.<lang>.toml. In the HTML, `data-t="key"` on an empty element takes the words, and
+`data-t-<attribute>="key"` an attribute's. The build writes the page in English and an nb.json beside it,
+which site/shared/scribe.js swaps in. It fails when a key is missing in a language, or a page's key is unused.
+
+Links are written from a root and made relative here, so the built site works under any path or host:
+  @/…  the product's own folder        @family/…  the family home        @<product>/…  another product
+Macros: {{shot <slot> sizes="…" alt="<key>" [load="lazy|high"]}}, {{file <name>}} (the download URL of a release
+file), {{releases}}, {{downloads}}, {{figure <name> …}} (a figure drawn from the repository's data:
+site/shared/figures.py, or the product's own figures.py), {{data <file> <path/to/value> [as="percent|tenth"]}},
+{{say <key>}} (the words of a key, where an element cannot take them), and the research pages' measurements,
+figures, citations and cross-references ({{data <key> [format]}}, {{chart …}}, {{cite …}}, {{ref …}} and more:
+site/research.py, which also checks the papers once every page is written). What a macro draws differently in the
+two languages is swapped as a whole. A page's header may name `styles:` and `scripts:`.
 """
 
 from __future__ import annotations
 
 import html
 import importlib.util
+import json
 import posixpath
 import re
 import shutil
@@ -37,56 +39,9 @@ SITE = Path(__file__).resolve().parent
 ROOT = SITE.parent
 OUT = SITE / "_site"
 LANGS = ("en", "nb")
-WORDS = {
-    "en": {"skip": "Skip to content", "nav": "Main", "family": "Scribe apps", "all": "All apps",
-           "switch": "Norsk", "download": "Download", "file": "File", "for": "For",
-           "files": "Files in the latest release", "home_alt": "{name}, home",
-           "see": "See {name}", "made_for": "For", "runs_on": "Runs on"},
-    "nb": {"skip": "Hopp til innholdet", "nav": "Hovedmeny", "family": "Scribe-appene", "all": "Alle appene",
-           "switch": "English", "download": "Last ned", "file": "Fil", "for": "For",
-           "files": "Filene i siste utgivelse", "home_alt": "{name}, forsiden",
-           "see": "Se {name}", "made_for": "For", "runs_on": "Kjører på"},
-}
 # 2x width per kind of screenshot, as site/shared/make_shots.py writes them.
 SHOT_WIDTH = {"phone": 600, "tablet": 720, "desktop": 1440, "mac": 1440}
-
-
-class Product:
-    def __init__(self, folder: Path, site: dict):
-        self.id = folder.name
-        self.dir = folder
-        self.data = tomllib.loads((folder / "product.toml").read_text())
-        self.mount = self.data.get("mount", self.id).strip("/")
-        self.url = self.data.get("url")  # set when the product is served from a host of its own
-        self.family = self.data.get("family", False)
-        self.releases = self.data.get("releases", site["releases"]).rstrip("/")
-        self.brand = ROOT / self.data["brand"]
-        self.kinds = {}
-        shots = folder / "shots.txt"
-        if shots.exists():
-            for line in shots.read_text().splitlines():
-                cols = line.split()
-                if len(cols) >= 3 and not line.startswith("#"):
-                    self.kinds[cols[0]] = cols[1]
-
-    def figures(self):
-        """The product's own figures (site/<product>/figures.py), when it has any."""
-        if not hasattr(self, "_figures"):
-            self._figures = load(self.dir / "figures.py") if (self.dir / "figures.py").exists() else None
-        return self._figures
-
-    def home(self, lang: str) -> str:
-        """The folder of the product's pages in a language, from the site root."""
-        return posixpath.join(self.mount, "" if lang == "en" else lang)
-
-    def pages(self, lang: str) -> dict[str, Path | None]:
-        found = {p.stem: p for p in sorted((self.dir / "pages" / lang).glob("*.html"))}
-        if self.data.get("downloads") and "download" not in found:
-            found["download"] = None  # made from the product's data
-        return found
-
-    def downloads(self, shared: list[dict]) -> list[dict]:
-        return self.data.get("downloads", []) + (shared if self.data.get("downloads") else [])
+BLOCKS = {"shot", "figure", "downloads"}  # macros that draw something; the others give a word or an address
 
 
 def load(path: Path):
@@ -102,6 +57,26 @@ def figures():
     return figures.module
 
 
+def flat(table: dict, prefix: str = "") -> dict:
+    """A TOML table as one level of keys: [hero] lead = … is hero.lead."""
+    out = {}
+    for key, value in table.items():
+        if isinstance(value, dict):
+            out.update(flat(value, f"{prefix}{key}."))
+        else:
+            out[prefix + key] = value
+    return out
+
+
+def words(path_for) -> dict[str, dict]:
+    """A table of words in both languages; the two files must hold the same keys."""
+    tables = {lang: flat(tomllib.loads(path_for(lang).read_text())) if path_for(lang).exists() else {} for lang in LANGS}
+    missing = set(tables["en"]) ^ set(tables["nb"])
+    if missing:
+        sys.exit(f"{path_for('en').relative_to(SITE)} and its nb twin differ in: {', '.join(sorted(missing))}")
+    return tables
+
+
 def rel(here: str, there: str) -> str:
     """A relative link from the page folder `here` to the folder or file `there`."""
     link = posixpath.relpath(there or ".", here or ".")
@@ -115,42 +90,110 @@ def png_height(path: Path, width: int) -> int:
     return round(h * width / w)
 
 
+class Product:
+    def __init__(self, folder: Path, site: dict):
+        self.id = folder.name
+        self.dir = folder
+        self.data = tomllib.loads((folder / "product.toml").read_text())
+        self.family = self.data.get("family", False)
+        self.mount = "" if self.family else self.data.get("mount", self.id).strip("/")
+        self.url = self.data.get("url")  # set when the product is served from a host of its own
+        self.releases = self.data.get("releases", site["releases"]).rstrip("/")
+        self.brand = ROOT / self.data["brand"]
+        self.paths = self.data.get("paths", {})  # a page's file name -> the name it is served under
+        self.text = words(lambda lang: folder / f"text.{lang}.toml")
+        self.kinds = {}
+        shots = folder / "shots.txt"
+        if shots.exists():
+            for line in shots.read_text().splitlines():
+                cols = line.split()
+                if len(cols) >= 3 and not line.startswith("#"):
+                    self.kinds[cols[0]] = cols[1]
+
+    def figures(self):
+        """The product's own figures (site/<product>/figures.py), when it has any."""
+        if not hasattr(self, "_figures"):
+            self._figures = load(self.dir / "figures.py") if (self.dir / "figures.py").exists() else None
+        return self._figures
+
+    def pages(self) -> dict[str, Path | None]:
+        """Its pages by file name. A page still kept as one whole file per language (pages/en, pages/nb) counts too."""
+        found = {p.stem: p for p in sorted((self.dir / "pages").glob("*.html"))}
+        if not self.family:
+            found.setdefault("index", SITE / "shared" / "product.html")  # every app's front page has one structure
+        for old in sorted((self.dir / "pages" / "en").glob("*.html")):
+            found.setdefault(old.stem, old)
+        if self.data.get("downloads") and "download" not in found:
+            found["download"] = None  # made from the product's data
+        return found
+
+    def served(self, name: str) -> str:
+        return "" if name == "index" else self.paths.get(name, name)
+
+    def downloads(self, shared: list[dict]) -> list[dict]:
+        return self.data.get("downloads", []) + (shared if self.data.get("downloads") else [])
+
+
 class Page:
-    def __init__(self, site: "Site", product: Product, lang: str, name: str, source: Path | None):
-        self.site, self.product, self.lang, self.name = site, product, lang, name
-        self.dir = posixpath.join(product.home(lang), "" if name == "index" else name)
-        self.meta, self.body = {}, ""
+    def __init__(self, site: "Site", product: Product, name: str, source: Path | None):
+        self.site, self.product, self.name, self.source = site, product, name, source
+        self.dir = posixpath.join(product.mount, product.served(name))
+        self.lang = "en"
+        self.meta, self.body, self.used, self.slots, self.plain = {}, {}, set(), {}, False
+        self.whole = bool(source and source.parent.name in LANGS)  # one whole file per language
+        own = words(lambda lang: product.dir / "pages" / f"{name}.{lang}.toml") if source and not self.whole else {lang: {} for lang in LANGS}
+        self.own = set(own["en"])
+        self.table = {lang: {**site.text[lang], **product.text[lang], **own[lang]} for lang in LANGS}
         if source:
-            text = source.read_text()
-            head = re.match(r"<!--\n(.*?)\n-->\n", text, re.S)
-            if not head:
-                sys.exit(f"{source}: a page starts with a <!-- title: … --> header")
-            for line in head.group(1).splitlines():
-                key, _, value = line.partition(":")
-                self.meta[key.strip()] = value.strip()
-            self.body = text[head.end():]
+            for lang in LANGS if self.whole else ("en",):
+                text = (source.parent.parent / lang / source.name if self.whole else source).read_text()
+                head = re.match(r"<!--\n(.*?)\n-->\n", text, re.S)
+                if not head:
+                    sys.exit(f"{source}: a page starts with a <!-- … --> header")
+                for line in head.group(1).splitlines():
+                    key, _, value = line.partition(":")
+                    self.meta[key.strip() if lang == "en" else f"{key.strip()}.nb"] = value.strip()
+                self.body[lang] = text[head.end():]
+
+    # Words -----------------------------------------------------------------------------------
+    def say(self, key: str, **values) -> str:
+        """The words of a key in the language being written, with {names} filled in."""
+        if key not in self.table[self.lang]:
+            sys.exit(f"{self.dir or '/'}: no words for '{key}'")
+        self.used.add(key)
+        said = self.table[self.lang][key]
+        return said.format(**values) if values and isinstance(said, str) else said
+
+    def group(self, prefix: str) -> dict:
+        """Every key under a prefix, as a table of its own: the words a figure hands to its script."""
+        found = {key[len(prefix):]: value for key, value in self.table[self.lang].items() if key.startswith(prefix)}
+        self.used |= {prefix + key for key in found}
+        return found
+
+    def number(self, value: float, digits: int = 1) -> str:
+        """A number as the language writes it: a decimal comma in Norwegian."""
+        said = f"{value:.{digits}f}"
+        return said.replace(".", ",") if self.lang == "nb" else said
 
     def named(self, key: str) -> list[str]:
         """The files a page's header names under `styles:` or `scripts:`, separated by spaces or commas."""
         return self.meta.get(key, "").replace(",", " ").split()
 
-    # Links ---------------------------------------------------------------------------------
+    # Links -----------------------------------------------------------------------------------
     def link(self, root: str, path: str = "") -> str:
         """Resolve @<root>/<path> from this page."""
         product = self.product
-        if root == "":
-            base = product.mount
-        elif root == "lang":
-            base = product.home(self.lang)
-        else:
+        if root not in ("", "lang"):
             product = self.site.family if root == "family" else self.site.products.get(root)
             if product is None:
                 sys.exit(f"{self.dir}: @{root}/ names no product")
             if product.url and product is not self.product:
-                return product.url.rstrip("/") + "/" + posixpath.join("" if self.lang == "en" else self.lang, path)
-            base = product.home(self.lang)
+                return product.url.rstrip("/") + "/" + path
         page, _, frag = path.partition("#")
-        target = posixpath.normpath(posixpath.join(base, page))
+        first = page.split("/")[0]
+        if first in product.paths:  # a page named by its file ("research/") is linked where it is served
+            page = product.paths[first] + page[len(first):]
+        target = posixpath.normpath(posixpath.join(product.mount, page))
         if page.endswith("/") or not page:
             target += "/"
         link = rel(self.dir, target)
@@ -161,10 +204,11 @@ class Page:
     def links(self, text: str) -> str:
         return re.sub(r"""(?<=["' ,(])@(\w*)/([^"'\s<>)]*)""", lambda m: self.link(m.group(1), m.group(2)), text)
 
-    # Macros --------------------------------------------------------------------------------
-    def shot(self, slot: str, sizes: str, alt: str, load: str = "", product: Product | None = None,
-             folder: str = "@/assets/shots") -> str:
+    # Macros ----------------------------------------------------------------------------------
+    def shot(self, slot: str, sizes: str, alt: str, load: str = "", product: Product | None = None, folder: str = "", said: str | None = None) -> str:
+        """A screenshot. `alt` is the key of its description, unless the description itself is handed in as `said`."""
         product = product or self.product
+        folder = folder or f"@{product.id}/assets/shots"
         kind = product.kinds.get(slot)
         if kind is None:
             sys.exit(f"{self.dir}: no screenshot '{slot}' in {product.id}/shots.txt")
@@ -174,8 +218,7 @@ class Page:
         full = SHOT_WIDTH[kind]
         base = f"{folder}/{slot}-{lang}"
         lines = ["<picture>"]
-        themes = (("dark", ' media="(prefers-color-scheme: dark)"'), ("light", ""))
-        for theme, media in themes:
+        for theme, media in (("dark", ' media="(prefers-color-scheme: dark)"'), ("light", "")):
             if not (shots / f"{slot}-{lang}-{theme}.avif").exists():
                 continue
             for ext in ("avif", "webp"):
@@ -183,7 +226,7 @@ class Page:
                              f'{base}-{theme}.{ext} {full}w" sizes="{sizes}">')
         height = png_height(shots / f"{slot}-{lang}-light.png", full)
         attr = {"lazy": ' loading="lazy"', "high": ' fetchpriority="high"', "": ""}[load]
-        lines.append(f'  <img src="{base}-light.png" width="{full}" height="{height}"{attr} alt="{alt}">')
+        lines.append(f'  <img src="{base}-light.png" width="{full}" height="{height}"{attr} alt="{html.escape(said if said is not None else self.say(alt), quote=True)}">')
         lines.append("</picture>")
         return "\n".join(lines)
 
@@ -191,215 +234,280 @@ class Page:
         return f"{self.product.releases}/download/{name}"
 
     def downloads_table(self) -> str:
-        w = WORDS[self.lang]
         rows = "".join(
             f'\n    <tr><th scope="row"><a href="{self.file(d["file"])}"><code>{d["file"]}</code></a></th><td>{d[self.lang]}</td></tr>'
             for d in self.product.downloads(self.site.shared_downloads))
         return (f'<div class="table-scroll" role="region" aria-labelledby="download-caption" tabindex="0">\n<table>\n'
-                f'  <caption id="download-caption">{w["files"]}</caption>\n'
-                f'  <thead><tr><th scope="col">{w["file"]}</th><th scope="col">{w["for"]}</th></tr></thead>\n'
+                f'  <caption id="download-caption">{self.say("downloads.files")}</caption>\n'
+                f'  <thead><tr><th scope="col">{self.say("downloads.file")}</th><th scope="col">{self.say("downloads.for")}</th></tr></thead>\n'
                 f"  <tbody>{rows}\n  </tbody>\n</table>\n</div>")
 
-    def product_sheets(self) -> str:
-        w = WORDS[self.lang]
-        out = []
-        for p in self.site.products.values():
-            t, card = p.data[self.lang], p.data[self.lang]["card"]
-            logo = p.data["logo"]
-            imgs = "".join(
-                f'<img class="logo-{theme}" src="@/assets/{p.id}/logo/{Path(logo[theme]).name}" alt="{t["name"]}" '
-                f'width="{logo["width"]}" height="{logo["height"]}">' for theme in ("light", "dark"))
-            shot = self.shot(card["shot"], "(max-width: 520px) 60vw, 240px", card["shot_alt"], "lazy", p,
-                             f"@/assets/{p.id}/shots").replace("\n", "\n      ")
-            platforms = "".join(f"<li>{x}</li>" for x in card["platforms"])
-            out.append(f"""<article class="sheet" data-brand="{p.id}" style="--lines: {p.data.get("staff_lines", 5)}" aria-labelledby="sheet-{p.id}">
-  <div class="sheet-text">
-    <p class="sheet-logo">{imgs}</p>
-    <h2 id="sheet-{p.id}">{card["title"]}</h2>
-    <p>{card["does"]}</p>
-    <dl>
-      <dt>{w["made_for"]}</dt><dd>{card["for"]}</dd>
-      <dt>{w["runs_on"]}</dt><dd><ul class="platforms">{platforms}</ul></dd>
-    </dl>
-    <div class="actions">
-      <a class="button primary" href="@{p.id}/">{w["see"].format(name=t["name"])}</a>
-      <a class="button outline" href="@{p.id}/download/">{w["download"]}</a>
-    </div>
-  </div>
-  <div class="sheet-shot">
-    <div class="phone-frame">
-      {shot}
-    </div>
-  </div>
-</article>""")
-        return "\n".join(out)
+    def figure(self, name: str, args: dict) -> str:
+        """A figure by name: the product's own, else a shared one. product="<id>" draws another product's (family home)."""
+        owner = self.site.products[args.pop("product")] if "product" in args else self.product
+        draw = getattr(owner.figures(), name, None) or getattr(figures(), name, None)
+        if draw is None:
+            sys.exit(f"{self.dir}: no figure named {name}")
+        self.shared = figures()  # a product's figures use the shared ones' helpers
+        mine, table = self.product, self.table
+        # The figure reads its words from the product it is about.
+        if owner is not mine:  # and its front page's
+            front = words(lambda lang: owner.dir / "pages" / f"index.{lang}.toml")
+            self.product, self.table = owner, {lang: {**table[lang], **owner.text[lang], **front[lang]} for lang in LANGS}
+        try:
+            return self.links(" " + draw(self, **args))[1:]  # its addresses are the product's own
+        finally:
+            self.product, self.table = mine, table
+
+    def macro(self, name: str, rest: str) -> str:
+        args = dict(re.findall(r'([\w-]+)="([^"]*)"', rest))
+        bare = re.sub(r'[\w-]+="[^"]*"', "", rest).split()
+        if name == "file":
+            return self.file(bare[0])
+        if name == "releases":
+            return self.product.releases
+        if name == "say":
+            return self.say(bare[0])
+        if name == "data" and (len(bare) == 1 or bare[1] in research.FORMATS):  # a named measurement: site/research.py
+            return research.macro(self, name, bare, args)
+        if name in research.MACROS:
+            return research.macro(self, name, bare, args)
+        if name == "data":
+            value = figures().lookup(bare[0], bare[1])
+            return str(round(value * 100)) if args.get("as") == "percent" else str(round(value * 10)) if args.get("as") == "tenth" else str(value)
+        if name == "shot":
+            other = self.site.products[args["product"]] if "product" in args else None  # the family home shows each app's screens
+            return self.shot(bare[0], args["sizes"], args["alt"], args.get("load", ""), other)
+        if name == "figure":
+            return self.figure(bare[0], args)
+        if name == "downloads":
+            return self.downloads_table()
+        sys.exit(f"{self.dir}: unknown macro {{{{{name}}}}}")
 
     def macros(self, text: str) -> str:
+        """Run the macros of a text. What a drawing macro gives differently in Norwegian becomes a slot the script swaps."""
+        if self.plain:  # a whole body in one language: its macros are written in that language as they stand
+            return re.sub(r"\{\{(\w+)([^{}]*)\}\}", lambda m: self.macro(m.group(1), m.group(2)), text)
+
         def run(m: re.Match) -> str:
             name, rest = m.group(1), m.group(2)
-            args = dict(re.findall(r'([\w-]+)="([^"]*)"', rest))
-            words = re.sub(r'[\w-]+="[^"]*"', "", rest).split()
-            if name == "file":
-                return self.file(words[0])
-            if name == "releases":
-                return self.product.releases
-            if name == "data":
-                if len(words) == 1 or words[1] in research.FORMATS:  # a named measurement: site/research.py
-                    return research.macro(self, name, words, args)
-                value = figures().lookup(words[0], words[1])
-                return str(round(value * 100)) if args.get("as") == "percent" else str(value)
-            if name == "figure":
-                own = self.product.figures()
-                draw = getattr(own, words[0], None) or getattr(figures(), words[0], None)
-                if draw is None:
-                    sys.exit(f"{self.dir}: no figure named {words[0]}")
-                made = draw(self, **args)
-            elif name == "shot":
-                made = self.shot(words[0], args["sizes"], args["alt"], args.get("load", ""))
-            elif name == "downloads":
-                made = self.downloads_table()
-            elif name == "products":
-                made = self.product_sheets()
-            elif name in research.MACROS:
-                made = research.macro(self, name, words, args)
-            else:
-                sys.exit(f"{self.dir}: unknown macro {{{{{name}}}}}")
+            made = {}
+            for lang in LANGS:
+                self.lang = lang
+                made[lang] = self.macro(name, rest)
+            self.lang = "en"
+            if name not in BLOCKS:
+                return made["en"]
             # A block keeps the indentation of the line its macro stands on.
             before = text[text.rfind("\n", 0, m.start()) + 1:m.start()]
-            return made.replace("\n", "\n" + before) if before.isspace() else made
+            shown = made["en"].replace("\n", "\n" + before) if before.isspace() else made["en"]
+            if made["nb"] == made["en"]:
+                return shown
+            slot = f"s{len(self.slots) + 1}"
+            self.slots[slot] = made["nb"]
+            return f'<div class="slot" data-slot="{slot}">{shown}</div>'
         return re.sub(r"\{\{(\w+)([^{}]*)\}\}", run, text)
 
-    # The download page, from the product's data --------------------------------------------
-    def download_page(self) -> None:
-        p, t = self.product, self.product.data[self.lang]
-        d = t["download"]
-        self.meta = {"title": d["title"], "description": d["description"], "main_class": "wrap downloads"}
+    # The download page, from the product's data ----------------------------------------------
+    def download_page(self, lang: str) -> str:
+        self.lang = lang
+        p = self.product
         groups: dict[str, list[dict]] = {}
         for item in p.downloads(self.site.shared_downloads):
             groups.setdefault(item["group"], []).append(item)
-        words = {**self.site.shared_groups[self.lang], **t.get("groups", {})}
-        parts = [f'<h1>{d["heading"]}</h1>\n<p class="lead">{d["lead"]}</p>\n<div class="download-groups">']
+        parts = [f'<h1>{self.say("download.heading")}</h1>\n<p class="lead">{self.say("download.lead")}</p>\n<div class="download-groups">']
         for group, items in groups.items():
-            g = words[group]
             links = "".join(
-                f'\n    <li><a class="button {"primary" if i == 0 else "outline"}" href="{self.file(x["file"])}">{x.get("label_" + self.lang, x["file"])}</a>'
-                f'<span class="muted">{x[self.lang]}</span></li>' for i, x in enumerate(items))
-            parts.append(f'<section id="{group}" aria-labelledby="{group}-title">\n  <h2 id="{group}-title">{g["title"]}</h2>\n'
-                         f'  <ul class="download-files">{links}\n  </ul>\n  <p>{g["note"]}</p>\n</section>')
-        parts.append(f'</div>\n<p class="muted">{d["more"]}</p>\n')
-        self.body = "\n".join(parts)
+                f'\n    <li><a class="button {"primary" if i == 0 else "outline"}" href="{self.file(x["file"])}">{x.get("label_" + lang, x["file"])}</a>'
+                f'<span class="muted">{x[lang]}</span></li>' for i, x in enumerate(items))
+            parts.append(f'<section id="{group}" aria-labelledby="{group}-title">\n  <h2 id="{group}-title">{self.say(f"groups.{group}.title")}</h2>\n'
+                         f'  <ul class="download-files">{links}\n  </ul>\n  <p>{self.say(f"groups.{group}.note")}</p>\n</section>')
+        parts.append(f'</div>\n<p class="muted">{self.say("download.more")}</p>\n')
+        self.lang = "en"
+        return "\n".join(parts)
 
-    # The whole page ------------------------------------------------------------------------
-    def render(self) -> str:
-        p, t, w, site = self.product, self.product.data[self.lang], WORDS[self.lang], self.site
-        if self.name == "download" and not self.body:
-            self.download_page()
-        other = "nb" if self.lang == "en" else "en"
-        here = "" if self.name == "index" else self.name + "/"
-        twin = (rel(self.dir, (posixpath.join(p.home(other), here).rstrip("/") or ".") + "/")
-                if self.name in p.pages(other) else None)
-        en = "./" if self.lang == "en" else twin
-        head = [f'<title>{self.meta["title"]}</title>',
-                f'<meta name="description" content="{self.meta["description"]}">',
-                '<meta name="color-scheme" content="light dark">']
-        for key in ("og_title", "og_description", "og_image"):
-            if key in self.meta:
-                head.append(f'<meta property="og:{key[3:]}" content="{self.meta[key]}">')
-        if twin:
-            head += [f'<link rel="alternate" hreflang="en" href="{en}">',
-                     f'<link rel="alternate" hreflang="nb" href="{"./" if self.lang == "nb" else twin}">',
-                     f'<link rel="alternate" hreflang="x-default" href="{en}">',
-                     '<script src="@/lang.js"></script>']
-        head.append(f'<link rel="icon" href="@/favicon.svg" type="image/svg+xml">')
+    # Words into the structure ----------------------------------------------------------------
+    def fill(self, text: str, nb: dict) -> str:
+        """English into every data-t element and data-t-<attribute>; the Norwegian of each into `nb`."""
+        def both(key: str) -> dict:
+            said = {}
+            for lang in LANGS:
+                self.lang = lang
+                said[lang] = self.links(" " + self.macros(str(self.say(key))))[1:]
+            self.lang = "en"
+            return said
+
+        def element(m: re.Match) -> str:
+            said = both(m.group(3))
+            nb["t"][m.group(3)] = said["nb"]
+            return f'<{m.group(1)}{m.group(2)} data-t="{m.group(3)}"{m.group(4)}>{said["en"]}</{m.group(1)}>'
+
+        def attribute(m: re.Match) -> str:
+            said = both(m.group(2))
+            nb["a"][m.group(2)] = said["nb"]
+            return f'{m.group(0)} {m.group(1)}="{html.escape(said["en"], quote=True)}"'
+
+        text = re.sub(r'<(\w+)([^<>]*?) data-t="([^"]+)"([^<>]*)></\1>', element, text)
+        return re.sub(r' data-t-([\w-]+)="([^"]+)"', attribute, text)
+
+    # The whole page --------------------------------------------------------------------------
+    def chrome(self) -> tuple[str, str]:
+        """What stands around every page: the family bar and the product's own row above, the footer below."""
+        p, site = self.product, self.site
+        here = lambda q: ' aria-current="page"' if q is p else ""
+        switch = "".join(f'<a href="@{q.id}/"{here(q)}>{q.data["name"]}</a>' for q in site.products.values())
+        bar = f"""<div class="family-bar">
+  <div class="wrap">
+    <nav class="family-switch" data-t-aria-label="bar.apps">
+      <a class="family-mark" href="@family/"{here(site.family)}>{site.mark}<span data-t="bar.all"></span></a>{switch}
+    </nav>
+    <button type="button" class="lang-switch" data-lang-switch hidden></button>
+    <noscript><span class="lang-note" data-t="bar.noscript"></span></noscript>
+  </div>
+</div>
+"""
+        if p.family:
+            brand = ""
+            items = [(key, href) for key, href in p.data.get("nav", [])]
+        else:
+            logo = p.data["logo"]
+            logos = "".join(f'<img class="logo-{theme}" src="@/assets/logo/{Path(logo[theme]).name}" alt="" width="{logo["width"]}" height="{logo["height"]}">'
+                            for theme in ("light", "dark"))
+            brand = f'\n    <span class="brand" aria-hidden="true">{logos}</span>'  # the bar above names the app; "Overview" leads home
+            # The same pages in the same order for every product.
+            items = [("nav.overview", "@/"), ("nav.guide", "@/guide/"), ("nav.download", "@/download/"), ("nav.how", "@/how-it-works/")]
+            items = [(key, href) for key, href in items if href == "@/" or href.strip("@/") in {p.served(n) for n in p.pages()}]
+        nav = []
+        for key, href in items:
+            current = ' aria-current="page"' if self.link("", href[2:]) == "./" else ""
+            nav.append(f'\n      <a href="{href}"{current} data-t="{key}"></a>')
+        row = "" if not items else f"""<div class="product-nav">
+  <div class="wrap">{brand}
+    <nav data-t-aria-label="nav.label">{"".join(nav)}
+    </nav>
+  </div>
+</div>
+"""
+        foot = f"""<footer class="site-footer">
+  <div class="wrap">
+    <span data-t="footer.line"></span>
+    <span data-t="{"footer.note" if self.whole else self.meta.get("footer", "footer.note")}"></span>
+  </div>
+</footer>"""
+        return f'<header class="site-header">\n{bar}{row}</header>\n', foot
+
+    def render(self) -> tuple[str, dict]:
+        p, site = self.product, self.site
+        nb = {"t": {}, "a": {}, "slots": self.slots}
+        if self.name == "download" and not self.source:
+            self.meta = {"main_class": "wrap downloads"}
+            self.body = {lang: self.download_page(lang) for lang in LANGS}
+            self.whole = True
+            titles = {lang: (self.table[lang]["download.title"], self.table[lang]["download.description"]) for lang in LANGS}
+            self.used |= {"download.title", "download.description"}
+        elif self.whole:
+            titles = {"en": (self.meta["title"], self.meta["description"]), "nb": (self.meta["title.nb"], self.meta["description.nb"])}
+        else:
+            titles = {lang: (self.table[lang]["title"], self.table[lang]["description"]) for lang in LANGS}
+            self.used |= {"title", "description"}
+        if self.whole:
+            # One whole body per language: the Norwegian one is swapped in as it is.
+            bodies, sources = {}, self.body
+            for lang in LANGS:
+                # While a language is written, the page is that language's page: its body, its numbering.
+                self.lang, self.plain, self.body = lang, True, sources[lang]
+                for kept in ("figures", "paper"):  # the research pages number their figures and sources from one in each language
+                    self.__dict__.pop(kept, None)
+                bodies[lang] = self.links(self.macros(self.body).replace("@lang/", "@/"))
+            self.lang, self.plain, self.body = "en", False, sources
+            nb["main"] = bodies["nb"].rstrip()
+            main = bodies["en"]
+        else:
+            main = self.body["en"]
+        top, foot = self.chrome()
+        head = [f'<title>{titles["en"][0]}</title>',
+                f'<meta name="description" content="{html.escape(titles["en"][1], quote=True)}">',
+                '<meta name="color-scheme" content="light dark">',
+                f'<meta property="og:title" content="{html.escape(titles["en"][0], quote=True)}">',
+                f'<meta property="og:description" content="{html.escape(titles["en"][1], quote=True)}">']
+        image = self.meta.get("og_image") or p.data.get("og_image")
+        if image:
+            # Addresses for other sites are whole: the site's address, the product's folder, the file.
+            whole = site.base + posixpath.join(p.mount, image.removeprefix("@/")) if site.base else image
+            head.append(f'<meta property="og:image" content="{whole}">')
+        if site.base:
+            head.append(f'<link rel="canonical" href="{site.base}{self.dir.strip("/") + "/" if self.dir.strip("/") else ""}">')
+        # The language is chosen before anything is drawn, so a Norwegian reader does not see English flash by.
+        head.append(f"<script>{site.early}</script>")
+        # What only a script can work has its room on the page from the start; without scripts it takes none.
+        head.append("<noscript><style>.await-js { display: none !important; }</style></noscript>")
+        for font in p.data.get("preload", []):  # the headline's face, so the headline is not drawn twice
+            head.append(f'<link rel="preload" href="@/assets/fonts/{font}" as="font" type="font/ttf" crossorigin>')
+        head.append('<script type="module" src="@family/scribe.js"></script>')
+        head.append('<link rel="icon" href="@/favicon.svg" type="image/svg+xml">')
         if "icons" in p.data:
-            head += ['<link rel="icon" href="@/favicon.ico" sizes="any">',
-                     '<link rel="apple-touch-icon" href="@/apple-touch-icon.png">']
+            head += ['<link rel="icon" href="@/favicon.ico" sizes="any">', '<link rel="apple-touch-icon" href="@/apple-touch-icon.png">']
         for css in [f'assets/{p.data["css"]}', "assets/fonts.css", "site.css", *self.named("styles"), *p.data.get("styles", [])]:
             head.append(f'<link rel="stylesheet" href="@/{css}">')
         for script in self.named("scripts"):
             head.append(f'<script type="module" src="@/{script}"></script>')
-
-        if p.family:
-            brand = f'<a class="brand brand-text" href="@lang/">{t["name"]}</a>'
-            items = [(q.data[self.lang]["name"], f"@{q.id}/") for q in site.products.values()]
-        else:
-            logo = p.data["logo"]
-            alt = t.get("logo_alt", w["home_alt"].format(name=t["name"]))
-            logos = "".join(f'\n      <img class="logo-{theme}" src="@/assets/logo/{Path(logo[theme]).name}" alt="{alt}" '
-                            f'width="{logo["width"]}" height="{logo["height"]}">' for theme in ("light", "dark"))
-            brand = f'<a class="brand" href="@lang/">{logos}\n    </a>'
-            items = t.get("nav", [])
-        nav = []
-        for label, href in items:
-            link = self.links(f" {href}").strip()
-            current = ' aria-current="page"' if link == "./" else ""
-            nav.append(f'\n      <a href="{link}"{current}>{label}</a>')
-        if twin:
-            nav.append(f'\n      <a class="lang-switch" href="{twin}" hreflang="{other}" lang="{other}" data-lang-switch>{w["switch"]}</a>')
-        family_bar = ""
-        if site.family and not p.family:
-            family = [f'<a href="@family/">{w["all"]}</a>']
-            for q in site.products.values():
-                current = ' aria-current="true"' if q is p else ""
-                family.append(f'<a href="@{q.id}/"{current}>{q.data[self.lang]["name"]}</a>')
-            family_bar = (f'<nav class="family-bar" aria-label="{w["family"]}">\n  <div class="wrap">\n    '
-                          + "\n    ".join(family) + "\n  </div>\n</nav>\n")
         main_class = f' class="{self.meta["main_class"]}"' if "main_class" in self.meta else ""
-        note = self.meta.get("footer", t.get("footer_note", ""))
         page = f"""<!doctype html>
-<html lang="{self.lang}">
+<html lang="en" data-product="{p.id}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   {"\n  ".join(head)}
 </head>
 <body>
-<a class="skip" href="#main">{w["skip"]}</a>
+<a class="skip" href="#main" data-t="bar.skip"></a>
 
-{family_bar}<header class="site-header">
-  <div class="wrap">
-    {brand}
-    <nav class="site-nav" aria-label="{w["nav"]}">{"".join(nav)}
-    </nav>
-  </div>
-</header>
-
+{top}
 <main id="main"{main_class}>
-{self.body.rstrip()}
+{main.rstrip()}
 </main>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <span>{t["footer"]}</span>
-    <span>{note}</span>
-  </div>
-</footer>
+{foot}
 </body>
 </html>
 """
         page = re.sub(r"[ \t]*<!--slot\b.*?-->\n?", "", page, flags=re.S)  # content slots are for authors
-        return self.links(self.macros(page))
+        if not self.whole:
+            page = self.macros(page)
+        page = self.links(self.fill(page, nb))
+        nb["slots"] = {k: self.links(" " + v)[1:] for k, v in self.slots.items()}
+        if "main" in nb:
+            nb["main"] = self.links(nb["main"])
+        nb["title"], nb["description"] = titles["nb"]
+        unused = self.own - self.used
+        if unused:
+            sys.exit(f"{self.dir or '/'}: words nothing uses: {', '.join(sorted(unused))}")
+        return page, nb
 
 
 class Site:
     def __init__(self):
         conf = tomllib.loads((SITE / "shared" / "site.toml").read_text())
+        self.base = conf.get("base", "").rstrip("/") + "/" if conf.get("base") else ""
+        self.redirects = conf.get("redirects", {})
         self.shared_downloads = conf.get("downloads", [])
-        self.shared_groups = {lang: conf[lang]["groups"] for lang in LANGS}
+        self.text = words(lambda lang: SITE / "shared" / f"text.{lang}.toml")
+        scribe = ROOT / "design" / "brands" / "scribe"
+        self.mark = (scribe / "brand" / "mark.svg").read_text().strip()
+        self.bar = (scribe / "dist" / "web" / "bar.css").read_text()  # the bar's colours are the family's, on every page
+        self.early = re.sub(r"\s*\n\s*", "", (SITE / "shared" / "early.js").read_text().split("*/", 1)[-1])
         every = [Product(f.parent, conf) for f in sorted(SITE.glob("*/product.toml"))]
         self.products = {p.id: p for p in every if not p.family}
-        self.family = next((p for p in every if p.family), None)
+        self.family = next(p for p in every if p.family)
         self.all = every
-        mounts = [p.mount for p in every]
-        if len(set(mounts)) != len(mounts):
-            sys.exit("two products have the same mount")
 
     def copy_brand(self, p: Product, assets: Path, logo_dir: Path) -> None:
         web = p.brand / "dist" / "web"
         assets.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(web / "fonts", assets / "fonts", dirs_exist_ok=True)
+        if (web / "fonts").exists():  # the family has no face of its own
+            shutil.copytree(web / "fonts", assets / "fonts", dirs_exist_ok=True)
         logo_dir.mkdir(parents=True, exist_ok=True)
-        for logo in [p.data["logo"]["light"], p.data["logo"]["dark"], *p.data.get("marks", [])]:
+        for logo in [p.data["logo"]["light"], p.data["logo"]["dark"], *p.data.get("marks", [])] if "logo" in p.data else []:
             shutil.copy(p.brand / logo, logo_dir)
 
     def build(self) -> None:
@@ -411,9 +519,8 @@ class Site:
             self.copy_brand(p, out / "assets", out / "assets" / "logo")
             shutil.copy(web / p.data["css"], out / "assets")
             shutil.copy(web / "fonts.css", out / "assets")
-            # Each product's folder holds everything its pages load, so it can move to a host of its own.
-            for shared in ("site.css", "lang.js"):
-                shutil.copy(SITE / "shared" / shared, out)
+            # Each product's folder holds everything its pages load but the language script, which is the family's.
+            (out / "site.css").write_text(self.bar + "\n" + (SITE / "shared" / "site.css").read_text())
             for css in p.data.get("styles", []):
                 if (p.dir / css).exists():  # the family's brands.css is made below
                     shutil.copy(p.dir / css, out)
@@ -422,39 +529,52 @@ class Site:
                     shutil.copy(icon, out)
             else:
                 shutil.copy(p.brand / p.data["favicon"], out / "favicon.svg")
-            if (p.dir / "shots").exists():
-                shutil.copytree(p.dir / "shots", out / "assets" / "shots")
-            if (p.dir / "figures").exists():
-                shutil.copytree(p.dir / "figures", out / "assets" / "data")
+            for kept, served in (("shots", "shots"), ("figures", "data")):
+                if (p.dir / kept).exists():
+                    shutil.copytree(p.dir / kept, out / "assets" / served)
             if p.family:
                 self.family_assets(out / "assets")
-            for lang in LANGS:
-                for name, source in p.pages(lang).items():
-                    page = Page(self, p, lang, name, source)
-                    # What a page names in its header: from the product's folder, else from site/shared.
-                    for extra in page.named("styles") + page.named("scripts"):
-                        found = [d / extra for d in (p.dir, SITE / "shared") if (d / extra).exists()]
-                        if not found:
-                            sys.exit(f"{page.dir}: {extra} is neither in {p.dir.name}/ nor in shared/")
-                        shutil.copy(found[0], out)
-                    target = OUT / page.dir / "index.html"  # a folder per page, so URLs have no .html
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    target.write_text(page.render())
+                shutil.copy(SITE / "shared" / "scribe.js", out)
+            for name, source in p.pages().items():
+                page = Page(self, p, name, source)
+                # What a page names in its header: from the product's folder, else from site/shared.
+                for extra in page.named("styles") + page.named("scripts"):
+                    found = [d / extra for d in (p.dir, SITE / "shared") if (d / extra).exists()]
+                    if not found:
+                        sys.exit(f"{page.dir}: {extra} is neither in {p.dir.name}/ nor in shared/")
+                    shutil.copy(found[0], out)
+                text, nb = page.render()
+                target = OUT / page.dir / "index.html"  # a folder per page, so URLs have no .html
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text)
+                (target.parent / "nb.json").write_text(json.dumps(nb, ensure_ascii=False, separators=(",", ":")))
+        self.stubs()
         (OUT / ".nojekyll").touch()
 
+    def stubs(self) -> None:
+        """An address the site used to have sends its visitor on to where the page is now."""
+        for old, new in self.redirects.items():
+            folder = OUT / old.strip("/")
+            if (folder / "index.html").exists():
+                sys.exit(f"redirect {old}: a page is served there")
+            path, _, query = new.partition("?")
+            to = rel(old.strip("/"), (path.strip("/") or ".") + "/") + ("?" + query if query else "")
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / "index.html").write_text(
+                f'<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <title>This page has moved</title>\n'
+                # The script keeps the place on the page the old address pointed at (#…).
+                f'  <script>location.replace("{to}" + location.hash)</script>\n'
+                f'  <noscript><meta http-equiv="refresh" content="0; url={to}"></noscript>\n  <link rel="canonical" href="{to}">\n  <meta name="robots" content="noindex">\n'
+                f'</head>\n<body>\n<p>This page has moved: <a href="{to}">go to the new address</a>.</p>\n</body>\n</html>\n')
+
     def family_assets(self, assets: Path) -> None:
-        """The family page shows each product in its own brand: tokens scoped to [data-brand], fonts, logo, one shot."""
+        """The family home shows each product in its own brand: tokens scoped to [data-brand], fonts, logo, shots, figures."""
         css = []
         for p in self.products.values():
             web = p.brand / "dist" / "web"
             self.copy_brand(p, assets / p.id, assets / p.id / "logo")
             css.append((web / "fonts.css").read_text().replace('url("fonts/', f'url("{p.id}/fonts/'))
             css.append((web / p.data["css"]).read_text().replace(":root", f'[data-brand="{p.id}"]'))
-            (assets / p.id / "shots").mkdir(exist_ok=True)
-            for lang in LANGS:
-                slot = p.data[lang]["card"]["shot"]
-                for shot in (p.dir / "shots").glob(f"{slot}-*"):
-                    shutil.copy(shot, assets / p.id / "shots")
         (assets / "brands.css").write_text("\n".join(css))
 
 
@@ -464,12 +584,12 @@ def check(out: Path) -> None:
     for page in out.rglob("index.html"):
         text = page.read_text()
         ids = set(re.findall(r'\bid="([^"]+)"', text))
-        for attr, value in re.findall(r'\b(href|src|srcset)="([^"]*)"', text):
+        for attr, value in re.findall(r'(?<![-\w])(href|src|srcset)="([^"]*)"', text):
             for url in ([u.split()[0] for u in value.split(", ")] if attr == "srcset" else [value]):
                 if re.match(r"[a-z]+:", url):
                     continue
                 path, _, frag = html.unescape(url).partition("#")
-                target = (page.parent / path).resolve()
+                target = (page.parent / path.split("?")[0]).resolve()
                 if target.is_dir():
                     target = target / "index.html"
                 if not target.exists() or out.resolve() not in target.parents:

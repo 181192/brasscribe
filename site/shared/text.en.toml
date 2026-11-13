@@ -1,0 +1,70 @@
+# Words every page uses: the bar, the app's row of pages, the figures, the download page's groups.
+# The same keys are in text.nb.toml; the build fails when they differ.
+
+[bar]
+skip = "Skip to content"
+apps = "The Scribe apps"
+all = "Scribe"
+noscript = "In English: the Norwegian version needs JavaScript."
+
+[nav]
+label = "This app's pages"
+overview = "Overview"
+guide = "Guide"
+download = "Download"
+how = "How it works"
+
+[downloads]
+files = "Files in the latest release"
+file = "File"
+for = "For"
+
+[fig]
+play = "Play"
+pause = "Pause"
+position = "Position in the recording"
+bar_beat = "Bar {bar}, beat {beat}"
+stage = "Step {n} of {total}"
+previous = "Previous step"
+next = "Next step"
+steps = "Steps"
+tuning = "Tuning"
+capo = "Capo"
+no_capo = "No capo"
+capo_n = "Capo on fret {n}"
+tab_label = "Tab of {title}, {bars} bars, in {tuning}."
+tab_scroll = "The tab. Scroll sideways to read on."
+pick = "Choose a number in the tab to see where else that note can be played. The arrow keys move from note to note."
+as_text = "The same tab as plain text ({tuning})"
+platform = "Device"
+table = "What {name} does on each device"
+alone = "Works by itself"
+with_bandroom = "Needs Bandroom on your computer"
+which_device = "Which device do you have?"
+hear_recording = "The recording"
+hear_written = "The written notes"
+hear = "What you hear"
+
+[groups.android]
+title = "Android"
+note = "Needs Android 16 or newer. Allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and what you have made stays. Most phones and tablets take the first file."
+
+[groups.ios]
+title = "iPhone and iPad"
+note = "Needs iOS or iPadOS 26 or newer. Not in the App Store yet. This is a test build without a signature, which you sign with your own Apple Account before it installs: <a href=\"@/guide/#download-ios\">how to sign and install it</a>."
+
+[groups.mac]
+title = "Mac"
+note = "Needs macOS 26 or newer and Apple silicon. Not notarised yet: unzip, move the app to Applications and open it once, then choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>."
+
+[groups.windows]
+title = "Windows"
+note = "For Windows 11 (x64). Not signed yet: unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
+
+[groups.bandroom]
+title = "Bandroom, for your computer"
+note = "Bandroom runs on your own Mac or PC and writes down the notes for the app on your phone, over your own network. One Bandroom serves every Scribe app. <a href=\"@/guide/#computer\">How to set it up</a>."
+
+[groups.tools]
+title = "For the tech person"
+note = "The command-line tool behind the apps, and the checksums of every file in the release."

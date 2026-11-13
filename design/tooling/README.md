@@ -11,6 +11,7 @@ its outputs; [`brands.json`](brands.json) lists them.
 | [`icons.json`](icons.json) | The actions and their icon on each platform. One set for every brand so far. |
 | [`tokens.json`](../brands/brasscribe/tokens/tokens.json) | Brasscribe's tokens (W3C Design Tokens, DTCG 2025.10). Fretscribe's are in [`../fretscribe/tokens/`](../brands/fretscribe/tokens/). |
 | [`test_build.py`](test_build.py) | Checks on the tokens and on what is generated, for every brand. |
+| [`family.py`](family.py) | The family's look (Scribe: the site's bar and home page), made from the brands' generated web tokens: every colour the midpoint of the brands'. Writes `design/brands/scribe/dist/web/`; `--check` in CI. Its mark and name are in [`../brands/scribe/brand/`](../brands/scribe/brand/brand.md). |
 
 Run these from the repository root:
 
@@ -18,6 +19,7 @@ Run these from the repository root:
 uv run design/tooling/build.py                     # write every brand's outputs
 uv run design/tooling/build.py --check             # CI: exit 1 if any brand's output is stale
 uv run design/tooling/build.py --brand fretscribe  # one brand
+uv run design/tooling/family.py                    # the family's look, after a brand's tokens change
 uv run --with pytest pytest design/tooling
 uv run qa/shared/tools/contrast.py --brands              # every brand, every mode; exit 1 on a failure or a stale report
                                                   # (a high-contrast mode needs 7:1 for every pair)

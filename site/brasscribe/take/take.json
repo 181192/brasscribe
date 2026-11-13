@@ -1,0 +1,22 @@
+{
+ "title": "Ich steh an deiner Krippe hier",
+ "work": "J. S. Bach, Ich steh an deiner Krippe hier (1736)",
+ "seconds": 14.6,
+ "source": "ChoraleBricks v1.1.0, CC BY 4.0, https://doi.org/10.5281/zenodo.20849469",
+ "tracks": {
+  "01_tp.wav": "48cd6bcb7caedc30e3f066fcb7761649b9bdf2854657c3c80914aac893591a17",
+  "02_tp.wav": "a635e371712bd551eea3dfdada54f1be5118c1d465b342b899e7b84af3ae98b1",
+  "03_bar.wav": "5be6c77c4bfcc1dadd40874f5ecd8a4521284b3f89029f2f676b8be154c52fbd",
+  "04_tba.wav": "8a3d7d7f5aa96198c9724b50aee22eeb1b2f47eacb7f9ad59483f3dad7774e97"
+ },
+ "profile": "brass-band",
+ "lineup": "quartet",
+ "stages": [
+  "arrange",
+  "beats",
+  "export",
+  "transcribe.mix.basic-pitch",
+  "transcribe.mix.muscriptor"
+ ],
+ "mix_samples_sha256": "9a1edf630b6fbfa9d9ee930446c3d76ead1f59fbadcbd1411c1a9d8d5d0d1aa3"
+}
