@@ -120,8 +120,8 @@ def stopped_from_outside(name: str, returncode: int) -> str | None:
         return (f"{name} was stopped: the program on the computer restarted or quit while this was being made. "
                 "Send the recording again.")
     if -returncode == signal.SIGKILL:
-        return (f"{name} was stopped by the computer, most often because it ran out of memory. Close other "
-                "programs there and send the recording again.")
+        return (f"{name} was stopped before it finished. A computer that runs out of memory stops a program "
+                "this way: close other programs there and send the recording again.")
     return None
 
 

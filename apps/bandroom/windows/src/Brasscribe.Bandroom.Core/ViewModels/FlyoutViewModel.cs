@@ -83,6 +83,9 @@ public sealed partial class FlyoutViewModel : ObservableObject
 
     // ----- Now -----
     [ObservableProperty] public partial bool IsBusy { get; set; }
+    /// <summary>The engine has a job running or waiting, shown or not: a restart or a stop would take it with it.
+    /// (<see cref="IsBusy"/> is the job the panel shows; one that only waits has no card yet.)</summary>
+    public bool HasJobs { get; private set; }
     [ObservableProperty] public partial string JobStep { get; set; } = "";
     [ObservableProperty] public partial string JobSource { get; set; } = "";
     [ObservableProperty] public partial double JobPercent { get; set; }
@@ -163,6 +166,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
 
         var job = info.State is DisplayState.Busy or DisplayState.NeedsAttention ? snap.Job : null;
         IsBusy = job is not null;
+        HasJobs = IsBusy || (snap.Status is { } engineSays && engineSays.JobsRunning + engineSays.JobsQueued > 0);
         StatusSub = job is null && info.State == DisplayState.Running ? info.StatusSub : info.State == DisplayState.Running ? "" : info.StatusSub;
         if (job is not null)
         {
@@ -221,7 +225,7 @@ public sealed partial class FlyoutViewModel : ObservableObject
             _announcer.Announce(info.Problem is { } p ? StatusWord + ": " + p.Title : StatusWord);
         _lastState = info.State;
 
-        if (_restartWhenDone && info.State != DisplayState.Busy && snap.Inputs.Engine == Supervisor.EngineState.Running)
+        if (_restartWhenDone && !HasJobs && info.State != DisplayState.Busy && snap.Inputs.Engine == Supervisor.EngineState.Running)
         {
             _restartWhenDone = false;
             _ = _actions.RestartAsync();
@@ -304,14 +308,14 @@ public sealed partial class FlyoutViewModel : ObservableObject
     [RelayCommand]
     private async Task RestartAsync()
     {
-        if (IsBusy) { ShowConfirm(ConfirmKind.RestartBusy); return; }
+        if (HasJobs) { ShowConfirm(ConfirmKind.RestartBusy); return; }
         await _actions.RestartAsync();
     }
 
     [RelayCommand]
     private async Task StopAsync()
     {
-        if (IsBusy) { ShowConfirm(ConfirmKind.StopBusy); return; }
+        if (HasJobs) { ShowConfirm(ConfirmKind.StopBusy); return; }
         await _actions.StopAsync();
     }
 

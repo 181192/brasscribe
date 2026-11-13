@@ -138,7 +138,7 @@ def test_only_a_signal_counts_as_stopped_from_outside():
 
     assert stopped_from_outside("beat-this", 3) is None and stopped_from_outside("beat-this", 0) is None
     if os.name != "nt":
-        assert "ran out of memory" in stopped_from_outside("beat-this", -9)
+        assert "runs out of memory" in stopped_from_outside("beat-this", -9)
         assert stopped_from_outside("beat-this", -11) is None  # a crash of its own keeps its code and its output
 
 

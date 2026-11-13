@@ -296,7 +296,12 @@ public sealed class BandroomController
         if (_sup.Problem == EngineProblem.NoFreePort) problems.Add(Problems.NoFreePort(_s));
         if (UpdateFailure is { } failure && !Updating)
         {
-            bool running = _sup.State == EngineState.Running;
+            var running = _sup.State switch
+            {
+                EngineState.Running => PutBackEngine.Running,
+                EngineState.Starting => PutBackEngine.Starting,
+                _ => PutBackEngine.NotRunning,
+            };
             problems.Add(UpdateRefusal is { } refused ? Problems.UpdateRefused(_s, refused, running) : Problems.UpdateFailed(_s, failure, running));
         }
         if (SetupFailure is { } stopped && !Updating) problems.Add(Problems.MissingDownload(_s, [], [], stopped));

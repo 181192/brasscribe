@@ -180,6 +180,25 @@ public enum EngineKeyUpdate: Equatable, Sendable {
     }
 }
 
+/// A restart for a new setting (the key, the name phones see) never takes a job with it: the engine is asked
+/// whether it has one, and this says what its answer means.
+public enum SettingRestart: Equatable, Sendable {
+    case restartNow
+    /// A score is being made or waits: restart after it.
+    case afterTheJob
+    /// The engine did not answer: the restart stays wanted and is decided again at its next answer.
+    case atTheNextAnswer
+
+    /// `busy` is the engine's answer now (`StatusMonitor.hasJobsNow`), nil when it gave none.
+    public static func decide(busy: Bool?) -> SettingRestart {
+        switch busy {
+        case false?: .restartNow
+        case true?: .afterTheJob
+        case nil: .atTheNextAnswer
+        }
+    }
+}
+
 extension EngineSupervisor {
     /// Gives the engine the saved key as HF_TOKEN (HF_TOKEN already in `environment` wins) from its next launch,
     /// and says what that means for the engine now.

@@ -238,7 +238,7 @@ struct SetupView: View {
                 }
             }
             if case .failed = boot, let refusal = app.bootstrapper.pixiRefusal {
-                ProblemCard(title: Strings.problemTitle(.pixiTooOld(refusal)), why: Strings.problemWhy(.pixiTooOld(refusal), engineRunning: false),
+                ProblemCard(title: Strings.problemTitle(.pixiTooOld(refusal)), why: Strings.problemWhy(.pixiTooOld(refusal), engine: .notRunning),
                             symbol: "exclamationmark.triangle.fill", tint: Color.Scribe.warning)
             } else if case .failed(let why) = boot {
                 ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill",

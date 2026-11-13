@@ -160,6 +160,7 @@ final class AppModel {
         }
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
         monitor.onJobsChanged = { [weak self] n in self?.jobsChanged(n) }
+        monitor.onAnswered = { [weak self] in self?.engineAnswered() }
         savedKey.onChange = { [weak self] _ in self?.huggingFaceKeyChanged() }
         log.write("Bandroom \(Bundle.main.shortVersion) starting; data \(paths.data.path); source \(source)")
         // HF_TOKEN in the environment wins, so there's nothing to read then.
@@ -495,13 +496,18 @@ final class AppModel {
         restartWhenDone = true
         Task { [weak self] in
             guard let self else { return }
-            let busy = await self.monitor.hasJobsNow()
-            if busy {
-                self.logger.write("a job is running or waiting: the engine restarts with the new setting after it")
-            } else if self.restartWhenDone {
-                self.restartNow()
+            switch SettingRestart.decide(busy: await self.monitor.hasJobsNow()) {
+            case .restartNow: if self.restartWhenDone { self.restartNow() }
+            case .afterTheJob: self.logger.write("a job is running or waiting: the engine restarts with the new setting after it")
+            case .atTheNextAnswer: self.logger.write("the engine did not answer: it restarts with the new setting once it says that nothing is being made")
             }
         }
+    }
+
+    /// The engine answered a check: a restart that waits (for a job to end, or for this answer) goes ahead when
+    /// nothing is being made.
+    private func engineAnswered() {
+        if restartWhenDone && !isBusy { restartNow() }
     }
 
     func tryAgain() {
@@ -759,9 +765,6 @@ final class AppModel {
 
     private func jobsChanged(_ running: Int) {
         if running > 0 { holdSleep() } else { releaseSleep() }
-        if running == 0 && !isBusy && restartWhenDone {
-            restartNow()
-        }
     }
 
     /// Don't idle-sleep while a score is being made; never blocks lid-close or a sleep the user asks for.

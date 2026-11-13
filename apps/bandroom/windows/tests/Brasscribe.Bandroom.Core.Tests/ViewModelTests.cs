@@ -140,6 +140,24 @@ public sealed class FlyoutViewModelTests
         Assert.Equal(["restart"], _actions.Calls);
     }
 
+    /// <summary>A job that only waits has no card on the panel yet, and is a job all the same: a restart asks first,
+    /// and one that waits for the job waits for this one too.</summary>
+    [Fact]
+    public async Task A_job_that_only_waits_is_not_restarted_over()
+    {
+        var vm = Make();
+        vm.Apply(Snap(queued: 1));
+        Assert.False(vm.IsBusy);
+        Assert.True(vm.HasJobs);
+        await vm.RestartCommand.ExecuteAsync(null);
+        Assert.Equal(ConfirmKind.RestartBusy, vm.Confirm);
+        await vm.ConfirmPrimaryCommand.ExecuteAsync(null);
+        vm.Apply(Snap(queued: 1));
+        Assert.Empty(_actions.Calls);
+        vm.Apply(Snap());
+        Assert.Equal(["restart"], _actions.Calls);
+    }
+
     [Fact]
     public async Task Removing_a_device_confirms_then_focuses_the_next_row_or_the_heading()
     {

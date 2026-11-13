@@ -100,3 +100,17 @@ public enum DisplayState: Equatable, Sendable {
         max(0, min(8, Int((Double(percent) / 12.5).rounded(.down))))
     }
 }
+
+/// What the engine that was put back after a failed update is doing, for the words of that problem: it may run,
+/// be on its way up (just started again, or waiting to be), or not run at all.
+public enum PutBackEngine: Equatable, Sendable {
+    case running, starting, notRunning
+
+    public init(phase: SupervisorPhase) {
+        switch phase {
+        case .running: self = .running
+        case .starting, .waitingToRetry, .stopping(then: .restart): self = .starting
+        case .idle, .stopped, .failed, .stopping: self = .notRunning
+        }
+    }
+}

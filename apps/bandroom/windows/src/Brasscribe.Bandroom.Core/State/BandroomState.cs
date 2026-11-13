@@ -159,6 +159,16 @@ public static class StateRules
 }
 
 /// <summary>The Needs-attention problems Bandroom can detect itself.</summary>
+/// <summary>What the engine that was put back after a failed update is doing, for the words of that problem. The
+/// names end the string keys (Update_Failed_Why_Running, …).</summary>
+public enum PutBackEngine
+{
+    Running,
+    /// <summary>Just started again, or waiting to be.</summary>
+    Starting,
+    NotRunning,
+}
+
 public static class Problems
 {
     public static Problem NoFreePort(IStrings s) =>
@@ -177,17 +187,17 @@ public static class Problems
     /// start it; when it can't, or it was started and gave up, nothing runs. The words say which. The fix tries the
     /// update again.
     /// </summary>
-    public static Problem UpdateFailed(IStrings s, string details, bool engineRunning) =>
+    public static Problem UpdateFailed(IStrings s, string details, PutBackEngine engine) =>
         new(ProblemKind.UpdateFailed, s["Update_Failed_Title"],
-            s[engineRunning ? "Update_Failed_Why_Running" : "Update_Failed_Why_NotRunning"], s["Primary_TryAgain"], details);
+            s["Update_Failed_Why_" + engine], s["Primary_TryAgain"], details);
 
     /// <summary>
     /// The update failed because pixi refused the new workspace (too old for it). The previous engine is back, so it
     /// is not "can't start"; the words say whether it runs, and the fix is a newer Bandroom.
     /// </summary>
-    public static Problem UpdateRefused(IStrings s, PixiRefusal refusal, bool engineRunning) =>
+    public static Problem UpdateRefused(IStrings s, PixiRefusal refusal, PutBackEngine engine) =>
         new(ProblemKind.UpdateRefused, s["Update_Failed_Title"],
-            s[engineRunning ? "Update_Refused_Why_Running" : "Update_Refused_Why_NotRunning"], s["Pixi_Fix"],
+            s["Update_Refused_Why_" + engine], s["Pixi_Fix"],
             $"pixi {refusal.Found} refused the updated engine workspace (it requires pixi '{refusal.Required}'): {refusal.Message}");
 
     /// <summary>

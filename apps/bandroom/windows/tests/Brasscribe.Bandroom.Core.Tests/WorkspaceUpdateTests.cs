@@ -333,7 +333,7 @@ public sealed class WorkspaceUpdateTests : IDisposable
         Assert.Equal("Updating Brasscribe… 30%. Back in about a minute. Phones reconnect by themselves.", info.StatusSub);
         Assert.StartsWith("Oppdaterer Brasscribe … 30 %.", StateRules.Describe(updating, Strings.Nb).StatusSub);
 
-        var failed = new StateInputs(EngineState.Running, true, 1, false, [Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1", engineRunning: true)], null, 0);
+        var failed = new StateInputs(EngineState.Running, true, 1, false, [Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1", PutBackEngine.Running)], null, 0);
         info = StateRules.Describe(failed, Strings.En);
         Assert.Equal(DisplayState.NeedsAttention, info.State);
         Assert.Equal(ProblemKind.UpdateFailed, info.Problem?.Kind);
@@ -354,7 +354,7 @@ public sealed class WorkspaceUpdateTests : IDisposable
         var gaveUp = failed with
         {
             Engine = EngineState.Error,
-            Problems = [lowDisk, Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1", engineRunning: false)],
+            Problems = [lowDisk, Problems.UpdateFailed(Strings.En, "pixi install -e default exited with 1", PutBackEngine.NotRunning)],
         };
         info = StateRules.Describe(gaveUp, Strings.En);
         Assert.Equal(DisplayState.NeedsAttention, info.State);
@@ -365,7 +365,6 @@ public sealed class WorkspaceUpdateTests : IDisposable
         // Without a failed update, an engine that gave up is the error it was.
         info = StateRules.Describe(gaveUp with { Problems = [lowDisk] }, Strings.En);
         Assert.Equal(DisplayState.Error, info.State);
-        Assert.Equal(PrimaryAction.TryAgain, info.Primary);
         Assert.Equal(PrimaryAction.TryAgain, info.Primary);
     }
 

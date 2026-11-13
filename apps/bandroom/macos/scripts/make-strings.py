@@ -247,6 +247,8 @@ NB = {
     "The key may have been deleted or have expired.": "Nøkkelen kan være slettet eller utløpt.",
     "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.":
         "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
+    "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.":
+        "Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
     "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.":
         "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
     "The phone keeps the recording and can send it again.": "Telefonen beholder opptaket og kan sende det på nytt.",
@@ -304,6 +306,8 @@ NB = {
         "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører. Brasscribe kommer fra en utviklerkopi: oppdater kopien, og start så Brasscribe på nytt.",
     "The update didn't finish. The previous version was put back and is running.":
         "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører.",
+    "The update didn't finish. The previous version was put back and is starting.":
+        "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter.",
     "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.":
         "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført.",
     "No phone can be paired until the update succeeds.": "Ingen telefon kan kobles til før oppdateringen er fullført.",

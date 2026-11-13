@@ -32,7 +32,7 @@ struct PairWindow: View {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.Scribe.warning).accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(Strings.problemTitle(blocker)).brFont(.bodyStrong)
-                            Text(Strings.problemWhy(blocker, engineRunning: app.phase == .running)).brFont(.body).fixedSize(horizontal: false, vertical: true)
+                            Text(Strings.problemWhy(blocker, engine: PutBackEngine(phase: app.phase))).brFont(.body).fixedSize(horizontal: false, vertical: true)
                             if let waits = Strings.pairingWaits(for: blocker) {
                                 Text(waits).brFont(.body).fixedSize(horizontal: false, vertical: true)
                             }
@@ -112,7 +112,7 @@ struct PairWindow: View {
         // window that opens with nothing to scan or type.
         .onChange(of: app.pairingBlocker, initial: true) { was, blocker in
             if let blocker {
-                let words = [Strings.problemTitle(blocker) + ".", Strings.problemWhy(blocker, engineRunning: app.phase == .running), Strings.pairingWaits(for: blocker)]
+                let words = [Strings.problemTitle(blocker) + ".", Strings.problemWhy(blocker, engine: PutBackEngine(phase: app.phase)), Strings.pairingWaits(for: blocker)]
                 AccessibilityNotification.Announcement(words.compactMap { $0 }.joined(separator: " ")).post()
             } else if was != nil {
                 pairingWasBlocked = true
