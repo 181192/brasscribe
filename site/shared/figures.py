@@ -310,20 +310,12 @@ def tabdemo(page) -> str:
 </div>"""
 
 
-def tens(page, path: str, kind: str, file: str = "eval/baselines.json") -> str:
-    """A measured rate as ten notes. kind "doubted": ten notes with a question mark, so many of them wrong.
-    kind "wrong": ten wrong notes, so many of them with a question mark."""
-    n = round(float(lookup(file, path)) * 10)
-    notes = []
-    for i in range(10):
-        x = 14 + i * 28
-        wrong = kind == "wrong" or i < n
-        marked = kind == "doubted" or i < n
-        notes.append((f'<text class="mark" x="{x}" y="14">?</text>' if marked else "")
-                     + f'<g class="{"wrong" if wrong else "right"}" transform="translate({x} 34)"><ellipse rx="7.5" ry="5.5" transform="rotate(-20)"/>'
-                     + ('<path class="cross" d="M-5 -5L5 5M5 -5L-5 5"/>' if wrong else "") + "</g>")
-    return (f'<svg class="tens {kind}" viewBox="0 0 280 46" role="img" aria-label="{esc(page.say(f"sure.alt_{kind}", n=n))}">'
-            f'<path class="string" d="M0 34H280"/>{"".join(notes)}</svg>')
+def tens(page, n: int) -> str:
+    """Ten notes on a line, so many of them right: the right ones filled in the brand's colour, the others left open."""
+    notes = "".join(f'<ellipse class="{"right" if i < n else "open"}" cx="{14 + i * 28}" cy="20" rx="7.5" ry="5.5" transform="rotate(-20 {14 + i * 28} 20)"/>'
+                    for i in range(10))
+    return (f'<svg class="tens" viewBox="0 0 280 40" role="img" aria-label="{esc(page.say("sure.alt_right", n=n))}">'
+            f'<path class="string" d="M0 20H280"/>{notes}</svg>')
 
 
 def gets(page) -> str:
@@ -358,17 +350,16 @@ def devices(page) -> str:
 
 
 def rates(page) -> str:
-    """How good the question marks are, per instrument: of ten notes with a mark, how many were wrong; of ten wrong
-    notes, how many had a mark. The product's [[rates]] say which measured numbers."""
-    say, groups = page.say, []
+    """What the app gets right, per instrument: of ten notes it writes, how many are right. Under them, how often a
+    question mark was worth checking. The product's [[rates]] say which measured numbers."""
+    say, groups, marks = page.say, [], []
     for rate in page.product.data["rates"]:
-        name = rate[page.lang]
-        rows = []
-        for kind in ("doubted", "wrong"):
-            n = round(float(lookup("eval/baselines.json", rate[kind])) * 10)
-            rows.append(f'<div class="rate">{tens(page, rate[kind], kind)}<p>{say(f"sure.{kind}", n=n, name=name)}</p></div>')
-        groups.append(f"<li><h3>{name}</h3>{''.join(rows)}</li>")
-    return f'<ul class="rates">{"".join(groups)}</ul>'
+        n = round(float(lookup("eval/baselines.json", rate["right"])) * 10)
+        marks.append(round(float(lookup("eval/baselines.json", rate["doubted"])) * 10))
+        groups.append(f'<li><div class="rate">{tens(page, n)}<p>{say("sure.right", n=n, name=rate[page.lang])}</p></div></li>')
+    low, high = min(marks), max(marks)
+    share = str(high) if low == high else say("sure.between", low=low, high=high)
+    return f'<ul class="rates">{"".join(groups)}</ul>\n<p class="sure-marks">{say("sure.marks", n=share)}</p>'
 
 
 def measured(page) -> str:

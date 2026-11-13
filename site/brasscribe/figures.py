@@ -172,20 +172,19 @@ def viewer(page) -> str:
 
 
 def rates(page) -> str:
-    """How many wrong notes slip through without a question mark, for one brass instrument alone: a sentence and a
-    picture of two hundred notes for each group of the product's [[rates]]."""
+    """What Brasscribe gets right for one brass instrument alone: of a hundred notes, how many are right or carry a
+    question mark, as a sentence and a picture of two hundred notes for each group of the product's [[rates]]."""
     shared, say = page.shared, page.say
     base = "targets/brass/suites/solo-instruments/metrics/"
     groups = []
     for rate in page.product.data["rates"]:
         # wrong notes with no mark in a hundred notes written, the mean over the group's instruments
         slipped = sum(shared.lookup("eval/baselines.json", f"{base}{key}.q_missed/value") for key in rate["instruments"]) / len(rate["instruments"])
-        one_in = 100 / slipped
-        size = 10 ** (len(str(round(one_in))) - 1)
-        one_in = round(one_in / size) * size  # about 1 in 200, not 1 in 232
-        wrong = max(1, round(slipped * 2))
-        spread = {(k * 73 + 31) % 200 for k in range(wrong)}  # the wrong ones among the others, not in a row
-        cells = "".join(f'<circle class="{"wrong" if i in spread else "right"}" cx="{5 + (i % 25) * 11}" cy="{5 + (i // 25) * 11}" r="3.6"/>' for i in range(200))
-        picture = f'<svg class="twohundred" viewBox="0 0 274 87" role="img" aria-label="{shared.esc(say("sure.alt_group", k=wrong))}">{cells}</svg>'
-        groups.append(f'<li><div class="rate">{picture}<p>{say("sure.group", name=rate[page.lang], n=one_in)}</p></div></li>')
+        good = int(100 - slipped)  # never rounded up: "more than 99" is 99.6, "about 98" is 98.2
+        share = say("sure.more" if good >= 99 else "sure.about", n=good)
+        left = max(1, round(slipped * 2))
+        spread = {(k * 73 + 31) % 200 for k in range(left)}  # the open ones among the others, not in a row
+        cells = "".join(f'<circle class="{"open" if i in spread else "right"}" cx="{5 + (i % 25) * 11}" cy="{5 + (i // 25) * 11}" r="3.6"/>' for i in range(200))
+        picture = f'<svg class="twohundred" viewBox="0 0 274 87" role="img" aria-label="{shared.esc(say("sure.alt_group", k=left))}">{cells}</svg>'
+        groups.append(f'<li><div class="rate">{picture}<p>{say("sure.group", name=rate[page.lang], share=share)}</p></div></li>')
     return f'<ul class="rates">{"".join(groups)}</ul>'

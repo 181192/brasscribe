@@ -46,19 +46,19 @@ hear = "What you hear"
 
 [groups.android]
 title = "Android"
-note = "Needs Android 16 or newer. Allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and what you have made stays. Most phones and tablets take the first file."
+note = "Needs Android 16 or newer. Allow installs from your browser or file manager, then open the file you downloaded. It updates an earlier version in place, and what you have made stays. Most phones and tablets take the first file."
 
 [groups.ios]
 title = "iPhone and iPad"
-note = "Needs iOS or iPadOS 26 or newer. Not in the App Store yet. This is a test build without a signature, which you sign with your own Apple Account before it installs: <a href=\"@/guide/#download-ios\">how to sign and install it</a>."
+note = "Needs iOS or iPadOS 26 or newer. Not in the App Store yet. This is a test version: it needs a few steps with your own Apple account before it installs, and <a href=\"@/guide/#download-ios\">the guide shows them</a>."
 
 [groups.mac]
 title = "Mac"
-note = "Needs macOS 26 or newer and Apple silicon. Not notarised yet: unzip, move the app to Applications and open it once, then choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>."
+note = "Needs macOS 26 or newer and a Mac from 2020 or later. Your Mac will warn you the first time: unzip, move the app to Applications and open it once, then choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>."
 
 [groups.windows]
 title = "Windows"
-note = "For Windows 11 (x64). Not signed yet: unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
+note = "For Windows 11. Windows will warn you the first time: unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
 
 [groups.bandroom]
 title = "Bandroom, on your computer"

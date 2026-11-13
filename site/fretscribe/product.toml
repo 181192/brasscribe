@@ -51,8 +51,8 @@ file = "fretscribe-windows-x64.zip"
 group = "windows"
 label_en = "Fretscribe for Windows"
 label_nb = "Fretscribe for Windows"
-en = "Fretscribe for Windows 11 (x64), an early version, not tested on a real PC yet"
-nb = "Fretscribe for Windows 11 (x64), en tidlig versjon, ikke testet på en ekte PC ennå"
+en = "Fretscribe for Windows 11, an early version, not tested on a real PC yet"
+nb = "Fretscribe for Windows 11, en tidlig versjon, ikke testet på en ekte PC ennå"
 
 # What each device does by itself and what it needs the computer for: the table on the front page.
 [[platforms]]
@@ -84,16 +84,23 @@ nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac fra 2020 ell
 [paths]
 research = "how-it-works"
 
-# The measured rates the front page shows as ten notes, per instrument: of the notes with a question mark, the
-# share that was wrong; of the wrong notes, the share that had one. Paths into eval/baselines.json.
+# The measured rates of "How sure is it?", one instrument alone: of the notes Fretscribe writes, the share that is
+# right; of the notes with a question mark, the share that was wrong. Paths into eval/baselines.json. The guitar's
+# are from the players the rules were not set on.
+[[rates]]
+en = "Guitar, one note at a time"
+nb = "Gitar, én tone om gangen"
+right = "targets/fretted/suites/guitar-tab/metrics/report.solo.onset_p"
+doubted = "targets/fretted/suites/guitar-tab/metrics/report.solo.doubt_precision"
+
+[[rates]]
+en = "Guitar, chords"
+nb = "Gitar, akkorder"
+right = "targets/fretted/suites/guitar-tab/metrics/report.comp.onset_p"
+doubted = "targets/fretted/suites/guitar-tab/metrics/report.comp.doubt_precision"
+
 [[rates]]
 en = "Bass"
 nb = "Bass"
-doubted = "targets/fretted/suites/bass-tab/metrics/song.doubt_precision"
-wrong = "targets/fretted/suites/bass-tab/metrics/song.doubt_recall"
-
-[[rates]]
-en = "Guitar"
-nb = "Gitar"
-doubted = "targets/fretted/suites/guitar-tab/metrics/song.doubt_precision"
-wrong = "targets/fretted/suites/guitar-tab/metrics/song.doubt_recall"
+right = "targets/fretted/suites/bass-tab/metrics/instrument.onset_p"
+doubted = "targets/fretted/suites/bass-tab/metrics/instrument.doubt_precision"

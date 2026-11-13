@@ -51,8 +51,8 @@ file = "brasscribe-play-windows-x64.zip"
 group = "windows"
 label_en = "Brasscribe for Windows"
 label_nb = "Brasscribe for Windows"
-en = "Brasscribe for Windows 11 (x64), an early version, not tested on a real PC yet"
-nb = "Brasscribe for Windows 11 (x64), en tidlig versjon, ikke testet på en ekte PC ennå"
+en = "Brasscribe for Windows 11, an early version, not tested on a real PC yet"
+nb = "Brasscribe for Windows 11, en tidlig versjon, ikke testet på en ekte PC ennå"
 
 # What each device does by itself and what it needs the computer for: the table on the front page.
 [[platforms]]

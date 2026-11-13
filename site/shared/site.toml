@@ -23,8 +23,8 @@ file = "brasscribe-bandroom-windows-x64.zip"
 group = "bandroom"
 label_en = "Bandroom for Windows"
 label_nb = "Bandroom for Windows"
-en = "Bandroom for Windows 11 (x64): <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
-nb = "Bandroom for Windows 11 (x64): <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
+en = "Bandroom for Windows 11: <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
+nb = "Bandroom for Windows 11: <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
 
 [[downloads]]
 file = "scribe-core-macos-arm64.tar.gz"

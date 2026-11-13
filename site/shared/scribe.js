@@ -36,17 +36,23 @@ const read = () => {
   return words;
 };
 
-// Where the reader is: the nearest thing with a name at or above the top of the window, and how far from it.
-// The words of another language take another amount of room; the reader stays at the same heading.
+// Where the reader is: the heading, figure or table nearest the top of the window, and how far from it. The words
+// of another language take another amount of room; the reader stays at the same thing. Both languages have the
+// same headings, figures and tables in the same order, so it is found again by its number.
+const MARKS = "main :is(h1, h2, h3, h4, figure, table)";
+const marks = () => [...document.querySelectorAll(MARKS)].filter((el) => el.getClientRects().length);
 const place = () => {
   if (scrollY < 1) return null;
-  const named = [...document.querySelectorAll("main [id]")].filter((el) => el.getClientRects().length);
-  const at = named.findLast((el) => el.getBoundingClientRect().top <= 8) ?? named[0];
-  return at ? { id: at.id, nth: named.indexOf(at), top: at.getBoundingClientRect().top } : null;
+  const all = marks();
+  let nth = -1, near = Infinity;
+  all.forEach((el, i) => {
+    const far = Math.abs(el.getBoundingClientRect().top - 80);
+    if (far < near) [nth, near] = [i, far];
+  });
+  return nth < 0 ? null : { nth, top: all[nth].getBoundingClientRect().top };
 };
 const back = (was) => {
-  if (!was) return;
-  const at = document.getElementById(was.id) ?? [...document.querySelectorAll("main [id]")].filter((el) => el.getClientRects().length)[was.nth];
+  const at = was && marks()[was.nth];
   if (at) scrollBy({ top: at.getBoundingClientRect().top - was.top, behavior: "instant" });
 };
 
@@ -85,9 +91,22 @@ const write = (words, lang) => {
   // Once now, and once more when the figures that draw themselves have taken their room.
   back(was);
   if (was) requestAnimationFrame(() => back(was));
+  if (was) setTimeout(() => back(was), 300);  // and when the charts have drawn
 };
 
 export const language = () => now;
+
+// An address that names a place on the page (#…): the browser went there while the page was English; the
+// Norwegian words take another amount of room, so go there again once they are in.
+const named = () => {
+  const at = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (!at) return;
+  at.scrollIntoView({ behavior: "instant" });
+  requestAnimationFrame(() => at.scrollIntoView({ behavior: "instant" }));
+  // Once more when pictures and faces have arrived, unless the reader has moved on.
+  const y = scrollY;
+  setTimeout(() => Math.abs(scrollY - y) < 400 && at.scrollIntoView({ behavior: "instant" }), 600);
+};
 
 async function choose(lang, remember) {
   if (remember) try { localStorage.setItem(KEY, lang); } catch {}
@@ -107,4 +126,5 @@ document.addEventListener("click", (e) => {
   const button = e.target.closest("[data-lang-switch]");
   if (button) choose(now === "nb" ? "en" : "nb", true);
 });
-choose(wanted(), new URLSearchParams(location.search).has("lang"));
+const first = wanted();
+choose(first, new URLSearchParams(location.search).has("lang")).then(() => first !== "en" && named());

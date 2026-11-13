@@ -4,7 +4,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 /* Anchored targets and focused elements clear the sticky header (WCAG 2.4.11). */
-html { scroll-behavior: smooth; scroll-padding-top: var(--scribe-space-4); }
+html { scroll-behavior: smooth; scroll-padding-top: calc(52px + var(--scribe-space-4)); }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
@@ -36,7 +36,9 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 /* The family bar: the same on every page of every app. Its colours are the family's (--family-bar…, from
    design/brands/scribe, put before this file by the build), so it looks the same on Brasscribe's brass, on
    Fretscribe's ruled paper and on the family home, in light and in dark. */
-.family-bar { --bar: var(--family-bar); --bar-text: var(--family-bar-text); --bar-muted: var(--family-bar-muted); background: var(--bar); color: var(--bar-text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+/* It stays at the top of the window, so the way home and the language are always in reach. */
+.site-header { display: contents; }
+.family-bar { position: sticky; top: 0; z-index: 20; --bar: var(--family-bar); --bar-text: var(--family-bar-text); --bar-muted: var(--family-bar-muted); background: var(--bar); color: var(--bar-text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .family-bar .wrap { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 52px; }
 .family-path { flex: 1 1 auto; min-width: 0; }
 .family-path ol { display: flex; align-items: center; margin: 0; padding: 0; list-style: none; }
@@ -85,6 +87,8 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 .product-nav nav { display: flex; align-items: center; gap: 0 var(--scribe-space-5); min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .product-nav nav::-webkit-scrollbar { display: none; }
 @media (max-width: 700px) {
+  /* Where the row is wider than the screen, its end fades: there is more to the side. */
+  .product-nav nav { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 28px; }
   .brand { display: none; }
   .product-nav .wrap { min-height: 48px; }
   .product-nav nav { gap: 0 var(--scribe-space-4); }

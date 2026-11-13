@@ -107,13 +107,13 @@ setup = "Sett opp datamaskinen"
 
 [sure]
 title = "Hvor sikker <em>er den?</em>"
-lead = "Når Fretscribe setter et <b class=\"uncertain\">?</b> over en tone, har den som regel rett. Men mange gale toner går den glipp av."
-doubted = "<b>{name}:</b> rundt {n} av 10 toner med ? var virkelig feil."
-wrong = "<b>{name}:</b> bare rundt {n} av 10 gale toner fikk et ?."
-alt_doubted = "Ti toner med spørsmålstegn; {n} av dem er feil."
-alt_wrong = "Ti gale toner; {n} av dem har et spørsmålstegn."
-source = "Vi målte dette på basslinjer og gitarstemmer plukket ut av hele låter spilt av en datamaskin, der vi kjenner de riktige tonene. Opptaket ditt kan gå bedre eller dårligere."
-end = "Sjekk altså tonene med ? først, og stol på ørene dine for resten."
+lead = "Spill én gitar eller bass alene, og Fretscribe treffer de fleste tonene. Og den viser deg hvor du bør høre etter: et <b class=\"uncertain\">?</b> markerer tonene den ikke var sikker på."
+right = "<b>{name}:</b> rundt {n} av 10 toner er riktige."
+alt_right = "Ti toner på en linje; {n} av dem er fylt, de som er riktige."
+marks = "Et <b class=\"uncertain\">?</b> er verdt tiden din: rundt {n} av 10 toner som fikk et, trengte å rettes."
+between = "{low} eller {high}"
+source = "Vi målte dette på gitarister appen ikke er stilt inn etter, som spiller enkelttoner og akkorder, og på basslinjer spilt av en datamaskin, hvert instrument alene."
+end = "Sjekk altså tonene med ? først, og spill så gjennom og stol på ørene dine: ikke alle gale toner har et merke. En gitar plukket ut av en hel låt er vanskeligere enn en gitar alene."
 how = "Slik målte vi det"
 
 [getit]
