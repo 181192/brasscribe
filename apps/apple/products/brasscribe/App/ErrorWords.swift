@@ -64,6 +64,9 @@ enum ErrorWords {
         case "seat_no_tune": return String(localized: "The tune can't go on your part in this band. Under Who plays the tune?, choose the band's usual part.")
         case "reads_not_offered": return String(localized: "Your instrument isn't written in that clef. Choose again under What you play.")
         case "invalid_options": return invalidOptions
+        // not taken: the computer has not been set up for a full band yet (the band writer and its key)
+        case "band_writer_not_set_up":
+            return String(localized: "Your computer isn't set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.")
         default:
             switch status {
             case 401, 403: return String(localized: "Your computer no longer knows this device. Connect them again in Settings.")

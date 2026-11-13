@@ -41,7 +41,7 @@ struct SettingsView: View {
             }
             if app.bandWriterLeftOut {
                 Section("Full-band scores") {
-                    Text("A score for a full band needs one more download, with a free Hugging Face account.")
+                    Text("A score for a full band needs one more download (\(Strings.gigabytes(ModelComponent.bandWriter.totalBytes)) GB) and a free Hugging Face account.")
                         .font(.caption).foregroundStyle(Color.Scribe.textMuted)
                     Button("Set up full-band scores") { app.wantBandWriter(); app.openWindow("setup") }
                 }

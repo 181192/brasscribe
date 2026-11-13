@@ -1344,6 +1344,12 @@ export interface components {
              * @description what a job was refused for since the engine started and still is not set up on the computer. band-writer: the model that writes down a band, which needs its licence accepted and an access key
              */
             setup_needed?: "band-writer"[];
+            /**
+             * Setup Refusals
+             * @description how many jobs were refused since the engine started because something in setup_needed was not set up: it goes up at every one
+             * @default 0
+             */
+            setup_refusals: number;
             /** Version */
             version: string;
         };
@@ -2974,7 +2980,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there */
+            /** @description not taken: the job needs a model that is not set up on the computer (`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` names the recording when the engine kept it, to ask again with */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3016,7 +3022,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there */
+            /** @description not taken: the job needs a model that is not set up on the computer (`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` names the recording when the engine kept it, to ask again with */
             409: {
                 headers: {
                     [name: string]: unknown;

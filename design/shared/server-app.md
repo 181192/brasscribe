@@ -80,12 +80,12 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
 
 1. **Check this computer.** Three lines, each with a word and an icon, never colour alone:
    - the computer and its speed: "Apple M3 Pro · Fast: uses the graphics chip". On Windows with no NVIDIA card: "Slower: no NVIDIA graphics card. It still works; full-band scores take longer."
-   - space: "Needs about 15 GB · 212 GB free"
+   - space: "Needs about 14 GB · 212 GB free" (as built: one less than with the band writer, which a first run no longer fetches)
    - internet: "Needed once, for the downloads"
 
    If space is short, this step says so and offers **Choose another disk…**, for example an external drive. Primary: **Continue**.
 2. **Accept one licence.** This is the one place the app names a model (see §3.2.1).
-   - **Not in a first run.** As built: a first run goes from the check straight to the downloads and fetches everything that needs no account (the tools and both separators), so tabs work without a Hugging Face account or key. This step comes when full-band scores are wanted: a phone sends a recording that needs the band writer (the engine does not take the job, tells the phone to finish setting up on the computer, and says so in its status, `setup_needed`), or the person chooses **Set up full-band scores** (the Ready step, Settings). Bandroom then says "Full-band scores need one more step", with a notification when a phone asked, and **Finish setting up** opens this step. A saved key, or `HF_TOKEN` in the environment, counts as wanting it. On Windows the key is entered in Settings, and the notice says so.
+   - **Not in a first run.** As built: a first run goes from the check straight to the downloads and fetches everything that needs no account (the tools and both separators), so tabs work without a Hugging Face account or key. This step comes when full-band scores are wanted: a phone sends a recording that needs the band writer (the engine does not take the job, tells the phone to open Bandroom on the computer, and says so in its status, `setup_needed`, at every refusal; a single line, the solo profile, is taken and written down without the band writer), or the person chooses **Set up full-band scores** (the Ready step, Settings). Bandroom then says "Full-band scores need one more step", with a notification when a phone asked, and **Finish setting up** opens this step. A saved key, or `HF_TOKEN` in the environment, counts as wanting it. On Windows the key is entered in Settings, and the notice says so.
    - Primary: **Sign in with Hugging Face**. It opens the browser. The user accepts the MuScriptor licence there, and the app gets a read-only key back through a loopback redirect.
    - **Verify** that a Hugging Face OAuth app with a loopback redirect gets a token that can read a gated repo the user has accepted. If it can't, **Paste an access key** becomes the primary, with a button that opens the "new read token" page.
    - Fallback: **Paste an access key instead** reveals a labelled field. It allows paste (WCAG 3.3.8) and has a **Paste** button.
@@ -107,7 +107,7 @@ This is one window, not a wizard of dialogs, and it has **one decision per step*
 4. **Ready.**
    - "Brasscribe is ready. It runs quietly in the menu bar: look for the Brasscribe mark." On Windows: "…in the corner of the taskbar. If you don't see it, choose ^ (Show hidden icons)", with **Keep it visible**, which opens `ms-settings:taskbar`.
    - The switch **Start when I log in** is on, visible and labelled.
-   - While the band writer has not been asked for (Mac): "Tabs work now. A score for a full band needs one more download, with a free Hugging Face account. Brasscribe asks for it when a phone first sends a recording that needs it, or you can set it up now." with **Set up full-band scores**. "Ready to make scores" in the panel then reads "Ready for tabs".
+   - While the band writer has not been asked for (Mac): "Tabs and single lines work now. A score for a full band needs one more download (1.2 GB, a few minutes on a fast connection) and a free Hugging Face account. Bandroom asks for it when a phone first sends a recording that needs it, or you can set it up now." with **Set up full-band scores**. "Ready to make scores" in the panel then reads "Without full-band scores". Every word a phone, the engine or the computer says about this names the place the same way: "Open Bandroom".
    - A one-line heads-up before the OS asks: "Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect."
    - Primary: **Pair a phone**. Secondary: **Done**.
 
@@ -595,8 +595,8 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | setup.1.body | Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices. | Brasscribe gjør det tunge arbeidet her, så telefoner og nettbrett kan lage partitur for hele bandet. Opptakene blir på dine egne enheter. |
 | setup.1.speed.gpu | Fast: uses the graphics chip | Rask: bruker grafikkbrikken |
 | setup.1.speed.cpu | Slower: no NVIDIA graphics card. It still works; full-band scores take longer. | Tregere: fant ikke noe NVIDIA-grafikkort. Det virker likevel, men partitur for fullt band tar lengre tid. |
-| setup.1.space | Needs about 15 GB · {n} GB free | Trenger omtrent 15 GB · {n} GB ledig |
-| setup.1.space.short | Not enough space: needs about 15 GB, {n} GB free | Ikke nok plass: trenger omtrent 15 GB, {n} GB ledig |
+| setup.1.space | Needs about 14 GB · {n} GB free | Trenger omtrent 14 GB · {n} GB ledig |
+| setup.1.space.short | Not enough space: needs about 14 GB, {n} GB free | Ikke nok plass: trenger omtrent 14 GB, {n} GB ledig |
 | setup.1.other-disk | Choose another disk… | Velg en annen disk … |
 | setup.1.internet | Internet: needed once, for the downloads | Internett: trengs én gang, til nedlastingene |
 | setup.continue | Continue | Fortsett |

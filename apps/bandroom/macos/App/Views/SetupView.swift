@@ -90,15 +90,16 @@ struct SetupView: View {
 
     private var checkComputer: some View {
         let free = app.host?.diskFreeGB ?? 0
-        let enough = free >= 15 || app.host == nil
+        let needs = BandWriterSetup.firstRunFreeGB
+        let enough = free >= needs || app.host == nil
         return VStack(alignment: .leading, spacing: 16) {
             Text("Make scores on this computer").brFont(.display)
             Text("Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices.")
                 .brFont(.body).fixedSize(horizontal: false, vertical: true)
             checkRow("cpu", "\(HostSampler.chipName()) · \(String(localized: "Fast: uses the graphics chip"))")
             checkRow(enough ? "internaldrive" : "exclamationmark.triangle.fill",
-                     enough ? String(localized: "Needs about 15 GB · \(free) GB free")
-                            : String(localized: "Not enough space: needs about 15 GB, \(free) GB free"))
+                     enough ? String(localized: "Needs about \(needs) GB · \(free) GB free")
+                            : String(localized: "Not enough space: needs about \(needs) GB, \(free) GB free"))
             checkRow("wifi", String(localized: "Internet: needed once, for the downloads"))
             Spacer()
             HStack {
@@ -410,7 +411,7 @@ struct SetupView: View {
             if app.bandWriterLeftOut {
                 // What a first run leaves out: the one download that needs an account. Offered, never required.
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Tabs work now. A score for a full band needs one more download, with a free Hugging Face account. Brasscribe asks for it when a phone first sends a recording that needs it, or you can set it up now.")
+                    Text("Tabs and single lines work now. A score for a full band needs one more download (\(Strings.gigabytes(ModelComponent.bandWriter.totalBytes)) GB, a few minutes on a fast connection) and a free Hugging Face account. Bandroom asks for it when a phone first sends a recording that needs it, or you can set it up now.")
                         .brFont(.callout).fixedSize(horizontal: false, vertical: true)
                     Button { app.wantBandWriter(); finishing = true; step = keySaved ? 2 : 1 } label: { Text("Set up full-band scores") }
                         .buttonStyle(.brOutline)

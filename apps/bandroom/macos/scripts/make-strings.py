@@ -32,20 +32,24 @@ NB = {
     "A download arrived damaged": "En nedlasting kom fram skadet",
     "About": "Om",
     "About Brasscribe Bandroom": "Om Brasscribe Bandroom",
-    "A phone asked for a full-band score. Open Brasscribe on this Mac to finish setting up.":
-        "En telefon ba om et partitur for fullt band. Åpne Brasscribe på denne Macen for å gjøre ferdig oppsettet.",
-    "Brasscribe is ready. Phones and tablets can send recordings now.":
-        "Brasscribe er klar. Telefoner og nettbrett kan sende opptak nå.",
-    "Tabs work now. A score for a full band needs one more download, with a free Hugging Face account. Brasscribe asks for it when a phone first sends a recording that needs it, or you can set it up now.":
-        "Tabber virker nå. Et partitur for fullt band trenger én nedlasting til, med en gratis Hugging Face-konto. Brasscribe ber om den første gang en telefon sender et opptak som trenger den, eller du kan sette den opp nå.",
+    "A phone asked for a full-band score. Open Bandroom on this Mac to finish setting up.":
+        "En telefon ba om et partitur for fullt band. Åpne Bandroom på denne Macen for å gjøre ferdig oppsettet.",
+    "Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this Mac.":
+        "Brasscribe er klar for tabber og enkeltstemmer. Et partitur for fullt band trenger ett steg til på denne Macen.",
+    "Tabs and single lines work now. A score for a full band needs one more download (%@ GB, a few minutes on a fast connection) and a free Hugging Face account. Bandroom asks for it when a phone first sends a recording that needs it, or you can set it up now.":
+        "Tabber og enkeltstemmer virker nå. Et partitur for fullt band trenger én nedlasting til (%@ GB, noen minutter på en rask forbindelse) og en gratis Hugging Face-konto. Bandroom ber om den første gang en telefon sender et opptak som trenger den, eller du kan sette den opp nå.",
+    "Without full-band scores":
+        "Uten partitur for fullt band",
+    "A score for a full band needs one more download (%@ GB) and a free Hugging Face account.":
+        "Et partitur for fullt band trenger én nedlasting til (%@ GB) og en gratis Hugging Face-konto.",
+    "Needs about %lld GB · %lld GB free":
+        "Trenger omtrent %lld GB · %lld GB ledig",
+    "Not enough space: needs about %lld GB, %lld GB free":
+        "Ikke nok plass: trenger omtrent %lld GB, %lld GB ledig",
     "Set up full-band scores":
         "Sett opp partitur for fullt band",
-    "Ready for tabs":
-        "Klar for tabber",
     "Full-band scores":
         "Partitur for fullt band",
-    "A score for a full band needs one more download, with a free Hugging Face account.":
-        "Et partitur for fullt band trenger én nedlasting til, med en gratis Hugging Face-konto.",
     "Accept one licence": "Godta én lisens",
     "Accept the licence on Hugging Face, then try again": "Godta lisensen på Hugging Face, og prøv igjen",
     "Access key from Hugging Face": "Tilgangsnøkkel fra Hugging Face",
@@ -168,7 +172,6 @@ NB = {
     "Missing one download": "Mangler én nedlasting",
     "More": "Mer",
     "Name shown to phones": "Navnet telefonene ser",
-    "Needs about 15 GB · %lld GB free": "Trenger omtrent 15 GB · %lld GB ledig",
     "Needs attention": "Må sjekkes",
     "Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect.":
         "Nå spør Macen om Brasscribe får finne enheter på nettverket. Velg **Tillat** så telefonene kan koble seg til.",
@@ -176,7 +179,6 @@ NB = {
         "Ingen telefoner ennå. Koble til en telefon for å lage partitur for fullt band fra den.",
     "None connected now · %lld paired": "Ingen tilkoblet nå · %lld sammenkoblet",
     "Not enough space": "Ikke nok plass",
-    "Not enough space: needs about 15 GB, %lld GB free": "Ikke nok plass: trenger omtrent 15 GB, %lld GB ledig",
     "Now": "Nå",
     "OK": "OK",
     "On the phone, open Brasscribe › Settings › Your computer and choose **Brasscribe on %@**. Then allow it here.":

@@ -152,7 +152,7 @@ public sealed class InterfaceVersionTests : IDisposable
     }
 
     [Fact]
-    public async Task A_phone_asking_for_a_full_band_score_makes_the_band_writer_part_of_setup_once()
+    public async Task A_phone_asking_for_a_full_band_score_makes_the_band_writer_part_of_setup_and_is_said_each_time()
     {
         string marker = Path.Combine(Path.GetTempPath(), "bandroom-test-" + Guid.NewGuid().ToString("N"), "band-writer-wanted");
         var setup = new BandWriterSetup(marker, () => false);
@@ -164,12 +164,17 @@ public sealed class InterfaceVersionTests : IDisposable
             await ctl.TickAsync();
             Assert.False(setup.Wanted);
             _engine.Inner.SetupNeeded = [BandWriterSetup.EngineName]; // the engine refused a job for it
+            _engine.Inner.SetupRefusals = 1;
             ctl.FlyoutOpen = true; // asks the engine at the next check
             await ctl.TickAsync();
             ctl.FlyoutOpen = true;
             await ctl.TickAsync();
             Assert.True(setup.Wanted);
             Assert.Equal(1, asked);
+            _engine.Inner.SetupRefusals = 2; // the phone asks again: said again
+            ctl.FlyoutOpen = true;
+            await ctl.TickAsync();
+            Assert.Equal(2, asked);
         }
         finally
         {

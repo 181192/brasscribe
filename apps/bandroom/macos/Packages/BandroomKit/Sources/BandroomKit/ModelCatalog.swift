@@ -56,6 +56,10 @@ public enum BandWriterSetup {
     /// The engine's word for it in `EngineStatus.setupNeeded`.
     public static let engineName = "band-writer"
 
+    /// The free space a first run asks for, in GB: its downloads (the tools and both separators, about 9 GB) and
+    /// room for results. One less than with the band writer, which a first run no longer fetches.
+    public static let firstRunFreeGB = 14
+
     /// Of what is missing, what Bandroom fetches and counts as left to do.
     public static func toFetch(missing: [ModelComponent], bandWriterWanted: Bool) -> [ModelComponent] {
         missing.filter { bandWriterWanted || !$0.needsHuggingFaceKey }

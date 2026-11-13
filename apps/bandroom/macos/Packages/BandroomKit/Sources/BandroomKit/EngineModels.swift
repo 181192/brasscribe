@@ -57,6 +57,8 @@ public struct EngineStatus: Codable, Sendable, Equatable {
     public var jobsQueued: Int
     /// What a job was refused for since the engine started and still is not set up here (`BandWriterSetup.engineName`).
     public var setupNeeded: [String]
+    /// How many jobs the engine has refused for it since it started: it goes up at every one.
+    public var setupRefusals: Int
 
     enum CodingKeys: String, CodingKey {
         case serverId = "server_id"
@@ -68,6 +70,7 @@ public struct EngineStatus: Codable, Sendable, Equatable {
         case jobsRunning = "jobs_running"
         case jobsQueued = "jobs_queued"
         case setupNeeded = "setup_needed"
+        case setupRefusals = "setup_refusals"
     }
 
     public init(from decoder: any Decoder) throws {
@@ -82,13 +85,15 @@ public struct EngineStatus: Codable, Sendable, Equatable {
         jobsQueued = try c.decode(Int.self, forKey: .jobsQueued)
         // An engine from a developer checkout may not say it yet.
         setupNeeded = try c.decodeIfPresent([String].self, forKey: .setupNeeded) ?? []
+        setupRefusals = try c.decodeIfPresent(Int.self, forKey: .setupRefusals) ?? 0
     }
 
     public init(serverId: String, serverName: String, version: String, onlineDevices: Int, pairedDevices: Int,
-                pairingOpen: Bool, jobsRunning: Int, jobsQueued: Int, setupNeeded: [String] = []) {
+                pairingOpen: Bool, jobsRunning: Int, jobsQueued: Int, setupNeeded: [String] = [],
+                setupRefusals: Int = 0) {
         self.serverId = serverId; self.serverName = serverName; self.version = version
         self.onlineDevices = onlineDevices; self.pairedDevices = pairedDevices; self.pairingOpen = pairingOpen
-        self.jobsRunning = jobsRunning; self.jobsQueued = jobsQueued; self.setupNeeded = setupNeeded
+        self.jobsRunning = jobsRunning; self.jobsQueued = jobsQueued; self.setupNeeded = setupNeeded; self.setupRefusals = setupRefusals
     }
 }
 

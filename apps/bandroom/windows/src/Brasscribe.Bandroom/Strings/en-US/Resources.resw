@@ -606,10 +606,10 @@
     <value>Brasscribe is ready. Phones and tablets can make full-band scores now.</value>
   </data>
   <data name="Notify_Ready_Tabs" xml:space="preserve">
-    <value>Brasscribe is ready. Phones and tablets can send recordings now.</value>
+    <value>Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this PC.</value>
   </data>
   <data name="Notify_BandWriter" xml:space="preserve">
-    <value>A phone asked for a full-band score. That needs one more step on this PC: open Settings and add your Hugging Face access key.</value>
+    <value>A phone asked for a full-band score. Open Bandroom on this PC to finish setting up: it asks for your Hugging Face access key in Settings.</value>
   </data>
   <data name="Lan_Title" xml:space="preserve">
     <value>Phones can't find this computer</value>

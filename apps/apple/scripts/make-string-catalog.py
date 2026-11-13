@@ -174,6 +174,8 @@ NB = {
     "Working": "Jobber",
     "Writing down the notes": "Skriver ned tonene",
     "Written": "Notert",
+    "Your computer isn't set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.":
+        "Datamaskinen er ikke satt opp for partitur for fullt band ennå. Åpne Bandroom der og følg det den sier, og send så opptaket på nytt.",
     "Your computer": "Datamaskinen din",
     "Your scores appear here.": "Partiturene dine vises her.",
     "Zoom %lld percent": "Zoom %lld prosent",

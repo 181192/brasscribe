@@ -680,10 +680,11 @@ final class AppModel {
 
     /// A phone sent a recording that needs the band writer, and the engine did not take it (`EngineStatus.setupNeeded`).
     private func engineAskedFor(_ needed: [String]) {
-        guard needed.contains(BandWriterSetup.engineName), !bandWriterWanted, models.missing.contains(.bandWriter) else { return }
+        // Every time, also after Skip for now at the licence: the phone asked again, so it is wanted again.
+        guard needed.contains(BandWriterSetup.engineName), models.missing.contains(.bandWriter) else { return }
         wantBandWriter()
         Notifier.post(id: "band-writer", title: String(localized: "Full-band scores need one more step"),
-                      body: String(localized: "A phone asked for a full-band score. Open Brasscribe on this Mac to finish setting up."))
+                      body: String(localized: "A phone asked for a full-band score. Open Bandroom on this Mac to finish setting up."))
     }
 
     private func downloadsFinished() {
@@ -694,7 +695,7 @@ final class AppModel {
         if !setupComplete, bootstrapper.phase == .done { finishSetup(startAtLogin: true) }
         Notifier.post(id: "ready", title: String(localized: "Brasscribe is ready"),
                       body: models.missing.contains(.bandWriter)
-                          ? String(localized: "Brasscribe is ready. Phones and tablets can send recordings now.")
+                          ? String(localized: "Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this Mac.")
                           : String(localized: "Brasscribe is ready. Phones and tablets can make full-band scores now."))
     }
 

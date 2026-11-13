@@ -139,10 +139,12 @@ refused the same way (`core_missing`), before any model runs. Bandroom for Mac a
 `scribe-core` and point the engine they install at it with `SCRIBE_CORE_CLI`.
 
 A job that needs a model the engine cannot get by itself answers 409 the same way, with the code
-`band-writer-not-set-up`, and is not started: the band writer is gated on Hugging Face, so without the model
+`band_writer_not_set_up`, and is not started: the band writer is gated on Hugging Face, so without the model
 in the local hub cache and without an access key (`HF_TOKEN`, or the file `huggingface-cli login` writes) it
-could only fail. `GET /v1/status` then lists `band-writer` under `setup_needed` until the model is there, which
-is how Bandroom knows to ask for the key. Tab jobs never need it.
+could only fail. The answer carries the `audio_id` of an uploaded recording, which the engine keeps, so the app can
+ask again for the same one. `GET /v1/status` then lists `band-writer` under `setup_needed` until the model is there
+and counts each refusal in `setup_refusals`, which is how Bandroom knows to ask for the key. Tab jobs never need
+it, and a `solo` job is taken without it: it then runs as the apps do on the device (`muscriptor: false`).
 
 ## Configuration
 

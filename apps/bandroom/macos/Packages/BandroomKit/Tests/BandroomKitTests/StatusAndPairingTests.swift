@@ -132,9 +132,9 @@ import Testing
     }
 
     @Test func theEngineSaysWhenAPhoneAskedForWhatIsNotSetUp() async throws {
-        let said = #"{"server_id":"a","server_name":"b","version":"1","online_devices":0,"paired_devices":1,"pairing_open":false,"jobs_running":0,"jobs_queued":0,"setup_needed":["band-writer"]}"#
+        let said = #"{"server_id":"a","server_name":"b","version":"1","online_devices":0,"paired_devices":1,"pairing_open":false,"jobs_running":0,"jobs_queued":0,"setup_refusals":1,"setup_needed":["band-writer"]}"#
         #expect(try JSONDecoder().decode(EngineStatus.self, from: Data(said.utf8)).setupNeeded == [BandWriterSetup.engineName])
-        let silent = said.replacingOccurrences(of: #","setup_needed":["band-writer"]"#, with: "")
+        let silent = said.replacingOccurrences(of: #","setup_refusals":1,"setup_needed":["band-writer"]"#, with: "")
         #expect(try JSONDecoder().decode(EngineStatus.self, from: Data(silent.utf8)).setupNeeded.isEmpty)
 
         let engine = FakeEngine()
@@ -145,9 +145,13 @@ import Testing
         await m.refresh()
         #expect(asked.isEmpty)
         engine.statusValue.setupNeeded = [BandWriterSetup.engineName]
+        engine.statusValue.setupRefusals = 1
         await m.refresh()
         await m.refresh()  // said once, not at every check
         #expect(asked == [[BandWriterSetup.engineName]])
+        engine.statusValue.setupRefusals = 2  // the phone asks again (after Skip for now, say): heard again
+        await m.refresh()
+        #expect(asked.count == 2)
     }
 
     @Test func withoutAnEngineNothingIsBeingMade() async {

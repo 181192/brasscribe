@@ -986,6 +986,12 @@
             "title": "Setup Needed",
             "type": "array"
           },
+          "setup_refusals": {
+            "default": 0,
+            "description": "how many jobs were refused since the engine started because something in setup_needed was not set up: it goes up at every one",
+            "title": "Setup Refusals",
+            "type": "integer"
+          },
           "version": {
             "title": "Version",
             "type": "string"
@@ -4310,7 +4316,7 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there"
+            "description": "not taken: the job needs a model that is not set up on the computer (`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` names the recording when the engine kept it, to ask again with"
           },
           "422": {
             "content": {
@@ -4373,7 +4379,7 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there"
+            "description": "not taken: the job needs a model that is not set up on the computer (`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` names the recording when the engine kept it, to ask again with"
           },
           "422": {
             "content": {

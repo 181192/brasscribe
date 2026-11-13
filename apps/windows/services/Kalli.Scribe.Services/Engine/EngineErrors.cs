@@ -17,6 +17,8 @@ public static class EngineErrors
         ["seat_no_tune"] = "Error_SeatNoTune",
         ["reads_not_offered"] = "Error_ReadsNotOffered",
         ["invalid_options"] = "Error_Options",
+        // Not taken: the computer has not been set up for a full band yet.
+        ["band_writer_not_set_up"] = "Error_BandWriterNotSetUp",
     };
 
     /// <summary>The string key for an engine failure.</summary>

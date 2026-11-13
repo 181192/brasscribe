@@ -32,6 +32,13 @@ KEEP_FINISHED_S = 600.0
 KEEP_FINISHED = 50
 
 
+# Profiles that still give a result worth having while the band writer is not set up, with the parameters that
+# leave it out. A solo line is SwiftF0's, confirmed by Basic Pitch where the band writer would have been asked too
+# (eval/baselines.json, solo-vote: notes both agree on are right 91 times in 100, against 98 with all three), and
+# it is what the apps write on the device. A band without the band writer is only a draft, so it is not here.
+WITHOUT_THE_BAND_WRITER = {"solo": {"muscriptor": False}}
+
+
 class NeedsSetup(RuntimeError):
     """A job was not taken: it needs a model that is not on this computer and that the engine cannot fetch by
     itself (adapters.waits_for_setup). `adapters` names the adapters it waits for."""
@@ -107,14 +114,21 @@ class JobManager:
         self.manifest_parses = 0  # for tests: manifests parsed by list()
         # Adapters a job was refused for because their model waits for setup (NeedsSetup), since this engine started.
         self.asked_for: set[str] = set()
+        self.refusals = 0  # how many jobs were refused for it, so the desktop program hears of each one
 
     def submit(self, audio: Path, profile: str, *, audio_id: str | None = None, title: str | None = None,
                params: dict | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
                previous_run_id: str | None = None, device_name: str | None = None) -> Job:
         pipeline = profiles.build(profile, audio, title, params)
         waiting = sorted({s.adapter for s in pipeline.stages if s.adapter and waits_for_setup(s.adapter)})
+        if waiting and profile in WITHOUT_THE_BAND_WRITER:
+            # One line is written down well without it (as the apps do on the device), so the job is taken.
+            params = {**(params or {}), **WITHOUT_THE_BAND_WRITER[profile]}
+            pipeline = profiles.build(profile, audio, title, params)
+            waiting = sorted({s.adapter for s in pipeline.stages if s.adapter and waits_for_setup(s.adapter)})
         if waiting:
             self.asked_for.update(waiting)
+            self.refusals += 1
             raise NeedsSetup(waiting)
         job = Job(runner.new_run_id(profile), profile, pipeline.stage("arrange").params.get("title"), audio_id,
                   Path(audio), dict(params or {}), allow_heavy, set(cold or ()), previous_run_id,

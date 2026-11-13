@@ -606,10 +606,10 @@
     <value>Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå.</value>
   </data>
   <data name="Notify_Ready_Tabs" xml:space="preserve">
-    <value>Brasscribe er klar. Telefoner og nettbrett kan sende opptak nå.</value>
+    <value>Brasscribe er klar for tabber og enkeltstemmer. Et partitur for fullt band trenger ett steg til på denne PC-en.</value>
   </data>
   <data name="Notify_BandWriter" xml:space="preserve">
-    <value>En telefon ba om et partitur for fullt band. Det trenger ett steg til på denne PC-en: åpne Innstillinger og legg inn tilgangsnøkkelen din fra Hugging Face.</value>
+    <value>En telefon ba om et partitur for fullt band. Åpne Bandroom på denne PC-en for å gjøre ferdig oppsettet: den ber om tilgangsnøkkelen din fra Hugging Face i Innstillinger.</value>
   </data>
   <data name="Lan_Title" xml:space="preserve">
     <value>Telefoner finner ikke denne datamaskinen</value>

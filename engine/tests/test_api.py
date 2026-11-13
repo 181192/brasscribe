@@ -169,10 +169,16 @@ def test_a_job_that_needs_the_band_writer_is_not_taken_until_it_is_set_up(settin
         assert client.get("/v1/status").json()["setup_needed"] == []
         upload = {"file": ("song.wav", audio.read_bytes())}
         r = client.post("/v1/jobs/upload", files=upload, data={"profile": "band"})
-        assert r.status_code == 409 and r.json()["code"] == "band-writer-not-set-up"
+        assert r.status_code == 409 and r.json()["code"] == "band_writer_not_set_up"
         assert "Open Bandroom on the computer" in r.json()["detail"]
         assert client.get("/v1/jobs").json() == []
-        assert client.get("/v1/status").json()["setup_needed"] == ["band-writer"]
+        status = client.get("/v1/status").json()
+        assert status["setup_needed"] == ["band-writer"] and status["setup_refusals"] == 1
+        # The recording was kept: the phone asks again for the same one, and each refusal is counted.
+        kept = r.json()["audio_id"]
+        again = client.post("/v1/jobs", json={"audio_id": kept, "profile": "band"})
+        assert again.status_code == 409 and again.json()["audio_id"] == kept
+        assert client.get("/v1/status").json()["setup_refusals"] == 2
         light = client.post("/v1/jobs/upload", files=upload, data={"profile": "test"})  # SwiftF0 and Basic Pitch only
         assert light.status_code == 202 and wait(client, light.json()["id"])["status"] == "succeeded"
 
@@ -181,8 +187,27 @@ def test_a_job_that_needs_the_band_writer_is_not_taken_until_it_is_set_up(settin
         ref.mkdir(parents=True)
         (ref / "main").write_text("0123abcd")
         assert client.get("/v1/status").json()["setup_needed"] == []
-        again = client.post("/v1/jobs/upload", files=upload, data={"profile": "band"})
+        again = client.post("/v1/jobs", json={"audio_id": kept, "profile": "band"})  # the recording sent before
         assert again.status_code == 202 and wait(client, again.json()["id"])["status"] == "succeeded"
+
+
+def test_a_solo_take_is_written_down_without_the_band_writer(settings, audio, tmp_path, monkeypatch):
+    """One line needs no band writer to be worth having: without the model and a key the solo profile runs as
+    the apps do on the device, Basic Pitch confirming SwiftF0's notes, and the job says so in its parameters."""
+    from scribe_engine import profiles
+
+    monkeypatch.delenv("HF_TOKEN")
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "hf"))
+    monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path / "hub"))
+    pipeline = profiles.build("solo", audio, "Take", {})
+    assert "muscriptor" in {s.adapter for s in pipeline.stages}  # as it is asked for
+    with TestClient(create_app(settings)) as client:
+        jobs = client.app.state.jobs
+        monkeypatch.setattr(jobs.pool, "submit", lambda *a, **k: None)  # taken, not run: the real models are not here
+        job = jobs.submit(audio, "solo", params={})
+        assert job.params["muscriptor"] is False
+        status = client.get("/v1/status").json()
+        assert status["setup_needed"] == [] and status["setup_refusals"] == 0  # nothing was refused
 
 
 def test_errors(client):

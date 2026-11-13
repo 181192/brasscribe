@@ -176,6 +176,7 @@
     <string name="error_engine_failed">Bandroom on your computer couldn\'t finish the tab. Try again.</string>
     <string name="error_invalid_options">Bandroom on your computer didn\'t accept these choices. It may need an update.</string>
     <string name="error_core_missing">Bandroom on your computer needs an update to write tabs. Update it there, then try again.</string>
+    <string name="error_band_writer_not_set_up">Your computer isn\'t set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.</string>
 
     <!-- Check the song (flows.md §7) -->
     <string name="fs_check_title">Check the song</string>

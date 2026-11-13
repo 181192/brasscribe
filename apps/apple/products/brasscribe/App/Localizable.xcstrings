@@ -5877,6 +5877,16 @@
         }
       }
     },
+    "Your computer isn't set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen er ikke satt opp for partitur for fullt band ennå. Åpne Bandroom der og følg det den sier, og send så opptaket på nytt."
+          }
+        }
+      }
+    },
     "Your answer decides how Brasscribe listens. It never guesses.": {
       "localizations": {
         "nb": {
