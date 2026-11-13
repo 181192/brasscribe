@@ -1,0 +1,335 @@
+<!--
+main_class: wrap guide
+styles: charts.css
+scripts: charts.js
+-->
+  <nav class="toc toc-article" aria-labelledby="toc-title">
+    <details class="toc-fold" open>
+    <summary id="toc-title" class="toc-title" data-t="top.summary1"></summary>
+    <ol>
+      <li data-t="top.li1"></li>
+      <li data-t="top.li2"></li>
+      <li data-t="top.li3"></li>
+      <li data-t="top.li4"></li>
+      <li data-t="top.li5"></li>
+      <li data-t="top.li6"></li>
+      <li data-t="top.li7"></li>
+      <li data-t="top.li8"></li>
+      <li data-t="top.li9"></li>
+      <li data-t="top.li10"></li>
+      <li data-t="top.li11"></li>
+      <li data-t="top.li12"></li>
+      <li data-t="top.li13"></li>
+      <li data-t="top.li14"></li>
+      <li data-t="top.li15"></li>
+    </ol>
+    </details>
+  </nav>
+
+  <article class="paper">
+    <header>
+      <p class="overline" data-t="front.p1"></p>
+      <h1 data-t="front.h11"></h1>
+      <p class="byline" data-t="front.p2"></p>
+    </header>
+
+    <section id="abstract" class="abstract" aria-labelledby="abstract-title">
+      <h2 id="abstract-title" data-t="abstract.h21"></h2>
+      <p class="abstract-text" data-t="abstract.p1"></p>
+      <p data-t="abstract.p2"></p>
+      <p data-t="abstract.p3"></p>{{holds p/chorales-transcription/muscriptor-medium.onset_r > 0.6}}{{holds p/chorales-transcription/muscriptor-medium.onset100_r > 0.8}}{{holds p/urmp-transcription/muscriptor-medium.onset_r > 0.6}}
+      {{holds brass/solo-instruments/flugelhorn.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/trombone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/baritone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/tuba.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/horn.q_hit <= brass/solo-instruments/trumpet.q_hit}}
+    </section>
+
+    <section id="introduction" aria-labelledby="introduction-title">
+      <h2 id="introduction-title" data-t="introduction.h21"></h2>
+      <p data-t="introduction.p1"></p>
+      <p data-t="introduction.p2"></p>
+      <p data-t="introduction.p3"></p>
+      <p data-t="introduction.p4"></p>
+      {{chart rhythm}}
+      <p data-t="introduction.p5"></p>
+      <ul>
+        <li data-t="introduction.li1"></li>
+        <li data-t="introduction.li2"></li>
+        <li data-t="introduction.li3"></li>
+        <li data-t="introduction.li4"></li>
+        <li data-t="introduction.li5"></li>
+      </ul>
+    </section>
+
+    <section id="related" aria-labelledby="related-title">
+      <h2 id="related-title" data-t="related.h21"></h2>
+      <p data-t="related.p1"></p>
+      <p data-t="related.p2"></p>
+      <p data-t="related.p3"></p>
+      <p data-t="related.p4"></p>
+      <p data-t="related.p5"></p>
+      <p data-t="related.p6"></p>
+    </section>
+
+    <section id="method" aria-labelledby="method-title">
+      <h2 id="method-title" data-t="method.h21"></h2>
+      <h3 data-t="method.h31"></h3>
+      <p data-t="method.p1"></p>
+
+      {{pipeline brass-pipeline}}
+
+      <div class="table-scroll" tabindex="0" role="region" data-t-aria-label="method.aria_label1" id="table-models">
+        <table>
+          <caption data-t="method.caption1"></caption>
+          <thead>
+            <tr><th scope="col" data-t="method.th1"></th><th scope="col" data-t="method.th2"></th><th scope="col" data-t="method.th3"></th><th scope="col" data-t="method.th4"></th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">SwiftF0 {{cite nieradzik2025swiftf0}}</th><td data-t="method.td1"></td><td data-t="method.td2"></td><td>MIT</td></tr>
+            <tr><th scope="row">Basic Pitch {{cite bittner2022basicpitch}}</th><td data-t="method.td3"></td><td data-t="method.td4"></td><td>Apache-2.0</td></tr>
+            <tr><th scope="row">Beat This! {{cite foscarin2024beatthis}}</th><td data-t="method.td5"></td><td data-t="method.td6"></td><td data-t="method.td7"></td></tr>
+            <tr><th scope="row">MuScriptor medium {{cite rouard2026muscriptor}}</th><td data-t="method.td8"></td><td data-t="method.td9"></td><td data-t="method.td10"></td></tr>
+            <tr><th scope="row">BS-RoFormer SW {{cite lu2024bsroformer}}, {{cite audioseparator}}</th><td data-t="method.td11"></td><td data-t="method.td12"></td><td data-t="method.td13"></td></tr>
+            <tr><th scope="row">MVSep Mega-53 {{cite solovyev2026msst}}</th><td data-t="method.td14"></td><td data-t="method.td15"></td><td data-t="method.td16"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-t="method.h32"></h3>
+      <p data-t="method.p2"></p>
+
+      <h3 data-t="method.h33"></h3>
+      <p data-t="method.p3"></p>
+
+      <h3 data-t="method.h34"></h3>
+      <p data-t="method.p4"></p>
+
+      <h3 data-t="method.h35"></h3>
+      <p data-t="method.p5"></p>
+      <p data-t="method.p6"></p>
+    </section>
+
+    <section id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title" data-t="setup.h21"></h2>
+      <h3 data-t="setup.h31"></h3>
+      <p data-t="setup.p1"></p>
+      <div class="table-scroll" tabindex="0" role="region" data-t-aria-label="setup.aria_label1" id="table-data">
+        <table>
+          <caption data-t="setup.caption1"></caption>
+          <thead>
+            <tr><th scope="col" data-t="setup.th1"></th><th scope="col" data-t="setup.th2"></th><th scope="col" data-t="setup.th3"></th><th scope="col" data-t="setup.th4"></th><th scope="col" data-t="setup.th5"></th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row" data-t="setup.th6"></th><td data-t="setup.td1"></td><td data-t="setup.td2"></td><td>CC BY 4.0</td><td data-t="setup.td3"></td></tr>
+            <tr><th scope="row" data-t="setup.th7"></th><td data-t="setup.td4"></td><td data-t="setup.td5"></td><td data-t="setup.td6"></td><td data-t="setup.td7"></td></tr>
+            <tr><th scope="row" data-t="setup.th8"></th><td data-t="setup.td8"></td><td data-t="setup.td9"></td><td>CC BY 4.0</td><td data-t="setup.td10"></td></tr>
+            <tr><th scope="row" data-t="setup.th9"></th><td data-t="setup.td11"></td><td data-t="setup.td12"></td><td data-t="setup.td13"></td><td data-t="setup.td14"></td></tr>
+            <tr><th scope="row" data-t="setup.th10"></th><td data-t="setup.td15"></td><td data-t="setup.td16"></td><td data-t="setup.td17"></td><td data-t="setup.td18"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-t="setup.h32"></h3>
+      <p data-t="setup.p2"></p>
+
+      <h3 data-t="setup.h33"></h3>
+      <p data-t="setup.p3"></p>
+      <ul class="measures">
+      {{part measure-onset}}
+      {{part measure-position}}
+      {{part measure-written}}
+      {{part measure-metre}}
+      {{part measure-doubt}}
+      </ul>
+
+      <h3 data-t="setup.h34"></h3>
+      <p data-t="setup.p4"></p>
+    </section>
+
+    <section id="results" aria-labelledby="results-title">
+      <h2 id="results-title" data-t="results.h21"></h2>
+
+      <h3 id="found" data-t="results.h31"></h3>
+      <p data-t="results.p1"></p>
+      {{chart notes-found}}
+      <div class="table-scroll" tabindex="0" role="region" data-t-aria-label="results.aria_label1" id="table-prf">
+        <table>
+          <caption data-t="results.caption1"></caption>
+          <thead><tr><th scope="col" data-t="results.th1"></th><th scope="col" class="num">P, ±50 ms</th><th scope="col" class="num">R, ±50 ms</th><th scope="col" class="num">F, ±50 ms</th><th scope="col" class="num">P, ±100 ms</th><th scope="col" class="num">R, ±100 ms</th><th scope="col" class="num">F, ±100 ms</th><th scope="col"><i>n</i></th></tr></thead>
+          <tbody>
+            <tr><th scope="row" data-t="results.th2"></th><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset_p}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset_r}}</td><td class="num">{{data brass/chorales-transcription/muscriptor-medium.onset_f1}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset100_p}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset100_r}}</td><td class="num">{{data brass/chorales-transcription/muscriptor-medium.onset100_f1}}</td><td data-t="results.td1"></td></tr>
+            <tr><th scope="row" data-t="results.th3"></th><td class="num">{{data p/chorales-transcription/basic-pitch.onset_p}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset_r}}</td><td class="num">{{data brass/chorales-transcription/basic-pitch.onset_f1}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset100_p}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset100_r}}</td><td class="num">{{data brass/chorales-transcription/basic-pitch.onset100_f1}}</td><td data-t="results.td2"></td></tr>
+            <tr><th scope="row" data-t="results.th4"></th><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset_p}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset_r}}</td><td class="num">{{data brass/urmp-transcription/muscriptor-medium.onset_f1}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset100_p}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset100_r}}</td><td class="num">{{data brass/urmp-transcription/muscriptor-medium.onset100_f1}}</td><td data-t="results.td3"></td></tr>
+            <tr><th scope="row" data-t="results.th5"></th><td class="num">{{data p/urmp-transcription/basic-pitch.onset_p}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset_r}}</td><td class="num">{{data brass/urmp-transcription/basic-pitch.onset_f1}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset100_p}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset100_r}}</td><td class="num">{{data brass/urmp-transcription/basic-pitch.onset100_f1}}</td><td data-t="results.td4"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="rhythm" data-t="results.h32"></h3>
+      <p data-t="results.p2"></p>
+      <p data-t="results.p3"></p>
+      <p data-t="results.p4"></p>
+      {{chart beats}}
+      <p data-t="results.p5"></p>
+      {{chart durations}}
+
+      <h3 id="solo" data-t="results.h33"></h3>
+      <p data-t="results.p6"></p>
+      {{chart solo-written}}
+
+      <h3 id="instruments" data-t="results.h34"></h3>
+      <p data-t="results.p7"></p>
+      {{chart solo-instruments}}
+
+      <h3 id="voices" data-t="results.h35"></h3>
+      <p data-t="results.p8"></p>
+      {{chart voices}}
+      <p data-t="results.p9"></p>
+      {{chart inner-parts}}
+
+      <h3 id="doubt" data-t="results.h36"></h3>
+      <p data-t="results.p10"></p>
+      {{chart agreement}}
+      {{chart doubt}}
+
+      <h3 id="fast" data-t="results.h37"></h3>
+      <p data-t="results.p11"></p>
+      {{chart fast-notes}}
+
+      <h3 id="comparisons" data-t="results.h38"></h3>
+      <p data-t="results.p12"></p>
+      {{chart models}}
+      <ul>
+        <li data-t="results.li1"></li>
+        <li data-t="results.li2"></li>
+        <li data-t="results.li3"></li>
+        <li data-t="results.li4"></li>
+        <li data-t="results.li5"></li>
+      </ul>
+      {{chart solo-trackers}}
+      <p data-t="results.p13"></p>
+      {{chart consensus}}
+      <p data-t="results.p14"></p>
+      {{chart melody}}
+      <p data-t="results.p15"></p>
+
+      <h3 id="performance" data-t="results.h39"></h3>
+      <p data-t="results.p16"></p>
+      {{chart speed}}
+      {{chart solo-stages}}
+      {{chart conversions}}
+    </section>
+
+    <section id="discussion" aria-labelledby="discussion-title">
+      <h2 id="discussion-title" data-t="discussion.h21"></h2>
+      <h3 data-t="discussion.h31"></h3>
+      <ul>
+        <li data-t="discussion.li1"></li>
+        <li data-t="discussion.li2"></li>
+        <li data-t="discussion.li3"></li>
+        <li data-t="discussion.li4"></li>
+        <li data-t="discussion.li5"></li>
+        <li data-t="discussion.li6"></li>
+        <li data-t="discussion.li7"></li>
+        <li data-t="discussion.li8"></li>
+      </ul>
+      <h3 data-t="discussion.h32"></h3>
+      <ul>
+        <li data-t="discussion.li9"></li>
+        <li data-t="discussion.li10"></li>
+        <li data-t="discussion.li11"></li>
+        <li data-t="discussion.li12"></li>
+        <li data-t="discussion.li13"></li>
+        <li data-t="discussion.li14"></li>
+      </ul>
+    </section>
+
+    <section id="limitations" aria-labelledby="limitations-title">
+      <h2 id="limitations-title" data-t="limitations.h21"></h2>
+      <ul>
+        <li data-t="limitations.li1"></li>
+        <li data-t="limitations.li2"></li>
+        <li data-t="limitations.li3"></li>
+        <li data-t="limitations.li4"></li>
+        <li data-t="limitations.li5"></li>
+      </ul>
+    </section>
+
+    <section id="conclusion" aria-labelledby="conclusion-title">
+      <h2 id="conclusion-title" data-t="conclusion.h21"></h2>
+      <p data-t="conclusion.p1"></p>
+      <p data-t="conclusion.p2"></p>
+    </section>
+
+    <section id="reproducibility" aria-labelledby="reproducibility-title">
+      <h2 id="reproducibility-title" data-t="reproducibility.h21"></h2>
+      <ul>
+        <li data-t="reproducibility.li1"></li>
+        <li data-t="reproducibility.li2"></li>
+        <li data-t="reproducibility.li3"></li>
+        <li data-t="reproducibility.li4"></li>
+        <li data-t="reproducibility.li5"></li>
+        <li data-t="reproducibility.li6"></li>
+        <li data-t="reproducibility.li7"></li>
+      </ul>
+    </section>
+
+    <section id="ethics" aria-labelledby="ethics-title">
+      <h2 id="ethics-title" data-t="ethics.h21"></h2>
+      <ul>
+        <li data-t="ethics.li1"></li>
+        <li data-t="ethics.li2"></li>
+        <li data-t="ethics.li3"></li>
+        <li data-t="ethics.li4"></li>
+        <li data-t="ethics.li5"></li>
+      </ul>
+    </section>
+
+    <section id="acknowledgements" aria-labelledby="acknowledgements-title">
+      <h2 id="acknowledgements-title" data-t="acknowledgements.h21"></h2>
+      <p data-t="acknowledgements.p1"></p>
+    </section>
+
+    <section id="cite" aria-labelledby="cite-title">
+      <h2 id="cite-title" data-t="cite.h21"></h2>
+      <p data-t="cite.p1"></p>
+      <pre class="bibtex"><code>@misc{kalliainen2026brasscribe,
+  author       = {Kalliainen, Kristoffer-Andre},
+  title        = {Brasscribe: Transcribing Brass Recordings into Band Scores
+                  with Pretrained Models and Deterministic Rules},
+  year         = {2026},
+  howpublished = {The Brasscribe project},
+  url          = {https://github.com/181192/brasscribe}
+}</code></pre>
+    </section>
+
+    <section id="references" aria-labelledby="references-title">
+      <h2 id="references-title" data-t="references.h21"></h2>
+      {{references}}
+    </section>
+
+    <section id="appendix" aria-labelledby="appendix-title">
+      <h2 id="appendix-title" data-t="appendix.h21"></h2>
+      <p data-t="appendix.p1"></p>
+      <div class="table-scroll" tabindex="0" role="region" data-t-aria-label="appendix.aria_label1" id="table-measured">
+        <table>
+          <caption data-t="appendix.caption1"></caption>
+          <thead><tr><th scope="col" data-t="appendix.th1"></th><th scope="col" data-t="appendix.th2"></th><th scope="col" data-t="appendix.th3"></th></tr></thead>
+          <tbody>
+            <tr><th scope="row" data-t="appendix.th4"></th><td>{{data m/solo_vote/n_all int}}, {{data m/solo_vote/n_mus_sw int}}, {{data m/solo_vote/n_bp_sw int}}, {{data m/solo_vote/n_sw int}}, {{data m/solo_vote/n_bp_mus int}}</td><td data-t="appendix.td1"></td></tr>
+            <tr><th scope="row" data-t="appendix.th5"></th><td data-t="appendix.td2"></td><td><code>docs/shared/research/13-performance-audit.md</code>, M5</td></tr>
+            <tr><th scope="row" data-t="appendix.th6"></th><td>{{data m/solo_stages/beats sec}}, {{data m/solo_stages/swift_f0 sec}}, {{data m/solo_stages/basic_pitch sec}}, {{data m/solo_stages/muscriptor sec}}, {{data m/solo_stages/contour sec}}</td><td data-t="appendix.td3"></td></tr>
+            <tr><th scope="row" data-t="appendix.th7"></th><td data-t="appendix.td4"></td><td data-t="appendix.td5"></td></tr>
+            <tr><th scope="row" data-t="appendix.th8"></th><td data-t="appendix.td6"></td><td data-t="appendix.td7"></td></tr>
+            <tr><th scope="row" data-t="appendix.th9"></th><td>{{data m/triplets/triplet_eighths pct}}</td><td data-t="appendix.td8"></td></tr>
+            <tr><th scope="row" data-t="appendix.th10"></th><td data-t="appendix.td9"></td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row" data-t="appendix.th11"></th><td data-t="appendix.td10"></td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row" data-t="appendix.th12"></th><td data-t="appendix.td11"></td><td><code>convert/reports/*.json</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="appendix-tables" class="print-only" aria-labelledby="appendix-tables-title">
+      <h2 id="appendix-tables-title" data-t="appendix_tables.h21"></h2>
+      {{figuretables}}
+    </section>
+    <p class="to-top" data-t="front.p3"></p>
+  </article>

@@ -55,9 +55,10 @@ A page is its structure and its words, kept apart:
   `document`). The reader stays at the same heading, and a figure keeps what its controls stood at
   (`remember` in `shared/showcase.js`). Without JavaScript the page
   is in English and says so.
-- A page that is still one whole file per language (`pages/en/<name>.html` and
-  `pages/nb/<name>.html`, as the paper is) is served the same way: its Norwegian body is swapped
-  in whole.
+- A number or a reference that a macro prints in the structure (`{{data …}}` in a table cell) and that
+  reads differently in Norwegian (0.66, 0,66) is swapped where it stands, like a word.
+- A page may still be one whole file per language (`pages/en/<name>.html` and
+  `pages/nb/<name>.html`): its Norwegian body is swapped in whole. No page is.
 
 ## What is where
 
@@ -140,7 +141,8 @@ leaves these comments out of the pages.
 
 ## Research pages and figures
 
-A product's research page (`pages/<lang>/research.html`) types no number. It names a measurement and
+A product's research page (`pages/research.html`, with its words in `research.en.toml` and
+`research.nb.toml` like every page) types no number. It names a measurement and
 the build prints it: from `eval/baselines.json` (the numbers `scribe bench` gates), from
 `convert/reports/` (the converted models' benchmarks), or from `shared/research/measured/measured.toml`
 (numbers measured once that exist only in prose under `docs/`, each with its source and command). So
@@ -151,8 +153,11 @@ the page follows the baselines. `site/research.py` lists the keys and the macros
 - **A sentence that depends on a number says so.** `{{holds <key> < 0.5}}` prints nothing and fails the
   build when it stops being true; a figure's `holds` does the same for its title. When the build fails
   there, the numbers have moved past what the words say: rewrite the words, then the rule.
-- **Figures** are described in `shared/research/figures.py` (words in English and Norwegian, rows that
-  name their measurements). The build writes each as a data table with its numbers; `shared/charts.js`
+- **Figures** are described in `shared/research/figures.py` (rows that name their measurements, and
+  the keys of their words). The words are in `shared/research/words.en.toml` and `words.nb.toml`:
+  `[chart]` what every figure says, `[figure.<name>]` one figure's title, caption, labels and notes.
+  The two files must hold the same keys, and a key nothing uses fails the build. Numbers are written
+  the way the language writes them, in the figure, its table and its readout. The build writes each as a data table with its numbers; `shared/charts.js`
   draws the chart from the same numbers and folds the table away, so the table is also what a browser
   without scripts shows. The exact values of a row appear in a panel under the plot on hover, touch
   and keyboard focus. `shared/charts.css` holds the series colours, which were checked for colour
@@ -161,10 +166,14 @@ the page follows the baselines. `site/research.py` lists the keys and the macros
 - **The spread behind a mean** (a dot per piece) comes from `shared/research/measured/per-piece.json`,
   made by `shared/research/per_piece.py` on a machine with the eval data. The build fails when a spread's
   mean no longer matches its baseline, so run the script again with a deliberate baseline change.
-- **Parts** in `shared/research/<lang>/` are shared by the products' research pages.
+- **Parts** (`shared/research/measure-<name>.html`, shown with `{{part measure-<name>}}`) are shared by
+  the products' research pages. A part is structure like a page; its words are under
+  `[measure.<name>]` in the same two word files.
 - **The keyboard is tested in a browser** by `shared/research/tests/keyboard.mjs` (its first lines say how
   to run it): every row of every view of every chart is reached with the arrow keys, and Escape clears
-  the readout. Run it after a change to `shared/charts.js`. The build itself refuses one known cause of a
+  the readout, in English, after a change to Norwegian, after the change back and on a first visit in
+  Norwegian; in each, every figure must be drawn once and in the page's language. Run it after a change
+  to `shared/charts.js`, `shared/scribe.js` or how the build writes a figure. The build itself refuses one known cause of a
   dead keyboard: a part of a chart stored under the name of one of the chart's methods.
 - **A paper keeps to the conventions of its field**, and the build checks what it can: citations are
   `{{cite <key>}}` from `shared/research/references.toml` (numbered in the order of first citation;
@@ -172,6 +181,6 @@ the page follows the baselines. `site/research.py` lists the keys and the macros
   figures, tables and equations are numbered separately and referred to with `{{ref fig:<name>}}`,
   `{{ref table:<name>}}` and `{{ref eq:<name>}}` (a figure or table that the text has not referred to
   before it appears fails the build); `{{built}}` prints the date and commit of the checkout; the
-  abstract (`<p class="abstract-text">`) must be 150 to 250 words. Where the pieces behind a mean are
+  abstract (`<p class="abstract-text">`) must be 150 to 250 words in each language. Where the pieces behind a mean are
   known, figures, tables and `{{data <key>@sd}}`, `@lo`, `@hi` give the standard deviation and a
   bootstrap 95 % interval. Add a reference only after checking it against its DOI or record page.

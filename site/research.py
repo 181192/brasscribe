@@ -9,7 +9,12 @@ No number is typed into a research page. A page names the measurement and the bu
                                     sentence such as "under half" cannot outlive the numbers it rests on
   {{chart <figure>}}                an interactive figure with its data table (site/shared/charts.js draws it)
   {{pipeline <figure>}}             a diagram of stages
-  {{part <name>}}                   site/shared/research/<lang>/<name>.html, shared by the products' pages
+  {{part <name>}}                   site/shared/research/<name>.html, shared by the products' pages
+
+A page is written as every page of the site: its structure once, its words by key in <page>.en.toml and
+<page>.nb.toml. A number is printed the way its language writes it (0.66, 0,66), in a sentence and in a table
+cell alike. What the research pages share has its words in site/shared/research/words.en.toml and words.nb.toml:
+[chart] what every figure says, [figure.<name>] the words of one figure, [measure.<name>] those of a shared part.
 
 A key is <target>/<suite>/<metric> in eval/baselines.json (target: brass or fretted), or
 m/<table>/<field> in site/shared/research/measured/measured.toml: numbers that were measured once and exist
@@ -20,7 +25,7 @@ rtf and peak_rss_mb). per_piece.py also writes the value of every piece behind a
 (site/shared/research/measured/per-piece.json), which the charts show; <key>@min and <key>@max are the
 lowest and the highest of them.
 
-The figures themselves are described in site/shared/research/figures.py.
+The figures themselves are described in site/shared/research/figures.py, which names their words by key.
 
 A paper follows the conventions of its field, and the build holds it to them:
 
@@ -39,7 +44,8 @@ A paper follows the conventions of its field, and the build holds it to them:
   {{figuretables}}                  the data tables of the figures above it, for an appendix: in print a figure is its
                                     plot and caption, and its table stands there
 
-After the pages are written, finish() checks each paper's abstract for its length.
+After the pages are written, finish() checks each paper's abstract for its length in both languages, and that
+every word of words.<lang>.toml is used.
 """
 
 from __future__ import annotations
@@ -62,18 +68,9 @@ ROOT = SITE.parent
 SHARED = SITE / "shared" / "research"
 MACROS = ("span", "holds", "chart", "pipeline", "part", "cite", "references", "ref", "label", "built", "figuretables")  # and {{data <key>}}, which site/build.py passes on
 FORMATS = ("f1", "f2", "f3", "pct", "int", "sec", "gb")
+LANGS = ("en", "nb")
 NBSP = chr(0xA0)  # between a number and its unit, and between thousands in Norwegian
 OPS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
-WORDS = {
-    "en": {"figure": "Figure", "table": "Table", "datatable": "Data table", "measure": "Measure", "n": "Measured on", "range": "lowest–highest",
-           "first": "Shown here: {view}; the other views, with n per view, are tabulated in the appendix of data tables.",
-           "fig": "Figure", "eq": "Eq.", "sd": "SD", "ci": "95 % CI", "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values.",
-           "tap": "Tap a row for its exact values."},
-    "nb": {"figure": "Figur", "table": "Tabell", "datatable": "Datatabell", "measure": "Mål", "n": "Målt på", "range": "laveste–høyeste",
-           "first": "Vist her: {view}; de andre visningene, med n per visning, står i vedlegget med datatabeller.",
-           "fig": "Figur", "eq": "ligning", "sd": "SA", "ci": "95 % KI", "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene.",
-           "tap": "Trykk på en rad for de nøyaktige verdiene."},
-}
 
 
 def script_guard() -> None:
@@ -93,7 +90,7 @@ class Numbers:
         self.targets = {t: {s: v["metrics"] for s, v in body["suites"].items()} for t, body in base["targets"].items()}
         self.measured = tomllib.loads((SHARED / "measured" / "measured.toml").read_text())
         self.pieces = json.loads((SHARED / "measured" / "per-piece.json").read_text())["suites"]
-        self.figures = runpy.run_path(str(SHARED / "figures.py"))
+        self.figures = runpy.run_path(str(SHARED / "figures.py"), {"T": T})
         self.converted = {f.stem: json.loads(f.read_text()) for f in sorted((ROOT / "convert" / "reports").glob("*.json"))}
 
     def get(self, key: str) -> float:
@@ -185,9 +182,42 @@ def fmt(value: float, how: str, lang: str) -> str:
     return text.replace(".", ",") if lang == "nb" else text
 
 
-def pick(text, lang: str) -> str:
-    """Figures give their words as (English, Norwegian)."""
-    return text if isinstance(text, str) else text[0 if lang == "en" else 1]
+class T:
+    """The words of a figure: a key under [figure] of words.en.toml and words.nb.toml, and what fills its %1, %2 …"""
+
+    def __init__(self, key: str, *values) -> None:
+        self.key, self.values = key, values
+
+
+SAID: set[str] = set()
+
+
+def table(lang: str) -> dict:
+    """The research pages' own words, by key: [chart], [figure.<name>] and [measure.<name>] of words.<lang>.toml."""
+    if "made" not in table.__dict__:
+        def flat(nested: dict, prefix: str = "") -> dict:
+            out = {}
+            for key, value in nested.items():
+                out.update(flat(value, f"{prefix}{key}.") if isinstance(value, dict) else {prefix + key: value})
+            return out
+        table.made = {each: flat(tomllib.loads((SHARED / f"words.{each}.toml").read_text())) for each in LANGS}
+        differ = set(table.made["en"]) ^ set(table.made["nb"])
+        if differ:
+            sys.exit(f"research: words.en.toml and words.nb.toml differ in: {', '.join(sorted(differ))}")
+    return table.made[lang]
+
+
+def pick(text, lang: str):
+    """A figure's words in the language being written; a name that is the same in both is given as it is."""
+    if not isinstance(text, T):
+        return text
+    if "figure." + text.key not in table(lang):
+        sys.exit(f"research: figures.py names the words '{text.key}', which words.{lang}.toml does not have under [figure]")
+    SAID.add("figure." + text.key)
+    said = table(lang)["figure." + text.key]
+    for i in range(len(text.values), 0, -1):
+        said = said.replace(f"%{i}", str(pick(text.values[i - 1], lang)))
+    return said
 
 
 def fill(text, lang: str, how: str) -> str:
@@ -224,16 +254,12 @@ def macro(page, name: str, words: list[str], args: dict[str, str]) -> str:
     if name == "holds":
         check(words, page.dir or "the front page")
         return ""
-    if name == "part":
-        return page.macros((SHARED / lang / f"{words[0]}.html").read_text().rstrip())
     paper = numbering(page)
+    if name == "part":
+        made = page.macros((SHARED / f"{words[0]}.html").read_text().rstrip())
+        page.lang = lang  # the page writes each macro in both languages, and is back at the first when it has
+        return made
     if name == "cite":
-        for key in words:
-            if key not in references():
-                sys.exit(f"{page.dir}: {{{{cite {key}}}}} names no entry of site/shared/research/references.toml")
-            if key not in paper["cited"]:
-                paper["cited"].append(key)
-            CITED.add(key)
         return "[" + ", ".join(f'<a href="#ref-{key}">{paper["cited"].index(key) + 1}</a>' for key in words) + "]"
     if name == "references":
         items = []
@@ -245,22 +271,17 @@ def macro(page, name: str, words: list[str], args: dict[str, str]) -> str:
     if name == "built":
         return built(lang)
     if name == "figuretables":  # the data tables of every figure so far, for the appendix that only print shows
-        return "\n".join(f'<h3>{WORDS[lang]["fig"]}{NBSP}{number}</h3>\n' + "\n".join(tables) for number, tables in paper["tables"])
+        return "\n".join(f'<h3>{table(lang)["chart.fig"]}{NBSP}{number}</h3>\n' + "\n".join(tables) for number, tables in paper["tables"])
     if name in ("ref", "label"):
         kind, _, what = words[0].partition(":")
         number = paper[kind].get(what)
         if number is None:
             sys.exit(f"{page.dir}: {{{{{name} {words[0]}}}}} names nothing that the page shows")
         if name == "ref":
-            paper["seen"].add(words[0])
             if kind == "eq":
                 return f'<a href="#eq-{what}">({number})</a>'
-            return f'<a href="#{kind}-{what}">{WORDS[lang][kind]}{NBSP}{number}</a>'
-        if kind == "table" and words[0] not in paper["seen"]:
-            sys.exit(f"{page.dir}: table '{what}' appears before the text refers to it with {{{{ref table:{what}}}}}")
-        return f"({number})" if kind == "eq" else f"{WORDS[lang][kind]}{NBSP}{number}"
-    if paper["strict"] and f"fig:{words[0]}" not in paper["seen"]:
-        sys.exit(f"{page.dir}: figure '{words[0]}' appears before the text refers to it with {{{{ref fig:{words[0]}}}}}")
+            return f'<a href="#{kind}-{what}">{table(lang)["chart." + kind]}{NBSP}{number}</a>'
+        return f"({number})" if kind == "eq" else f"{table(lang)["chart." + kind]}{NBSP}{number}"
     page.figures = paper["fig"][words[0]]
     spec = numbers().figures["FIGURES"].get(words[0])
     if spec is None:
@@ -282,16 +303,40 @@ def references() -> dict:
 
 
 def numbering(page) -> dict:
-    """Figures, tables and equations of a page, each kind numbered in the order it appears (parts included)."""
-    if not hasattr(page, "paper"):
-        body = page.body
+    """What a paper numbers, read from its whole text in the language being written before any macro runs: figures,
+    tables and equations, each kind in the order it appears, and its sources in the order they are first cited. The
+    build writes a page's figures before its words, so the order cannot be taken from the order the macros run in."""
+    papers = page.__dict__.get("papers")
+    if papers is None:
+        papers = page.papers = {}
+        for lang in LANGS:  # the shared parts' words, beside the page's own
+            page.table[lang] = {**{key: said for key, said in table(lang).items() if key.startswith("measure.")}, **page.table[lang]}
+    if page.lang not in papers:
+        body = page.body if isinstance(page.body, str) else page.body["en"]
         for _ in range(3):  # a part may hold a figure or an equation
-            body = re.sub(r"\{\{part ([\w-]+)\}\}", lambda m: (SHARED / page.lang / f"{m.group(1)}.html").read_text(), body)
-        page.paper = {"fig": {}, "table": {}, "eq": {}, "seen": set(), "cited": [], "tables": [], "strict": "{{references}}" in body}
-        for kind, what in re.findall(r"\{\{(chart|pipeline|label) ([\w:-]+)\}\}", body):
-            kind, _, what = (what if kind == "label" else "fig:" + what).partition(":")
-            page.paper[kind].setdefault(what, len(page.paper[kind]) + 1)
-    return page.paper
+            body = re.sub(r"\{\{part ([\w-]+)\}\}", lambda m: (SHARED / f"{m.group(1)}.html").read_text(), body)
+        # Each element's words stand where the element does.
+        body = re.sub(r'<(\w+)[^<>]*? data-t="([^"]+)"[^<>]*></\1>', lambda m: str(page.table[page.lang].get(m.group(2), "")), body)
+        paper = papers[page.lang] = {"fig": {}, "table": {}, "eq": {}, "cited": [], "tables": []}
+        strict, seen = "{{references}}" in body, set()
+        for kind, rest in re.findall(r"\{\{(chart|pipeline|label|ref|cite) ([^{}]+)\}\}", body):
+            if kind == "cite":
+                for key in rest.split():
+                    if key not in references():
+                        sys.exit(f"{page.dir}: {{{{cite {key}}}}} names no entry of site/shared/research/references.toml")
+                    if key not in paper["cited"]:
+                        paper["cited"].append(key)
+                    CITED.add(key)
+                continue
+            if kind == "ref":
+                seen.add(rest.strip())
+                continue
+            kind, _, what = (rest if kind == "label" else "fig:" + rest).strip().partition(":")
+            if strict and kind in ("fig", "table") and f"{kind}:{what}" not in seen and what not in paper[kind]:
+                sys.exit(f"{page.dir} ({page.lang}): {'figure' if kind == 'fig' else 'table'} '{what}' appears before the text "
+                         f"refers to it with {{{{ref {kind}:{what}}}}}")
+            paper[kind].setdefault(what, len(paper[kind]) + 1)
+    return papers[page.lang]
 
 
 def built(lang: str) -> str:
@@ -309,19 +354,28 @@ def built(lang: str) -> str:
 
 
 def finish(out: Path) -> None:
-    """What can only be checked when every page is written: unused references, and the length of each abstract."""
+    """What can only be checked when every page is written: unused references and words, and the length of each abstract."""
     unused = sorted(set(references()) - CITED)
     if unused:
         sys.exit(f"research: no paper cites {', '.join(unused)}; cite them or take them out of site/shared/research/references.toml")
+    parts = "".join(part.read_text() for part in sorted(SHARED.glob("*.html")))
+    idle = sorted(key for key in table("en") if (key.startswith("figure.") and key not in SAID)
+                  or (key.startswith("measure.") and f'"{key}"' not in parts))
+    if idle:
+        sys.exit(f"research: words that no figure or shared part uses, in words.en.toml and words.nb.toml: {', '.join(idle)}")
     for page in sorted(out.rglob("index.html")):
         text = page.read_text()
-        found = re.search(r'<p class="abstract-text">(.*?)</p>', text, re.S)
+        found = re.search(r'<p class="abstract-text"(?: data-t="([^"]+)")?>(.*?)</p>', text, re.S)
         if '<article class="paper"' in text and not found:
             sys.exit(f"research: {page.relative_to(out)} is a paper without an abstract (<p class=\"abstract-text\">)")
         if found:
-            count = len(re.sub(r"<[^>]+>", " ", found.group(1)).split())
-            if not 150 <= count <= 250:
-                sys.exit(f"research: the abstract of {page.relative_to(out)} is {count} words; a paper's abstract is 150 to 250")
+            abstracts = {"en": found.group(2)}
+            if found.group(1):
+                abstracts["nb"] = json.loads((page.parent / "nb.json").read_text())["t"][found.group(1)]
+            for lang, abstract in abstracts.items():
+                count = len(re.sub(r"<[^>]+>", " ", abstract).split())
+                if not 150 <= count <= 250:
+                    sys.exit(f"research: the abstract of {page.relative_to(out)} ({lang}) is {count} words; a paper's abstract is 150 to 250")
 
 
 # Charts -----------------------------------------------------------------------------------------
@@ -334,8 +388,12 @@ def whole(made: str, name: str) -> str:
     return made
 
 
+def chart_words(lang: str) -> dict:
+    return {key.removeprefix("chart."): said for key, said in table(lang).items() if key.startswith("chart.")}
+
+
 def chart(spec: dict, name: str, page) -> str:
-    lang, w, num, e = page.lang, WORDS[page.lang], numbers(), html.escape
+    lang, w, num, e = page.lang, chart_words(page.lang), numbers(), html.escape
     views = []
     for view in spec["views"]:
         how, top, rows = view.get("format", spec.get("format", "f2")), view.get("max", spec.get("max", 1)), []
@@ -417,7 +475,8 @@ def chart(spec: dict, name: str, page) -> str:
     data["words"]["tap"] = w["tap"]
     if not re.fullmatch(r"[a-z0-9-]+", name):
         sys.exit(f"research: a figure's name is its id in the page, so '{name}' must be lower-case letters, digits and hyphens")
-    numbering(page)["tables"].append((page.figures, tables))
+    if all(number != page.figures for number, _ in numbering(page)["tables"]):
+        numbering(page)["tables"].append((page.figures, tables))
     made = (f'<figure class="chart" id="fig-{name}" aria-labelledby="fig-{name}-title" data-chart data-brand="{page.product.id}">\n'
             f'<p class="chart-sub">{fill(spec["sub"], lang, how)}</p>\n'
             f'<div class="chart-plot" hidden></div>\n'
@@ -432,7 +491,7 @@ def chart(spec: dict, name: str, page) -> str:
 
 def pipeline(spec: dict, name: str, page) -> str:
     """Rows of one box or two side by side; each box is (kind, title, lines): kind is model, rule or human."""
-    lang, w, e = page.lang, WORDS[page.lang], html.escape
+    lang, w, e = page.lang, chart_words(page.lang), html.escape
     out, y, above = [], 8, None
     for row in spec["rows"]:
         height = 28 + 16 * max(len(pick(box[2], lang)) for box in row)
