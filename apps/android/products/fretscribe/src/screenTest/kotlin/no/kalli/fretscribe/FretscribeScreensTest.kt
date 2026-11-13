@@ -76,13 +76,13 @@ class FretscribeScreensTest : ScreenCatalogue() {
         whatIsThis()
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performScrollTo().performClick()
-        rule.onNodeWithTag("fs-what-continue").performClick()
+        rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
         waitForTag("fs-show-tab")
     }
 
     private fun theTab() {
         checkTheSong()
-        rule.onNodeWithTag("fs-show-tab").performClick()
+        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
         waitForTag("fs-tab", 30_000)
         waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
         // And the player under the tab, which comes once the recording has been looked for on the phone (on another thread).
@@ -127,7 +127,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
             whatIsThis()
             rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
                 hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-song"))).performScrollTo().performClick()
-            rule.onNodeWithTag("fs-what-continue").performClick()
+            rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
             waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
         },
         Entry("check-the-song") { checkTheSong() },

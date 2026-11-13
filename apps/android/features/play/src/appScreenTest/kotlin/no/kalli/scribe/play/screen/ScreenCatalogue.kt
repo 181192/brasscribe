@@ -153,12 +153,12 @@ abstract class ScreenCatalogue : ScreenTest() {
         onEveryScreen("small") { assertNoTextIsClipped() }
     }
 
-    /** The small phone on its side (640 × 360 dp): the least height a screen gets. */
+    /** The small phone on its side (640 × 360 dp): the least height a screen gets. Nothing is cut off. */
     @Test
     fun onASmallPhoneOnItsSide() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
-        onEveryScreen("small-landscape")
+        onEveryScreen("small-landscape") { assertNoTextIsClipped() }
     }
 
     @Test

@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 
 /**
  * While a recording is being written down, a small phone still shows how far it has come: the step, the percentage
- * and Cancel are in view without scrolling, upright with larger text and on its side. In both apps (the screen is shared).
+ * and Cancel are in view without scrolling, upright with larger text and on its side; upright the note about leaving is too. In both apps (the screen is shared).
  */
 @RunWith(AndroidJUnit4::class)
 class WritingDownRoomTest : ScreenTest() {
@@ -67,6 +67,9 @@ class WritingDownRoomTest : ScreenTest() {
         writingDown()
         shot("writing-down-small")
         theProgressIsInView()
+        // What the player has to know before leaving the screen (for a tab: keep the app open) is there without scrolling.
+        val leave = rule.onNodeWithTag("transcribe-leave").fetchSemanticsNode()
+        assertEquals("the note about leaving is in view, whole", leave.size.height.toFloat(), leave.boundsInWindow.height, 1f)
     }
 
     @Test

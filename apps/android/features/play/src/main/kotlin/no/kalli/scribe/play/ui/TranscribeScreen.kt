@@ -194,20 +194,21 @@ fun TranscribeScreen(vm: PlayViewModel) {
             Text(percentText, style = no.kalli.scribe.design.ScribeNumericStyle, color = c.textMuted, modifier = Modifier.semantics { testTag = "transcribe-percent" })
             if (eta != null) Text(eta, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
-        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
-            steps.forEachIndexed { i, step ->
-                StepRow(stringResource(step.text), done = i < current, now = i == current)
-            }
-        }
-        // Where the work is done and that the player may leave: under the progress, never over it.
+        // Where the work is done and that the player may leave: right under the progress, before the steps, so it is
+        // in view on a small phone too (for a tab made on the phone it says to keep the app open).
         val leave = when {
             s.draft -> R.string.transcribe_leave_draft
             onPhone -> R.string.transcribe_leave
             notifies -> R.string.transcribe_leave_computer
             else -> R.string.transcribe_leave_computer_quiet
         }
-        InfoNote(stringResource(leave, s.where),
+        InfoNote(stringResource(leave, s.where), Modifier.semantics { testTag = "transcribe-leave" },
             icon = if (onPhone) DesignR.drawable.ic_bc_info else DesignR.drawable.ic_bc_computer)
+        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
+            steps.forEachIndexed { i, step ->
+                StepRow(stringResource(step.text), done = i < current, now = i == current)
+            }
+        }
     }
 
     if (confirmCancel) {
