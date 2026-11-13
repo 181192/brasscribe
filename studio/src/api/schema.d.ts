@@ -1429,6 +1429,11 @@ export interface components {
             /** Id */
             id: string;
             /**
+             * Missing
+             * @description files a succeeded job should have had and has not (its PDF, its MIDI), each with why. The rest of the job is whole; asking for one of these files answers 404 with the same message
+             */
+            missing?: components["schemas"]["MissingOutput"][];
+            /**
              * Outputs
              * @description names fetchable under /v1/jobs/{id}/artifacts/{name}
              */
@@ -1606,6 +1611,25 @@ export interface components {
             tick: number;
         } & {
             [key: string]: unknown;
+        };
+        /** MissingOutput */
+        MissingOutput: {
+            /**
+             * Message
+             * @description what happened and what to do about it on the computer, in English; an app with its own words for `reason` shows those instead
+             */
+            message: string;
+            /**
+             * Name
+             * @description the file the job would have had under /v1/jobs/{id}/artifacts/{name}
+             */
+            name: string;
+            /**
+             * Reason
+             * @description musescore-not-installed: there is no MuseScore on the computer. musescore-not-starting: it was started, wrote nothing and did no work, and was stopped. musescore-failed: it ran and left the file out
+             * @enum {string}
+             */
+            reason: "musescore-not-installed" | "musescore-not-starting" | "musescore-failed";
         };
         /** ModelFile */
         ModelFile: {

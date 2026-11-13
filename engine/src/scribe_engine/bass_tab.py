@@ -693,26 +693,36 @@ def export_stage(ctx: StageContext) -> None:
     Stopping the job stops MuseScore.
 
     A file MuseScore did not write does not fail the job: the tab itself (JSON, MusicXML, text) is made by the
-    stage before, and the apps show it without the PDF. The log and export.json name what is missing, and the
-    stage's output is not stored for reuse, so the next job tries MuseScore again."""
+    stage before, and the apps show it without the PDF. The log and export.json name what is missing and why
+    (`reason`: MuseScore did not get going, or it ran and left the file out), the job's result repeats it
+    (runner.missing_outputs), and the stage's output is not stored for reuse, so the next job tries MuseScore again."""
     from scribe_music import musescore
 
     mscore = musescore.binary() if ctx.params.get("musescore") else None  # as the stage was keyed
     names = [targets.FRETTED.file(ext) for ext in EXPORT_FORMATS]
     written: list[str] = []
     missing: list[str] = []
+    reason = None
     if mscore:
-        not_written = musescore.convert_many([(ctx.inputs["score"] / TAB_XML, [ctx.out / n for n in names])],
-                                             cancel=ctx.executor.cancel)
-        missing = [p.name for p in not_written]
+        try:
+            not_written = musescore.convert_many([(ctx.inputs["score"] / TAB_XML, [ctx.out / n for n in names])],
+                                                 cancel=ctx.executor.cancel)
+            missing = [p.name for p in not_written]
+            if missing:
+                reason = "musescore-failed"
+                ctx.log(f"MuseScore did not write {', '.join(missing)}: the tab is there without " + ("them" if len(missing) > 1 else "it"))
+        except musescore.NotStarting as e:
+            missing = [n for n in names if not (ctx.out / n).exists()]
+            reason = "musescore-not-starting"
+            ctx.log(f"{e}: the tab is there without {', '.join(missing)}. {musescore.advice()}")
         written = [n for n in names if n not in missing]
         if missing:
-            ctx.log(f"MuseScore did not write {', '.join(missing)}: the tab is there without " + ("them" if len(missing) > 1 else "it"))
             ctx.not_for_reuse()
     else:
         ctx.log("mscore not found: PDF and MIDI skipped")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
-                                                     "skipped": [] if mscore else names, "missing": missing}, indent=1))
+                                                     "skipped": [] if mscore else names, "missing": missing,
+                                                     "reason": reason}, indent=1))
 
 
 # ---------------------------------------------------------------- the pipeline

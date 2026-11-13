@@ -897,7 +897,7 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
                           params={"musescore": None}, executor=SimpleNamespace(cancel=threading.Event()))
     bass_tab.export_stage(ctx)
     assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": None, "written": [], "skipped": ["tab.pdf", "tab.mid"],
-                                                                  "missing": []}
+                                                                  "missing": [], "reason": None}
     assert said == ["mscore not found: PDF and MIDI skipped"]
 
     monkeypatch.setattr(musescore, "binary", lambda: "mscore")
@@ -905,7 +905,7 @@ def test_without_musescore_the_export_says_what_it_skipped(tmp_path, monkeypatch
     monkeypatch.setattr(musescore, "convert_many", lambda jobs, cancel=None: [])
     bass_tab.export_stage(ctx)
     assert json.loads((tmp_path / "export.json").read_text()) == {"musescore": "mscore", "written": ["tab.pdf", "tab.mid"], "skipped": [],
-                                                                  "missing": []}
+                                                                  "missing": [], "reason": None}
 
 
 @needs_core
@@ -934,6 +934,8 @@ def test_a_tab_job_succeeds_without_the_pdf_and_the_next_job_tries_musescore_aga
     run = settings.runs_dir / first["run_id"]
     export = json.loads((run / "stages" / "export" / "export.json").read_text())
     assert export["written"] == ["tab.mid"] and export["missing"] == ["tab.pdf"] and export["skipped"] == []
+    assert export["reason"] == "musescore-failed"
+    assert first["missing"] == [{"name": "tab.pdf", "reason": "musescore-failed"}]  # the job's result says so too
     logged = [json.loads(line) for line in (run / "events.jsonl").read_text().splitlines()]
     assert "MuseScore did not write tab.pdf: the tab is there without it" in [e.get("message") for e in logged]
 
@@ -944,6 +946,38 @@ def test_a_tab_job_succeeds_without_the_pdf_and_the_next_job_tries_musescore_aga
     assert "tab.pdf" in second["outputs"]
     third = runner.run(settings, audio, "bass-tab", params={"recording": "instrument"})
     assert third["stages"][-1]["status"] == "cached" and "tab.pdf" in third["outputs"]
+    assert "missing" not in second and "missing" not in third
+
+
+def test_a_musescore_that_does_not_get_going_leaves_the_tab_and_says_what_to_do(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from scribe_music import musescore
+
+    def stuck(jobs, cancel=None):
+        raise musescore.NotStarting(30.0)
+
+    monkeypatch.setattr(musescore, "binary", lambda: "mscore")
+    monkeypatch.setattr(musescore, "convert_many", stuck)
+    (tmp_path / "score").mkdir()
+    (tmp_path / "score" / "tab.musicxml").write_text("<score-partwise/>")
+    said: list[str] = []
+    kept = []
+    ctx = SimpleNamespace(out=tmp_path, inputs={"score": tmp_path / "score"}, log=said.append, stage=SimpleNamespace(name="export"),
+                          params={"musescore": "0123456789abcdef"}, executor=SimpleNamespace(cancel=threading.Event()),
+                          not_for_reuse=lambda: kept.append(False))
+    bass_tab.export_stage(ctx)
+    export = json.loads((tmp_path / "export.json").read_text())
+    assert export["missing"] == ["tab.pdf", "tab.mid"] and export["reason"] == "musescore-not-starting"
+    assert kept == [False]  # the next job tries MuseScore again
+    assert len(said) == 1 and "did not get going" in said[0] and musescore.advice() in said[0]
+
+    ctx.params = {"audio": False, "musescore": "0123456789abcdef"}
+    (tmp_path / "score" / "brass-band.musicxml").write_text("<score-partwise/>")
+    monkeypatch.setattr(musescore, "convert_many", lambda jobs, style=None, cancel=None: stuck(jobs))
+    with pytest.raises(S.StageFailed, match="did not get going") as failed:  # a band score without its PDF is no result
+        S.export(ctx)
+    assert musescore.advice() in str(failed.value)
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")

@@ -48,6 +48,7 @@ class Job:
     started: float | None = None
     finished: float | None = None
     error: str | None = None
+    missing: list[dict] = field(default_factory=list)  # files a succeeded job lacks, and why (runner.missing_outputs)
     events: list[dict] = field(default_factory=list)
     stages: dict[str, dict] = field(default_factory=dict)
     cancel: threading.Event = field(default_factory=threading.Event)
@@ -67,6 +68,7 @@ class Job:
             elif e.get("type") == "job" and e.get("status") in TERMINAL:
                 self.status = e["status"]
                 self.error = e.get("error")
+                self.missing = e.get("missing") or []
                 self.finished = time.time()
             self.cond.notify_all()
 
@@ -348,7 +350,7 @@ class JobManager:
                   m.get("params", {}), m.get("options", {}).get("allow_heavy", True),
                   set(m.get("options", {}).get("cold", [])), m.get("previous_run_id"), m.get("device_name"),
                   status=m.get("status", "unknown"),
-                  created=created, error=m.get("error"))
+                  created=created, error=m.get("error"), missing=m.get("missing") or [])
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
                                        "seconds": st.get("seconds"), "queue_wait_s": st.get("queue_wait_s"),

@@ -154,6 +154,9 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
                         link_or_clone(r.out_dir / rel, Path(out) / dest)
             if out is not None:
                 manifest["out"] = str(Path(out).resolve())
+            missing = missing_outputs(results)
+            if missing:
+                manifest["missing"] = missing
         manifest["finished"] = datetime.now(timezone.utc).isoformat()
         manifest["seconds"] = round(time.time() - t0, 3)
         manifest["devices"] = sorted({r.adapter["device"] for r in partial.values() if r.adapter})
@@ -165,7 +168,8 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
         if out is not None and manifest["status"] == "succeeded":
             (Path(out) / "manifest.json").write_text(json.dumps(manifest, indent=1))
-        on_event({"type": "job", "status": manifest["status"], "error": manifest.get("error")})
+        on_event({"type": "job", "status": manifest["status"], "error": manifest.get("error"),
+                  **({"missing": manifest["missing"]} if manifest.get("missing") else {})})
         events_file.close()
     return manifest
 
@@ -183,6 +187,19 @@ def rerun(settings: Settings, manifest_path: Path, **overrides) -> tuple[dict, d
               "allow_heavy": opts.get("allow_heavy", True), **overrides}
     new = run(settings, audio, old["profile"], **kwargs)
     return old, new
+
+
+def missing_outputs(results: dict) -> list[dict]:
+    """The files a job that succeeded should have had and has not, each with why: what its export stage wrote
+    down in export.json. `musescore-not-installed`: there is no MuseScore on the computer.
+    `musescore-not-starting`: it was started and never got going. `musescore-failed`: it ran and left the file out."""
+    export = results.get("export")
+    try:
+        said = json.loads((export.out_dir / "export.json").read_text()) if export else {}
+    except (OSError, ValueError):
+        return []
+    return ([{"name": name, "reason": "musescore-not-installed"} for name in said.get("skipped", [])]
+            + [{"name": name, "reason": said.get("reason") or "musescore-failed"} for name in said.get("missing", [])])
 
 
 def diff_manifests(old: dict, new: dict) -> dict:

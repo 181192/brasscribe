@@ -94,6 +94,44 @@ def test_one_shot_upload_and_second_job_hits_cache(client, audio):
     assert all(s["status"] == "cached" for s in j["stages"])
 
 
+def test_a_job_without_its_pdf_says_which_file_and_why(settings, audio, monkeypatch):
+    """A job that succeeded without a file MuseScore makes: the job names the file with the reason and what to
+    do, and asking for the file answers with the same words. Read back from disk it says the same."""
+    import json
+
+    from scribe_engine import profiles
+    from scribe_engine.dag import Input, Stage
+
+    def export(ctx):
+        (ctx.out / "export.json").write_text(json.dumps({"skipped": ["brass-band.pdf"], "missing": ["brass-band.mid"],
+                                                         "reason": "musescore-not-starting"}))
+
+    fake_pipeline = profiles.PROFILES["test"].build
+
+    def pipeline(title, params):
+        p = fake_pipeline(title, params)
+        p.stages.append(Stage("export", "export", {"score": Input("arrange")}, export, outputs=("export.json",)))
+        return p
+
+    monkeypatch.setitem(profiles.PROFILES, "test", profiles.Profile("test", "test", "fake profile with an export", False, pipeline))
+    with TestClient(create_app(settings)) as client:
+        job_id = client.post("/v1/jobs/upload", files={"file": ("song.wav", audio.read_bytes())},
+                             data={"profile": "test"}).json()["id"]
+        job = wait(client, job_id)
+        assert job["status"] == "succeeded"
+        assert [(x["name"], x["reason"]) for x in job["missing"]] == [("brass-band.pdf", "musescore-not-installed"),
+                                                                      ("brass-band.mid", "musescore-not-starting")]
+        assert "Install MuseScore 4" in job["missing"][0]["message"] and "did not get going" in job["missing"][1]["message"]
+        r = client.get(f"/v1/jobs/{job_id}/pdf")
+        assert r.status_code == 404 and r.json()["detail"] == job["missing"][0]["message"]
+        events = sse(client.get(f"/v1/jobs/{job_id}/events").text)
+        assert events[-1]["data"]["missing"] == [{"name": "brass-band.pdf", "reason": "musescore-not-installed"},
+                                         {"name": "brass-band.mid", "reason": "musescore-not-starting"}]
+    with TestClient(create_app(settings)) as again:  # another engine process: the run comes from its manifest
+        assert again.get(f"/v1/jobs/{job_id}").json()["missing"] == job["missing"]
+        assert [j["missing"] for j in again.get("/v1/jobs").json() if j["id"] == job_id] == [job["missing"]]
+
+
 def test_errors(client):
     assert client.get("/v1/jobs/nope").status_code == 404
     assert client.post("/v1/jobs", json={"audio_id": "missing", "profile": "test"}).status_code == 404

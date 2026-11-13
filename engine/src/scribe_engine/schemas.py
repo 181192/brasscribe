@@ -259,6 +259,16 @@ class StageState(BaseModel):
     device: str | None = None
 
 
+class MissingOutput(BaseModel):
+    name: str = Field(description="the file the job would have had under /v1/jobs/{id}/artifacts/{name}")
+    reason: Literal["musescore-not-installed", "musescore-not-starting", "musescore-failed"] = Field(
+        description="musescore-not-installed: there is no MuseScore on the computer. musescore-not-starting: it "
+                    "was started, wrote nothing and did no work, and was stopped. musescore-failed: it ran and "
+                    "left the file out")
+    message: str = Field(description="what happened and what to do about it on the computer, in English; an app "
+                                     "with its own words for `reason` shows those instead")
+
+
 class Job(BaseModel):
     id: str
     profile: str
@@ -278,6 +288,9 @@ class Job(BaseModel):
                                     "started on the engine's own computer (Studio, loopback) or with a static token")
     stages: list[StageState]
     outputs: list[str] = Field(default_factory=list, description="names fetchable under /v1/jobs/{id}/artifacts/{name}")
+    missing: list[MissingOutput] = Field(default_factory=list, description="files a succeeded job should have had "
+                                         "and has not (its PDF, its MIDI), each with why. The rest of the job is "
+                                         "whole; asking for one of these files answers 404 with the same message")
 
 
 class Artifact(BaseModel):

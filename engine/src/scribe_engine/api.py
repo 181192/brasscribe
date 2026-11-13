@@ -84,6 +84,20 @@ class CachedStaticFiles(StaticFiles):
         return response
 
 
+def missing_message(name: str, reason: str) -> str:
+    """Why a succeeded job has no `name`, and what to do on the computer, for a player to read."""
+    from scribe_music import musescore
+
+    if reason == "musescore-not-installed":
+        return (f"{name} was not made: MuseScore is not installed on the computer that runs the engine. "
+                "Install MuseScore 4 there and run the job again.")
+    if reason == "musescore-not-starting":
+        return (f"{name} was not made: MuseScore was started on the computer and did not get going. "
+                f"{musescore.advice()} Then run the job again.")
+    return (f"{name} was not made: MuseScore ran on the computer and did not write it. Run the job again; if it "
+            "happens again, open the job's MusicXML in MuseScore there to see what it says.")
+
+
 def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
     """`trust_loopback` overrides settings.trust_local (SCRIBE_TRUST_LOCAL)."""
     settings = (settings or Settings()).ensure()
@@ -204,7 +218,13 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
                      device_name=job.device_name, target=getattr(target_of(job), "id", None),
-                     stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job))
+                     stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job))
+
+    def missing_of(job: Job) -> list[m.MissingOutput]:
+        """What the job lacks, without a file that is there after all."""
+        have = set(outputs_of(job))
+        return [m.MissingOutput(name=x["name"], reason=x["reason"], message=missing_message(x["name"], x["reason"]))
+                for x in job.missing if x["name"] not in have]
 
     def target_of(job: Job) -> targets.Target | None:
         return targets.of_run(job.profile, jobs.run_dir(job.id) / "outputs")
@@ -224,7 +244,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         root = jobs.run_dir(job.id) if name == "manifest.json" else jobs.run_dir(job.id) / "outputs"
         p = (root / name).resolve()
         if not inspection.inside(root, p) or not p.is_file():
-            raise HTTPException(404, f"{name} not available for job {job_id} (status {job.status})")
+            why = next((x.message for x in missing_of(job) if x.name == name), None)
+            raise HTTPException(404, why or f"{name} not available for job {job_id} (status {job.status})")
         return FileResponse(p, media_type=media_type(name), filename=p.name)
 
     # ------------------------------------------------------------ session
