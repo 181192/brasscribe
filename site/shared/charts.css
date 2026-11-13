@@ -72,13 +72,13 @@
 /* The exact values of the row under the pointer or the keyboard. It keeps its room, so the page never jumps. */
 .chart-tip {
   position: sticky; bottom: var(--scribe-space-2); z-index: 2;  /* in view while its figure is, also under a tall plot on a phone */
-  min-height: 5.6em; margin-top: var(--scribe-space-3); padding: var(--scribe-space-2) var(--scribe-space-3);
+  min-height: 3.2em; margin-top: var(--scribe-space-3); padding: var(--scribe-space-2) var(--scribe-space-3);
   border-left: 3px solid var(--scribe-border-strong); background: var(--scribe-surface);
   border-radius: 0 var(--scribe-radius-sm) var(--scribe-radius-sm) 0;
   font-size: var(--scribe-type-caption-size); line-height: 1.45; color: var(--scribe-text-muted);
 }
 .chart-tip.is-on { color: var(--scribe-text); border-left-color: var(--scribe-brand); }
-@media (max-width: 600px) { .chart-tip { min-height: 8.6em; } .chart-tip.is-on { box-shadow: 0 0 0 1px var(--scribe-border-strong), 0 4px 14px rgb(0 0 0 / 0.2); } }
+@media (max-width: 600px) { .chart-tip.is-on { box-shadow: 0 0 0 1px var(--scribe-border-strong), 0 4px 14px rgb(0 0 0 / 0.2); } }
 .chart-tip p { margin: 0; }
 .chart-tip-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--scribe-space-2); }
 .chart-tip-row b { font-size: var(--scribe-type-callout-size); font-variant-numeric: tabular-nums; }

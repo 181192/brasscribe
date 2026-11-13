@@ -73,7 +73,7 @@
         htm("span", null, view.l, label);
       });
     }
-    this.key = htm("ul", "chart-key", null, bar);
+    this.legend = htm("ul", "chart-key", null, bar);
     this.note = htm("p", "chart-note", null, this.plot);
     this.note.setAttribute("aria-live", "polite");  // a new view is announced: its name, what it is, how much was measured
   };
@@ -91,7 +91,7 @@
     var lane = dots ? 20 : 16;
     this.note.textContent = [d.views.length > 1 ? view.l + "." : "", view.note, view.n ? view.n.charAt(0).toUpperCase() + view.n.slice(1) + "." : ""].join(" ").trim();
     // The key names the series of this view, and only those it has values for.
-    var key = this.key;
+    var key = this.legend;
     key.textContent = "";
     key.hidden = view.s.length < 2;
     view.s.forEach(function (name, s) {

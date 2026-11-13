@@ -563,8 +563,10 @@ FIGURES = {
                  {"label": ("Guitar (Slakh)", "Gitar (Slakh)"), "keys": [None, F + "guitar-tab/song.onset_f1"],
                   "n": ("{fretted/guitar-tab/song.excerpts|int} guitars in songs", "{fretted/guitar-tab/song.excerpts|int} gitarer i låter")}]},
             {"label": ("Rendered passages, held out", "Syntetiske passasjer, holdt utenfor"),
-             "note": ("Written for the test and played by a sampler, one preset each: weak evidence, and all there is for ukulele and mandolin.",
-                      "Skrevet for testen og spilt av en sampler, én lyd hver: svakt belegg, og alt som finnes for ukulele og mandolin."),
+             "note": ("Written for the test and played by a sampler, one preset each: weak evidence, and all there is for ukulele and mandolin. "
+                      "These held-out groups hold melodies and picked passages only: no held-out rendered passage tests chords.",
+                      "Skrevet for testen og spilt av en sampler, én lyd hver: svakt belegg, og alt som finnes for ukulele og mandolin. "
+                      "Disse gruppene holdt utenfor har bare melodier og plukkede passasjer: ingen syntetisk passasje holdt utenfor prøver akkorder."),
              "rows": [{"label": label, "keys": [F + f"{suite}/{group}.instrument.onset_f1", F + f"{suite}/{group}.song.onset_f1"],
                        "n": (f"{{fretted/{suite}/{group}.instrument.excerpts|int}} passages", f"{{fretted/{suite}/{group}.instrument.excerpts|int}} passasjer")}
                       for label, suite, group in (
@@ -574,6 +576,20 @@ FIGURES = {
                           (("Mandolin", "Mandolin"), "mandolin-tab", "mandolin_heldout"),
                           (("Guitar, nylon strings", "Gitar, nylonstrenger"), "guitar-rendered-tab", "guitar_nylon_heldout"),
                           (("Guitar, clean electric", "Gitar, ren elektrisk"), "guitar-rendered-tab", "guitar_clean_heldout"))]},
+            {"label": ("Rendered, strummed and chord-melody", "Syntetiske, strummet og akkordmelodi"),
+             "note": ("The strummed and chord-melody passages of the same groups. One rule was chosen on them, so they are development data, "
+                      "and they score lower.",
+                      "De strummede passasjene og akkordmelodiene i de samme gruppene. Én regel er valgt på dem, så de er utviklingsdata, "
+                      "og de gir lavere tall."),
+             "rows": [{"label": label, "keys": [F + f"{suite}/{group}.instrument.onset_f1", F + f"{suite}/{group}.song.onset_f1"],
+                       "n": (f"{{fretted/{suite}/{group}.instrument.excerpts|int}} passages", f"{{fretted/{suite}/{group}.instrument.excerpts|int}} passasjer")}
+                      for label, suite, group in (
+                          (("Ukulele, high G", "Ukulele, høy G"), "ukulele-tab", "ukulele_high_g_heldout_dev"),
+                          (("Ukulele, low G", "Ukulele, lav G"), "ukulele-tab", "ukulele_low_g_heldout_dev"),
+                          (("Baritone ukulele", "Barytonukulele"), "ukulele-tab", "ukulele_baritone_heldout_dev"),
+                          (("Mandolin", "Mandolin"), "mandolin-tab", "mandolin_heldout_dev"),
+                          (("Guitar, nylon strings", "Gitar, nylonstrenger"), "guitar-rendered-tab", "guitar_nylon_heldout_dev"),
+                          (("Guitar, clean electric", "Gitar, ren elektrisk"), "guitar-rendered-tab", "guitar_clean_heldout_dev"))]},
         ],
         "caption": ("Notes found per instrument, alone and inside a song. The tolerance is 50 ms here; Brasscribe's headline figures use 100 ms, "
                     "so the two papers' numbers are not on the same footing.",
@@ -666,7 +682,12 @@ FIGURES = {
                 "Bassen alene, med den dypeste lyden filtrert bort slik en liten mikrofon ville gjort, før noe lytter."),
         "axis": ("Onset F1 at 50 ms", "Onset-F1 ved 50 ms"),
         "series": [("Onset F1", "Onset-F1")],
-        "views": [{"label": ("Bass alone", "Bass alene"), "rows": [
+        "views": [{"label": ("Bass alone", "Bass alene"),
+                   "note": ("The rows are not the same lines: the full sound is the Slakh basses only; the filtered rows add the low bass lines "
+                            "written for the test.",
+                            "Radene er ikke de samme linjene: full lyd er bare Slakh-bassene; de filtrerte radene har i tillegg de dype "
+                            "basslinjene som er skrevet for testen."),
+                   "rows": [
             {"label": label, "keys": [F + f"bass-tab/phone.hp{cut}.onset_f1"], "n": (f"{{fretted/bass-tab/phone.hp{cut}.tracks|int}} bass lines", f"{{fretted/bass-tab/phone.hp{cut}.tracks|int}} basslinjer")}
             for cut, label in ((0, ("Full sound", "Full lyd")), (100, ("Nothing under 100 Hz", "Ingenting under 100 Hz")),
                                (200, ("Nothing under 200 Hz", "Ingenting under 200 Hz")), (300, ("Nothing under 300 Hz (steeper filter)", "Ingenting under 300 Hz (brattere filter)")))]}],
@@ -677,10 +698,10 @@ FIGURES = {
         "source": ("<code>eval/baselines.json</code>, suite bass-tab, the <code>phone</code> part.", "<code>eval/baselines.json</code>, suiten bass-tab, delen <code>phone</code>."),
     },
     "tab-heldout": {
-        "title": ("Chords found in single-line playing: {fretted/guitar-tab/tune.solo.chord_recall|pct} on the players the rules were set on, "
-                  "{fretted/guitar-tab/report.solo.chord_recall|pct} on the others",
-                  "Akkorder funnet i enkeltlinjespill: {fretted/guitar-tab/tune.solo.chord_recall|pct} hos gitaristene reglene er stilt inn på, "
-                  "{fretted/guitar-tab/report.solo.chord_recall|pct} hos de andre"),
+        "title": ("The players the rules were set on and the others score alike, except on one measure that rests on few notes: chord notes in "
+                  "single-line playing ({fretted/guitar-tab/tune.solo.chord_recall|pct} against {fretted/guitar-tab/report.solo.chord_recall|pct})",
+                  "Gitaristene reglene er stilt inn på, og de andre får like tall, unntatt på ett mål som hviler på få toner: akkordtoner i "
+                  "enkeltlinjespill ({fretted/guitar-tab/tune.solo.chord_recall|pct} mot {fretted/guitar-tab/report.solo.chord_recall|pct})"),
         "holds": ["fretted/guitar-tab/report.solo.chord_recall < fretted/guitar-tab/tune.solo.chord_recall", "fretted/guitar-tab/report.solo.chord_recall < 0.5"],
         "format": "pct",
         "sub": ("The same measure on the three players whose recordings shaped the rules and on the three who were only reported.",
@@ -688,7 +709,7 @@ FIGURES = {
         "axis": ("Share of the played chord notes that were found (recall)", "Andel av de spilte akkordtonene som ble funnet (recall)"),
         "series": [("Players the rules were set on", "Gitarister reglene er stilt inn på"), ("Players only reported", "Gitarister som bare er rapportert")],
         "view_label": ("Measure", "Mål"),
-        "views": [{"label": label, "axis": axis, "rows": [
+        "views": [{"label": label, "axis": axis, "format": "f2" if key == "onset_f1" else "pct", "rows": [
             {"label": text, "keys": [F + f"guitar-tab/tune.{kind}.{key}", F + f"guitar-tab/report.{kind}.{key}"],
              "n": (f"{{fretted/guitar-tab/report.{kind}.excerpts|int}} recordings in each group", f"{{fretted/guitar-tab/report.{kind}.excerpts|int}} opptak i hver gruppe")}
             for text, kind in ((("Single lines", "Enkeltlinjer"), "solo"), (("Chords", "Akkorder"), "comp"))]}
@@ -696,10 +717,12 @@ FIGURES = {
                 (("Chord notes found", "Akkordtoner funnet"), "chord_recall", ("Share of the played chord notes that were found (recall)", "Andel av de spilte akkordtonene som ble funnet (recall)")),
                 (("Written chord notes that are right", "Skrevne akkordtoner som er riktige"), "chord_precision", ("Share of the written chord notes that are right (precision)", "Andel av de skrevne akkordtonene som er riktige (presisjon)")),
                 (("Notes found", "Toner funnet"), "onset_f1", ("Onset F1 at 50 ms", "Onset-F1 ved 50 ms")))],
-        "caption": ("What a held-out group is for. A chord is three or more notes that start together; single-line takes have few of them, so the "
-                    "first row rests on few notes.",
-                    "Hva en gruppe holdt utenfor er til for. En akkord er tre eller flere toner som starter samtidig; opptak av enkeltlinjer har få, "
-                    "så den første raden hviler på få toner."),
+        "caption": ("Tuned-on and held-out players. A chord is three or more notes that start together; single-line takes have few of them, so the "
+                    "first row of the first view rests on few notes (the benchmark does not report how many). String agreement and notes found "
+                    "are similar or better on the held-out players.",
+                    "Gitarister brukt til innstilling og gitarister holdt utenfor. En akkord er tre eller flere toner som starter samtidig; opptak av "
+                    "enkeltlinjer har få, så den første raden i den første visningen hviler på få toner (målingen oppgir ikke hvor mange). "
+                    "Strengesamsvar og toner funnet er like eller bedre hos gitaristene holdt utenfor."),
         "source": ("<code>eval/baselines.json</code>, suite guitar-tab, the <code>tune</code> and <code>report</code> groups.",
                    "<code>eval/baselines.json</code>, suiten guitar-tab, gruppene <code>tune</code> og <code>report</code>."),
     },
