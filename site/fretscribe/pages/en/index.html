@@ -4,39 +4,74 @@ description: Play a riff, record a song or open a file. Fretscribe and Bandroom 
 og_title: Fretscribe
 og_description: Turn a recording into tab.
 og_image: @/assets/shots/tab-en-light.png
+styles: showcase.css
+scripts: showcase.js
 -->
   <section class="hero">
-    <div class="wrap hero-grid">
-      <div>
-        <h1>Turn a recording into <em>tab.</em></h1>
-        <p class="lead">Play a riff, record a song or open a file you have. Fretscribe writes it down as tab for your instrument and your tuning, shows you what it heard before a single fret is written, and lets you practise with the recording.</p>
-        <div class="actions">
-          <a class="button primary" href="@lang/guide/#get-started">Get started</a>
-          <a class="button secondary" href="@lang/download/">Download</a>
-        </div>
-        <p class="platforms-label" id="platforms">Runs on</p>
-        <ul class="platforms" aria-labelledby="platforms">
-          <li>Android</li>
-          <li>iPhone and iPad (test build)</li>
-          <li>Mac</li>
-          <li>Windows (preview)</li>
-        </ul>
-        <p class="muted needs-note">Every tab is written by <a href="#needs">Bandroom on your own computer</a>.</p>
+    <div class="wrap">
+      <h1>Turn a recording into <em>tab.</em></h1>
+      <p class="lead">Play a riff or open a recording, and Fretscribe writes it down as tab for your instrument and your tuning.</p>
+      <div class="actions">
+        <a class="button primary" href="@lang/guide/#get-started">Get started</a>
+        <a class="button secondary" href="@lang/download/">Download</a>
       </div>
-      <div class="phones" role="group" aria-label="Fretscribe on a phone">
-        <div class="phone-frame">
-          {{shot tab sizes="(max-width: 900px) 42vw, 260px" alt="A bass tab in Fretscribe: Bass line in standard tuning with no capo, bar 1 marked, a question mark over a note in bar 3 and an exclamation mark over one in bar 7. Below it the player: play, start again, previous and next bar, Bar 1, beat 1, Speed 100% and Repeat bars." load="high"}}
-        </div>
-        <div class="phone-frame">
-          {{shot songs sizes="(max-width: 900px) 42vw, 260px" alt="Home in Fretscribe: Turn a recording into tab, Not connected with Connect, Open a recording, Record with the microphone and Record what's playing, and Your songs with Bass line, 4-string bass, Standard, 2 notes to check."}}
-        </div>
-      </div>
+      <p class="muted needs-note">Every tab is written by <a href="#needs">Bandroom on your own computer</a>.</p>
+    </div>
+    {{figure strip fixture="apps/fixtures/guitar-line" sound="site/fretscribe/figures/guitar-line-sound.json"}}
+  </section>
+
+  <section id="steps" aria-labelledby="steps-title">
+    <div class="wrap">
+      <h2 id="steps-title">From sound to tab, <em>one step at a time.</em></h2>
+      <p class="lead">What the engine had at each step for the first two bars of the line above, drawn from its own answers and from the take's own sound.</p>
+      {{figure stages fixture="apps/fixtures/guitar-line" sound="site/fretscribe/figures/guitar-line-sound.json"}}
     </div>
   </section>
 
-  <section id="how" aria-labelledby="how-title">
+  <section id="try" aria-labelledby="try-title">
     <div class="wrap">
-      <h2 id="how-title">From recording to tab, <em>one question at a time.</em></h2>
+      <h2 id="try-title">The same notes, <em>your tuning.</em></h2>
+      <p class="lead">The line above, as the engine wrote it. In standard tuning it found notes with no place on the neck, and the tuning it suggests first is {{data apps/fixtures/guitar-line/tab.json tuning_suggestions/0/tuning}}, as Check the song would in the app. Change the tuning: the notes stay the same, and the strings and frets are the solver's own for each. Choose a number to see every place that note can be played.</p>
+      {{figure tabdemo data="site/fretscribe/figures/tab-demo.json" fixture="apps/fixtures/guitar-line"}}
+    </div>
+  </section>
+
+  <section id="sure" aria-labelledby="sure-title">
+    <div class="wrap">
+      <h2 id="sure-title">How sure <em>is it?</em></h2>
+      <p class="lead">A note Fretscribe doubts gets a <span class="uncertain"><strong>?</strong></span>. We measure two things about those marks, on recordings where the right notes are known.</p>
+      <ul class="rates">
+        <li>
+          <h3>Bass</h3>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_precision"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_precision as="percent"}}</span> of 100 question marks were right to doubt: the note under them was wrong.</p>
+          </div>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_recall" kind="found"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_recall as="percent"}}</span> of 100 wrong notes carried a question mark. The rest slipped through unmarked.</p>
+          </div>
+        </li>
+        <li>
+          <h3>Guitar</h3>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_precision"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_precision as="percent"}}</span> of 100 question marks were right to doubt: the note under them was wrong.</p>
+          </div>
+          <div class="rate">
+            {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_recall" kind="found"}}
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_recall as="percent"}}</span> of 100 wrong notes carried a question mark. The rest slipped through unmarked.</p>
+          </div>
+        </li>
+      </ul>
+      <p>So a question mark is worth checking, and a note without one can still be wrong. A tab from a recording is a draft: trust your ears over it.</p>
+      <p class="source">Measured on bass and guitar parts picked out of full songs (the Slakh excerpts), and gated in <code>eval/baselines.json</code>: a change that makes these worse does not ship.</p>
+    </div>
+  </section>
+
+  <section id="app" aria-labelledby="app-title">
+    <div class="wrap">
+      <h2 id="app-title">In the app, <em>one question at a time.</em></h2>
       <p class="lead">Fretscribe asks one thing at a time. Nothing is shown as frets until you have seen what it heard.</p>
       <ol class="flow">
         <li>
@@ -48,91 +83,42 @@ og_image: @/assets/shots/tab-en-light.png
         </li>
         <li>
           <div class="phone-frame">
-            {{shot what-is-this sizes="(max-width: 520px) 44vw, 232px" alt="What is this? for Bass line.wav, with two choices: Just my instrument, one instrument playing with nothing else, and A full song, a band or a record where Fretscribe picks out the bass. On your computer: Bandroom writes down the notes, the recording is not sent online." load="lazy"}}
+            {{shot what-is-this sizes="(max-width: 520px) 44vw, 232px" alt="What is this? for Bass line.wav, with two choices: Just my instrument, one instrument playing with nothing else, and A full song, a band or a record where Fretscribe picks out the bass." load="lazy"}}
           </div>
           <h3>What is this?</h3>
-          <p>Just your instrument, or a full song where your part is picked out. Then Bandroom on your computer writes down the notes.</p>
+          <p>Just your instrument, or a full song where your part is picked out.</p>
         </li>
         <li>
           <div class="phone-frame">
-            {{shot check sizes="(max-width: 520px) 44vw, 232px" alt="Check the song: Tuning, sounds like Drop D, written for Standard, with Use Drop D. Octave, written one octave lower than it was heard. Reference pitch, a little sharp of A = 440. Key and tempo, E minor, 100, 2/4. 2 notes marked with a question mark. Show the tab." load="lazy"}}
+            {{shot check sizes="(max-width: 520px) 44vw, 232px" alt="Check the song: Tuning, sounds like Drop D, written for Standard, with Use Drop D. Octave, written one octave lower than it was heard. Reference pitch. Key and tempo. 2 notes marked with a question mark. Show the tab." load="lazy"}}
           </div>
           <h3>Check the song</h3>
-          <p>The tuning it heard, the octave, the key and the tempo. If one of these is wrong, every fret is wrong, so you see them first.</p>
+          <p>The tuning it heard, the octave, the key and the tempo. If one is wrong, every fret is wrong, so you see them first.</p>
         </li>
         <li>
           <div class="phone-frame">
-            {{shot tab sizes="(max-width: 520px) 44vw, 232px" alt="The tab of Bass line, with the tuning and capo at the top, 2 notes marked with a question mark, and the player below." load="lazy"}}
+            {{shot note sizes="(max-width: 520px) 44vw, 232px" alt="A note with a question mark chosen in the tab: Bar 3, beat 2, 3rd string, fret 2, B. Fretscribe isn't sure about this one. With Play this bar slowly and Next." load="lazy"}}
           </div>
-          <h3>The tab</h3>
-          <p>Your part as tab, with the player under it and the doubtful notes marked.</p>
+          <h3>Practise</h3>
+          <p>Speed slows the recording down, Repeat bars plays the hard ones again, and a doubtful note plays its bar slowly.</p>
         </li>
       </ol>
     </div>
   </section>
 
-  <section aria-labelledby="practise-title">
-    <div class="wrap hero-grid reverse">
-      <div class="phones single">
-        <div class="phone-frame">
-          {{shot note sizes="(max-width: 900px) 60vw, 280px" alt="A note with a question mark chosen in the tab: Bar 3, beat 2, 3rd string, fret 2, B. Fretscribe isn't sure about this one. With Play this bar slowly and Next." load="lazy"}}
-        </div>
-      </div>
-      <div>
-        <h2 id="practise-title">Read it, then <em>play along.</em></h2>
-        <p>The tab is yours to practise with, not just to look at.</p>
-        <ul class="ticks">
-          <li>The player plays your recording and follows the tab, bar and beat.</li>
-          <li><strong>Speed</strong> slows the recording down, and <strong>Repeat bars</strong> plays the hard ones again and again.</li>
-          <li>Full screen leaves only the tab, for when the phone sits on an amp.</li>
-          <li>A note Fretscribe was not sure about gets a <span class="uncertain"><strong>?</strong></span>. Choose it to hear that bar slowly and decide for yourself.</li>
-          <li>The marks find some of the wrong notes, not most of them. A tab from a recording is a draft: trust your ears over it.</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <section id="instrument" aria-labelledby="instrument-title">
-    <div class="wrap hero-grid">
-      <div>
-        <h2 id="instrument-title">Written for <em>your instrument.</em></h2>
-        <p>The same notes sit in different places on a bass, a seven-string or a ukulele. Fretscribe asks once what you play and has every tab written for that.</p>
-        <ul class="ticks">
-          <li>Guitar, bass, ukulele and mandolin, with the number of strings you have.</li>
-          <li>Your usual tuning, and a capo when you use one.</li>
-          <li>Left-handed instruments, and instruments played upside down.</li>
-          <li>When a recording sounds like another tuning than yours, Check the song says so and offers it.</li>
-        </ul>
-      </div>
-      <div class="phones single">
-        <div class="phone-frame">
-          {{shot instrument sizes="(max-width: 900px) 60vw, 280px" alt="Your instrument: Instrument, Bass. Strings, 4 strings. Usual tuning, Standard. Which hand is on the neck? Left hand on the neck, most players. You read, Tab. Save." load="lazy"}}
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section id="needs" aria-labelledby="needs-title">
-    <div class="wrap hero-grid reverse">
-      <div class="phones single">
-        <div class="phone-frame">
-          {{shot computer sizes="(max-width: 900px) 60vw, 280px" alt="Bandroom on your computer, in Fretscribe's settings: Not connected. Open Bandroom on your computer, it is Brasscribe Bandroom in the list of programs, and choose Pair a phone. Scan the code on the computer, or type the six-digit code, or Ask on the computer instead." load="lazy"}}
-        </div>
-      </div>
-      <div>
-        <h2 id="needs-title">What you need</h2>
-        <p>Fretscribe does not write tabs by itself:</p>
-        <ul class="ticks">
-          <li><strong>A computer with Bandroom</strong>, on the same Wi-Fi as the phone: a Mac with Apple silicon and macOS 26 or newer, or a PC with Windows 11. Bandroom is free, and it writes every tab, for one instrument and for a full song.</li>
-          <li><strong>The Fretscribe app</strong> on the newest system or the one before it: Android 17 or 16, iOS, iPadOS and macOS 27 or 26, or Windows 11.</li>
-          <li><strong>Without the computer</strong> the app still opens the tabs you have made, to read and practise. It cannot write a new one.</li>
-          <li><strong>The downloads are not signed yet</strong> and are not in any app store. Each device needs a few extra steps the first time, and the <a href="@lang/download/">download page</a> says which.</li>
-        </ul>
-        <p>The recording never leaves your own network: it goes from your phone to your own computer and nowhere else. Bandroom's first run needs the internet, to download what it listens with. Bandroom is the same program Brasscribe uses, so one computer serves both apps.</p>
-        <div class="actions">
-          <a class="button outline" href="@lang/guide/#computer">Set up your computer</a>
-          <a class="button outline" href="@family/">See all the apps</a>
-        </div>
+    <div class="wrap">
+      <h2 id="needs-title">What you need</h2>
+      <p class="lead">Fretscribe does not write tabs by itself. Choose your device to see what it does alone and what it needs the computer for.</p>
+      {{figure platforms}}
+      <ul class="ticks needs-list">
+        <li><strong>A computer with Bandroom</strong>, on the same Wi-Fi as the phone: a Mac with Apple silicon and macOS 27 or 26, or a PC with Windows 11. Bandroom is free, and it writes every tab.</li>
+        <li><strong>The downloads are not signed yet</strong> and are not in any app store. Each device needs a few extra steps the first time, and the <a href="@lang/download/">download page</a> says which.</li>
+        <li><strong>Your recording never leaves your own network.</strong> It goes from your phone to your own computer and nowhere else. Bandroom's first run needs the internet, to download what it listens with.</li>
+      </ul>
+      <div class="actions">
+        <a class="button outline" href="@lang/guide/#computer">Set up your computer</a>
+        <a class="button outline" href="@family/">See all the apps</a>
       </div>
     </div>
   </section>

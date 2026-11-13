@@ -1,0 +1,167 @@
+/* The front pages' figures (site/shared/figures.py) and what showcase.js does with them. Every colour is a
+   brand token, so a figure wears the brand of the page it is on, in light and in dark. */
+
+/* What the script reveals stays out of the way until then. */
+.strip [hidden], .tabdemo [hidden], .matrix [hidden], .stages [hidden] { display: none; }
+button.button { font: inherit; font-weight: 600; cursor: pointer; background: none; color: var(--scribe-text); }
+
+.tab-ink { --paper: var(--scribe-surface-raised); overflow: visible; }
+.tab-ink .string { stroke: var(--scribe-line); stroke-width: 1; fill: none; }
+.tab-ink .bar { stroke: var(--scribe-ink); stroke-width: 1.25; fill: none; }
+.tab-ink .bar-no { font: 11px var(--scribe-font-text); fill: var(--scribe-text-muted); }
+.tab-ink .knock { fill: var(--paper); }
+.tab-ink .fret { font-family: var(--fs-font-tab, var(--scribe-font-mono)), var(--scribe-font-mono); font-weight: 600; font-size: 15px; text-anchor: middle; fill: var(--scribe-ink); }
+.tab-ink .fret.doubt, .tab-ink .note.doubt .fret { fill: var(--scribe-uncertain); }
+.tab-ink .mark { font: 700 17px var(--scribe-font-text); text-anchor: middle; fill: var(--scribe-uncertain); }
+.tab-ink .no-place rect { fill: var(--paper); stroke: var(--scribe-ink); stroke-width: 1.5; }
+.tab-ink .no-place text { font: 700 14px var(--scribe-font-text); text-anchor: middle; fill: var(--scribe-ink); }
+.tab-ink .wave, .strip .wave { stroke: var(--scribe-brand); stroke-width: 1.5; stroke-linecap: round; fill: none; }
+.tab-ink .wave.faint { opacity: 0.28; }
+.tab-ink .beat { stroke: var(--scribe-border-strong); stroke-width: 1; stroke-dasharray: 2 3; }
+.tab-ink .beat.down { stroke: var(--scribe-ink); stroke-dasharray: none; }
+.tab-ink .beat.faint { opacity: 0.35; }
+.tab-ink .heard { fill: var(--scribe-brand); stroke: var(--scribe-brand); }
+.tab-ink .heard.doubt { fill: var(--scribe-uncertain); stroke: var(--scribe-uncertain); }
+.tab-ink .heard rect { stroke: none; }
+.tab-ink .heard .rang { fill: none; stroke-width: 1.2; opacity: 0.55; }
+/* Where a note was heard, once it has been moved onto the beat. */
+.tab-ink .ghost { fill: none; stroke: var(--scribe-border-strong); stroke-width: 1; stroke-dasharray: 2 2; }
+
+/* The strip under the headline. */
+.strip { --t: 520; margin: var(--scribe-space-10) 0 0; }
+.strip-stage {
+  --pen: 46%;
+  position: relative; height: var(--strip-height, 232px); overflow: hidden;
+  background: var(--scribe-surface-raised); border-block: 1px solid var(--scribe-border);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.strip-ink { position: absolute; inset: 0 auto 0 0; width: var(--pen); overflow: hidden; }
+.strip-sound { position: absolute; inset: 0 0 0 var(--pen); overflow: hidden; }
+.strip-ink svg, .strip-sound svg { position: absolute; top: 0; max-width: none; transform: translateX(calc(var(--t) * -1px)); will-change: transform; }
+.strip-ink svg { left: 100%; }
+.strip-sound svg { left: 0; }
+.strip-pen { position: absolute; top: 14px; bottom: 14px; left: var(--pen); width: 2px; margin-left: -1px; background: var(--scribe-brand); border-radius: 1px; }
+.strip-pen::before { content: ""; position: absolute; left: -5px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: var(--scribe-brand); }
+.strip-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-3) var(--scribe-space-4); margin-top: var(--scribe-space-4); }
+.strip-controls .button { min-height: 44px; min-width: 96px; }
+.strip-range { flex: 1 1 180px; display: flex; }
+.strip-range input { width: 100%; min-height: 44px; accent-color: var(--scribe-brand); }
+.strip-controls output { font-variant-numeric: tabular-nums; color: var(--scribe-text-muted); min-width: 8.5em; }
+.strip figcaption { margin-top: var(--scribe-space-3); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); max-width: 52em; }
+@media (min-width: 901px) { .strip-stage { --pen: 38%; } }
+/* Under a headline the strip runs the full width of the page, and closes the hero. */
+.hero:has(> .strip) { padding-bottom: 0; }
+.hero > .strip { margin-top: var(--scribe-space-8); }
+.hero > .strip .strip-controls, .hero > .strip figcaption { max-width: 1120px; margin-left: auto; margin-right: auto; padding: 0 var(--scribe-space-6); }
+.hero > .strip figcaption { padding-bottom: var(--scribe-space-10); }
+
+/* The steps from sound to written music. Without the script they are a list; with it, one at a time. */
+.stages { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; gap: var(--scribe-space-10); }
+.stage { display: grid; gap: var(--scribe-space-5); grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; }
+.stage[hidden] { display: none; }
+.stage-figure { width: 100%; height: auto; max-width: 600px; overflow: hidden; background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); }
+.stage h3 { margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-title-2-size); }
+.stage-count { margin: 0 0 var(--scribe-space-1); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.stage-engine { margin: 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+/* The way through them: a ruled line, a mark for each step, and the pen at the one that is shown. */
+.stages-nav { --at: 0; position: relative; display: flex; justify-content: space-between; max-width: 600px; margin-top: var(--scribe-space-8); }
+.stages-nav::before { content: ""; position: absolute; left: 22px; right: 22px; top: 50%; height: 2px; margin-top: -1px; background: var(--scribe-border-strong); }
+.stages-nav::after {
+  content: ""; position: absolute; left: 22px; top: 50%; height: 2px; margin-top: -1px; background: var(--scribe-brand);
+  width: calc((100% - 44px) * var(--at)); transition: width var(--scribe-duration-base, 200ms) ease;
+}
+@media (prefers-reduced-motion: reduce) { .stages-nav::after { transition: none; } }
+.stages-nav button {
+  position: relative; z-index: 1; width: 44px; height: 44px; padding: 0; border-radius: 50%; cursor: pointer;
+  font: 600 1rem var(--fs-font-tab, var(--scribe-font-text)), var(--scribe-font-text); color: var(--scribe-text);
+  background: var(--scribe-bg); border: 2px solid var(--scribe-border-strong);
+}
+.stages-nav button.done { border-color: var(--scribe-brand); color: var(--scribe-brand-text); }
+.stages-nav button[aria-current] { background: var(--scribe-brand); border-color: var(--scribe-brand); color: var(--scribe-bg); }
+.stages.live { margin-top: var(--scribe-space-6); }
+.stages-foot { display: flex; gap: var(--scribe-space-3); margin-top: var(--scribe-space-5); }
+.stages-foot .button { min-height: 44px; }
+.stages-foot .button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+@media (min-width: 901px) {
+  .stage { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: var(--scribe-space-10); align-items: center; }
+}
+
+/* The tab viewer. */
+.tabdemo { margin-top: var(--scribe-space-6); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); padding: var(--scribe-space-4); }
+.tabdemo-controls { display: flex; flex-wrap: wrap; gap: var(--scribe-space-3) var(--scribe-space-6); margin-bottom: var(--scribe-space-3); }
+.tabdemo-controls label { display: inline-flex; align-items: center; gap: var(--scribe-space-2); font-weight: 600; }
+.tabdemo-controls select {
+  min-height: 44px; padding: 0 var(--scribe-space-3); font: inherit; color: var(--scribe-text);
+  background: var(--scribe-bg); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm);
+}
+.tabdemo-scroll { overflow-x: auto; padding: var(--scribe-space-2) 0; }
+.tabdemo-scroll svg { max-width: none; display: block; }
+.tabdemo .note { cursor: pointer; }
+.tabdemo .note .knock { stroke: transparent; stroke-width: 1.5; }
+.tabdemo .note:hover .knock { fill: var(--scribe-brand-tint); }
+.tabdemo .note.chosen .knock { fill: var(--scribe-brand); stroke: var(--scribe-brand); }
+.tabdemo .note.chosen .fret { fill: var(--scribe-bg); }
+.tabdemo .note:focus { outline: none; }
+.tabdemo .note:focus-visible .knock { stroke: var(--scribe-focus); stroke-width: 2.5; }
+.tabdemo .note.lost .knock { stroke: var(--scribe-ink); }
+.tabdemo-legend { display: flex; flex-wrap: wrap; gap: var(--scribe-space-1) var(--scribe-space-5); list-style: none; margin: var(--scribe-space-2) 0 0; padding: 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.tabdemo-legend b { display: inline-block; min-width: 1.4em; text-align: center; color: var(--scribe-text); border: 1px solid var(--scribe-border-strong); border-radius: 3px; margin-right: 0.3em; }
+.tabdemo-legend li:first-child b { color: var(--scribe-uncertain); border-color: transparent; }
+.tabdemo-chosen { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-3) var(--scribe-space-8); margin-top: var(--scribe-space-4); padding-top: var(--scribe-space-4); border-top: 1px solid var(--scribe-border); min-height: 6.5rem; }
+.tabdemo-status { flex: 1 1 16rem; margin: 0; }
+.neck { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.neck-ink { display: block; max-width: 100%; height: auto; --paper: var(--scribe-surface-raised); }
+.neck-ink .nut { stroke: var(--scribe-ink); stroke-width: 3; }
+.neck-ink .fret-wire { stroke: var(--scribe-border-strong); stroke-width: 1; }
+.neck-ink .here { fill: var(--scribe-brand); }
+.neck-ink .other { fill: var(--paper); stroke: var(--scribe-brand); stroke-width: 2; }
+.tabdemo-hint { margin: var(--scribe-space-2) 0 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.tabdemo details { margin-bottom: 0; }
+.tabdemo pre { border: 0; background: none; padding: 0; font-size: 0.8rem; line-height: 1.25; }
+
+/* A measured rate, as so many squares of a hundred. */
+.rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--scribe-space-8) var(--scribe-space-10); margin: var(--scribe-space-8) 0 0; padding: 0; list-style: none; }
+.rates h3 { margin: 0 0 var(--scribe-space-3); }
+.rate { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: var(--scribe-space-4); align-items: center; }
+.rate + .rate { margin-top: var(--scribe-space-5); }
+.rate p { margin: 0; }
+.rate .big { display: block; font-family: var(--fs-font-tab, var(--scribe-font-display)), var(--scribe-font-display); font-weight: 600; font-size: 2.5rem; line-height: 1; color: var(--scribe-text); margin-bottom: var(--scribe-space-1); }
+.rates + p { margin-top: var(--scribe-space-8); max-width: 46em; }
+.dots { width: 118px; height: 118px; }
+.dots .on { fill: var(--scribe-brand); }
+.dots .off { fill: var(--scribe-border); }
+/* Of the wrong notes: the ones a mark found, and the ones that slipped through. */
+.dots.found .off { fill: var(--scribe-uncertain); }
+.source { font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); max-width: 52em; margin-top: var(--scribe-space-6); }
+
+/* The device table. */
+.matrix-pick { display: flex; flex-wrap: wrap; gap: var(--scribe-space-2); margin: var(--scribe-space-5) 0 var(--scribe-space-2); }
+.matrix-pick button {
+  min-height: 44px; padding: 0 var(--scribe-space-4); font: inherit; font-weight: 600; cursor: pointer; color: var(--scribe-text);
+  background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm);
+}
+.matrix-pick button[aria-pressed="true"] { background: var(--scribe-primary); color: var(--scribe-on-primary); border-color: var(--scribe-primary); }
+.matrix th .status { display: block; font-weight: 400; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.matrix tbody th { width: 26%; min-width: 7.5em; }
+@media (max-width: 600px) {
+  /* Narrow: each device is a block, with the column's name before each answer. */
+  .matrix thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .matrix table, .matrix tbody, .matrix tr, .matrix tbody th, .matrix td { display: block; width: auto; min-width: 0; }
+  .matrix tr { padding: var(--scribe-space-3) 0; border-bottom: 1px solid var(--scribe-border); }
+  .matrix tr[hidden] { display: none; }
+  .matrix tbody th, .matrix td { border: 0; padding: var(--scribe-space-1) 0; }
+  .matrix td::before { content: attr(data-label) ": "; font-weight: 600; }
+}
+
+@media (forced-colors: active) {
+  .tab-ink .string, .tab-ink .bar, .tab-ink .wave, .tab-ink .beat, .neck-ink .nut, .neck-ink .fret-wire { stroke: CanvasText; }
+  .tab-ink .fret, .tab-ink .mark, .tab-ink .bar-no, .tab-ink .no-place text { fill: CanvasText; }
+  .tab-ink .knock { fill: Canvas; }
+  .tabdemo .note.chosen .knock, .neck-ink .here { fill: Highlight; }
+  .tabdemo .note.chosen .fret { fill: HighlightText; }
+  .tab-ink .heard, .dots .on { fill: CanvasText; }
+  .dots .off, .dots.found .off { fill: none; stroke: CanvasText; }
+  .strip-pen, .strip-pen::before, .stages-nav::before, .stages-nav::after { background: CanvasText; }
+  .stages-nav button[aria-current], .matrix-pick button[aria-pressed="true"] { background: Highlight; color: HighlightText; }
+}
+@media print { .strip-controls, .stages-nav, .stages-foot, .tabdemo-controls, .matrix-pick { display: none; } }

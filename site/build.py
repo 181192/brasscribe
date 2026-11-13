@@ -11,12 +11,16 @@ site works under any path or host:
   @lang/…      the product's pages in the page's language
   @family/…    the family page, @<product>/… another product, in the page's language
 Macros: {{shot <slot> sizes="…" alt="…" [load="lazy|high"]}}, {{file <name>}} (the download URL of a
-release file), {{releases}}, {{downloads}} (the table of release files), {{products}} (family page).
+release file), {{releases}}, {{downloads}} (the table of release files), {{products}} (family page),
+{{figure <name> …}} (a figure drawn from the repository's data: site/shared/figures.py, or the product's
+own figures.py), {{data <file> <path/to/value> [as="percent"]}} (a number from a JSON file in the repository).
+A page's header may name `styles:` and `scripts:` (files in the product's folder or in site/shared).
 """
 
 from __future__ import annotations
 
 import html
+import importlib.util
 import posixpath
 import re
 import shutil
@@ -61,6 +65,12 @@ class Product:
                 if len(cols) >= 3 and not line.startswith("#"):
                     self.kinds[cols[0]] = cols[1]
 
+    def figures(self):
+        """The product's own figures (site/<product>/figures.py), when it has any."""
+        if not hasattr(self, "_figures"):
+            self._figures = load(self.dir / "figures.py") if (self.dir / "figures.py").exists() else None
+        return self._figures
+
     def home(self, lang: str) -> str:
         """The folder of the product's pages in a language, from the site root."""
         return posixpath.join(self.mount, "" if lang == "en" else lang)
@@ -73,6 +83,19 @@ class Product:
 
     def downloads(self, shared: list[dict]) -> list[dict]:
         return self.data.get("downloads", []) + (shared if self.data.get("downloads") else [])
+
+
+def load(path: Path):
+    spec = importlib.util.spec_from_file_location(f"site_{path.parent.name}_{path.stem}", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def figures():
+    if "module" not in figures.__dict__:
+        figures.module = load(SITE / "shared" / "figures.py")
+    return figures.module
 
 
 def rel(here: str, there: str) -> str:
@@ -102,6 +125,10 @@ class Page:
                 key, _, value = line.partition(":")
                 self.meta[key.strip()] = value.strip()
             self.body = text[head.end():]
+
+    def named(self, key: str) -> list[str]:
+        """The files a page's header names under `styles:` or `scripts:`, separated by spaces or commas."""
+        return self.meta.get(key, "").replace(",", " ").split()
 
     # Links ---------------------------------------------------------------------------------
     def link(self, root: str, path: str = "") -> str:
@@ -212,7 +239,16 @@ class Page:
                 return self.file(words[0])
             if name == "releases":
                 return self.product.releases
-            if name == "shot":
+            if name == "data":
+                value = figures().lookup(words[0], words[1])
+                return str(round(value * 100)) if args.get("as") == "percent" else str(value)
+            if name == "figure":
+                own = self.product.figures()
+                draw = getattr(own, words[0], None) or getattr(figures(), words[0], None)
+                if draw is None:
+                    sys.exit(f"{self.dir}: no figure named {words[0]}")
+                made = draw(self, **args)
+            elif name == "shot":
                 made = self.shot(words[0], args["sizes"], args["alt"], args.get("load", ""))
             elif name == "downloads":
                 made = self.downloads_table()
@@ -270,8 +306,10 @@ class Page:
         if "icons" in p.data:
             head += ['<link rel="icon" href="@/favicon.ico" sizes="any">',
                      '<link rel="apple-touch-icon" href="@/apple-touch-icon.png">']
-        for css in [f'assets/{p.data["css"]}', "assets/fonts.css", "site.css", *p.data.get("styles", [])]:
+        for css in [f'assets/{p.data["css"]}', "assets/fonts.css", "site.css", *self.named("styles"), *p.data.get("styles", [])]:
             head.append(f'<link rel="stylesheet" href="@/{css}">')
+        for script in self.named("scripts"):
+            head.append(f'<script type="module" src="@/{script}"></script>')
 
         if p.family:
             brand = f'<a class="brand brand-text" href="@lang/">{t["name"]}</a>'
@@ -378,11 +416,19 @@ class Site:
                 shutil.copy(p.brand / p.data["favicon"], out / "favicon.svg")
             if (p.dir / "shots").exists():
                 shutil.copytree(p.dir / "shots", out / "assets" / "shots")
+            if (p.dir / "figures").exists():
+                shutil.copytree(p.dir / "figures", out / "assets" / "data")
             if p.family:
                 self.family_assets(out / "assets")
             for lang in LANGS:
                 for name, source in p.pages(lang).items():
                     page = Page(self, p, lang, name, source)
+                    # What a page names in its header: from the product's folder, else from site/shared.
+                    for extra in page.named("styles") + page.named("scripts"):
+                        found = [d / extra for d in (p.dir, SITE / "shared") if (d / extra).exists()]
+                        if not found:
+                            sys.exit(f"{page.dir}: {extra} is neither in {p.dir.name}/ nor in shared/")
+                        shutil.copy(found[0], out)
                     target = OUT / page.dir / "index.html"  # a folder per page, so URLs have no .html
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_text(page.render())

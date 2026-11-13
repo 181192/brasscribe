@@ -39,6 +39,26 @@ is made from the product's `[[downloads]]` unless the product has a `download.ht
 `site/build.py`'s first lines list the link roots (`@/`, `@lang/`, `@family/`, `@<product>/`) and
 the macros (`{{shot}}`, `{{file}}`, `{{releases}}`, `{{downloads}}`).
 
+## Figures and numbers
+
+A front page's figures are drawn at build time from files in the repository, so a page shows what the
+engine answered and no number is typed into a page:
+
+- `{{figure <name> …}}` calls a function in `shared/figures.py` (or in the product's own `figures.py`):
+  the strip under the headline, the steps from sound to written music, the tab viewer, a measured rate
+  as squares of a hundred, the device table. Their words are in `figures.py` and in the product's
+  `product.toml` (`[[<lang>.stages]]`, `[<lang>.tabdemo]`, `[[platforms]]`).
+- `{{data <file> <path/to/value> as="percent"}}` prints a number from a JSON file, such as a gated
+  rate in `eval/baselines.json`.
+- A page names the stylesheets and scripts it needs in its header (`styles:`, `scripts:`); the build
+  copies them from the product's folder or from `shared/`. `shared/showcase.css` and `showcase.js`
+  belong to the figures. Every figure is complete without the script, which only adds what moves.
+- `<product>/figures/` is served as `assets/data/`. Fretscribe's is made by
+  `uv run --with numpy python site/fretscribe/make_demo.py`: `tab-demo.json` asks the core's solver
+  for each tuning the viewer offers, and `guitar-line-sound.json` is the loudness of the take the
+  engine heard, made again by the fixture's own script and checked against the job's audio id.
+  Run it again when the guitar fixture or the solver changes.
+
 ## Adding a product
 
 1. `site/<product>/product.toml`: copy Fretscribe's and change it. `brand` points at the product's
