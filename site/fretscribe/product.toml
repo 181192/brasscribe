@@ -56,23 +56,23 @@ nb = "Fretscribe for Windows 11 (x64), en forhåndsversjon: ikke prøvd for hån
 # What each device does by itself and what it needs the computer for: the table on the front page.
 [[platforms]]
 id = "android"
-en = { name = "Android", status = "Android 17 or 16", alone = "Records, opens the tabs you have made, plays them with Speed and Repeat bars.", bandroom = "Writing a tab." }
-nb = { name = "Android", status = "Android 17 eller 16", alone = "Spiller inn, åpner tabbene du har laget, spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab." }
+en = { name = "Android", status = "Android 17 or 16", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab." }
+nb = { name = "Android", status = "Android 17 eller 16", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab." }
 
 [[platforms]]
 id = "ios"
-en = { name = "iPhone and iPad", status = "Test build you sign yourself · iOS, iPadOS 27 or 26", alone = "Records, opens the tabs you have made, plays them.", bandroom = "Writing a tab." }
-nb = { name = "iPhone og iPad", status = "Testversjon du signerer selv · iOS, iPadOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, spiller dem.", bandroom = "Å skrive en tab." }
+en = { name = "iPhone and iPad", status = "Test build you sign yourself · iOS, iPadOS 27 or 26", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab." }
+nb = { name = "iPhone og iPad", status = "Testversjon du signerer selv · iOS, iPadOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab." }
 
 [[platforms]]
 id = "mac"
-en = { name = "Mac", status = "Apple silicon · macOS 27 or 26", alone = "Records, opens the tabs you have made, plays them.", bandroom = "Writing a tab. Bandroom can run on the same Mac." }
-nb = { name = "Mac", status = "Apple-prosessor · macOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, spiller dem.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme Mac." }
+en = { name = "Mac", status = "Apple silicon · macOS 27 or 26", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab. Bandroom can run on the same Mac." }
+nb = { name = "Mac", status = "Apple-prosessor · macOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme Mac." }
 
 [[platforms]]
 id = "windows"
-en = { name = "Windows", status = "Preview, not yet tried by hand · Windows 11", alone = "Records, opens the tabs you have made, plays them, shares or prints a tab.", bandroom = "Writing a tab. Bandroom can run on the same PC." }
-nb = { name = "Windows", status = "Forhåndsversjon, ikke prøvd for hånd ennå · Windows 11", alone = "Spiller inn, åpner tabbene du har laget, spiller dem, deler eller skriver ut en tab.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme PC." }
+en = { name = "Windows", status = "Preview, not yet tried by hand · Windows 11", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars. Shares or prints a tab.", bandroom = "Writing a tab. Bandroom can run on the same PC." }
+nb = { name = "Windows", status = "Forhåndsversjon, ikke prøvd for hånd ennå · Windows 11", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter. Deler eller skriver ut en tab.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme PC." }
 
 [en]
 name = "Fretscribe"
@@ -99,44 +99,48 @@ heading = "Download Fretscribe"
 lead = "Fretscribe is an early version: it is not in any app store, and the downloads are not signed yet, so each device below says how to install it anyway. You need two downloads: the app for your device, and Bandroom for a computer on the same Wi-Fi, which writes every tab."
 more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@lang/guide/#download\">user guide</a> has the steps in full."
 
-# The steps of {{figure stages}}, in the order the engine takes them. {tempo}, {beats}, {unit}, {notes}, {doubt},
-# {key}, {open} and {tuning} are read from the fixture.
+# The steps of {{figure stages}}, in the order the engine takes them. {tempo}, {beats}, {notes}, {doubt}, {lost},
+# {key}, {open}, {tuning} and {strings} are read from the fixture.
 [[en.stages]]
 title = "The recording"
-text = "A riff into the microphone, or a file you have. The phone sends it to Bandroom on your own computer; it goes nowhere else."
-alt = "The recording as a sound wave: a row of plucked notes, each loud at first and dying away."
+text = "A riff into the microphone, or a file you have. The phone sends it to Bandroom on your own computer; it goes nowhere else. This is the loudness of the take the engine was given: a made-up line, strummed and picked by a synthesizer."
+alt = "A sound wave: strummed chords, each loud at first and dying away."
 [[en.stages]]
 title = "Listening for the beat"
-text = "First the pulse. Here the engine heard {tempo} beats a minute and {beats} beats in a bar. It writes what it hears: this line was made up in four, and it heard it in two."
+text = "First the pulse: the engine heard {tempo} beats a minute, {beats} to the bar. It writes what it hears. This take was written with another beat than that, and the page keeps the engine's answer, not the one we would have liked."
 alt = "The same sound wave with a line on every beat and a heavier line where each bar starts."
 [[en.stages]]
 title = "Hearing the notes"
-text = "Two listeners go through the sound. A note one of them hears only faintly and the other not at all is kept, but doubted. Each note gets a pitch, a start, a length and a number for how sure the engine is: the paler a block, the less sure."
-alt = "The notes as blocks, higher notes higher up, each as long as it sounded. Some blocks are paler."
+text = "Two listeners go through the sound: one hears many notes at once, the other follows a single line. Every note gets a pitch, a start, a length and a number for how sure the engine is. The paler a block, the less sure."
+alt = "The notes as blocks, higher notes higher up, each as long as it sounded: stacks of blocks where a chord was strummed. Some are paler."
 [[en.stages]]
 title = "Placing the notes in bars"
-text = "The notes are moved onto the beat, so they can be written as rhythm. That gives {notes} notes in E minor; the engine doubts {doubt} of them."
-alt = "The same blocks, now starting exactly on beats and half beats, between bar lines."
+text = "Played notes are never exactly on the beat. Each one moves from where it was heard, the dotted outline, to the nearest place a player would read. That gives {notes} notes in {key}."
+alt = "The same blocks moved a little sideways onto the beats, with a dotted outline left where each was heard."
 [[en.stages]]
 title = "Choosing strings and frets"
-text = "Every note can be played in several places. The solver picks a string and a fret for each so that the hand moves as little as it can: here {open} of the {notes} notes are on open strings in {tuning} tuning. A doubtful note keeps its question mark."
-alt = "The same notes as tab: fret numbers on four string lines, with a question mark over a doubtful note."
+text = "Every note can be played in several places. The solver picks a string and a fret for each so that the hand moves as little as it can: {open} of the {notes} notes are on open strings in {tuning} tuning. The engine doubts {doubt} of them, and {lost} have no place on the neck at all."
+alt = "The same notes as tab: fret numbers on {strings} string lines, chords as columns of numbers."
 
 [en.tabdemo]
-start = "The tab as the engine wrote it for standard tuning: two notes have no place on the neck."
 summary = "{tuning}, {capo}: no note is without a place on the neck."
 summary_lost = "{tuning}, {capo}: {lost} notes have no place on the neck."
 summary_lost_one = "{tuning}, {capo}: one note has no place on the neck."
+summary_left = "The solver left {left} more out of this fingering (–)."
 at = "Bar {bar}, beat {beat}, {name}:"
 place = "{string} string, fret {fret}"
 also = "It could also be played on the {places}."
+could = "It could be played on the {places}."
 or = ", or the "
 only = "There is no other place for it."
 lost = "it has no place on the neck in this tuning."
+nowhere = "no tuning here has a place for it. It is a sound the engine heard that is not a note of the line, and it says so instead of hiding it."
 left = "the solver left it out of this fingering."
-could = "It could be played on the {places}."
-summary_left = "The solver left {left} out of this fingering (–)."
 doubt = "The engine is not sure about this note."
+neck = "The neck: the filled dot is the place in the tab, the rings are the other places for this note."
+legend_doubt = "the engine is not sure"
+legend_lost = "no place on the neck"
+legend_left = "left out of this fingering"
 ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th"]
 names = ["C", "C sharp", "D", "E flat", "E", "F", "F sharp", "G", "G sharp", "A", "B flat", "B"]
 
@@ -167,39 +171,43 @@ more = "Alt ligger også i <a href=\"{{releases}}\">siste utgivelse på GitHub</
 
 [[nb.stages]]
 title = "Opptaket"
-text = "Et riff i mikrofonen, eller en fil du har. Telefonen sender det til Bandroom på din egen datamaskin; det går ingen andre steder."
-alt = "Opptaket som en lydbølge: en rekke klimprede toner, hver sterk først og så svakere."
+text = "Et riff i mikrofonen, eller en fil du har. Telefonen sender det til Bandroom på din egen datamaskin; det går ingen andre steder. Dette er lydstyrken i opptaket motoren fikk: en oppdiktet linje, spilt av en synthesizer."
+alt = "En lydbølge: akkorder som slås an, hver sterk først og så svakere."
 [[nb.stages]]
 title = "Lytter etter pulsen"
-text = "Først pulsen. Her hørte motoren {tempo} slag i minuttet og {beats} slag i takten. Den skriver det den hører: denne linjen ble diktet i fire, og den hørte den i to."
+text = "Først pulsen: motoren hørte {tempo} slag i minuttet, {beats} i takten. Den skriver det den hører. Dette opptaket ble skrevet med en annen puls enn det, og siden beholder motorens svar, ikke det vi helst ville hatt."
 alt = "Den samme lydbølgen med en strek på hvert slag og en kraftigere strek der hver takt begynner."
 [[nb.stages]]
 title = "Hører tonene"
-text = "To lyttere går gjennom lyden. En tone som den ene bare hører svakt og den andre ikke hører, blir stående, men med tvil. Hver tone får en tonehøyde, en start, en lengde og et tall for hvor sikker motoren er: jo blekere blokk, jo mindre sikker."
-alt = "Tonene som blokker, høyere toner høyere opp, hver så lang som den klang. Noen blokker er blekere."
+text = "To lyttere går gjennom lyden: den ene hører mange toner på en gang, den andre følger én enkelt linje. Hver tone får en tonehøyde, en start, en lengde og et tall for hvor sikker motoren er. Jo blekere blokk, jo mindre sikker."
+alt = "Tonene som blokker, høyere toner høyere opp, hver så lang som den klang: stabler av blokker der en akkord ble slått an. Noen er blekere."
 [[nb.stages]]
 title = "Plasserer tonene i takter"
-text = "Tonene flyttes inn på slagene, så de kan skrives som rytme. Det gir {notes} toner i e-moll; motoren er usikker på {doubt} av dem."
-alt = "De samme blokkene, som nå begynner nøyaktig på slag og halve slag, mellom taktstreker."
+text = "Spilte toner er aldri nøyaktig på slaget. Hver av dem flyttes fra der den ble hørt, den stiplede omrisset, til nærmeste sted en musiker ville lest. Det gir {notes} toner i {key}."
+alt = "De samme blokkene flyttet litt sidelengs inn på slagene, med et stiplet omriss igjen der hver ble hørt."
 [[nb.stages]]
 title = "Velger strenger og bånd"
-text = "Hver tone kan spilles flere steder. Løseren velger en streng og et bånd for hver, slik at hånda flytter seg minst mulig: her er {open} av de {notes} tonene på løse strenger i {tuning}-stemming. En usikker tone beholder spørsmålstegnet."
-alt = "De samme tonene som tab: båndtall på fire strenglinjer, med et spørsmålstegn over en usikker tone."
+text = "Hver tone kan spilles flere steder. Løseren velger en streng og et bånd for hver, slik at hånda flytter seg minst mulig: {open} av de {notes} tonene er på løse strenger i {tuning}-stemming. Motoren er usikker på {doubt} av dem, og {lost} har ingen plass på halsen i det hele tatt."
+alt = "De samme tonene som tab: båndtall på {strings} strenglinjer, akkorder som søyler av tall."
 
 [nb.tabdemo]
-start = "Tabben slik motoren skrev den for standardstemming: to toner har ingen plass på halsen."
 summary = "{tuning}, {capo}: ingen toner er uten plass på halsen."
 summary_lost = "{tuning}, {capo}: {lost} toner har ingen plass på halsen."
 summary_lost_one = "{tuning}, {capo}: én tone har ingen plass på halsen."
+summary_left = "Løseren utelot {left} til fra dette grepet (–)."
 at = "Takt {bar}, slag {beat}, {name}:"
 place = "{string} streng, bånd {fret}"
 also = "Den kan også spilles på {places}."
+could = "Den kan spilles på {places}."
 or = ", eller "
 only = "Den har ingen annen plass."
 lost = "den har ingen plass på halsen i denne stemmingen."
+nowhere = "ingen stemming her har plass til den. Det er en lyd motoren hørte som ikke er en tone i linjen, og den sier fra i stedet for å skjule det."
 left = "løseren tok den ikke med i dette grepet."
-could = "Den kan spilles på {places}."
-summary_left = "Løseren utelot {left} fra dette grepet (–)."
 doubt = "Motoren er ikke sikker på denne tonen."
+neck = "Halsen: den fylte prikken er plassen i tabben, ringene er de andre plassene for denne tonen."
+legend_doubt = "motoren er ikke sikker"
+legend_lost = "ingen plass på halsen"
+legend_left = "utelatt fra dette grepet"
 ordinals = ["1.", "2.", "3.", "4.", "5.", "6."]
 names = ["C", "Ciss", "D", "Ess", "E", "F", "Fiss", "G", "Giss", "A", "B", "H"]

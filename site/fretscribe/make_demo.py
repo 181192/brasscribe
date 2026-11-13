@@ -1,15 +1,22 @@
-"""Make the data of the tab viewer on Fretscribe's front page: site/fretscribe/figures/tab-demo.json.
+"""Make the data of the figures on Fretscribe's front page, in site/fretscribe/figures/.
 
-The notes are the ones the engine wrote for apps/fixtures/guitar-line (a made-up line, synthesized, then heard
-by the engine). For every tuning and capo the viewer offers, the string and fret of each note, its other
-places and the notes with no place are asked of the core's own solver (`scribe-core fret`), so the page shows
-what the app would show and nothing is worked out in the browser. The run fails unless the solver gives the
-fixture's own places back for the fixture's own tuning.
+tab-demo.json is the tab viewer's. The notes are the ones the engine wrote for apps/fixtures/guitar-line (a made-up
+line, synthesized, then heard by the engine). For every tuning the viewer offers, the string and fret of each
+note, its other places and the notes with no place are asked of the core's own solver (`scribe-core fret`), so the
+page shows what the app would show and nothing is worked out in the browser. The run fails unless the solver gives
+the fixture's own places back for the fixture's own tuning.
+
+guitar-line-sound.json is the loudness of the take the engine heard, fifty times a second: the fixture's own
+script synthesizes the take again, and the run fails unless it is, byte for byte, the audio the fixture's job
+was given (the job's audio id is the start of its SHA-256).
 
     cargo build --release -p scribe-cli   (in core/, or set SCRIBE_CORE_CLI)
-    python3 site/fretscribe/make_demo.py
+    uv run --with numpy python site/fretscribe/make_demo.py
 """
 
+import hashlib
+import importlib.util
+import io
 import json
 import os
 import re
@@ -22,17 +29,36 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "apps" / "fixtures" / "guitar-line"
 OUT = ROOT / "site" / "fretscribe" / "figures" / "tab-demo.json"
 PRESETS = ["guitar-standard", "guitar-drop-d", "guitar-open-g", "guitar-dadgad"]
-CAPOS = [0, 1, 2, 3]
+CAPOS = [0]  # a capo takes the low notes off this line's neck in every tuning, so the viewer offers none
 
 
-def doubtful(musicxml: str) -> set[int]:
-    """The notes the engine drew in the doubt colour: each <note> carries <?fretted-note N?>."""
-    marked = set()
-    for note in re.findall(r"<note\b[^>]*>.*?</note>", musicxml, re.S):
-        number = re.search(r"<\?fretted-note (\d+)\?>", note)
-        if number and re.match(r'<note\b[^>]*color="#9A5200"', note):
-            marked.add(int(number.group(1)))
-    return marked
+def module(path: Path):
+    spec = importlib.util.spec_from_file_location(path.stem.replace("-", "_"), path)
+    made = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(made)
+    return made
+
+
+def sound() -> dict | None:
+    """The take's loudness, from the audio the fixture's own script makes: its peak in every fiftieth of a second."""
+    import wave
+
+    import numpy as np
+
+    lines = module(ROOT / "apps" / "fixtures" / "make-fretted-lines.py")
+    audio = lines.take(lines.GUITAR)
+    heard = json.loads((FIXTURE / "request.json").read_text())["audio_id"]
+    if hashlib.sha256(audio).hexdigest()[:len(heard)] != heard:
+        print("the take made here is not the audio the fixture's job was given", file=sys.stderr)
+        return None
+    with wave.open(io.BytesIO(audio)) as w:
+        rate = w.getframerate()
+        samples = np.abs(np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(float)) / 32768
+    step = rate // 50
+    peaks = [round(float(samples[i:i + step].max()), 3) for i in range(0, len(samples), step)]
+    top = max(peaks)
+    return {"source": "apps/fixtures/make-fretted-lines.py take(GUITAR), the audio of apps/fixtures/guitar-line's job",
+            "audio_id": heard, "per_second": 50, "peak": [round(p / top, 3) for p in peaks]}
 
 
 def main() -> int:
@@ -41,7 +67,11 @@ def main() -> int:
         print("scribe-core is missing: cargo build --release -p scribe-cli in core/", file=sys.stderr)
         return 1
     tab = json.loads((FIXTURE / "tab.json").read_text())
-    marks = doubtful((FIXTURE / "tab.musicxml").read_text())
+    marks = module(ROOT / "site" / "shared" / "figures.py").doubtful((FIXTURE / "tab.musicxml").read_text())
+    heard = sound()
+    if heard is None:
+        return 1
+    (OUT.parent / "guitar-line-sound.json").write_text(json.dumps(heard, separators=(",", ":")) + "\n")
     notes = [{k: n[k] for k in ("pitch", "start", "dur")} for n in tab["notes"]]
     variants = {}
     with tempfile.TemporaryDirectory() as tmp:

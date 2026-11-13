@@ -7,23 +7,41 @@ h1 { font-size: clamp(2.25rem, 5.6vw, 3.75rem); }
 h2 { font-size: clamp(1.75rem, 3.6vw, 2.5rem); }
 h1 em, h2 em { font-weight: 700; }
 
-/* The hero's screens lie on a ruled page: a rule every 28 px. */
-.hero .phones {
-  padding: var(--scribe-space-8) var(--scribe-space-5); border-radius: var(--scribe-radius-sm);
-  border: 1px solid var(--scribe-border);
-  background: repeating-linear-gradient(180deg, var(--scribe-surface-raised) 0 27px, var(--scribe-border) 27px 28px);
+/* The page is the paper: a faint rule every 32 px through every section, and the margin line down its left. */
+main > section {
+  --rule: color-mix(in srgb, var(--scribe-line) 16%, transparent);
+  --margin-line: color-mix(in srgb, var(--scribe-brand) 30%, transparent);
+  --margin-at: max(10px, calc(50% - 584px));
+  background:
+    linear-gradient(90deg, transparent var(--margin-at), var(--margin-line) var(--margin-at), var(--margin-line) calc(var(--margin-at) + 1px), transparent calc(var(--margin-at) + 1px)),
+    repeating-linear-gradient(180deg, transparent 0 31px, var(--rule) 31px 32px);
 }
-@media (forced-colors: active) { .hero .phones { background: none; } }
+main > section + section { border-top: 0; }
+/* What is pasted onto the page stands a little off it. */
+.strip-stage, .stage-figure, .tabdemo, .matrix .table-scroll, .flow .phone-frame { box-shadow: var(--scribe-elevation-1); }
+.matrix .table-scroll { background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); padding: 0 var(--scribe-space-4); }
+
+/* The pen that writes the strip opens every section: a dot and the line it has drawn. */
+main > section h2::before {
+  content: ""; display: block; width: 72px; height: 12px; margin-bottom: var(--scribe-space-4);
+  background:
+    radial-gradient(circle at 66px 50%, var(--scribe-brand) 5.5px, transparent 6px),
+    linear-gradient(var(--scribe-brand), var(--scribe-brand)) 0 50% / 62px 2px no-repeat;
+}
+
+/* The front page: the headline sits over the strip. */
+.hero { padding-top: var(--scribe-space-10); background-color: var(--scribe-bg); }
+.hero .lead { max-width: 30em; margin-bottom: 0; }
+.hero .actions { margin-top: var(--scribe-space-5); }
+.needs-note { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
+.needs-list { margin-top: var(--scribe-space-6); max-width: 46em; }
 
 /* The phone screenshots here are Android screens: 9:20, where the shared frame assumes an iPhone. */
 .phone-frame img { aspect-ratio: 600 / 1304; }
 
-.needs-note { margin: var(--scribe-space-5) 0 0; font-size: var(--scribe-type-callout-size); }
-
-/* The front page: the headline over the strip, which runs the full width of the page like a ruled line. */
-.hero { padding-bottom: 0; background: linear-gradient(180deg, var(--scribe-brand-tint), var(--scribe-bg) 60%); }
-.hero .lead { max-width: 34em; }
-.hero .strip { margin-top: var(--scribe-space-8); }
-.hero .strip-controls, .hero .strip figcaption { max-width: 1120px; margin-left: auto; margin-right: auto; padding: 0 var(--scribe-space-6); }
-.hero .strip figcaption { padding-bottom: var(--scribe-space-10); }
-.needs-list { margin-top: var(--scribe-space-6); max-width: 46em; }
+@media (max-width: 600px) {
+  .hero { padding-top: var(--scribe-space-6); }
+  .hero .button { min-height: 48px; }
+  .hero > .strip { margin-top: var(--scribe-space-5); }
+}
+@media (forced-colors: active) { main > section { background: none; } main > section h2::before { display: none; } }

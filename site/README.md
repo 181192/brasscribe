@@ -53,9 +53,11 @@ engine answered and no number is typed into a page:
 - A page names the stylesheets and scripts it needs in its header (`styles:`, `scripts:`); the build
   copies them from the product's folder or from `shared/`. `shared/showcase.css` and `showcase.js`
   belong to the figures. Every figure is complete without the script, which only adds what moves.
-- `<product>/figures/` is served as `assets/data/`. Fretscribe's `figures/tab-demo.json` is made by
-  `fretscribe/make_demo.py`, which asks the core's solver for each tuning and capo the viewer offers;
-  run it again when the guitar fixture or the solver changes.
+- `<product>/figures/` is served as `assets/data/`. Fretscribe's is made by
+  `uv run --with numpy python site/fretscribe/make_demo.py`: `tab-demo.json` asks the core's solver
+  for each tuning the viewer offers, and `guitar-line-sound.json` is the loudness of the take the
+  engine heard, made again by the fixture's own script and checked against the job's audio id.
+  Run it again when the guitar fixture or the solver changes.
 
 ## Adding a product
 

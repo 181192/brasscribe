@@ -126,6 +126,10 @@ class Page:
                 self.meta[key.strip()] = value.strip()
             self.body = text[head.end():]
 
+    def named(self, key: str) -> list[str]:
+        """The files a page's header names under `styles:` or `scripts:`, separated by spaces or commas."""
+        return self.meta.get(key, "").replace(",", " ").split()
+
     # Links ---------------------------------------------------------------------------------
     def link(self, root: str, path: str = "") -> str:
         """Resolve @<root>/<path> from this page."""
@@ -302,9 +306,9 @@ class Page:
         if "icons" in p.data:
             head += ['<link rel="icon" href="@/favicon.ico" sizes="any">',
                      '<link rel="apple-touch-icon" href="@/apple-touch-icon.png">']
-        for css in [f'assets/{p.data["css"]}', "assets/fonts.css", "site.css", *self.meta.get("styles", "").split(), *p.data.get("styles", [])]:
+        for css in [f'assets/{p.data["css"]}', "assets/fonts.css", "site.css", *self.named("styles"), *p.data.get("styles", [])]:
             head.append(f'<link rel="stylesheet" href="@/{css}">')
-        for script in self.meta.get("scripts", "").split():
+        for script in self.named("scripts"):
             head.append(f'<script type="module" src="@/{script}"></script>')
 
         if p.family:
@@ -420,8 +424,11 @@ class Site:
                 for name, source in p.pages(lang).items():
                     page = Page(self, p, lang, name, source)
                     # What a page names in its header: from the product's folder, else from site/shared.
-                    for extra in (page.meta.get("styles", "") + " " + page.meta.get("scripts", "")).split():
-                        shutil.copy(next(d / extra for d in (p.dir, SITE / "shared") if (d / extra).exists()), out)
+                    for extra in page.named("styles") + page.named("scripts"):
+                        found = [d / extra for d in (p.dir, SITE / "shared") if (d / extra).exists()]
+                        if not found:
+                            sys.exit(f"{page.dir}: {extra} is neither in {p.dir.name}/ nor in shared/")
+                        shutil.copy(found[0], out)
                     target = OUT / page.dir / "index.html"  # a folder per page, so URLs have no .html
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_text(page.render())

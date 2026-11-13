@@ -10,28 +10,28 @@ scripts: showcase.js
   <section class="hero">
     <div class="wrap">
       <h1>Turn a recording into <em>tab.</em></h1>
-      <p class="lead">Play a riff, record a song or open a file you have. Fretscribe writes it down as tab for your instrument and your tuning, shows you what it heard before a single fret is written, and lets you practise with the recording.</p>
+      <p class="lead">Play a riff or open a recording, and Fretscribe writes it down as tab for your instrument and your tuning.</p>
       <div class="actions">
         <a class="button primary" href="@lang/guide/#get-started">Get started</a>
         <a class="button secondary" href="@lang/download/">Download</a>
       </div>
       <p class="muted needs-note">Every tab is written by <a href="#needs">Bandroom on your own computer</a>.</p>
     </div>
-    {{figure strip fixture="apps/fixtures/bass-line-marks"}}
+    {{figure strip fixture="apps/fixtures/guitar-line" sound="site/fretscribe/figures/guitar-line-sound.json"}}
   </section>
 
   <section id="steps" aria-labelledby="steps-title">
     <div class="wrap">
       <h2 id="steps-title">From sound to tab, <em>one step at a time.</em></h2>
-      <p class="lead">This is what the engine had at each step for the first bars of the line above. Nothing here is drawn by hand.</p>
-      {{figure stages fixture="apps/fixtures/bass-line-marks"}}
+      <p class="lead">What the engine had at each step for the first two bars of the line above, drawn from its own answers and from the take's own sound.</p>
+      {{figure stages fixture="apps/fixtures/guitar-line" sound="site/fretscribe/figures/guitar-line-sound.json"}}
     </div>
   </section>
 
   <section id="try" aria-labelledby="try-title">
     <div class="wrap">
       <h2 id="try-title">The same notes, <em>your tuning.</em></h2>
-      <p class="lead">A made-up guitar line, as the engine wrote it. In standard tuning two notes have no place on the neck (!), one of them a low D: the line sounds like Drop D. Change the tuning or put on a capo. The notes stay the same; the strings and frets are the solver's own for each choice, and a dash (–) is a note it left out of that fingering.</p>
+      <p class="lead">The line above, as the engine wrote it. In standard tuning it found notes with no place on the neck, and the tuning it suggests first is {{data apps/fixtures/guitar-line/tab.json tuning_suggestions/0/tuning}}, as Check the song would in the app. Change the tuning: the notes stay the same, and the strings and frets are the solver's own for each. Choose a number to see every place that note can be played.</p>
       {{figure tabdemo data="site/fretscribe/figures/tab-demo.json" fixture="apps/fixtures/guitar-line"}}
     </div>
   </section>
@@ -45,26 +45,26 @@ scripts: showcase.js
           <h3>Bass</h3>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_precision"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_precision as="percent"}}</span> of 100 marked notes were wrong. When it doubts a note, it usually has reason to.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_precision as="percent"}}</span> of 100 question marks were right to doubt: the note under them was wrong.</p>
           </div>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_recall" kind="found"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_recall as="percent"}}</span> of 100 wrong notes carried a mark. Most wrong notes are not marked.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_recall as="percent"}}</span> of 100 wrong notes carried a question mark. The rest slipped through unmarked.</p>
           </div>
         </li>
         <li>
           <h3>Guitar</h3>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_precision"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_precision as="percent"}}</span> of 100 marked notes were wrong. When it doubts a note, it usually has reason to.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_precision as="percent"}}</span> of 100 question marks were right to doubt: the note under them was wrong.</p>
           </div>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_recall" kind="found"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_recall as="percent"}}</span> of 100 wrong notes carried a mark. Most wrong notes are not marked.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_recall as="percent"}}</span> of 100 wrong notes carried a question mark. The rest slipped through unmarked.</p>
           </div>
         </li>
       </ul>
-      <p>So a mark is worth checking, and a note without one can still be wrong. A tab from a recording is a draft: trust your ears over it.</p>
+      <p>So a question mark is worth checking, and a note without one can still be wrong. A tab from a recording is a draft: trust your ears over it.</p>
       <p class="source">Measured on bass and guitar parts picked out of full songs (the Slakh excerpts), and gated in <code>eval/baselines.json</code>: a change that makes these worse does not ship.</p>
     </div>
   </section>

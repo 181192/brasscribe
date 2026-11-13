@@ -10,28 +10,28 @@ scripts: showcase.js
   <section class="hero">
     <div class="wrap">
       <h1>Gjør et opptak om til <em>tab.</em></h1>
-      <p class="lead">Spill et riff, ta opp en sang eller åpne en fil du har. Fretscribe skriver det ned som tab for instrumentet og stemmingen din, viser deg hva den hørte før et eneste bånd er skrevet, og lar deg øve med opptaket.</p>
+      <p class="lead">Spill et riff eller åpne et opptak, så skriver Fretscribe det ned som tab for instrumentet og stemmingen din.</p>
       <div class="actions">
         <a class="button primary" href="@lang/guide/#get-started">Kom i gang</a>
         <a class="button secondary" href="@lang/download/">Last ned</a>
       </div>
       <p class="muted needs-note">Hver tab skrives av <a href="#needs">Bandroom på din egen datamaskin</a>.</p>
     </div>
-    {{figure strip fixture="apps/fixtures/bass-line-marks"}}
+    {{figure strip fixture="apps/fixtures/guitar-line" sound="site/fretscribe/figures/guitar-line-sound.json"}}
   </section>
 
   <section id="steps" aria-labelledby="steps-title">
     <div class="wrap">
       <h2 id="steps-title">Fra lyd til tab, <em>ett steg om gangen.</em></h2>
-      <p class="lead">Dette er det motoren hadde på hvert steg for de første taktene av linjen over. Ingenting her er tegnet for hånd.</p>
-      {{figure stages fixture="apps/fixtures/bass-line-marks"}}
+      <p class="lead">Det motoren hadde på hvert steg for de to første taktene av linjen over, tegnet fra dens egne svar og fra opptakets egen lyd.</p>
+      {{figure stages fixture="apps/fixtures/guitar-line" sound="site/fretscribe/figures/guitar-line-sound.json"}}
     </div>
   </section>
 
   <section id="try" aria-labelledby="try-title">
     <div class="wrap">
       <h2 id="try-title">De samme tonene, <em>din stemming.</em></h2>
-      <p class="lead">En oppdiktet gitarlinje, slik motoren skrev den. I standardstemming har to toner ingen plass på halsen (!), den ene en dyp D: linjen høres ut som Drop D. Bytt stemming eller sett på en capo. Tonene er de samme; strengene og båndene er løserens egne for hvert valg, og en strek (–) er en tone den utelot fra det grepet.</p>
+      <p class="lead">Linjen over, slik motoren skrev den. I standardstemming fant den toner uten plass på halsen, og stemmingen den foreslår først, er {{data apps/fixtures/guitar-line/tab.json tuning_suggestions/0/tuning}}, slik Sjekk sangen ville gjort i appen. Bytt stemming: tonene er de samme, og strengene og båndene er løserens egne for hver. Velg et tall for å se alle stedene den tonen kan spilles.</p>
       {{figure tabdemo data="site/fretscribe/figures/tab-demo.json" fixture="apps/fixtures/guitar-line"}}
     </div>
   </section>
@@ -45,26 +45,26 @@ scripts: showcase.js
           <h3>Bass</h3>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_precision"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_precision as="percent"}}</span> av 100 merkede toner var feil. Når den tviler på en tone, har den som regel grunn til det.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_precision as="percent"}}</span> av 100 spørsmålstegn hadde grunn til tvilen: tonen under dem var feil.</p>
           </div>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/bass-tab/metrics/song.doubt_recall" kind="found"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_recall as="percent"}}</span> av 100 gale toner hadde et merke. De fleste gale tonene blir ikke merket.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/bass-tab/metrics/song.doubt_recall as="percent"}}</span> av 100 gale toner hadde et spørsmålstegn. Resten slapp gjennom uten merke.</p>
           </div>
         </li>
         <li>
           <h3>Gitar</h3>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_precision"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_precision as="percent"}}</span> av 100 merkede toner var feil. Når den tviler på en tone, har den som regel grunn til det.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_precision as="percent"}}</span> av 100 spørsmålstegn hadde grunn til tvilen: tonen under dem var feil.</p>
           </div>
           <div class="rate">
             {{figure dots path="targets/fretted/suites/guitar-tab/metrics/song.doubt_recall" kind="found"}}
-            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_recall as="percent"}}</span> av 100 gale toner hadde et merke. De fleste gale tonene blir ikke merket.</p>
+            <p><span class="big">{{data eval/baselines.json targets/fretted/suites/guitar-tab/metrics/song.doubt_recall as="percent"}}</span> av 100 gale toner hadde et spørsmålstegn. Resten slapp gjennom uten merke.</p>
           </div>
         </li>
       </ul>
-      <p>Et merke er altså verdt å sjekke, og en tone uten merke kan også være feil. En tab fra et opptak er et utkast: stol mer på ørene dine enn på den.</p>
+      <p>Et spørsmålstegn er altså verdt å sjekke, og en tone uten kan også være feil. En tab fra et opptak er et utkast: stol mer på ørene dine enn på den.</p>
       <p class="source">Målt på bass- og gitarstemmer plukket ut av hele sanger (Slakh-utdragene), og låst i <code>eval/baselines.json</code>: en endring som gjør disse dårligere, blir ikke gitt ut.</p>
     </div>
   </section>
