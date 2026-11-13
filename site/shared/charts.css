@@ -37,7 +37,7 @@
 .chart-views input:focus-visible + span { outline: 2px solid var(--scribe-focus); outline-offset: 2px; }
 .chart-key { display: flex; flex-wrap: wrap; gap: var(--scribe-space-1) var(--scribe-space-4); list-style: none; padding: 0; margin: 0; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
 .chart-key li { display: inline-flex; align-items: center; gap: var(--scribe-space-2); margin: 0; }
-.chart-key li[hidden] { display: none; }
+.chart-key[hidden] { display: none; }
 .chart-key i, .chart-tip i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; flex: none; }
 .chart i.s1 { background: var(--chart-1); } .chart i.s2 { background: var(--chart-2); } .chart i.s3 { background: var(--chart-3); }
 .chart-note { min-height: 1.4em; margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
@@ -71,12 +71,14 @@
 
 /* The exact values of the row under the pointer or the keyboard. It keeps its room, so the page never jumps. */
 .chart-tip {
+  position: sticky; bottom: var(--scribe-space-2); z-index: 2;  /* in view while its figure is, also under a tall plot on a phone */
   min-height: 5.6em; margin-top: var(--scribe-space-3); padding: var(--scribe-space-2) var(--scribe-space-3);
   border-left: 3px solid var(--scribe-border-strong); background: var(--scribe-surface);
   border-radius: 0 var(--scribe-radius-sm) var(--scribe-radius-sm) 0;
   font-size: var(--scribe-type-caption-size); line-height: 1.45; color: var(--scribe-text-muted);
 }
 .chart-tip.is-on { color: var(--scribe-text); border-left-color: var(--scribe-brand); }
+@media (max-width: 600px) { .chart-tip { min-height: 8.6em; } .chart-tip.is-on { box-shadow: 0 0 0 1px var(--scribe-border-strong), 0 4px 14px rgb(0 0 0 / 0.2); } }
 .chart-tip p { margin: 0; }
 .chart-tip-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--scribe-space-2); }
 .chart-tip-row b { font-size: var(--scribe-type-callout-size); font-variant-numeric: tabular-nums; }
@@ -123,4 +125,12 @@
 @media (forced-colors: active) {
   .mv .ln, .mv .bold { stroke: CanvasText; } .mv .ref, .mv .ok, .mv .txt, .mv .strong, .mv .q { fill: CanvasText; }
   .mv .bad { fill: Canvas; stroke: CanvasText; } .mv .win { fill: Canvas; stroke: CanvasText; }
+}
+
+/* The contents list of a paper: a list beside the text on a wide screen, folded above it on a narrow one. */
+.toc-fold { border: 0; background: none; margin: 0; padding: 0; }
+.toc-fold > summary.toc-title { padding: 0 var(--scribe-space-3); min-height: 44px; }
+@media (min-width: 901px) {
+  .toc-fold > summary.toc-title { pointer-events: none; min-height: 0; }
+  .toc-fold > summary.toc-title::before { content: none; }
 }

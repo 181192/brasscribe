@@ -8,6 +8,7 @@
 source = "eval/fixtures/choralebricks-solo (one <stem>.notes.csv per stem); docs/shared/research/10-benchmark-results.md, 'Song benchmark: Slakh trumpet-lead tracks'"
 choralebricks_solo_stems = 93     # find eval/fixtures/choralebricks-solo -name '*.notes.csv' | wc -l
 slakh_trumpet_songs = 2           # BabySlakh Track00006 and Track00014
+fast_notes_frozen_clips = 253     # ls eval/fixtures/fast-notes | wc -l
 
 [solo_vote]
 # Notes per agreement class behind the precisions gated in the solo-vote suite.

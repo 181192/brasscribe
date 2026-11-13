@@ -7,7 +7,8 @@ styles: charts.css
 scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
-    <p id="toc-title" class="toc-title">I denne artikkelen</p>
+    <details class="toc-fold" open>
+    <summary id="toc-title" class="toc-title">I denne artikkelen</summary>
     <ol>
       <li><a href="#abstract">Sammendrag</a></li>
       <li><a href="#problem">1. Problemet</a></li>
@@ -24,6 +25,7 @@ scripts: charts.js
       <li><a href="#licences">12. Lisenser</a></li>
       <li><a href="#references">Referanser</a></li>
     </ol>
+    </details>
   </nav>
 
   <article class="paper">
@@ -42,6 +44,8 @@ scripts: charts.js
       {{holds brass/solo-instruments/flugelhorn.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/trombone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/baritone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/tuba.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/horn.q_hit <= brass/solo-instruments/trumpet.q_hit}}
     </section>
 
+    {{chart rhythm}}
+
     <section id="problem" aria-labelledby="problem-title">
       <h2 id="problem-title"><span class="secno">1</span> Problemet</h2>
       <p class="plain"><span class="plain-label">Kort fortalt</span>En musiker hører et stykke og vil ha stemmen sin. Å skrive den ned etter gehør tar timer. Brasscribe skriver et første utkast og må si fra om hvilke toner den er usikker på.</p>
@@ -49,7 +53,7 @@ scripts: charts.js
       <p>Et brassband har 18 stemmer i et konkurransepartitur, fra soprankornett til B-bass og slagverk; norske band bruker samme oppsett. De fleste instrumentene har samme familieklang og dobler hverandre hele tiden. Det er det vanskelige tilfellet for alle modeller vi kjenner: ingen kjenner bandets instrumenter, og ingen skiller flere musikere på samme instrument fra hverandre.</p>
       <p>Tre krav har formet arbeidet:</p>
       <ul class="ticks">
-        <li><strong>Musikerens egne enheter.</strong> Opptak sendes ikke til en skytjeneste. Et fullt band behandles på musikerens datamaskin. På Android og Windows skriver appen en solo selv; på iPhone, iPad og Mac ligger lyttemodellene ikke i appen ennå, så alle noter kommer fra datamaskinen.</li>
+        <li><strong>Musikerens egne enheter.</strong> Opptak sendes ikke til en skytjeneste. Et fullt band behandles på musikerens datamaskin. På Android skriver appen en solo selv. På Windows, iPhone, iPad og Mac kommer alle noter fra datamaskinen: appen har ennå ikke det den trenger for å skrive en alene.</li>
         <li><strong>Tvil vises.</strong> En tone systemet tviler på, får et <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span>, med både form og farge, og musikeren går gjennom de merkede tonene gruppevis. <a href="#doubt">Avsnitt 6.6</a> måler hvor mye merkene fanger.</li>
         <li><strong>Målt, så låst.</strong> Et steg velges etter måling på opptak med kjent fasit, og en sperre stopper bygget når et tall flytter seg.</li>
       </ul>
@@ -143,10 +147,10 @@ scripts: charts.js
       <p>På en brasskvartett når den beste modellen F1 {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} med den romslige toleransen, og stykkene er ganske ulike: fra {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@min}} til {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@max}}. Den strenge toleransen på 50 ms koster mye for brass, fordi en myk ansats kommer sent; den romslige er det rimeligste målet på hva som ender i notene. På et fullt band ga det bedre resultat å skille instrumentene først enn å transkribere miksen, på to syntetiske låter.</p>
 
       <h3 id="rhythm">6.2 Hvor tonene havner</h3>
-      {{chart rhythm}}
-      <p>Dette er artikkelens viktigste resultat. Med riktige slag skriver reglene {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} av tonene nøyaktig der partituret har dem. Med slagene sporeren fant, klarer de {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, og prikkene viser hvor lite et snitt sier her: enkeltstykker går fra {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}, avhengig av hvor godt sporeren fant slagene og taktstrekene. Plassen i slaget holder mye bedre ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), så rytmen inne i et slag er som regel lesbar selv når taktstrekene ikke er det. Skrevne lengder er riktige for {{data brass/quant-urmp/reference_beats.duration_acc pct}} av tonene i kammermusikken selv med perfekte slag: musikere korter ned toner, og reglene retter det bare delvis opp.</p>
+      <p>Figuren til dette er <a href="#fig-rhythm">den under sammendraget</a>. Det er artikkelens viktigste resultat. Med riktige slag skriver reglene {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} av tonene nøyaktig der partituret har dem. Med slagene sporeren fant, klarer de {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, og prikkene viser hvor lite et snitt sier her: enkeltstykker går fra {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}, avhengig av hvor godt sporeren fant slagene og taktstrekene. Plassen i slaget holder mye bedre ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), så rytmen inne i et slag er som regel lesbar selv når taktstrekene ikke er det. Skrevne lengder er riktige for {{data brass/quant-urmp/reference_beats.duration_acc pct}} av tonene i kammermusikken selv med perfekte slag: musikere korter ned toner, og reglene retter det bare delvis opp.</p>
+      <p>Ett innstillingssteg ligger bak tallene til venstre. Å gjøre en enkel rytme billigere å velge for kvantiseringen enn en komplisert flyttet nøyaktige plasser på koralene fra {{data m/penalties/position_before pct}} til {{data brass/quant-chorales/reference_beats.position_acc pct}}, med partiturets slag. Steget er stilt inn på disse koralene, så gevinsten er en tilpasning, ikke en prøve.{{holds brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before}}</p>
       {{chart durations}}
-      <p>Tre regler for skrevet tonelengde ble sammenlignet. Den som brukes, leser slutten av en tone fra der tonehøyden stopper, og den er best av de tre med liten margin. Resultatet for kammermusikken er lavt under alle reglene.</p>
+      <p>Tre regler for skrevet tonelengde ble sammenlignet. Tallene for kammermusikk i denne figuren er høyere enn {{data brass/quant-urmp/reference_beats.duration_acc pct}} i rytmefiguren fordi de to kommer fra ulike målesuiter: der hentes lengden fra kvantiseringen alene og må være nøyaktig lik partiturets; her brukes en lengderegel per stemme, og ett trinn (1/24 slag) er tillatt. Den som brukes, leser slutten av en tone fra der tonehøyden stopper, og den er best av de tre med liten margin. Resultatet for kammermusikken er lavt under alle reglene.</p>
 
       <h3 id="solo">6.3 Én musiker, fra ende til ende</h3>
       {{chart solo-written}}
@@ -155,13 +159,11 @@ scripts: charts.js
       <h3 id="instruments">6.4 Instrument for instrument</h3>
       {{chart solo-instruments}}
       <p>Alene blir hvert messinginstrument sporet godt, også tubaen, og nesten aldri i feil oktav. Den andre serien viser en feil som er lett å forveksle med en modellfeil: uten å vite hvilket instrument det er, beholder soloveien bare toner i kornettens omfang, så en tuba forsvinner og en trombone beholder {{data brass/solo-instruments/trombone.today_recall pct}} av tonene. Tonehøydesporeren var aldri begrensningen der.</p>
-      {{chart trackers}}
-      <p>Dette er kontrollen av SwiftF0 på messing som avsnitt 2 lovet. Den andre modellen betyr også noe: en tone skrives uten merke bare når Basic Pitch bekrefter den, og på tubaen er Basic Pitch enig i {{data brass/solo-instruments/tuba.bp_agrees pct}} av tonene i linjen. Det gir {{data brass/solo-instruments/tuba.q_missed f1}} gale toner uten merke per 100 skrevne toner på tubaen, mot {{data brass/solo-instruments/trumpet.q_missed f1}} på trompeten.</p>
+      <p>Figurens andre visning er kontrollen av SwiftF0 på messing som avsnitt 2 lovet. Den andre modellen betyr også noe: en tone skrives uten merke bare når Basic Pitch bekrefter den, og på tubaen er Basic Pitch enig i {{data brass/solo-instruments/tuba.bp_agrees pct}} av tonene i linjen. Det gir {{data brass/solo-instruments/tuba.q_missed f1}} gale toner uten merke per 100 skrevne toner på tubaen, mot {{data brass/solo-instruments/trumpet.q_missed f1}} på trompeten.</p>
 
       <h3 id="voices">6.5 Én stemme ut av en gruppe</h3>
-      {{chart voice-recall}}
-      <p>Hvem sine toner mangler i en kvartett? For det meste de to nederste musikernes. Neste figur stiller det vanskeligere spørsmålet: kan én musikers linje hentes ut hel.</p>
       {{chart voices}}
+      <p>Den første visningen spør om én musikers linje kan hentes ut hel. De andre visningene stiller et enklere spørsmål, hvem sine toner mangler i transkripsjonen i det hele tatt: for det meste de to nederste musikernes.</p>
       <p>En musiker som tar opp hele gruppen og vil ha sin egen linje, får den hvis linjen er overstemmen, og nesten hvis den er andrestemmen. Tenorstemmen, midt i harmonien på et instrument som låter som naboene, blir funnet med F1 {{data brass/seat-voices/muscriptor-medium.T_f1}} av den beste modellen. Derfor skriver Brasscribe bare melodien og bassen i et band fra det den hørte, og arrangerer stemmene imellom ut fra harmonien.</p>
       {{chart inner-parts}}
       <p>Hvor gode er de arrangerte stemmene? Med riktig harmoni velger kvartettarrangøren samme tone som komponisten for omtrent fire av fem toner, med {{data brass/arrange/quartet.parallels_per_100 f2}} parallelle kvinter eller oktaver per 100 akkordskifter mot {{data brass/arrange/quartet-reference.parallels_per_100 f2}} i koralene selv. Fra et opptak treffer den omtrent halvparten og skriver {{data brass/quartet-audio/mus.parallels_per_100 f1}} paralleller per 100. Arrangørene skriver aldri en tone et instrument ikke kan spille, og krysser aldri stemmer; det følger av hvordan de er bygd, så det viser at reglene holder, ikke at musikken er god.</p>
@@ -174,9 +176,7 @@ scripts: charts.js
 
       <h3 id="fast">6.7 Raske toner</h3>
       {{chart fast-notes}}
-      <p>Løp, gjentatte toner og triller er det musikere helst vil ha skrevet ned, og det vanskeligste. Tonehøydesporeren hører omtrent seks av ti toner i dem. Med riktige slag kommer nesten alle disse med på arket; med sporede slag går flere tapt når tonene settes på rutenettet. Av trillene og vekslingene mellom to toner beholder {{data brass/fast-notes/oracle.written.alt_kept pct}} minst fire femdeler av tonene med riktige slag, og {{data brass/fast-notes/small0.written.alt_kept pct}} med sporede.</p>
-      {{chart fast-before-after}}
-      <p>Reglene for raske toner kom til etter at en første versjon mistet de fleste av dem. De hjalp, og passasjene blir fortsatt for det meste ikke skrevet.</p>
+      <p>Løp, gjentatte toner og triller er det musikere helst vil ha skrevet ned, og det vanskeligste. Tonehøydesporeren hører omtrent seks av ti toner i dem. Med riktige slag kommer nesten alle disse med på arket; med sporede slag går flere tapt når tonene settes på rutenettet. Av trillene og vekslingene mellom to toner beholder {{data brass/fast-notes/oracle.written.alt_kept pct}} minst fire femdeler av tonene med riktige slag, og {{data brass/fast-notes/small0.written.alt_kept pct}} med sporede. Reglene for raske toner kom til etter at en første versjon mistet de fleste av dem; de andre visningene i figuren viser før og etter. De hjalp, og passasjene blir fortsatt for det meste ikke skrevet.</p>
     </section>
 
     <section id="errors" aria-labelledby="errors-title">
@@ -201,7 +201,6 @@ scripts: charts.js
       {{chart solo-trackers}}
       {{chart consensus}}
       {{chart melody}}
-      {{chart penalties}}
       <ul>
         <li><strong>MuScriptor large mot medium.</strong> Den store modellen fikk lavere snitt. Medium brukes.</li>
         <li><strong>Å fortelle MuScriptor at instrumentene er messing</strong> tok den fra {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} til {{data brass/chorales-transcription/muscriptor-medium-brass.onset_f1}}. Den får aldri vite det.</li>

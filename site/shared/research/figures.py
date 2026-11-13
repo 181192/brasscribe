@@ -133,35 +133,57 @@ FIGURES = {
     "solo-instruments": {
         "title": ("One instrument alone is found well, tuba included, once the app knows which instrument it is",
                   "Ett instrument alene blir funnet godt, også tuba, når appen vet hvilket instrument det er"),
-        "holds": [f"brass/solo-instruments/{i}.seat_f1 >= 0.85" for i, _ in INSTRUMENTS] + ["brass/solo-instruments/tuba.today_f1 < 0.1"],
+        "holds": [f"brass/solo-instruments/{i}.seat_f1 >= 0.85" for i, _ in INSTRUMENTS] + ["brass/solo-instruments/tuba.today_f1 < 0.1"]
+                 + [f"brass/solo-instruments/{i}.sw_f1 >= 0.85" for i, _ in INSTRUMENTS] + ["brass/solo-instruments/tuba.bp_f1 < 0.6"],
         "sub": ("Onset F1 at 100 ms of the written solo line, per instrument, with a fixed cornet range and with the player's own.",
                 "Onset-F1 ved 100 ms for den skrevne sololinjen, per instrument, med et fast kornettomfang og med musikerens eget."),
         "axis": F1_AXIS,
         "series": [("Instrument chosen: its own range", "Instrument valgt: dets eget omfang"), ("No instrument chosen: fixed E3–E6", "Ikke valgt instrument: fast E3–E6")],
-        "views": [{"label": ("ChoraleBricks", "ChoraleBricks"), "n": STEMS,
-                   "rows": [{"label": label, "keys": [f"{B}solo-instruments/{i}.seat_f1", f"{B}solo-instruments/{i}.today_f1"]} for i, label in INSTRUMENTS]}],
-        "caption": ("Each instrument recorded alone in a dry room. Pitch and onset only: where the notes land in the bar is the figure above.",
-                    "Hvert instrument tatt opp alene i et tørt rom. Bare tonehøyde og ansats: hvor tonene havner i takten, står i figuren over."),
+        "view_label": ("Compare", "Sammenlign"),
+        "views": [{"label": ("The written line, with and without the instrument chosen", "Den skrevne linjen, med og uten valgt instrument"),
+                   "rows": [{"label": label, "keys": [f"{B}solo-instruments/{i}.seat_f1", f"{B}solo-instruments/{i}.today_f1"],
+                             "n": (f"{{m/solo_stems/{i}|int}} recordings", f"{{m/solo_stems/{i}|int}} opptak")} for i, label in INSTRUMENTS]},
+                  {"label": ("The two models, each alone", "De to modellene, hver for seg"), "series": ["SwiftF0", "Basic Pitch"],
+                   "rows": [{"label": label, "keys": [f"{B}solo-instruments/{i}.sw_f1", f"{B}solo-instruments/{i}.bp_f1"],
+                             "n": (f"{{m/solo_stems/{i}|int}} recordings", f"{{m/solo_stems/{i}|int}} opptak")} for i, label in INSTRUMENTS]}],
+        "caption": ("Each instrument recorded alone. Pitch and onset only: where the notes land in the bar is the figure before this one. The second "
+                    "view is SwiftF0 measured on brass, beside Basic Pitch, the model that confirms its notes.",
+                    "Hvert instrument tatt opp alene. Bare tonehøyde og ansats: hvor tonene havner i takten, står i forrige figur. Den andre visningen "
+                    "er SwiftF0 målt på messing, ved siden av Basic Pitch, modellen som bekrefter tonene."),
         "source": ("<code>eval/baselines.json</code>, suite solo-instruments (runs in CI).", "<code>eval/baselines.json</code>, suiten solo-instruments (kjøres i CI)."),
     },
     "voices": {
         "title": ("From a quartet recording the top voice is found and the tenor is mostly lost",
                   "Fra et kvartettopptak blir overstemmen funnet, og tenoren for det meste borte"),
         "holds": ["brass/seat-voices/muscriptor-medium.S_f1 > 0.85", "brass/seat-voices/muscriptor-medium.T_f1 < 0.4",
-                  "brass/seat-voices/basic-pitch.T_f1 < 0.4", "brass/seat-voices/consensus.T_f1 < 0.4"],
+                  "brass/seat-voices/basic-pitch.T_f1 < 0.4", "brass/seat-voices/consensus.T_f1 < 0.4",
+                  "p/chorales-transcription/muscriptor-medium.recall_T < 0.55", "p/chorales-transcription/muscriptor-medium.recall_B < 0.55",
+                  "p/chorales-transcription/muscriptor-medium.recall_S > 0.8"],
         "sub": ("One player's line picked out of the four-part mix by the range of their instrument, scored against that player's part.",
                 "Én musikers linje plukket ut av den firstemte miksen etter omfanget til instrumentet, målt mot musikerens stemme."),
         "axis": F1_AXIS,
         "series": ["MuScriptor medium", "Basic Pitch", ("Notes both found", "Toner begge fant")],
-        "views": [{"label": CHORALES, "n": CHORALES_N, "rows": [
+        "view_label": ("Question", "Spørsmål"),
+        "views": [{"label": ("One player's line taken out whole", "Én musikers linje hentet ut hel"), "n": CHORALES_N, "rows": [
             {"label": label, "keys": [f"{B}seat-voices/{m}.{v}_f1" for m in ("muscriptor-medium", "basic-pitch", "consensus")]} for v, label in (
                 ("S", ("Soprano (trumpet)", "Sopran (trompet)")), ("A", ("Alto (flugelhorn)", "Alt (flygelhorn)")),
-                ("T", ("Tenor (baritone)", "Tenor (baryton)")), ("B", ("Bass (tuba)", "Bass (tuba)")))]}],
-        "caption": ("Onset F1 at 100 ms per voice. This is why Brasscribe writes only the tune and the bass from what it heard in a band, and "
-                    "arranges the parts between them.",
-                    "Onset-F1 ved 100 ms per stemme. Derfor skriver Brasscribe bare melodien og bassen fra det den hørte i et band, og "
-                    "arrangerer stemmene imellom."),
-        "source": ("<code>eval/baselines.json</code>, suite seat-voices (runs in CI).", "<code>eval/baselines.json</code>, suiten seat-voices (kjøres i CI)."),
+                ("T", ("Tenor (baritone)", "Tenor (baryton)")), ("B", ("Bass (tuba)", "Bass (tuba)")))]}] + [
+            {"label": label, "n": CHORALES_N, "format": "pct", "series": ["MuScriptor medium", "Basic Pitch"],
+                   "axis": ("Share of the voice's notes found (recall)", "Andel av stemmens toner funnet (recall)"),
+                   "note": ("A note is credited to a voice when any written note matches it, so these are upper bounds.",
+                            "En tone godskrives en stemme når en hvilken som helst skrevet tone treffer den, så dette er øvre grenser."),
+                   "rows": [{"label": text, "keys": [f"p/chorales-transcription/{m}.{key}_{v}" for m in ("muscriptor-medium", "basic-pitch")]} for v, text in (
+                       ("S", ("Soprano (trumpet)", "Sopran (trompet)")), ("A", ("Alto (flugelhorn)", "Alt (flygelhorn)")),
+                       ("T", ("Tenor (baritone)", "Tenor (baryton)")), ("B", ("Bass (tuba)", "Bass (tuba)")))]}
+                  for label, key in ((("Notes of each voice found, within 100 ms", "Toner funnet per stemme, innen 100 ms"), "recall100"), (("Within 50 ms", "Innen 50 ms"), "recall"))],
+        "caption": ("First view: onset F1 at 100 ms of the line picked out for each player. Other views: the share of each player's notes that appear "
+                    "anywhere in the transcription of the quartet (upper bounds: any written note may match). This is why Brasscribe writes only "
+                    "the tune and the bass from what it heard in a band, and arranges the parts between them.",
+                    "Første visning: onset-F1 ved 100 ms for linjen som er plukket ut for hver musiker. De andre visningene: andelen av hver musikers "
+                    "toner som finnes et sted i transkripsjonen av kvartetten (øvre grenser: en hvilken som helst skrevet tone kan treffe). Derfor "
+                    "skriver Brasscribe bare melodien og bassen fra det den hørte i et band, og arrangerer stemmene imellom."),
+        "source": ("<code>eval/baselines.json</code>, suite seat-voices (runs in CI); the recall views from <code>per-piece.json</code>, computed with the gate's scorer but not gated.",
+                   "<code>eval/baselines.json</code>, suiten seat-voices (kjøres i CI); recall-visningene fra <code>per-piece.json</code>, regnet ut med sperrens målekode, men ikke låst."),
     },
     "doubt": {
         "title": ("The ? marks are rarely false alarms, but they catch a third of the wrong notes at best",
@@ -197,25 +219,38 @@ FIGURES = {
                   "Raske figurer: omtrent seks av ti toner blir hørt, og færre overlever å bli skrevet ned"),
         "holds": ["brass/fast-notes/small0.sw.fig_recall > 0.5", "brass/fast-notes/small0.sw.fig_recall < 0.7",
                   "brass/fast-notes/small0.written.fig_recall < brass/fast-notes/small0.line.fig_recall",
-                  "brass/fast-notes/oracle.written.fig_recall < brass/fast-notes/oracle.line.fig_recall"],
+                  "brass/fast-notes/oracle.written.fig_recall < brass/fast-notes/oracle.line.fig_recall",
+                  "m/fast_notes/oracle_fig_after > m/fast_notes/oracle_fig_before", "m/fast_notes/oracle_fig_after < 0.5",
+                  "m/fast_notes/small0_fig_after > m/fast_notes/small0_fig_before", "m/fast_notes/small0_fig_after < 0.5"],
         "format": "pct",
         "sub": ("Share of the notes in a fast run, repeated-note figure or trill that are still there after each stage of the solo path.",
                 "Andel av tonene i et raskt løp, en figur med gjentatte toner eller en trille som fortsatt er der etter hvert steg i soloveien."),
         "axis": ("Share of the figure's notes kept (recall)", "Andel av figurens toner beholdt (recall)"),
         "series": [("Beats given", "Slag gitt"), ("Beats tracked (Beat This! small0)", "Slag sporet (Beat This! small0)")],
-        "views": [{"label": ("Fast-note clips", "Klipp med raske toner"),
-                   "n": ("the fast-note clips frozen in the repository: built from samples, dry and with a room; development data",
-                         "klippene med raske toner som er låst i repositoriet: satt sammen av samplinger, tørt og med rom; utviklingsdata"),
+        "view_label": ("Show", "Vis"),
+        "views": [{"label": ("Stage by stage", "Steg for steg"),
+                   "n": ("{m/datasets/fast_notes_frozen_clips|int} clips frozen in the repository: built from samples, dry and with a room; development data",
+                         "{m/datasets/fast_notes_frozen_clips|int} klipp som er låst i repositoriet: satt sammen av samplinger, tørt og med rom; utviklingsdata"),
                    "rows": [{"label": label, "keys": [f"{B}fast-notes/oracle.{stage}.fig_recall", f"{B}fast-notes/small0.{stage}.fig_recall"]} for stage, label in (
                        ("sw", ("1. Heard by the pitch tracker (SwiftF0)", "1. Hørt av tonehøydesporeren (SwiftF0)")),
                        ("line", ("2. In the solo line after the vote", "2. I sololinjen etter avstemningen")),
                        ("quantized", ("3. After snapping to the beat grid", "3. Etter plassering på slagrutenettet")),
-                       ("written", ("4. Written in the score", "4. Skrevet i notene")))]}],
+                       ("written", ("4. Written in the score", "4. Skrevet i notene")))]}] + [
+            {"label": label, "series": [("Before the fast-note rules", "Før reglene for raske toner"), ("After", "Etter")],
+                   "axis": ("Share or F1, 0 to 100 %", "Andel eller F1, 0 til 100 %"), "n": ("{m/fast_notes/clips|int} clips built from samples; the rules were developed on them", "{m/fast_notes/clips|int} klipp satt sammen av samplinger; reglene er utviklet på dem"),
+                   "rows": [{"label": text, "keys": [f"m/fast_notes/{beats}_{key}_before", f"m/fast_notes/{beats}_{key}_after"]} for text, key in (
+                       (("Notes of the fast figure written (recall)", "Toner i den raske figuren skrevet (recall)"), "fig"),
+                       (("All notes of the clip (F1)", "Alle tonene i klippet (F1)"), "f1"),
+                       (("Trills and alternations that keep four fifths of their notes", "Triller og vekslinger som beholder fire femdeler av tonene"), "alt"))]}
+                  for label, beats in ((("Before and after, beats given", "Før og etter, slag gitt"), "oracle"), (("Before and after, beats tracked", "Før og etter, slag sporet"), "small0"))],
         "caption": ("Where fast notes are lost. The clips are rendered from real trumpet samples, dry and with a hall, with an exact reference; "
-                    "they are development data, not held out.",
+                    "they are development data, not held out. The before-and-after views are the full set of {m/fast_notes/clips|int} clips, so "
+                    "their numbers differ a little from the frozen part the gate holds.",
                     "Hvor raske toner går tapt. Klippene er satt sammen av ekte trompetsamplinger, tørt og med romklang, med nøyaktig fasit; "
-                    "de er utviklingsdata, ikke holdt utenfor."),
-        "source": ("<code>eval/baselines.json</code>, suite fast-notes (runs in CI).", "<code>eval/baselines.json</code>, suiten fast-notes (kjøres i CI)."),
+                    "de er utviklingsdata, ikke holdt utenfor. Visningene før og etter gjelder hele settet på {m/fast_notes/clips|int} klipp, så "
+                    "tallene avviker litt fra den låste delen sperren holder."),
+        "source": ("<code>eval/baselines.json</code>, suite fast-notes (runs in CI); before and after from <code>docs/brasscribe/plan/fast-notes.md</code>, section 7.2, via <code>measured.toml</code>.",
+                   "<code>eval/baselines.json</code>, suiten fast-notes (kjøres i CI); før og etter fra <code>docs/brasscribe/plan/fast-notes.md</code>, avsnitt 7.2, via <code>measured.toml</code>."),
     },
     "agreement": {
         "title": ("A note heard by SwiftF0 and one more model is almost always right; without that pairing it is a coin toss or worse",
@@ -388,47 +423,6 @@ FIGURES = {
         "source": ("<code>docs/shared/research/13-performance-audit.md</code> via <code>measured.toml</code>.",
                    "<code>docs/shared/research/13-performance-audit.md</code> via <code>measured.toml</code>."),
     },
-    "trackers": {
-        "title": ("The pitch tracker holds up on every instrument; Basic Pitch drops to {brass/solo-instruments/tuba.bp_f1} on the tuba",
-                  "Tonehøydesporeren holder på alle instrumenter; Basic Pitch faller til {brass/solo-instruments/tuba.bp_f1} på tubaen"),
-        "holds": [f"brass/solo-instruments/{i}.sw_f1 >= 0.85" for i, _ in INSTRUMENTS] + ["brass/solo-instruments/tuba.bp_f1 < 0.6"],
-        "sub": ("The two models a phone has, each alone, on one instrument at a time. Onset F1 at 100 ms.",
-                "De to modellene en telefon har, hver for seg, på ett instrument om gangen. Onset-F1 ved 100 ms."),
-        "axis": F1_AXIS,
-        "series": ["SwiftF0", "Basic Pitch"],
-        "views": [{"label": ("ChoraleBricks", "ChoraleBricks"), "rows": [
-            {"label": label, "keys": [f"{B}solo-instruments/{i}.sw_f1", f"{B}solo-instruments/{i}.bp_f1"],
-             "n": (f"{{m/solo_stems/{i}|int}} recordings", f"{{m/solo_stems/{i}|int}} opptak")} for i, label in INSTRUMENTS]}],
-        "caption": ("SwiftF0 measured on brass. Basic Pitch is the model that confirms SwiftF0's notes, so where it is weak, fewer notes are "
-                    "confirmed.",
-                    "SwiftF0 målt på messing. Basic Pitch er modellen som bekrefter tonene til SwiftF0, så der den er svak, blir færre toner "
-                    "bekreftet."),
-        "source": ("<code>eval/baselines.json</code>, suite solo-instruments, <code>sw_f1</code> and <code>bp_f1</code> (runs in CI).",
-                   "<code>eval/baselines.json</code>, suiten solo-instruments, <code>sw_f1</code> og <code>bp_f1</code> (kjøres i CI)."),
-    },
-    "voice-recall": {
-        "title": ("In a quartet the best model misses about half of the tenor's and the bass's notes at 50 ms",
-                  "I en kvartett går den beste modellen glipp av omtrent halvparten av tonene til tenoren og bassen ved 50 ms"),
-        "holds": ["p/chorales-transcription/muscriptor-medium.recall_T < 0.55", "p/chorales-transcription/muscriptor-medium.recall_B < 0.55",
-                  "p/chorales-transcription/muscriptor-medium.recall_T > 0.4", "p/chorales-transcription/muscriptor-medium.recall_S > 0.8"],
-        "format": "pct",
-        "sub": ("Share of each player's notes that appear in the transcription of the whole quartet.",
-                "Andel av hver musikers toner som finnes i transkripsjonen av hele kvartetten."),
-        "axis": ("Share of the voice's notes found (recall)", "Andel av stemmens toner funnet (recall)"),
-        "series": ["MuScriptor medium", "Basic Pitch"],
-        "view_label": ("Tolerance", "Toleranse"),
-        "views": [{"label": label, "n": CHORALES_N,
-                   "note": ("A note is credited to a voice when any written note matches it, so these are upper bounds.",
-                            "En tone godskrives en stemme når en hvilken som helst skrevet tone treffer den, så dette er øvre grenser."),
-                   "rows": [{"label": text, "keys": [f"p/chorales-transcription/{m}.{key}_{v}" for m in ("muscriptor-medium", "basic-pitch")]} for v, text in (
-                       ("S", ("Soprano (trumpet)", "Sopran (trompet)")), ("A", ("Alto (flugelhorn)", "Alt (flygelhorn)")),
-                       ("T", ("Tenor (baritone)", "Tenor (baryton)")), ("B", ("Bass (tuba)", "Bass (tuba)")))]}
-                  for label, key in ((("Onset within 50 ms", "Ansats innen 50 ms"), "recall"), (("Onset within 100 ms", "Ansats innen 100 ms"), "recall100"))],
-        "caption": ("Recall per voice. The two models miss different voices at the strict tolerance, which is one reason both are run.",
-                    "Recall per stemme. De to modellene går glipp av ulike stemmer ved den strenge toleransen, og det er én grunn til at begge kjøres."),
-        "source": ("<code>site/shared/research/measured/per-piece.json</code>: means over the chorales from the scorer the gate uses; not gated themselves.",
-                   "<code>site/shared/research/measured/per-piece.json</code>: snitt over koralene fra samme målekode som sperren bruker; ikke selv låst."),
-    },
     "consensus": {
         "title": ("Keeping only what two models agree on does not find more notes, and on a full band it finds fewer",
                   "Å beholde bare det to modeller er enige om, finner ikke flere toner, og på et fullt band finner det færre"),
@@ -511,53 +505,6 @@ FIGURES = {
                     "Tre regler for skrevet lengde. Regelen som brukes, vinner to–tre prosentpoeng. I kammermusikk skriver partituret ofte en kort "
                     "tone og en pause der musikeren holder ut, og ingen regel her henter det inn."),
         "source": ("<code>eval/baselines.json</code>, suite durations (the chorale part runs in CI).", "<code>eval/baselines.json</code>, suiten durations (koraldelen kjøres i CI)."),
-    },
-    "penalties": {
-        "title": ("Making a simple rhythm cheaper for the quantizer to choose moved exact positions from {m/penalties/position_before|pct} to "
-                  "{brass/quant-chorales/reference_beats.position_acc|pct} on the chorales",
-                  "Å gjøre en enkel rytme billigere å velge for kvantiseringen flyttet nøyaktige plasser fra {m/penalties/position_before|pct} til "
-                  "{brass/quant-chorales/reference_beats.position_acc|pct} på koralene"),
-        "holds": ["brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before",
-                  "brass/quant-chorales/reference_beats.duration_acc > m/penalties/duration_before"],
-        "format": "pct", "spread": False,
-        "sub": ("The same correct notes and the score's beats, before and after the penalty for complicated subdivisions was multiplied by 20.",
-                "De samme riktige tonene og partiturets slag, før og etter at straffen for kompliserte underdelinger ble ganget med 20."),
-        "axis": ("Share of the reference notes written as the score has them", "Andel av referansetonene skrevet slik partituret har dem"),
-        "series": [("Before", "Før"), ("After (used)", "Etter (brukes)")],
-        "views": [{"label": CHORALES, "n": CHORALES_N,
-                   "note": ("The penalty was tuned on these chorales, so the gain is a fit, not a test.", "Straffen er stilt inn på disse koralene, så gevinsten er en tilpasning, ikke en prøve."),
-                   "rows": [{"label": label, "keys": [f"m/penalties/{key}_before", f"{B}quant-chorales/reference_beats.{key}_acc"]} for label, key in (
-                       (("Right place in the bar", "Riktig plass i takten"), "position"), (("Right place within the beat", "Riktig plass i slaget"), "subdivision"),
-                       (("Right written length", "Riktig skrevet lengde"), "duration"))]}],
-        "caption": ("One tuning step of the quantizer. Played music is rarely exactly on the beat, and a reader prefers the simpler rhythm.",
-                    "Ett innstillingssteg for kvantiseringen. Spilt musikk er sjelden nøyaktig på slaget, og en leser foretrekker den enkleste rytmen."),
-        "source": ("Before: <code>docs/shared/research/10-benchmark-results.md</code> via <code>measured.toml</code>. After: <code>eval/baselines.json</code>, suite quant-chorales.",
-                   "Før: <code>docs/shared/research/10-benchmark-results.md</code> via <code>measured.toml</code>. Etter: <code>eval/baselines.json</code>, suiten quant-chorales."),
-    },
-    "fast-before-after": {
-        "title": ("The fast-note rules raised the share of a fast figure's notes that are written from {m/fast_notes/oracle_fig_before|pct} to "
-                  "{m/fast_notes/oracle_fig_after|pct}: better, and still under half",
-                  "Reglene for raske toner økte andelen skrevne toner i en rask figur fra {m/fast_notes/oracle_fig_before|pct} til "
-                  "{m/fast_notes/oracle_fig_after|pct}: bedre, og fortsatt under halvparten"),
-        "holds": ["m/fast_notes/oracle_fig_after > m/fast_notes/oracle_fig_before", "m/fast_notes/oracle_fig_after < 0.5",
-                  "m/fast_notes/small0_fig_after > m/fast_notes/small0_fig_before", "m/fast_notes/small0_fig_after < 0.5"],
-        "format": "pct",
-        "sub": ("The solo path on every fast-note clip, before and after the rules for fast notes were added.",
-                "Soloveien på alle klippene med raske toner, før og etter at reglene for raske toner kom til."),
-        "axis": ("Share or F1, 0 to 100 %", "Andel eller F1, 0 til 100 %"),
-        "series": [("Before", "Før"), ("After", "Etter")],
-        "view_label": ("Beats", "Slag"),
-        "views": [{"label": label, "n": ("{m/fast_notes/clips|int} clips built from samples; the rules were developed on them", "{m/fast_notes/clips|int} klipp satt sammen av samplinger; reglene er utviklet på dem"),
-                   "rows": [{"label": text, "keys": [f"m/fast_notes/{beats}_{key}_before", f"m/fast_notes/{beats}_{key}_after"]} for text, key in (
-                       (("Notes of the fast figure written (recall)", "Toner i den raske figuren skrevet (recall)"), "fig"),
-                       (("All notes of the clip (F1)", "Alle tonene i klippet (F1)"), "f1"),
-                       (("Trills and alternations that keep four fifths of their notes", "Triller og vekslinger som beholder fire femdeler av tonene"), "alt"))]}
-                  for label, beats in ((("Beats given", "Slag gitt"), "oracle"), (("Beats tracked (Beat This! small0)", "Slag sporet (Beat This! small0)"), "small0"))],
-        "caption": ("Before and after on the full clip set. The gate holds a frozen part of this set, so the stage-by-stage figure above shows "
-                    "slightly different numbers.",
-                    "Før og etter på hele klippsettet. Sperren holder en låst del av dette settet, så figuren steg for steg over viser litt andre tall."),
-        "source": ("<code>docs/brasscribe/plan/fast-notes.md</code>, section 7.2, via <code>measured.toml</code>.",
-                   "<code>docs/brasscribe/plan/fast-notes.md</code>, avsnitt 7.2, via <code>measured.toml</code>."),
     },
     "brass-pipeline": {
         "title": ("The Brasscribe pipeline", "Brasscribes arbeidsflyt"),

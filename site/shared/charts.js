@@ -73,15 +73,7 @@
         htm("span", null, view.l, label);
       });
     }
-    if (d.series.length > 1) {
-      var key = htm("ul", "chart-key", null, bar);
-      this.keys = d.series.map(function (name, i) {
-        var li = htm("li", null, null, key);
-        htm("i", "s" + (i + 1), null, li);
-        htm("span", null, name, li);
-        return li;
-      });
-    }
+    this.key = htm("ul", "chart-key", null, bar);
     this.note = htm("p", "chart-note", null, this.plot);
     this.note.setAttribute("aria-live", "polite");  // a new view is announced: its name, what it is, how much was measured
   };
@@ -98,8 +90,15 @@
       : function (v) { return x0 + v * (x1 - x0) / view.max; };
     var lane = dots ? 20 : 16;
     this.note.textContent = [d.views.length > 1 ? view.l + "." : "", view.note, view.n ? view.n.charAt(0).toUpperCase() + view.n.slice(1) + "." : ""].join(" ").trim();
-    (this.keys || []).forEach(function (li, s) {
-      li.hidden = !view.rows.some(function (r) { return r.c[s]; });
+    // The key names the series of this view, and only those it has values for.
+    var key = this.key;
+    key.textContent = "";
+    key.hidden = view.s.length < 2;
+    view.s.forEach(function (name, s) {
+      if (!view.rows.some(function (r) { return r.c[s]; })) return;
+      var li = htm("li", null, null, key);
+      htm("i", "s" + (s + 1), null, li);
+      htm("span", null, name, li);
     });
     this.canvas.textContent = "";
     var root = svg("svg", { "class": "chart-svg" + (animate ? " is-new" : ""), width: W, role: "group",
@@ -114,13 +113,17 @@
       lines = lines.concat(own);
       var bars = row.c.length * lane, head = wide ? 0 : lines.length * 17 + 3;
       var height = Math.max(bars, wide ? lines.length * 17 : 0) + head + 14;
-      var g = svg("g", { "class": "chart-row", role: "img", tabindex: r === self.row ? 0 : -1, "aria-label": self.describe(row) }, rows);
+      var g = svg("g", { "class": "chart-row", role: "img", tabindex: r === self.row ? 0 : -1, "aria-label": self.describe(row, view) }, rows);
       svg("rect", { "class": "chart-hit", x: 0, y: y, width: W, height: height, rx: 6 }, g);
       var ty = wide ? y + 7 + (Math.max(bars, lines.length * 17) - lines.length * 17) / 2 + 12 : y + 7 + 12;
       lines.forEach(function (line, i) {
         svg("text", { "class": i < count ? "chart-label" : "chart-count", x: wide ? 6 : 2, y: ty + i * 17 }, g).textContent = line;
       });
       var by = y + 7 + head + (wide ? Math.max(0, lines.length * 17 - bars) / 2 : 0);
+      if (view.mark) {  // the line to reach, drawn across the bars only, so it never runs through a label
+        var mx = Math.round(at(view.mark.v)) + 0.5;
+        svg("line", { "class": "chart-mark", x1: mx, x2: mx, y1: by - 3, y2: by + bars + 3 }, g);
+      }
       row.c.forEach(function (cell, s) {
         if (!cell) return;
         var cy = by + s * lane + lane / 2, cls = " s" + (s + 1), end = at(cell.v);
@@ -155,9 +158,7 @@
       svg("text", { "class": "chart-tick", x: x, y: y + 17, "text-anchor": anchor }, grid).textContent = tick.t;
     });
     if (view.mark) {
-      var mx = Math.round(at(view.mark.v)) + 0.5;
-      svg("line", { "class": "chart-mark", x1: mx, x2: mx, y1: 0, y2: y + 2 }, grid);
-      svg("text", { "class": "chart-mark-label", x: mx - 5, y: 11, "text-anchor": "end" }, grid).textContent = view.mark.t;
+      svg("text", { "class": "chart-mark-label", x: Math.round(at(view.mark.v)) + 4, y: 11, "text-anchor": "end" }, grid).textContent = view.mark.t + " ↓";
     }
     var ax = wrap(view.axis, x1 - x0 + 40, probe);
     ax.forEach(function (line, i) {
@@ -174,11 +175,11 @@
       "a" + r + " " + r + " 0 0 1 " + -r + " " + r + "h" + -(w - r) + "z";
   }
 
-  Chart.prototype.describe = function (row) {
+  Chart.prototype.describe = function (row, view) {
     var d = this.data, parts = [row.l];
     row.c.forEach(function (cell, s) {
       if (!cell) return;
-      var text = (d.series.length > 1 ? d.series[s] + ": " : "") + cell.t;
+      var text = (view.s.length > 1 ? view.s[s] + ": " : "") + cell.t;
       if (cell.p) text += " (" + d.words.range + " " + cell.lo + "–" + cell.hi + ")";
       parts.push(text);
     });
@@ -187,7 +188,7 @@
   };
 
   Chart.prototype.show = function (r) {
-    var d = this.data, at = this.rows[r], tip = this.tip;
+    var d = this.data, at = this.rows[r], tip = this.tip, names = d.views[this.view].s;
     tip.textContent = "";
     htm("p", "chart-tip-title", at.row.l, tip);
     at.row.c.forEach(function (cell, s) {
@@ -195,7 +196,7 @@
       var line = htm("p", "chart-tip-row", null, tip);
       htm("i", "s" + (s + 1), null, line);
       htm("b", null, cell.t, line);
-      if (d.series.length > 1) htm("span", null, d.series[s], line);
+      if (names.length > 1) htm("span", null, names[s], line);
       if (cell.p) htm("span", "chart-tip-range", d.words.range + ": " + cell.lo + "–" + cell.hi, line);
     });
     if (at.row.n) htm("p", "chart-tip-n", at.row.n, tip);
@@ -204,7 +205,8 @@
   };
   Chart.prototype.hide = function () {
     this.tip.classList.remove("is-on");
-    this.tip.textContent = this.data.words.hint;
+    var touch = window.matchMedia && window.matchMedia("(hover: none)").matches;
+    this.tip.textContent = touch ? this.data.words.tap : this.data.words.hint;
     (this.rows || []).forEach(function (row) { row.g.classList.remove("is-on"); });
   };
   Chart.prototype.key = function (ev, r) {
@@ -218,7 +220,14 @@
     this.rows[next].g.focus();
   };
 
+  // On a narrow screen a long contents list would push the paper a screen down: it starts folded there.
+  function fold() {
+    var list = document.querySelector("details.toc-fold");
+    if (list && window.matchMedia && window.matchMedia("(max-width: 900px)").matches) list.open = false;
+  }
+
   function start() {
+    fold();
     Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart]"), function (figure) {
       try { new Chart(figure); } catch (e) {
         // The table stays: a figure never ends up empty.

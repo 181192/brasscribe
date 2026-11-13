@@ -7,7 +7,8 @@ styles: charts.css
 scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
-    <p id="toc-title" class="toc-title">In this paper</p>
+    <details class="toc-fold" open>
+    <summary id="toc-title" class="toc-title">In this paper</summary>
     <ol>
       <li><a href="#abstract">Abstract</a></li>
       <li><a href="#problem">1. The problem</a></li>
@@ -24,6 +25,7 @@ scripts: charts.js
       <li><a href="#licences">12. Licences</a></li>
       <li><a href="#references">References</a></li>
     </ol>
+    </details>
   </nav>
 
   <article class="paper">
@@ -42,6 +44,8 @@ scripts: charts.js
       {{holds brass/solo-instruments/flugelhorn.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/trombone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/baritone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/tuba.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/horn.q_hit <= brass/solo-instruments/trumpet.q_hit}}
     </section>
 
+    {{chart rhythm}}
+
     <section id="problem" aria-labelledby="problem-title">
       <h2 id="problem-title"><span class="secno">1</span> The problem</h2>
       <p class="plain"><span class="plain-label">In short</span>A player hears a piece and wants the part. Writing it down by ear takes hours. Brasscribe writes a first draft and has to say which notes it is unsure about.</p>
@@ -49,7 +53,7 @@ scripts: charts.js
       <p>A British-style brass band has 18 parts on a contest score, from soprano cornet to B♭ bass and percussion; Norwegian bands use the same layout. Most of the instruments share one family sound and double each other constantly. That is the hard case for every model we know of: none knows the band's instruments, and none tells several players of one instrument apart.</p>
       <p>Three constraints shaped the work:</p>
       <ul class="ticks">
-        <li><strong>The musician's own devices.</strong> Recordings are not sent to a cloud service. A full band is processed on the musician's computer. On Android and Windows the app writes a solo by itself; on iPhone, iPad and Mac the listening models are not in the app yet, so every score comes from the computer.</li>
+        <li><strong>The musician's own devices.</strong> Recordings are not sent to a cloud service. A full band is processed on the musician's computer. On Android the app writes a solo by itself. On Windows, iPhone, iPad and Mac every score comes from the computer: the app does not yet have what it needs to write one alone.</li>
         <li><strong>Doubt is shown.</strong> A note the system doubts carries a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span>, by shape and colour, and the musician checks the marked notes in groups. <a href="#doubt">Section 6.6</a> measures how much those marks catch.</li>
         <li><strong>Measured, then gated.</strong> A stage is chosen by benchmark on recordings with known correct notes, and a gate fails the build when a number moves.</li>
       </ul>
@@ -143,10 +147,10 @@ scripts: charts.js
       <p>On a brass quartet the best model reaches F1 {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} at the looser tolerance, and the pieces differ a good deal: from {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@min}} to {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@max}}. The strict 50 ms tolerance costs brass a lot, because a soft attack speaks late; the looser one is the fairer measure of what ends up in the score. On a full band, separating the instruments first scored higher than transcribing the mix, on two synthesized songs.</p>
 
       <h3 id="rhythm">6.2 Where the notes land</h3>
-      {{chart rhythm}}
-      <p>This is the central result of the paper. Given the right beats, the rules write {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} of the notes exactly where the score has them. Given the beats the tracker found, they manage {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, and the dots show how little a mean says here: single pieces range from {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}, depending on how well the tracker found the beats and the bar lines. Position within the beat holds up much better ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), so the rhythm inside a beat is usually readable even when the bar lines are not. Written lengths are right for {{data brass/quant-urmp/reference_beats.duration_acc pct}} of the chamber-music notes even with perfect beats: players shorten notes, and the rules only partly undo that.</p>
+      <p>The figure for this is <a href="#fig-rhythm">the one under the abstract</a>. It is the central result of the paper. Given the right beats, the rules write {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} of the notes exactly where the score has them. Given the beats the tracker found, they manage {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, and the dots show how little a mean says here: single pieces range from {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}, depending on how well the tracker found the beats and the bar lines. Position within the beat holds up much better ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), so the rhythm inside a beat is usually readable even when the bar lines are not. Written lengths are right for {{data brass/quant-urmp/reference_beats.duration_acc pct}} of the chamber-music notes even with perfect beats: players shorten notes, and the rules only partly undo that.</p>
+      <p>One tuning step is behind the left-hand numbers. Making a simple rhythm cheaper for the quantizer to choose than a complicated one moved exact positions on the chorales from {{data m/penalties/position_before pct}} to {{data brass/quant-chorales/reference_beats.position_acc pct}}, with the score's beats. The step was tuned on these chorales, so that gain is a fit, not a test.{{holds brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before}}</p>
       {{chart durations}}
-      <p>Three rules for a note's written length were compared. The one in use reads the end of a note from where its pitch stops, and it is the best of the three by a small margin. The chamber-music result stays low under every rule.</p>
+      <p>Three rules for a note's written length were compared. This figure's chamber-music numbers are higher than the {{data brass/quant-urmp/reference_beats.duration_acc pct}} in the rhythm figure because the two come from different suites: there a length is taken from the quantizer alone and must equal the score's exactly; here a length rule is applied per part and one tick (1/24 of a beat) is allowed. The one in use reads the end of a note from where its pitch stops, and it is the best of the three by a small margin. The chamber-music result stays low under every rule.</p>
 
       <h3 id="solo">6.3 One player, end to end</h3>
       {{chart solo-written}}
@@ -155,13 +159,11 @@ scripts: charts.js
       <h3 id="instruments">6.4 Instrument by instrument</h3>
       {{chart solo-instruments}}
       <p>Alone, every brass instrument is tracked well, the tuba included, and almost never in the wrong octave. The second series shows a fault that is easy to mistake for a model's: without knowing the instrument, the solo path keeps only notes in a cornet's range, so a tuba vanishes and a trombone keeps {{data brass/solo-instruments/trombone.today_recall pct}} of its notes. The pitch tracker was never the limit there.</p>
-      {{chart trackers}}
-      <p>This is the check of SwiftF0 on brass that section 2 promised. The second model matters too: a note is written without a mark only when Basic Pitch confirms it, and on the tuba Basic Pitch agrees with {{data brass/solo-instruments/tuba.bp_agrees pct}} of the line's notes. That leaves {{data brass/solo-instruments/tuba.q_missed f1}} wrong notes without a mark per 100 written notes on the tuba, against {{data brass/solo-instruments/trumpet.q_missed f1}} on the trumpet.</p>
+      <p>The figure's second view is the check of SwiftF0 on brass that section 2 promised. The second model matters too: a note is written without a mark only when Basic Pitch confirms it, and on the tuba Basic Pitch agrees with {{data brass/solo-instruments/tuba.bp_agrees pct}} of the line's notes. That leaves {{data brass/solo-instruments/tuba.q_missed f1}} wrong notes without a mark per 100 written notes on the tuba, against {{data brass/solo-instruments/trumpet.q_missed f1}} on the trumpet.</p>
 
       <h3 id="voices">6.5 One voice out of a group</h3>
-      {{chart voice-recall}}
-      <p>Whose notes are missing from a quartet? Mostly the lower two players'. The next figure asks the harder question: can one player's line be taken out whole.</p>
       {{chart voices}}
+      <p>The first view asks whether one player's line can be taken out whole. The other views ask a simpler question, whose notes are missing from the transcription at all: mostly the lower two players'.</p>
       <p>A player who records the whole group and wants their own line gets it if they play the top part, and nearly so on the second. The tenor voice, in the middle of the harmony on an instrument that sounds like its neighbours, is found with F1 {{data brass/seat-voices/muscriptor-medium.T_f1}} by the best model. For this reason Brasscribe writes only the melody and the bass of a band from what it heard, and arranges the parts in between from the harmony.</p>
       {{chart inner-parts}}
       <p>How good are those arranged parts? Given the true harmony, the quartet arranger chooses the same note as the composer for about four notes in five, with {{data brass/arrange/quartet.parallels_per_100 f2}} parallel fifths or octaves per 100 chord changes against {{data brass/arrange/quartet-reference.parallels_per_100 f2}} in the chorales themselves. Starting from a recording it matches about half, and writes {{data brass/quartet-audio/mus.parallels_per_100 f1}} parallels per 100. The arrangers never write a note an instrument cannot play and never cross parts; that is guaranteed by how they are built, so it shows the rules hold, not that the music is good.</p>
@@ -174,9 +176,7 @@ scripts: charts.js
 
       <h3 id="fast">6.7 Fast notes</h3>
       {{chart fast-notes}}
-      <p>Runs, repeated notes and trills are the passages players most want written down, and the hardest. The pitch tracker hears about six of their notes in ten. With the right beats nearly all of those survive to the page; with tracked beats more are lost when the notes are put on the grid. Of the trills and two-note alternations, {{data brass/fast-notes/oracle.written.alt_kept pct}} keep at least four fifths of their notes with the right beats and {{data brass/fast-notes/small0.written.alt_kept pct}} with tracked ones.</p>
-      {{chart fast-before-after}}
-      <p>The rules for fast notes were added after a first version lost most of them. They helped, and the passages are still mostly not written.</p>
+      <p>Runs, repeated notes and trills are the passages players most want written down, and the hardest. The pitch tracker hears about six of their notes in ten. With the right beats nearly all of those survive to the page; with tracked beats more are lost when the notes are put on the grid. Of the trills and two-note alternations, {{data brass/fast-notes/oracle.written.alt_kept pct}} keep at least four fifths of their notes with the right beats and {{data brass/fast-notes/small0.written.alt_kept pct}} with tracked ones. The rules for fast notes were added after a first version lost most of them; the figure's other views show before and after. They helped, and the passages are still mostly not written.</p>
     </section>
 
     <section id="errors" aria-labelledby="errors-title">
@@ -201,7 +201,6 @@ scripts: charts.js
       {{chart solo-trackers}}
       {{chart consensus}}
       {{chart melody}}
-      {{chart penalties}}
       <ul>
         <li><strong>MuScriptor large against medium.</strong> The large model scored lower on average. Medium is used.</li>
         <li><strong>Telling MuScriptor the instruments are brass</strong> took it from {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} to {{data brass/chorales-transcription/muscriptor-medium-brass.onset_f1}}. It is never told.</li>

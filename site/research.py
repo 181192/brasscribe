@@ -44,9 +44,11 @@ NBSP = chr(0xA0)  # between a number and its unit, and between thousands in Norw
 OPS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
 WORDS = {
     "en": {"figure": "Figure", "table": "Data table", "measure": "Measure", "n": "Measured on", "range": "lowest–highest",
-           "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values."},
+           "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values.",
+           "tap": "Tap a row for its exact values."},
     "nb": {"figure": "Figur", "table": "Datatabell", "measure": "Mål", "n": "Målt på", "range": "laveste–høyeste",
-           "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene."},
+           "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene.",
+           "tap": "Trykk på en rad for de nøyaktige verdiene."},
 }
 
 
@@ -176,9 +178,16 @@ def macro(page, name: str, words: list[str], args: dict[str, str]) -> str:
 
 # Charts -----------------------------------------------------------------------------------------
 
+def whole(made: str, name: str) -> str:
+    """A figure with a measurement's name still in it has words that were never filled in."""
+    left = re.search(r"\{[a-z]+/[^{}\s]*\}", made)
+    if left:
+        sys.exit(f"research: figure '{name}' prints {left.group(0)} as it stands; that text is not filled in")
+    return made
+
+
 def chart(spec: dict, name: str, page) -> str:
     lang, w, num, e = page.lang, WORDS[page.lang], numbers(), html.escape
-    series = [pick(s, lang) for s in spec["series"]]
     views = []
     for view in spec["views"]:
         how, top, rows = view.get("format", spec.get("format", "f2")), view.get("max", spec.get("max", 1)), []
@@ -198,6 +207,7 @@ def chart(spec: dict, name: str, page) -> str:
                     cell |= {"p": pieces, "lo": fmt(min(pieces), how, lang), "hi": fmt(max(pieces), how, lang)}
                 cells.append(cell)
             rows.append({"l": pick(row["label"], lang), "n": fill(row.get("n", view.get("n", "")), lang, "int"), "c": cells})
+        series = [pick(s, lang) for s in view.get("series", spec["series"])]  # a view may compare other things than its neighbours
         tick = "int" if how in ("sec", "gb") else "pct" if how == "pct" else "f2"
         ticks = [{"v": top * i / 4, "t": fmt(top * i / 4, tick, lang)} for i in range(5)]
         if log:
@@ -207,11 +217,11 @@ def chart(spec: dict, name: str, page) -> str:
         sizes = {row["n"] for row in rows}
         mark = view.get("mark", spec.get("mark"))
         views.append({"l": pick(view["label"], lang), "note": fill(view.get("note", ""), lang, how), "rows": rows, "max": top,
-                      "min": low if log else 0, "log": log, "n": sizes.pop() if len(sizes) == 1 else None,
+                      "min": low if log else 0, "log": log, "n": sizes.pop() if len(sizes) == 1 else None, "s": series,
                       "mark": {"v": num.get(mark[0]), "t": fill(mark[1], lang, how)} if mark else None,
-                      "axis": pick(view.get("axis", spec.get("axis")), lang), "ticks": ticks})
+                      "axis": fill(view.get("axis", spec.get("axis")), lang, how), "ticks": ticks})
     how = spec.get("format", "f2")
-    data = {"series": series, "views": views,
+    data = {"views": views,
             "viewLabel": pick(spec.get("view_label", ""), lang),
             "words": {"range": w["range"], "hint": w["hint"]}}
 
@@ -220,7 +230,7 @@ def chart(spec: dict, name: str, page) -> str:
     for view in views:
         shared = view["n"]  # one answer for every row goes under the caption, not in a column
         head = [f'<th scope="col">{w["measure"]}</th>']
-        for label in series:
+        for label in view["s"]:
             head.append(f'<th scope="col" class="num">{e(label)}</th>')
             if spread:
                 head.append(f'<th scope="col" class="num">{w["range"]}</th>')
@@ -242,15 +252,17 @@ def chart(spec: dict, name: str, page) -> str:
                       f'<caption>{caption}</caption>\n<thead><tr>{"".join(head)}</tr></thead>\n'
                       f'<tbody>\n{chr(10).join(body)}\n</tbody>\n</table>\n</div>')
     source = fill(spec["source"], lang, how)
+    data["words"]["tap"] = w["tap"]
     if not re.fullmatch(r"[a-z0-9-]+", name):
         sys.exit(f"research: a figure's name is its id in the page, so '{name}' must be lower-case letters, digits and hyphens")
-    return (f'<figure class="chart" id="fig-{name}" aria-labelledby="fig-{name}-title" data-chart data-brand="{page.product.id}">\n'
+    made = (f'<figure class="chart" id="fig-{name}" aria-labelledby="fig-{name}-title" data-chart data-brand="{page.product.id}">\n'
             f'<p class="chart-title" id="fig-{name}-title">{fill(spec["title"], lang, how)}</p>\n'
             f'<p class="chart-sub">{fill(spec["sub"], lang, how)}</p>\n'
             f'<div class="chart-plot" hidden></div>\n'
             f'<details class="chart-data" open>\n<summary>{w["table"]}</summary>\n{chr(10).join(tables)}\n</details>\n'
             f'<figcaption><b>{w["figure"]} {page.figures}.</b> {fill(spec["caption"], lang, how)} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
             f'<script type="application/json">{json.dumps(data, ensure_ascii=False).replace("</", "<\\/")}</script>\n</figure>')
+    return whole(made, name)
 
 
 # Stage diagrams ---------------------------------------------------------------------------------
@@ -275,9 +287,9 @@ def pipeline(spec: dict, name: str, page) -> str:
                            f'<path class="head" d="M{cx - 5} {y - 8} L{cx + 5} {y - 8} L{cx} {y} Z"/>')
         above, y = len(row), y + height + 20
     legend = spec["legend"]
-    return (f'<figure id="fig-{name}">\n'
+    return whole(f'<figure id="fig-{name}">\n'
             f'<svg class="diagram diagram-pipeline" viewBox="0 0 440 {y - 12}" role="img" aria-labelledby="{name}-title {name}-desc" xmlns="http://www.w3.org/2000/svg">'
             f'<title id="{name}-title">{e(pick(spec["title"], lang))}</title><desc id="{name}-desc">{e(pick(spec["desc"], lang))}</desc>{"".join(out)}</svg>\n'
             f'<ul class="legend" aria-hidden="true">\n<li><i class="model"></i>{pick(legend[0], lang)}</li>\n<li><i></i>{pick(legend[1], lang)}</li>\n'
             f'<li><i class="human"></i>{pick(legend[2], lang)}</li>\n</ul>\n'
-            f'<figcaption><b>{w["figure"]} {page.figures}.</b> {pick(spec["caption"], lang)}</figcaption>\n</figure>')
+            f'<figcaption><b>{w["figure"]} {page.figures}.</b> {pick(spec["caption"], lang)}</figcaption>\n</figure>', name)
