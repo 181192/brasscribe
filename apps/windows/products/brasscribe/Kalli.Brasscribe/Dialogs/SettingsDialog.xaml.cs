@@ -146,4 +146,19 @@ public sealed partial class SettingsDialog : ContentDialog
             ViewModel.Connection.Start();
         }
     }
+
+    /// <summary>The file of third-party licences that ships beside the app (licences/dist, written by scripts/licences.py).</summary>
+    internal static string LicencesFile => System.IO.Path.Combine(AppContext.BaseDirectory, "Licences", "third-party.txt");
+
+    private void OnLicences(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(LicencesFile) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or System.IO.IOException or InvalidOperationException)
+        {
+            // No program for text files, or the file is gone: nothing to show, and nothing else in Settings depends on it.
+        }
+    }
 }

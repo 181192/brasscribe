@@ -52,6 +52,11 @@ val designLicence = tasks.register<Sync>("syncDesignLicence") {
         include("OFL.txt")
         rename { "${font.replace('_', '-')}-OFL.txt" }
     }
+    // What the app ships of others' work, with every licence's text (licences/README.md); About shows it.
+    from(File(repoRoot, "licences/dist")) {
+        include("brasscribe-android.txt")
+        rename { "third-party.txt" }
+    }
 }
 tasks.named("preBuild") { dependsOn(designResources, designLicence) }
 

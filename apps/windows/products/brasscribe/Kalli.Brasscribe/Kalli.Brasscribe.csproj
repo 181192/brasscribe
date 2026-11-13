@@ -61,6 +61,8 @@
     <!-- The brass italic of the display face ("a score.") is its own font file, not a slanted Regular. -->
     <Content Include="$(DesignDir)brand\fonts\InstrumentSerif-Italic.ttf" Link="Assets\Fonts\InstrumentSerif-Italic.ttf" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)dist\icons\windows\Assets\*" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- What the app ships of others' work, with every licence's text (licences/README.md); Settings opens it. -->
+    <Content Include="$(DesignDir)..\..\..\licences\dist\brasscribe-windows.txt" Link="Licences\third-party.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)brand\logo\mark-brass.svg" Link="Assets\Brand\mark-brass.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

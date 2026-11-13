@@ -748,6 +748,14 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         return true;
     }
 
+    /// <summary>The file of third-party licences beside the app (licences/dist, written by scripts/licences.py).</summary>
+    internal static string LicencesFile => Path.Combine(AppContext.BaseDirectory, "Licences", "third-party.txt");
+
+    public void OpenLicences()
+    {
+        if (File.Exists(LicencesFile)) Process.Start(new ProcessStartInfo(LicencesFile) { UseShellExecute = true });
+    }
+
     public void OpenModelPage() => _ = Windows.System.Launcher.LaunchUriAsync(ModelComponent.BandWriter.Page());
 
     /// <summary>Restarts a running engine now if nothing is being made, else once the score is done.</summary>

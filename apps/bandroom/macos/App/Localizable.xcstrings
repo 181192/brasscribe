@@ -192,6 +192,16 @@
       }
     },
     "A heading": {},
+    "About": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Om"
+          }
+        }
+      }
+    },
     "About Brasscribe Bandroom": {
       "localizations": {
         "nb": {
@@ -2294,6 +2304,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført."
+          }
+        }
+      }
+    },
+    "Third-party licences": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tredjepartslisenser"
           }
         }
       }

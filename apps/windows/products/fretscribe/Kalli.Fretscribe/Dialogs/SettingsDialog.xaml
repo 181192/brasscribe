@@ -93,6 +93,8 @@
 
             <TextBlock x:Uid="SettingsAboutHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+            <!-- The licences of what the app ships, in the program that opens text files on this PC. -->
+            <Button x:Uid="LicencesButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnLicences" />
             <TextBlock x:Name="AppVersion" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
         </StackPanel>
     </ScrollViewer>

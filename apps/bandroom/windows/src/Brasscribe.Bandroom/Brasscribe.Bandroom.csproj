@@ -115,6 +115,10 @@
     <Content Include="$(RepoRoot)sounds\playback_levels.py" Link="band\playback_levels.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="$(RepoRoot)sounds\band-notice.txt" Link="band\NOTICE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- What Bandroom ships of others' work, with every licence's text (licences/README.md); Settings opens it. -->
+    <Content Include="$(RepoRoot)licences\dist\bandroom-windows.txt" Link="Licences\third-party.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
   <!--
     The Rust core's command line, which the engine's bass-tab profile runs (SCRIBE_CORE_CLI): under core\ next
     to the exe when it has been built (a release build of scribe-cli in core\). Without it Bandroom logs that

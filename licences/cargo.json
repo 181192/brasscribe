@@ -1,0 +1,352 @@
+{
+ "crates": {
+  "anstyle": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "anyhow": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "askama": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "askama_derive": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "askama_macros": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "askama_parser": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "autocfg": {
+   "licence": "Apache-2.0 OR MIT"
+  },
+  "basic-toml": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "bitflags": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "bumpalo": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "bytes": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2018 Carl Lerche"
+   ]
+  },
+  "camino": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "cargo-platform": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "cargo_metadata": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) the cargo_metadata contributors"
+   ]
+  },
+  "cfg-if": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "clap": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "clap_builder": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "clap_derive": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "clap_lex": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "crc32fast": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "equivalent": {
+   "licence": "Apache-2.0 OR MIT"
+  },
+  "errno": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "fastrand": {
+   "licence": "Apache-2.0 OR MIT"
+  },
+  "flate2": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "foldhash": {
+   "licence": "Zlib",
+   "notice": [
+    "Copyright (c) 2024 Orson Peters"
+   ]
+  },
+  "fs-err": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "getrandom": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "glob": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "goblin": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) m4b 2016-2024"
+   ]
+  },
+  "hashbrown": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "heck": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "indexmap": {
+   "licence": "Apache-2.0 OR MIT"
+  },
+  "itoa": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "libc": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "linux-raw-sys": {
+   "licence": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+  },
+  "log": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "memchr": {
+   "licence": "Unlicense OR MIT",
+   "notice": [
+    "Copyright (c) 2015 Andrew Gallant"
+   ]
+  },
+  "minimal-lexical": {
+   "licence": "MIT/Apache-2.0"
+  },
+  "nom": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2014-2019 Geoffroy Couprie"
+   ]
+  },
+  "once_cell": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "percent-encoding": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "plain": {
+   "licence": "MIT/Apache-2.0"
+  },
+  "proc-macro2": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "quote": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "r-efi": {
+   "licence": "MIT OR Apache-2.0 OR LGPL-2.1-or-later"
+  },
+  "roxmltree": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "rustc-hash": {
+   "licence": "Apache-2.0 OR MIT"
+  },
+  "rustix": {
+   "licence": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+  },
+  "scroll": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) m4b 2016"
+   ]
+  },
+  "scroll_derive": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2017"
+   ]
+  },
+  "semver": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "serde": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "serde_core": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "serde_derive": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "serde_json": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "serde_spanned": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "simd-adler32": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) [2021] [Marvin Countryman]"
+   ]
+  },
+  "siphasher": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "smawk": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2017 Martin Geisler"
+   ]
+  },
+  "static_assertions": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "strsim": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2015 Danny Guo",
+    "Copyright (c) 2016 Titus Wormer",
+    "Copyright (c) 2018 Akash Kurdekar"
+   ]
+  },
+  "syn": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "tempfile": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "textwrap": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2016 Martin Geisler"
+   ]
+  },
+  "thiserror": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "thiserror-impl": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "toml": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "toml_datetime": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "toml_parser": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "toml_writer": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "typed-path": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "unicode-ident": {
+   "licence": "(MIT OR Apache-2.0) AND Unicode-3.0",
+   "notice": [
+    "Copyright © 1991-2023 Unicode, Inc."
+   ]
+  },
+  "unicode-width": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "uniffi": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi contributors"
+   ]
+  },
+  "uniffi_bindgen": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_bindgen contributors"
+   ]
+  },
+  "uniffi_core": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_core contributors"
+   ]
+  },
+  "uniffi_internal_macros": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_internal_macros contributors"
+   ]
+  },
+  "uniffi_macros": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_macros contributors"
+   ]
+  },
+  "uniffi_meta": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_meta contributors"
+   ]
+  },
+  "uniffi_pipeline": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_pipeline contributors"
+   ]
+  },
+  "uniffi_udl": {
+   "licence": "MPL-2.0",
+   "notice": [
+    "Copyright (c) the uniffi_udl contributors"
+   ]
+  },
+  "weedle2": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright 2018-Present Sharad Chand",
+    "Copyright 2022 Jan-Erik Rediger"
+   ]
+  },
+  "windows-link": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "windows-sys": {
+   "licence": "MIT OR Apache-2.0"
+  },
+  "winnow": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) the winnow contributors"
+   ]
+  },
+  "zip": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) 2014 Mathijs van de Nes"
+   ]
+  },
+  "zlib-rs": {
+   "licence": "Zlib",
+   "notice": [
+    "(C) 2024 Trifecta Tech Foundation"
+   ]
+  },
+  "zmij": {
+   "licence": "MIT",
+   "notice": [
+    "Copyright (c) the zmij contributors"
+   ]
+  },
+  "zopfli": {
+   "licence": "Apache-2.0"
+  }
+ }
+}

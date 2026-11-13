@@ -42,6 +42,9 @@
   <data name="AboutText.Text" xml:space="preserve">
     <value>Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1). Lyttingen på denne PC-en bruker Microsofts ONNX Runtime (MIT), som sender bruksdata til Microsoft gjennom Windows' diagnostikkdata, aldri opptaket.</value>
   </data>
+  <data name="LicencesButton.Content" xml:space="preserve">
+    <value>Tredjepartslisenser</value>
+  </data>
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Noen takter har ingen fast puls (ad lib.). Rytmene der er omtrentlige.</value>
   </data>

@@ -175,6 +175,10 @@ import TranscriptionKit
         }
 
         try await sheet("settings", app: full) { SettingsView() }
+        // The app's own file of licences, from About: there, and shown from its first part on.
+        try await window("licences", app: full, shows: { nodes in
+            nodes.contains { $0.label == "Verovio" } ? nil : "the list of what the app ships"
+        }) { ThirdPartyLicencesView(resource: "brasscribe-apple") }
         // Your computer while one of the two needs an update: the words, where to get it, and Forget this computer
         for (name, update) in [("settings-update-computer", InterfaceMatch.Update.computer), ("settings-update-app", .app)] {
             let app = LayoutFixtures.app(connection: .mismatch(serverName: "Brasscribe on Studio Mac", update: update))

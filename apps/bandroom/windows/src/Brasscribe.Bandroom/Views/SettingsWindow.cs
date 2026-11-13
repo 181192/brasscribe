@@ -24,6 +24,8 @@ public interface ISettingsHost
     bool SaveHuggingFaceKey(string key);
     /// <summary>The MuScriptor page on Hugging Face, where the licence is accepted and the full terms are.</summary>
     void OpenModelPage();
+    /// <summary>Opens the file of third-party licences that ships with the app.</summary>
+    void OpenLicences();
 }
 
 /// <summary>
@@ -135,6 +137,8 @@ internal sealed class SettingsWindow : Window
         login.Toggled += (_, _) => { host.StartAtLogin = login.IsOn; login.IsOn = host.StartAtLogin; };
 
         var about = new TextBlock { Text = s["Settings_About"], Style = S("MutedStyle"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+        var licences = new Button { Content = s["Settings_Licences"], Style = S("PlainButtonStyle") };
+        licences.Click += (_, _) => settings.OpenLicences();
         var title = new TextBlock { Text = s["Settings_Title"], Style = S("DisplayHeadingStyle") };
         AutomationProperties.SetHeadingLevel(title, Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level1);
         var root = new Grid
@@ -157,6 +161,7 @@ internal sealed class SettingsWindow : Window
                             Card(new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center, Children = { appearanceHeader, contrastNote } }, picker),
                             Card(loginHeader, login),
                             about,
+                            licences,
                         },
                     },
                 },

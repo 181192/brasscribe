@@ -116,6 +116,8 @@
 
             <TextBlock x:Uid="SettingsAboutHeading" Style="{StaticResource SectionHeadingStyle}" AutomationProperties.HeadingLevel="Level2" />
             <TextBlock x:Uid="AboutText" Style="{StaticResource MutedStyle}" IsTextSelectionEnabled="True" />
+            <!-- The licences of what the app ships, in the program that opens text files on this PC. -->
+            <Button x:Uid="LicencesButton" Style="{StaticResource ActionButtonStyle}" MinHeight="44" Click="OnLicences" />
             <TextBlock x:Name="CoreVersion" Style="{StaticResource MutedStyle}" />
             <!-- The version is an ordinary button (click, Space, Enter, Narrator): five in a row unlock the hidden Pink
                  appearance (design/brands/brasscribe/system.md §10). Nothing about it hints that it does more. -->

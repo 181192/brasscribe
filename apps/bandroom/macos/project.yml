@@ -44,6 +44,9 @@ targets:
         buildPhase: resources
       - path: ../../../design/brands/brasscribe/dist/apple/Fonts/OFL.txt
         buildPhase: resources
+      # What Bandroom ships of others' work, with every licence's text (licences/README.md); Settings opens it.
+      - path: ../../../licences/dist/bandroom-mac.txt
+        buildPhase: resources
     dependencies:
       - package: BandroomKit
         product: BandroomKit

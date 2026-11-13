@@ -85,20 +85,20 @@ jobs:
         with:
           filters: |
             workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
-            python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
+            python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'licences/**', 'scripts/licences.py', 'sounds/**', 'design/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
             studio: ['studio/**', 'docs/shared/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/scribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
-            android: ['apps/android/*', 'apps/android/buildSrc/**', 'apps/android/gradle/**', 'apps/android/scripts/**', 'apps/android/services/**', 'apps/android/features/**', 'apps/android/design/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/shared/accessibility/talking-score-vectors.json']
+            android: ['apps/android/*', 'apps/android/buildSrc/**', 'apps/android/gradle/**', 'apps/android/scripts/**', 'apps/android/services/**', 'apps/android/features/**', 'apps/android/design/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/shared/accessibility/talking-score-vectors.json', 'licences/dist/**']
             android_brasscribe: ['apps/android/products/brasscribe/**']
             android_fretscribe: ['apps/android/products/fretscribe/**']
-            windows_play: ['apps/windows/*', 'apps/windows/services/**', 'apps/windows/features/**', 'apps/windows/tests/**', 'apps/windows/tools/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/scribe-core/**', 'core/ffi/**', 'core/targets/**', 'core/bindings/c/**', 'design/tooling/**', 'docs/shared/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml']
+            windows_play: ['apps/windows/*', 'apps/windows/services/**', 'apps/windows/features/**', 'apps/windows/tests/**', 'apps/windows/tools/**', 'core/Cargo.toml', 'core/Cargo.lock', 'core/.cargo/**', 'core/scribe-core/**', 'core/ffi/**', 'core/targets/**', 'core/bindings/c/**', 'design/tooling/**', 'docs/shared/accessibility/talking-score-vectors.json', 'scripts/check-windows-imports.sh', '.github/workflows/windows.yml', 'licences/dist/**']
             windows_brasscribe: ['apps/windows/products/brasscribe/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/windows/**', 'design/brands/brasscribe/dist/icons/windows/**', 'design/brands/brasscribe/brand/**', 'apps/fixtures/old-hundredth/**', 'apps/fixtures/ties-and-trills.musicxml', 'sounds/**', 'engine/src/scribe_engine/static/assets/alphatab/**']
             windows_fretscribe: ['apps/windows/products/fretscribe/**', 'design/brands/fretscribe/tokens/**', 'design/brands/fretscribe/dist/windows/**', 'design/brands/fretscribe/dist/icons/windows/**', 'design/brands/fretscribe/brand/**', 'apps/fixtures/guitar-line/**']
             # What both Apple apps are built from, and each one's own: a change in one product's folder checks that product only.
-            apple_play: ['apps/apple/services/**', 'apps/apple/features/**', 'apps/apple/testing/**', 'apps/apple/scripts/**', 'apps/apple/Makefile', 'apps/apple/products/brasscribe/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/brand/**', 'design/brands/brasscribe/pink/**', 'sounds/**', '.github/workflows/apple.yml']
-            apple_fretscribe: ['apps/apple/services/**', 'apps/apple/features/**', 'apps/apple/testing/**', 'apps/apple/scripts/**', 'apps/apple/Makefile', 'apps/apple/products/fretscribe/**', 'capture/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/fretscribe/**', '.github/workflows/apple.yml']
-            apple_bandroom: ['apps/bandroom/macos/**', 'apps/apple/testing/ScreenCatalogue/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml']
-            windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/windows/**', 'design/brands/brasscribe/dist/icons/windows/**', 'design/brands/brasscribe/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/scribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml']
+            apple_play: ['apps/apple/services/**', 'apps/apple/features/**', 'apps/apple/testing/**', 'apps/apple/scripts/**', 'apps/apple/Makefile', 'apps/apple/products/brasscribe/**', 'capture/**', 'core/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/brand/**', 'design/brands/brasscribe/pink/**', 'sounds/**', '.github/workflows/apple.yml', 'licences/dist/**']
+            apple_fretscribe: ['apps/apple/services/**', 'apps/apple/features/**', 'apps/apple/testing/**', 'apps/apple/scripts/**', 'apps/apple/Makefile', 'apps/apple/products/fretscribe/**', 'capture/**', 'apps/fixtures/**', 'design/tooling/**', 'design/brands/fretscribe/**', '.github/workflows/apple.yml', 'licences/dist/**']
+            apple_bandroom: ['apps/bandroom/macos/**', 'apps/apple/testing/ScreenCatalogue/**', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/apple/**', 'design/brands/brasscribe/dist/icons/apple/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/workflows/apple.yml', 'licences/dist/**']
+            windows_bandroom: ['apps/bandroom/windows/**', 'apps/windows/tools/ScreenCheck/**', 'apps/windows/tools/ScreenCheck.Core/**', 'apps/windows/Directory.*.props', 'apps/windows/global.json', 'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/ModelCatalog.swift', 'apps/bandroom/macos/scripts/*pixi*', 'design/tooling/**', 'design/brands/brasscribe/tokens/**', 'design/brands/brasscribe/dist/windows/**', 'design/brands/brasscribe/dist/icons/windows/**', 'design/brands/brasscribe/brand/**', 'sounds/**', 'pixi.toml', 'pixi.lock', '.pixi-version', 'engine/src/**', 'engine/pyproject.toml', 'engine/openapi.json', 'music/src/**', 'music/pyproject.toml', 'music/README.md', 'eval/scribe_eval/**', 'eval/pyproject.toml', 'eval/README.md', 'ml/adapters/**', '.github/actions/pixi/**', '.github/actions/band-sounds/**', '.github/workflows/windows.yml', 'licences/dist/**']
 
       # A change in one Android app's own module checks that app only.
       - name: Which Android apps
@@ -133,6 +133,18 @@ jobs:
         run: shellcheck .github/scripts/*.sh
       - name: What counts as only the version (version-only.sh)
         run: .github/scripts/test-version-only.sh
+
+  # The licence texts the apps ship (licences/README.md): the files written from the list are current, and every
+  # dependency of the builds is in the list or named as not shipped. Always run: a dependency can change in any area.
+  licences:
+    name: third-party licences
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: python3 scripts/licences.py check
 
   linux:
     name: tests and CPU benchmark gate (Ubuntu 24.04)
@@ -610,13 +622,13 @@ jobs:
   # One check that is always reported, whichever jobs ran: the one to make required.
   result:
     name: CI result
-    needs: [changes, workflows, linux, core, studio, android, android-screens, windows, apple]
+    needs: [changes, workflows, licences, linux, core, studio, android, android-screens, windows, apple]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - env:
           CHANGES: ${{ needs.changes.result }}
-          RESULTS: ${{ needs.workflows.result }} ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }} ${{ needs.android.result }} ${{ needs.android-screens.result }} ${{ needs.windows.result }} ${{ needs.apple.result }}
+          RESULTS: ${{ needs.workflows.result }} ${{ needs.licences.result }} ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }} ${{ needs.android.result }} ${{ needs.android-screens.result }} ${{ needs.windows.result }} ${{ needs.apple.result }}
         run: |
           echo "changes: $CHANGES, jobs: $RESULTS"
           [ "$CHANGES" = success ] || exit 1

@@ -58,6 +58,9 @@ targets:
         buildPhase: resources
       - path: ../../../../design/brands/fretscribe/dist/apple/Fonts/OFL-FretscribeTab.txt
         buildPhase: resources
+      # What the app ships of others' work, with every licence's text (licences/README.md); About shows it.
+      - path: ../../../../licences/dist/fretscribe-apple.txt
+        buildPhase: resources
       - path: ../../../../design/brands/fretscribe/brand/logo-mark.svg
         buildPhase: resources
     dependencies:

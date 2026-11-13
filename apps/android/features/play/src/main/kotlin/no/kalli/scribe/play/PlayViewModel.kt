@@ -67,7 +67,7 @@ import kotlinx.coroutines.flow.map
 import java.io.File
 import java.util.zip.ZipInputStream
 
-enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, SETTINGS, PROBLEM, HELP }
+enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, LICENCES, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
 enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC, OPEN_FAILED }

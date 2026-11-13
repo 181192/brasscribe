@@ -524,6 +524,13 @@ final class AppModel {
         NSWorkspace.shared.open(URL(string: "http://127.0.0.1:\(port)/")!)
     }
 
+    /// The file of third-party licences among the app's resources (licences/dist, written by scripts/licences.py).
+    static var licencesFile: URL? { Bundle.main.url(forResource: "bandroom-mac", withExtension: "txt") }
+
+    func openLicences() {
+        if let file = Self.licencesFile { NSWorkspace.shared.open(file) }
+    }
+
     func showLogs() {
         let log = FileManager.default.fileExists(atPath: paths.engineLog.path) ? paths.engineLog : paths.logs
         NSWorkspace.shared.activateFileViewerSelecting([log])

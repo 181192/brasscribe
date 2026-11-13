@@ -43,6 +43,7 @@ fun BrasscribeRoot(vm: PlayViewModel) {
         Screen.EXPORT -> ExportScreen(vm)
         Screen.COMPANION -> CompanionScreen(vm)
         Screen.ABOUT -> AboutScreen(vm)
+        Screen.LICENCES -> LicencesScreen(vm)
         Screen.SETTINGS -> BrasscribeSettingsScreen(vm)
         Screen.HELP -> HelpScreen(vm)
         Screen.PROBLEM -> ProblemScreen(vm)

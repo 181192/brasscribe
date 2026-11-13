@@ -56,6 +56,8 @@
     <Page Include="$(DesignDir)dist\windows\FretscribeTheme.xaml" Link="Themes\FretscribeTheme.xaml" />
     <Content Include="$(DesignDir)dist\windows\Assets\Fonts\*" Link="Assets\Fonts\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)dist\icons\windows\Assets\*" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- What the app ships of others' work, with every licence's text (licences/README.md); Settings opens it. -->
+    <Content Include="$(DesignDir)..\..\..\licences\dist\fretscribe-windows.txt" Link="Licences\third-party.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)brand\logo-mark.svg" Link="Assets\Brand\logo-mark.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)brand\logo-mark-dark.svg" Link="Assets\Brand\logo-mark-dark.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

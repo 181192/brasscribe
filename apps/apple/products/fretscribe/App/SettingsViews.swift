@@ -225,7 +225,12 @@ struct AboutView: View {
                     .font(Font.Scribe.body).fixedSize(horizontal: false, vertical: true)
                 Text("Titles are set in Atkinson Hyperlegible Next, and fret numbers in Fretscribe Tab (both SIL Open Font License 1.1).")
                     .font(Font.Scribe.body).fixedSize(horizontal: false, vertical: true)
+                // Both are rows to press: at least the 44 pt a finger or a pointer needs (a bare link is a line high).
+                NavigationLink { ThirdPartyLicencesView(resource: "fretscribe-apple") } label: { Text("Third-party licences") }
+                    .frame(minHeight: 44).contentShape(Rectangle())
+                    .accessibilityIdentifier("fs-about-licences")
                 Link(destination: URL(string: "https://github.com/181192/brasscribe")!) { Text("Source code and licences") }
+                    .frame(minHeight: 44).contentShape(Rectangle())
             }
             .foregroundStyle(Color.Scribe.text)
             .padding(Space.s5)

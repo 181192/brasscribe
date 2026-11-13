@@ -1,0 +1,603 @@
+{
+  "apps": {
+    "brasscribe-android": "Brasscribe Play for Android",
+    "fretscribe-android": "Fretscribe for Android",
+    "brasscribe-apple": "Brasscribe Play for Mac, iPhone and iPad",
+    "fretscribe-apple": "Fretscribe for Mac, iPhone and iPad",
+    "brasscribe-windows": "Brasscribe Play for Windows",
+    "fretscribe-windows": "Fretscribe for Windows",
+    "bandroom-mac": "Brasscribe Bandroom for Mac",
+    "bandroom-windows": "Brasscribe Bandroom for Windows"
+  },
+  "sets": {
+    "android": ["brasscribe-android", "fretscribe-android"],
+    "windows-play": ["brasscribe-windows", "fretscribe-windows"],
+    "bandroom": ["bandroom-mac", "bandroom-windows"],
+    "rust-core": ["brasscribe-android", "fretscribe-android", "brasscribe-apple", "brasscribe-windows", "bandroom-mac", "bandroom-windows"],
+    "band-sounds": ["brasscribe-android", "brasscribe-apple", "brasscribe-windows", "bandroom-mac", "bandroom-windows"],
+    "brasscribe-brand": ["brasscribe-android", "brasscribe-apple", "brasscribe-windows", "bandroom-mac", "bandroom-windows"],
+    "fretscribe-brand": ["fretscribe-android", "fretscribe-apple", "fretscribe-windows"]
+  },
+  "components": [
+    {
+      "id": "verovio",
+      "name": "Verovio",
+      "url": "https://github.com/rism-digital/verovio",
+      "licence": "LGPL-3.0-or-later",
+      "texts": ["LGPL-3.0", "GPL-3.0"],
+      "notice": ["By the Verovio contributors (RISM Digital Center)."],
+      "note": "Built from the unmodified source as a separate dynamic framework, so it can be replaced with another build of Verovio. The source is at the address above.",
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "leipzig",
+      "name": "Leipzig font (with Verovio)",
+      "url": "https://github.com/rism-digital/leipzig",
+      "licence": "OFL-1.1",
+      "texts": ["OFL-1.1"],
+      "notice": ["Copyright (c) 2014, Etienne Darbellay, Jean-Francois Marti and Laurent Pugin, with Reserved Font Name \"Leipzig\"."],
+      "apps": ["brasscribe-apple"]
+    },
+    {
+      "id": "bravura",
+      "name": "Bravura font (with Verovio and alphaTab)",
+      "url": "https://github.com/steinbergmedia/bravura",
+      "licence": "OFL-1.1",
+      "texts": ["OFL-1.1"],
+      "notice": ["Copyright (c) 2015, Steinberg Media Technologies GmbH (http://www.steinberg.net/), with Reserved Font Name \"Bravura\"."],
+      "apps": ["brasscribe-android", "fretscribe-android", "brasscribe-apple", "fretscribe-apple", "brasscribe-windows", "fretscribe-windows", "bandroom-mac", "bandroom-windows"]
+    },
+    {
+      "id": "alphatab",
+      "name": "alphaTab",
+      "url": "https://github.com/CoderLine/alphaTab",
+      "licence": "MPL-2.0",
+      "texts": ["MPL-2.0"],
+      "notice": ["Copyright (c) 2025, Daniel Kuschny and Contributors. All rights reserved."],
+      "note": "Unmodified package. The source is at the address above.",
+      "apps": ["brasscribe-android", "fretscribe-android", "fretscribe-apple", "brasscribe-windows", "fretscribe-windows", "bandroom-mac", "bandroom-windows"],
+      "covers": {"maven": ["net.alphatab:alphaTab"], "nuget": ["AlphaTab"], "npm": ["@coderline/alphatab"]}
+    },
+    {
+      "id": "sonivox",
+      "name": "Sonivox SoundFont (with alphaTab)",
+      "url": "https://github.com/CoderLine/alphaTab",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright (c) 2004-2006 Sonic Network Inc."],
+      "apps": ["brasscribe-android", "fretscribe-android", "bandroom-mac", "bandroom-windows"]
+    },
+    {
+      "id": "alphaskia",
+      "name": "alphaSkia",
+      "url": "https://github.com/CoderLine/alphaSkia",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (c) 2023, Daniel Kuschny. All rights reserved."],
+      "apps": ["brasscribe-android", "fretscribe-android", "brasscribe-windows", "fretscribe-windows"],
+      "covers": {"maven": ["net.alphatab:alphaSkia", "net.alphatab:alphaSkia-android"], "nuget": ["AlphaSkia", "AlphaSkia.Native.Windows"]}
+    },
+    {
+      "id": "skia",
+      "name": "Skia (in alphaSkia)",
+      "url": "https://skia.org",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (c) 2011 Google Inc. All rights reserved."],
+      "note": "Skia carries further third-party code of its own; its notices are in its source tree under third_party.",
+      "apps": ["brasscribe-android", "fretscribe-android", "brasscribe-windows", "fretscribe-windows"]
+    },
+    {
+      "id": "sfizz",
+      "name": "sfizz",
+      "url": "https://github.com/sfztools/sfizz",
+      "licence": "BSD-2-Clause",
+      "texts": ["BSD-2-Clause"],
+      "notice": ["Copyright (c) 2021-2023, sfizz contributors (detailed in AUTHORS.md). All rights reserved."],
+      "note": "Built from its source into the app's audio library. One line is taken out of its build file (the step that writes a Doxyfile); the code is unchanged. The libraries below, down to the Faust libraries, are linked in with it from the copies it carries.",
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "abseil",
+      "name": "Abseil (in sfizz)",
+      "url": "https://github.com/abseil/abseil-cpp",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright The Abseil Authors."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "st-audiofile",
+      "name": "st_audiofile (in sfizz)",
+      "url": "https://github.com/sfztools/st_audiofile",
+      "licence": "BSD-2-Clause",
+      "texts": ["BSD-2-Clause"],
+      "notice": ["Copyright (c) 2020, Jean-Pierre Cimalando. All rights reserved."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "dr-libs",
+      "name": "dr_libs (in sfizz)",
+      "url": "https://github.com/mackron/dr_libs",
+      "licence": "Public domain (Unlicense) or MIT No Attribution",
+      "texts": [],
+      "notice": ["By David Reid. Used as public-domain software; no notice is required."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "stb-vorbis",
+      "name": "stb_vorbis (in sfizz)",
+      "url": "https://github.com/nothings/stb",
+      "licence": "MIT or public domain (Unlicense)",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2017 Sean Barrett"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "libaiff",
+      "name": "LibAiff (in sfizz)",
+      "url": "http://aifftools.sourceforge.net/libaiff/",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2005, 2006, 2007, 2008 Marco Trillo"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "wavpack",
+      "name": "WavPack (in sfizz)",
+      "url": "https://www.wavpack.com",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (c) 1998 - 2022 David Bryant. All rights reserved."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "pugixml",
+      "name": "pugixml (in sfizz)",
+      "url": "https://pugixml.org",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2006-2022 Arseny Kapoulkine"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "kiss-fft",
+      "name": "KISS FFT (in sfizz)",
+      "url": "https://github.com/mborgerding/kissfft",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (c) 2003-2010 Mark Borgerding. All rights reserved."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "cephes",
+      "name": "Cephes (in sfizz)",
+      "url": "https://www.netlib.org/cephes/",
+      "licence": "BSD-3-Clause, by its author's written permission",
+      "texts": ["BSD-3-Clause"],
+      "notice": [
+        "By Stephen L. Moshier.",
+        "Cephes states no licence of its own. Its author gave written permission to distribute it under a BSD licence (\"BSD license is fine, modification is OK\"); the message is kept with sfizz's copy, in external/cephes/LICENSE.txt."
+      ],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "cpuid",
+      "name": "cpuid (in sfizz)",
+      "url": "https://github.com/steinwurf/cpuid",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (c) 2014, Steinwurf ApS. All rights reserved."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "surge-tuning",
+      "name": "Surge tuning library (in sfizz)",
+      "url": "https://github.com/surge-synthesizer/tuning-library",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright 2019-2020, Paul Walker"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "spline",
+      "name": "Cubic spline by Roland Rabien (in sfizz)",
+      "url": "https://github.com/sfztools/sfizz",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": [
+        "Copyright (c) 2018, Roland Rabien. All rights reserved.",
+        "Its source file names Roland Rabien and Devin Lane, and keeps a second permissive notice, of the file it grew from: \"THE BEER-WARE LICENSE\" (Revision 42), by Devin Lane, which asks that its notice be retained."
+      ],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "ghc-filesystem",
+      "name": "ghc::filesystem (in sfizz)",
+      "url": "https://github.com/gulrak/filesystem",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2018, Steffen Schümann"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "atomic-queue",
+      "name": "atomic_queue (in sfizz)",
+      "url": "https://github.com/max0x7ba/atomic_queue",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2019 Maxim Egorushkin"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "simde",
+      "name": "SIMDe (in sfizz)",
+      "url": "https://github.com/simd-everywhere/simde",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2017 Evan Nemerson"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "hiir",
+      "name": "HIIR (in sfizz)",
+      "url": "http://ldesoras.free.fr/prod.html",
+      "licence": "WTFPL-2.0",
+      "texts": [],
+      "notice": ["By Laurent de Soras. The licence asks for nothing."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "jsl",
+      "name": "jsl (in sfizz)",
+      "url": "https://github.com/sfztools/sfizz",
+      "licence": "BSL-1.0",
+      "texts": ["BSL-1.0"],
+      "notice": ["By Jean-Pierre Cimalando."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "threadpool",
+      "name": "ThreadPool (in sfizz)",
+      "url": "https://github.com/progschj/ThreadPool",
+      "licence": "Zlib",
+      "texts": ["Zlib"],
+      "notice": ["Copyright (c) 2012 Jakob Progsch, Václav Zeman"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "faust",
+      "name": "Faust libraries (in sfizz)",
+      "url": "https://github.com/grame-cncm/faustlibraries",
+      "licence": "STK-4.3 and LGPL with an exception for generated code",
+      "texts": [],
+      "notice": ["sfizz's effects are code that Faust generated from sfizz's own sources with these libraries. The libraries' exception lets generated code be distributed under the terms of the program it is part of."],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "media3",
+      "name": "AndroidX Media3 (ExoPlayer)",
+      "url": "https://github.com/androidx/media",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright (C) The Android Open Source Project."],
+      "apps": ["fretscribe-android"],
+      "covers": {"maven": ["androidx.media3:*"]}
+    },
+    {
+      "id": "uniffi",
+      "name": "UniFFI",
+      "url": "https://github.com/mozilla/uniffi-rs",
+      "licence": "MPL-2.0",
+      "texts": ["MPL-2.0"],
+      "notice": ["By Mozilla and the UniFFI contributors."],
+      "note": "Unmodified crates, linked into the Rust core. The source is at the address above.",
+      "apps": ["@rust-core"]
+    },
+    {
+      "id": "rust-crates",
+      "name": "Rust crates",
+      "url": "https://crates.io",
+      "licence": "see the list",
+      "texts": [],
+      "cargo": true,
+      "note": "The Rust core (the library the app links, and in Bandroom the scribe-core command line) and its tools are built with the crates below. A crate offered under MIT or Apache-2.0 is used under Apache-2.0.",
+      "apps": ["@rust-core"]
+    },
+    {
+      "id": "vsco2",
+      "name": "VSCO 2 Community Edition (band sounds)",
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "licence": "CC0-1.0",
+      "texts": [],
+      "notice": ["Versilian Studios LLC. Dedicated to the public domain (https://creativecommons.org/publicdomain/zero/1.0/)."],
+      "apps": ["@band-sounds"]
+    },
+    {
+      "id": "iowa-mis",
+      "name": "University of Iowa Musical Instrument Samples (band sounds)",
+      "url": "https://theremin.music.uiowa.edu/MIS.html",
+      "licence": "Free for any use",
+      "texts": [],
+      "notice": ["Electronic Music Studios, University of Iowa, Lawrence Fritts. The samples \"may be downloaded and used for any projects, without restrictions\"."],
+      "apps": ["@band-sounds"]
+    },
+    {
+      "id": "ms-basic",
+      "name": "MuseScore MS Basic SoundFont (band sounds)",
+      "url": "https://github.com/musescore/MuseScore/tree/master/share/sound",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": [
+        "FluidR3 (original version) by Frank Wen Copyright (c) 2000-02",
+        "Mono conversion (FluidR3Mono) by Michael Cowgill Copyright (c) 2014-17",
+        "Adaptation for MuseScore_General.sf2 by S. Christian Collins Copyright (c) 2018-19",
+        "Temple Blocks instrument provided by Ethan Winer Copyright (c) 2002",
+        "Drumline Cymbals provided by Michael Schorsch Copyright (c) 2016"
+      ],
+      "apps": ["@band-sounds"]
+    },
+    {
+      "id": "instrument-serif",
+      "name": "Instrument Serif font",
+      "url": "https://github.com/Instrument/instrument-serif",
+      "licence": "OFL-1.1",
+      "texts": ["OFL-1.1"],
+      "notice": ["Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif)"],
+      "apps": ["@brasscribe-brand"]
+    },
+    {
+      "id": "atkinson-next",
+      "name": "Atkinson Hyperlegible Next font",
+      "url": "https://github.com/googlefonts/atkinson-hyperlegible-next",
+      "licence": "OFL-1.1",
+      "texts": ["OFL-1.1"],
+      "notice": ["Copyright 2020-2024 The Atkinson Hyperlegible Next Project Authors (https://github.com/googlefonts/atkinson-hyperlegible-next)"],
+      "apps": ["@fretscribe-brand"]
+    },
+    {
+      "id": "fretscribe-tab",
+      "name": "Fretscribe Tab font",
+      "url": "https://github.com/googlefonts/atkinson-hyperlegible-next-mono",
+      "licence": "OFL-1.1",
+      "texts": ["OFL-1.1"],
+      "notice": [
+        "A modified version of Atkinson Hyperlegible Mono: Copyright 2020-2024 The Atkinson Hyperlegible Mono Project Authors (https://github.com/googlefonts/atkinson-hyperlegible-next-mono).",
+        "The weight is fixed at 600 and a plain zero is the default, under a new name as the licence requires."
+      ],
+      "apps": ["@fretscribe-brand"]
+    },
+    {
+      "id": "swiftf0",
+      "name": "SwiftF0 (model)",
+      "url": "https://github.com/lars76/swift-f0",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2025-2026 Lars Nieradzik"],
+      "apps": ["brasscribe-android", "brasscribe-windows"]
+    },
+    {
+      "id": "basic-pitch",
+      "name": "Basic Pitch (model)",
+      "url": "https://github.com/spotify/basic-pitch",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright 2022 Spotify AB"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "beat-this",
+      "name": "Beat This! (model)",
+      "url": "https://github.com/CPJKU/beat_this",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2024 Institute of Computational Perception, JKU Linz, Austria"],
+      "apps": ["brasscribe-android"]
+    },
+    {
+      "id": "onnxruntime",
+      "name": "ONNX Runtime",
+      "url": "https://github.com/microsoft/onnxruntime",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) Microsoft Corporation"],
+      "note": "Microsoft's build, as published. It contains further third-party software; Microsoft's notices for it are in ThirdPartyNotices.txt at the address above. In Fretscribe for Windows only its managed library is present.",
+      "apps": ["brasscribe-android", "brasscribe-windows", "fretscribe-windows"],
+      "covers": {"maven": ["com.microsoft.onnxruntime:*"], "nuget": ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.Managed"]}
+    },
+    {
+      "id": "directml",
+      "name": "DirectML (with ONNX Runtime)",
+      "url": "https://www.nuget.org/packages/Microsoft.AI.DirectML",
+      "licence": "Microsoft software licence terms",
+      "texts": [],
+      "notice": ["Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package; its terms are in the package at the address above."],
+      "apps": ["brasscribe-windows"],
+      "covers": {"nuget": ["Microsoft.ML.OnnxRuntime.DirectML"]}
+    },
+    {
+      "id": "androidx",
+      "name": "AndroidX and Jetpack Compose",
+      "url": "https://developer.android.com/jetpack/androidx",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright (C) The Android Open Source Project."],
+      "note": "Core, Activity, Lifecycle, Navigation, Compose, CameraX and the libraries they bring.",
+      "apps": ["@android"],
+      "covers": {"maven": ["androidx.*:*"]}
+    },
+    {
+      "id": "kotlin",
+      "name": "Kotlin standard library, coroutines and serialization",
+      "url": "https://github.com/JetBrains/kotlin",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright JetBrains s.r.o. and Kotlin Programming Language contributors."],
+      "apps": ["@android"],
+      "covers": {"maven": ["org.jetbrains.kotlin:*", "org.jetbrains.kotlinx:*", "org.jetbrains:*"]}
+    },
+    {
+      "id": "ktor",
+      "name": "Ktor",
+      "url": "https://github.com/ktorio/ktor",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright JetBrains s.r.o. and contributors."],
+      "apps": ["@android"],
+      "covers": {"maven": ["io.ktor:*"]}
+    },
+    {
+      "id": "okhttp",
+      "name": "OkHttp and Okio",
+      "url": "https://github.com/square/okhttp",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright (C) Square, Inc."],
+      "apps": ["@android"],
+      "covers": {"maven": ["com.squareup.okhttp3:*", "com.squareup.okio:*"]}
+    },
+    {
+      "id": "oboe",
+      "name": "Oboe",
+      "url": "https://github.com/google/oboe",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright (C) The Android Open Source Project."],
+      "apps": ["@android"],
+      "covers": {"maven": ["com.google.oboe:*"]}
+    },
+    {
+      "id": "jna",
+      "name": "JNA",
+      "url": "https://github.com/java-native-access/jna",
+      "licence": "Apache-2.0 (offered under LGPL-2.1-or-later or Apache-2.0)",
+      "texts": ["Apache-2.0"],
+      "notice": ["By Timothy Wall and the JNA contributors. Used under Apache-2.0."],
+      "apps": ["@android"],
+      "covers": {"maven": ["net.java.dev.jna:*"]}
+    },
+    {
+      "id": "zxing",
+      "name": "ZXing core",
+      "url": "https://github.com/zxing/zxing",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Copyright (C) ZXing authors."],
+      "apps": ["@android"],
+      "covers": {"maven": ["com.google.zxing:*"]}
+    },
+    {
+      "id": "guava",
+      "name": "Guava and the annotation libraries that come with the above",
+      "url": "https://github.com/google/guava",
+      "licence": "Apache-2.0",
+      "texts": ["Apache-2.0"],
+      "notice": ["Guava, AutoValue, Dagger, Error Prone annotations and J2ObjC annotations: Copyright (C) The Guava Authors and Google LLC. JSpecify: Copyright The JSpecify Authors. JSR 305 and javax.inject / jakarta.inject annotations. kaml, snakeyaml-engine-kmp and urlencoder, which come with alphaTab."],
+      "apps": ["@android"],
+      "covers": {"maven": ["com.google.guava:*", "com.google.auto.value:*", "com.google.dagger:*", "com.google.errorprone:*", "com.google.j2objc:*", "com.google.code.findbugs:*", "org.jspecify:*", "javax.inject:*", "jakarta.inject:*", "com.charleskorn.kaml:*", "it.krzeminski:*", "net.thauvin.erik.urlencoder:*"]}
+    },
+    {
+      "id": "slf4j",
+      "name": "SLF4J API (with Ktor)",
+      "url": "https://www.slf4j.org",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2004-2023 QOS.ch. All rights reserved."],
+      "apps": ["@android"],
+      "covers": {"maven": ["org.slf4j:*"]}
+    },
+    {
+      "id": "checker-qual",
+      "name": "Checker Framework qualifiers (with Guava)",
+      "url": "https://checkerframework.org",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright 2004-present by the Checker Framework developers"],
+      "apps": ["@android"],
+      "covers": {"maven": ["org.checkerframework:*"]}
+    },
+    {
+      "id": "windows-app-sdk",
+      "name": "Windows App SDK",
+      "url": "https://github.com/microsoft/WindowsAppSDK",
+      "licence": "Microsoft software licence terms",
+      "texts": [],
+      "notice": ["Copyright (c) Microsoft Corporation. The terms (license.txt) and Microsoft's third-party notices (NOTICE.txt) are in the package, https://www.nuget.org/packages/Microsoft.WindowsAppSDK."],
+      "apps": ["@windows-play", "bandroom-windows"],
+      "covers": {"nuget": ["Microsoft.WindowsAppSDK"]}
+    },
+    {
+      "id": "vcruntime",
+      "name": "Microsoft Visual C++ runtime (vcruntime140.dll)",
+      "url": "https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files",
+      "licence": "Microsoft Visual Studio licence terms (redistributable file)",
+      "texts": [],
+      "notice": ["Copyright (c) Microsoft Corporation. ONNX Runtime needs it."],
+      "apps": ["brasscribe-windows"]
+    },
+    {
+      "id": "naudio",
+      "name": "NAudio",
+      "url": "https://github.com/naudio/NAudio",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright 2008-2026 Mark Heath"],
+      "apps": ["@windows-play"],
+      "covers": {"nuget": ["NAudio.Core", "NAudio.Wasapi"]}
+    },
+    {
+      "id": "communitytoolkit-mvvm",
+      "name": "CommunityToolkit.Mvvm",
+      "url": "https://github.com/CommunityToolkit/dotnet",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) .NET Foundation and Contributors. All rights reserved."],
+      "apps": ["@windows-play", "bandroom-windows"],
+      "covers": {"nuget": ["CommunityToolkit.Mvvm"]}
+    },
+    {
+      "id": "qrcoder",
+      "name": "QRCoder",
+      "url": "https://github.com/Shane32/QRCoder",
+      "licence": "MIT",
+      "texts": ["MIT"],
+      "notice": ["Copyright (c) 2013-2025 Raffael Herrmann", "Copyright (c) 2024-2025 Shane Krueger"],
+      "apps": ["bandroom-windows"],
+      "covers": {"nuget": ["QRCoder"]}
+    },
+    {
+      "id": "pixi",
+      "name": "pixi",
+      "url": "https://github.com/prefix-dev/pixi",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (c) 2023, prefix.dev GmbH. All rights reserved."],
+      "note": "The unmodified program, which sets up Brasscribe's tools on this computer. What it installs there (Python and its packages, from conda-forge and PyPI) comes with its own licence files, in the tools' folder.",
+      "apps": ["@bandroom"]
+    },
+    {
+      "id": "choralebricks",
+      "name": "ChoraleBricks (derived test data)",
+      "url": "https://doi.org/10.5281/zenodo.20849469",
+      "licence": "CC-BY-4.0",
+      "texts": [],
+      "notice": ["Notes, beats and pitch contours computed from the ChoraleBricks v1.1.0 recordings, used to check the engine. Licensed under Creative Commons Attribution 4.0 International (https://creativecommons.org/licenses/by/4.0/). The recordings themselves are not included."],
+      "apps": ["@bandroom"]
+    }
+  ],
+  "not_shipped": {
+    "maven": [
+      "org.jetbrains.kotlinx:kotlinx-coroutines-test", "io.ktor:ktor-client-mock",
+      "androidx.compose.ui:ui-tooling", "androidx.compose.ui:ui-test-junit4", "androidx.compose.ui:ui-test-junit4-accessibility",
+      "androidx.compose.ui:ui-test-manifest", "junit:junit", "androidx.test:*", "androidx.test.ext:*", "androidx.test.espresso:*",
+      "com.google.android.apps.common.testing.accessibility.framework:*", "org.robolectric:*", "io.github.takahirom.roborazzi:*",
+      "com.microsoft.onnxruntime:onnxruntime", "net.alphatab:alphaSkia-macos", "net.alphatab:alphaSkia-linux", "net.alphatab:alphaSkia-windows"
+    ],
+    "nuget": [
+      "AlphaSkia.Native.MacOs", "AlphaSkia.Native.Linux", "Microsoft.Windows.SDK.BuildTools", "Microsoft.NET.Test.Sdk", "xunit",
+      "Xunit.SkippableFact", "Microsoft.Extensions.TimeProvider.Testing", "xunit.runner.visualstudio", "Axe.Windows",
+      "MSTest.TestFramework", "MSTest.TestAdapter", "Microsoft.Testing.Extensions.TrxReport", "FlaUI.UIA3", "System.Drawing.Common"
+    ],
+    "npm": []
+  }
+}

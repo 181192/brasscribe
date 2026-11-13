@@ -18,7 +18,7 @@ on memory or on this file.
 | Design rules and tokens | [design/README.md](design/README.md) and `design/tooling/` |
 | Why the architecture is as it is | [docs/shared/research/00-summary.md](docs/shared/research/00-summary.md) |
 | Per-app build and toolchain | the README in the app's directory (`apps/<app>/`, `apps/bandroom/<os>/`) |
-| Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
+| Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); the texts the apps ship: [licences/README.md](licences/README.md) |
 
 ## How to work
 

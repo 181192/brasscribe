@@ -136,6 +136,7 @@ object Fretscribe : Product {
             Screen.EXPORT -> ExportScreen(vm)
             Screen.COMPANION -> CompanionScreen(vm)
             Screen.ABOUT -> AboutScreen(vm)
+            Screen.LICENCES -> LicencesScreen(vm)
             Screen.SETTINGS -> SettingsScreen(vm)
             Screen.HELP -> HelpScreen(vm)
             Screen.PROBLEM -> ProblemScreen(vm)
