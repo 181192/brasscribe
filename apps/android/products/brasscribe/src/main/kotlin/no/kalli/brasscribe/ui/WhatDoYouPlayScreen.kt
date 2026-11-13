@@ -137,18 +137,15 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         reads = offered.firstOrNull()?.reads?.firstOrNull()
     }
 
-    // The reason Continue waits, and "I conduct or listen". On a phone on its side only Continue is docked,
-    // so the instruments keep the screen; these two scroll with them instead.
-    val short = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
-    val Extras = @Composable {
+    // Continue alone is docked, so the instruments keep the screen and the button is in view on a short one too.
+    // "I conduct or listen" is the last of the choices, and the reason Continue waits, which names it, comes after it.
+    val Hint = @Composable {
         if (seat == null) Text(
             stringResource(if (instrument == null) R.string.seat_continue_hint else R.string.seat_part_hint),
             style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
             modifier = Modifier.fillMaxWidth().testTag("seat-hint"),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
-        PlainButton(stringResource(R.string.seat_none), { vm.chooseSeat(SeatChoice.Conductor) },
-            Modifier.fillMaxWidth().testTag("seat-none"))
     }
     PlayScaffold(
         title = null,
@@ -160,7 +157,6 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
             PrimaryButton(stringResource(R.string.continue_label), {
                 seat?.let { s -> vm.chooseSeat(SeatChoice.Player(s.id, reads?.takeIf { s.reads.size > 1 })) }
             }, enabled = seat != null, modifier = Modifier.testTag("seat-continue"))
-            if (!short) Extras()
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
@@ -190,7 +186,8 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         if (offered.size > 1 && readsSeat != null) Choices(
             stringResource(R.string.seat_reads), offered.map { it to stringResource(readsLabel(it, readsSeat)) }, reads, large, "seat-reads",
         ) { reads = it }
-        if (short) Extras()
+        OutlineButton(stringResource(R.string.seat_none), { vm.chooseSeat(SeatChoice.Conductor) }, Modifier.testTag("seat-none"))
+        Hint()
     }
 }
 

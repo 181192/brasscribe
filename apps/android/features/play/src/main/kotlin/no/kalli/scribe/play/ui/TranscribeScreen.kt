@@ -86,7 +86,8 @@ fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean
                 if (disabledReason != null) { disabled(); stateDescription = disabledReason }
             }
             .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3),
-        verticalAlignment = Alignment.Top,
+        // A card with its title alone has it in the middle, not over an empty line.
+        verticalAlignment = if (disabledReason == null && desc == null) Alignment.CenterVertically else Alignment.Top,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             Text(title, style = MaterialTheme.typography.titleMedium, color = if (available) c.text else c.textMuted)
@@ -96,7 +97,7 @@ fun ChoiceCard(title: String, desc: String?, selected: Boolean, enabled: Boolean
                 modifier = if (disabledReason != null) Modifier.clearAndSetSemantics { } else Modifier)
         }
         // The radio has its own column, top-aligned, so large text never runs under it (review 3, P2-D).
-        Box(Modifier.padding(start = ScribeSpace.s2).width(40.dp), contentAlignment = Alignment.TopEnd) {
+        Box(Modifier.padding(start = ScribeSpace.s2).width(40.dp), contentAlignment = if (disabledReason == null && desc == null) Alignment.CenterEnd else Alignment.TopEnd) {
             RadioButton(selected = selected, onClick = null, enabled = available,
                 colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
         }
