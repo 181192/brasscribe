@@ -412,8 +412,8 @@ class Site:
                 shutil.copy(p.brand / p.data["favicon"], out / "favicon.svg")
             if (p.dir / "shots").exists():
                 shutil.copytree(p.dir / "shots", out / "assets" / "shots")
-            if (p.dir / "data").exists():
-                shutil.copytree(p.dir / "data", out / "assets" / "data")
+            if (p.dir / "figures").exists():
+                shutil.copytree(p.dir / "figures", out / "assets" / "data")
             if p.family:
                 self.family_assets(out / "assets")
             for lang in LANGS:

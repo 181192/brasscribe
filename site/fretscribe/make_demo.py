@@ -1,4 +1,4 @@
-"""Make the data of the tab viewer on Fretscribe's front page: site/fretscribe/data/tab-demo.json.
+"""Make the data of the tab viewer on Fretscribe's front page: site/fretscribe/figures/tab-demo.json.
 
 The notes are the ones the engine wrote for apps/fixtures/guitar-line (a made-up line, synthesized, then heard
 by the engine). For every tuning and capo the viewer offers, the string and fret of each note, its other
@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "apps" / "fixtures" / "guitar-line"
-OUT = ROOT / "site" / "fretscribe" / "data" / "tab-demo.json"
+OUT = ROOT / "site" / "fretscribe" / "figures" / "tab-demo.json"
 PRESETS = ["guitar-standard", "guitar-drop-d", "guitar-open-g", "guitar-dadgad"]
 CAPOS = [0, 1, 2, 3]
 
