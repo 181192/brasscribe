@@ -1,5 +1,8 @@
   <li>
-    <h3>Plass i takten og i slaget</h3>
+    <h3>Nøyaktighet for plassering og varighet</h3>
+    <p>Rytmen måles på de <var>N</var> tonene som har en plass i referansepartituret. La <var>q<sub>i</sub></var> være den kvantiserte plassen til tone <var>i</var> (i trinn, 24 per slag) og <var>s<sub>i</sub></var> den noterte plassen, etter én global forskyvning med et helt antall slag:</p>
+    <p class="eq" id="eq-position"><span><var>A</var><sub>takt</sub> = |{<var>i</var> : <var>q<sub>i</sub></var> = <var>s<sub>i</sub></var>}| / <var>N</var></span> <span class="eqno">{{label eq:position}}</span></p>
+    <p>Plass i slaget, <var>A</var><sub>slag</sub>, sammenligner plassene modulo ett slag og påvirkes derfor ikke av en forskjøvet taktstrek. Nøyaktighet for varighet er andelen toner der skrevet varighet er lik den noterte.</p>
     <svg class="mv" viewBox="0 0 280 84" role="img" aria-label="To takter. Partituret har tre toner på slag én, to og tre. Den skrevne linjen har de to første på plass og den tredje ett slag for sent: to av tre plasser er riktige.">
       <line class="ln" x1="20" y1="40" x2="260" y2="40"/><line class="ln" x1="50" y1="36" x2="50" y2="44"/><line class="ln" x1="80" y1="36" x2="80" y2="44"/><line class="ln" x1="110" y1="36" x2="110" y2="44"/><line class="ln" x1="140" y1="36" x2="140" y2="44"/><line class="ln" x1="170" y1="36" x2="170" y2="44"/><line class="ln" x1="200" y1="36" x2="200" y2="44"/><line class="ln" x1="230" y1="36" x2="230" y2="44"/>
       <line class="bold" x1="20" y1="14" x2="20" y2="66"/><line class="bold" x1="140" y1="14" x2="140" y2="66"/><line class="bold" x1="260" y1="14" x2="260" y2="66"/>
@@ -8,5 +11,4 @@
       <ellipse class="ok" cx="35" cy="56" rx="7" ry="5"/><ellipse class="ok" cx="65" cy="56" rx="7" ry="5"/><ellipse class="bad" cx="125" cy="56" rx="7" ry="5"/>
       <text class="strong" x="35" y="79" text-anchor="middle">✓</text><text class="strong" x="65" y="79" text-anchor="middle">✓</text><text class="strong" x="125" y="79" text-anchor="middle">✗</text>
     </svg>
-    <p>Av tonene som ble funnet: andelen som er skrevet på nøyaktig samme sted som i partituret. <b>I takten</b> krever at taktstrekene er riktige. <b>I slaget</b> krever bare at tonen står på riktig underdeling, så den tåler en forskjøvet taktstrek. Skrevet lengde telles på samme måte: nøyaktig, eller feil.</p>
   </li>

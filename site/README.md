@@ -97,6 +97,15 @@ the page follows the baselines. `site/research.py` lists the keys and the macros
   to run it): every row of every view of every chart is reached with the arrow keys, and Escape clears
   the readout. Run it after a change to `shared/charts.js`. The build itself refuses one known cause of a
   dead keyboard: a part of a chart stored under the name of one of the chart's methods.
+- **A paper keeps to the conventions of its field**, and the build checks what it can: citations are
+  `{{cite <key>}}` from `shared/research/references.toml` (numbered in the order of first citation;
+  an unknown key, or an entry no paper cites, fails the build), and `{{references}}` prints the list;
+  figures, tables and equations are numbered separately and referred to with `{{ref fig:<name>}}`,
+  `{{ref table:<name>}}` and `{{ref eq:<name>}}` (a figure or table that the text has not referred to
+  before it appears fails the build); `{{built}}` prints the date and commit of the checkout; the
+  abstract (`<p class="abstract-text">`) must be 150 to 250 words. Where the pieces behind a mean are
+  known, figures, tables and `{{data <key>@sd}}`, `@lo`, `@hi` give the standard deviation and a
+  bootstrap 95 % interval. Add a reference only after checking it against its DOI or record page.
 
 ## Download links
 

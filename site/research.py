@@ -21,6 +21,25 @@ rtf and peak_rss_mb). per_piece.py also writes the value of every piece behind a
 lowest and the highest of them.
 
 The figures themselves are described in site/shared/research/figures.py.
+
+A paper follows the conventions of its field, and the build holds it to them:
+
+  {{cite <key> …}}                  [3], numbered in the order of first citation; the keys are the tables of
+                                    site/shared/research/references.toml. An unknown key fails the build, and so
+                                    does an entry there that no paper cites.
+  {{references}}                    the reference list of the page: what it cited, in that order
+  {{ref fig:<name>}}, {{ref table:<name>}}, {{ref eq:<name>}}
+                                    "Figure 3", "Table 2", "(1)", linked. Figures, tables and equations are
+                                    numbered separately, in the order they appear on the page.
+  {{label table:<name>}}, {{label eq:<name>}}
+                                    the number where the table's caption or the equation stands (a figure has its
+                                    number from {{chart}} or {{pipeline}}). A figure or a table that the text has
+                                    not referred to before it appears fails the build.
+  {{built}}                         the date and the commit of the checkout the page was built from
+  {{figuretables}}                  the data tables of the figures above it, for an appendix: in print a figure is its
+                                    plot and caption, and its table stands there
+
+After the pages are written, finish() checks each paper's abstract for its length.
 """
 
 from __future__ import annotations
@@ -28,7 +47,10 @@ from __future__ import annotations
 import html
 import json
 import operator
+import random
 import re
+import statistics
+import subprocess
 import runpy
 import sys
 import tomllib
@@ -38,16 +60,18 @@ from pathlib import Path
 SITE = Path(__file__).resolve().parent
 ROOT = SITE.parent
 SHARED = SITE / "shared" / "research"
-MACROS = ("span", "holds", "chart", "pipeline", "part")  # and {{data <key>}}, which site/build.py passes on
+MACROS = ("span", "holds", "chart", "pipeline", "part", "cite", "references", "ref", "label", "built", "figuretables")  # and {{data <key>}}, which site/build.py passes on
 FORMATS = ("f1", "f2", "f3", "pct", "int", "sec", "gb")
 NBSP = chr(0xA0)  # between a number and its unit, and between thousands in Norwegian
 OPS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
 WORDS = {
-    "en": {"figure": "Figure", "table": "Data table", "measure": "Measure", "n": "Measured on", "range": "lowest–highest",
-           "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values.",
+    "en": {"figure": "Figure", "table": "Table", "datatable": "Data table", "measure": "Measure", "n": "Measured on", "range": "lowest–highest",
+           "first": "Shown here: {view}; the other views, with n per view, are tabulated in the appendix of data tables.",
+           "fig": "Figure", "eq": "Eq.", "sd": "SD", "ci": "95 % CI", "source": "Source", "hint": "Point at a row, or move to it with the arrow keys, for its exact values.",
            "tap": "Tap a row for its exact values."},
-    "nb": {"figure": "Figur", "table": "Datatabell", "measure": "Mål", "n": "Målt på", "range": "laveste–høyeste",
-           "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene.",
+    "nb": {"figure": "Figur", "table": "Tabell", "datatable": "Datatabell", "measure": "Mål", "n": "Målt på", "range": "laveste–høyeste",
+           "first": "Vist her: {view}; de andre visningene, med n per visning, står i vedlegget med datatabeller.",
+           "fig": "Figur", "eq": "ligning", "sd": "SA", "ci": "95 % KI", "source": "Kilde", "hint": "Pek på en rad, eller gå til den med piltastene, for de nøyaktige verdiene.",
            "tap": "Trykk på en rad for de nøyaktige verdiene."},
 }
 
@@ -73,12 +97,22 @@ class Numbers:
         self.converted = {f.stem: json.loads(f.read_text()) for f in sorted((ROOT / "convert" / "reports").glob("*.json"))}
 
     def get(self, key: str) -> float:
-        if key.endswith(("@min", "@max")):  # the lowest or the highest piece behind a mean
+        if "@" in key:  # of the pieces behind a mean: @min @max @sd @lo @hi @n @mean, or @0.60-0.75: how many lie in a range
             key, _, end = key.rpartition("@")
-            pieces = self.spread(key)
+            head, _, rest = key.partition("/")
+            suite, _, name = rest.partition("/")
+            # p/<suite>/<name>: per-piece values that have no gated mean (their mean is <key>@mean)
+            pieces = self.pieces.get(suite, {}).get(name) if head == "p" else self.spread(key)
+            if not isinstance(pieces, list):
+                pieces = None
             if pieces is None:
                 sys.exit(f"research: no per-piece values for '{key}'")
-            return min(pieces) if end == "min" else max(pieces)
+            if end in ("lo", "hi"):
+                return interval(pieces)[end == "hi"]
+            if "-" in end:
+                low, _, high = end.partition("-")
+                return sum(float(low) <= value <= float(high) for value in pieces)
+            return {"min": min, "max": max, "sd": statistics.stdev, "n": len, "mean": statistics.fmean}[end](pieces)
         head, _, rest = key.partition("/")
         group, _, name = rest.partition("/")
         try:
@@ -94,12 +128,17 @@ class Numbers:
             value = {"m": self.measured, "p": self.pieces}[head][group][name] if head in ("m", "p") else self.targets[head][group][name]
         except KeyError:
             sys.exit(f"research: no measurement '{key}'")
+        if isinstance(value, list):  # per-piece values without a gated mean: the key is their mean
+            return statistics.fmean(value)
         return float(value["value"] if isinstance(value, dict) else value)
 
     def spread(self, key: str) -> list[float] | None:
         """The per-piece values behind a gated mean, unless the mean has moved since they were made."""
         head, _, rest = key.partition("/")
         suite, _, name = rest.partition("/")
+        if head == "p":
+            values = self.pieces.get(suite, {}).get(name)
+            return values if isinstance(values, list) else None
         values = self.pieces.get(suite, {}).get(name) if head in self.targets else None
         if not isinstance(values, list):
             return None
@@ -107,6 +146,16 @@ class Numbers:
             sys.exit(f"research: the per-piece values of {key} no longer average to its baseline, so the figures would show "
                      "dots that are not behind the mean. Run site/shared/research/per_piece.py on a machine with the eval data.")
         return values
+
+
+def interval(pieces: list[float]) -> tuple[float, float]:
+    """A 95 % confidence interval of the mean over pieces: percentile bootstrap, 10,000 resamples, a fixed seed."""
+    key = tuple(pieces)
+    if key not in interval.__dict__.setdefault("made", {}):
+        draw = random.Random(20261113)
+        means = sorted(statistics.fmean(draw.choices(pieces, k=len(pieces))) for _ in range(10_000))
+        interval.made[key] = (means[249], means[9749])
+    return interval.made[key]
 
 
 _numbers: Numbers | None = None
@@ -177,13 +226,102 @@ def macro(page, name: str, words: list[str], args: dict[str, str]) -> str:
         return ""
     if name == "part":
         return page.macros((SHARED / lang / f"{words[0]}.html").read_text().rstrip())
-    page.figures = getattr(page, "figures", 0) + 1
+    paper = numbering(page)
+    if name == "cite":
+        for key in words:
+            if key not in references():
+                sys.exit(f"{page.dir}: {{{{cite {key}}}}} names no entry of site/shared/research/references.toml")
+            if key not in paper["cited"]:
+                paper["cited"].append(key)
+            CITED.add(key)
+        return "[" + ", ".join(f'<a href="#ref-{key}">{paper["cited"].index(key) + 1}</a>' for key in words) + "]"
+    if name == "references":
+        items = []
+        for key in paper["cited"]:
+            entry = references()[key]
+            note = entry.get("note_" + lang, entry.get("note", ""))
+            items.append(f'<li id="ref-{key}">{entry["text"]}{" " + note if note else ""}</li>')
+        return '<ol class="refs">\n' + "\n".join(items) + "\n</ol>"
+    if name == "built":
+        return built(lang)
+    if name == "figuretables":  # the data tables of every figure so far, for the appendix that only print shows
+        return "\n".join(f'<h3>{WORDS[lang]["fig"]}{NBSP}{number}</h3>\n' + "\n".join(tables) for number, tables in paper["tables"])
+    if name in ("ref", "label"):
+        kind, _, what = words[0].partition(":")
+        number = paper[kind].get(what)
+        if number is None:
+            sys.exit(f"{page.dir}: {{{{{name} {words[0]}}}}} names nothing that the page shows")
+        if name == "ref":
+            paper["seen"].add(words[0])
+            if kind == "eq":
+                return f'<a href="#eq-{what}">({number})</a>'
+            return f'<a href="#{kind}-{what}">{WORDS[lang][kind]}{NBSP}{number}</a>'
+        if kind == "table" and words[0] not in paper["seen"]:
+            sys.exit(f"{page.dir}: table '{what}' appears before the text refers to it with {{{{ref table:{what}}}}}")
+        return f"({number})" if kind == "eq" else f"{WORDS[lang][kind]}{NBSP}{number}"
+    if paper["strict"] and f"fig:{words[0]}" not in paper["seen"]:
+        sys.exit(f"{page.dir}: figure '{words[0]}' appears before the text refers to it with {{{{ref fig:{words[0]}}}}}")
+    page.figures = paper["fig"][words[0]]
     spec = numbers().figures["FIGURES"].get(words[0])
     if spec is None:
         sys.exit(f"{page.dir}: no figure '{words[0]}' in site/shared/research/figures.py")
     for rule in spec.get("holds", []):
         check(rule.split(), f"figure '{words[0]}'")
     return pipeline(spec, words[0], page) if name == "pipeline" else chart(spec, words[0], page)
+
+
+# The conventions of a paper ------------------------------------------------------------------------
+
+CITED: set[str] = set()
+
+
+def references() -> dict:
+    if "made" not in references.__dict__:
+        references.made = tomllib.loads((SHARED / "references.toml").read_text())
+    return references.made
+
+
+def numbering(page) -> dict:
+    """Figures, tables and equations of a page, each kind numbered in the order it appears (parts included)."""
+    if not hasattr(page, "paper"):
+        body = page.body
+        for _ in range(3):  # a part may hold a figure or an equation
+            body = re.sub(r"\{\{part ([\w-]+)\}\}", lambda m: (SHARED / page.lang / f"{m.group(1)}.html").read_text(), body)
+        page.paper = {"fig": {}, "table": {}, "eq": {}, "seen": set(), "cited": [], "tables": [], "strict": "{{references}}" in body}
+        for kind, what in re.findall(r"\{\{(chart|pipeline|label) ([\w:-]+)\}\}", body):
+            kind, _, what = (what if kind == "label" else "fig:" + what).partition(":")
+            page.paper[kind].setdefault(what, len(page.paper[kind]) + 1)
+    return page.paper
+
+
+def built(lang: str) -> str:
+    """The date and commit of the checkout: what the numbers on the page were read from."""
+    if "made" not in built.__dict__:
+        run = subprocess.run(["git", "-C", str(ROOT), "log", "-1", "--format=%cs %h"], capture_output=True, text=True)
+        built.made = run.stdout.split() if run.returncode == 0 and run.stdout.strip() else None
+    if built.made is None:
+        sys.exit("research: {{built}} needs the git history of the checkout (the date and the commit of HEAD)")
+    year, month, day = built.made[0].split("-")
+    months = {"en": "January February March April May June July August September October November December",
+              "nb": "januar februar mars april mai juni juli august september oktober november desember"}[lang].split()
+    date = f"{int(day)} {months[int(month) - 1]} {year}" if lang == "en" else f"{int(day)}. {months[int(month) - 1]} {year}"
+    return f'<time datetime="{built.made[0]}">{date}</time>, {"commit" if lang == "en" else "innsjekking"} <code>{built.made[1]}</code>'
+
+
+def finish(out: Path) -> None:
+    """What can only be checked when every page is written: unused references, and the length of each abstract."""
+    unused = sorted(set(references()) - CITED)
+    if unused:
+        sys.exit(f"research: no paper cites {', '.join(unused)}; cite them or take them out of site/shared/research/references.toml")
+    for page in sorted(out.rglob("index.html")):
+        text = page.read_text()
+        found = re.search(r'<p class="abstract-text">(.*?)</p>', text, re.S)
+        if '<article class="paper"' in text and not found:
+            sys.exit(f"research: {page.relative_to(out)} is a paper without an abstract (<p class=\"abstract-text\">)")
+        if found:
+            count = len(re.sub(r"<[^>]+>", " ", found.group(1)).split())
+            if not 150 <= count <= 250:
+                sys.exit(f"research: the abstract of {page.relative_to(out)} is {count} words; a paper's abstract is 150 to 250")
 
 
 # Charts -----------------------------------------------------------------------------------------
@@ -214,7 +352,10 @@ def chart(spec: dict, name: str, page) -> str:
                 value, pieces = num.get(key), num.spread(key) if spec.get("spread", True) else None
                 cell = {"v": value, "t": fmt(value, how, lang)}
                 if pieces:
-                    cell |= {"p": pieces, "lo": fmt(min(pieces), how, lang), "hi": fmt(max(pieces), how, lang)}
+                    low, high = interval(pieces)
+                    cell |= {"p": pieces, "lo": fmt(min(pieces), how, lang), "hi": fmt(max(pieces), how, lang), "ci": [low, high],
+                             "sd": fmt(statistics.stdev(pieces), how, lang),
+                             "cit": f"{fmt(low, how, lang).replace(NBSP + '%', '')}–{fmt(high, how, lang)}"}
                 cells.append(cell)
             rows.append({"l": pick(row["label"], lang), "n": fill(row.get("n", view.get("n", "")), lang, "int"), "c": cells})
         series = [pick(s, lang) for s in view.get("series", spec["series"])]  # a view may compare other things than its neighbours
@@ -233,7 +374,7 @@ def chart(spec: dict, name: str, page) -> str:
     how = spec.get("format", "f2")
     data = {"views": views,
             "viewLabel": pick(spec.get("view_label", ""), lang),
-            "words": {"range": w["range"], "hint": w["hint"]}}
+            "words": {"range": w["range"], "hint": w["hint"], "sd": w["sd"], "ci": w["ci"]}}
 
     tables = []
     spread = any(c and "p" in c for v in views for r in v["rows"] for c in r["c"])
@@ -243,7 +384,7 @@ def chart(spec: dict, name: str, page) -> str:
         for label in view["s"]:
             head.append(f'<th scope="col" class="num">{e(label)}</th>')
             if spread:
-                head.append(f'<th scope="col" class="num">{w["range"]}</th>')
+                head += [f'<th scope="col" class="num">{w["sd"]}</th>', f'<th scope="col" class="num">{w["ci"]}</th>']
         if shared is None:
             head.append(f'<th scope="col">{w["n"]}</th>')
         body = []
@@ -252,25 +393,37 @@ def chart(spec: dict, name: str, page) -> str:
             for c in row["c"]:
                 cells.append(f'<td class="num">{c["t"] if c else "–"}</td>')
                 if spread:
-                    cells.append(f'<td class="num">{c["lo"]}–{c["hi"]}</td>' if c and "p" in c else "<td></td>")
+                    cells.append(f'<td class="num">{c["sd"]}</td><td class="num">{c["cit"]}</td>' if c and "p" in c else "<td></td><td></td>")
             if shared is None:
                 cells.append(f'<td>{e(row["n"])}</td>')
             body.append(f'<tr>{"".join(cells)}</tr>')
         note = " ".join(x for x in (view["note"], f'{w["n"]}: {e(shared)}.' if shared else "") if x)
         caption = view["l"] + (f'<span class="src">{note}</span>' if note else "")
-        tables.append(f'<div class="table-scroll" tabindex="0" role="region" aria-label="{e(w["table"])}: {e(view["l"])}">\n<table>\n'
+        tables.append(f'<div class="table-scroll" tabindex="0" role="region" aria-label="{e(w["datatable"])}: {e(view["l"])}">\n<table>\n'
                       f'<caption>{caption}</caption>\n<thead><tr>{"".join(head)}</tr></thead>\n'
                       f'<tbody>\n{chr(10).join(body)}\n</tbody>\n</table>\n</div>')
+    # What was measured on, inside the caption: per view where the rows share it, per row where they do not.
+    sizes = []
+    for view in views:
+        size = view["n"] or "; ".join(f'{row["l"]}: {row["n"]}' for row in view["rows"] if row["n"])
+        if size:
+            sizes.append((view["l"], size))
+    if len({size for _, size in sizes}) == 1:  # the same for every view: said once
+        sizes = [("", sizes[0][1])]
+    measured_on = (' <span class="chart-n"><i>n</i>: ' + e(" · ".join(f"{label}: {size}" if label else size for label, size in sizes)) + ".</span>") if sizes else ""
     source = fill(spec["source"], lang, how)
+    # On paper a figure shows its first view; the others are in the appendix of data tables.
+    several = f' <span class="print-only">{w["first"].format(view=e(views[0]["l"]))}</span>' if len(views) > 1 else ""
     data["words"]["tap"] = w["tap"]
     if not re.fullmatch(r"[a-z0-9-]+", name):
         sys.exit(f"research: a figure's name is its id in the page, so '{name}' must be lower-case letters, digits and hyphens")
+    numbering(page)["tables"].append((page.figures, tables))
     made = (f'<figure class="chart" id="fig-{name}" aria-labelledby="fig-{name}-title" data-chart data-brand="{page.product.id}">\n'
-            f'<p class="chart-title" id="fig-{name}-title">{fill(spec["title"], lang, how)}</p>\n'
             f'<p class="chart-sub">{fill(spec["sub"], lang, how)}</p>\n'
             f'<div class="chart-plot" hidden></div>\n'
-            f'<details class="chart-data" open>\n<summary>{w["table"]}</summary>\n{chr(10).join(tables)}\n</details>\n'
-            f'<figcaption><b>{w["figure"]} {page.figures}.</b> {fill(spec["caption"], lang, how)} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
+            f'<details class="chart-data" open>\n<summary>{w["datatable"]}</summary>\n{chr(10).join(tables)}\n</details>\n'
+            f'<figcaption><b>{w["figure"]} {page.figures}.</b> <span class="chart-title" id="fig-{name}-title">{fill(spec["title"], lang, how)}.</span> '
+            f'{fill(spec["caption"], lang, how)}{measured_on}{several} <span class="src">{w["source"]}: {source}</span></figcaption>\n'
             f'<script type="application/json">{json.dumps(data, ensure_ascii=False).replace("</", "<\\/")}</script>\n</figure>')
     return whole(made, name)
 

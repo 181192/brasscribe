@@ -21,8 +21,7 @@ CHORALES_NOTE = ("ChoraleBricks: four real players (trumpet, flugelhorn, bariton
 URMP_NOTE = ("URMP: real duos to quintets of trumpet, horn, trombone and tuba.",
              "URMP: ekte duoer til kvintetter med trompet, horn, trombone og tuba.")
 RECORDINGS = ("Recordings", "Opptak")
-F1_AXIS = ("Onset F1: 0 = nothing right, 1 = every played note found and no extra ones",
-           "Onset-F1: 0 = ingenting riktig, 1 = alle spilte toner funnet og ingen ekstra")
+F1_AXIS = ("Onset F-measure (0 to 1)", "F-mål for ansats (0 til 1)")
 SHARE_AXIS = ("Share of notes", "Andel av tonene")
 
 INSTRUMENTS = (("trumpet", ("Trumpet", "Trompet")), ("flugelhorn", ("Flugelhorn", "Flygelhorn")), ("horn", ("French horn", "Valthorn")),
@@ -32,24 +31,26 @@ STEMS = ("{m/datasets/choralebricks_solo_stems|int} single-instrument recordings
 
 
 def transcription(suite, rows):
-    return [{"label": label, "keys": [f"{B}{suite}/{model}.onset100_f1" if "100" in has else None,
-                                      f"{B}{suite}/{model}.onset_f1" if "50" in has else None]} for label, model, has in rows]
+    return [{"label": label, "keys": [f"{B}{suite}/{model}.onset_f1" if "50" in has else None,
+                                      f"{B}{suite}/{model}.onset100_f1" if "100" in has else None]} for label, model, has in rows]
 
 
 FIGURES = {
     # ------------------------------------------------------------------------------- brass
     "notes-found": {
-        "title": ("The best model scores {brass/chorales-transcription/muscriptor-medium.onset100_f1} on brass quartets and "
-                  "{brass/urmp-transcription/muscriptor-medium.onset100_f1} on chamber brass",
-                  "Den beste modellen får {brass/chorales-transcription/muscriptor-medium.onset100_f1} på brasskvartetter og "
-                  "{brass/urmp-transcription/muscriptor-medium.onset100_f1} på kammerbrass"),
+        "title": ("The best model reaches an onset F-measure of {brass/chorales-transcription/muscriptor-medium.onset_f1} on brass quartets and "
+                  "{brass/urmp-transcription/muscriptor-medium.onset_f1} on chamber brass at ±50 ms, and "
+                  "{brass/chorales-transcription/muscriptor-medium.onset100_f1} and {brass/urmp-transcription/muscriptor-medium.onset100_f1} at ±100 ms",
+                  "Den beste modellen oppnår et F-mål for ansats på {brass/chorales-transcription/muscriptor-medium.onset_f1} på brasskvartetter og "
+                  "{brass/urmp-transcription/muscriptor-medium.onset_f1} på kammerbrass ved ±50 ms, og "
+                  "{brass/chorales-transcription/muscriptor-medium.onset100_f1} og {brass/urmp-transcription/muscriptor-medium.onset100_f1} ved ±100 ms"),
         "holds": ["brass/chorales-transcription/muscriptor-medium.onset100_f1 > brass/chorales-transcription/basic-pitch.onset100_f1",
                   "brass/urmp-transcription/muscriptor-medium.onset100_f1 > brass/urmp-transcription/basic-pitch.onset100_f1",
                   "brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1 > brass/slakh-transcription/muscriptor-medium.onset100_f1"],
-        "sub": ("Notes found in the whole recording, every part at once. A dot is one piece; the ringed dot is the mean.",
-                "Toner funnet i hele opptaket, alle stemmer samtidig. En prikk er ett stykke; prikken med ring er snittet."),
+        "sub": ("Notes found in the whole recording, every part at once. A dot is one piece, the ringed dot the mean, the thick bar its 95 % confidence interval.",
+                "Toner funnet i hele opptaket, alle stemmer samtidig. En prikk er ett stykke, prikken med ring gjennomsnittet, den tykke streken 95 % konfidensintervall."),
         "axis": F1_AXIS,
-        "series": [("Onset within 100 ms", "Ansats innen 100 ms"), ("Onset within 50 ms", "Ansats innen 50 ms")],
+        "series": [("Onset within ±50 ms (standard)", "Ansats innen ±50 ms (standard)"), ("Onset within ±100 ms (relaxed)", "Ansats innen ±100 ms (romsligere)")],
         "view_label": RECORDINGS,
         "views": [
             {"label": CHORALES, "note": CHORALES_NOTE, "n": CHORALES_N,
@@ -57,8 +58,8 @@ FIGURES = {
             {"label": URMP, "note": URMP_NOTE, "n": URMP_N,
              "rows": transcription("urmp-transcription", [("MuScriptor medium", "muscriptor-medium", "100 50"), ("Basic Pitch", "basic-pitch", "100 50")])},
             {"label": ("Trumpet over a band", "Trompet over et band"),
-             "note": ("Slakh: synthesized songs with a trumpet lead. Only the 100 ms score is gated.",
-                      "Slakh: syntetiske låter med trompet i front. Bare 100 ms-målet er låst."),
+             "note": ("Slakh: synthesised songs with a trumpet lead. Only the ±100 ms result is stored for this set.",
+                      "Slakh: syntetiske låter med trompet i front. Bare resultatet ved ±100 ms er lagret for dette settet."),
              "n": ("{m/datasets/slakh_trumpet_songs|int} songs", "{m/datasets/slakh_trumpet_songs|int} låter"),
              "rows": transcription("slakh-transcription", [
                  (("Separated first, then MuScriptor", "Separert først, så MuScriptor"), "pipeB-sw-muscriptor", "100"),
@@ -66,25 +67,27 @@ FIGURES = {
                  (("Separated first, then Basic Pitch", "Separert først, så Basic Pitch"), "pipeB-sw-basicpitch", "100"),
                  (("Basic Pitch on the whole mix", "Basic Pitch på hele miksen"), "basic-pitch", "100")])},
         ],
-        "caption": ("Onset F1 of the two transcribers on real brass, and of the two routes on a full band. A note counts as found when its "
-                    "pitch is right and its start is within the tolerance.",
-                    "Onset-F1 for de to transkripsjonsmodellene på ekte brass, og for de to veiene på et fullt band. En tone regnes som funnet "
-                    "når tonehøyden er riktig og starten er innenfor toleransen."),
+        "caption": ("Onset F-measure of the two transcribers on real brass, and of the two routes on a full band. A note counts as detected when its "
+                    "pitch is correct and its onset lies within the tolerance.",
+                    "F-mål for ansats for de to transkripsjonsmodellene på ekte brass, og for de to veiene på et fullt band. En tone regnes som detektert "
+                    "når tonehøyden er riktig og ansatsen ligger innenfor toleransen."),
         "source": ("<code>eval/baselines.json</code>, suites chorales-transcription, urmp-transcription and slakh-transcription; "
                    "the pieces from <code>site/shared/research/measured/per-piece.json</code>.",
                    "<code>eval/baselines.json</code>, suitene chorales-transcription, urmp-transcription og slakh-transcription; "
                    "stykkene fra <code>site/shared/research/measured/per-piece.json</code>."),
     },
     "rhythm": {
-        "title": ("With the score's beats nearly every note lands in its place; with tracked beats under half do",
-                  "Med partiturets slag havner nesten alle toner på plass; med slag sporet fra opptaket under halvparten"),
+        "title": ("With reference beats nearly every note is written at its place in the bar; with tracked beats "
+                  "{brass/quant-urmp/beat_this.position_acc|pct} to {brass/quant-chorales/beat_this.position_acc|pct} are on average, with wide variation between pieces",
+                  "Med referanseslag skrives nesten alle toner på riktig plass i takten; med sporede slag gjelder det i gjennomsnitt "
+                  "{brass/quant-urmp/beat_this.position_acc|pct} til {brass/quant-chorales/beat_this.position_acc|pct}, med stor variasjon mellom stykkene"),
         "holds": ["brass/quant-chorales/beat_this.position_acc < 0.5", "brass/quant-urmp/beat_this.position_acc < 0.5",
                   "brass/quant-chorales/reference_beats.position_acc >= 0.9", "brass/quant-urmp/reference_beats.position_acc >= 0.9"],
         "format": "pct",
-        "sub": ("The correct notes are given to the quantizer, so only the beat grid differs. A dot is one piece: with tracked beats the "
-                "pieces spread over almost the whole scale.",
-                "Kvantiseringen får de riktige tonene, så bare slagrutenettet er ulikt. En prikk er ett stykke: med sporede slag sprer "
-                "stykkene seg over nesten hele skalaen."),
+        "sub": ("The correct notes are given to the quantiser, so only the beat grid differs. A dot is one piece, the ringed dot the mean, the thick bar its 95 % confidence interval: with tracked "
+                "beats the pieces spread over almost the whole scale.",
+                "Kvantiseringen får de riktige tonene, så bare slagrutenettet er ulikt. En prikk er ett stykke, prikken med ring gjennomsnittet, den tykke streken 95 % konfidensintervall: med "
+                "sporede slag sprer stykkene seg over nesten hele skalaen."),
         "axis": ("Share of the reference notes written as the score has them", "Andel av referansetonene skrevet slik partituret har dem"),
         "series": [("Beats given (from the score)", "Slag gitt (fra partituret)"), ("Beats tracked (Beat This!)", "Slag sporet (Beat This!)")],
         "view_label": RECORDINGS,
@@ -101,8 +104,8 @@ FIGURES = {
                    "<code>eval/baselines.json</code>, suitene quant-chorales og quant-urmp; stykkene fra <code>per-piece.json</code>."),
     },
     "solo-written": {
-        "title": ("From one player's recording the notes are heard, but about one in four is written where the score has it",
-                  "Fra opptak av én musiker blir tonene hørt, men omtrent én av fire blir skrevet der partituret har den"),
+        "title": ("On recordings of a single part the notes are detected with a high F-measure, but the written F-measure is about a quarter",
+                  "På opptak av en enkeltstemme detekteres tonene med høyt F-mål, men det skrevne F-målet er omtrent en firedel"),
         "holds": ["brass/solo-beat-model/urmp.small0.written_f1 < 0.3", "brass/solo-beat-model/choralebricks.small0.written_f1 < 0.3",
                   "brass/solo-beat-model/urmp.final0.written_f1 < 0.3", "brass/solo-beat-model/choralebricks.final0.written_f1 < 0.3",
                   "brass/solo-beat-model/urmp.small0.written_f1 > 0.2", "brass/solo-beat-model/choralebricks.small0.written_f1 > 0.2",
@@ -111,8 +114,8 @@ FIGURES = {
                 "pitch and onset, then also by their place in the bar.",
                 "Hele soloveien med modellene en telefon har, målt mot musikerens egen stemme: de samme tonene, først talt etter tonehøyde "
                 "og ansats, så også etter plassen i takten."),
-        "axis": ("F1, 0 to 1", "F1, 0 til 1"),
-        "series": [("Heard: pitch and onset within 100 ms", "Hørt: tonehøyde og ansats innen 100 ms"),
+        "axis": ("F-measure, 0 to 1", "F-mål, 0 til 1"),
+        "series": [("Detected: pitch and onset within ±100 ms", "Detektert: tonehøyde og ansats innen ±100 ms"),
                    ("Written in place: also in the right place in the bar", "Skrevet på plass: også på riktig plass i takten")],
         "view_label": ("Beat tracker", "Slagsporer"),
         "views": [{"label": label, "note": note, "rows": [
@@ -135,8 +138,8 @@ FIGURES = {
                   "Ett instrument alene blir funnet godt, også tuba, når appen vet hvilket instrument det er"),
         "holds": [f"brass/solo-instruments/{i}.seat_f1 >= 0.85" for i, _ in INSTRUMENTS] + ["brass/solo-instruments/tuba.today_f1 < 0.1"]
                  + [f"brass/solo-instruments/{i}.sw_f1 >= 0.85" for i, _ in INSTRUMENTS] + ["brass/solo-instruments/tuba.bp_f1 < 0.6"],
-        "sub": ("Onset F1 at 100 ms of the written solo line, per instrument, with a fixed cornet range and with the player's own.",
-                "Onset-F1 ved 100 ms for den skrevne sololinjen, per instrument, med et fast kornettomfang og med musikerens eget."),
+        "sub": ("Onset F-measure at ±100 ms of the written solo line, per instrument, with a fixed cornet range and with the player's own.",
+                "F-mål for ansats ved ±100 ms for den skrevne sololinjen, per instrument, med et fast kornettomfang og med musikerens eget."),
         "axis": F1_AXIS,
         "series": [("Instrument chosen: its own range", "Instrument valgt: dets eget omfang"), ("No instrument chosen: fixed E3–E6", "Ikke valgt instrument: fast E3–E6")],
         "view_label": ("Compare", "Sammenlign"),
@@ -176,12 +179,12 @@ FIGURES = {
                        ("S", ("Soprano (trumpet)", "Sopran (trompet)")), ("A", ("Alto (flugelhorn)", "Alt (flygelhorn)")),
                        ("T", ("Tenor (baritone)", "Tenor (baryton)")), ("B", ("Bass (tuba)", "Bass (tuba)")))]}
                   for label, key in ((("Notes of each voice found, within 100 ms", "Toner funnet per stemme, innen 100 ms"), "recall100"), (("Within 50 ms", "Innen 50 ms"), "recall"))],
-        "caption": ("First view: onset F1 at 100 ms of the line picked out for each player. Other views: the share of each player's notes that appear "
+        "caption": ("First view: onset F-measure at ±100 ms of the line picked out for each player. Other views: the share of each player's notes that appear "
                     "anywhere in the transcription of the quartet (upper bounds: any written note may match). This is why Brasscribe writes only "
-                    "the tune and the bass from what it heard in a band, and arranges the parts between them.",
-                    "Første visning: onset-F1 ved 100 ms for linjen som er plukket ut for hver musiker. De andre visningene: andelen av hver musikers "
+                    "the melody and the bass from the audio of an ensemble, and arranges the parts between them.",
+                    "Første visning: F-mål for ansats ved ±100 ms for linjen som er plukket ut for hver musiker. De andre visningene: andelen av hver musikers "
                     "toner som finnes et sted i transkripsjonen av kvartetten (øvre grenser: en hvilken som helst skrevet tone kan treffe). Derfor "
-                    "skriver Brasscribe bare melodien og bassen fra det den hørte i et band, og arrangerer stemmene imellom."),
+                    "skriver Brasscribe bare melodien og bassen fra lyden av et ensemble, og arrangerer stemmene imellom."),
         "source": ("<code>eval/baselines.json</code>, suite seat-voices (runs in CI); the recall views from <code>per-piece.json</code>, computed with the gate's scorer but not gated.",
                    "<code>eval/baselines.json</code>, suiten seat-voices (kjøres i CI); recall-visningene fra <code>per-piece.json</code>, regnet ut med sperrens målekode, men ikke låst."),
     },
@@ -215,8 +218,8 @@ FIGURES = {
                    "<code>measured.toml</code>."),
     },
     "fast-notes": {
-        "title": ("Fast figures: about six notes in ten are heard, and fewer survive being written down",
-                  "Raske figurer: omtrent seks av ti toner blir hørt, og færre overlever å bli skrevet ned"),
+        "title": ("Fast figures: about six notes in ten are detected, and fewer remain after notation",
+                  "Raske figurer: omtrent seks av ti toner detekteres, og færre står igjen etter notasjonen"),
         "holds": ["brass/fast-notes/small0.sw.fig_recall > 0.5", "brass/fast-notes/small0.sw.fig_recall < 0.7",
                   "brass/fast-notes/small0.written.fig_recall < brass/fast-notes/small0.line.fig_recall",
                   "brass/fast-notes/oracle.written.fig_recall < brass/fast-notes/oracle.line.fig_recall",
@@ -232,15 +235,15 @@ FIGURES = {
                    "n": ("{m/datasets/fast_notes_frozen_clips|int} clips frozen in the repository: built from samples, dry and with a room; development data",
                          "{m/datasets/fast_notes_frozen_clips|int} klipp som er låst i repositoriet: satt sammen av samplinger, tørt og med rom; utviklingsdata"),
                    "rows": [{"label": label, "keys": [f"{B}fast-notes/oracle.{stage}.fig_recall", f"{B}fast-notes/small0.{stage}.fig_recall"]} for stage, label in (
-                       ("sw", ("1. Heard by the pitch tracker (SwiftF0)", "1. Hørt av tonehøydesporeren (SwiftF0)")),
+                       ("sw", ("1. Detected by the f0 estimator (SwiftF0)", "1. Detektert av f0-estimatoren (SwiftF0)")),
                        ("line", ("2. In the solo line after the vote", "2. I sololinjen etter avstemningen")),
                        ("quantized", ("3. After snapping to the beat grid", "3. Etter plassering på slagrutenettet")),
                        ("written", ("4. Written in the score", "4. Skrevet i notene")))]}] + [
             {"label": label, "series": [("Before the fast-note rules", "Før reglene for raske toner"), ("After", "Etter")],
-                   "axis": ("Share or F1, 0 to 100 %", "Andel eller F1, 0 til 100 %"), "n": ("{m/fast_notes/clips|int} clips built from samples; the rules were developed on them", "{m/fast_notes/clips|int} klipp satt sammen av samplinger; reglene er utviklet på dem"),
+                   "axis": ("Share or F-measure, 0 to 100 %", "Andel eller F-mål, 0 til 100 %"), "n": ("{m/fast_notes/clips|int} clips built from samples; the rules were developed on them", "{m/fast_notes/clips|int} klipp satt sammen av samplinger; reglene er utviklet på dem"),
                    "rows": [{"label": text, "keys": [f"m/fast_notes/{beats}_{key}_before", f"m/fast_notes/{beats}_{key}_after"]} for text, key in (
                        (("Notes of the fast figure written (recall)", "Toner i den raske figuren skrevet (recall)"), "fig"),
-                       (("All notes of the clip (F1)", "Alle tonene i klippet (F1)"), "f1"),
+                       (("All notes of the clip (F-measure)", "Alle tonene i klippet (F-mål)"), "f1"),
                        (("Trills and alternations that keep four fifths of their notes", "Triller og vekslinger som beholder fire femdeler av tonene"), "alt"))]}
                   for label, beats in ((("Before and after, beats given", "Før og etter, slag gitt"), "oracle"), (("Before and after, beats tracked", "Før og etter, slag sporet"), "small0"))],
         "caption": ("Where fast notes are lost. The clips are rendered from real trumpet samples, dry and with a hall, with an exact reference; "
@@ -253,8 +256,8 @@ FIGURES = {
                    "<code>eval/baselines.json</code>, suiten fast-notes (kjøres i CI); før og etter fra <code>docs/brasscribe/plan/fast-notes.md</code>, avsnitt 7.2, via <code>measured.toml</code>."),
     },
     "agreement": {
-        "title": ("A note heard by SwiftF0 and one more model is almost always right; without that pairing it is a coin toss or worse",
-                  "En tone hørt av SwiftF0 og én modell til er nesten alltid riktig; uten den kombinasjonen er det myntkast eller verre"),
+        "title": ("A note produced by SwiftF0 and one further model is correct in about nine cases in ten or more; other combinations in about half or fewer",
+                  "En tone gitt av SwiftF0 og én modell til er riktig i omtrent ni av ti tilfeller eller flere; andre kombinasjoner i omtrent halvparten eller færre"),
         "holds": ["brass/solo-vote/precision.bp+mus+sw > 0.9", "brass/solo-vote/precision.mus+sw > 0.9", "brass/solo-vote/precision.bp+sw > 0.85",
                   "brass/solo-vote/precision.sw < 0.6", "brass/solo-vote/precision.bp+mus < 0.5"],
         "format": "pct",
@@ -279,8 +282,8 @@ FIGURES = {
                    "<code>docs/shared/research/10-benchmark-results.md</code> via <code>measured.toml</code>."),
     },
     "models": {
-        "title": ("The larger model was not better, and telling the model the instruments are brass made it worse",
-                  "Den større modellen var ikke bedre, og å fortelle modellen at instrumentene er messing gjorde den dårligere"),
+        "title": ("The larger model did not score higher, and conditioning the model on brass instruments lowered its F-measure",
+                  "Den større modellen ga ikke høyere verdi, og betinging på messinginstrumenter senket F-målet"),
         "holds": ["brass/chorales-transcription/muscriptor-large.onset_f1 < brass/chorales-transcription/muscriptor-medium.onset_f1",
                   "brass/chorales-transcription/muscriptor-medium-brass.onset_f1 < brass/chorales-transcription/muscriptor-medium.onset_f1",
                   "brass/chorales-transcription/muscriptor-large-brass.onset_f1 < brass/chorales-transcription/muscriptor-large.onset_f1"],
@@ -295,8 +298,8 @@ FIGURES = {
                 ("basic-pitch-retuned", ("Basic Pitch, recording retuned to A = 440 (used)", "Basic Pitch, opptaket stemt om til A = 440 (brukes)")),
                 ("basic-pitch", ("Basic Pitch, as recorded", "Basic Pitch, slik det ble tatt opp")),
                 ("muscriptor-large", ("MuScriptor large", "MuScriptor large")),
-                ("muscriptor-medium-brass", ("MuScriptor medium, told it is brass", "MuScriptor medium, fortalt at det er messing")),
-                ("muscriptor-large-brass", ("MuScriptor large, told it is brass", "MuScriptor large, fortalt at det er messing")))]}],
+                ("muscriptor-medium-brass", ("MuScriptor medium, conditioned on brass instruments", "MuScriptor medium, betinget på messinginstrumenter")),
+                ("muscriptor-large-brass", ("MuScriptor large, conditioned on brass instruments", "MuScriptor large, betinget på messinginstrumenter")))]}],
         "caption": ("Model comparison on the same recordings, as means over the pieces.",
                     "Modellsammenligning på de samme opptakene, som snitt over stykkene."),
         "source": ("<code>eval/baselines.json</code>, suite chorales-transcription (runs in CI).", "<code>eval/baselines.json</code>, suiten chorales-transcription (kjøres i CI)."),
@@ -376,9 +379,9 @@ FIGURES = {
                   "c/basic-pitch/coreml-b1-fp32-ALL.parity >= c/swift-f0/threshold_f1", "c/beat-this/small0/coreml-fp16-ALL.parity >= c/swift-f0/threshold_f1",
                   "c/bs-roformer-sw/coreml-fp16-ALL.parity >= c/swift-f0/threshold_f1", "c/mega53/coreml-fp16-ALL.parity >= c/swift-f0/threshold_f1"],
         "format": "f3", "spread": False,
-        "sub": ("How closely a converted model gives the original's result: F1 of its notes (or beats) against the original's own output.",
-                "Hvor nær en konvertert modell kommer originalens resultat: F1 for tonene (eller slagene) mot originalens eget resultat."),
-        "axis": ("F1 against the original model's output, 0 to 1", "F1 mot originalmodellens resultat, 0 til 1"),
+        "sub": ("How closely a converted model gives the original's result: F-measure of its notes against the original's own output (for the beat tracker, of its beats and downbeats at ±50 ms).",
+                "Hvor nær en konvertert modell kommer originalens resultat: F-mål for tonene mot originalens eget resultat (for slagsporeren: for slag og enere ved ±50 ms)."),
+        "axis": ("F-measure against the original model's output, 0 to 1", "F-mål mot originalmodellens resultat, 0 til 1"),
         "mark": ("c/swift-f0/threshold_f1", ("must reach {c/swift-f0/threshold_f1|f2}", "må nå {c/swift-f0/threshold_f1|f2}")),
         "series": [("Parity with the original", "Samsvar med originalen")],
         "views": [{"label": ("Conversions", "Konverteringer"),
@@ -403,8 +406,8 @@ FIGURES = {
                    "<code>convert/reports/*.json</code>, <code>parity</code> (den laveste verdien der en rapport har to)."),
     },
     "solo-stages": {
-        "title": ("A 30-second solo on the computer: MuScriptor is {m/solo_stages/muscriptor|sec} of the model time, the pitch tracker {m/solo_stages/swift_f0|sec}",
-                  "En solo på 30 sekunder på datamaskinen: MuScriptor står for {m/solo_stages/muscriptor|sec} av modelltiden, tonehøydesporeren {m/solo_stages/swift_f0|sec}"),
+        "title": ("A 30-second solo on the computer: MuScriptor is {m/solo_stages/muscriptor|sec} of the model time, the f0 estimator {m/solo_stages/swift_f0|sec}",
+                  "En solo på 30 sekunder på datamaskinen: MuScriptor står for {m/solo_stages/muscriptor|sec} av modelltiden, f0-estimatoren {m/solo_stages/swift_f0|sec}"),
         "holds": ["m/solo_stages/muscriptor > m/solo_stages/basic_pitch", "m/solo_stages/muscriptor > m/solo_stages/beats", "m/solo_stages/swift_f0 < 1"],
         "format": "sec", "max": "auto",
         "sub": ("Seconds each model call took in one solo job, as the engine runs them, each starting its own process.",
@@ -428,8 +431,8 @@ FIGURES = {
                   "Å beholde bare det to modeller er enige om, finner ikke flere toner, og på et fullt band finner det færre"),
         "holds": ["brass/consensus-slakh/t0.8.onset100_f1 < brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1",
                   "brass/consensus-chorales/best.onset100_f1 < 0.78", "brass/consensus-urmp/t0.8.onset100_f1 < 0.9"],
-        "sub": ("The best single route against the combined vote of the models, on each kind of recording. Onset F1 at 100 ms.",
-                "Den beste enkeltveien mot modellenes samlede avstemning, for hvert slags opptak. Onset-F1 ved 100 ms."),
+        "sub": ("The best single route against the combined vote of the models, on each kind of recording. Onset F-measure at ±100 ms.",
+                "Den beste enkeltveien mot modellenes samlede avstemning, for hvert slags opptak. F-mål for ansats ved ±100 ms."),
         "axis": F1_AXIS,
         "series": [("Best single route", "Beste enkeltvei"), ("Vote between the models", "Avstemning mellom modellene")],
         "views": [{"label": RECORDINGS, "rows": [
@@ -447,8 +450,8 @@ FIGURES = {
         "title": ("For the melody, the top line of MuScriptor's notes beats the top line of everything both models found, on every set",
                   "For melodien slår den øverste linjen av tonene til MuScriptor den øverste linjen av alt begge modellene fant, i alle settene"),
         "holds": [f"brass/melody/muscriptor_supported.{k} > brass/melody/union.{k}" for k in ("slakh", "urmp", "chorales")],
-        "sub": ("Three ways to choose which notes the melody may be drawn from, scored on the melody alone. Onset F1 at 100 ms.",
-                "Tre måter å velge hvilke toner melodien kan hentes fra, målt på melodien alene. Onset-F1 ved 100 ms."),
+        "sub": ("Three ways to choose which notes the melody may be drawn from, scored on the melody alone. Onset F-measure at ±100 ms.",
+                "Tre måter å velge hvilke toner melodien kan hentes fra, målt på melodien alene. F-mål for ansats ved ±100 ms."),
         "axis": F1_AXIS,
         "series": [("Trumpet over a band (Slakh)", "Trompet over et band (Slakh)"), URMP, CHORALES],
         "views": [{"label": ("Melody", "Melodi"),
@@ -463,25 +466,54 @@ FIGURES = {
         "source": ("<code>eval/baselines.json</code>, suite melody (runs locally).", "<code>eval/baselines.json</code>, suiten melody (kjøres lokalt)."),
     },
     "solo-trackers": {
-        "title": ("On a solo line lifted out of a mix, the pitch tracker leads and MuScriptor, the best model on mixes, trails",
-                  "På en sololinje løftet ut av en miks leder tonehøydesporeren, og MuScriptor, den beste modellen på mikser, ligger bak"),
+        "title": ("On a solo line separated from a mixture the f0 estimator has the highest F-measure, and MuScriptor, the best model on mixtures, a much lower one",
+                  "På en sololinje separert fra en miks har f0-estimatoren det høyeste F-målet, og MuScriptor, den beste modellen på mikser, et mye lavere"),
         "holds": ["brass/solo-vote/sw.onset100_f1 > brass/solo-vote/mus.onset100_f1", "brass/solo-vote/sw.onset100_f1 > brass/solo-vote/bp.onset100_f1",
                   "brass/solo-vote/sw.onset100_f1 >= brass/solo-vote/vote2.onset100_f1"],
-        "sub": ("Each model alone on trumpet lines separated with Mega-53, and the line kept when two models agree. Onset F1 at 100 ms.",
-                "Hver modell alene på trompetlinjer separert med Mega-53, og linjen som beholdes når to modeller er enige. Onset-F1 ved 100 ms."),
+        "sub": ("Each model alone on trumpet lines separated with Mega-53, and the line kept when two models agree. Onset F-measure at ±100 ms.",
+                "Hver modell alene på trompetlinjer separert med Mega-53, og linjen som beholdes når to modeller er enige. F-mål for ansats ved ±100 ms."),
         "axis": F1_AXIS,
-        "series": [("Onset F1", "Onset-F1")],
+        "series": [("Onset F-measure", "F-mål for ansats")],
         "views": [{"label": ("Separated solo lines", "Separerte sololinjer"),
                    "n": ("the solo lines of {p/chorales-transcription/pieces|int} chorales and {m/datasets/slakh_trumpet_songs|int} songs",
                          "sololinjene fra {p/chorales-transcription/pieces|int} koraler og {m/datasets/slakh_trumpet_songs|int} låter"),
                    "rows": [{"label": label, "keys": [f"{B}solo-vote/{key}.onset100_f1"]} for label, key in (
                        (("SwiftF0", "SwiftF0"), "sw"), (("Notes at least two models found", "Toner minst to modeller fant"), "vote2"),
                        (("MuScriptor", "MuScriptor"), "mus"), (("Basic Pitch", "Basic Pitch"), "bp"))]}],
-        "caption": ("Why a solo is built on the pitch tracker. The two-model line has precision {brass/solo-vote/vote2.onset100_p} and recall "
+        "caption": ("Why a solo is built on the f0 estimator. The two-model line has precision {brass/solo-vote/vote2.onset100_p} and recall "
                     "{brass/solo-vote/vote2.onset100_r}.",
-                    "Hvorfor en solo bygges på tonehøydesporeren. Linjen fra to modeller har presisjon {brass/solo-vote/vote2.onset100_p} og recall "
+                    "Hvorfor en solo bygges på f0-estimatoren. Linjen fra to modeller har presisjon {brass/solo-vote/vote2.onset100_p} og recall "
                     "{brass/solo-vote/vote2.onset100_r}."),
         "source": ("<code>eval/baselines.json</code>, suite solo-vote (runs locally).", "<code>eval/baselines.json</code>, suiten solo-vote (kjøres lokalt)."),
+    },
+    "beats": {
+        "title": ("Against the notated quarter-note pulse the two trackers score alike; the candidate places more notes at their notated position on average, "
+                  "and both vary widely between pieces",
+                  "Mot den noterte firedelspulsen får de to sporerne like verdier; kandidaten plasserer i gjennomsnitt flere toner på den noterte "
+                  "plassen, og begge varierer mye mellom stykkene"),
+        "holds": ["p/quant-chorales/md_beat_this.position_acc > brass/quant-chorales/beat_this.position_acc",
+                  "p/quant-urmp/md_beat_this.position_acc > brass/quant-urmp/beat_this.position_acc"],
+        "sub": ("The tracked beats themselves, and what they do to the notes. A dot is one piece, the ringed dot the mean, the thick bar its "
+                "95 % confidence interval.",
+                "De sporede slagene selv, og hva de gjør med tonene. En prikk er ett stykke, prikken med ring gjennomsnittet, den tykke streken "
+                "95 % konfidensintervall."),
+        "axis": ("F-measure or share, 0 to 1", "F-mål eller andel, 0 til 1"),
+        "series": [("Beat This! (in use)", "Beat This! (i bruk)"), ("md_beat_this, model run1 (candidate under evaluation)", "md_beat_this, modell run1 (kandidat under evaluering)")],
+        "view_label": RECORDINGS,
+        "views": [{"label": label, "note": note, "n": n, "rows": [
+            {"label": ("F-measure against the notated quarter-note pulse, ±70 ms", "F-mål mot den noterte firedelspulsen, ±70 ms"),
+             "keys": [f"p/{suite}/beat_this.beat_f", f"p/{suite}/md_beat_this.beat_f"]},
+            {"label": ("Reference notes written at their notated position in the bar", "Referansetoner skrevet på den noterte plassen i takten"),
+             "keys": [f"{B}{suite}/beat_this.position_acc", f"p/{suite}/md_beat_this.position_acc"]}]}
+            for label, note, n, suite in ((CHORALES, CHORALES_NOTE, CHORALES_N, "quant-chorales"), (URMP, URMP_NOTE, URMP_N, "quant-urmp"))],
+        "caption": ("Beat tracking on the brass mixtures, by the F-measure of mir_eval.beat against the notated pulse (not comparable with published beat F-measures) and by its effect on rhythm quantisation "
+                    "(reference notes quantised on the tracked beats). The candidate is not part of the released system.",
+                    "Slagsporing på messingmiksene, etter F-målet i mir_eval.beat mot den noterte pulsen (kan ikke sammenlignes med publiserte F-mål for slag) og etter virkningen på rytmekvantiseringen "
+                    "(referansetoner kvantisert på de sporede slagene). Kandidaten er ikke en del av det utgitte systemet."),
+        "source": ("<code>site/shared/research/measured/per-piece.json</code>, computed by <code>per_piece.py</code> from the beat files stored beside each "
+                   "mixture; the position accuracy of Beat This! is the gated value of quant-chorales and quant-urmp.",
+                   "<code>site/shared/research/measured/per-piece.json</code>, beregnet av <code>per_piece.py</code> fra slagfilene som ligger ved hver miks; "
+                   "plasseringsnøyaktigheten for Beat This! er den låste verdien i quant-chorales og quant-urmp."),
     },
     "durations": {
         "title": ("Written note lengths: right for about nine in ten chorale notes and about two in three in chamber music, whichever rule is used",
@@ -526,30 +558,29 @@ FIGURES = {
              ("rule", ("Metrical level", "Metrisk nivå"), (["the beat a player", "would count"], ["slaget en musiker", "ville telt"]))],
             [("rule", ("Vote and confidence", "Avstemning og sikkerhet"), (["agreement between models", "→ which notes get a ?"], ["enighet mellom modellene", "→ hvilke toner som får ?"])),
              ("rule", ("Bar lines, free time", "Taktstreker, fri rytme"), (["downbeat cleanup,", "ad lib. passages"], ["opprydding i enere,", "ad lib.-partier"]))],
-            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantization, 24 ticks per beat"], ["kvantisering, 24 trinn per slag"]))],
+            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantisation, 24 ticks per beat"], ["kvantisering, 24 trinn per slag"]))],
             [("rule", ("Durations", "Lengder"), (["note ends from the pitch contour; staccato"], ["toneslutt fra tonehøydekurven; staccato"]))],
             [("rule", ("Spelling and key", "Tonenavn og toneart"), (["ps13 at concert pitch · Krumhansl–Kessler"], ["ps13 i klingende tonehøyde · Krumhansl–Kessler"]))],
             [("rule", ("Harmony", "Harmoni"), (["the chord tones of each beat"], ["akkordtonene i hvert slag"]))],
             [("rule", ("Arrange", "Arranger"), (["full band · small band · quartet"], ["fullt band · lite band · kvartett"]))],
             [("rule", ("Difficulty", "Vanskelighetsgrad"), (["as played · standard · easier"], ["som spilt · standard · enklere"]))],
-            [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["grouped review, your part first"], ["gruppevis gjennomgang, din stemme først"]))],
+            [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["grouped review, the player's own part first"], ["gruppevis gjennomgang, din stemme først"]))],
             [("rule", ("Share or print", "Del eller skriv ut"), (["MusicXML · PDF · MIDI · MP3 · talking score"], ["MusicXML · PDF · MIDI · MP3 · talende noter"]))],
         ],
     },
     # ------------------------------------------------------------------------------- fretted
     "tab-notes": {
-        "title": ("A bass is heard well and a guitar alone fairly well; a guitar inside a song scores {fretted/guitar-tab/song.onset_f1}",
-                  "En bass blir hørt godt og en gitar alene ganske godt; en gitar inne i en låt får {fretted/guitar-tab/song.onset_f1}"),
+        "title": ("A bass line and a guitar recorded alone reach onset F-measures above 0.7; a guitar within a song reaches {fretted/guitar-tab/song.onset_f1}",
+                  "En basslinje og en gitar tatt opp alene oppnår F-mål for ansats over 0,7; en gitar i en låt oppnår {fretted/guitar-tab/song.onset_f1}"),
         "holds": ["fretted/bass-tab/song.onset_f1 > 0.8", "fretted/bass-tab/instrument.onset_f1 > 0.8", "fretted/guitar-tab/report.solo.onset_f1 > 0.7",
                   "fretted/guitar-tab/report.comp.onset_f1 > 0.7", "fretted/guitar-tab/song.onset_f1 < 0.5"],
         "sub": ("Notes found: right pitch, and the start within 50 ms.", "Toner funnet: riktig tonehøyde, og starten innen 50 ms."),
-        "axis": ("Onset F1 at 50 ms: 0 = nothing right, 1 = every played note found and no extra ones",
-                 "Onset-F1 ved 50 ms: 0 = ingenting riktig, 1 = alle spilte toner funnet og ingen ekstra"),
+        "axis": ("Onset F-measure at ±50 ms (0 to 1)", "F-mål for ansats ved ±50 ms (0 til 1)"),
         "series": [("The instrument alone", "Instrumentet alene"), ("In a song, separated first", "I en låt, separert først")],
         "view_label": ("Evidence", "Belegg"),
         "views": [
             {"label": ("Recordings and Slakh", "Opptak og Slakh"),
-             "note": ("GuitarSet and IDMT-SMT-Guitar are real guitars. The Slakh songs are synthesized, the basses included.",
+             "note": ("GuitarSet and IDMT-SMT-Guitar are real guitars. The Slakh songs are synthesised, the basses included.",
                       "GuitarSet og IDMT-SMT-Guitar er ekte gitarer. Slakh-låtene er syntetiske, også bassene."),
              "rows": [
                  {"label": ("Bass (Slakh)", "Bass (Slakh)"), "keys": [F + "bass-tab/instrument.onset_f1", F + "bass-tab/song.onset_f1"],
@@ -591,10 +622,10 @@ FIGURES = {
                           (("Guitar, nylon strings", "Gitar, nylonstrenger"), "guitar-rendered-tab", "guitar_nylon_heldout_dev"),
                           (("Guitar, clean electric", "Gitar, ren elektrisk"), "guitar-rendered-tab", "guitar_clean_heldout_dev"))]},
         ],
-        "caption": ("Notes found per instrument, alone and inside a song. The tolerance is 50 ms here; Brasscribe's headline figures use 100 ms, "
-                    "so the two papers' numbers are not on the same footing.",
-                    "Toner funnet per instrument, alene og inne i en låt. Toleransen er 50 ms her; hovedtallene til Brasscribe bruker 100 ms, "
-                    "så tallene i de to artiklene står ikke på samme grunnlag."),
+        "caption": ("Note detection per instrument, alone and within a song, at the ±50 ms tolerance. Several results of the companion paper exist at "
+                    "±100 ms only; values should be compared only at the same tolerance.",
+                    "Tonedeteksjon per instrument, alene og i en låt, med toleransen ±50 ms. Flere resultater i søsterartikkelen finnes bare ved "
+                    "±100 ms; verdier bør bare sammenlignes ved samme toleranse."),
         "source": ("<code>eval/baselines.json</code>, suites bass-tab, guitar-tab, ukulele-tab, mandolin-tab and guitar-rendered-tab (all run locally, not in CI).",
                    "<code>eval/baselines.json</code>, suitene bass-tab, guitar-tab, ukulele-tab, mandolin-tab og guitar-rendered-tab (alle kjøres lokalt, ikke i CI)."),
     },
@@ -605,9 +636,9 @@ FIGURES = {
                   "fretted/guitar-tab/idmt.report.string_agreement < 0.5", "fretted/guitar-tab/report.comp.string_agreement > 0.6"],
         "format": "pct",
         "sub": ("Where the tab puts a note against where it was played, on guitars recorded with a pickup per string.",
-                "Hvor tabben setter en tone, mot hvor den ble spilt, på gitarer tatt opp med én mikrofon per streng."),
+                "Hvor tabben setter en tone, mot hvor den ble spilt, på gitarer tatt opp med en pickup per streng."),
         "axis": ("Share of notes on the player's string", "Andel toner på musikerens streng"),
-        "series": [("Of the notes heard right", "Av tonene som ble hørt riktig"), ("Of all the notes played", "Av alle tonene som ble spilt")],
+        "series": [("Of the correctly detected notes", "Av de riktig detekterte tonene"), ("Of all the notes played", "Av alle tonene som ble spilt")],
         "view_label": ("Players", "Gitarister"),
         "views": [{"label": label, "note": note, "rows": [
             {"label": text, "keys": [F + f"guitar-tab/{group}.string_agreement", F + f"guitar-tab/{group}.string_recall"],
@@ -680,8 +711,8 @@ FIGURES = {
                   "fretted/bass-tab/phone.hp200.onset_f1 > fretted/bass-tab/phone.hp300.onset_f1"],
         "sub": ("The bass alone, with its lowest sound filtered away as a small microphone would, before anything listens.",
                 "Bassen alene, med den dypeste lyden filtrert bort slik en liten mikrofon ville gjort, før noe lytter."),
-        "axis": ("Onset F1 at 50 ms", "Onset-F1 ved 50 ms"),
-        "series": [("Onset F1", "Onset-F1")],
+        "axis": ("Onset F-measure at ±50 ms", "F-mål for ansats ved ±50 ms"),
+        "series": [("Onset F-measure", "F-mål for ansats")],
         "views": [{"label": ("Bass alone", "Bass alene"),
                    "note": ("The rows are not the same lines: the full sound is the Slakh basses only; the filtered rows add the low bass lines "
                             "written for the test.",
@@ -716,7 +747,7 @@ FIGURES = {
             for label, key, axis in (
                 (("Chord notes found", "Akkordtoner funnet"), "chord_recall", ("Share of the played chord notes that were found (recall)", "Andel av de spilte akkordtonene som ble funnet (recall)")),
                 (("Written chord notes that are right", "Skrevne akkordtoner som er riktige"), "chord_precision", ("Share of the written chord notes that are right (precision)", "Andel av de skrevne akkordtonene som er riktige (presisjon)")),
-                (("Notes found", "Toner funnet"), "onset_f1", ("Onset F1 at 50 ms", "Onset-F1 ved 50 ms")))],
+                (("Notes found", "Toner funnet"), "onset_f1", ("Onset F-measure at ±50 ms", "F-mål for ansats ved ±50 ms")))],
         "caption": ("Tuned-on and held-out players. A chord is three or more notes that start together; single-line takes have few of them, so the "
                     "first row of the first view rests on few notes (the benchmark does not report how many). String agreement and notes found "
                     "are similar or better on the held-out players.",
@@ -747,7 +778,7 @@ FIGURES = {
             [("model", ("Notes", "Toner"), (["Basic Pitch; SwiftF0 as a", "second opinion on one line"], ["Basic Pitch; SwiftF0 som en", "ekstra vurdering av én linje"])),
              ("rule", ("Metre, tempo, key", "Taktart, tempo, toneart"), (["beats in a bar,", "the beat to count"], ["slag i takten,", "slaget å telle"]))],
             [("rule", ("Clean the notes", "Rydd i tonene"), (["overtones out · the instrument's range · bass octave check"], ["overtoner ut · instrumentets omfang · oktavsjekk for bass"]))],
-            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantization and written lengths"], ["kvantisering og skrevne lengder"]))],
+            [("rule", ("Put the notes on the grid", "Sett tonene på rutenettet"), (["quantisation and written lengths"], ["kvantisering og skrevne lengder"]))],
             [("rule", ("A string and a fret for every note", "Streng og bånd for hver tone"), (["the easiest path for the hand along the neck"], ["den letteste veien for hånden langs halsen"]))],
             [("human", ("Check the notes marked ?", "Sjekk tonene merket ?"), (["listen to the recording at those places"], ["hør på opptaket på de stedene"]))],
             [("rule", ("The tab", "Tabben"), (["MusicXML · PDF · MIDI · text · instructions in words"], ["MusicXML · PDF · MIDI · tekst · instruksjoner i ord"]))],

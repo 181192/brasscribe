@@ -1,0 +1,154 @@
+# The reference list of the research papers. A paper cites an entry with {{cite <key>}} and prints what it
+# cited, in the order of first citation, with {{references}}. `text` is the entry as printed; `note_en` and
+# `note_nb` add what the paper relies on (a licence, a version). Every entry was checked against its DOI,
+# arXiv record, Zenodo record or project page on 13 November 2026. An entry that no paper cites fails the build.
+
+[benetos2019amt]
+text = 'E. Benetos, S. Dixon, Z. Duan, and S. Ewert, “Automatic music transcription: An overview,” <i>IEEE Signal Processing Magazine</i>, vol. 36, no. 1, pp. 20–30, 2019, doi: <a href="https://doi.org/10.1109/MSP.2018.2869928">10.1109/MSP.2018.2869928</a>.'
+
+[gardner2022mt3]
+text = 'J. Gardner, I. Simon, E. Manilow, C. Hawthorne, and J. Engel, “MT3: Multi-task multitrack music transcription,” in <i>Proc. Int. Conf. on Learning Representations (ICLR)</i>, 2022, arXiv: <a href="https://arxiv.org/abs/2111.03017">2111.03017</a>.'
+
+[chang2024yourmt3]
+text = 'S. Chang, E. Benetos, H. Kirchhoff, and S. Dixon, “YourMT3+: Multi-instrument music transcription with enhanced transformer architectures and cross-dataset stem augmentation,” in <i>Proc. IEEE Int. Workshop on Machine Learning for Signal Processing (MLSP)</i>, 2024, pp. 1–6, doi: <a href="https://doi.org/10.1109/MLSP58920.2024.10734819">10.1109/MLSP58920.2024.10734819</a>.'
+
+[rouard2026muscriptor]
+text = 'S. Rouard, M. Krause, A. Roebel, C.-J. Simon-Gabriel, and A. Défossez, “MuScriptor: An open model for multi-instrument music transcription,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2026, arXiv: <a href="https://arxiv.org/abs/2607.08168">2607.08168</a>.'
+note_en = 'Code: MIT. Weights (<a href="https://huggingface.co/MuScriptor/muscriptor-medium">muscriptor-medium</a>): CC BY-NC 4.0, gated.'
+note_nb = 'Kode: MIT. Vekter (<a href="https://huggingface.co/MuScriptor/muscriptor-medium">muscriptor-medium</a>): CC BY-NC 4.0, lukket nedlasting.'
+
+[bittner2022basicpitch]
+text = 'R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-Brocal, and S. Ewert, “A lightweight instrument-agnostic model for polyphonic note transcription and multipitch estimation,” in <i>Proc. IEEE Int. Conf. on Acoustics, Speech and Signal Processing (ICASSP)</i>, 2022, pp. 781–785, doi: <a href="https://doi.org/10.1109/ICASSP43922.2022.9746549">10.1109/ICASSP43922.2022.9746549</a>.'
+note_en = 'Software: Basic Pitch, Apache-2.0.'
+note_nb = 'Programvare: Basic Pitch, Apache-2.0.'
+
+[hawthorne2018onsets]
+text = 'C. Hawthorne, E. Elsen, J. Song, A. Roberts, I. Simon, C. Raffel, J. Engel, S. Oore, and D. Eck, “Onsets and Frames: Dual-objective piano transcription,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2018, pp. 50–57, doi: <a href="https://doi.org/10.5281/zenodo.1492341">10.5281/zenodo.1492341</a>.'
+
+[kim2018crepe]
+text = 'J. W. Kim, J. Salamon, P. Li, and J. P. Bello, “CREPE: A convolutional representation for pitch estimation,” in <i>Proc. IEEE Int. Conf. on Acoustics, Speech and Signal Processing (ICASSP)</i>, 2018, pp. 161–165, doi: <a href="https://doi.org/10.1109/ICASSP.2018.8461329">10.1109/ICASSP.2018.8461329</a>.'
+
+[nieradzik2025swiftf0]
+text = 'L. Nieradzik, “SwiftF0: Fast and accurate monophonic pitch detection,” 2025, arXiv: <a href="https://arxiv.org/abs/2508.18440">2508.18440</a>.'
+note_en = 'Software: <a href="https://github.com/lars76/swift-f0">swift-f0</a>, MIT.'
+note_nb = 'Programvare: <a href="https://github.com/lars76/swift-f0">swift-f0</a>, MIT.'
+
+[pitchbenchmark]
+text = 'pitch-benchmark, software repository. [Online]. Available: <a href="https://github.com/lars76/pitch-benchmark">https://github.com/lars76/pitch-benchmark</a>. Accessed: 13 Nov. 2026.'
+note_en = 'MIT. Published under the same account as SwiftF0.'
+note_nb = 'MIT. Publisert under samme konto som SwiftF0.'
+
+[rouard2023htdemucs]
+text = 'S. Rouard, F. Massa, and A. Défossez, “Hybrid transformers for music source separation,” in <i>Proc. IEEE Int. Conf. on Acoustics, Speech and Signal Processing (ICASSP)</i>, 2023, pp. 1–5, doi: <a href="https://doi.org/10.1109/ICASSP49357.2023.10096956">10.1109/ICASSP49357.2023.10096956</a>.'
+
+[lu2024bsroformer]
+text = 'W.-T. Lu, J.-C. Wang, Q. Kong, and Y.-N. Hung, “Music source separation with band-split RoPE transformer,” in <i>Proc. IEEE Int. Conf. on Acoustics, Speech and Signal Processing (ICASSP)</i>, 2024, pp. 481–485, doi: <a href="https://doi.org/10.1109/ICASSP48485.2024.10446843">10.1109/ICASSP48485.2024.10446843</a>.'
+
+[audioseparator]
+text = 'python-audio-separator, software repository. [Online]. Available: <a href="https://github.com/nomadkaraoke/python-audio-separator">https://github.com/nomadkaraoke/python-audio-separator</a>. Accessed: 13 Nov. 2026.'
+note_en = 'Code: MIT. Distributes the BS-RoFormer SW checkpoint; no licence is stated for the weights.'
+note_nb = 'Kode: MIT. Distribuerer modellfilen BS-RoFormer SW; ingen lisens er oppgitt for vektene.'
+
+[solovyev2026msst]
+text = 'R. Solovyev, I. Kiselev, A. Stempkovskiy, and T. Gabruseva, “Music-Source-Separation-Training (MSST): A unified framework for training and evaluating music demixing models,” 2026, arXiv: <a href="https://arxiv.org/abs/2607.23395">2607.23395</a>.'
+note_en = 'Code: MIT. The MVSep Mega-53 checkpoint is published with release v1.0.21 of the <a href="https://github.com/ZFTurbo/Music-Source-Separation-Training">repository</a>; no licence is stated for the weights.'
+note_nb = 'Kode: MIT. Modellfilen MVSep Mega-53 er publisert med utgivelse v1.0.21 av <a href="https://github.com/ZFTurbo/Music-Source-Separation-Training">repositoriet</a>; ingen lisens er oppgitt for vektene.'
+
+[krebs2015]
+text = 'F. Krebs, S. Böck, and G. Widmer, “An efficient state-space model for joint tempo and meter tracking,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2015, pp. 72–78, doi: <a href="https://doi.org/10.5281/zenodo.1414966">10.5281/zenodo.1414966</a>.'
+
+[bock2016madmom]
+text = 'S. Böck, F. Korzeniowski, J. Schlüter, F. Krebs, and G. Widmer, “madmom: A new Python audio and music signal processing library,” in <i>Proc. ACM Int. Conf. on Multimedia</i>, 2016, pp. 1174–1178, doi: <a href="https://doi.org/10.1145/2964284.2973795">10.1145/2964284.2973795</a>.'
+
+[foscarin2024beatthis]
+text = 'F. Foscarin, J. Schlüter, and G. Widmer, “Beat this! Accurate beat tracking without DBN postprocessing,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2024, arXiv: <a href="https://arxiv.org/abs/2407.21658">2407.21658</a>.'
+note_en = 'Code and published weights: MIT.'
+note_nb = 'Kode og publiserte vekter: MIT.'
+
+[meredith2006ps13]
+text = 'D. Meredith, “The ps13 pitch spelling algorithm,” <i>Journal of New Music Research</i>, vol. 35, no. 2, pp. 121–159, 2006, doi: <a href="https://doi.org/10.1080/09298210600834961">10.1080/09298210600834961</a>.'
+
+[cancino2022partitura]
+text = 'C. Cancino-Chacón, S. D. Peter, E. Karystinaios, F. Foscarin, M. Grachten, and G. Widmer, “Partitura: A Python package for symbolic music processing,” in <i>Proc. Music Encoding Conf. (MEC)</i>, 2022, arXiv: <a href="https://arxiv.org/abs/2206.01071">2206.01071</a>.'
+note_en = 'Apache-2.0.'
+note_nb = 'Apache-2.0.'
+
+[krumhansl1990]
+text = 'C. L. Krumhansl, <i>Cognitive Foundations of Musical Pitch</i>. New York, NY, USA: Oxford University Press, 1990.'
+
+[musicxml]
+text = 'W3C Music Notation Community Group, “MusicXML version 4.0,” Final Community Group Report, 2021. [Online]. Available: <a href="https://www.w3.org/2021/06/musicxml40/">https://www.w3.org/2021/06/musicxml40/</a>. Accessed: 13 Nov. 2026.'
+
+[balke2025choralebricks]
+text = 'S. Balke, A. Berndt, and M. Müller, “ChoraleBricks: A modular multitrack dataset for wind music research,” <i>Transactions of the International Society for Music Information Retrieval</i>, vol. 8, no. 1, pp. 39–54, 2025, doi: <a href="https://doi.org/10.5334/tismir.252">10.5334/tismir.252</a>.'
+note_en = 'Data: version 1.1.0, doi: <a href="https://doi.org/10.5281/zenodo.20849469">10.5281/zenodo.20849469</a>, CC BY 4.0.'
+note_nb = 'Data: versjon 1.1.0, doi: <a href="https://doi.org/10.5281/zenodo.20849469">10.5281/zenodo.20849469</a>, CC BY 4.0.'
+
+[li2019urmp]
+text = 'B. Li, X. Liu, K. Dinesh, Z. Duan, and G. Sharma, “Creating a multitrack classical music performance dataset for multimodal music analysis: Challenges, insights, and applications,” <i>IEEE Transactions on Multimedia</i>, vol. 21, no. 2, pp. 522–535, 2019, doi: <a href="https://doi.org/10.1109/TMM.2018.2856090">10.1109/TMM.2018.2856090</a>.'
+note_en = 'The dataset page states no licence.'
+note_nb = 'Datasettets nettside oppgir ingen lisens.'
+
+[manilow2019slakh]
+text = 'E. Manilow, G. Wichern, P. Seetharaman, and J. Le Roux, “Cutting music source separation some Slakh: A dataset to study the impact of training data quality and quantity,” in <i>Proc. IEEE Workshop on Applications of Signal Processing to Audio and Acoustics (WASPAA)</i>, 2019, pp. 45–49, doi: <a href="https://doi.org/10.1109/WASPAA.2019.8937170">10.1109/WASPAA.2019.8937170</a>.'
+note_en = 'Data: doi: <a href="https://doi.org/10.5281/zenodo.4599666">10.5281/zenodo.4599666</a>, CC BY 4.0.'
+note_nb = 'Data: doi: <a href="https://doi.org/10.5281/zenodo.4599666">10.5281/zenodo.4599666</a>, CC BY 4.0.'
+
+[iowa-mis]
+text = 'University of Iowa Electronic Music Studios, “Musical instrument samples.” [Online]. Available: <a href="https://theremin.music.uiowa.edu/MIS.html">https://theremin.music.uiowa.edu/MIS.html</a>. Accessed: 13 Nov. 2026.'
+note_en = 'The page permits use “for any projects, without restrictions”.'
+note_nb = 'Nettsiden tillater bruk «for any projects, without restrictions».'
+
+[vsco2]
+text = 'Versilian Studios, “VSCO 2 Community Edition,” sample library. [Online]. Available: <a href="https://github.com/sgossner/VSCO-2-CE">https://github.com/sgossner/VSCO-2-CE</a>. Accessed: 13 Nov. 2026.'
+note_en = 'CC0 1.0.'
+note_nb = 'CC0 1.0.'
+
+[openair]
+text = 'OpenAIR, the Open Acoustic Impulse Response Library, University of York. [Online]. Available: <a href="https://www.openair.hosted.york.ac.uk/">https://www.openair.hosted.york.ac.uk/</a>. Accessed: 13 Nov. 2026.'
+note_en = 'Impulse response of St Margaret’s Church (National Centre for Early Music), York. The repository’s notices record the licence as CC BY 4.0; the library’s site could not be reached to confirm it when this list was checked.'
+note_nb = 'Impulsrespons fra St Margaret’s Church (National Centre for Early Music), York. Repositoriets lisensoversikt oppgir CC BY 4.0; bibliotekets nettsted kunne ikke nås for å bekrefte det da listen ble kontrollert.'
+
+[raffel2014mireval]
+text = 'C. Raffel, B. McFee, E. J. Humphrey, J. Salamon, O. Nieto, D. Liang, and D. P. W. Ellis, “mir_eval: A transparent implementation of common MIR metrics,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2014, pp. 367–372, doi: <a href="https://doi.org/10.5281/zenodo.1416528">10.5281/zenodo.1416528</a>.'
+
+[bay2009mirex]
+text = 'M. Bay, A. F. Ehmann, and J. S. Downie, “Evaluation of multiple-F0 estimation and tracking systems,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2009, pp. 315–320, doi: <a href="https://doi.org/10.5281/zenodo.1418241">10.5281/zenodo.1418241</a>.'
+
+[efron1993bootstrap]
+text = 'B. Efron and R. J. Tibshirani, <i>An Introduction to the Bootstrap</i>. Boston, MA, USA: Springer, 1993, doi: <a href="https://doi.org/10.1007/978-1-4899-4541-9">10.1007/978-1-4899-4541-9</a>.'
+
+[xi2018guitarset]
+text = 'Q. Xi, R. M. Bittner, J. Pauwels, X. Ye, and J. P. Bello, “GuitarSet: A dataset for guitar transcription,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2018, pp. 453–460, doi: <a href="https://doi.org/10.5281/zenodo.1492449">10.5281/zenodo.1492449</a>.'
+note_en = 'Data: version 1.1.0, doi: <a href="https://doi.org/10.5281/zenodo.3371780">10.5281/zenodo.3371780</a>, CC BY 4.0.'
+note_nb = 'Data: versjon 1.1.0, doi: <a href="https://doi.org/10.5281/zenodo.3371780">10.5281/zenodo.3371780</a>, CC BY 4.0.'
+
+[kehling2014idmt]
+text = 'C. Kehling, J. Abeßer, C. Dittmar, and G. Schuller, “Automatic tablature transcription of electric guitar recordings by estimation of score- and instrument-related parameters,” in <i>Proc. Int. Conf. on Digital Audio Effects (DAFx)</i>, 2014. [Online]. Available: <a href="https://www.dafx.de/paper-archive/2014/dafx14_christian_kehling_automatic_tablature_trans.pdf">https://www.dafx.de/paper-archive/2014/</a>. Accessed: 13 Nov. 2026.'
+
+[idmt-smt-guitar]
+text = 'C. Kehling, A. Männchen, and A. Eppler, “IDMT-SMT-Guitar dataset,” version 1.0.0, Zenodo, doi: <a href="https://doi.org/10.5281/zenodo.7544110">10.5281/zenodo.7544110</a>.'
+note_en = 'CC BY-NC-ND 4.0.'
+note_nb = 'CC BY-NC-ND 4.0.'
+
+[wiggins2019tabcnn]
+text = 'A. Wiggins and Y. Kim, “Guitar tablature estimation with a convolutional neural network,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2019, pp. 284–291, doi: <a href="https://doi.org/10.5281/zenodo.3527800">10.5281/zenodo.3527800</a>.'
+
+[musescore-general]
+text = 'MuseScore General SoundFont, version 0.2.0. [Online]. Available: <a href="https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/">https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/</a>. Accessed: 13 Nov. 2026.'
+note_en = 'MIT. Rendered with FluidSynth (LGPL-2.1).'
+note_nb = 'MIT. Gjengitt med FluidSynth (LGPL-2.1).'
+
+[foscarin2026mdbeat]
+text = 'F. Foscarin, F. Korzeniowski, and R. Vogl, “Masked diffusion enables coherent beat tracking,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2026, arXiv: <a href="https://arxiv.org/abs/2608.04624">2608.04624</a>.'
+note_en = 'Software and pretrained models: <a href="https://github.com/fosfrancesco/md_beat_this">md_beat_this</a>, CC BY-NC 4.0.'
+note_nb = 'Programvare og forhåndstrente modeller: <a href="https://github.com/fosfrancesco/md_beat_this">md_beat_this</a>, CC BY-NC 4.0.'
+
+[sayegh1989fingering]
+text = 'S. I. Sayegh, “Fingering for string instruments with the optimum path paradigm,” <i>Computer Music Journal</i>, vol. 13, no. 3, 1989, doi: <a href="https://doi.org/10.2307/3680014">10.2307/3680014</a>.'
+
+[heijink2002guitar]
+text = 'H. Heijink and R. G. J. Meulenbroek, “On the complexity of classical guitar playing: Functional adaptations to task constraints,” <i>Journal of Motor Behavior</i>, vol. 34, no. 4, pp. 339–351, 2002, doi: <a href="https://doi.org/10.1080/00222890209601952">10.1080/00222890209601952</a>.'
+
+[burlet2013robotaba]
+text = 'G. Burlet and I. Fujinaga, “Robotaba guitar tablature transcription framework,” in <i>Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)</i>, 2013. [Online]. Available: <a href="https://archives.ismir.net/ismir2013/paper/000217.pdf">https://archives.ismir.net/ismir2013/paper/000217.pdf</a>. Accessed: 13 Nov. 2026.'

@@ -1,24 +1,27 @@
 <!--
-title: Fra et opptak til tab · Fretscribe-forskning
-description: Hvordan Fretscribe skriver tab fra et opptak, og hvor godt: arbeidsflyten, datasettene, hvert mål forklart, resultater for bass, gitar, ukulele og mandolin, og hva som ikke virker.
+title: Fretscribe: transkripsjon av opptak til tabulatur · Forskningsartikkel
+description: En systembeskrivelse og evaluering av Fretscribe: forhåndstrente lyttemodeller og et fingersettingssøk som gjør et opptak om til tabulatur for bass, gitar, ukulele og mandolin, med resultater, feilanalyse og begrensninger.
 main_class: wrap guide
 styles: charts.css
 scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
     <details class="toc-fold" open>
-    <summary id="toc-title" class="toc-title">I denne artikkelen</summary>
+    <summary id="toc-title" class="toc-title">Innhold</summary>
     <ol>
       <li><a href="#abstract">Sammendrag</a></li>
-      <li><a href="#problem">1. Problemet</a></li>
-      <li><a href="#pipeline">2. Arbeidsflyten</a></li>
-      <li><a href="#data">3. Data</a></li>
-      <li><a href="#measures">4. Mål</a></li>
+      <li><a href="#introduction">1. Innledning</a></li>
+      <li><a href="#related">2. Tidligere arbeid</a></li>
+      <li><a href="#method">3. Metode</a></li>
+      <li><a href="#setup">4. Eksperimentelt oppsett</a></li>
       <li><a href="#results">5. Resultater</a></li>
-      <li><a href="#errors">6. Hvor det svikter</a></li>
-      <li><a href="#performance">7. Fart</a></li>
-      <li><a href="#limitations">8. Begrensninger</a></li>
-      <li><a href="#next">9. Veien videre</a></li>
+      <li><a href="#discussion">6. Diskusjon</a></li>
+      <li><a href="#limitations">7. Begrensninger</a></li>
+      <li><a href="#conclusion">8. Konklusjon og videre arbeid</a></li>
+      <li><a href="#reproducibility">9. Reproduserbarhet</a></li>
+      <li><a href="#ethics">10. Etikk og lisenser</a></li>
+      <li><a href="#acknowledgements">Takk</a></li>
+      <li><a href="#cite">Sitering</a></li>
       <li><a href="#references">Referanser</a></li>
     </ol>
     </details>
@@ -26,167 +29,211 @@ scripts: charts.js
 
   <article class="paper">
     <header>
-      <p class="overline">Forskning</p>
-      <h1>Fra et opptak til tab</h1>
-      <p class="lead">Hva Fretscribe gjør med et opptak, hvordan hvert steg er målt, og hvor tabben fortsatt er feil.</p>
-      <p class="byline">Fretscribe-prosjektet · Alle tall og figurer på denne siden leses fra målefilen i repositoriet når nettstedet bygges, så de endrer seg når filen gjør det · <a href="@brasscribe/research/">Det samme for brassbandnoter: Brasscribes artikkel</a></p>
+      <p class="overline">Forskningsartikkel</p>
+      <h1>Fretscribe: transkripsjon av opptak til tabulatur med forhåndstrente modeller og et fingersettingssøk</h1>
+      <p class="byline">Kristoffer-Andre Kalliainen · Fretscribe-prosjektet · Bygget {{built}}; alle tall og figurer er lest fra målefilen i repositoriet ved den innsjekkingen · Søsterartikkel: <a href="@brasscribe/research/">Brasscribe (noter for brassband)</a></p>
     </header>
 
     <section id="abstract" class="abstract" aria-labelledby="abstract-title">
       <h2 id="abstract-title">Sammendrag</h2>
-      <p><strong>Med enkle ord:</strong> Fretscribe hører en basslinje godt og en gitar alene ganske godt. En gitar inne i en hel låt klarer den for det meste ikke. Båndene den skriver, kan spilles, men er ofte ikke de musikeren brukte, og spørsmålstegnene fanger et mindretall av feilene.</p>
-      <p>Fretscribe skriver tabulatur for bass, gitar, ukulele og mandolin fra et opptak. Lærte modeller finner slagene og tonene, etter å ha skilt instrumentet ut av miksen når opptaket er en hel låt. Regler rydder så i tonene, setter dem på slagrutenettet og velger streng og bånd for hver tone etter den letteste veien for hånden. Ingen modell er trent for dette. Målt med en toleranse på 50 ms får en bass onset-F1 {{span fretted/bass-tab/song.onset_f1 fretted/bass-tab/instrument.onset_f1}} på {{data fretted/bass-tab/song.tracks int}} syntetiske låter, og en ekte gitar spilt alene {{span fretted/guitar-tab/report.solo.onset_f1 fretted/guitar-tab/report.comp.onset_f1}} hos gitarister reglene ikke er stilt inn på. En gitar inne i en syntetisk låt får {{data fretted/guitar-tab/song.onset_f1}}. Av de riktig hørte tonene i en enkeltlinje på gitar er {{data fretted/guitar-tab/report.solo.string_agreement pct}} skrevet på den strengen gitaristen brukte, og {{data fretted/guitar-tab/report.comp.string_agreement pct}} i akkordspill. Tempoet er riktig for {{span fretted/bass-tab/song.tempo_ok fretted/bass-tab/instrument.tempo_ok fretted/guitar-tab/report.solo.tempo_ok fretted/guitar-tab/report.comp.tempo_ok fretted/guitar-tab/song.tempo_ok pct}} av opptakene av bass og gitar. Et tvilsmerke står på en gal tone i {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision fretted/guitar-tab/report.solo.doubt_precision fretted/guitar-tab/report.comp.doubt_precision fretted/guitar-tab/song.doubt_precision pct}} av tilfellene, men bare {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall fretted/guitar-tab/report.solo.doubt_recall fretted/guitar-tab/report.comp.doubt_recall fretted/guitar-tab/song.doubt_recall pct}} av de gale tonene er merket. Alle tabber som ble målt, kan spilles slik de står. Belegget for ukulele og mandolin er en håndfull syntetiske passasjer. Ingenting av dette er målt på opptak gjort med en telefon.</p>
+      <p class="abstract-text">Vi beskriver og evaluerer Fretscribe, et system som transkriberer opptak til tabulatur for bass, gitar, ukulele og mandolin. Forhåndstrente modeller for kildeseparasjon, slagsporing, tonetranskripsjon og estimering av grunnfrekvens brukes uten videre trening; deterministiske regler rydder i og kvantiserer tonene, og et korteste-vei-søk tildeler hver tone en streng og et bånd. Systemet evalueres med presisjon, recall og F-mål på tonenivå med ansatstoleransen ±50 ms fra mir_eval, med strengesamsvar mot annoterte strenger og med nøyaktighet for tempo og taktart. På {{data fretted/bass-tab/song.tracks int}} syntetiske låter oppnår en basslinje et F-mål for ansats på {{span fretted/bass-tab/song.onset_f1 fretted/bass-tab/instrument.onset_f1}}. På GuitarSet, for tre gitarister som ikke ble brukt til å stille inn reglene, oppnår en gitar tatt opp alene {{span fretted/guitar-tab/report.solo.onset_f1 fretted/guitar-tab/report.comp.onset_f1}}; en gitar i en syntetisk låt oppnår {{data fretted/guitar-tab/song.onset_f1}}. Av de riktig detekterte tonene i enstemmig gitarspill tildeles {{data fretted/guitar-tab/report.solo.string_agreement pct}} strengen gitaristen brukte, og {{data fretted/guitar-tab/report.comp.string_agreement pct}} i akkordspill. Tempoet er riktig for {{span fretted/bass-tab/song.tempo_ok fretted/bass-tab/instrument.tempo_ok fretted/guitar-tab/report.solo.tempo_ok fretted/guitar-tab/report.comp.tempo_ok fretted/guitar-tab/song.tempo_ok pct}} av opptakene av bass og gitar. Tvilsmerkene har en presisjon på {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision fretted/guitar-tab/report.solo.doubt_precision fretted/guitar-tab/report.comp.doubt_precision fretted/guitar-tab/song.doubt_precision pct}} og en recall på {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall fretted/guitar-tab/report.solo.doubt_recall fretted/guitar-tab/report.comp.doubt_recall fretted/guitar-tab/song.doubt_recall pct}}. Alle tabulaturene som ble laget, var spillbare. Belegget for bass er syntetisk, belegget for ukulele og mandolin består av noen få syntetiske passasjer, ingen måling kjøres i kontinuerlig integrasjon, og ingenting er målt på opptak gjort med en telefon.</p>
+      <p><strong>Nøkkelord:</strong> automatisk musikktranskripsjon, gitartabulatur, fingersetting, strengetildeling, kildeseparasjon, evaluering.</p>
+      <p><strong>Sammendrag i klarspråk:</strong> Fretscribe hører en basslinje godt og en gitar alene ganske godt. En gitar inne i en hel låt klarer systemet for det meste ikke. Båndene som skrives, kan spilles, men er ofte ikke de musikeren brukte, og spørsmålstegnene fanger et mindretall av feilene.</p>
       {{holds fretted/bass-tab/song.violations <= 0}}{{holds fretted/bass-tab/instrument.violations <= 0}}{{holds fretted/guitar-tab/report.solo.violations <= 0}}{{holds fretted/guitar-tab/report.comp.violations <= 0}}{{holds fretted/guitar-tab/song.violations <= 0}}
     </section>
 
-    {{chart tab-notes}}
-
-    <section id="problem" aria-labelledby="problem-title">
-      <h2 id="problem-title"><span class="secno">1</span> Problemet</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>En musiker hører et riff og vil vite hvor fingrene skal stå. Tonene er halve svaret; strengen og båndet er den andre halvdelen, og et opptak sier ikke hvilke de var.</p>
-      <p>Tabulatur viser hvor en tone spilles: en linje for hver streng og et båndnummer på den. Å skrive tab fra lyd har to problemer i tillegg til vanlig transkripsjon. For det første kan samme tonehøyde som regel spilles flere steder på halsen, og ingenting i et mikrofonopptak sier hvilket som ble brukt. For det andre er instrumentet sjelden alene: i en låt ligger det under sang, trommer og andre instrumenter, og en gitar spiller akkorder der tonene klinger over hverandre.</p>
-      <p>Fretscribe kjører på musikerens egne enheter, slik <a href="@brasscribe/research/">Brasscribe</a> gjør, og deler lyttemodeller og rytmeregler med den. All tab skrives på musikerens datamaskin: appen på telefonen tar opp, sender opptaket dit og viser tabben, og har ingen lyttemodeller. Denne artikkelen tar for seg det som er særegent for tab, og gir resultatene for tab.</p>
+    <section id="introduction" aria-labelledby="introduction-title">
+      <h2 id="introduction-title"><span class="secno">1</span> Innledning</h2>
+      <p>Tabulatur viser hvor en tone spilles på et strengeinstrument med bånd: én linje per streng og et båndnummer på den. Å transkribere tabulatur fra lyd legger to problemer til automatisk musikktranskripsjon (<i>automatic music transcription</i>, AMT) {{cite benetos2019amt}}. For det første kan en tonehøyde som regel spilles flere steder på halsen, og et mikrofonopptak viser ikke hvilket som ble brukt. For det andre er instrumentet sjelden alene: i en låt er det mikset med sang, slagverk og andre instrumenter, og en gitar spiller akkorder der tonene overlapper.</p>
+      <p>Fretscribe deler lyttemodeller og rytmeregler med Brasscribe, som er beskrevet i en <a href="@brasscribe/research/">søsterartikkel</a>. Systemet kjører på brukerens egne enheter; all tabulatur lages på brukerens datamaskin, og appen på telefonen har ingen lyttemodeller. Denne artikkelen tar for seg det som er særegent for tabulatur. {{ref fig:tab-notes}} oppsummerer tonedeteksjonen for hvert instrument, alene og i en låt.</p>
+      {{chart tab-notes}}
+      <p>Artikkelens bidrag er:</p>
+      <ul>
+        <li>en beskrivelse av en arbeidsflyt fra lyd til tabulatur bygd av forhåndstrente modeller, deterministiske toneregler og et fingersettingssøk (kapittel 3);</li>
+        <li>en evaluering på ekte gitaropptak med annoterte strenger, med et skille mellom gitaristene reglene er stilt inn på, og de resultatene rapporteres for, og på syntetisk materiale for bass, ukulele og mandolin (kapittel 4 og 5);</li>
+        <li>en analyse av feilene og av truslene mot validiteten, med et tilfelle der gitaristene som er brukt til innstilling, og de som er rapportert, skiller seg markant (avsnitt 5.6 og kapittel 6).</li>
+      </ul>
     </section>
 
-    <section id="pipeline" aria-labelledby="pipeline-title">
-      <h2 id="pipeline-title"><span class="secno">2</span> Arbeidsflyten</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Modellene finner tonene, reglene velger hvor fingrene skal stå. Stemmingen kan endres etterpå uten å lytte på nytt.</p>
+    <section id="related" aria-labelledby="related-title">
+      <h2 id="related-title"><span class="secno">2</span> Tidligere arbeid</h2>
+      <p><strong>Tonetranskripsjon og f0-estimering.</strong> Basic Pitch er en lett tonetranskripsjonsmodell som er uavhengig av instrument {{cite bittner2022basicpitch}}; SwiftF0 estimerer grunnfrekvensen (f0) til en enstemmig linje {{cite nieradzik2025swiftf0}}. Beat This! sporer slag og enere (<i>downbeats</i>) {{cite foscarin2024beatthis}}, og en band-split RoPE Transformer (BS-RoFormer) {{cite lu2024bsroformer}} separerer en miks i spor.</p>
+      <p><strong>Transkripsjon til tabulatur.</strong> Kehling mfl. estimerer streng og bånd sammen med partiturparametre for elektrisk gitar {{cite kehling2014idmt}}. Wiggins og Kim estimerer tabulatur ramme for ramme med et konvolusjonsnettverk (TabCNN) og definerer presisjon og recall for tabulatur og et mål de kaller <i>tablature disambiguation rate</i> {{cite wiggins2019tabcnn}}; GuitarSet har opptak med en pickup per streng, slik at hver tone har en annotert streng {{cite xi2018guitarset}}. I motsetning til disse lærte tilnærmingene estimerer ikke Fretscribe strengen fra lyden: systemet detekterer toner og velger deretter plassering ved et søk over spillbare fingersettinger, som i formuleringen av en optimal vei hos Sayegh {{cite sayegh1989fingering}} og det A*-baserte arrangementet hos Burlet og Fujinaga {{cite burlet2013robotaba}}.</p>
+      <p><strong>Det som manglet.</strong> Vi fant ingen annoterte opptak av ukulele eller mandolin, og ikke noe datasett med bassopptak og tilhørende toner som vi kunne bruke; evalueringen for disse instrumentene hviler derfor på syntetisk lyd (avsnitt 4.1).</p>
+    </section>
+
+    <section id="method" aria-labelledby="method-title">
+      <h2 id="method-title"><span class="secno">3</span> Metode</h2>
+      <p>{{ref fig:fret-pipeline}} viser arbeidsflyten.</p>
 
       {{pipeline fret-pipeline}}
 
-      <h3>Hvilken modell gjør hva</h3>
-      <ul>
-        <li><strong>BS-RoFormer SW</strong><sup><a href="#ref-4">[4]</a></sup> deler en hel låt i spor, og sporet til instrumentet blir lyttet på. Den har spor for bass og for gitar. Den har ingen for ukulele eller mandolin, som leses fra gitarsporet. Steget hoppes over når opptaket er instrumentet alene.</li>
-        <li><strong>Beat This!</strong><sup><a href="#ref-3">[3]</a></sup> finner slag og enere.</li>
-        <li><strong>Basic Pitch</strong><sup><a href="#ref-1">[1]</a></sup> finner tonene. <strong>SwiftF0</strong><sup><a href="#ref-2">[2]</a></sup> gir en ekstra vurdering; den følger én linje, så vurderingen teller bare der én tone klinger om gangen.</li>
-      </ul>
-      <h3>Fra toner til tab</h3>
-      <p>Regler fjerner overtoner som tonemodellen hørte som toner, forkaster toner instrumentet ikke kan spille, og sjekker for bass om en linje som ble hørt en oktav for høyt, virkelig ble spilt der. Tonene settes så på slagrutenettet med skrevne lengder, etter de samme reglene som i Brasscribe. Hver tone får så en sikkerhet mellom 0 og 1. Den settes av en regel, ikke av en tilpasset modell som i Brasscribe: 0,5 pluss halvparten av lydstyrken Basic Pitch oppgir for tonen. En tone settes i tvil, og får et <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span>, når den er svak og, i en enkeltlinje, SwiftF0 ikke hørte den på den tonehøyden; eller, i en akkord, når den er svak, eller ganske svak og ikke hørt igjen innen kort tid. Tersklene er satt for hånd.</p>
-      <p>Fingersettingen er et søk, ikke en modell. Toner som starter samtidig, plasseres sammen, hver på sin streng, innenfor det en hånd kan spenne over. Hver mulighet har en kostnad: hvor langt fingrene strekkes, hvor høyt på halsen hånden står, og hvor langt hånden må flytte seg fra de forrige tonene, målt i millimeter langs halsen, slik at samme regel passer en bass og en ukulele. Den billigste veien gjennom hele passasjen er tabben. De samme tonene gir alltid den samme tabben, og en egen kontroll bekrefter at hver plassering kan spilles. Åpne strenger og kjente akkordgrep inngår også i kostnaden. En tone som ikke kan gripes sammen med de andre, utelates til tabben kan spilles, så at alle tabber er spillbare, følger av konstruksjonen: {{span fretted/guitar-tab/report.solo.unplayable_dropped fretted/guitar-tab/report.comp.unplayable_dropped pct}} av tonene i GuitarSet utelates, og {{span fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_high_g_heldout_dev.song.unplayable_dropped fretted/ukulele-tab/ukulele_low_g_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_low_g_heldout_dev.song.unplayable_dropped fretted/ukulele-tab/ukulele_baritone_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_baritone_heldout_dev.song.unplayable_dropped fretted/mandolin-tab/mandolin_heldout_dev.instrument.unplayable_dropped fretted/mandolin-tab/mandolin_heldout_dev.song.unplayable_dropped pct}} i de syntetiske strummede passasjene for ukulele og mandolin.</p>
+      <h3>3.1 Lyttemodeller</h3>
+      <p>BS-RoFormer SW {{cite audioseparator}} separerer en låt i spor, og sporet til instrumentet analyseres. Modellen har spor for bass og for gitar og ingen for ukulele eller mandolin, som leses fra gitarsporet; steget utelates når opptaket inneholder instrumentet alene. Beat This! gir slag og enere. Basic Pitch gir tonene, og SwiftF0 et andre estimat som bare brukes der én tone klinger om gangen.</p>
+      <h3>3.2 Fra toner til kvantiserte toner</h3>
+      <p>Regler fjerner overtoner som tonemodellen har rapportert som toner, forkaster toner utenfor instrumentets omfang og tester for bass om en linje som ble detektert en oktav for høyt, ble spilt der. Tonene kvantiseres så til slagrutenettet med skrevne varigheter etter reglene som er beskrevet i søsterartikkelen. Hver tone får så en sikkerhet mellom 0 og 1. Den settes av en regel, ikke av en tilpasset modell som i søsterartikkelen: 0,5 pluss halvparten av amplituden Basic Pitch oppgir for tonen. En tone settes i tvil, og merkes med et <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span>, når amplituden er lav og, i en enstemmig linje, SwiftF0 ikke detekterte den på den tonehøyden; eller, i en akkord, når amplituden er lav, eller middels lav og tonehøyden ikke detekteres igjen innen kort tid. Tersklene er satt for hånd.</p>
+      <h3>3.3 Fingersetting</h3>
+      <p>Fingersettingen er et søk og ikke en lært modell, i tradisjonen som behandler fingersetting som en optimal vei gjennom mulige plasseringer {{cite sayegh1989fingering}}, utvidet til akkorder som et grafsøk av Burlet og Fujinaga {{cite burlet2013robotaba}}; kostnadsleddene følger observasjonen at gitarister begrenser håndspennet og foretrekker lave posisjoner {{cite heijink2002guitar}}. Toner som starter samtidig, plasseres sammen, hver på sin streng, innenfor spennet til en hånd. Hver mulig plassering har en kostnad: strekket i fingrene, hvor høyt på halsen hånden står, og hvor langt hånden flytter seg fra de foregående tonene, målt i millimeter langs halsen, slik at samme regel gjelder for en bass og en ukulele. Veien med lavest samlet kostnad gjennom passasjen, funnet med dynamisk programmering, er tabulaturen. Åpne strenger og kjente akkordgrep inngår også i kostnaden. Søket er deterministisk, og en egen kontroll bekrefter at hver plassering er spillbar. En tone som ikke kan gripes sammen med de andre, utelates til tabulaturen er spillbar, så spillbarheten følger av konstruksjonen: {{span fretted/guitar-tab/report.solo.unplayable_dropped fretted/guitar-tab/report.comp.unplayable_dropped pct}} av tonene utelates i GuitarSet, og {{span fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_high_g_heldout_dev.song.unplayable_dropped fretted/ukulele-tab/ukulele_low_g_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_low_g_heldout_dev.song.unplayable_dropped fretted/ukulele-tab/ukulele_baritone_heldout_dev.instrument.unplayable_dropped fretted/ukulele-tab/ukulele_baritone_heldout_dev.song.unplayable_dropped fretted/mandolin-tab/mandolin_heldout_dev.instrument.unplayable_dropped fretted/mandolin-tab/mandolin_heldout_dev.song.unplayable_dropped pct}} i de syntetiske strummede passasjene for ukulele og mandolin. Stemming, capo og spillestil er parametre bare i dette steget, så en annen stemming krever ikke at lyden analyseres på nytt.</p>
     </section>
 
-    <section id="data" aria-labelledby="data-title">
-      <h2 id="data-title"><span class="secno">3</span> Data</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Det finnes ekte gitaropptak med fasit, og de er brukt. For bass kommer linjene fra syntetiske låter. For ukulele og mandolin fant vi ingen opptak med fasit i det hele tatt.</p>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell 1">
+    <section id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title"><span class="secno">4</span> Eksperimentelt oppsett</h2>
+      <h3>4.1 Datasett</h3>
+      <p>{{ref table:tabdata}} lister evalueringssettene. Annoterte opptak av ekte instrumenter var bare tilgjengelige for gitar.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell: datasett" id="table-tabdata">
         <table>
-          <caption>Tabell 1. Målesett. <span class="src">Kilde: <code>eval/README.md</code> og målemodulene i <code>eval/scribe_eval/</code>; størrelser fra <code>eval/baselines.json</code>.</span></caption>
-          <thead><tr><th scope="col">Sett</th><th scope="col">Hva det er</th><th scope="col">Brukt størrelse</th><th scope="col">Lisens</th><th scope="col">Brukt til</th></tr></thead>
+          <caption>{{label table:tabdata}}. Evalueringssett, størrelsen slik de er brukt, lisensen og rollen. Størrelsene er hentet fra <code>eval/baselines.json</code>.</caption>
+          <thead><tr><th scope="col">Sett</th><th scope="col">Innhold</th><th scope="col">Brukt størrelse</th><th scope="col">Lisens</th><th scope="col">Rolle</th></tr></thead>
           <tbody>
-            <tr><th scope="row">GuitarSet<sup><a href="#ref-5">[5]</a></sup></th><td>Ekte akustisk gitar, seks gitarister, hver låt spilt én gang som akkorder og én gang som enkeltlinje; én mikrofon per streng, så hver tone har sin streng</td><td>{{data fretted/guitar-tab/tune.solo.excerpts int}} + {{data fretted/guitar-tab/tune.comp.excerpts int}} opptak av tre gitarister, {{data fretted/guitar-tab/report.solo.excerpts int}} + {{data fretted/guitar-tab/report.comp.excerpts int}} av de tre andre</td><td>CC BY 4.0</td><td>Reglene er stilt inn på de tre første; tallene som oppgis, er fra de tre andre</td></tr>
-            <tr><th scope="row">IDMT-SMT-Guitar<sup><a href="#ref-6">[6]</a></sup></th><td>Ekte gitarer: licks og korte stykker, med strengene oppgitt</td><td>{{data fretted/guitar-tab/idmt.tune.excerpts int}} opptak sammen med innstillingsmaterialet, {{data fretted/guitar-tab/idmt.report.excerpts int}} bare rapportert</td><td>CC BY-NC-ND 4.0</td><td>En ekstra kontroll på andre gitarer</td></tr>
-            <tr><th scope="row">Slakh<sup><a href="#ref-7">[7]</a></sup></th><td>Syntetiske låter med tonene til hvert instrument. Basslinjer og gitarer, i miksen og alene</td><td>{{data fretted/bass-tab/song.tracks int}} låter med én bass; {{data fretted/guitar-tab/song.excerpts int}} gitarer i låter</td><td>Ikke sjekket for videredeling</td><td>Bass, og instrumenter inne i en låt. Utviklingsdata</td></tr>
-            <tr><th scope="row">Dype basslinjer</th><td>Linjer skrevet for testen nederst på en firestrengs og en femstrengs bass, spilt av en sampler</td><td>{{data fretted/bass-tab/low_e.song.tracks int}} + {{data fretted/bass-tab/low_b.song.tracks int}} linjer</td><td>Våre egne; SoundFont MIT<sup><a href="#ref-9">[9]</a></sup></td><td>Registeret linjene i Slakh aldri når ned til</td></tr>
-            <tr><th scope="row">Passasjer for ukulele, mandolin og gitar</th><td>Akkorder, skalaer og melodier skrevet for testen og spilt av en sampler, alene og under bass og trommer</td><td>{{data fretted/ukulele-tab/ukulele_high_g.instrument.excerpts int}} passasjer og {{data fretted/ukulele-tab/ukulele_high_g_heldout.instrument.excerpts int}} holdt utenfor per instrumentgruppe (melodier og plukkede passasjer), og {{data fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.excerpts int}} strummede passasjer eller akkordmelodier målt for seg</td><td>Våre egne; SoundFont MIT</td><td>Alt belegget som finnes for ukulele og mandolin</td></tr>
-            <tr><th scope="row">Passasjer i andre taktarter</th><td>Ett instrument alene i 2/4, 3/4, 6/8, 12/8 og 5/4, spilt av en sampler</td><td>{{data fretted/meter-tab/excerpts int}} passasjer</td><td>Våre egne; SoundFont MIT</td><td>Taktlengden</td></tr>
+            <tr><th scope="row">GuitarSet {{cite xi2018guitarset}}</th><td>Akustisk gitar, seks gitarister, hvert stykke spilt én gang som akkorder og én gang som enstemmig linje; en pickup per streng gir strengen for hver tone</td><td>{{data fretted/guitar-tab/tune.solo.excerpts int}} + {{data fretted/guitar-tab/tune.comp.excerpts int}} opptak av tre gitarister; {{data fretted/guitar-tab/report.solo.excerpts int}} + {{data fretted/guitar-tab/report.comp.excerpts int}} av de tre andre</td><td>CC BY 4.0</td><td>Reglene er stilt inn på de tre første; resultatene rapporteres for de tre andre</td></tr>
+            <tr><th scope="row">IDMT-SMT-Guitar {{cite kehling2014idmt idmt-smt-guitar}}</th><td>Gitarlicks og korte stykker med annoterte strenger</td><td>{{data fretted/guitar-tab/idmt.tune.excerpts int}} opptak i innstillingsmaterialet; {{data fretted/guitar-tab/idmt.report.excerpts int}} bare rapportert</td><td>CC BY-NC-ND 4.0</td><td>Flere gitarer</td></tr>
+            <tr><th scope="row">Slakh {{cite manilow2019slakh}}</th><td>Syntetiske låter med tonene til hvert instrument: basslinjer og gitarer, i miksen og alene</td><td>{{data fretted/bass-tab/song.tracks int}} låter med én bass; {{data fretted/guitar-tab/song.excerpts int}} gitarer i låter</td><td>CC BY 4.0</td><td>Bass, og instrumenter i en låt; utviklingsdata</td></tr>
+            <tr><th scope="row">Dype basslinjer</th><td>Linjer skrevet for testen nederst på en firestrengs og en femstrengs bass, syntetisert med en SoundFont {{cite musescore-general}}</td><td>{{data fretted/bass-tab/low_e.song.tracks int}} + {{data fretted/bass-tab/low_b.song.tracks int}} linjer</td><td>Eget materiale; SoundFont MIT</td><td>Registeret linjene i Slakh ikke når</td></tr>
+            <tr><th scope="row">Passasjer for ukulele, mandolin og gitar</th><td>Akkorder, skalaer og melodier skrevet for testen og syntetisert, alene og under bass og trommer</td><td>{{data fretted/ukulele-tab/ukulele_high_g.instrument.excerpts int}} passasjer og {{data fretted/ukulele-tab/ukulele_high_g_heldout.instrument.excerpts int}} passasjer holdt utenfor per instrumentgruppe (melodier og plukkede passasjer), og {{data fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.excerpts int}} strummede passasjer eller akkordmelodier målt for seg</td><td>Eget materiale; SoundFont MIT</td><td>Det eneste belegget for ukulele og mandolin</td></tr>
+            <tr><th scope="row">Passasjer i andre taktarter</th><td>Ett instrument alene i 2/4, 3/4, 6/8, 12/8 og 5/4, syntetisert</td><td>{{data fretted/meter-tab/excerpts int}} passasjer</td><td>Eget materiale; SoundFont MIT</td><td>Taktlengde</td></tr>
           </tbody>
         </table>
       </div>
-      <p><strong>Innstilling og rapportering hver for seg.</strong> Ingen modell er trent. Reglene har terskler, og for gitar er de valgt på tre av de seks gitaristene i GuitarSet og oppgis her for de tre andre, så en terskel ikke møter opptakene den ble valgt på. <a href="#heldout">Avsnitt 5.6</a> viser hva det skillet er verdt. For bass finnes det ikke noe slikt skille: Slakh-settet er utviklingsdata, og én terskel i oktavsjekken er valgt på nettopp det settet som måler den. De syntetiske passasjene har grupper holdt utenfor, med unntak som <code>eval/README.md</code> lister regel for regel.</p>
-      <p><strong>Hva som mangler.</strong> Ingen ekte opptak av bass, ukulele eller mandolin med fasit. Ingen opptak gjort med en telefon. Ingen tab-måling kjøres i CI: alle trenger data eller modeller som ikke ligger i repositoriet, så de kjøres for hånd på én datamaskin.</p>
-    </section>
-
-    <section id="measures" aria-labelledby="measures-title">
-      <h2 id="measures-title"><span class="secno">4</span> Mål</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Ble tonen hørt, står den på strengen musikeren brukte, og varsler tabben der den tar feil? Alle målene går fra 0 til 1; høyere er bedre.</p>
+      <h3>4.2 Datadeling og lekkasje</h3>
+      <p>Ingen modell er trent. Reglene har terskler; for gitar er disse valgt på tre av de seks gitaristene i GuitarSet, og resultatene rapporteres for de tre andre, slik at en terskel ikke evalueres på opptakene den er valgt på. Avsnitt 5.6 viser verdien av det skillet. For bass finnes det ikke noe slikt skille: Slakh-settet er utviklingsdata, og én terskel i oktavtesten er valgt på settet som måler den. De syntetiske passasjene har grupper som er holdt utenfor, med unntak som <code>eval/README.md</code> lister regel for regel.</p>
+      <h3>4.3 Mål</h3>
+      <p>Alle målene ligger mellom 0 og 1; høyere er bedre. Mål på tonenivå beregnes med <code>mir_eval.transcription</code>, bare for ansats, og alle bruker standardtoleransen ±50 ms. En <em>oktavfeil</em> er en referansetone som ikke får treff, mens en estimert tone én eller to oktaver unna starter innenfor toleransen.</p>
       <ul class="measures">
-      {{part measure-onset}}
+      {{part measure-onset-tab}}
       {{part measure-string}}
-      {{part measure-doubt}}
+      {{part measure-doubt-tab}}
       {{part measure-metre}}
       </ul>
-      <p><strong>Også oppgitt.</strong> <em>Tempo</em>: andelen opptak der tabben er innenfor 4 % av fasitens tempo. <em>Recall og presisjon for akkorder</em>: som for toner, men bare regnet over toner som starter tre eller flere samtidig. <em>Spillbar</em>: en hard sperre, ikke et mål: en tab med en plassering som ikke kan spilles, feiler målingen. Alle onset-mål på denne siden bruker toleransen 50 ms.</p>
+      <p>I tillegg rapporterer vi <em>nøyaktighet for tempo</em>, andelen opptak der det estimerte tempoet er innenfor 4 % av referansetempoet; <em>presisjon og recall for akkorder</em>, {{ref eq:prf}} begrenset til toner som starter samtidig i grupper på tre eller flere; og <em>spillbarhet</em>, som er et krav og ikke et mål: en tabulatur med en uspillbar plassering feiler målingen.</p>
+      <h3>4.4 Protokoll</h3>
+      <p>Modellresultatene beregnes én gang og lagres; <code>scribe bench</code> regner ut hver målesuite på nytt og feiler når en verdi har flyttet seg mer enn toleransen i <code>eval/baselines.json</code>. Presisjon, recall og F-mål på tonenivå, andelen oktavfeil og nøyaktighet for tempo og taktart er gjennomsnitt over opptak. Presisjon og recall for akkorder, strengesamsvar og strenge-recall, og presisjon og recall for tvilsmerkene er forholdstall mellom antall som er slått sammen over alle opptak i en betingelse. Verdier per opptak lagres ikke for tabulaturmålingene, så det rapporteres ingen spredning og ingen konfidensintervaller, og det er ikke utført signifikanstester; forskjeller rapporteres deskriptivt. Ingen av tabulaturmålingene kjøres i kontinuerlig integrasjon, fordi de krever data eller modeller som ikke ligger i repositoriet; de kjøres på én datamaskin.</p>
     </section>
 
     <section id="results" aria-labelledby="results-title">
       <h2 id="results-title"><span class="secno">5</span> Resultater</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Bass er det beste tilfellet. En gitar alene er brukbar som utkast. En gitar i en låt er ikke der ennå. Båndene er et forslag.</p>
-
-      <h3 id="found">5.1 Toner funnet</h3>
-      <p>Figuren til dette er <a href="#fig-tab-notes">den under sammendraget</a>.</p>
-      <p>En basslinje er én tone om gangen i et register for seg selv, og den tåler å bli skilt ut av en låt: {{data fretted/bass-tab/song.onset_f1}} i miksen mot {{data fretted/bass-tab/instrument.onset_f1}} alene. Helt nederst på en femstrengs bass faller den til {{span fretted/bass-tab/low_b.song.onset_f1 fretted/bass-tab/low_b.instrument.onset_f1}}. En ekte gitar alene får {{data fretted/guitar-tab/report.solo.onset_f1}} på enkeltlinjer og {{data fretted/guitar-tab/report.comp.onset_f1}} på akkorder, der tonene klinger over hverandre. Inne i en låt får gitaren {{data fretted/guitar-tab/song.onset_f1}}. Den andre visningen har de syntetiske passasjene; tallene der er høye, og de er det svakeste belegget på siden. Gruppene som er holdt utenfor, har bare melodier og plukkede passasjer. Den tredje visningen har de strummede passasjene og akkordmelodiene i de samme gruppene, som én regel er valgt på: ukulelene får {{span fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_high_g_heldout_dev.song.onset_f1 fretted/ukulele-tab/ukulele_low_g_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_low_g_heldout_dev.song.onset_f1 fretted/ukulele-tab/ukulele_baritone_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_baritone_heldout_dev.song.onset_f1}}, og mandolinen {{data fretted/mandolin-tab/mandolin_heldout_dev.instrument.onset_f1}} alene og {{data fretted/mandolin-tab/mandolin_heldout_dev.song.onset_f1}} i en låt, med oktavfeil på {{span fretted/mandolin-tab/mandolin_heldout_dev.instrument.octave_err_rate fretted/mandolin-tab/mandolin_heldout_dev.song.octave_err_rate pct}}. Ingen syntetisk passasje holdt utenfor prøver akkorder.</p>
-
+      <h3 id="found">5.1 Tonedeteksjon</h3>
+      <p>{{ref fig:tab-notes}} (kapittel 1) gir F-målet for ansats per instrument. En basslinje, som er enstemmig og har sitt eget register, detekteres nesten like godt i en miks ({{data fretted/bass-tab/song.onset_f1}}) som alene ({{data fretted/bass-tab/instrument.onset_f1}}); nederst på en femstrengs bass faller verdien til {{span fretted/bass-tab/low_b.song.onset_f1 fretted/bass-tab/low_b.instrument.onset_f1}}. En gitar tatt opp alene oppnår {{data fretted/guitar-tab/report.solo.onset_f1}} på enstemmige linjer og {{data fretted/guitar-tab/report.comp.onset_f1}} på akkorder. I en låt oppnår gitaren {{data fretted/guitar-tab/song.onset_f1}}. De syntetiske passasjene i den andre visningen gir høye verdier; de er det svakeste belegget i denne artikkelen, og gruppene som er holdt utenfor, har bare melodier og plukkede passasjer. Den tredje visningen gir de strummede passasjene og akkordmelodiene i de samme gruppene, som én regel er valgt på: ukulelene oppnår {{span fretted/ukulele-tab/ukulele_high_g_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_high_g_heldout_dev.song.onset_f1 fretted/ukulele-tab/ukulele_low_g_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_low_g_heldout_dev.song.onset_f1 fretted/ukulele-tab/ukulele_baritone_heldout_dev.instrument.onset_f1 fretted/ukulele-tab/ukulele_baritone_heldout_dev.song.onset_f1}}, og mandolinen {{data fretted/mandolin-tab/mandolin_heldout_dev.instrument.onset_f1}} alene og {{data fretted/mandolin-tab/mandolin_heldout_dev.song.onset_f1}} i en låt, med andeler oktavfeil på {{span fretted/mandolin-tab/mandolin_heldout_dev.instrument.octave_err_rate fretted/mandolin-tab/mandolin_heldout_dev.song.octave_err_rate pct}}. Ingen syntetisk passasje holdt utenfor prøver akkorder.</p>
+      <p>{{ref table:prf}} gir presisjon og recall ved siden av F-målet for opptakene og Slakh.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell: presisjon, recall og F-mål" id="table-prf">
+        <table>
+          <caption>{{label table:prf}}. Presisjon (P), recall (R) og F-mål (F) på tonenivå ved ±50 ms, gjennomsnitt over opptak. Kilde: <code>eval/baselines.json</code>, målesuitene bass-tab og guitar-tab.</caption>
+          <thead><tr><th scope="col">Betingelse</th><th scope="col" class="num">P</th><th scope="col" class="num">R</th><th scope="col" class="num">F</th><th scope="col">n</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Bass i en låt (Slakh)</th><td class="num">{{data fretted/bass-tab/song.onset_p}}</td><td class="num">{{data fretted/bass-tab/song.onset_r}}</td><td class="num">{{data fretted/bass-tab/song.onset_f1}}</td><td>{{data fretted/bass-tab/song.tracks int}} låter</td></tr>
+            <tr><th scope="row">Bass alene (Slakh)</th><td class="num">{{data fretted/bass-tab/instrument.onset_p}}</td><td class="num">{{data fretted/bass-tab/instrument.onset_r}}</td><td class="num">{{data fretted/bass-tab/instrument.onset_f1}}</td><td>{{data fretted/bass-tab/instrument.tracks int}} låter</td></tr>
+            <tr><th scope="row">Gitar, enstemmige linjer (GuitarSet, rapporterte gitarister)</th><td class="num">{{data fretted/guitar-tab/report.solo.onset_p}}</td><td class="num">{{data fretted/guitar-tab/report.solo.onset_r}}</td><td class="num">{{data fretted/guitar-tab/report.solo.onset_f1}}</td><td>{{data fretted/guitar-tab/report.solo.excerpts int}} opptak</td></tr>
+            <tr><th scope="row">Gitar, akkorder (GuitarSet, rapporterte gitarister)</th><td class="num">{{data fretted/guitar-tab/report.comp.onset_p}}</td><td class="num">{{data fretted/guitar-tab/report.comp.onset_r}}</td><td class="num">{{data fretted/guitar-tab/report.comp.onset_f1}}</td><td>{{data fretted/guitar-tab/report.comp.excerpts int}} opptak</td></tr>
+            <tr><th scope="row">Gitar i en låt (Slakh)</th><td class="num">{{data fretted/guitar-tab/song.onset_p}}</td><td class="num">{{data fretted/guitar-tab/song.onset_r}}</td><td class="num">{{data fretted/guitar-tab/song.onset_f1}}</td><td>{{data fretted/guitar-tab/song.excerpts int}} gitarer</td></tr>
+          </tbody>
+        </table>
+      </div>
       <h3 id="strings">5.2 Streng og bånd</h3>
+      <p>{{ref fig:tab-strings}} sammenligner de tildelte strengene med de annoterte. I akkordspill, der hånden har få alternativer, står {{data fretted/guitar-tab/report.comp.string_agreement pct}} av de riktig detekterte tonene på musikerens streng. For enstemmige linjer er verdien {{data fretted/guitar-tab/report.solo.string_agreement pct}}: søket minimerer bevegelse, mens musikere også velger plassering ut fra klang og ut fra frasen som følger. I forhold til alle spilte toner er {{data fretted/guitar-tab/report.solo.string_recall pct}} av tonene i en enstemmig linje både detektert og på musikerens streng. Tabulaturen er spillbar i alle tilfeller, men den er ikke en gjengivelse av framføringen.</p>
       {{chart tab-strings}}
-      <p>Tabben kan alltid spilles, men den er ikke en gjengivelse av hva gitaristen gjorde. I akkorder, der hånden har få valg, står {{data fretted/guitar-tab/report.comp.string_agreement pct}} av de riktige tonene på musikerens streng. På enkeltlinjer er det {{data fretted/guitar-tab/report.solo.string_agreement pct}}: søket foretrekker minst mulig bevegelse, og gitarister velger posisjon for klangen, for neste frase eller av vane. Regnet mot alt som ble spilt, er {{data fretted/guitar-tab/report.solo.string_recall pct}} av tonene i en enkeltlinje både hørt og på musikerens streng.</p>
-
       <h3 id="tempo">5.3 Tempo og taktart</h3>
+      <p>{{ref fig:tab-tempo}} rapporterer tempo og taktart. Nesten alle disse opptakene går i firedelt takt, og antallet slag i takten er riktig for {{span fretted/bass-tab/song.meter_ok fretted/bass-tab/instrument.meter_ok fretted/guitar-tab/report.solo.meter_ok fretted/guitar-tab/report.comp.meter_ok fretted/guitar-tab/song.meter_ok pct}} av dem; på de {{data fretted/meter-tab/excerpts int}} syntetiske passasjene i andre taktarter er det riktig for {{data fretted/meter-tab/meter_ok pct}}. Tempoet er oftere feil, delvis med en faktor på to: når halvt og dobbelt tempo godtas, øker andelen for enstemmige gitarlinjer fra {{data fretted/guitar-tab/report.solo.tempo_ok pct}} til {{data fretted/guitar-tab/report.solo.tempo_ok_level pct}}.{{holds fretted/guitar-tab/report.solo.tempo_ok_level > fretted/guitar-tab/report.solo.tempo_ok}}</p>
       {{chart tab-tempo}}
-      <p>Disse opptakene går nesten alle i fire, og tabben har riktig antall slag i takten for {{span fretted/bass-tab/song.meter_ok fretted/bass-tab/instrument.meter_ok fretted/guitar-tab/report.solo.meter_ok fretted/guitar-tab/report.comp.meter_ok fretted/guitar-tab/song.meter_ok pct}} av dem. På de {{data fretted/meter-tab/excerpts int}} passasjene skrevet i andre taktarter er takten riktig for {{data fretted/meter-tab/meter_ok pct}}. Tempoet feiler oftere, delvis med en faktor på to: når halvt eller dobbelt tempo regnes som riktig, øker andelen for enkeltlinjer på gitar fra {{data fretted/guitar-tab/report.solo.tempo_ok pct}} til {{data fretted/guitar-tab/report.solo.tempo_ok_level pct}}.{{holds fretted/guitar-tab/report.solo.tempo_ok_level > fretted/guitar-tab/report.solo.tempo_ok}}</p>
-
-      <h3 id="doubt">5.4 Tvilsmerkene</h3>
+      <h3 id="doubt">5.4 Tvilsmerker</h3>
+      <p>{{ref fig:tab-doubt}} gir presisjon og recall for merkene. En merket tone er som regel gal, men de fleste gale toner er ikke merket: på en bass er presisjonen {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision pct}} og recall {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall pct}}. En tabulatur uten merker er dermed ikke kontrollert.</p>
       {{chart tab-doubt}}
-      <p>Merkene peker på virkelige feil og lar de fleste feil stå umerket, som i Brasscribe. På en bass er {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision pct}} av de merkede tonene gale, og {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall pct}} av de gale tonene er merket. En tab uten <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span> er ikke en kontrollert tab.</p>
-
-      <h3 id="phone">5.5 En bass gjennom en liten mikrofon</h3>
+      <h3 id="phone">5.5 En bass uten de dype frekvensene</h3>
+      <p>Små mikrofoner slipper gjennom lite av den dypeste oktaven til en bass. {{ref fig:tab-phone}} simulerer dette ved å høypassfiltrere bassen før analysen. Opp til en grensefrekvens på 200 Hz blir linjen fortsatt detektert, med lavere F-mål. Med et brattere filter ved 300 Hz faller F-målet sammen, og oktavfeilene øker: {{data fretted/bass-tab/phone.hp300.octave_err_rate pct}} av referansetonene blir borte mens det gis en tone én eller to oktaver unna, mot {{data fretted/bass-tab/phone.hp0.octave_err_rate pct}} uten filtrering. Ved den grensefrekvensen flyttet oktavtesten {{data fretted/bass-tab/phone.hp300.line_moved pct}} av linjene i sin helhet, og ingen opp til 200 Hz; den forskyvningen forklarer sammenbruddet.{{holds fretted/bass-tab/phone.hp200.line_moved <= 0}} Raden uten filter dekker bare Slakh-bassene, mens de filtrerte radene også har med de dype basslinjene.{{holds fretted/bass-tab/phone.hp300.octave_err_rate > fretted/bass-tab/phone.hp200.octave_err_rate}} Testen filtrerer syntetiske basser; ingen telefon er brukt.</p>
       {{chart tab-phone}}
-      <p>Folk tar opp med telefonen, og en liten mikrofon slipper gjennom lite av den dypeste oktaven til en bass. Denne testen fjerner bunnen med et filter før noe lytter. Opp til et kutt ved 200 Hz blir linjen fortsatt funnet, med lavere resultat. Med et brattere kutt ved 300 Hz faller resultatet sammen, og oktavfeilene øker: {{data fretted/bass-tab/phone.hp300.octave_err_rate pct}} av de spilte tonene blir borte med en skrevet tone én eller to oktaver unna, mot {{data fretted/bass-tab/phone.hp0.octave_err_rate pct}} med full lyd. Oktavsjekken flyttet {{data fretted/bass-tab/phone.hp300.line_moved pct}} av linjene i sin helhet ved det kuttet, og ingen opp til 200 Hz; den forskyvningen er sammenbruddet.{{holds fretted/bass-tab/phone.hp200.line_moved <= 0}}{{holds fretted/bass-tab/phone.hp300.octave_err_rate > fretted/bass-tab/phone.hp200.octave_err_rate}} Dette er et filter på syntetiske basser, ikke en telefon i et rom.</p>
-
-      <h3 id="heldout">5.6 Hva gitaristene holdt utenfor viser</h3>
+      <h3 id="heldout">5.6 Gitarister brukt til innstilling og til rapportering</h3>
+      <p>{{ref fig:tab-heldout}} sammenligner gitaristene reglene er stilt inn på, med dem som rapporteres. De fleste målene er like i de to gruppene. Ett er det ikke: recall for akkordtoner i enstemmig spill, som ville blitt rapportert som {{data fretted/guitar-tab/tune.solo.chord_recall pct}} uten skillet. Resultatene for bass, for de dype basslinjene og for de fleste syntetiske passasjene har ikke noe slikt skille.</p>
       {{chart tab-heldout}}
-      <p>De fleste målene holder seg hos gitaristene reglene aldri så. Ett gjør det ikke: akkordtoner inne i enkeltlinjespill. Uten skillet ville det tallet blitt oppgitt som {{data fretted/guitar-tab/tune.solo.chord_recall pct}}. Tallene for bass, de dype basslinjene og de fleste syntetiske passasjene har ikke noe slikt skille, og bør leses med det i tankene.</p>
     </section>
 
-    <section id="errors" aria-labelledby="errors-title">
-      <h2 id="errors-title"><span class="secno">6</span> Hvor det svikter</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Et instrument inne i en låt, hvilken streng en tone spilles på, og bunnen av en bass.</p>
+    <section id="discussion" aria-labelledby="discussion-title">
+      <h2 id="discussion-title"><span class="secno">6</span> Diskusjon</h2>
+      <h3>6.1 Feilanalyse</h3>
       <ul>
-        <li><strong>Inne i en låt.</strong> En gitar i en miks får {{data fretted/guitar-tab/song.onset_f1}}, og {{data fretted/guitar-tab/song.chord_recall pct}} av akkordtonene blir funnet. Det er ikke høyere der låten har én gitar ({{data fretted/guitar-tab/song_one.onset_f1}}).{{holds fretted/guitar-tab/song_one.onset_f1 < 0.5}}</li>
-        <li><strong>Strenger.</strong> Under halvparten av de riktige tonene i en enkeltlinje står på musikerens streng (<a href="#strings">5.2</a>).</li>
-        <li><strong>Oktavfeil</strong> er få på en bass i en låt ({{data fretted/bass-tab/song.octave_err_rate pct}} av de spilte tonene) og blir flere nederst på en femstrengs ({{span fretted/bass-tab/low_b.song.octave_err_rate fretted/bass-tab/low_b.instrument.octave_err_rate pct}}) og når bunnen mangler (<a href="#phone">5.5</a>). På gitarakkorder er andelen {{data fretted/guitar-tab/report.comp.octave_err_rate pct}}.</li>
-        <li><strong>Akkorder.</strong> I akkordspill blir {{data fretted/guitar-tab/report.comp.chord_recall pct}} av akkordtonene funnet, og {{data fretted/guitar-tab/report.comp.chord_precision pct}} av akkordtonene som skrives, er riktige.</li>
-        <li><strong>Tempoet</strong> er feil for opptil fire av ti opptak (<a href="#tempo">5.3</a>).</li>
-        <li><strong>Tremolo.</strong> En mandolinmelodi spilt med raske gjentatte toner får {{span fretted/mandolin-tab/mandolin_tremolo.instrument.onset_f1 fretted/mandolin-tab/mandolin_heldout_tremolo.instrument.onset_f1}} alene, og {{data fretted/mandolin-tab/mandolin_tremolo.song.onset_f1}} og {{data fretted/mandolin-tab/mandolin_heldout_tremolo.song.onset_f1}} i en låt, på én syntetisk passasje hver.</li>
-        <li><strong>Toner som fjernes i ryddingen.</strong> Overtonene og de svake tonene som ryddingen fjerner, utgjør {{span fretted/mandolin-tab/mandolin_tremolo.instrument.leftovers_dropped fretted/mandolin-tab/mandolin_tremolo.song.leftovers_dropped pct}} av de skrevne tonene i tremolopassasjene og {{span fretted/guitar-tab/idmt.tune.leftovers_dropped fretted/guitar-tab/idmt.report.leftovers_dropped pct}} i IDMT-SMT-Guitar, mot {{span fretted/guitar-tab/report.solo.leftovers_dropped fretted/guitar-tab/report.comp.leftovers_dropped pct}} hos gitaristene holdt utenfor i GuitarSet.</li>
+        <li><strong>Et instrument i en låt.</strong> En gitar i en miks oppnår F = {{data fretted/guitar-tab/song.onset_f1}}, med en recall for akkorder på {{data fretted/guitar-tab/song.chord_recall pct}}. Verdien er ikke høyere for låter med én gitar ({{data fretted/guitar-tab/song_one.onset_f1}}).{{holds fretted/guitar-tab/song_one.onset_f1 < 0.5}}</li>
+        <li><strong>Strengetildeling.</strong> Under halvparten av de riktig detekterte tonene i en enstemmig linje står på musikerens streng (avsnitt 5.2).</li>
+        <li><strong>Oktavfeil</strong> er sjeldne for en bass i en låt ({{data fretted/bass-tab/song.octave_err_rate pct}} av referansetonene) og hyppigere nederst på en femstrengs bass ({{span fretted/bass-tab/low_b.song.octave_err_rate fretted/bass-tab/low_b.instrument.octave_err_rate pct}}) og når de dype frekvensene mangler (avsnitt 5.5). For gitarakkorder er andelen {{data fretted/guitar-tab/report.comp.octave_err_rate pct}}.</li>
+        <li><strong>Akkorder.</strong> I akkordspill er recall for akkorder {{data fretted/guitar-tab/report.comp.chord_recall pct}} og presisjonen {{data fretted/guitar-tab/report.comp.chord_precision pct}}.</li>
+        <li><strong>Tempoet</strong> er feil for opptil fire av ti opptak (avsnitt 5.3).</li>
+        <li><strong>Tremolo.</strong> En mandolinmelodi i raske gjentatte toner oppnår F = {{span fretted/mandolin-tab/mandolin_tremolo.instrument.onset_f1 fretted/mandolin-tab/mandolin_heldout_tremolo.instrument.onset_f1}} alene, og {{data fretted/mandolin-tab/mandolin_tremolo.song.onset_f1}} og {{data fretted/mandolin-tab/mandolin_heldout_tremolo.song.onset_f1}} i en låt, på én syntetisk passasje hver.</li>
+        <li><strong>Toner som fjernes i ryddingen.</strong> Overtonene og tonene med lav amplitude som ryddingen fjerner, utgjør {{span fretted/mandolin-tab/mandolin_tremolo.instrument.leftovers_dropped fretted/mandolin-tab/mandolin_tremolo.song.leftovers_dropped pct}} av de skrevne tonene i tremolopassasjene og {{span fretted/guitar-tab/idmt.tune.leftovers_dropped fretted/guitar-tab/idmt.report.leftovers_dropped pct}} i IDMT-SMT-Guitar, mot {{span fretted/guitar-tab/report.solo.leftovers_dropped fretted/guitar-tab/report.comp.leftovers_dropped pct}} for de rapporterte gitaristene i GuitarSet.</li>
       </ul>
-    </section>
-
-    <section id="performance" aria-labelledby="performance-title">
-      <h2 id="performance-title"><span class="secno">7</span> Fart</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Ikke målt for tab.</p>
-      <p>En tab-jobb kjører de samme modellene som Brasscribe: separatoren for en hel låt, Beat This!, Basic Pitch og SwiftF0. <a href="@brasscribe/research/#performance">Brasscribes artikkel</a> gir tid og minne for hver modell på én bærbar. Ingen hel tab-jobb er tidsmålt, og ingenting er tidsmålt på en telefon.</p>
+      <h3>6.2 Trusler mot validiteten</h3>
+      <ul>
+        <li><strong>Syntetisk lyd.</strong> Alle resultatene for bass, og alle resultatene for ukulele og mandolin, kommer fra syntetisk lyd; de siste fra ett samplet instrument hver og noen få passasjer.</li>
+        <li><strong>Innstilling på testdataene.</strong> Bare gitarreglene er stilt inn på andre gitarister enn dem som rapporteres (avsnitt 4.2).</li>
+        <li><strong>Ingen spredning.</strong> Resultatene er gjennomsnitt uten spredningsmål (avsnitt 4.4).</li>
+        <li><strong>Sammenlignbarhet.</strong> Strengemålene er på tonenivå og kan ikke sammenlignes med tabulaturmål på rammenivå i litteraturen; flere resultater i søsterartikkelen finnes bare med toleransen ±100 ms, og verdier bør bare sammenlignes ved samme toleranse.</li>
+        <li><strong>Simulering.</strong> Mikrofoneksperimentet er et filter, ikke et opptak.</li>
+      </ul>
     </section>
 
     <section id="limitations" aria-labelledby="limitations-title">
-      <h2 id="limitations-title"><span class="secno">8</span> Begrensninger</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Ekte opptak bare for gitar, ingenting i CI, og ingenting tatt opp med en telefon.</p>
+      <h2 id="limitations-title"><span class="secno">7</span> Begrensninger</h2>
       <ul>
-        <li><strong>Bass, ukulele og mandolin er bare målt på syntetisk lyd.</strong> For ukulele og mandolin er det ett samplet instrument hver og noen få passasjer, som målingen selv kaller svakt belegg.</li>
-        <li><strong>Ingen tab-måling kjøres i CI.</strong> Tallene holdes fast når noen kjører målingen for hånd på en datamaskin med dataene.</li>
-        <li><strong>Utviklingsdata.</strong> Bare gitarreglene har gitarister som er holdt utenfor (<a href="#heldout">5.6</a>).</li>
-        <li><strong>Ingen telefonopptak.</strong> Mikrofontesten er et filter (<a href="#phone">5.5</a>).</li>
-        <li><strong>Strengesamsvar er bare kjent for gitar,</strong> fordi bare gitarsettene sier hvilken streng som ble spilt.</li>
-        <li><strong>Tvilsmerkene vurderer bare tonehøyde og start.</strong> De dekker ikke strengen, rytmen eller tempoet.</li>
-        <li><strong>Spilleteknikker</strong> som bends, slides og hammer-ons blir ikke målt av noen måling her.</li>
-        <li><strong>Firetakt.</strong> Nesten alle opptakene går i fire; resultatet for andre taktarter hviler på {{data fretted/meter-tab/excerpts int}} syntetiske passasjer.</li>
+        <li>Ingen opptak av en ekte bass, ukulele eller mandolin med referansetoner er evaluert.</li>
+        <li>Ingen opptak gjort med en telefon er evaluert.</li>
+        <li>Ingen tabulaturmåling kjøres i kontinuerlig integrasjon; verdiene holdes bare fast når målingen kjøres på en datamaskin som har dataene.</li>
+        <li>Strengesamsvar er bare kjent for gitar, fordi bare gitarsettene annoterer strengen.</li>
+        <li>Tvilsmerkene dekker bare tonehøyde og ansats, ikke strengen, rytmen eller tempoet.</li>
+        <li>Spilleteknikker som bends, slides og hammer-ons er ikke evaluert.</li>
+        <li>Nesten alle opptakene går i firedelt takt; andre taktarter hviler på {{data fretted/meter-tab/excerpts int}} syntetiske passasjer.</li>
+        <li>Beregningskostnaden for en tabulaturjobb er ikke målt; modellene er de samme som i søsterartikkelen, som rapporterer kostnaden på én bærbar datamaskin.</li>
       </ul>
     </section>
 
-    <section id="next" aria-labelledby="next-title">
-      <h2 id="next-title"><span class="secno">9</span> Veien videre</h2>
+    <section id="conclusion" aria-labelledby="conclusion-title">
+      <h2 id="conclusion-title"><span class="secno">8</span> Konklusjon og videre arbeid</h2>
+      <p>Med forhåndstrente modeller og deterministiske regler transkriberes en basslinje og en gitar tatt opp alene godt nok til å tjene som utkast, mens en gitar i en låt ikke gjør det. Fingersettingssøket gir alltid spillbar tabulatur, men for enstemmige linjer stemmer det med musikerens valg av streng for under halvparten av tonene. Tvilsmerkene er presise og har lav recall.</p>
+      <p>Videre arbeid omfatter opptak av ekte basser, ukuleler og mandoliner med referansetoner, og opptak gjort med telefoner; transkripsjon av en gitar i en miks; en fingersettingskostnad som gjenspeiler hvordan gitarister velger plassering, evaluert mot de annoterte strengene i GuitarSet; en tabulaturmåling i kontinuerlig integrasjon på data som kan videredistribueres; og målinger av beregningskostnad.</p>
+    </section>
+
+    <section id="reproducibility" aria-labelledby="reproducibility-title">
+      <h2 id="reproducibility-title"><span class="secno">9</span> Reproduserbarhet</h2>
       <ul>
-        <li><strong>Ekte opptak</strong> av bass, ukulele og mandolin med fasit, og opptak gjort med telefoner.</li>
-        <li><strong>Gitaren i en låt.</strong></li>
-        <li><strong>Strenger en musiker ville valgt,</strong> målt mot strengene i GuitarSet.</li>
-        <li><strong>En tab-måling i CI</strong> på data som kan deles videre.</li>
-        <li><strong>Tidsmåling</strong> av hele tab-jobber, på en datamaskin og på telefoner.</li>
+        <li><strong>Kode.</strong> Systemet, målingene og denne siden ligger i det åpne repositoriet <a href="https://github.com/181192/brasscribe">github.com/181192/brasscribe</a>; siden er bygget fra innsjekkingen som er oppgitt under tittelen.</li>
+        <li><strong>Kommandoer.</strong> <code>pixi run scribe bench fretted</code> regner ut tabulaturmålingene på nytt fra lagrede modellresultater og sammenligner dem med <code>eval/baselines.json</code>; <code>eval/README.md</code> gir kommandoene som bygger hvert sett og kjører modellene. <code>site/build.sh</code> bygger denne siden og feiler dersom et oppgitt funn ikke lenger holder.</li>
+        <li><strong>Reproduserbart fra repositoriet alene.</strong> Ingen av resultatene: ingen tabulaturmåling kjøres i kontinuerlig integrasjon, og hver måling trenger et datasett eller modellresultater som ikke ligger i repositoriet. Selve siden kan bygges på nytt fra det lagrede grunnlaget.</li>
+        <li><strong>Krever lokal nedlasting.</strong> Alle resultatene: GuitarSet, IDMT-SMT-Guitar og Slakh må lastes ned og modellene kjøres lokalt; de syntetiske passasjene genereres lokalt med FluidSynth og SoundFont-filen.</li>
+        <li><strong>Tilgang til data.</strong> GuitarSet, IDMT-SMT-Guitar og Slakh er tilgjengelige fra utgiverne. De syntetiske passasjene genereres av skript i repositoriet.</li>
+        <li><strong>Metode.</strong> Fingersettingssøket er dokumentert i <code>core/targets/fretted/README.md</code>.</li>
       </ul>
+    </section>
+
+    <section id="ethics" aria-labelledby="ethics-title">
+      <h2 id="ethics-title"><span class="secno">10</span> Etikk og lisenser</h2>
+      <ul>
+        <li><strong>Modellisenser.</strong> Basic Pitch har Apache-2.0; SwiftF0 og Beat This! har MIT. Det er ikke oppgitt noen lisens for vektene til BS-RoFormer SW; de lastes ned av brukerens datamaskin fra utgiveren og videredistribueres ikke av prosjektet.</li>
+        <li><strong>Lisensene til datasettene</strong> står i {{ref table:tabdata}}. IDMT-SMT-Guitar er lisensiert for ikke-kommersiell bruk uten bearbeidelser; settet brukes bare til evaluering, og ingenting som er avledet av det, distribueres.</li>
+        <li><strong>Personvern.</strong> Ingen opptak, og ingen tabulatur avledet av et opptak, sendes til en tjener.</li>
+        <li><strong>Telemetri.</strong> ONNX Runtime, Microsoft-biblioteket som kjører modeller i deler av motoren, rapporterer sin egen bruk til Microsoft med en enhets-ID; <code>THIRD_PARTY_NOTICES.md</code> dokumenterer hva som sendes.</li>
+      </ul>
+    </section>
+
+    <section id="acknowledgements" aria-labelledby="acknowledgements-title">
+      <h2 id="acknowledgements-title">Takk</h2>
+      <p>Dette arbeidet hviler på forfatterne av modellene og datasettene som er sitert over, og som har gjort dem åpent tilgjengelige. Deler av programvaren og av denne teksten er skrevet med hjelp av en KI-kodeassistent og gjennomgått av forfatteren.</p>
+    </section>
+
+    <section id="cite" aria-labelledby="cite-title">
+      <h2 id="cite-title">Sitering</h2>
+      <p>K.-A. Kalliainen, «Fretscribe: Transcribing recordings into tablature with pretrained models and a fingering search», Fretscribe-prosjektet, 2026. [På nett]. Tilgjengelig: https://github.com/181192/brasscribe</p>
+      <pre class="bibtex"><code>@misc{kalliainen2026fretscribe,
+  author       = {Kalliainen, Kristoffer-Andre},
+  title        = {Fretscribe: Transcribing Recordings into Tablature
+                  with Pretrained Models and a Fingering Search},
+  year         = {2026},
+  howpublished = {The Fretscribe project},
+  url          = {https://github.com/181192/brasscribe}
+}</code></pre>
     </section>
 
     <section id="references" aria-labelledby="references-title">
       <h2 id="references-title">Referanser</h2>
-      <ol class="refs">
-        <li id="ref-1">R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-Brocal, S. Ewert. A Lightweight Instrument-Agnostic Model for Polyphonic Note Transcription and Multipitch Estimation. <i>ICASSP</i> 2022. <a href="https://arxiv.org/abs/2203.09893">arXiv:2203.09893</a>. Apache-2.0.</li>
-        <li id="ref-2">L. Nieradzik. SwiftF0: Fast and Accurate Monophonic Pitch Detection. Forhåndstrykk, 2025. <a href="https://arxiv.org/abs/2508.18440">arXiv:2508.18440</a>. MIT.</li>
-        <li id="ref-3">F. Foscarin, J. Schlüter, G. Widmer. Beat this! Accurate beat tracking without DBN postprocessing. <i>ISMIR</i> 2024. <a href="https://arxiv.org/abs/2407.21658">arXiv:2407.21658</a>. MIT, kode og vekter.</li>
-        <li id="ref-4">W.-T. Lu, J.-C. Wang, Q. Kong, Y.-N. Hung. Music Source Separation with Band-Split RoPE Transformer. <i>ICASSP</i> 2024. <a href="https://arxiv.org/abs/2309.02612">arXiv:2309.02612</a>. Modellfilen BS-RoFormer SW: python-audio-separator, <a href="https://github.com/nomadkaraoke/python-audio-separator">github.com/nomadkaraoke/python-audio-separator</a>; kode MIT, ingen lisens oppgitt for vektene.</li>
-        <li id="ref-5">Q. Xi, R. M. Bittner, J. Pauwels, X. Ye, J. P. Bello. GuitarSet: A Dataset for Guitar Transcription. <i>ISMIR</i> 2018. Data: <a href="https://doi.org/10.5281/zenodo.3371780">doi:10.5281/zenodo.3371780</a>. CC BY 4.0.</li>
-        <li id="ref-6">C. Kehling, J. Abeßer, C. Dittmar, G. Schuller. Automatic Tablature Transcription of Electric Guitar Recordings by Estimation of Score- and Instrument-Related Parameters. <i>DAFx</i> 2014. IDMT-SMT-Guitar, data: <a href="https://doi.org/10.5281/zenodo.7544110">doi:10.5281/zenodo.7544110</a>. CC BY-NC-ND 4.0.</li>
-        <li id="ref-7">E. Manilow, G. Wichern, P. Seetharaman, J. Le Roux. Cutting Music Source Separation Some Slakh. <i>IEEE WASPAA</i> 2019. <a href="https://doi.org/10.1109/WASPAA.2019.8937170">doi:10.1109/WASPAA.2019.8937170</a>. Lastes ned ved behov; vilkårene for videredeling er ikke sjekket.</li>
-        <li id="ref-8">C. Raffel, B. McFee, E. J. Humphrey et al. mir_eval: A Transparent Implementation of Common MIR Metrics. <i>ISMIR</i> 2014. Tonemålene på denne siden er regnet ut med det.</li>
-        <li id="ref-9">MuseScore General SoundFont (MIT) og FluidSynth: de samplede instrumentene og avspilleren bak de syntetiske passasjene. <a href="https://github.com/musescore/MuseScore/tree/master/share/sound">github.com/musescore/MuseScore</a></li>
-      </ol>
-      <p class="muted">I repositoriet: <a href="https://github.com/181192/brasscribe/blob/main/eval/baselines.json">de låste tallene</a> · <a href="https://github.com/181192/brasscribe/blob/main/eval/README.md">hvordan målingene kjøres, og hva som er stilt inn på hva</a> · <a href="https://github.com/181192/brasscribe/blob/main/core/targets/fretted/README.md">hvordan strenger og bånd velges</a></p>
-      <p class="to-top"><a href="#main">Til toppen</a></p>
+      {{references}}
     </section>
+
+    <section id="appendix-tables" class="print-only" aria-labelledby="appendix-tables-title">
+      <h2 id="appendix-tables-title">Vedlegg: Datatabeller til figurene</h2>
+      {{figuretables}}
+    </section>
+    <p class="to-top"><a href="#main">Til toppen</a></p>
   </article>

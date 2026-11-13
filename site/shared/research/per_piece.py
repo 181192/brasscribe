@@ -17,6 +17,8 @@ import json
 import subprocess
 from pathlib import Path
 
+import mir_eval
+import numpy as np
 from scribe_eval.quant_bench import evaluate, reference_beats
 from scribe_eval.score import load_notes, score
 from scribe_eval.suites import SETS, _songs, load_baselines
@@ -58,6 +60,9 @@ def main() -> None:
             rows = [score(load_notes(s / "reference.json"), load_notes(s / f"{model}.mid")) for s in songs]
             for metric in metrics:
                 keep(suite, f"{model}.{metric}", [r[metric] for r in rows])
+            # Precision and recall behind each F-measure: means over the pieces, which the baselines do not hold.
+            for metric in ("onset_p", "onset_r", "onset100_p", "onset100_r"):
+                out[suite][f"{model}.{metric}"] = round(sum(r[metric] for r in rows) / len(rows), 3)
             # Recall per voice of the quartet: a mean over the pieces, which no suite gates.
             for voice in "SATB":
                 for metric in (f"recall_{voice}", f"recall100_{voice}"):
@@ -71,13 +76,29 @@ def main() -> None:
         for name, rows in (("reference_beats", given), ("beat_this", tracked)):
             for key in QUANT_KEYS:
                 keep(suite, f"{name}.{key}", [r[key] for r in rows])
+        # The tracker's beats themselves, by the field's measure: F-measure within ±70 ms (mir_eval.beat), against
+        # quarter-note beats interpolated from the notated positions of the reference notes. Not gated.
+        # The same for a candidate tracker where its beats are stored beside the mix (md-beat-this.beats: md_beat_this,
+        # model run1), with the note positions its beats give, scored as the gated ones are.
+        for tracker, beats in (("beat_this", "beat-this.beats"), ("md_beat_this", "md-beat-this.beats")):
+            have = [s for s in songs if (s / beats).exists()]
+            if len(have) != len(songs):
+                continue
+            out[suite][f"{tracker}.beat_f"] = [
+                round(float(mir_eval.beat.f_measure(mir_eval.beat.trim_beats(np.unique(reference_beats(s))),
+                                                    mir_eval.beat.trim_beats(np.unique(np.loadtxt(s / beats)[:, 0])))), 3)
+                for s in have]
+            if tracker != "beat_this":
+                rows = [evaluate(s, None, beats) for s in have]
+                for key in QUANT_KEYS:
+                    out[suite][f"{tracker}.{key}"] = [round(r[key], 3) for r in rows]
 
     commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     doc = {
         "provenance": {
             "what": "Per-piece values of metrics whose means are gated in eval/baselines.json, in the order of the eval set's pieces; "
                     "the size of each set; and, as single numbers, each model's mean recall per voice of the quartets (S, A, T, B), "
-                    "which the scorer reports and no suite gates.",
+                    "which the scorer reports and no suite gates; and the beat F-measure of the tracked beats per piece (±70 ms), not gated.",
             "command": "pixi run python site/shared/research/per_piece.py",
             "commit": commit,
             "data": "data/eval/choralebricks-brass4 and data/eval/urmp-brass with the cached model outputs the baselines were taken from",

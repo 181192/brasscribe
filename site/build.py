@@ -14,7 +14,8 @@ Macros: {{shot <slot> sizes="…" alt="…" [load="lazy|high"]}}, {{file <name>}
 release file), {{releases}}, {{downloads}} (the table of release files), {{products}} (family page),
 {{figure <name> …}} (a figure drawn from the repository's data: site/shared/figures.py, or the product's
 own figures.py), {{data <file> <path/to/value> [as="percent"]}} (a number from a JSON file in the repository), and
-the research pages' measurements and figures ({{data <key> [format]}}, {{chart …}} and more: site/research.py).
+the research pages' measurements, figures, citations and cross-references ({{data <key> [format]}}, {{chart …}},
+{{cite …}}, {{ref …}} and more: site/research.py, which also checks the papers once every page is written).
 A page's header may name `styles:` and `scripts:` (files in the product's folder or in site/shared).
 """
 
@@ -482,4 +483,5 @@ def check(out: Path) -> None:
 if __name__ == "__main__":
     Site().build()
     check(OUT)
+    research.finish(OUT)
     print(f"site built in {OUT}")

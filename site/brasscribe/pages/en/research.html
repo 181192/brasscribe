@@ -1,6 +1,6 @@
 <!--
-title: From a recording to a brass-band score · Brasscribe research
-description: How Brasscribe writes a brass-band score from a recording, and how well: the pipeline, the datasets, every measure defined, the results with their limits, and what fails.
+title: Brasscribe: transcribing brass recordings into band scores · Research paper
+description: A system description and evaluation of Brasscribe: pretrained listening models and deterministic music rules that turn a brass recording into a score, with note-level and rhythm results, error analysis and limitations.
 main_class: wrap guide
 footer: Notation engraved with Verovio (LGPL-3.0-or-later). Display type: Instrument Serif (OFL).
 styles: charts.css
@@ -8,132 +8,132 @@ scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
     <details class="toc-fold" open>
-    <summary id="toc-title" class="toc-title">In this paper</summary>
+    <summary id="toc-title" class="toc-title">Contents</summary>
     <ol>
       <li><a href="#abstract">Abstract</a></li>
-      <li><a href="#problem">1. The problem</a></li>
+      <li><a href="#introduction">1. Introduction</a></li>
       <li><a href="#related">2. Related work</a></li>
-      <li><a href="#pipeline">3. The pipeline</a></li>
-      <li><a href="#data">4. Data</a></li>
-      <li><a href="#measures">5. Measures</a></li>
-      <li><a href="#results">6. Results</a></li>
-      <li><a href="#errors">7. Where it fails</a></li>
-      <li><a href="#comparisons">8. Model comparisons</a></li>
-      <li><a href="#performance">9. Speed and memory</a></li>
-      <li><a href="#limitations">10. Limitations</a></li>
-      <li><a href="#next">11. What is next</a></li>
-      <li><a href="#licences">12. Licences</a></li>
+      <li><a href="#method">3. Method</a></li>
+      <li><a href="#setup">4. Experimental setup</a></li>
+      <li><a href="#results">5. Results</a></li>
+      <li><a href="#discussion">6. Discussion</a></li>
+      <li><a href="#limitations">7. Limitations</a></li>
+      <li><a href="#conclusion">8. Conclusion and future work</a></li>
+      <li><a href="#reproducibility">9. Reproducibility</a></li>
+      <li><a href="#ethics">10. Ethics and licences</a></li>
+      <li><a href="#acknowledgements">Acknowledgements</a></li>
+      <li><a href="#cite">How to cite</a></li>
       <li><a href="#references">References</a></li>
+      <li><a href="#appendix">Appendix</a></li>
     </ol>
     </details>
   </nav>
 
   <article class="paper">
     <header>
-      <p class="overline">Research</p>
-      <h1>From a recording to a brass-band score</h1>
-      <p class="lead">What Brasscribe does to a recording, how each step was measured, and where the result is still wrong.</p>
-      <p class="byline">Brasscribe project · Every number and figure on this page is read from the repository's benchmark files when the site is built, so it changes when they do · <a href="@fretscribe/research/">The same for tab: Fretscribe's paper</a></p>
+      <p class="overline">Research paper</p>
+      <h1>Brasscribe: Transcribing Brass Recordings into Band Scores with Pretrained Models and Deterministic Rules</h1>
+      <p class="byline">Kristoffer-Andre Kalliainen · The Brasscribe project · Built {{built}}; every number and figure is read from the repository's benchmark files at that commit · Companion paper: <a href="@fretscribe/research/">Fretscribe (tablature)</a></p>
     </header>
 
     <section id="abstract" class="abstract" aria-labelledby="abstract-title">
       <h2 id="abstract-title">Abstract</h2>
-      <p><strong>In plain words:</strong> Brasscribe hears most of the notes in a brass recording. It is much less sure where they belong in the bar, and its question marks warn about only some of the mistakes. What you get is a draft to correct, not a finished part.</p>
-      <p>Brasscribe turns a recording into a score and parts for a British-style brass band on the musician's own devices. Learned models only listen: they separate layers, find notes and find beats. Music rules that always give the same result then write: rhythm, note names, key, harmony, parts for the band, difficulty. No listening model was trained for this; the listening stages were chosen by benchmark on recordings with known notes, and the results below are held by a regression gate unless a figure names another source.</p>
-      <p>On {{data p/chorales-transcription/pieces int}} real brass quartets the best transcriber finds notes with onset F1 {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} at 100 ms ({{data brass/chorales-transcription/muscriptor-medium.onset_f1}} at 50 ms), and {{data brass/urmp-transcription/muscriptor-medium.onset100_f1}} on {{data p/urmp-transcription/pieces int}} chamber pieces. Given the score's own beats, the rules put {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} of notes in their exact place in the bar; with beats tracked from the audio that falls to {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}. End to end on one player's recording, notes are heard with F1 {{span brass/solo-beat-model/urmp.small0.onset_f1 brass/solo-beat-model/choralebricks.small0.onset_f1}}, but only {{span brass/solo-beat-model/urmp.small0.written_f1 brass/solo-beat-model/choralebricks.small0.written_f1 brass/solo-beat-model/urmp.final0.written_f1 brass/solo-beat-model/choralebricks.final0.written_f1}} when a note must also be written where the score has it, and the bar length is right for {{span brass/solo-beat-model/urmp.small0.meter_match brass/solo-beat-model/choralebricks.final0.meter_match brass/solo-beat-model/choralebricks.small0.meter_match brass/solo-beat-model/urmp.final0.meter_match pct}} of parts. From a four-part mix the tenor voice is recovered with F1 {{data brass/seat-voices/muscriptor-medium.T_f1}}, so the inner parts of a band score are arranged, not heard. The doubt marks are rarely false alarms, but they sit on at most {{data brass/solo-instruments/trumpet.q_hit pct}} of a solo line's wrong notes. Beat and bar tracking is the main limit on a readable score.</p>
+      <p class="abstract-text">We describe and evaluate Brasscribe, a system that transcribes recordings of brass ensembles into notated scores and parts for British-style brass band. Pretrained models for source separation, note transcription, fundamental-frequency estimation and beat tracking are combined, without further training, with deterministic rules for rhythm quantisation, pitch spelling, harmony reduction and arrangement. Each stage is evaluated on ChoraleBricks brass quartets ({{data p/chorales-transcription/pieces int}} pieces), URMP brass chamber music ({{data p/urmp-transcription/pieces int}} pieces), single-instrument recordings and synthesised material, with note-level precision, recall and F-measure as defined in mir_eval and with score-position accuracy for rhythm. The best transcriber reaches a mean onset F-measure of {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} at the standard ±50 ms tolerance ({{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} at ±100 ms) on the quartets and {{data brass/urmp-transcription/muscriptor-medium.onset_f1}} ({{data brass/urmp-transcription/muscriptor-medium.onset100_f1}}) on the chamber pieces. Given reference beats, the quantiser places {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} of notes at their notated position in the bar; with tracked beats it places {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, with large variation between pieces. End to end on single parts, at ±100 ms (the only tolerance stored for these suites), notes are detected with F = {{span brass/solo-beat-model/urmp.small0.onset_f1 brass/solo-beat-model/choralebricks.small0.onset_f1}}, whereas the written F-measure, which also requires the correct position in the bar, is {{span brass/solo-beat-model/urmp.small0.written_f1 brass/solo-beat-model/choralebricks.small0.written_f1 brass/solo-beat-model/urmp.final0.written_f1 brass/solo-beat-model/choralebricks.final0.written_f1}}. The tenor voice of a quartet is recovered with F = {{data brass/seat-voices/muscriptor-medium.T_f1}} (±100 ms), and the confidence marks flag at most {{data brass/solo-instruments/trumpet.q_hit pct}} of wrong notes. All rule thresholds were tuned on the evaluation sets and no brass-band recording with reference notes was available, so the results are upper bounds. Beat and metre tracking is the main obstacle to readable output.</p>
+      <p><strong>Keywords:</strong> automatic music transcription, brass band, rhythm quantisation, beat tracking, source separation, evaluation.</p>
+      <p><strong>Plain-language summary:</strong> In a brass ensemble, Brasscribe finds about two thirds of the played notes when the timing must be exact to 50 ms, and more than four fifths when 100 ms is allowed. It is much less reliable about where they belong in the bar, and its question marks warn about only some of the mistakes. The output is a draft to correct, not a finished part.</p>{{holds p/chorales-transcription/muscriptor-medium.onset_r > 0.6}}{{holds p/chorales-transcription/muscriptor-medium.onset100_r > 0.8}}{{holds p/urmp-transcription/muscriptor-medium.onset_r > 0.6}}
       {{holds brass/solo-instruments/flugelhorn.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/trombone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/baritone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/tuba.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/horn.q_hit <= brass/solo-instruments/trumpet.q_hit}}
     </section>
 
-    {{chart rhythm}}
-
-    <section id="problem" aria-labelledby="problem-title">
-      <h2 id="problem-title"><span class="secno">1</span> The problem</h2>
-      <p class="plain"><span class="plain-label">In short</span>A player hears a piece and wants the part. Writing it down by ear takes hours. Brasscribe writes a first draft and has to say which notes it is unsure about.</p>
-      <p>Automatic music transcription turns audio into notes: which pitch sounds, when it starts and when it stops. A musician needs more. A part is <em>readable</em> when its rhythms sit on a beat grid a player can count, in bars of the right length, with the note names a composer would write. It is <em>playable</em> when it stays in the instrument's range, is written in its transposition (B♭ or E♭ for most of the band), and does not cross its neighbours.</p>
-      <p>A British-style brass band has 18 parts on a contest score, from soprano cornet to B♭ bass and percussion; Norwegian bands use the same layout. Most of the instruments share one family sound and double each other constantly. That is the hard case for every model we know of: none knows the band's instruments, and none tells several players of one instrument apart.</p>
-      <p>Three constraints shaped the work:</p>
-      <ul class="ticks">
-        <li><strong>The musician's own devices.</strong> Recordings are not sent to a cloud service. A full band is processed on the musician's computer. In the builds released today every score, a solo included, is written on the musician's computer, on every platform. On Android the app writes a solo by itself in builds that bundle the listening models; the builds released so far did not bundle them. On iPhone, iPad and Mac the models are not in the app yet, and Windows has no such path.</li>
-        <li><strong>Doubt is shown.</strong> A note the system doubts carries a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span>, by shape and colour, and the musician checks the marked notes in groups. <a href="#doubt">Section 6.6</a> measures how much those marks catch.</li>
-        <li><strong>Measured, then gated.</strong> A stage is chosen by benchmark on recordings with known correct notes, and a gate fails the build when a number moves.</li>
+    <section id="introduction" aria-labelledby="introduction-title">
+      <h2 id="introduction-title"><span class="secno">1</span> Introduction</h2>
+      <p>Automatic music transcription (AMT) converts audio into a symbolic representation: which pitches sound, when they start and when they stop {{cite benetos2019amt}}. A musician needs more than a list of notes. A part is readable when its rhythms lie on a beat grid that can be counted, in bars of the correct length, with the pitch spellings a composer would choose; it is playable when it stays within the instrument's range, is written in its transposition, and does not cross neighbouring parts.</p>
+      <p>The British-style brass band is a demanding target. A contest score has 18 parts, from soprano cornet to B♭ bass and percussion, and Norwegian bands use the same instrumentation. Most of the instruments share one timbre family and double each other constantly. To our knowledge, no openly available transcription model has the band's instruments in its vocabulary, and none separates several players of the same instrument.</p>
+      <p>Brasscribe addresses the task with pretrained models that only listen (they separate sources, estimate notes and track beats) and with deterministic rules that write the notation. It runs on the musician's own devices; no recording is uploaded to a server. In the builds released at the time of writing, every score, including a solo part, is produced on the musician's computer on all platforms. The Android app transcribes a solo part on the device in builds that bundle the listening models, which the builds released so far did not; on iPhone, iPad and Mac the models are not yet included, and the Windows app has no on-device path.</p>
+      <p>The central finding is shown in {{ref fig:rhythm}}: the rules place nearly all notes correctly when the beats are known, and about half on average, with wide variation between pieces, when the beats are tracked from the audio.</p>
+      {{chart rhythm}}
+      <p>The contributions of this paper are:</p>
+      <ul>
+        <li>a description of a complete audio-to-score pipeline for brass ensembles that uses only pretrained models and deterministic rules (Section 3);</li>
+        <li>a stage-by-stage evaluation on real brass recordings with reference notes, reported with the standard note-level metrics and with score-position metrics for rhythm (Sections 4 and 5);</li>
+        <li>negative results and comparisons that determined the design, including models and settings that were rejected (Section 5.8);</li>
+        <li>an error analysis and a statement of threats to validity, notably that all thresholds were tuned on the evaluation data (Sections 6 and 7);</li>
+        <li>a page whose numbers and figures are generated from the regression baselines of the public repository, so that they cannot drift from the measurements (Section 9).</li>
       </ul>
     </section>
 
     <section id="related" aria-labelledby="related-title">
       <h2 id="related-title"><span class="secno">2</span> Related work</h2>
-      <p class="plain"><span class="plain-label">In short</span>Good open models exist for each listening task. None was made for brass bands, so each was tested on brass before it was trusted.</p>
-      <p><strong>Notes from many instruments.</strong> MT3 treats multi-instrument transcription as translation from a spectrogram to note tokens<sup><a href="#ref-1">[1]</a></sup>, and YourMT3+ extended it<sup><a href="#ref-2">[2]</a></sup>. MuScriptor is a later open model of the same kind, trained on real multi-instrument recordings<sup><a href="#ref-3">[3]</a></sup>. Basic Pitch is a small model that does not care which instrument plays<sup><a href="#ref-4">[4]</a></sup>; Onsets and Frames set the pattern it follows<sup><a href="#ref-7">[7]</a></sup>.</p>
-      <p><strong>One line.</strong> For a single melody a pitch tracker is simpler and more exact than a transcriber. CREPE introduced the learned pitch tracker<sup><a href="#ref-6">[6]</a></sup>; SwiftF0 is a very small recent one<sup><a href="#ref-5">[5]</a></sup>. Its published ranking comes from a benchmark its own author maintains<sup><a href="#ref-24">[24]</a></sup>, so we measured it on brass ourselves (<a href="#instruments">section 6.4</a>).</p>
-      <p><strong>Separating instruments.</strong> HT-Demucs<sup><a href="#ref-12">[12]</a></sup> and BS-RoFormer<sup><a href="#ref-11">[11]</a></sup> split a mix into stems. We use two community checkpoints of the latter: BS-RoFormer SW (six stems) and MVSep Mega-53 (53 stems, among them brass, trumpet, trombone, French horn and tuba)<sup><a href="#ref-13">[13]</a><a href="#ref-25">[25]</a></sup>. We found no open separator that knows cornet, tenor horn, baritone or euphonium, and none that separates several players of one instrument.</p>
-      <p><strong>Beats and bars.</strong> Earlier beat trackers decode a network's output with a probabilistic model of tempo and bar position<sup><a href="#ref-9">[9]</a><a href="#ref-10">[10]</a></sup>. Beat This! predicts beats and downbeats directly<sup><a href="#ref-8">[8]</a></sup>. No open model gives a time signature: the metre has to be worked out from the spacing of the downbeats.</p>
-      <p><strong>Note names, key and notation.</strong> A pitch number does not say whether a note is F♯ or G♭. The ps13 algorithm names notes from their tonal context<sup><a href="#ref-14">[14]</a><a href="#ref-15">[15]</a></sup>, in partitura's implementation<sup><a href="#ref-23">[23]</a></sup>. The key comes from the Krumhansl–Kessler profiles<sup><a href="#ref-16">[16]</a></sup>. Scores are written as MusicXML<sup><a href="#ref-22">[22]</a></sup>.</p>
-      <p><strong>What was missing.</strong> No model knows the band's instruments, no model separates voices of the same sound, and we found no published accuracy on brass-band audio. The evaluation therefore had to be assembled first (<a href="#data">section 4</a>), from the nearest real brass recordings that come with their notes.</p>
+      <p><strong>Multi-instrument transcription.</strong> MT3 formulates multi-instrument transcription as sequence-to-sequence translation from a spectrogram to note tokens {{cite gardner2022mt3}}, and YourMT3+ extends that approach {{cite chang2024yourmt3}}. MuScriptor is a more recent open model of the same family, pretrained on synthetic data, fine-tuned on real recordings and then trained further with reinforcement learning {{cite rouard2026muscriptor}}. Basic Pitch is a lightweight, instrument-agnostic note transcriber {{cite bittner2022basicpitch}} in the onset-and-frame tradition of Onsets and Frames {{cite hawthorne2018onsets}}.</p>
+      <p><strong>Fundamental-frequency (f0) estimation.</strong> For a monophonic line, an f0 estimator is simpler and more precise than a polyphonic transcriber. CREPE introduced a learned f0 estimator operating on the waveform {{cite kim2018crepe}}; SwiftF0 is a small recent model {{cite nieradzik2025swiftf0}}. Its published ranking comes from a benchmark maintained under the same account as the model {{cite pitchbenchmark}}; we therefore measured it on brass ourselves (Section 5.4).</p>
+      <p><strong>Source separation.</strong> Hybrid Transformer Demucs {{cite rouard2023htdemucs}} and the band-split RoPE Transformer (BS-RoFormer) {{cite lu2024bsroformer}} separate a mixture into stems. We use two community checkpoints of the latter architecture: BS-RoFormer SW, with six stems {{cite audioseparator}}, and MVSep Mega-53, with 53 stems that include brass, trumpet, trombone, French horn and tuba {{cite solovyev2026msst}}. We found no open separator with stems for cornet, tenor horn, baritone or euphonium, and none that separates several players of one instrument.</p>
+      <p><strong>Beat and downbeat tracking.</strong> Earlier trackers decode the activations of a neural network with a dynamic Bayesian network over tempo and bar position {{cite krebs2015}}, {{cite bock2016madmom}}. Beat This! predicts beats and downbeats directly {{cite foscarin2024beatthis}}. None of these models outputs a time signature; the metre must be inferred from the spacing of the downbeats.</p>
+      <p><strong>Pitch spelling, key and notation.</strong> A pitch number does not determine whether a note is F♯ or G♭. The ps13 algorithm spells pitches from their tonal context {{cite meredith2006ps13}}; we use the implementation in partitura {{cite cancino2022partitura}}. The key is estimated with the Krumhansl–Kessler profiles {{cite krumhansl1990}}, and scores are written in MusicXML {{cite musicxml}}.</p>
+      <p><strong>Gap.</strong> We found no published accuracy figures for transcription of brass-band audio, and no dataset of brass-band recordings with aligned notes. The evaluation in this paper is therefore assembled from the closest available real brass recordings (Section 4.1).</p>
     </section>
 
-    <section id="pipeline" aria-labelledby="pipeline-title">
-      <h2 id="pipeline-title"><span class="secno">3</span> The pipeline</h2>
-      <p class="plain"><span class="plain-label">In short</span>Models listen and rules write. After the vote between the models, the same notes always give exactly the same score.</p>
+    <section id="method" aria-labelledby="method-title">
+      <h2 id="method-title"><span class="secno">3</span> Method</h2>
+      <h3>3.1 Overview</h3>
+      <p>{{ref fig:brass-pipeline}} shows the pipeline, and {{ref table:models}} lists the pretrained models and their roles. Learned models are used only for listening; every stage after the vote between the note models is deterministic, so identical notes always yield an identical score.</p>
 
       {{pipeline brass-pipeline}}
 
-      <h3>Which model does what</h3>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Table 1">
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Table: models" id="table-models">
         <table>
-          <caption>Table 1. The models, what each is used for, and its licence. <span class="src">Source: <code>THIRD_PARTY_NOTICES.md</code> and the profiles in <code>engine/src/scribe_engine/profiles.py</code>.</span></caption>
+          <caption>{{label table:models}}. Pretrained models used by the system, their role, where they run and their licence. Source: <code>THIRD_PARTY_NOTICES.md</code> and <code>engine/src/scribe_engine/profiles.py</code>.</caption>
           <thead>
-            <tr><th scope="col">Model</th><th scope="col">Used for</th><th scope="col">Runs on</th><th scope="col">Licence</th></tr>
+            <tr><th scope="col">Model</th><th scope="col">Role</th><th scope="col">Runs on</th><th scope="col">Licence</th></tr>
           </thead>
           <tbody>
-            <tr><th scope="row">SwiftF0<sup><a href="#ref-5">[5]</a></sup></th><td>The pitch of one line: the spine of a solo, and where each note ends</td><td>Computer; Android phone in builds that bundle the models</td><td>MIT</td></tr>
-            <tr><th scope="row">Basic Pitch<sup><a href="#ref-4">[4]</a></sup></th><td>A second opinion on every note; the only note model in a draft made on the phone</td><td>Computer; Android phone in builds that bundle the models</td><td>Apache-2.0</td></tr>
-            <tr><th scope="row">Beat This!<sup><a href="#ref-8">[8]</a></sup></th><td>Beats and downbeats (the small checkpoint on phones, the final one on the computer)</td><td>Computer; Android phone in builds that bundle the models</td><td>MIT, code and weights</td></tr>
-            <tr><th scope="row">MuScriptor medium<sup><a href="#ref-3">[3]</a></sup></th><td>The main note model for a whole band or a mix</td><td>Computer</td><td>CC BY-NC 4.0, non-commercial; gated, each user downloads it</td></tr>
-            <tr><th scope="row">BS-RoFormer SW<sup><a href="#ref-11">[11]</a><a href="#ref-25">[25]</a></sup></th><td>Splits a pop or rock song into stems before the notes are found</td><td>Computer</td><td>Code MIT; no licence stated for the weights</td></tr>
-            <tr><th scope="row">Mega-53<sup><a href="#ref-13">[13]</a></sup></th><td>Lifts a soloist, the bass and the drums out of an orchestra</td><td>Computer</td><td>Code MIT; no licence stated for the weights</td></tr>
+            <tr><th scope="row">SwiftF0 {{cite nieradzik2025swiftf0}}</th><td>f0 of a monophonic line: the basis of a solo part, and note offsets</td><td>Computer; Android phone in builds that bundle the models</td><td>MIT</td></tr>
+            <tr><th scope="row">Basic Pitch {{cite bittner2022basicpitch}}</th><td>Second note estimate for every note; the only note model in a draft made on a phone</td><td>Computer; Android phone in builds that bundle the models</td><td>Apache-2.0</td></tr>
+            <tr><th scope="row">Beat This! {{cite foscarin2024beatthis}}</th><td>Beats and downbeats (checkpoint small0 on phones, final0 on the computer)</td><td>Computer; Android phone in builds that bundle the models</td><td>MIT, code and weights</td></tr>
+            <tr><th scope="row">MuScriptor medium {{cite rouard2026muscriptor}}</th><td>Main note model for an ensemble or a mixture</td><td>Computer</td><td>CC BY-NC 4.0, gated; downloaded by each user</td></tr>
+            <tr><th scope="row">BS-RoFormer SW {{cite lu2024bsroformer}}, {{cite audioseparator}}</th><td>Separates a pop or rock recording into stems before transcription</td><td>Computer</td><td>Code MIT; no licence stated for the weights</td></tr>
+            <tr><th scope="row">MVSep Mega-53 {{cite solovyev2026msst}}</th><td>Extracts a soloist, the bass and the drums from an orchestral recording</td><td>Computer</td><td>Code MIT; no licence stated for the weights</td></tr>
           </tbody>
         </table>
       </div>
 
-      <h3>Routing: separate first, or not</h3>
-      <p>The musician answers "What is this?", and the answer picks the route; the app does not guess. A <strong>solo</strong> and a <strong>brass band</strong> go straight to the note models: in an all-brass recording there is nothing for a separator to split. A <strong>pop or rock song</strong> is first split into stems with BS-RoFormer SW, and each stem is transcribed. For a <strong>soloist with an orchestra</strong>, Mega-53 lifts out the solo, the bass and the drums, and the orchestra is what remains of the mix.</p>
+      <h3>3.2 Routing</h3>
+      <p>The user states what the recording is, and that answer selects the route. A solo part and a brass ensemble are passed directly to the note models, since an all-brass mixture offers a separator nothing to split. A pop or rock recording is first separated with BS-RoFormer SW, and each stem is transcribed. For a soloist with an orchestra, Mega-53 extracts the solo, the bass and the drums, and the orchestra is taken as the residual of the mixture.</p>
 
-      <h3>The vote, and what a ? means</h3>
-      <p>Every note model hears the same audio, and notes are grouped when they share a pitch and start together. For a solo, SwiftF0 supplies the notes and a second model confirms them; a note SwiftF0 did not hear is dropped (<a href="#doubt">section 6.6</a> shows why). A small logistic model then turns the evidence for each note into a probability that it is right: which models found it, how long it is, how firmly the pitch tracker held it, and whether the line was separated from a mix. A note below the threshold gets a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span>. Neighbouring marked notes share one mark, and the review starts with the musician's own part.</p>
+      <h3>3.3 Note consensus and confidence</h3>
+      <p>The note models process the same audio, and their notes are clustered when they agree in pitch and onset. For a solo part, SwiftF0 supplies the notes and a second model confirms them; a note that SwiftF0 did not produce is discarded (Section 5.6 gives the evidence). A logistic regression then maps the evidence for each note to a probability that it is correct: which models produced it, its duration, the voicing confidence of the f0 contour at its start, and whether the line was separated from a mixture. A note below a threshold is marked with a <span class="q uncertain" aria-hidden="true">?</span><span class="vh">question mark</span>; neighbouring marked notes share one mark.</p>
 
-      <h3>Beats, bars and the grid</h3>
-      <p>Beat This! tracks beats and downbeats on the whole mix. Rules then pick the beat a player would count (the tracker often taps half notes in slow music), tidy the bar lines where the tracker inserted or dropped a beat, and mark passages without a steady pulse as <i>ad lib.</i> The notes are then moved onto the grid: for each beat the quantizer weighs how well a subdivision fits against how complicated it is to read, at 24 ticks per beat. Written note lengths come from where the pitch contour leaves the note, not from how long the player held it.</p>
+      <h3>3.4 Beats, metre and quantisation</h3>
+      <p>Beat This! tracks beats and downbeats on the full mixture. Rules select the metrical level a player would count (the tracker often follows half notes in slow music), repair bar lines where a beat was inserted or dropped, and label passages without a steady pulse as <i>ad lib.</i> The notes are then quantised: for each beat, the quantiser weighs how well a subdivision fits the onsets against how complex it is to read, at a resolution of 24 ticks per beat. Written durations are derived from where the f0 contour leaves the note, not from the performed duration.</p>
 
-      <h3>Names, harmony and parts</h3>
-      <p>Note names are chosen for the whole ensemble at sounding pitch, before anything is transposed, and the key is estimated from the same notes. Dense accompaniment is reduced to the chord tones of each beat. Three arrangers write the parts: a full band, a small band, and a quartet whose two inner parts follow classical part-writing rules (no crossing, no parallel fifths or octaves, only chord tones). Three difficulty levels follow: as played, standard, and easier.</p>
-      <p>Everything in this section after the vote is written twice, in Python as the reference and in Rust for the apps, and a conformance suite requires the two to produce identical output.</p>
+      <h3>3.5 Spelling, harmony and arrangement</h3>
+      <p>Pitches are spelled for the whole ensemble at concert pitch, before transposition, and the key is estimated from the same notes. Dense accompaniment is reduced to the chord tones of each beat. Three arrangers write the parts: a full band, a small band, and a quartet whose inner parts follow part-writing rules (no crossing, no parallel fifths or octaves, chord tones only). Three difficulty levels are derived from the result.</p>
+      <p>All stages after the vote are implemented twice, in Python as the reference and in Rust for the apps, and a conformance suite requires identical output from the two.</p>
     </section>
 
-    <section id="data" aria-labelledby="data-title">
-      <h2 id="data-title"><span class="secno">4</span> Data</h2>
-      <p class="plain"><span class="plain-label">In short</span>There is no public brass-band recording with its correct notes. We used the closest real brass recordings. They are small sets, and the rules were tuned on the same sets they are scored on.</p>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Table 2">
+    <section id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title"><span class="secno">4</span> Experimental setup</h2>
+      <h3>4.1 Datasets</h3>
+      <p>No public brass-band recording with aligned reference notes was found. {{ref table:data}} lists the sets that were used instead. None of them is a brass band: the quartets have one player per part, recorded one at a time, and the largest set has {{data p/chorales-transcription/pieces int}} pieces.{{holds p/chorales-transcription/pieces >= p/urmp-transcription/pieces}}</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Table: datasets" id="table-data">
         <table>
-          <caption>Table 2. Evaluation sets. <span class="src">Source: <code>eval/README.md</code>, <code>THIRD_PARTY_NOTICES.md</code>; sizes counted by <code>site/shared/research/per_piece.py</code> and from <code>eval/baselines.json</code>.</span></caption>
+          <caption>{{label table:data}}. Evaluation sets, their size as used, their licence and where the regression gate runs on them. Sizes are counted by <code>site/shared/research/per_piece.py</code> or taken from <code>eval/baselines.json</code>.</caption>
           <thead>
-            <tr><th scope="col">Set</th><th scope="col">What it is</th><th scope="col">Size used</th><th scope="col">Licence</th><th scope="col">Gate runs</th></tr>
+            <tr><th scope="col">Set</th><th scope="col">Content</th><th scope="col">Size used</th><th scope="col">Licence</th><th scope="col">Gate</th></tr>
           </thead>
           <tbody>
-            <tr><th scope="row">ChoraleBricks brass quartets<sup><a href="#ref-17">[17]</a></sup></th><td>Chorales played by four real, separately recorded players: trumpet, flugelhorn, baritone, tuba. Aligned notes, with each note's place in the score</td><td>{{data p/chorales-transcription/pieces int}} chorales, {{data p/chorales-transcription/notes int}} notes; {{data m/datasets/choralebricks_solo_stems int}} single-instrument recordings</td><td>CC BY 4.0</td><td>In CI, from pinned annotations and our own model outputs</td></tr>
-            <tr><th scope="row">URMP brass<sup><a href="#ref-18">[18]</a></sup></th><td>Real chamber pieces for two to five brass players, each part also recorded alone</td><td>{{data p/urmp-transcription/pieces int}} pieces, {{data p/urmp-transcription/notes int}} notes; {{data brass/solo-beat-model/urmp.parts int}} single parts</td><td>Not checked for redistribution</td><td>Locally only</td></tr>
-            <tr><th scope="row">Slakh, trumpet lead<sup><a href="#ref-19">[19]</a></sup></th><td>Synthesized songs with a trumpet melody over a band. Used to compare routes, never for rhythm: its notes are not on a grid</td><td>{{data m/datasets/slakh_trumpet_songs int}} songs</td><td>Not checked for redistribution</td><td>Locally only</td></tr>
-            <tr><th scope="row">Fast-note clips</th><td>Runs, repeated notes, trills and ornaments built from real trumpet samples, dry and with a church's reverberation, with an exact reference</td><td>A frozen set</td><td>Samples: University of Iowa MIS, VSCO 2 CE (CC0); room: OpenAIR (CC BY 4.0)</td><td>In CI</td></tr>
-            <tr><th scope="row">One commercial recording</th><td>A soloist with an orchestra. No reference notes: the arranged output is frozen and must be reproduced exactly</td><td>1 recording</td><td>Commercial; never published or shipped</td><td>Locally only</td></tr>
+            <tr><th scope="row">ChoraleBricks, brass quartets {{cite balke2025choralebricks}}</th><td>Chorales played by four separately recorded players (trumpet, flugelhorn, baritone, tuba), with aligned notes and score positions</td><td>{{data p/chorales-transcription/pieces int}} pieces, {{data p/chorales-transcription/notes int}} notes; {{data m/datasets/choralebricks_solo_stems int}} single-instrument recordings</td><td>CC BY 4.0</td><td>Continuous integration, from pinned annotations and cached model outputs</td></tr>
+            <tr><th scope="row">URMP (University of Rochester Multi-Modal Music Performance dataset), brass pieces {{cite li2019urmp}}</th><td>Chamber pieces for two to five brass players; each part also recorded alone</td><td>{{data p/urmp-transcription/pieces int}} pieces, {{data p/urmp-transcription/notes int}} notes; {{data brass/solo-beat-model/urmp.parts int}} single parts</td><td>None stated</td><td>Local only</td></tr>
+            <tr><th scope="row">Slakh, trumpet lead {{cite manilow2019slakh}}</th><td>Synthesised songs with a trumpet melody over a band; used to compare routes, not for rhythm, since its notes are not quantised</td><td>{{data m/datasets/slakh_trumpet_songs int}} songs</td><td>CC BY 4.0</td><td>Local only</td></tr>
+            <tr><th scope="row">Fast-note clips</th><td>Runs, repeated notes, trills and ornaments assembled from trumpet samples {{cite iowa-mis}}, {{cite vsco2}}, dry and convolved with a church impulse response {{cite openair}}, with an exact reference</td><td>{{data m/datasets/fast_notes_frozen_clips int}} clips in continuous integration; {{data m/fast_notes/clips int}} in all</td><td>Samples: unrestricted and CC0; impulse response: CC BY 4.0</td><td>Continuous integration</td></tr>
+            <tr><th scope="row">One commercial recording</th><td>A soloist with an orchestra; no reference notes, the arranged output is frozen and must be reproduced exactly</td><td>1 recording</td><td>Commercial; not published or distributed</td><td>Local only</td></tr>
           </tbody>
         </table>
       </div>
-      <p><strong>Training and evaluation.</strong> Brasscribe trains no listening model: all six are used as published. Two things were fitted on our data. The confidence model was fitted on notes with known answers from these same sets, and checked on a half of the recordings it had not seen. The thresholds in the music rules (the quantizer's penalties, the bar-line cleanup, the duration and staccato rules, the fast-note rules) were chosen while looking at the sets they are scored on. <strong>There is no held-out brass set.</strong> The numbers below therefore show how well the rules fit these recordings, which is at best an upper bound for a recording made elsewhere.</p>
-      <p><strong>What the sets are not.</strong> None is a brass band. The quartets have one player per part, recorded one at a time; a band has several players per part, in a hall. The largest set has {{data p/chorales-transcription/pieces int}} pieces.</p>
-      {{holds p/chorales-transcription/pieces >= p/urmp-transcription/pieces}}
-    </section>
 
-    <section id="measures" aria-labelledby="measures-title">
-      <h2 id="measures-title"><span class="secno">5</span> Measures</h2>
-      <p class="plain"><span class="plain-label">In short</span>Hearing a note and writing it in the right place are different things, and they are measured apart. All measures run from 0 to 1; higher is better.</p>
+      <h3>4.2 Splits and data leakage</h3>
+      <p>No listening model was trained or fine-tuned; all six are used as published. Two components were fitted to our data. The confidence model (Section 3.3) was fitted on notes with reference labels from the sets in {{ref table:data}} and validated on a held-out half of the recordings. The thresholds of the rules (the quantiser's complexity penalties, the bar-line repair, the duration and staccato rules, the fast-note rules) were chosen while inspecting the same sets on which they are scored. <strong>There is no held-out brass set.</strong> The results in Section 5 therefore measure how well the rules fit these recordings and should be read as upper bounds for unseen recordings.</p>
+
+      <h3>4.3 Metrics</h3>
+      <p>All measures lie between 0 and 1; higher is better. The detection of a note and its placement in the score are measured separately. Note-level measures are computed with <code>mir_eval.transcription</code> {{cite raffel2014mireval}}, onset-only and, where stated, onset+offset. The primary onset tolerance is ±50 ms; ±100 ms is reported as a secondary, relaxed tolerance, and several suites store results at ±100 ms only, which is stated where it applies. An <em>octave error</em> is a reference note that remains unmatched while an estimated note one or two octaves away starts within the onset tolerance; the octave-error rate is the share of reference notes for which this holds.</p>
       <ul class="measures">
       {{part measure-onset}}
       {{part measure-position}}
@@ -141,163 +141,198 @@ scripts: charts.js
       {{part measure-metre}}
       {{part measure-doubt}}
       </ul>
-      <p><strong>The gate.</strong> <code>scribe bench</code> scores every suite again from stored model outputs and fails when a number has moved by more than the tolerance in <code>eval/baselines.json</code>; counts such as crossing parts are held exactly. Most figures on this page read the same file the gate reads. The others say so in their source line: the reports of the model conversions, and a few numbers that were measured once and are kept with their sources in <code>measured.toml</code>.</p>
+
+      <h3>4.4 Protocol</h3>
+      <p>Model outputs are computed once and stored; <code>scribe bench</code> rescores every suite from the stored outputs and fails when a value has moved by more than the tolerance recorded in <code>eval/baselines.json</code>. Results are means over pieces. Where the per-piece values are available we also report the sample standard deviation (SD) and a 95 % confidence interval (CI) of the mean, obtained with a percentile bootstrap over pieces (10,000 resamples, fixed seed) {{cite efron1993bootstrap}}; with {{data p/urmp-transcription/pieces int}} to {{data p/chorales-transcription/pieces int}} pieces these intervals are wide. No significance tests were carried out, and differences between conditions are reported descriptively. F-measure, precision and recall are given as proportions to two decimals, and shares as percentages (with one decimal below 10 %); the parity of converted models is given to three decimals because its threshold is 0.98. Precision and recall are reported beside the F-measure where the baselines store them or the scorer provides them for the ensemble suites ({{ref table:prf}}). Most figures read the file used by the gate; figures built from other files (the model-conversion reports, and a small set of values measured once, listed in the Appendix) state this in their source line.</p>
     </section>
 
     <section id="results" aria-labelledby="results-title">
-      <h2 id="results-title"><span class="secno">6</span> Results</h2>
-      <p class="plain"><span class="plain-label">In short</span>Most notes are found. Putting them in the right place in the bar is the weak step. The middle parts of a group are mostly not heard.</p>
+      <h2 id="results-title"><span class="secno">5</span> Results</h2>
 
-      <h3 id="found">6.1 Notes found in a group</h3>
+      <h3 id="found">5.1 Note detection in ensembles</h3>
+      <p>{{ref fig:notes-found}} gives the onset F-measure of the two transcribers. On the quartets the best model reaches {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} at the standard ±50 ms tolerance (SD {{data brass/chorales-transcription/muscriptor-medium.onset_f1@sd}}, 95 % CI {{data brass/chorales-transcription/muscriptor-medium.onset_f1@lo}}–{{data brass/chorales-transcription/muscriptor-medium.onset_f1@hi}}) and {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} at the relaxed ±100 ms tolerance (SD {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@sd}}, 95 % CI {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@lo}}–{{data brass/chorales-transcription/muscriptor-medium.onset100_f1@hi}}; range {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@min}}–{{data brass/chorales-transcription/muscriptor-medium.onset100_f1@max}}). {{ref table:prf}} gives precision and recall beside the F-measure: at ±100 ms the best model finds {{data p/chorales-transcription/muscriptor-medium.onset100_r pct}} of the played notes of the quartets, and {{data p/chorales-transcription/muscriptor-medium.onset100_p pct}} of the notes it reports are correct. The difference between the two tolerances is large for brass, consistent with late detection of soft attacks. On the two synthesised songs with a trumpet lead, separating before transcription scored higher than transcribing the mixture; with two songs this is suggestive only.</p>
       {{chart notes-found}}
-      <p>On a brass quartet the best model reaches F1 {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} at the looser tolerance, and the pieces differ a good deal: from {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@min}} to {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@max}}. The strict 50 ms tolerance costs brass a lot, because a soft attack speaks late; the looser one is the fairer measure of what ends up in the score. On a full band, separating the instruments first scored higher than transcribing the mix, on two synthesized songs.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Table: precision, recall and F-measure" id="table-prf">
+        <table>
+          <caption>{{label table:prf}}. Note-level precision (P), recall (R) and F-measure (F) of the two transcribers on the ensembles of {{ref fig:notes-found}}, means over pieces. F is the gated value; P and R are computed with the same scorer by <code>per_piece.py</code> and are not gated.</caption>
+          <thead><tr><th scope="col">Set and model</th><th scope="col" class="num">P, ±50 ms</th><th scope="col" class="num">R, ±50 ms</th><th scope="col" class="num">F, ±50 ms</th><th scope="col" class="num">P, ±100 ms</th><th scope="col" class="num">R, ±100 ms</th><th scope="col" class="num">F, ±100 ms</th><th scope="col"><i>n</i></th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Brass quartets, MuScriptor medium</th><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset_p}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset_r}}</td><td class="num">{{data brass/chorales-transcription/muscriptor-medium.onset_f1}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset100_p}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset100_r}}</td><td class="num">{{data brass/chorales-transcription/muscriptor-medium.onset100_f1}}</td><td>{{data p/chorales-transcription/pieces int}} pieces</td></tr>
+            <tr><th scope="row">Brass quartets, Basic Pitch</th><td class="num">{{data p/chorales-transcription/basic-pitch.onset_p}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset_r}}</td><td class="num">{{data brass/chorales-transcription/basic-pitch.onset_f1}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset100_p}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset100_r}}</td><td class="num">{{data brass/chorales-transcription/basic-pitch.onset100_f1}}</td><td>{{data p/chorales-transcription/pieces int}} pieces</td></tr>
+            <tr><th scope="row">Chamber brass, MuScriptor medium</th><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset_p}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset_r}}</td><td class="num">{{data brass/urmp-transcription/muscriptor-medium.onset_f1}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset100_p}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset100_r}}</td><td class="num">{{data brass/urmp-transcription/muscriptor-medium.onset100_f1}}</td><td>{{data p/urmp-transcription/pieces int}} pieces</td></tr>
+            <tr><th scope="row">Chamber brass, Basic Pitch</th><td class="num">{{data p/urmp-transcription/basic-pitch.onset_p}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset_r}}</td><td class="num">{{data brass/urmp-transcription/basic-pitch.onset_f1}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset100_p}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset100_r}}</td><td class="num">{{data brass/urmp-transcription/basic-pitch.onset100_f1}}</td><td>{{data p/urmp-transcription/pieces int}} pieces</td></tr>
+          </tbody>
+        </table>
+      </div>
 
-      <h3 id="rhythm">6.2 Where the notes land</h3>
-      <p>The figure for this is <a href="#fig-rhythm">the one under the abstract</a>. It is the central result of the paper. Given the right beats, the rules write {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} of the notes exactly where the score has them. Given the beats the tracker found, they manage {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, and the dots show how little a mean says here: single pieces range from {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}, depending on how well the tracker found the beats and the bar lines. Position within the beat holds up much better ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), so the rhythm inside a beat is usually readable even when the bar lines are not. Written lengths are right for {{data brass/quant-urmp/reference_beats.duration_acc pct}} of the chamber-music notes even with perfect beats: players shorten notes, and the rules only partly undo that.</p>
-      <p>One tuning step is behind the left-hand numbers. Making a simple rhythm cheaper for the quantizer to choose than a complicated one moved exact positions on the chorales from {{data m/penalties/position_before pct}} to {{data brass/quant-chorales/reference_beats.position_acc pct}}, with the score's beats. The step was tuned on these chorales, so that gain is a fit, not a test.{{holds brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before}}</p>
+      <h3 id="rhythm">5.2 Rhythm quantisation</h3>
+      <p>{{ref fig:rhythm}} (Section 1) isolates the rhythm stage by quantising the reference notes. With reference beats, {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} of notes are written at their notated position in the bar. With tracked beats the mean falls to {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, and single pieces range from {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}; the mean is therefore a poor summary. Position within the beat is more robust ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), so the rhythm inside a beat is usually readable even when the bar lines are displaced. One tuning step underlies the reference-beat results: scaling the quantiser's complexity penalties raised exact positions on the chorales from {{data m/penalties/position_before pct}} to {{data brass/quant-chorales/reference_beats.position_acc pct}}. The step was tuned on these chorales, so the gain is a fit and not a test.{{holds brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before}}</p>
+      <p>The tracked beats were also scored against the notated quarter-note pulse, with the F-measure of <code>mir_eval.beat</code> (tolerance ±70 ms; beats in the first 5 s are discarded, the default of mir_eval); {{ref fig:beats}} gives the results. No annotated beats exist for these sets, so the reference is the quarter-note pulse interpolated from the notated positions of the reference notes. The values are therefore not comparable with published beat F-measures, which rest on annotated beats. The raw output of Beat This! reaches a mean of {{data p/quant-chorales/beat_this.beat_f}} (SD {{data p/quant-chorales/beat_this.beat_f@sd}}, 95 % CI {{data p/quant-chorales/beat_this.beat_f@lo}}–{{data p/quant-chorales/beat_this.beat_f@hi}}) on the quartets and {{data p/quant-urmp/beat_this.beat_f}} (SD {{data p/quant-urmp/beat_this.beat_f@sd}}, 95 % CI {{data p/quant-urmp/beat_this.beat_f@lo}}–{{data p/quant-urmp/beat_this.beat_f@hi}}) on the chamber pieces. A tracker that follows every second quarter note scores about 0.67 under this measure, and {{data p/quant-urmp/beat_this.beat_f@0.60-0.75 int}} of the {{data p/quant-urmp/beat_this.beat_f@n int}} chamber pieces lie between 0.60 and 0.75. Read together with {{ref fig:rhythm}}, this indicates that the beats themselves are mostly found, whereas the metrical level and the bar are not. Downbeat F-measure and the continuity measures (CMLt, AMLt) were not computed, because the references contain no bar-start times.</p>
+      <p>The figure also includes a candidate tracker that is under evaluation and is not part of the released system, md_beat_this (model run1) {{cite foscarin2026mdbeat}}. Against the same pulse its F-measure is {{data p/quant-chorales/md_beat_this.beat_f}} and {{data p/quant-urmp/md_beat_this.beat_f}}, close to that of Beat This!. Quantising the reference notes on its beats raises the mean position accuracy from {{data brass/quant-chorales/beat_this.position_acc pct}} to {{data p/quant-chorales/md_beat_this.position_acc pct}} on the quartets and from {{data brass/quant-urmp/beat_this.position_acc pct}} to {{data p/quant-urmp/md_beat_this.position_acc pct}} on the chamber pieces; single pieces move in both directions, and with {{data p/urmp-transcription/pieces int}} to {{data p/chorales-transcription/pieces int}} pieces and no test the difference is suggestive only. These values are computed from stored beat files and are not gated.</p>
+      {{chart beats}}
+      <p>Written durations are examined separately in {{ref fig:durations}}, which compares three rules for deriving a written duration. The rule in use is the best of the three by a small margin, and the chamber-music result remains low under every rule. These values are higher than the duration accuracy in {{ref fig:rhythm}} ({{data brass/quant-urmp/reference_beats.duration_acc pct}} for chamber music) because the suites differ: there the duration is taken from the quantiser alone and must equal the notated one exactly, whereas here a duration rule is applied per part and a deviation of one tick is accepted.</p>
       {{chart durations}}
-      <p>Three rules for a note's written length were compared. This figure's chamber-music numbers are higher than the {{data brass/quant-urmp/reference_beats.duration_acc pct}} in the rhythm figure because the two come from different suites: there a length is taken from the quantizer alone and must equal the score's exactly; here a length rule is applied per part and one tick (1/24 of a beat) is allowed. The one in use reads the end of a note from where its pitch stops, and it is the best of the three by a small margin. The chamber-music result stays low under every rule.</p>
 
-      <h3 id="solo">6.3 One player, end to end</h3>
+      <h3 id="solo">5.3 A single part, end to end</h3>
+      <p>{{ref fig:solo-written}} evaluates the complete solo path on recordings of single parts, with the models available on a phone. Notes are detected well, but the written F-measure is about a quarter, and the bar length is correct for {{span brass/solo-beat-model/urmp.small0.meter_match brass/solo-beat-model/choralebricks.final0.meter_match brass/solo-beat-model/choralebricks.small0.meter_match brass/solo-beat-model/urmp.final0.meter_match pct}} of the parts. A monophonic line offers a beat tracker little evidence: there is no bass and no percussion. Replacing the small beat-tracking checkpoint by the larger one (second view) changes the results little; no statistical test was applied to the difference.</p>
       {{chart solo-written}}
-      <p>The rhythm figure above tested the rules on correct notes. This one tests everything at once, on the recording of a single player, with the models a phone has. The notes are heard well. But only about a quarter are written in the right place in the bar, and the bar itself has the right length for {{span brass/solo-beat-model/urmp.small0.meter_match brass/solo-beat-model/choralebricks.final0.meter_match brass/solo-beat-model/choralebricks.small0.meter_match brass/solo-beat-model/urmp.final0.meter_match pct}} of the parts. A single line gives a beat tracker little to hold on to: there is no bass and no drums. The second view swaps in the larger beat tracker: it changes little, and <code>eval/README.md</code> records that no difference between the two was significant.</p>
 
-      <h3 id="instruments">6.4 Instrument by instrument</h3>
+      <h3 id="instruments">5.4 Single instruments</h3>
+      <p>{{ref fig:solo-instruments}} reports the solo path per instrument. Every brass instrument recorded alone is transcribed well, including the tuba, with an octave-error rate of at most {{data brass/solo-instruments/trombone.octave_err pct}}. Without knowledge of the instrument, the solo path retains only notes in a cornet's range, so the tuba is lost entirely and the trombone retains {{data brass/solo-instruments/trombone.today_recall pct}} of its notes; the f0 estimator is not the limiting factor. The second view compares SwiftF0 with Basic Pitch on the same recordings. Basic Pitch confirms the notes of SwiftF0, and on the tuba it agrees with {{data brass/solo-instruments/tuba.bp_agrees pct}} of them, which leaves {{data brass/solo-instruments/tuba.q_missed f1}} unmarked wrong notes per 100 written notes, against {{data brass/solo-instruments/trumpet.q_missed f1}} on the trumpet.{{holds brass/solo-instruments/tuba.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/trumpet.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/horn.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/baritone.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/flugelhorn.octave_err <= brass/solo-instruments/trombone.octave_err}}</p>
       {{chart solo-instruments}}
-      <p>Alone, every brass instrument is tracked well, the tuba included, and almost never in the wrong octave. The second series shows a fault that is easy to mistake for a model's: without knowing the instrument, the solo path keeps only notes in a cornet's range, so a tuba vanishes and a trombone keeps {{data brass/solo-instruments/trombone.today_recall pct}} of its notes. The pitch tracker was never the limit there.</p>
-      <p>The figure's second view is the check of SwiftF0 on brass that section 2 promised. The second model matters too: a note is written without a mark only when Basic Pitch confirms it, and on the tuba Basic Pitch agrees with {{data brass/solo-instruments/tuba.bp_agrees pct}} of the line's notes. That leaves {{data brass/solo-instruments/tuba.q_missed f1}} wrong notes without a mark per 100 written notes on the tuba, against {{data brass/solo-instruments/trumpet.q_missed f1}} on the trumpet.</p>
 
-      <h3 id="voices">6.5 One voice out of a group</h3>
+      <h3 id="voices">5.5 Individual voices of an ensemble</h3>
+      <p>{{ref fig:voices}} asks whether the line of one player can be extracted from a quartet recording by the range of the instrument. The top voice is recovered and the tenor largely is not (F = {{data brass/seat-voices/muscriptor-medium.T_f1}} with the best model). The further views give the recall of each voice's notes anywhere in the transcription; these are upper bounds, and the lower two voices are the ones most often missing. For this reason the system writes only the melody and the bass of an ensemble from the audio and arranges the parts between them from the harmony.</p>
       {{chart voices}}
-      <p>The first view asks whether one player's line can be taken out whole. The other views ask a simpler question, whose notes are missing from the transcription at all: mostly the lower two players'.</p>
-      <p>A player who records the whole group and wants their own line gets it if they play the top part, and nearly so on the second. The tenor voice, in the middle of the harmony on an instrument that sounds like its neighbours, is found with F1 {{data brass/seat-voices/muscriptor-medium.T_f1}} by the best model. For this reason Brasscribe writes only the melody and the bass of a band from what it heard, and arranges the parts in between from the harmony.</p>
+      <p>{{ref fig:inner-parts}} evaluates those arranged parts against the composer's. Given the harmony of the score, the quartet arranger chooses the composer's pitch class for about four notes in five, with {{data brass/arrange/quartet.parallels_per_100 f2}} parallel fifths or octaves per 100 chord changes, against {{data brass/arrange/quartet-reference.parallels_per_100 f2}} in the chorales themselves. From a recording it matches about half, with {{data brass/quartet-audio/mus.parallels_per_100 f1}} parallels per 100. That the arrangers never write an unplayable note or cross parts holds by construction and is not evidence of musical quality.</p>
       {{chart inner-parts}}
-      <p>How good are those arranged parts? Given the true harmony, the quartet arranger chooses the same note as the composer for about four notes in five, with {{data brass/arrange/quartet.parallels_per_100 f2}} parallel fifths or octaves per 100 chord changes against {{data brass/arrange/quartet-reference.parallels_per_100 f2}} in the chorales themselves. Starting from a recording it matches about half, and writes {{data brass/quartet-audio/mus.parallels_per_100 f1}} parallels per 100. The arrangers never write a note an instrument cannot play and never cross parts; that is guaranteed by how they are built, so it shows the rules hold, not that the music is good.</p>
 
-      <h3 id="doubt">6.6 The doubt marks</h3>
+      <h3 id="doubt">5.6 Agreement between models and the confidence marks</h3>
+      <p>{{ref fig:agreement}} shows that agreement between models is strong evidence that a note is correct, provided that SwiftF0 is one of the models. This motivates the rule of Section 3.3. The marks derived from it are weaker ({{ref fig:doubt}}): few correct notes are marked, but most wrong notes carry no mark, and on the French horn none did.{{holds brass/solo-instruments/horn.q_hit <= 0}} The recordings in {{ref fig:doubt}} are those on which the confidence model was fitted, so performance on new recordings should be expected to be no better. The marks judge pitch and onset only; they say nothing about the most frequent error, a correct note at the wrong position in the bar (Section 5.3).</p>
       {{chart agreement}}
-      <p>Agreement between models is good evidence. This is why a note needs SwiftF0 and one more model to be written without a mark, and why two models that agree without SwiftF0 are not trusted.</p>
       {{chart doubt}}
-      <p>The marks themselves are a weaker tool than the agreement behind them suggests. A marked note is usually worth looking at: few right notes are marked. But most wrong notes carry no mark, and on the French horn none did.{{holds brass/solo-instruments/horn.q_hit <= 0}} The marks also say nothing about the commonest fault of all, a right note in the wrong place in the bar (<a href="#solo">6.3</a>): they judge pitch and onset only. A musician should treat an unmarked note as "probably the right pitch", not as "correct".</p>
 
-      <h3 id="fast">6.7 Fast notes</h3>
+      <h3 id="fast">5.7 Fast passages</h3>
+      <p>{{ref fig:fast-notes}} follows the notes of fast figures (runs, repeated notes, trills) through the stages of the solo path. The f0-based note segmentation retains about six notes in ten. With reference beats nearly all of these reach the score; with tracked beats more are lost at quantisation. Of the trills and two-note alternations, {{data brass/fast-notes/oracle.written.alt_kept pct}} keep at least four fifths of their notes with reference beats and {{data brass/fast-notes/small0.written.alt_kept pct}} with tracked beats. The further views show the effect of the rules that were added for fast notes: recall of the figure's notes improved and remains below one half. The clips are assembled from samples and the rules were developed on them.</p>
       {{chart fast-notes}}
-      <p>Runs, repeated notes and trills are the passages players most want written down, and the hardest. The pitch tracker hears about six of their notes in ten. With the right beats nearly all of those survive to the page; with tracked beats more are lost when the notes are put on the grid. Of the trills and two-note alternations, {{data brass/fast-notes/oracle.written.alt_kept pct}} keep at least four fifths of their notes with the right beats and {{data brass/fast-notes/small0.written.alt_kept pct}} with tracked ones. The rules for fast notes were added after a first version lost most of them; the figure's other views show before and after. They helped, and the passages are still mostly not written.</p>
-    </section>
 
-    <section id="errors" aria-labelledby="errors-title">
-      <h2 id="errors-title"><span class="secno">7</span> Where it fails</h2>
-      <p class="plain"><span class="plain-label">In short</span>Rhythm more than pitch. Inner voices more than outer. Fast and ornamented playing more than plain.</p>
-      <ul>
-        <li><strong>Rhythm, not pitch, is the larger error.</strong> On a solo, notes are heard with F1 {{data brass/solo-beat-model/urmp.small0.onset_f1}} and written in place with F1 {{data brass/solo-beat-model/urmp.small0.written_f1}} (<a href="#solo">6.3</a>). Most of the gap is the beat grid: with the score's beats the same rules place {{data brass/quant-urmp/reference_beats.position_acc pct}} of correct notes (<a href="#rhythm">6.2</a>). It varies enormously from piece to piece: with tracked beats, between {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}} of a piece's notes are in place.</li>
-        <li><strong>Bar length.</strong> The metre is wrong for most solo parts (<a href="#solo">6.3</a>).{{holds brass/solo-beat-model/urmp.small0.meter_match < 0.5}}{{holds brass/solo-beat-model/choralebricks.small0.meter_match < 0.5}} A part in three that is written in four has every bar line in the wrong place, however good its notes.</li>
-        <li><strong>Inner voices.</strong> From a quartet the tenor is found with F1 {{data brass/seat-voices/muscriptor-medium.T_f1}} and the bass with {{data brass/seat-voices/muscriptor-medium.B_f1}}, against {{data brass/seat-voices/muscriptor-medium.S_f1}} for the top voice (<a href="#voices">6.5</a>).</li>
-        <li><strong>Octave errors</strong> are rare where the notes are found at all. Of the played notes in the quartets, {{data brass/chorales-transcription/muscriptor-medium.octave_err_rate pct}} were missed while MuScriptor wrote a note one or two octaves away at that moment, and {{data brass/chorales-transcription/basic-pitch.octave_err_rate pct}} with Basic Pitch; in chamber brass {{data brass/urmp-transcription/muscriptor-medium.octave_err_rate pct}} and {{data brass/urmp-transcription/basic-pitch.octave_err_rate pct}}. The count includes written notes that belong to another part an octave away, so it overstates the fault. On a single instrument the rate is at most {{data brass/solo-instruments/trombone.octave_err pct}}.{{holds brass/solo-instruments/tuba.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/trumpet.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/horn.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/baritone.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/flugelhorn.octave_err <= brass/solo-instruments/trombone.octave_err}}</li>
-        <li><strong>Fast notes</strong> lose about four notes in ten before anything is written (<a href="#fast">6.7</a>).</li>
-        <li><strong>Ornaments become extra notes.</strong> The fast-note set has control clips that must stay one note. With tracked beats a fall adds {{data brass/fast-notes/small0.ctl-fall.extra}} notes per played note, a scoop {{data brass/fast-notes/small0.ctl-scoop.extra}}, a rip {{data brass/fast-notes/small0.ctl-rip.extra}}, and a wide downward vibrato {{data brass/fast-notes/small0.ctl-vibdown120.extra}}; an ordinary vibrato adds {{data brass/fast-notes/small0.ctl-vibrato.extra}}. No control clip was written as a trill.{{holds brass/fast-notes/small0.ctl.trills <= 0}}</li>
-        <li><strong>Triplets</strong> have only been checked on computed note times, not on recordings: with 15 ms of timing error, {{data m/triplets/triplet_eighths pct}} of triplet eighths land on their true place. No recorded triplets with a reference are in the sets above.</li>
-        <li><strong>Note lengths.</strong> Even with perfect beats, {{data brass/quant-urmp/reference_beats.duration_acc pct}} of chamber-music notes get the score's written length, and {{data brass/quant-chorales/reference_beats.duration_acc pct}} of chorale notes (<a href="#rhythm">6.2</a>).</li>
-      </ul>
-    </section>
-
-    <section id="comparisons" aria-labelledby="comparisons-title">
-      <h2 id="comparisons-title"><span class="secno">8</span> Model comparisons</h2>
-      <p class="plain"><span class="plain-label">In short</span>Bigger was not better, and neither was telling the model what it was hearing. These are the comparisons that were run, including the ones that lost.</p>
+      <h3 id="comparisons">5.8 Model and design comparisons</h3>
+      <p>The comparisons that determined the design are summarised in {{ref fig:models}}, {{ref fig:solo-trackers}}, {{ref fig:consensus}} and {{ref fig:melody}}.</p>
       {{chart models}}
-      {{chart solo-trackers}}
-      {{chart consensus}}
-      {{chart melody}}
       <ul>
-        <li><strong>MuScriptor large against medium.</strong> The large model scored lower on average. Medium is used.</li>
-        <li><strong>Telling MuScriptor the instruments are brass</strong> took it from {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} to {{data brass/chorales-transcription/muscriptor-medium-brass.onset_f1}}. It is never told.</li>
-        <li><strong>Retuning for Basic Pitch.</strong> Bands rarely play at exactly A = 440. Shifting the recording to 440 before Basic Pitch hears it moved its score from {{data brass/chorales-transcription/basic-pitch.onset100_f1}} to {{data brass/chorales-transcription/basic-pitch-retuned.onset100_f1}} at 100 ms. The combined result of both models did not move ({{data brass/consensus-chorales/best.onset100_f1}} and {{data brass/consensus-chorales-retuned/best.onset100_f1 f2}}).</li>
-        <li><strong>Separate first, or transcribe the mix</strong> (<a href="#found">6.1</a>, third view). On a trumpet over a band, separation first scored {{data brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1}} against {{data brass/slakh-transcription/muscriptor-medium.onset100_f1}} on the mix. That is {{data m/datasets/slakh_trumpet_songs int}} synthesized songs.</li>
-        <li><strong>Three models on a separated solo line.</strong> SwiftF0 scored {{data brass/solo-vote/sw.onset100_f1}}, MuScriptor {{data brass/solo-vote/mus.onset100_f1}} and Basic Pitch {{data brass/solo-vote/bp.onset100_f1}}.{{holds brass/solo-vote/sw.onset100_f1 > brass/solo-vote/mus.onset100_f1}} MuScriptor, the best model on a mix, is far weaker on a line that a separator has already processed. Keeping only notes two models agree on gave {{data brass/solo-vote/vote2.onset100_f1}}: fewer notes ({{data brass/solo-vote/vote2.onset100_r}} recall), more of them right ({{data brass/solo-vote/vote2.onset100_p}} precision).</li>
-        <li><strong>A melody from a mix.</strong> Taking the top line of only the notes MuScriptor supports scored {{data brass/melody/muscriptor_supported.mean}} on average over the three sets, against {{data brass/melody/union.mean}} for the top line of everything either model found, whose false high notes sit above the tune.{{holds brass/melody/muscriptor_supported.mean > brass/melody/union.mean}}</li>
-        <li><strong>Two sizes of beat tracker</strong> (<a href="#solo">6.3</a>): no significant difference, so phones keep the small one.</li>
+        <li><strong>Model size.</strong> MuScriptor large scored lower than medium on the quartets ({{ref fig:models}}); medium is used.</li>
+        <li><strong>Instrument conditioning.</strong> Conditioning MuScriptor on brass instruments lowered its onset F-measure from {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} to {{data brass/chorales-transcription/muscriptor-medium-brass.onset_f1}}; conditioning is not used.</li>
+        <li><strong>Retuning.</strong> Shifting the recording to A = 440 Hz before Basic Pitch raised its F-measure from {{data brass/chorales-transcription/basic-pitch.onset100_f1}} to {{data brass/chorales-transcription/basic-pitch-retuned.onset100_f1}} at ±100 ms; the combined result of both models did not change ({{data brass/consensus-chorales/best.onset100_f1}} and {{data brass/consensus-chorales-retuned/best.onset100_f1 f2}}).</li>
+        <li><strong>Separation before transcription</strong> scored {{data brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1}} against {{data brass/slakh-transcription/muscriptor-medium.onset100_f1}} on the mixture, on {{data m/datasets/slakh_trumpet_songs int}} synthesised songs ({{ref fig:notes-found}}, third view).</li>
+        <li><strong>Beat-tracker size</strong> made little difference on single parts (Section 5.3); phones keep the smaller checkpoint.</li>
       </ul>
-    </section>
+      {{chart solo-trackers}}
+      <p>On a solo line that a separator has already extracted, the f0 estimator is the strongest single source and MuScriptor, the best model on mixtures, is far weaker ({{ref fig:solo-trackers}}).{{holds brass/solo-vote/sw.onset100_f1 > brass/solo-vote/mus.onset100_f1}}</p>
+      {{chart consensus}}
+      <p>Retaining only notes on which two models agree does not improve the F-measure, and lowers it on a full band ({{ref fig:consensus}}). The vote is therefore used to estimate confidence and not to select notes.</p>
+      {{chart melody}}
+      <p>For melody extraction, the top line of the notes supported by MuScriptor is preferable to the top line of the union of both models on all three sets ({{ref fig:melody}}).{{holds brass/melody/muscriptor_supported.mean > brass/melody/union.mean}}</p>
 
-    <section id="performance" aria-labelledby="performance-title">
-      <h2 id="performance-title"><span class="secno">9</span> Speed and memory</h2>
-      <p class="plain"><span class="plain-label">In short</span>The small models are quick enough for a phone. A full band needs a computer with a lot of memory. Only one laptop has been timed, and no phone.</p>
+      <h3 id="performance">5.9 Computational cost</h3>
+      <p>{{ref fig:speed}} gives the time and memory of each model on one laptop, {{ref fig:solo-stages}} the time of each model call in one solo job, and {{ref fig:conversions}} the parity of the models converted to Core ML or to the Open Neural Network Exchange format (ONNX) with their originals. Whole jobs were timed on an Apple M-series computer (the notes do not record the model): a solo of {{data m/jobs/solo_audio_s int}} s took {{span m/jobs/solo_s_fast m/jobs/solo_s_slow f1}} s, and a band recording of {{data m/jobs/band_audio_s int}} s took {{data m/jobs/band_s sec}}, of which MuScriptor accounted for {{data m/jobs/band_muscriptor_s sec}}. A converted model is enabled in the apps only if its output matches that of the original with F ≥ {{data c/swift-f0/threshold_f1}}; three conversions failed this requirement, and each failure determined where a model may run. Time and memory were not measured on any phone or tablet, on a Windows computer, or on a computer with less memory.</p>
       {{chart speed}}
       {{chart solo-stages}}
-      <p><strong>Whole jobs</strong> on an M-series Mac (the notes do not say which), every stage run afresh: a {{data m/jobs/solo_audio_s int}}-second solo took {{span m/jobs/solo_s_fast m/jobs/solo_s_slow f1}} s from start to finished score, and a {{data m/jobs/band_audio_s int}}-second band recording took {{data m/jobs/band_s sec}}, of which MuScriptor alone was {{data m/jobs/band_muscriptor_s sec}}.</p>
       {{chart conversions}}
-      <p>A model is switched on in the apps only when its converted form gives the same result as the original: F1 of at least {{data c/swift-f0/threshold_f1}} against the original's output. Three conversions failed, and each failure decided where a model may run.</p>
-      <p><strong>Not measured:</strong> time and memory on any phone or tablet, on a Windows PC, or on a Mac with less memory. The separators' memory in the figure is more than many laptops have.</p>
+    </section>
+
+    <section id="discussion" aria-labelledby="discussion-title">
+      <h2 id="discussion-title"><span class="secno">6</span> Discussion</h2>
+      <h3>6.1 Error analysis</h3>
+      <ul>
+        <li><strong>Rhythm is the dominant error.</strong> On single parts the onset F-measure is {{data brass/solo-beat-model/urmp.small0.onset_f1}} and the written F-measure {{data brass/solo-beat-model/urmp.small0.written_f1}} (Section 5.3). Most of the difference is attributable to the beat grid: with reference beats the same rules place {{data brass/quant-urmp/reference_beats.position_acc pct}} of correct notes (Section 5.2).</li>
+        <li><strong>Metre.</strong> The bar length is wrong for most single parts.{{holds brass/solo-beat-model/urmp.small0.meter_match < 0.5}}{{holds brass/solo-beat-model/choralebricks.small0.meter_match < 0.5}} A part in triple time written in quadruple time has every bar line misplaced, whatever the quality of its notes.</li>
+        <li><strong>Inner voices.</strong> From a quartet, the tenor is recovered with F = {{data brass/seat-voices/muscriptor-medium.T_f1}} and the bass with {{data brass/seat-voices/muscriptor-medium.B_f1}}, against {{data brass/seat-voices/muscriptor-medium.S_f1}} for the top voice (Section 5.5).</li>
+        <li><strong>Octave errors</strong> are infrequent. Of the reference notes of the quartets, {{data brass/chorales-transcription/muscriptor-medium.octave_err_rate pct}} were missed while MuScriptor produced a note one or two octaves away at the same time, and {{data brass/chorales-transcription/basic-pitch.octave_err_rate pct}} with Basic Pitch; for chamber music the rates are {{data brass/urmp-transcription/muscriptor-medium.octave_err_rate pct}} and {{data brass/urmp-transcription/basic-pitch.octave_err_rate pct}}. The count includes estimated notes that belong to another part an octave away and therefore overstates the error.</li>
+        <li><strong>Fast passages</strong> lose about four notes in ten before notation (Section 5.7).</li>
+        <li><strong>Ornaments are split into extra notes.</strong> On control clips that should remain one note, with tracked beats, a fall adds {{data brass/fast-notes/small0.ctl-fall.extra}} notes per reference note, a scoop {{data brass/fast-notes/small0.ctl-scoop.extra}}, a rip {{data brass/fast-notes/small0.ctl-rip.extra}} and a wide downward vibrato {{data brass/fast-notes/small0.ctl-vibdown120.extra}}; an ordinary vibrato adds {{data brass/fast-notes/small0.ctl-vibrato.extra}}. No control clip was notated as a trill.{{holds brass/fast-notes/small0.ctl.trills <= 0}}</li>
+        <li><strong>Triplets</strong> were examined only on computed onset times, not on recordings: with 15 ms of timing jitter, {{data m/triplets/triplet_eighths pct}} of triplet eighth notes are placed correctly. The evaluation sets contain no recorded triplets with a reference.</li>
+        <li><strong>Durations.</strong> With reference beats, {{data brass/quant-urmp/reference_beats.duration_acc pct}} of chamber-music notes and {{data brass/quant-chorales/reference_beats.duration_acc pct}} of chorale notes receive the notated duration (Section 5.2).</li>
+      </ul>
+      <h3>6.2 Threats to validity</h3>
+      <ul>
+        <li><strong>Tuning on the test data.</strong> The thresholds of the rules were selected on the recordings on which they are scored, and the confidence marks are evaluated on their fitting data (Section 4.2). The reported values are optimistic to an unknown degree.</li>
+        <li><strong>Sample size.</strong> The sets have {{data p/urmp-transcription/pieces int}} to {{data p/chorales-transcription/pieces int}} pieces, and the route comparison on a full band rests on {{data m/datasets/slakh_trumpet_songs int}} synthesised songs. The confidence intervals are correspondingly wide, and one agreement class contains {{data m/solo_vote/n_bp_mus int}} notes.</li>
+        <li><strong>Representativeness.</strong> The chorales are slow and rhythmically simple and were recorded one player at a time; neither they nor the chamber pieces resemble a full band in a hall.</li>
+        <li><strong>Synthetic material.</strong> The fast-note clips are assembled from single sampled notes, and the full-band songs are synthesised.</li>
+        <li><strong>Tolerance.</strong> Several suites (single parts end to end, voices, the vote on separated lines, melody, consensus) store results at a ±100 ms onset tolerance only, which is more lenient than the ±50 ms convention; where both exist, both are reported and ±50 ms is given first.</li>
+        <li><strong>Measurement.</strong> Timing results come from single runs on one computer; some values were measured once and are not gated (Appendix).</li>
+      </ul>
     </section>
 
     <section id="limitations" aria-labelledby="limitations-title">
-      <h2 id="limitations-title"><span class="secno">10</span> Limitations</h2>
-      <p class="plain"><span class="plain-label">In short</span>Small test sets that are not brass bands, rules tuned on those same sets, and one route that is checked end to end.</p>
+      <h2 id="limitations-title"><span class="secno">7</span> Limitations</h2>
       <ul>
-        <li><strong>No brass-band ground truth.</strong> Every number comes from quartets, chamber groups, single players or synthesized songs. How a full band in a hall behaves is not measured.</li>
-        <li><strong>No held-out set.</strong> The rules' thresholds were chosen on the recordings they are scored on (<a href="#data">section 4</a>).</li>
-        <li><strong>Small sets.</strong> {{data p/chorales-transcription/pieces int}} chorales, {{data p/urmp-transcription/pieces int}} chamber pieces, {{data m/datasets/slakh_trumpet_songs int}} songs. The chorales are slow and rhythmically simple.</li>
-        <li><strong>Only one route is checked end to end,</strong> and without reference notes: the soloist-with-orchestra route must reproduce a frozen output. The solo, brass-band and pop routes are assembled from the same tested parts but have no end-to-end gate.</li>
-        <li><strong>The doubt marks judge pitch and onset only,</strong> and miss most wrong notes (<a href="#doubt">6.6</a>).</li>
-        <li><strong>Inner parts are arranged.</strong> In a band score only the melody and the bass come from the recording.</li>
-        <li><strong>Fast notes come from samples.</strong> The fast-note clips are assembled from single recorded notes, not played by a person, and the rules were developed on them.</li>
-        <li><strong>Speed</strong> is known for one laptop (<a href="#performance">section 9</a>).</li>
-        <li><strong>Agreement counts are small.</strong> The precision of one agreement class rests on {{data m/solo_vote/n_bp_mus int}} notes.</li>
+        <li>No brass-band recording with reference notes was evaluated; behaviour on a full band is not measured.</li>
+        <li>Only one route is checked end to end, and without reference notes: the soloist-with-orchestra route must reproduce a frozen output. The solo, ensemble and pop routes are composed of the same tested components but have no end-to-end gate.</li>
+        <li>In an ensemble score only the melody and the bass are transcribed; the inner parts are arranged.</li>
+        <li>The confidence marks cover pitch and onset only and miss most wrong notes.</li>
+        <li>Computational cost is known for one laptop and for no phone.</li>
       </ul>
     </section>
 
-    <section id="next" aria-labelledby="next-title">
-      <h2 id="next-title"><span class="secno">11</span> What is next</h2>
+    <section id="conclusion" aria-labelledby="conclusion-title">
+      <h2 id="conclusion-title"><span class="secno">8</span> Conclusion and future work</h2>
+      <p>On brass ensembles the best pretrained model reaches an onset F-measure of {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} to {{data brass/urmp-transcription/muscriptor-medium.onset_f1}} at ±50 ms and {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} to {{data brass/urmp-transcription/muscriptor-medium.onset100_f1}} at ±100 ms (recall {{data p/chorales-transcription/muscriptor-medium.onset_r}} to {{data p/urmp-transcription/muscriptor-medium.onset_r}} and {{data p/chorales-transcription/muscriptor-medium.onset100_r}} to {{data p/urmp-transcription/muscriptor-medium.onset100_r}}), and deterministic rules notate the notes correctly when the beat grid is correct. The evaluation indicates that the score is lost mainly at beat and metre tracking, in particular for single parts, and that inner voices of an ensemble are not recoverable with the models examined. The confidence marks are precise but have low recall.</p>
+      <p>Future work follows from these results: beat and metre estimation for monophonic lines, including a step in which the user confirms the time signature and the first downbeat; a held-out brass set, so that a tuned rule can be distinguished from one that generalises; confidence estimates that cover rhythm; brass-band data, both rendered from public-domain scores and recorded with corrected scores; and measurements of computational cost on phones.</p>
+    </section>
+
+    <section id="reproducibility" aria-labelledby="reproducibility-title">
+      <h2 id="reproducibility-title"><span class="secno">9</span> Reproducibility statement</h2>
       <ul>
-        <li><strong>Beats and bars first.</strong> The results say where the score is lost: a better beat grid for a single line, the metre, and a step where the musician confirms the time signature and the first downbeat before the notes are placed.</li>
-        <li><strong>A held-out brass set,</strong> so that a tuned rule can be told from a rule that works.</li>
-        <li><strong>Doubt marks that cover rhythm,</strong> and that catch more wrong notes at the same number of false alarms.</li>
-        <li><strong>Brass-band data:</strong> a band rendered from public-domain scores, and a few real band recordings with corrected scores.</li>
-        <li><strong>Timing on phones.</strong></li>
+        <li><strong>Code.</strong> The system, the benchmarks and this page are in the public repository <a href="https://github.com/181192/brasscribe">github.com/181192/brasscribe</a>. This page was built from the commit named under the title.</li>
+        <li><strong>Commands.</strong> <code>pixi run scribe bench list</code> lists the suites; <code>pixi run scribe bench cpu</code> rescores all of them from stored model outputs and compares them with <code>eval/baselines.json</code>; <code>pixi run python site/shared/research/per_piece.py</code> produces the per-piece values; <code>site/build.sh</code> builds this page and fails if a stated finding no longer holds.</li>
+        <li><strong>Reproducible from the repository alone.</strong> The following results are rescored in continuous integration on every change, from pinned ChoraleBricks annotations and cached model outputs kept in the repository, and can be reproduced without downloading a dataset: the quartet views of {{ref fig:notes-found}} and {{ref fig:rhythm}}, {{ref fig:models}}, {{ref fig:solo-instruments}}, {{ref fig:doubt}}, the first view of {{ref fig:voices}}, {{ref fig:inner-parts}}, the stage view of {{ref fig:fast-notes}}, and the chorale series of {{ref fig:durations}}. {{ref fig:speed}} and {{ref fig:conversions}} are read from committed reports; rerunning them requires the models.</li>
+        <li><strong>Requiring a local download.</strong> Results on URMP (the chamber views, {{ref fig:solo-written}}), on Slakh and on separated stems ({{ref fig:agreement}}, {{ref fig:solo-trackers}}, {{ref fig:consensus}}, {{ref fig:melody}}) need the datasets and the models on a local computer; the per-piece values and the beat F-measure need the evaluation data as well. The frozen output of the commercial recording cannot be reproduced by a reader.</li>
+        <li><strong>Data availability.</strong> ChoraleBricks, URMP and Slakh are available from their publishers ({{ref table:data}}). The commercial recording is not distributed.</li>
+        <li><strong>Models and scorer.</strong> All models are public; MuScriptor's weights require acceptance of its licence. The checkpoints are MuScriptor medium, Basic Pitch as published, SwiftF0 as published, Beat This! small0 and final0, BS-RoFormer SW and MVSep Mega-53; the package versions are pinned in <code>pixi.lock</code>. Scoring uses mir_eval 0.8.2.</li>
+        <li><strong>Not gated.</strong> The values listed in the Appendix were measured once; their sources and commands are recorded in <code>site/shared/research/measured/measured.toml</code>.</li>
       </ul>
     </section>
 
-    <section id="licences" aria-labelledby="licences-title">
-      <h2 id="licences-title"><span class="secno">12</span> Licences and data</h2>
+    <section id="ethics" aria-labelledby="ethics-title">
+      <h2 id="ethics-title"><span class="secno">10</span> Ethics and licence statement</h2>
       <ul>
-        <li><strong>Non-commercial.</strong> MuScriptor's weights are CC BY-NC 4.0, so full-band scores may only be used non-commercially. Each musician accepts that licence with their own account and downloads the file themselves.</li>
-        <li><strong>Weights without a stated licence.</strong> BS-RoFormer SW and Mega-53 are downloaded by the musician's computer from where their makers publish them. Brasscribe re-hosts none of them.</li>
-        <li><strong>Bundled models</strong> (SwiftF0, Basic Pitch, Beat This!) are MIT or Apache-2.0.</li>
-        <li><strong>Datasets.</strong> ChoraleBricks is CC BY 4.0, and the repository keeps small data derived from it. URMP and Slakh are downloaded on request; the repository holds one small test file derived from 30 seconds of a URMP track. The church response used for the fast-note clips is from OpenAIR, University of York (CC BY 4.0). The licences are in Table 2 and with each reference below.</li>
-        <li><strong>No copyrighted music</strong> is published here or shipped. The built-in example is a public-domain hymn tune.</li>
-        <li><strong>Recordings stay with the musician.</strong> No recording, and no score written from one, is sent to a cloud service. One thing is sent: ONNX Runtime, Microsoft's library that runs the models in Play for Android and Windows and in parts of the engine, reports its own use to Microsoft with a device identifier. <code>THIRD_PARTY_NOTICES.md</code> says exactly what.</li>
+        <li><strong>Model licences.</strong> MuScriptor's weights are licensed CC BY-NC 4.0; scores produced with them may be used non-commercially only, and each user accepts the licence and downloads the weights personally. No licence is stated for the BS-RoFormer SW and Mega-53 weights; they are downloaded by the user's computer from their publishers and are not redistributed by the project. SwiftF0, Basic Pitch and Beat This! are MIT or Apache-2.0 ({{ref table:models}}).</li>
+        <li><strong>Dataset licences</strong> are given in {{ref table:data}}. The repository contains small data derived from ChoraleBricks (CC BY 4.0) and one test file derived from 30 s of a URMP track.</li>
+        <li><strong>Copyright.</strong> No copyrighted music is published on this page or distributed with the apps; the built-in example is a public-domain hymn tune.</li>
+        <li><strong>Privacy.</strong> No recording, and no score derived from one, is sent to a server.</li>
+        <li><strong>Telemetry.</strong> ONNX Runtime, the Microsoft library that executes the models in the Android and Windows apps and in parts of the engine, reports its own usage to Microsoft with a device identifier. <code>THIRD_PARTY_NOTICES.md</code> documents what is sent.</li>
       </ul>
+    </section>
+
+    <section id="acknowledgements" aria-labelledby="acknowledgements-title">
+      <h2 id="acknowledgements-title">Acknowledgements</h2>
+      <p>This work depends on the authors of the models and datasets cited above, who made them openly available. Parts of the software and of this text were written with the assistance of an AI coding assistant and reviewed by the author.</p>
+    </section>
+
+    <section id="cite" aria-labelledby="cite-title">
+      <h2 id="cite-title">How to cite</h2>
+      <p>K.-A. Kalliainen, “Brasscribe: Transcribing brass recordings into band scores with pretrained models and deterministic rules,” The Brasscribe project, 2026. [Online]. Available: https://github.com/181192/brasscribe</p>
+      <pre class="bibtex"><code>@misc{kalliainen2026brasscribe,
+  author       = {Kalliainen, Kristoffer-Andre},
+  title        = {Brasscribe: Transcribing Brass Recordings into Band Scores
+                  with Pretrained Models and Deterministic Rules},
+  year         = {2026},
+  howpublished = {The Brasscribe project},
+  url          = {https://github.com/181192/brasscribe}
+}</code></pre>
     </section>
 
     <section id="references" aria-labelledby="references-title">
       <h2 id="references-title">References</h2>
-      <ol class="refs">
-        <li id="ref-1">J. Gardner, I. Simon, E. Manilow, C. Hawthorne, J. Engel. MT3: Multi-Task Multitrack Music Transcription. <i>ICLR</i> 2022. <a href="https://arxiv.org/abs/2111.03017">arXiv:2111.03017</a></li>
-        <li id="ref-2">S. Chang, E. Benetos, H. Kirchhoff, S. Dixon. YourMT3+: Multi-Instrument Music Transcription with Enhanced Transformer Architectures and Cross-Dataset Stem Augmentation. <i>IEEE MLSP</i> 2024. <a href="https://arxiv.org/abs/2407.04822">arXiv:2407.04822</a></li>
-        <li id="ref-3">S. Rouard, M. Krause, A. Roebel, C.-J. Simon-Gabriel, A. Défossez. MuScriptor: An Open Model for Multi-Instrument Music Transcription. <i>ISMIR</i> 2026. <a href="https://arxiv.org/abs/2607.08168">arXiv:2607.08168</a>. Code MIT; weights CC BY-NC 4.0, gated.</li>
-        <li id="ref-4">R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-Brocal, S. Ewert. A Lightweight Instrument-Agnostic Model for Polyphonic Note Transcription and Multipitch Estimation. <i>ICASSP</i> 2022. <a href="https://arxiv.org/abs/2203.09893">arXiv:2203.09893</a>. Apache-2.0.</li>
-        <li id="ref-5">L. Nieradzik. SwiftF0: Fast and Accurate Monophonic Pitch Detection. Preprint, 2025. <a href="https://arxiv.org/abs/2508.18440">arXiv:2508.18440</a>. MIT.</li>
-        <li id="ref-6">J. W. Kim, J. Salamon, P. Li, J. P. Bello. CREPE: A Convolutional Representation for Pitch Estimation. <i>ICASSP</i> 2018. <a href="https://doi.org/10.1109/ICASSP.2018.8461329">doi:10.1109/ICASSP.2018.8461329</a></li>
-        <li id="ref-7">C. Hawthorne, E. Elsen, J. Song et al. Onsets and Frames: Dual-Objective Piano Transcription. <i>ISMIR</i> 2018. <a href="https://arxiv.org/abs/1710.11153">arXiv:1710.11153</a></li>
-        <li id="ref-8">F. Foscarin, J. Schlüter, G. Widmer. Beat this! Accurate beat tracking without DBN postprocessing. <i>ISMIR</i> 2024. <a href="https://arxiv.org/abs/2407.21658">arXiv:2407.21658</a>. MIT, code and weights.</li>
-        <li id="ref-9">F. Krebs, S. Böck, G. Widmer. An Efficient State-Space Model for Joint Tempo and Meter Tracking. <i>ISMIR</i> 2015. <a href="https://doi.org/10.5281/zenodo.1414966">doi:10.5281/zenodo.1414966</a></li>
-        <li id="ref-10">S. Böck, F. Korzeniowski, J. Schlüter, F. Krebs, G. Widmer. madmom: a new Python Audio and Music Signal Processing Library. <i>ACM Multimedia</i> 2016. <a href="https://doi.org/10.1145/2964284.2973795">doi:10.1145/2964284.2973795</a></li>
-        <li id="ref-11">W.-T. Lu, J.-C. Wang, Q. Kong, Y.-N. Hung. Music Source Separation with Band-Split RoPE Transformer. <i>ICASSP</i> 2024. <a href="https://arxiv.org/abs/2309.02612">arXiv:2309.02612</a></li>
-        <li id="ref-12">S. Rouard, F. Massa, A. Défossez. Hybrid Transformers for Music Source Separation. <i>ICASSP</i> 2023. <a href="https://arxiv.org/abs/2211.08553">arXiv:2211.08553</a></li>
-        <li id="ref-13">ZFTurbo. Music-Source-Separation-Training (source of the MVSep Mega-53 checkpoint). <a href="https://github.com/ZFTurbo/Music-Source-Separation-Training">github.com/ZFTurbo/Music-Source-Separation-Training</a>. Code MIT; no licence stated for the weights.</li>
-        <li id="ref-14">D. Meredith. The ps13 pitch spelling algorithm. <i>Journal of New Music Research</i> 35(2):121–159, 2006. <a href="https://doi.org/10.1080/09298210600834961">doi:10.1080/09298210600834961</a></li>
-        <li id="ref-15">D. Meredith. Computing Pitch Names in Tonal Music: A Comparative Analysis of Pitch Spelling Algorithms. DPhil thesis, University of Oxford, 2007.</li>
-        <li id="ref-16">C. L. Krumhansl. <i>Cognitive Foundations of Musical Pitch</i>. Oxford University Press, 1990.</li>
-        <li id="ref-17">S. Balke, A. Berndt, M. Müller. ChoraleBricks: A Modular Multitrack Dataset for Wind Music Research. <i>Transactions of the ISMIR</i> 8(1):39–54, 2025. <a href="https://doi.org/10.5334/tismir.252">doi:10.5334/tismir.252</a>; data: <a href="https://doi.org/10.5281/zenodo.20849469">doi:10.5281/zenodo.20849469</a>. CC BY 4.0.</li>
-        <li id="ref-18">B. Li, X. Liu, K. Dinesh, Z. Duan, G. Sharma. Creating a Multitrack Classical Music Performance Dataset for Multimodal Music Analysis. <i>IEEE Transactions on Multimedia</i> 21:522–535, 2019. <a href="https://doi.org/10.1109/TMM.2018.2856090">doi:10.1109/TMM.2018.2856090</a>. Downloaded on request; its terms for redistribution have not been checked.</li>
-        <li id="ref-19">E. Manilow, G. Wichern, P. Seetharaman, J. Le Roux. Cutting Music Source Separation Some Slakh. <i>IEEE WASPAA</i> 2019. <a href="https://doi.org/10.1109/WASPAA.2019.8937170">doi:10.1109/WASPAA.2019.8937170</a>. Downloaded on request; its terms for redistribution have not been checked.</li>
-        <li id="ref-20">C. Raffel, B. McFee, E. J. Humphrey et al. mir_eval: A Transparent Implementation of Common MIR Metrics. <i>ISMIR</i> 2014. The note measures on this page are computed with it.</li>
-        <li id="ref-21">University of Iowa Electronic Music Studios, Musical Instrument Samples, <a href="https://theremin.music.uiowa.edu/MIS.html">theremin.music.uiowa.edu/MIS.html</a>; Versilian Studios, VSCO 2 Community Edition (CC0), <a href="https://github.com/sgossner/VSCO-2-CE">github.com/sgossner/VSCO-2-CE</a>. The trumpet samples behind the fast-note clips.</li>
-        <li id="ref-22">W3C Music Notation Community Group. MusicXML 4.0. 2021. <a href="https://www.w3.org/2021/06/musicxml40/">w3.org/2021/06/musicxml40</a></li>
-        <li id="ref-23">partitura: a Python package for symbolic music processing. <a href="https://github.com/CPJKU/partitura">github.com/CPJKU/partitura</a></li>
-        <li id="ref-24">L. Nieradzik. pitch-benchmark (maintained by the SwiftF0 author). <a href="https://github.com/lars76/pitch-benchmark">github.com/lars76/pitch-benchmark</a></li>
-        <li id="ref-25">python-audio-separator (source of the BS-RoFormer SW checkpoint). <a href="https://github.com/nomadkaraoke/python-audio-separator">github.com/nomadkaraoke/python-audio-separator</a>. Code MIT; no licence stated for the weights.</li>
-      </ol>
-      <p class="muted">In the repository: <a href="https://github.com/181192/brasscribe/blob/main/eval/baselines.json">the gated numbers</a> · <a href="https://github.com/181192/brasscribe/blob/main/eval/README.md">how the benchmarks run</a> · <a href="https://github.com/181192/brasscribe/blob/main/docs/shared/research/10-benchmark-results.md">benchmark notes</a> · <a href="https://github.com/181192/brasscribe/blob/main/convert/README.md">model conversions</a> · <a href="https://github.com/181192/brasscribe/blob/main/site/shared/research/measured/measured.toml">numbers measured once, with their sources</a></p>
-      <p class="to-top"><a href="#main">Back to top</a></p>
+      {{references}}
     </section>
+
+    <section id="appendix" aria-labelledby="appendix-title">
+      <h2 id="appendix-title">Appendix A: Values that are not gated</h2>
+      <p>{{ref table:measured}} lists the values on this page that were measured once and are not held by the regression gate, with their sources.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Table: values that are not gated" id="table-measured">
+        <table>
+          <caption>{{label table:measured}}. Values measured once. Each is recorded with its source and command in <code>site/shared/research/measured/measured.toml</code>.</caption>
+          <thead><tr><th scope="col">Value</th><th scope="col">As reported</th><th scope="col">Source</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Notes per agreement class ({{ref fig:agreement}})</th><td>{{data m/solo_vote/n_all int}}, {{data m/solo_vote/n_mus_sw int}}, {{data m/solo_vote/n_bp_sw int}}, {{data m/solo_vote/n_sw int}}, {{data m/solo_vote/n_bp_mus int}}</td><td><code>docs/shared/research/10-benchmark-results.md</code>, three-way vote</td></tr>
+            <tr><th scope="row">Whole jobs (Section 5.9)</th><td>{{data m/jobs/solo_audio_s int}} s solo: {{span m/jobs/solo_s_fast m/jobs/solo_s_slow f1}} s; {{data m/jobs/band_audio_s int}} s band: {{data m/jobs/band_s sec}}</td><td><code>docs/shared/research/13-performance-audit.md</code>, M5</td></tr>
+            <tr><th scope="row">Model calls of a solo job ({{ref fig:solo-stages}})</th><td>{{data m/solo_stages/beats sec}}, {{data m/solo_stages/swift_f0 sec}}, {{data m/solo_stages/basic_pitch sec}}, {{data m/solo_stages/muscriptor sec}}, {{data m/solo_stages/contour sec}}</td><td>Same document, M6</td></tr>
+            <tr><th scope="row">Quantiser before penalty scaling (Section 5.2)</th><td>{{data m/penalties/position_before pct}} position, {{data m/penalties/subdivision_before pct}} within beat, {{data m/penalties/duration_before pct}} duration</td><td><code>docs/shared/research/10-benchmark-results.md</code>, rhythm</td></tr>
+            <tr><th scope="row">Fast notes before and after ({{ref fig:fast-notes}})</th><td>Figure recall {{data m/fast_notes/oracle_fig_before pct}} → {{data m/fast_notes/oracle_fig_after pct}} on {{data m/fast_notes/clips int}} clips</td><td><code>docs/brasscribe/plan/fast-notes.md</code>, Section 7.2</td></tr>
+            <tr><th scope="row">Triplets on computed onsets (Section 6.1)</th><td>{{data m/triplets/triplet_eighths pct}}</td><td>Same document, Section 8.2</td></tr>
+            <tr><th scope="row">Beat F-measure of the tracked beats (Section 5.2)</th><td>{{data p/quant-chorales/beat_this.beat_f}} and {{data p/quant-urmp/beat_this.beat_f}}</td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row">Recall per voice ({{ref fig:voices}})</th><td>Means over pieces, computed with the gate's scorer</td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row">Model speed, memory and conversion parity ({{ref fig:speed}}, {{ref fig:conversions}})</th><td>See the figures</td><td><code>convert/reports/*.json</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="appendix-tables" class="print-only" aria-labelledby="appendix-tables-title">
+      <h2 id="appendix-tables-title">Appendix B: Data tables of the figures</h2>
+      {{figuretables}}
+    </section>
+    <p class="to-top"><a href="#main">Back to top</a></p>
   </article>

@@ -1,8 +1,8 @@
 {
  "provenance": {
-  "what": "Per-piece values of metrics whose means are gated in eval/baselines.json, in the order of the eval set's pieces; the size of each set; and, as single numbers, each model's mean recall per voice of the quartets (S, A, T, B), which the scorer reports and no suite gates.",
+  "what": "Per-piece values of metrics whose means are gated in eval/baselines.json, in the order of the eval set's pieces; the size of each set; and, as single numbers, each model's mean recall per voice of the quartets (S, A, T, B), which the scorer reports and no suite gates; and the beat F-measure of the tracked beats per piece (\u00b170 ms), not gated.",
   "command": "pixi run python site/shared/research/per_piece.py",
-  "commit": "035f6c47",
+  "commit": "abed9526",
   "data": "data/eval/choralebricks-brass4 and data/eval/urmp-brass with the cached model outputs the baselines were taken from"
  },
  "suites": {
@@ -33,6 +33,10 @@
     0.56,
     0.715
    ],
+   "basic-pitch.onset_p": 0.373,
+   "basic-pitch.onset_r": 0.635,
+   "basic-pitch.onset100_p": 0.474,
+   "basic-pitch.onset100_r": 0.808,
    "basic-pitch.recall_S": 0.739,
    "basic-pitch.recall100_S": 0.9,
    "basic-pitch.recall_A": 0.659,
@@ -65,6 +69,10 @@
     0.769,
     0.808
    ],
+   "muscriptor-medium.onset_p": 0.511,
+   "muscriptor-medium.onset_r": 0.626,
+   "muscriptor-medium.onset100_p": 0.681,
+   "muscriptor-medium.onset100_r": 0.832,
    "muscriptor-medium.recall_S": 0.839,
    "muscriptor-medium.recall100_S": 0.965,
    "muscriptor-medium.recall_A": 0.765,
@@ -85,6 +93,10 @@
     0.57,
     0.406
    ],
+   "muscriptor-large.onset_p": 0.414,
+   "muscriptor-large.onset_r": 0.478,
+   "muscriptor-large.onset100_p": 0.646,
+   "muscriptor-large.onset100_r": 0.748,
    "muscriptor-large.recall_S": 0.732,
    "muscriptor-large.recall100_S": 0.922,
    "muscriptor-large.recall_A": 0.603,
@@ -105,6 +117,10 @@
     0.297,
     0.454
    ],
+   "muscriptor-medium-brass.onset_p": 0.299,
+   "muscriptor-medium-brass.onset_r": 0.378,
+   "muscriptor-medium-brass.onset100_p": 0.632,
+   "muscriptor-medium-brass.onset100_r": 0.8,
    "muscriptor-medium-brass.recall_S": 0.604,
    "muscriptor-medium-brass.recall100_S": 0.97,
    "muscriptor-medium-brass.recall_A": 0.46,
@@ -137,6 +153,10 @@
     0.625,
     0.75
    ],
+   "basic-pitch.onset_p": 0.644,
+   "basic-pitch.onset_r": 0.706,
+   "basic-pitch.onset100_p": 0.707,
+   "basic-pitch.onset100_r": 0.78,
    "muscriptor-medium.onset_f1": [
     0.869,
     0.318,
@@ -156,7 +176,11 @@
     0.899,
     0.826,
     0.874
-   ]
+   ],
+   "muscriptor-medium.onset_p": 0.7,
+   "muscriptor-medium.onset_r": 0.689,
+   "muscriptor-medium.onset100_p": 0.89,
+   "muscriptor-medium.onset100_r": 0.878
   },
   "quant-chorales": {
    "pieces": 10,
@@ -231,6 +255,66 @@
     0.913,
     0.824,
     0.115
+   ],
+   "beat_this.beat_f": [
+    0.636,
+    1.0,
+    0.753,
+    0.915,
+    0.877,
+    0.869,
+    0.956,
+    0.967,
+    0.755,
+    0.513
+   ],
+   "md_beat_this.beat_f": [
+    0.756,
+    0.951,
+    0.766,
+    0.949,
+    0.82,
+    0.64,
+    0.95,
+    0.95,
+    0.724,
+    0.951
+   ],
+   "md_beat_this.position_acc": [
+    0.203,
+    0.986,
+    0.14,
+    1.0,
+    0.251,
+    0.046,
+    0.99,
+    0.523,
+    0.269,
+    0.846
+   ],
+   "md_beat_this.subdivision_acc": [
+    0.978,
+    0.986,
+    0.928,
+    1.0,
+    1.0,
+    0.555,
+    0.99,
+    1.0,
+    0.991,
+    0.969
+   ],
+   "md_beat_this.duration_acc": [
+    0.797,
+    0.944,
+    0.706,
+    0.905,
+    0.839,
+    0.0,
+    0.914,
+    0.942,
+    0.852,
+    0.808
    ]
   },
   "quant-urmp": {
@@ -294,6 +378,56 @@
     0.772,
     0.241,
     0.313
+   ],
+   "beat_this.beat_f": [
+    0.62,
+    0.706,
+    1.0,
+    0.961,
+    0.988,
+    0.62,
+    0.717,
+    0.645
+   ],
+   "md_beat_this.beat_f": [
+    0.64,
+    0.912,
+    0.992,
+    0.495,
+    0.97,
+    0.758,
+    0.954,
+    0.619
+   ],
+   "md_beat_this.position_acc": [
+    0.949,
+    0.371,
+    0.951,
+    0.009,
+    0.996,
+    0.35,
+    0.942,
+    0.025
+   ],
+   "md_beat_this.subdivision_acc": [
+    0.949,
+    0.937,
+    0.951,
+    0.4,
+    1.0,
+    0.702,
+    0.942,
+    0.499
+   ],
+   "md_beat_this.duration_acc": [
+    0.778,
+    0.67,
+    0.287,
+    0.453,
+    0.657,
+    0.562,
+    0.322,
+    0.305
    ]
   }
  }

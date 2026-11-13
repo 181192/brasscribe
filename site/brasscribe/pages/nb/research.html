@@ -1,6 +1,6 @@
 <!--
-title: Fra et opptak til noter for brassband · Brasscribe-forskning
-description: Hvordan Brasscribe skriver noter for brassband fra et opptak, og hvor godt: arbeidsflyten, datasettene, hvert mål forklart, resultatene med begrensninger, og hva som ikke virker.
+title: Brasscribe: transkripsjon av messingopptak til noter for brassband · Forskningsartikkel
+description: En systembeskrivelse og evaluering av Brasscribe: forhåndstrente lyttemodeller og deterministiske musikkregler som gjør et messingopptak om til noter, med resultater på tonenivå og for rytme, feilanalyse og begrensninger.
 main_class: wrap guide
 footer: Noter satt med Verovio (LGPL-3.0-or-later). Overskrifter: Instrument Serif (OFL).
 styles: charts.css
@@ -8,132 +8,132 @@ scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
     <details class="toc-fold" open>
-    <summary id="toc-title" class="toc-title">I denne artikkelen</summary>
+    <summary id="toc-title" class="toc-title">Innhold</summary>
     <ol>
       <li><a href="#abstract">Sammendrag</a></li>
-      <li><a href="#problem">1. Problemet</a></li>
+      <li><a href="#introduction">1. Innledning</a></li>
       <li><a href="#related">2. Tidligere arbeid</a></li>
-      <li><a href="#pipeline">3. Arbeidsflyten</a></li>
-      <li><a href="#data">4. Data</a></li>
-      <li><a href="#measures">5. Mål</a></li>
-      <li><a href="#results">6. Resultater</a></li>
-      <li><a href="#errors">7. Hvor det svikter</a></li>
-      <li><a href="#comparisons">8. Modellsammenligninger</a></li>
-      <li><a href="#performance">9. Fart og minne</a></li>
-      <li><a href="#limitations">10. Begrensninger</a></li>
-      <li><a href="#next">11. Veien videre</a></li>
-      <li><a href="#licences">12. Lisenser</a></li>
+      <li><a href="#method">3. Metode</a></li>
+      <li><a href="#setup">4. Eksperimentelt oppsett</a></li>
+      <li><a href="#results">5. Resultater</a></li>
+      <li><a href="#discussion">6. Diskusjon</a></li>
+      <li><a href="#limitations">7. Begrensninger</a></li>
+      <li><a href="#conclusion">8. Konklusjon og videre arbeid</a></li>
+      <li><a href="#reproducibility">9. Reproduserbarhet</a></li>
+      <li><a href="#ethics">10. Etikk og lisenser</a></li>
+      <li><a href="#acknowledgements">Takk</a></li>
+      <li><a href="#cite">Sitering</a></li>
       <li><a href="#references">Referanser</a></li>
+      <li><a href="#appendix">Vedlegg</a></li>
     </ol>
     </details>
   </nav>
 
   <article class="paper">
     <header>
-      <p class="overline">Forskning</p>
-      <h1>Fra et opptak til noter for brassband</h1>
-      <p class="lead">Hva Brasscribe gjør med et opptak, hvordan hvert steg er målt, og hvor resultatet fortsatt er feil.</p>
-      <p class="byline">Brasscribe-prosjektet · Alle tall og figurer på denne siden leses fra målefilene i repositoriet når nettstedet bygges, så de endrer seg når filene gjør det · <a href="@fretscribe/research/">Det samme for tab: Fretscribes artikkel</a></p>
+      <p class="overline">Forskningsartikkel</p>
+      <h1>Brasscribe: transkripsjon av messingopptak til noter for brassband med forhåndstrente modeller og deterministiske regler</h1>
+      <p class="byline">Kristoffer-Andre Kalliainen · Brasscribe-prosjektet · Bygget {{built}}; alle tall og figurer er lest fra målefilene i repositoriet ved den innsjekkingen · Søsterartikkel: <a href="@fretscribe/research/">Fretscribe (tabulatur)</a></p>
     </header>
 
     <section id="abstract" class="abstract" aria-labelledby="abstract-title">
       <h2 id="abstract-title">Sammendrag</h2>
-      <p><strong>Med enkle ord:</strong> Brasscribe hører de fleste tonene i et brassopptak. Den er mye mindre sikker på hvor de hører hjemme i takten, og spørsmålstegnene varsler bare om noen av feilene. Du får et utkast som må rettes, ikke en ferdig stemme.</p>
-      <p>Brasscribe gjør et opptak om til partitur og stemmer for brassband på musikerens egne enheter. Lærte modeller bare lytter: de skiller lag, finner toner og finner slag. Musikkregler som alltid gir samme resultat, skriver deretter: rytme, tonenavn, toneart, harmoni, stemmer for bandet og vanskelighetsgrad. Ingen lyttemodell er trent for dette; lyttestegene er valgt etter måling på opptak med kjente toner, og resultatene under holdes fast av en regresjonssperre med mindre en figur oppgir en annen kilde.</p>
-      <p>På {{data p/chorales-transcription/pieces int}} ekte brasskvartetter finner den beste transkripsjonsmodellen toner med onset-F1 {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} ved 100 ms ({{data brass/chorales-transcription/muscriptor-medium.onset_f1}} ved 50 ms), og {{data brass/urmp-transcription/muscriptor-medium.onset100_f1}} på {{data p/urmp-transcription/pieces int}} kammerstykker. Med partiturets egne slag setter reglene {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} av tonene på nøyaktig riktig plass i takten; med slag sporet fra lyden faller det til {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}. Fra ende til ende på opptak av én musiker blir tonene hørt med F1 {{span brass/solo-beat-model/urmp.small0.onset_f1 brass/solo-beat-model/choralebricks.small0.onset_f1}}, men bare {{span brass/solo-beat-model/urmp.small0.written_f1 brass/solo-beat-model/choralebricks.small0.written_f1 brass/solo-beat-model/urmp.final0.written_f1 brass/solo-beat-model/choralebricks.final0.written_f1}} når tonen også må være skrevet der partituret har den, og taktlengden er riktig for {{span brass/solo-beat-model/urmp.small0.meter_match brass/solo-beat-model/choralebricks.final0.meter_match brass/solo-beat-model/choralebricks.small0.meter_match brass/solo-beat-model/urmp.final0.meter_match pct}} av stemmene. Fra en firstemt miks blir tenorstemmen funnet med F1 {{data brass/seat-voices/muscriptor-medium.T_f1}}, så mellomstemmene i et bandpartitur er arrangert, ikke hørt. Tvilsmerkene er sjelden falsk alarm, men de står på høyst {{data brass/solo-instruments/trumpet.q_hit pct}} av de gale tonene i en sololinje. Sporingen av slag og takter er det som mest begrenser hvor lesbare notene blir.</p>
+      <p class="abstract-text">Vi beskriver og evaluerer Brasscribe, et system som transkriberer opptak av messingensembler til noterte partiturer og stemmer for brassband. Forhåndstrente modeller for kildeseparasjon, tonetranskripsjon, estimering av grunnfrekvens og slagsporing kombineres, uten videre trening, med deterministiske regler for rytmekvantisering, valg av tonenavn, harmonisk reduksjon og arrangering. Hvert steg evalueres på brasskvartetter fra ChoraleBricks ({{data p/chorales-transcription/pieces int}} stykker), kammermusikk for messing fra URMP ({{data p/urmp-transcription/pieces int}} stykker), opptak av enkeltinstrumenter og syntetisk materiale, med presisjon, recall og F-mål på tonenivå slik de er definert i mir_eval, og med nøyaktighet for plassering i partituret for rytme. Den beste transkripsjonsmodellen oppnår et gjennomsnittlig F-mål for ansats på {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} ved standardtoleransen ±50 ms ({{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} ved ±100 ms) på kvartettene og {{data brass/urmp-transcription/muscriptor-medium.onset_f1}} ({{data brass/urmp-transcription/muscriptor-medium.onset100_f1}}) på kammerstykkene. Med referanseslag plasserer kvantiseringen {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} av tonene på den noterte plassen i takten; med sporede slag plasserer den {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, med stor variasjon mellom stykkene. Fra ende til ende på enkeltstemmer, ved ±100 ms (den eneste toleransen som er lagret for disse målesuitene), detekteres tonene med F = {{span brass/solo-beat-model/urmp.small0.onset_f1 brass/solo-beat-model/choralebricks.small0.onset_f1}}, mens det skrevne F-målet, som også krever riktig plass i takten, er {{span brass/solo-beat-model/urmp.small0.written_f1 brass/solo-beat-model/choralebricks.small0.written_f1 brass/solo-beat-model/urmp.final0.written_f1 brass/solo-beat-model/choralebricks.final0.written_f1}}. Tenorstemmen i en kvartett gjenvinnes med F = {{data brass/seat-voices/muscriptor-medium.T_f1}} (±100 ms), og tvilsmerkene fanger høyst {{data brass/solo-instruments/trumpet.q_hit pct}} av de gale tonene. Alle terskler i reglene er stilt inn på evalueringssettene, og ingen brassbandopptak med referansetoner var tilgjengelige, så resultatene er øvre grenser. Sporing av slag og taktart er det største hinderet for lesbare noter.</p>
+      <p><strong>Nøkkelord:</strong> automatisk musikktranskripsjon, brassband, rytmekvantisering, slagsporing, kildeseparasjon, evaluering.</p>
+      <p><strong>Sammendrag i klarspråk:</strong> I et messingensemble finner Brasscribe omtrent to tredeler av de spilte tonene når tidspunktet må stemme på 50 ms, og over fire femdeler når 100 ms tillates. Systemet er mye mindre pålitelig når det gjelder hvor tonene hører hjemme i takten, og spørsmålstegnene varsler bare om noen av feilene. Resultatet er et utkast som må rettes, ikke en ferdig stemme.</p>{{holds p/chorales-transcription/muscriptor-medium.onset_r > 0.6}}{{holds p/chorales-transcription/muscriptor-medium.onset100_r > 0.8}}{{holds p/urmp-transcription/muscriptor-medium.onset_r > 0.6}}
       {{holds brass/solo-instruments/flugelhorn.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/trombone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/baritone.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/tuba.q_hit <= brass/solo-instruments/trumpet.q_hit}}{{holds brass/solo-instruments/horn.q_hit <= brass/solo-instruments/trumpet.q_hit}}
     </section>
 
-    {{chart rhythm}}
-
-    <section id="problem" aria-labelledby="problem-title">
-      <h2 id="problem-title"><span class="secno">1</span> Problemet</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>En musiker hører et stykke og vil ha stemmen sin. Å skrive den ned etter gehør tar timer. Brasscribe skriver et første utkast og må si fra om hvilke toner den er usikker på.</p>
-      <p>Automatisk transkripsjon gjør lyd om til toner: hvilken tonehøyde som klinger, når den starter og når den slutter. En musiker trenger mer. En stemme er <em>lesbar</em> når rytmene står på et rutenett av slag som kan telles, i takter med riktig lengde, med de tonenavnene en komponist ville skrevet. Den er <em>spillbar</em> når den holder seg innenfor instrumentets omfang, er skrevet i instrumentets transponering (B eller Ess for det meste av bandet) og ikke krysser nabostemmene.</p>
-      <p>Et brassband har 18 stemmer i et konkurransepartitur, fra soprankornett til B-bass og slagverk; norske band bruker samme oppsett. De fleste instrumentene har samme familieklang og dobler hverandre hele tiden. Det er det vanskelige tilfellet for alle modeller vi kjenner: ingen kjenner bandets instrumenter, og ingen skiller flere musikere på samme instrument fra hverandre.</p>
-      <p>Tre krav har formet arbeidet:</p>
-      <ul class="ticks">
-        <li><strong>Musikerens egne enheter.</strong> Opptak sendes ikke til en skytjeneste. Et fullt band behandles på musikerens datamaskin. I versjonene som er gitt ut i dag, skrives alle noter, også en solo, på musikerens datamaskin, på alle plattformer. På Android skriver appen en solo selv i versjoner som har lyttemodellene med; versjonene som er gitt ut så langt, hadde dem ikke med. På iPhone, iPad og Mac ligger modellene ikke i appen ennå, og Windows har ingen slik vei.</li>
-        <li><strong>Tvil vises.</strong> En tone systemet tviler på, får et <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span>, med både form og farge, og musikeren går gjennom de merkede tonene gruppevis. <a href="#doubt">Avsnitt 6.6</a> måler hvor mye merkene fanger.</li>
-        <li><strong>Målt, så låst.</strong> Et steg velges etter måling på opptak med kjent fasit, og en sperre stopper bygget når et tall flytter seg.</li>
+    <section id="introduction" aria-labelledby="introduction-title">
+      <h2 id="introduction-title"><span class="secno">1</span> Innledning</h2>
+      <p>Automatisk musikktranskripsjon (<i>automatic music transcription</i>, AMT) gjør lyd om til en symbolsk representasjon: hvilke tonehøyder som klinger, når de starter og når de slutter {{cite benetos2019amt}}. En musiker trenger mer enn en liste med toner. En stemme er lesbar når rytmene ligger på et rutenett av slag som kan telles, i takter med riktig lengde, med de tonenavnene en komponist ville valgt; den er spillbar når den holder seg innenfor instrumentets omfang, er skrevet i instrumentets transponering og ikke krysser nabostemmene.</p>
+      <p>Brassbandet er et krevende mål. Et konkurransepartitur har 18 stemmer, fra soprankornett til B-bass og slagverk, og norske band bruker samme besetning. De fleste instrumentene tilhører samme klangfamilie og dobler hverandre hele tiden. Så vidt vi vet, har ingen åpent tilgjengelig transkripsjonsmodell bandets instrumenter i vokabularet sitt, og ingen skiller flere musikere på samme instrument fra hverandre.</p>
+      <p>Brasscribe løser oppgaven med forhåndstrente modeller som bare lytter (de separerer kilder, estimerer toner og sporer slag), og med deterministiske regler som skriver notasjonen. Systemet kjører på musikerens egne enheter; ingen opptak lastes opp til en tjener. I versjonene som var gitt ut da dette ble skrevet, lages alle noter, også en solostemme, på musikerens datamaskin på alle plattformer. Android-appen transkriberer en solostemme på enheten i versjoner som har lyttemodellene med, noe versjonene som er gitt ut så langt, ikke hadde; på iPhone, iPad og Mac er modellene ennå ikke med, og Windows-appen har ingen slik vei.</p>
+      <p>Hovedfunnet er vist i {{ref fig:rhythm}}: reglene plasserer nesten alle toner riktig når slagene er kjent, og omtrent halvparten i gjennomsnitt, med stor variasjon mellom stykkene, når slagene spores fra lyden.</p>
+      {{chart rhythm}}
+      <p>Artikkelens bidrag er:</p>
+      <ul>
+        <li>en beskrivelse av en komplett arbeidsflyt fra lyd til noter for messingensembler som bare bruker forhåndstrente modeller og deterministiske regler (kapittel 3);</li>
+        <li>en evaluering steg for steg på ekte messingopptak med referansetoner, rapportert med de vanlige målene på tonenivå og med plasseringsmål for rytme (kapittel 4 og 5);</li>
+        <li>negative resultater og sammenligninger som avgjorde utformingen, også modeller og innstillinger som ble forkastet (avsnitt 5.8);</li>
+        <li>en feilanalyse og en redegjørelse for trusler mot validiteten, særlig at alle terskler er stilt inn på evalueringsdataene (kapittel 6 og 7);</li>
+        <li>en side der tall og figurer genereres fra regresjonsgrunnlaget i det åpne repositoriet, slik at de ikke kan gli fra målingene (kapittel 9).</li>
       </ul>
     </section>
 
     <section id="related" aria-labelledby="related-title">
       <h2 id="related-title"><span class="secno">2</span> Tidligere arbeid</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Det finnes gode åpne modeller for hver lytteoppgave. Ingen er laget for brassband, så hver av dem ble prøvd på brass før vi stolte på den.</p>
-      <p><strong>Toner fra mange instrumenter.</strong> MT3 behandler transkripsjon av flere instrumenter som oversettelse fra et spektrogram til tonesymboler<sup><a href="#ref-1">[1]</a></sup>, og YourMT3+ bygde videre på det<sup><a href="#ref-2">[2]</a></sup>. MuScriptor er en nyere åpen modell av samme slag, trent på ekte opptak med flere instrumenter<sup><a href="#ref-3">[3]</a></sup>. Basic Pitch er en liten modell som ikke bryr seg om hvilket instrument som spiller<sup><a href="#ref-4">[4]</a></sup>; Onsets and Frames la mønsteret den følger<sup><a href="#ref-7">[7]</a></sup>.</p>
-      <p><strong>Én linje.</strong> For en enkelt melodi er en tonehøydesporer enklere og mer nøyaktig enn en transkripsjonsmodell. CREPE var den første lærte tonehøydesporeren<sup><a href="#ref-6">[6]</a></sup>; SwiftF0 er en svært liten, nyere en<sup><a href="#ref-5">[5]</a></sup>. Rangeringen den er publisert med, kommer fra en sammenligning forfatteren selv vedlikeholder<sup><a href="#ref-24">[24]</a></sup>, så vi målte den på brass selv (<a href="#instruments">avsnitt 6.4</a>).</p>
-      <p><strong>Å skille instrumenter.</strong> HT-Demucs<sup><a href="#ref-12">[12]</a></sup> og BS-RoFormer<sup><a href="#ref-11">[11]</a></sup> deler en miks i spor. Vi bruker to modellfiler av den siste som er delt av andre: BS-RoFormer SW (seks spor) og MVSep Mega-53 (53 spor, blant dem messing, trompet, trombone, valthorn og tuba)<sup><a href="#ref-13">[13]</a><a href="#ref-25">[25]</a></sup>. Vi fant ingen åpen separator som kjenner kornett, althorn, baryton eller eufonium, og ingen som skiller flere musikere på samme instrument.</p>
-      <p><strong>Slag og takter.</strong> Eldre slagsporere tolker utdataene fra et nettverk med en sannsynlighetsmodell for tempo og plass i takten<sup><a href="#ref-9">[9]</a><a href="#ref-10">[10]</a></sup>. Beat This! finner slag og enere direkte<sup><a href="#ref-8">[8]</a></sup>. Ingen åpen modell gir en taktart: den må regnes ut fra avstanden mellom enerne.</p>
-      <p><strong>Tonenavn, toneart og notasjon.</strong> Et tonenummer sier ikke om en tone er fiss eller gess. Algoritmen ps13 gir toner navn ut fra den tonale sammenhengen<sup><a href="#ref-14">[14]</a><a href="#ref-15">[15]</a></sup>, i partituras implementasjon<sup><a href="#ref-23">[23]</a></sup>. Tonearten kommer fra Krumhansl–Kessler-profilene<sup><a href="#ref-16">[16]</a></sup>. Notene skrives som MusicXML<sup><a href="#ref-22">[22]</a></sup>.</p>
-      <p><strong>Hva som manglet.</strong> Ingen modell kjenner bandets instrumenter, ingen modell skiller stemmer med samme klang, og vi fant ingen publiserte tall for nøyaktighet på brassbandlyd. Målegrunnlaget måtte derfor settes sammen først (<a href="#data">avsnitt 4</a>), fra de nærmeste ekte brassopptakene som har fasit.</p>
+      <p><strong>Transkripsjon av flere instrumenter.</strong> MT3 formulerer transkripsjon av flere instrumenter som sekvens-til-sekvens-oversettelse fra et spektrogram til tonesymboler {{cite gardner2022mt3}}, og YourMT3+ bygger videre på den tilnærmingen {{cite chang2024yourmt3}}. MuScriptor er en nyere åpen modell av samme familie, forhåndstrent på syntetiske data, finjustert på ekte opptak og deretter trent videre med forsterkende læring {{cite rouard2026muscriptor}}. Basic Pitch er en lett tonetranskripsjonsmodell som er uavhengig av instrument {{cite bittner2022basicpitch}}, i tradisjonen etter Onsets and Frames {{cite hawthorne2018onsets}}.</p>
+      <p><strong>Estimering av grunnfrekvens (f0).</strong> For en enstemmig linje er en f0-estimator enklere og mer presis enn en flerstemmig transkripsjonsmodell. CREPE introduserte en lært f0-estimator som arbeider på bølgeformen {{cite kim2018crepe}}; SwiftF0 er en liten, nyere modell {{cite nieradzik2025swiftf0}}. Rangeringen den er publisert med, kommer fra en sammenligning som vedlikeholdes under samme konto som modellen {{cite pitchbenchmark}}; vi målte den derfor selv på messing (avsnitt 5.4).</p>
+      <p><strong>Kildeseparasjon.</strong> Hybrid Transformer Demucs {{cite rouard2023htdemucs}} og band-split RoPE Transformer (BS-RoFormer) {{cite lu2024bsroformer}} separerer en miks i spor. Vi bruker to modellfiler av den siste arkitekturen som er delt av andre: BS-RoFormer SW, med seks spor {{cite audioseparator}}, og MVSep Mega-53, med 53 spor som blant annet omfatter messing, trompet, trombone, valthorn og tuba {{cite solovyev2026msst}}. Vi fant ingen åpen separator med spor for kornett, althorn, baryton eller eufonium, og ingen som skiller flere musikere på samme instrument.</p>
+      <p><strong>Sporing av slag og enere.</strong> Eldre sporere dekoder aktiveringene fra et nevralt nettverk med et dynamisk bayesiansk nettverk over tempo og plass i takten {{cite krebs2015}}, {{cite bock2016madmom}}. Beat This! predikerer slag og enere (<i>downbeats</i>) direkte {{cite foscarin2024beatthis}}. Ingen av disse modellene gir en taktart; den må utledes av avstanden mellom enerne.</p>
+      <p><strong>Tonenavn, toneart og notasjon.</strong> Et tonenummer avgjør ikke om en tone er fiss eller gess. Algoritmen ps13 velger tonenavn ut fra den tonale sammenhengen {{cite meredith2006ps13}}; vi bruker implementasjonen i partitura {{cite cancino2022partitura}}. Tonearten estimeres med Krumhansl–Kessler-profilene {{cite krumhansl1990}}, og notene skrives i MusicXML {{cite musicxml}}.</p>
+      <p><strong>Det som manglet.</strong> Vi fant ingen publiserte tall for nøyaktighet ved transkripsjon av brassbandlyd, og ikke noe datasett med brassbandopptak og tilhørende toner. Evalueringen i denne artikkelen er derfor satt sammen av de nærmeste tilgjengelige ekte messingopptakene (avsnitt 4.1).</p>
     </section>
 
-    <section id="pipeline" aria-labelledby="pipeline-title">
-      <h2 id="pipeline-title"><span class="secno">3</span> Arbeidsflyten</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Modellene lytter, reglene skriver. Etter avstemningen mellom modellene gir de samme tonene alltid nøyaktig de samme notene.</p>
+    <section id="method" aria-labelledby="method-title">
+      <h2 id="method-title"><span class="secno">3</span> Metode</h2>
+      <h3>3.1 Oversikt</h3>
+      <p>{{ref fig:brass-pipeline}} viser arbeidsflyten, og {{ref table:models}} lister de forhåndstrente modellene og rollene deres. Lærte modeller brukes bare til lytting; hvert steg etter avstemningen mellom tonemodellene er deterministisk, så identiske toner gir alltid identiske noter.</p>
 
       {{pipeline brass-pipeline}}
 
-      <h3>Hvilken modell gjør hva</h3>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell 1">
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell: modeller" id="table-models">
         <table>
-          <caption>Tabell 1. Modellene, hva hver brukes til, og lisensen. <span class="src">Kilde: <code>THIRD_PARTY_NOTICES.md</code> og profilene i <code>engine/src/scribe_engine/profiles.py</code>.</span></caption>
+          <caption>{{label table:models}}. Forhåndstrente modeller i systemet, rollen deres, hvor de kjører, og lisensen. Kilde: <code>THIRD_PARTY_NOTICES.md</code> og <code>engine/src/scribe_engine/profiles.py</code>.</caption>
           <thead>
-            <tr><th scope="col">Modell</th><th scope="col">Brukes til</th><th scope="col">Kjører på</th><th scope="col">Lisens</th></tr>
+            <tr><th scope="col">Modell</th><th scope="col">Rolle</th><th scope="col">Kjører på</th><th scope="col">Lisens</th></tr>
           </thead>
           <tbody>
-            <tr><th scope="row">SwiftF0<sup><a href="#ref-5">[5]</a></sup></th><td>Tonehøyden til én linje: ryggraden i en solo, og hvor hver tone slutter</td><td>Datamaskin; Android-telefon i versjoner som har modellene med</td><td>MIT</td></tr>
-            <tr><th scope="row">Basic Pitch<sup><a href="#ref-4">[4]</a></sup></th><td>En ekstra vurdering av hver tone; den eneste tonemodellen i et utkast laget på telefonen</td><td>Datamaskin; Android-telefon i versjoner som har modellene med</td><td>Apache-2.0</td></tr>
-            <tr><th scope="row">Beat This!<sup><a href="#ref-8">[8]</a></sup></th><td>Slag og enere (den lille modellfilen på telefoner, den endelige på datamaskinen)</td><td>Datamaskin; Android-telefon i versjoner som har modellene med</td><td>MIT, kode og vekter</td></tr>
-            <tr><th scope="row">MuScriptor medium<sup><a href="#ref-3">[3]</a></sup></th><td>Hovedmodellen for toner i et helt band eller en miks</td><td>Datamaskin</td><td>CC BY-NC 4.0, ikke-kommersiell; lukket nedlasting, hver bruker henter den selv</td></tr>
-            <tr><th scope="row">BS-RoFormer SW<sup><a href="#ref-11">[11]</a><a href="#ref-25">[25]</a></sup></th><td>Deler en pop- eller rockelåt i spor før tonene blir funnet</td><td>Datamaskin</td><td>Kode MIT; ingen lisens oppgitt for vektene</td></tr>
-            <tr><th scope="row">Mega-53<sup><a href="#ref-13">[13]</a></sup></th><td>Løfter en solist, bassen og trommene ut av et orkester</td><td>Datamaskin</td><td>Kode MIT; ingen lisens oppgitt for vektene</td></tr>
+            <tr><th scope="row">SwiftF0 {{cite nieradzik2025swiftf0}}</th><td>f0 for en enstemmig linje: grunnlaget for en solostemme, og toneslutt</td><td>Datamaskin; Android-telefon i versjoner som har modellene med</td><td>MIT</td></tr>
+            <tr><th scope="row">Basic Pitch {{cite bittner2022basicpitch}}</th><td>Et andre toneestimat for hver tone; den eneste tonemodellen i et utkast laget på en telefon</td><td>Datamaskin; Android-telefon i versjoner som har modellene med</td><td>Apache-2.0</td></tr>
+            <tr><th scope="row">Beat This! {{cite foscarin2024beatthis}}</th><td>Slag og enere (modellfilen small0 på telefoner, final0 på datamaskinen)</td><td>Datamaskin; Android-telefon i versjoner som har modellene med</td><td>MIT, kode og vekter</td></tr>
+            <tr><th scope="row">MuScriptor medium {{cite rouard2026muscriptor}}</th><td>Hovedmodellen for toner i et ensemble eller en miks</td><td>Datamaskin</td><td>CC BY-NC 4.0, lukket nedlasting; hentes av hver bruker</td></tr>
+            <tr><th scope="row">BS-RoFormer SW {{cite lu2024bsroformer}}, {{cite audioseparator}}</th><td>Separerer et pop- eller rockeopptak i spor før transkripsjon</td><td>Datamaskin</td><td>Kode MIT; ingen lisens oppgitt for vektene</td></tr>
+            <tr><th scope="row">MVSep Mega-53 {{cite solovyev2026msst}}</th><td>Henter ut en solist, bassen og trommene fra et orkesteropptak</td><td>Datamaskin</td><td>Kode MIT; ingen lisens oppgitt for vektene</td></tr>
           </tbody>
         </table>
       </div>
 
-      <h3>Veivalg: skille først, eller ikke</h3>
-      <p>Musikeren svarer på «Hva er dette?», og svaret velger veien; appen gjetter ikke. En <strong>solo</strong> og et <strong>brassband</strong> går rett til tonemodellene: i et rent brassopptak er det ingenting for en separator å skille. En <strong>pop- eller rockelåt</strong> deles først i spor med BS-RoFormer SW, og hvert spor transkriberes. For en <strong>solist med orkester</strong> løfter Mega-53 ut solisten, bassen og trommene, og orkesteret er det som blir igjen av miksen.</p>
+      <h3>3.2 Veivalg</h3>
+      <p>Brukeren oppgir hva opptaket er, og svaret velger veien. En solostemme og et messingensemble sendes rett til tonemodellene, siden en ren messingmiks ikke gir en separator noe å skille. Et pop- eller rockeopptak separeres først med BS-RoFormer SW, og hvert spor transkriberes. For en solist med orkester henter Mega-53 ut solisten, bassen og trommene, og orkesteret tas som resten av miksen.</p>
 
-      <h3>Avstemningen, og hva et ? betyr</h3>
-      <p>Alle tonemodellene hører den samme lyden, og toner samles når de har samme tonehøyde og starter samtidig. For en solo leverer SwiftF0 tonene, og en annen modell bekrefter dem; en tone SwiftF0 ikke hørte, blir forkastet (<a href="#doubt">avsnitt 6.6</a> viser hvorfor). En liten logistisk modell gjør så belegget for hver tone om til en sannsynlighet for at den er riktig: hvilke modeller som fant den, hvor lang den er, hvor fast tonehøydesporeren holdt den, og om linjen er skilt ut fra en miks. En tone under terskelen får et <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span>. Merkede nabotoner deler ett merke, og gjennomgangen starter med musikerens egen stemme.</p>
+      <h3>3.3 Enighet mellom modeller og sikkerhet</h3>
+      <p>Tonemodellene behandler den samme lyden, og tonene deres samles når de stemmer overens i tonehøyde og ansats. For en solostemme leverer SwiftF0 tonene, og en annen modell bekrefter dem; en tone SwiftF0 ikke har gitt, forkastes (avsnitt 5.6 gir grunnlaget). En logistisk regresjon avbilder så belegget for hver tone til en sannsynlighet for at den er riktig: hvilke modeller som ga den, varigheten, hvor sikkert f0-kurven er stemt ved starten, og om linjen er separert fra en miks. En tone under en terskel merkes med et <span class="q uncertain" aria-hidden="true">?</span><span class="vh">spørsmålstegn</span>; merkede nabotoner deler ett merke.</p>
 
-      <h3>Slag, takter og rutenettet</h3>
-      <p>Beat This! sporer slag og enere i hele miksen. Regler velger så det slaget en musiker ville telt (sporeren slår ofte halvnoter i langsom musikk), rydder taktstrekene der sporeren har lagt til eller mistet et slag, og merker partier uten fast puls som <i>ad lib.</i> Deretter flyttes tonene inn på rutenettet: for hvert slag veier kvantiseringen hvor godt en underdeling passer, mot hvor vanskelig den er å lese, med 24 trinn per slag. Skrevne tonelengder kommer fra der tonehøydekurven forlater tonen, ikke fra hvor lenge musikeren holdt den.</p>
+      <h3>3.4 Slag, taktart og kvantisering</h3>
+      <p>Beat This! sporer slag og enere i hele miksen. Regler velger det metriske nivået en musiker ville telt (sporeren følger ofte halvnoter i langsom musikk), retter taktstreker der et slag er lagt til eller falt ut, og merker partier uten fast puls som <i>ad lib.</i> Deretter kvantiseres tonene: for hvert slag veier kvantiseringen hvor godt en underdeling passer til ansatsene, mot hvor komplisert den er å lese, med en oppløsning på 24 trinn per slag. Skrevne varigheter utledes av der f0-kurven forlater tonen, ikke av den spilte varigheten.</p>
 
-      <h3>Navn, harmoni og stemmer</h3>
-      <p>Tonenavn velges for hele ensemblet i klingende tonehøyde, før noe transponeres, og tonearten anslås fra de samme tonene. Tett akkompagnement reduseres til akkordtonene i hvert slag. Tre arrangører skriver stemmene: fullt band, lite band, og en kvartett der de to mellomstemmene følger klassiske regler for stemmeføring (ingen kryssing, ingen parallelle kvinter eller oktaver, bare akkordtoner). Så følger tre vanskelighetsgrader: som spilt, standard og enklere.</p>
-      <p>Alt i dette avsnittet etter avstemningen er skrevet to ganger, i Python som referanse og i Rust for appene, og en samsvarstest krever at de to gir identisk resultat.</p>
+      <h3>3.5 Tonenavn, harmoni og arrangering</h3>
+      <p>Tonenavn velges for hele ensemblet i klingende tonehøyde, før transponering, og tonearten estimeres fra de samme tonene. Tett akkompagnement reduseres til akkordtonene i hvert slag. Tre arrangører skriver stemmene: fullt band, lite band, og en kvartett der mellomstemmene følger regler for stemmeføring (ingen kryssing, ingen parallelle kvinter eller oktaver, bare akkordtoner). Tre vanskelighetsgrader utledes av resultatet.</p>
+      <p>Alle steg etter avstemningen er implementert to ganger, i Python som referanse og i Rust for appene, og en samsvarstest krever identisk resultat fra de to.</p>
     </section>
 
-    <section id="data" aria-labelledby="data-title">
-      <h2 id="data-title"><span class="secno">4</span> Data</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Det finnes ikke noe offentlig brassbandopptak med fasit. Vi brukte de nærmeste ekte brassopptakene. Settene er små, og reglene er stilt inn på de samme settene som de måles på.</p>
-      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell 2">
+    <section id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title"><span class="secno">4</span> Eksperimentelt oppsett</h2>
+      <h3>4.1 Datasett</h3>
+      <p>Vi fant ingen offentlige brassbandopptak med tilhørende referansetoner. {{ref table:data}} lister settene som ble brukt i stedet. Ingen av dem er et brassband: kvartettene har én musiker per stemme, tatt opp én om gangen, og det største settet har {{data p/chorales-transcription/pieces int}} stykker.{{holds p/chorales-transcription/pieces >= p/urmp-transcription/pieces}}</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell: datasett" id="table-data">
         <table>
-          <caption>Tabell 2. Målesett. <span class="src">Kilde: <code>eval/README.md</code>, <code>THIRD_PARTY_NOTICES.md</code>; størrelsene er talt av <code>site/shared/research/per_piece.py</code> og hentet fra <code>eval/baselines.json</code>.</span></caption>
+          <caption>{{label table:data}}. Evalueringssett, størrelsen slik de er brukt, lisensen og hvor regresjonssperren kjører på dem. Størrelsene er talt av <code>site/shared/research/per_piece.py</code> eller hentet fra <code>eval/baselines.json</code>.</caption>
           <thead>
-            <tr><th scope="col">Sett</th><th scope="col">Hva det er</th><th scope="col">Brukt størrelse</th><th scope="col">Lisens</th><th scope="col">Sperren kjører</th></tr>
+            <tr><th scope="col">Sett</th><th scope="col">Innhold</th><th scope="col">Brukt størrelse</th><th scope="col">Lisens</th><th scope="col">Sperre</th></tr>
           </thead>
           <tbody>
-            <tr><th scope="row">ChoraleBricks, brasskvartetter<sup><a href="#ref-17">[17]</a></sup></th><td>Koraler spilt av fire ekte musikere, tatt opp hver for seg: trompet, flygelhorn, baryton, tuba. Toner justert mot lyden, med hver tones plass i partituret</td><td>{{data p/chorales-transcription/pieces int}} koraler, {{data p/chorales-transcription/notes int}} toner; {{data m/datasets/choralebricks_solo_stems int}} opptak av ett instrument</td><td>CC BY 4.0</td><td>I CI, fra låste annotasjoner og våre egne modellresultater</td></tr>
-            <tr><th scope="row">URMP, brass<sup><a href="#ref-18">[18]</a></sup></th><td>Ekte kammerstykker for to til fem messingblåsere, der hver stemme også er tatt opp alene</td><td>{{data p/urmp-transcription/pieces int}} stykker, {{data p/urmp-transcription/notes int}} toner; {{data brass/solo-beat-model/urmp.parts int}} enkeltstemmer</td><td>Ikke sjekket for videredeling</td><td>Bare lokalt</td></tr>
-            <tr><th scope="row">Slakh, trompet i front<sup><a href="#ref-19">[19]</a></sup></th><td>Syntetiske låter med trompetmelodi over et band. Brukt til å sammenligne veier, aldri til rytme: tonene står ikke på noe rutenett</td><td>{{data m/datasets/slakh_trumpet_songs int}} låter</td><td>Ikke sjekket for videredeling</td><td>Bare lokalt</td></tr>
-            <tr><th scope="row">Klipp med raske toner</th><td>Løp, gjentatte toner, triller og ornamenter satt sammen av ekte trompetsamplinger, tørt og med klangen fra en kirke, med nøyaktig fasit</td><td>Et låst sett</td><td>Samplinger: University of Iowa MIS, VSCO 2 CE (CC0); rom: OpenAIR (CC BY 4.0)</td><td>I CI</td></tr>
-            <tr><th scope="row">Ett kommersielt opptak</th><td>En solist med orkester. Ingen fasit: det arrangerte resultatet er låst og må gjenskapes nøyaktig</td><td>1 opptak</td><td>Kommersielt; aldri publisert eller levert med appene</td><td>Bare lokalt</td></tr>
+            <tr><th scope="row">ChoraleBricks, brasskvartetter {{cite balke2025choralebricks}}</th><td>Koraler spilt av fire musikere tatt opp hver for seg (trompet, flygelhorn, baryton, tuba), med toner justert mot lyden og plass i partituret</td><td>{{data p/chorales-transcription/pieces int}} stykker, {{data p/chorales-transcription/notes int}} toner; {{data m/datasets/choralebricks_solo_stems int}} opptak av enkeltinstrumenter</td><td>CC BY 4.0</td><td>Kontinuerlig integrasjon, fra låste annotasjoner og lagrede modellresultater</td></tr>
+            <tr><th scope="row">URMP (University of Rochester Multi-Modal Music Performance dataset), messingstykker {{cite li2019urmp}}</th><td>Kammerstykker for to til fem messingblåsere; hver stemme også tatt opp alene</td><td>{{data p/urmp-transcription/pieces int}} stykker, {{data p/urmp-transcription/notes int}} toner; {{data brass/solo-beat-model/urmp.parts int}} enkeltstemmer</td><td>Ingen oppgitt</td><td>Bare lokalt</td></tr>
+            <tr><th scope="row">Slakh, trompet i front {{cite manilow2019slakh}}</th><td>Syntetiske låter med trompetmelodi over et band; brukt til å sammenligne veier, ikke til rytme, siden tonene ikke er kvantisert</td><td>{{data m/datasets/slakh_trumpet_songs int}} låter</td><td>CC BY 4.0</td><td>Bare lokalt</td></tr>
+            <tr><th scope="row">Klipp med raske toner</th><td>Løp, gjentatte toner, triller og ornamenter satt sammen av trompetsamplinger {{cite iowa-mis}}, {{cite vsco2}}, tørt og foldet med en impulsrespons fra en kirke {{cite openair}}, med nøyaktig fasit</td><td>{{data m/datasets/fast_notes_frozen_clips int}} klipp i kontinuerlig integrasjon; {{data m/fast_notes/clips int}} i alt</td><td>Samplinger: uten restriksjoner og CC0; impulsrespons: CC BY 4.0</td><td>Kontinuerlig integrasjon</td></tr>
+            <tr><th scope="row">Ett kommersielt opptak</th><td>En solist med orkester; ingen referansetoner, det arrangerte resultatet er låst og må gjenskapes nøyaktig</td><td>1 opptak</td><td>Kommersielt; ikke publisert eller distribuert</td><td>Bare lokalt</td></tr>
           </tbody>
         </table>
       </div>
-      <p><strong>Trening og måling.</strong> Brasscribe trener ingen lyttemodell: alle seks brukes slik de er publisert. To ting er tilpasset våre data. Sikkerhetsmodellen er tilpasset toner med kjent fasit fra de samme settene, og kontrollert på en halvdel av opptakene den ikke hadde sett. Tersklene i musikkreglene (kvantiseringens straffer, oppryddingen i taktstreker, reglene for lengde og staccato, reglene for raske toner) er valgt mens vi så på de settene de måles på. <strong>Det finnes ikke noe brass-sett som er holdt utenfor.</strong> Tallene under viser derfor hvor godt reglene passer disse opptakene, og det er i beste fall en øvre grense for et opptak gjort et annet sted.</p>
-      <p><strong>Hva settene ikke er.</strong> Ingen av dem er et brassband. Kvartettene har én musiker per stemme, tatt opp én om gangen; et band har flere musikere per stemme, i en sal. Det største settet har {{data p/chorales-transcription/pieces int}} stykker.</p>
-      {{holds p/chorales-transcription/pieces >= p/urmp-transcription/pieces}}
-    </section>
 
-    <section id="measures" aria-labelledby="measures-title">
-      <h2 id="measures-title"><span class="secno">5</span> Mål</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Å høre en tone og å skrive den på riktig sted er to forskjellige ting, og de måles hver for seg. Alle målene går fra 0 til 1; høyere er bedre.</p>
+      <h3>4.2 Datadeling og lekkasje</h3>
+      <p>Ingen lyttemodell er trent eller finjustert; alle seks brukes slik de er publisert. To komponenter er tilpasset våre data. Sikkerhetsmodellen (avsnitt 3.3) er tilpasset toner med referanseetiketter fra settene i {{ref table:data}} og validert på en halvdel av opptakene som var holdt utenfor. Tersklene i reglene (kvantiseringens kompleksitetsstraffer, rettingen av taktstreker, reglene for varighet og staccato, reglene for raske toner) er valgt mens vi så på de samme settene som de måles på. <strong>Det finnes ikke noe messingsett som er holdt utenfor.</strong> Resultatene i kapittel 5 måler derfor hvor godt reglene passer disse opptakene, og bør leses som øvre grenser for opptak systemet ikke har sett.</p>
+
+      <h3>4.3 Mål</h3>
+      <p>Alle målene ligger mellom 0 og 1; høyere er bedre. Om en tone blir funnet, og hvor den plasseres i notene, måles hver for seg. Mål på tonenivå beregnes med <code>mir_eval.transcription</code> {{cite raffel2014mireval}}, bare for ansats og, der det er oppgitt, for ansats og slutt. Den primære ansatstoleransen er ±50 ms; ±100 ms rapporteres som en sekundær, romsligere toleranse, og flere målesuiter lagrer bare resultater ved ±100 ms, noe som oppgis der det gjelder. En <em>oktavfeil</em> er en referansetone som ikke får treff, mens en estimert tone én eller to oktaver unna starter innenfor ansatstoleransen; andelen oktavfeil er andelen referansetoner dette gjelder for.</p>
       <ul class="measures">
       {{part measure-onset}}
       {{part measure-position}}
@@ -141,163 +141,198 @@ scripts: charts.js
       {{part measure-metre}}
       {{part measure-doubt}}
       </ul>
-      <p><strong>Sperren.</strong> <code>scribe bench</code> regner ut hver målesuite på nytt fra lagrede modellresultater og feiler når et tall har flyttet seg mer enn toleransen i <code>eval/baselines.json</code>; antall, som kryssende stemmer, holdes nøyaktig. De fleste figurene på denne siden leser den samme filen som sperren. De andre sier det i kildelinjen: rapportene fra modellkonverteringene, og noen få tall som er målt én gang og ligger med kildene sine i <code>measured.toml</code>.</p>
+
+      <h3>4.4 Protokoll</h3>
+      <p>Modellresultatene beregnes én gang og lagres; <code>scribe bench</code> regner ut hver målesuite på nytt fra de lagrede resultatene og feiler når en verdi har flyttet seg mer enn toleransen i <code>eval/baselines.json</code>. Resultatene er gjennomsnitt over stykker. Der verdiene per stykke er tilgjengelige, oppgir vi også standardavviket i utvalget (SA) og et 95 % konfidensintervall (KI) for gjennomsnittet, funnet med persentil-bootstrap over stykker (10 000 gjentrekninger, fast frø) {{cite efron1993bootstrap}}; med {{data p/urmp-transcription/pieces int}} til {{data p/chorales-transcription/pieces int}} stykker er disse intervallene brede. Det er ikke utført signifikanstester, og forskjeller mellom betingelser rapporteres deskriptivt. F-mål, presisjon og recall oppgis som andeler med to desimaler, og andeler ellers som prosent (med én desimal under 10 %); samsvaret for konverterte modeller oppgis med tre desimaler fordi terskelen er 0,98. Presisjon og recall rapporteres ved siden av F-målet der grunnlagsfilen lagrer dem, eller der målekoden gir dem for ensemblesuitene ({{ref table:prf}}). De fleste figurene leser filen sperren bruker; figurer som bygger på andre filer (rapportene fra modellkonverteringene, og et lite sett verdier som er målt én gang, listet i vedlegget), oppgir det i kildelinjen.</p>
     </section>
 
     <section id="results" aria-labelledby="results-title">
-      <h2 id="results-title"><span class="secno">6</span> Resultater</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>De fleste tonene blir funnet. Å sette dem på riktig plass i takten er det svake steget. Mellomstemmene i en gruppe blir for det meste ikke hørt.</p>
+      <h2 id="results-title"><span class="secno">5</span> Resultater</h2>
 
-      <h3 id="found">6.1 Toner funnet i en gruppe</h3>
+      <h3 id="found">5.1 Tonedeteksjon i ensembler</h3>
+      <p>{{ref fig:notes-found}} gir F-målet for ansats for de to transkripsjonsmodellene. På kvartettene oppnår den beste modellen {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} ved standardtoleransen ±50 ms (SA {{data brass/chorales-transcription/muscriptor-medium.onset_f1@sd}}, 95 % KI {{data brass/chorales-transcription/muscriptor-medium.onset_f1@lo}}–{{data brass/chorales-transcription/muscriptor-medium.onset_f1@hi}}) og {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} ved den romsligere toleransen ±100 ms (SA {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@sd}}, 95 % KI {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@lo}}–{{data brass/chorales-transcription/muscriptor-medium.onset100_f1@hi}}; variasjonsbredde {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@min}}–{{data brass/chorales-transcription/muscriptor-medium.onset100_f1@max}}). {{ref table:prf}} gir presisjon og recall ved siden av F-målet: ved ±100 ms finner den beste modellen {{data p/chorales-transcription/muscriptor-medium.onset100_r pct}} av de spilte tonene i kvartettene, og {{data p/chorales-transcription/muscriptor-medium.onset100_p pct}} av tonene den rapporterer, er riktige. Forskjellen mellom de to toleransene er stor for messing, noe som stemmer med sen deteksjon av myke ansatser. På de to syntetiske låtene med trompet i front ga separasjon før transkripsjon høyere verdi enn transkripsjon av miksen; med to låter er dette bare en antydning.</p>
       {{chart notes-found}}
-      <p>På en brasskvartett når den beste modellen F1 {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} med den romslige toleransen, og stykkene er ganske ulike: fra {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@min}} til {{data brass/chorales-transcription/muscriptor-medium.onset100_f1@max}}. Den strenge toleransen på 50 ms koster mye for brass, fordi en myk ansats kommer sent; den romslige er det rimeligste målet på hva som ender i notene. På et fullt band ga det bedre resultat å skille instrumentene først enn å transkribere miksen, på to syntetiske låter.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell: presisjon, recall og F-mål" id="table-prf">
+        <table>
+          <caption>{{label table:prf}}. Presisjon (P), recall (R) og F-mål (F) på tonenivå for de to transkripsjonsmodellene på ensemblene i {{ref fig:notes-found}}, gjennomsnitt over stykker. F er den låste verdien; P og R er beregnet med samme målekode av <code>per_piece.py</code> og er ikke låst.</caption>
+          <thead><tr><th scope="col">Sett og modell</th><th scope="col" class="num">P, ±50 ms</th><th scope="col" class="num">R, ±50 ms</th><th scope="col" class="num">F, ±50 ms</th><th scope="col" class="num">P, ±100 ms</th><th scope="col" class="num">R, ±100 ms</th><th scope="col" class="num">F, ±100 ms</th><th scope="col"><i>n</i></th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Brasskvartetter, MuScriptor medium</th><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset_p}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset_r}}</td><td class="num">{{data brass/chorales-transcription/muscriptor-medium.onset_f1}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset100_p}}</td><td class="num">{{data p/chorales-transcription/muscriptor-medium.onset100_r}}</td><td class="num">{{data brass/chorales-transcription/muscriptor-medium.onset100_f1}}</td><td>{{data p/chorales-transcription/pieces int}} stykker</td></tr>
+            <tr><th scope="row">Brasskvartetter, Basic Pitch</th><td class="num">{{data p/chorales-transcription/basic-pitch.onset_p}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset_r}}</td><td class="num">{{data brass/chorales-transcription/basic-pitch.onset_f1}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset100_p}}</td><td class="num">{{data p/chorales-transcription/basic-pitch.onset100_r}}</td><td class="num">{{data brass/chorales-transcription/basic-pitch.onset100_f1}}</td><td>{{data p/chorales-transcription/pieces int}} stykker</td></tr>
+            <tr><th scope="row">Kammerbrass, MuScriptor medium</th><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset_p}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset_r}}</td><td class="num">{{data brass/urmp-transcription/muscriptor-medium.onset_f1}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset100_p}}</td><td class="num">{{data p/urmp-transcription/muscriptor-medium.onset100_r}}</td><td class="num">{{data brass/urmp-transcription/muscriptor-medium.onset100_f1}}</td><td>{{data p/urmp-transcription/pieces int}} stykker</td></tr>
+            <tr><th scope="row">Kammerbrass, Basic Pitch</th><td class="num">{{data p/urmp-transcription/basic-pitch.onset_p}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset_r}}</td><td class="num">{{data brass/urmp-transcription/basic-pitch.onset_f1}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset100_p}}</td><td class="num">{{data p/urmp-transcription/basic-pitch.onset100_r}}</td><td class="num">{{data brass/urmp-transcription/basic-pitch.onset100_f1}}</td><td>{{data p/urmp-transcription/pieces int}} stykker</td></tr>
+          </tbody>
+        </table>
+      </div>
 
-      <h3 id="rhythm">6.2 Hvor tonene havner</h3>
-      <p>Figuren til dette er <a href="#fig-rhythm">den under sammendraget</a>. Det er artikkelens viktigste resultat. Med riktige slag skriver reglene {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} av tonene nøyaktig der partituret har dem. Med slagene sporeren fant, klarer de {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, og prikkene viser hvor lite et snitt sier her: enkeltstykker går fra {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}, avhengig av hvor godt sporeren fant slagene og taktstrekene. Plassen i slaget holder mye bedre ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), så rytmen inne i et slag er som regel lesbar selv når taktstrekene ikke er det. Skrevne lengder er riktige for {{data brass/quant-urmp/reference_beats.duration_acc pct}} av tonene i kammermusikken selv med perfekte slag: musikere korter ned toner, og reglene retter det bare delvis opp.</p>
-      <p>Ett innstillingssteg ligger bak tallene til venstre. Å gjøre en enkel rytme billigere å velge for kvantiseringen enn en komplisert flyttet nøyaktige plasser på koralene fra {{data m/penalties/position_before pct}} til {{data brass/quant-chorales/reference_beats.position_acc pct}}, med partiturets slag. Steget er stilt inn på disse koralene, så gevinsten er en tilpasning, ikke en prøve.{{holds brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before}}</p>
+      <h3 id="rhythm">5.2 Rytmekvantisering</h3>
+      <p>{{ref fig:rhythm}} (kapittel 1) isolerer rytmesteget ved å kvantisere referansetonene. Med referanseslag skrives {{span brass/quant-urmp/reference_beats.position_acc brass/quant-chorales/reference_beats.position_acc pct}} av tonene på den noterte plassen i takten. Med sporede slag faller gjennomsnittet til {{span brass/quant-urmp/beat_this.position_acc brass/quant-chorales/beat_this.position_acc pct}}, og enkeltstykker varierer fra {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}}; gjennomsnittet er derfor en dårlig oppsummering. Plass i slaget er mer robust ({{span brass/quant-urmp/beat_this.subdivision_acc brass/quant-chorales/beat_this.subdivision_acc pct}}), så rytmen inne i et slag er som regel lesbar selv når taktstrekene er forskjøvet. Ett innstillingssteg ligger bak resultatene med referanseslag: skalering av kvantiseringens kompleksitetsstraffer løftet nøyaktige plasser på koralene fra {{data m/penalties/position_before pct}} til {{data brass/quant-chorales/reference_beats.position_acc pct}}. Steget er stilt inn på disse koralene, så gevinsten er en tilpasning og ikke en prøve.{{holds brass/quant-chorales/reference_beats.position_acc > m/penalties/position_before}}</p>
+      <p>De sporede slagene er også målt mot den noterte firedelspulsen, med F-målet i <code>mir_eval.beat</code> (toleranse ±70 ms; slag i de første 5 s forkastes, som er standard i mir_eval); {{ref fig:beats}} gir resultatene. Det finnes ingen annoterte slag for disse settene, så referansen er firedelspulsen interpolert fra de noterte plassene til referansetonene. Verdiene kan derfor ikke sammenlignes med publiserte F-mål for slag, som bygger på annoterte slag. De rå resultatene fra Beat This! gir et gjennomsnitt på {{data p/quant-chorales/beat_this.beat_f}} (SA {{data p/quant-chorales/beat_this.beat_f@sd}}, 95 % KI {{data p/quant-chorales/beat_this.beat_f@lo}}–{{data p/quant-chorales/beat_this.beat_f@hi}}) på kvartettene og {{data p/quant-urmp/beat_this.beat_f}} (SA {{data p/quant-urmp/beat_this.beat_f@sd}}, 95 % KI {{data p/quant-urmp/beat_this.beat_f@lo}}–{{data p/quant-urmp/beat_this.beat_f@hi}}) på kammerstykkene. En sporer som følger annenhver firedel, får omtrent 0,67 med dette målet, og {{data p/quant-urmp/beat_this.beat_f@0.60-0.75 int}} av de {{data p/quant-urmp/beat_this.beat_f@n int}} kammerstykkene ligger mellom 0,60 og 0,75. Sett sammen med {{ref fig:rhythm}} tyder dette på at selve slagene stort sett blir funnet, mens det metriske nivået og takten ikke blir det. F-mål for enere og kontinuitetsmålene (CMLt, AMLt) er ikke beregnet, fordi referansene ikke inneholder tidspunkter for taktstart.</p>
+      <p>Figuren tar også med en kandidat som er under evaluering og ikke er en del av det utgitte systemet, md_beat_this (modell run1) {{cite foscarin2026mdbeat}}. Mot den samme pulsen er F-målet {{data p/quant-chorales/md_beat_this.beat_f}} og {{data p/quant-urmp/md_beat_this.beat_f}}, nær det for Beat This!. Når referansetonene kvantiseres på slagene fra kandidaten, øker den gjennomsnittlige plasseringsnøyaktigheten fra {{data brass/quant-chorales/beat_this.position_acc pct}} til {{data p/quant-chorales/md_beat_this.position_acc pct}} på kvartettene og fra {{data brass/quant-urmp/beat_this.position_acc pct}} til {{data p/quant-urmp/md_beat_this.position_acc pct}} på kammerstykkene; enkeltstykker flytter seg i begge retninger, og med {{data p/urmp-transcription/pieces int}} til {{data p/chorales-transcription/pieces int}} stykker og uten test er forskjellen bare en antydning. Verdiene er beregnet fra lagrede slagfiler og er ikke låst.</p>
+      {{chart beats}}
+      <p>Skrevne varigheter undersøkes for seg i {{ref fig:durations}}, som sammenligner tre regler for å utlede en skrevet varighet. Regelen som brukes, er den beste av de tre med liten margin, og resultatet for kammermusikk er lavt under alle reglene. Verdiene er høyere enn nøyaktigheten for varighet i {{ref fig:rhythm}} ({{data brass/quant-urmp/reference_beats.duration_acc pct}} for kammermusikk) fordi målesuitene er ulike: der hentes varigheten fra kvantiseringen alene og må være nøyaktig lik den noterte, mens det her brukes en varighetsregel per stemme og godtas et avvik på ett trinn.</p>
       {{chart durations}}
-      <p>Tre regler for skrevet tonelengde ble sammenlignet. Tallene for kammermusikk i denne figuren er høyere enn {{data brass/quant-urmp/reference_beats.duration_acc pct}} i rytmefiguren fordi de to kommer fra ulike målesuiter: der hentes lengden fra kvantiseringen alene og må være nøyaktig lik partiturets; her brukes en lengderegel per stemme, og ett trinn (1/24 slag) er tillatt. Den som brukes, leser slutten av en tone fra der tonehøyden stopper, og den er best av de tre med liten margin. Resultatet for kammermusikken er lavt under alle reglene.</p>
 
-      <h3 id="solo">6.3 Én musiker, fra ende til ende</h3>
+      <h3 id="solo">5.3 En enkeltstemme, fra ende til ende</h3>
+      <p>{{ref fig:solo-written}} evaluerer hele soloveien på opptak av enkeltstemmer, med modellene som er tilgjengelige på en telefon. Tonene blir funnet godt, men det skrevne F-målet er omtrent en firedel, og taktlengden er riktig for {{span brass/solo-beat-model/urmp.small0.meter_match brass/solo-beat-model/choralebricks.final0.meter_match brass/solo-beat-model/choralebricks.small0.meter_match brass/solo-beat-model/urmp.final0.meter_match pct}} av stemmene. En enstemmig linje gir en slagsporer lite belegg: det er ingen bass og intet slagverk. Å bytte den lille modellfilen for slagsporing med den større (andre visning) endrer resultatene lite; forskjellen er ikke testet statistisk.</p>
       {{chart solo-written}}
-      <p>Rytmefiguren over prøvde reglene på riktige toner. Denne prøver alt på en gang, på opptak av én musiker, med modellene en telefon har. Tonene blir hørt godt. Men bare omtrent en firedel blir skrevet på riktig plass i takten, og selve takten har riktig lengde for {{span brass/solo-beat-model/urmp.small0.meter_match brass/solo-beat-model/choralebricks.final0.meter_match brass/solo-beat-model/choralebricks.small0.meter_match brass/solo-beat-model/urmp.final0.meter_match pct}} av stemmene. En enkelt linje gir en slagsporer lite å holde seg i: det er ingen bass og ingen trommer. Den andre visningen bytter til den større slagsporeren: den endrer lite, og <code>eval/README.md</code> slår fast at ingen forskjell mellom de to var signifikant.</p>
 
-      <h3 id="instruments">6.4 Instrument for instrument</h3>
+      <h3 id="instruments">5.4 Enkeltinstrumenter</h3>
+      <p>{{ref fig:solo-instruments}} rapporterer soloveien per instrument. Hvert messinginstrument som er tatt opp alene, transkriberes godt, også tubaen, med en andel oktavfeil på høyst {{data brass/solo-instruments/trombone.octave_err pct}}. Uten kunnskap om instrumentet beholder soloveien bare toner i kornettens omfang, så tubaen går helt tapt, og trombonen beholder {{data brass/solo-instruments/trombone.today_recall pct}} av tonene; f0-estimatoren er ikke den begrensende faktoren. Den andre visningen sammenligner SwiftF0 med Basic Pitch på de samme opptakene. Basic Pitch bekrefter tonene fra SwiftF0, og på tubaen er den enig i {{data brass/solo-instruments/tuba.bp_agrees pct}} av dem, noe som gir {{data brass/solo-instruments/tuba.q_missed f1}} umerkede gale toner per 100 skrevne toner, mot {{data brass/solo-instruments/trumpet.q_missed f1}} på trompeten.{{holds brass/solo-instruments/tuba.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/trumpet.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/horn.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/baritone.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/flugelhorn.octave_err <= brass/solo-instruments/trombone.octave_err}}</p>
       {{chart solo-instruments}}
-      <p>Alene blir hvert messinginstrument sporet godt, også tubaen, og nesten aldri i feil oktav. Den andre serien viser en feil som er lett å forveksle med en modellfeil: uten å vite hvilket instrument det er, beholder soloveien bare toner i kornettens omfang, så en tuba forsvinner og en trombone beholder {{data brass/solo-instruments/trombone.today_recall pct}} av tonene. Tonehøydesporeren var aldri begrensningen der.</p>
-      <p>Figurens andre visning er kontrollen av SwiftF0 på messing som avsnitt 2 lovet. Den andre modellen betyr også noe: en tone skrives uten merke bare når Basic Pitch bekrefter den, og på tubaen er Basic Pitch enig i {{data brass/solo-instruments/tuba.bp_agrees pct}} av tonene i linjen. Det gir {{data brass/solo-instruments/tuba.q_missed f1}} gale toner uten merke per 100 skrevne toner på tubaen, mot {{data brass/solo-instruments/trumpet.q_missed f1}} på trompeten.</p>
 
-      <h3 id="voices">6.5 Én stemme ut av en gruppe</h3>
+      <h3 id="voices">5.5 Enkeltstemmer i et ensemble</h3>
+      <p>{{ref fig:voices}} undersøker om linjen til én musiker kan hentes ut av et kvartettopptak etter instrumentets omfang. Overstemmen gjenvinnes, og tenoren stort sett ikke (F = {{data brass/seat-voices/muscriptor-medium.T_f1}} med den beste modellen). De øvrige visningene gir recall for hver stemmes toner hvor som helst i transkripsjonen; dette er øvre grenser, og det er de to nederste stemmene som oftest mangler. Av den grunn skriver systemet bare melodien og bassen i et ensemble fra lyden og arrangerer stemmene imellom ut fra harmonien.</p>
       {{chart voices}}
-      <p>Den første visningen spør om én musikers linje kan hentes ut hel. De andre visningene stiller et enklere spørsmål, hvem sine toner mangler i transkripsjonen i det hele tatt: for det meste de to nederste musikernes.</p>
-      <p>En musiker som tar opp hele gruppen og vil ha sin egen linje, får den hvis linjen er overstemmen, og nesten hvis den er andrestemmen. Tenorstemmen, midt i harmonien på et instrument som låter som naboene, blir funnet med F1 {{data brass/seat-voices/muscriptor-medium.T_f1}} av den beste modellen. Derfor skriver Brasscribe bare melodien og bassen i et band fra det den hørte, og arrangerer stemmene imellom ut fra harmonien.</p>
+      <p>{{ref fig:inner-parts}} evaluerer de arrangerte stemmene mot komponistens. Med partiturets harmoni velger kvartettarrangøren komponistens tonenavn for omtrent fire av fem toner, med {{data brass/arrange/quartet.parallels_per_100 f2}} parallelle kvinter eller oktaver per 100 akkordskifter, mot {{data brass/arrange/quartet-reference.parallels_per_100 f2}} i koralene selv. Fra et opptak treffer den omtrent halvparten, med {{data brass/quartet-audio/mus.parallels_per_100 f1}} paralleller per 100. At arrangørene aldri skriver en uspillbar tone eller krysser stemmer, følger av konstruksjonen og er ikke belegg for musikalsk kvalitet.</p>
       {{chart inner-parts}}
-      <p>Hvor gode er de arrangerte stemmene? Med riktig harmoni velger kvartettarrangøren samme tone som komponisten for omtrent fire av fem toner, med {{data brass/arrange/quartet.parallels_per_100 f2}} parallelle kvinter eller oktaver per 100 akkordskifter mot {{data brass/arrange/quartet-reference.parallels_per_100 f2}} i koralene selv. Fra et opptak treffer den omtrent halvparten og skriver {{data brass/quartet-audio/mus.parallels_per_100 f1}} paralleller per 100. Arrangørene skriver aldri en tone et instrument ikke kan spille, og krysser aldri stemmer; det følger av hvordan de er bygd, så det viser at reglene holder, ikke at musikken er god.</p>
 
-      <h3 id="doubt">6.6 Tvilsmerkene</h3>
+      <h3 id="doubt">5.6 Enighet mellom modeller og tvilsmerkene</h3>
+      <p>{{ref fig:agreement}} viser at enighet mellom modeller er sterkt belegg for at en tone er riktig, forutsatt at SwiftF0 er en av modellene. Dette begrunner regelen i avsnitt 3.3. Merkene som utledes av den, er svakere ({{ref fig:doubt}}): få riktige toner blir merket, men de fleste gale toner har ikke noe merke, og på valthornet hadde ingen det.{{holds brass/solo-instruments/horn.q_hit <= 0}} Opptakene i {{ref fig:doubt}} er de sikkerhetsmodellen er tilpasset, så resultatet på nye opptak kan ikke ventes å være bedre. Merkene vurderer bare tonehøyde og ansats; de sier ingenting om den hyppigste feilen, en riktig tone på feil plass i takten (avsnitt 5.3).</p>
       {{chart agreement}}
-      <p>Enighet mellom modeller er godt belegg. Derfor trenger en tone SwiftF0 og én modell til for å bli skrevet uten merke, og derfor stoler vi ikke på to modeller som er enige uten SwiftF0.</p>
       {{chart doubt}}
-      <p>Selve merkene er et svakere verktøy enn enigheten bak dem skulle tilsi. En merket tone er som regel verdt å se på: få riktige toner er merket. Men de fleste gale toner har ikke noe merke, og på valthornet hadde ingen det.{{holds brass/solo-instruments/horn.q_hit <= 0}} Merkene sier heller ingenting om den vanligste feilen av alle, en riktig tone på feil plass i takten (<a href="#solo">6.3</a>): de vurderer bare tonehøyde og ansats. En musiker bør lese en tone uten merke som «trolig riktig tonehøyde», ikke som «riktig».</p>
 
-      <h3 id="fast">6.7 Raske toner</h3>
+      <h3 id="fast">5.7 Raske passasjer</h3>
+      <p>{{ref fig:fast-notes}} følger tonene i raske figurer (løp, gjentatte toner, triller) gjennom stegene i soloveien. Den f0-baserte tonesegmenteringen beholder omtrent seks av ti toner. Med referanseslag når nesten alle disse fram til notene; med sporede slag går flere tapt i kvantiseringen. Av trillene og vekslingene mellom to toner beholder {{data brass/fast-notes/oracle.written.alt_kept pct}} minst fire femdeler av tonene med referanseslag og {{data brass/fast-notes/small0.written.alt_kept pct}} med sporede slag. De øvrige visningene viser virkningen av reglene som ble lagt til for raske toner: recall for figurens toner ble bedre og er fortsatt under en halv. Klippene er satt sammen av samplinger, og reglene er utviklet på dem.</p>
       {{chart fast-notes}}
-      <p>Løp, gjentatte toner og triller er det musikere helst vil ha skrevet ned, og det vanskeligste. Tonehøydesporeren hører omtrent seks av ti toner i dem. Med riktige slag kommer nesten alle disse med på arket; med sporede slag går flere tapt når tonene settes på rutenettet. Av trillene og vekslingene mellom to toner beholder {{data brass/fast-notes/oracle.written.alt_kept pct}} minst fire femdeler av tonene med riktige slag, og {{data brass/fast-notes/small0.written.alt_kept pct}} med sporede. Reglene for raske toner kom til etter at en første versjon mistet de fleste av dem; de andre visningene i figuren viser før og etter. De hjalp, og passasjene blir fortsatt for det meste ikke skrevet.</p>
-    </section>
 
-    <section id="errors" aria-labelledby="errors-title">
-      <h2 id="errors-title"><span class="secno">7</span> Hvor det svikter</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Rytme mer enn tonehøyde. Mellomstemmer mer enn ytterstemmer. Raskt og ornamentert spill mer enn enkelt.</p>
-      <ul>
-        <li><strong>Rytmen, ikke tonehøyden, er den største feilen.</strong> I en solo blir tonene hørt med F1 {{data brass/solo-beat-model/urmp.small0.onset_f1}} og skrevet på plass med F1 {{data brass/solo-beat-model/urmp.small0.written_f1}} (<a href="#solo">6.3</a>). Det meste av avstanden er slagrutenettet: med partiturets slag setter de samme reglene {{data brass/quant-urmp/reference_beats.position_acc pct}} av riktige toner på plass (<a href="#rhythm">6.2</a>). Det varierer enormt fra stykke til stykke: med sporede slag er mellom {{span brass/quant-chorales/beat_this.position_acc@min brass/quant-chorales/beat_this.position_acc@max brass/quant-urmp/beat_this.position_acc@min brass/quant-urmp/beat_this.position_acc@max pct}} av tonene i et stykke på plass.</li>
-        <li><strong>Taktlengde.</strong> Taktarten er feil for de fleste solostemmer (<a href="#solo">6.3</a>).{{holds brass/solo-beat-model/urmp.small0.meter_match < 0.5}}{{holds brass/solo-beat-model/choralebricks.small0.meter_match < 0.5}} En stemme i tre som er skrevet i fire, har alle taktstreker på feil sted, uansett hvor gode tonene er.</li>
-        <li><strong>Mellomstemmer.</strong> Fra en kvartett blir tenoren funnet med F1 {{data brass/seat-voices/muscriptor-medium.T_f1}} og bassen med {{data brass/seat-voices/muscriptor-medium.B_f1}}, mot {{data brass/seat-voices/muscriptor-medium.S_f1}} for overstemmen (<a href="#voices">6.5</a>).</li>
-        <li><strong>Oktavfeil</strong> er sjeldne der tonene i det hele tatt blir funnet. Av de spilte tonene i kvartettene ble {{data brass/chorales-transcription/muscriptor-medium.octave_err_rate pct}} borte mens MuScriptor skrev en tone én eller to oktaver unna i samme øyeblikk, og {{data brass/chorales-transcription/basic-pitch.octave_err_rate pct}} med Basic Pitch; i kammerbrass {{data brass/urmp-transcription/muscriptor-medium.octave_err_rate pct}} og {{data brass/urmp-transcription/basic-pitch.octave_err_rate pct}}. Tellingen tar med skrevne toner som hører til en annen stemme en oktav unna, så den overdriver feilen. På ett enkelt instrument er andelen høyst {{data brass/solo-instruments/trombone.octave_err pct}}.{{holds brass/solo-instruments/tuba.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/trumpet.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/horn.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/baritone.octave_err <= brass/solo-instruments/trombone.octave_err}}{{holds brass/solo-instruments/flugelhorn.octave_err <= brass/solo-instruments/trombone.octave_err}}</li>
-        <li><strong>Raske toner</strong> mister omtrent fire av ti toner før noe er skrevet (<a href="#fast">6.7</a>).</li>
-        <li><strong>Ornamenter blir til ekstra toner.</strong> Settet med raske toner har kontrollklipp som skal forbli én tone. Med sporede slag legger et fall til {{data brass/fast-notes/small0.ctl-fall.extra}} toner per spilt tone, en scoop {{data brass/fast-notes/small0.ctl-scoop.extra}}, en rip {{data brass/fast-notes/small0.ctl-rip.extra}} og en bred vibrato nedover {{data brass/fast-notes/small0.ctl-vibdown120.extra}}; en vanlig vibrato legger til {{data brass/fast-notes/small0.ctl-vibrato.extra}}. Ingen kontrollklipp ble skrevet som trille.{{holds brass/fast-notes/small0.ctl.trills <= 0}}</li>
-        <li><strong>Trioler</strong> er bare kontrollert på utregnede tonetider, ikke på opptak: med 15 ms unøyaktighet havner {{data m/triplets/triplet_eighths pct}} av åttedelstriolene på riktig plass. Ingen innspilte trioler med fasit finnes i settene over.</li>
-        <li><strong>Tonelengder.</strong> Selv med perfekte slag får {{data brass/quant-urmp/reference_beats.duration_acc pct}} av tonene i kammermusikken partiturets skrevne lengde, og {{data brass/quant-chorales/reference_beats.duration_acc pct}} av koraltonene (<a href="#rhythm">6.2</a>).</li>
-      </ul>
-    </section>
-
-    <section id="comparisons" aria-labelledby="comparisons-title">
-      <h2 id="comparisons-title"><span class="secno">8</span> Modellsammenligninger</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Større var ikke bedre, og det hjalp heller ikke å fortelle modellen hva den hørte. Dette er sammenligningene som ble kjørt, også de som tapte.</p>
+      <h3 id="comparisons">5.8 Sammenligninger av modeller og utforming</h3>
+      <p>Sammenligningene som avgjorde utformingen, er oppsummert i {{ref fig:models}}, {{ref fig:solo-trackers}}, {{ref fig:consensus}} og {{ref fig:melody}}.</p>
       {{chart models}}
-      {{chart solo-trackers}}
-      {{chart consensus}}
-      {{chart melody}}
       <ul>
-        <li><strong>MuScriptor large mot medium.</strong> Den store modellen fikk lavere snitt. Medium brukes.</li>
-        <li><strong>Å fortelle MuScriptor at instrumentene er messing</strong> tok den fra {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} til {{data brass/chorales-transcription/muscriptor-medium-brass.onset_f1}}. Den får aldri vite det.</li>
-        <li><strong>Omstemming for Basic Pitch.</strong> Band spiller sjelden nøyaktig i A = 440. Å flytte opptaket til 440 før Basic Pitch hører det, flyttet resultatet fra {{data brass/chorales-transcription/basic-pitch.onset100_f1}} til {{data brass/chorales-transcription/basic-pitch-retuned.onset100_f1}} ved 100 ms. Det samlede resultatet av begge modellene flyttet seg ikke ({{data brass/consensus-chorales/best.onset100_f1}} og {{data brass/consensus-chorales-retuned/best.onset100_f1 f2}}).</li>
-        <li><strong>Skille først, eller transkribere miksen</strong> (<a href="#found">6.1</a>, tredje visning). På en trompet over et band ga separasjon først {{data brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1}} mot {{data brass/slakh-transcription/muscriptor-medium.onset100_f1}} på miksen. Det er {{data m/datasets/slakh_trumpet_songs int}} syntetiske låter.</li>
-        <li><strong>Tre modeller på en separert sololinje.</strong> SwiftF0 fikk {{data brass/solo-vote/sw.onset100_f1}}, MuScriptor {{data brass/solo-vote/mus.onset100_f1}} og Basic Pitch {{data brass/solo-vote/bp.onset100_f1}}.{{holds brass/solo-vote/sw.onset100_f1 > brass/solo-vote/mus.onset100_f1}} MuScriptor, den beste modellen på en miks, er langt svakere på en linje en separator allerede har behandlet. Å beholde bare toner to modeller er enige om, ga {{data brass/solo-vote/vote2.onset100_f1}}: færre toner (recall {{data brass/solo-vote/vote2.onset100_r}}), flere av dem riktige (presisjon {{data brass/solo-vote/vote2.onset100_p}}).</li>
-        <li><strong>En melodi fra en miks.</strong> Å ta den øverste linjen av bare de tonene MuScriptor støtter, ga {{data brass/melody/muscriptor_supported.mean}} i snitt over de tre settene, mot {{data brass/melody/union.mean}} for den øverste linjen av alt en av modellene fant, der falske høye toner ligger over melodien.{{holds brass/melody/muscriptor_supported.mean > brass/melody/union.mean}}</li>
-        <li><strong>To størrelser av slagsporeren</strong> (<a href="#solo">6.3</a>): ingen signifikant forskjell, så telefoner beholder den lille.</li>
+        <li><strong>Modellstørrelse.</strong> MuScriptor large ga lavere verdi enn medium på kvartettene ({{ref fig:models}}); medium brukes.</li>
+        <li><strong>Betinging på instrument.</strong> Å betinge MuScriptor på messinginstrumenter senket F-målet for ansats fra {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} til {{data brass/chorales-transcription/muscriptor-medium-brass.onset_f1}}; betinging brukes ikke.</li>
+        <li><strong>Omstemming.</strong> Å flytte opptaket til A = 440 Hz før Basic Pitch løftet F-målet fra {{data brass/chorales-transcription/basic-pitch.onset100_f1}} til {{data brass/chorales-transcription/basic-pitch-retuned.onset100_f1}} ved ±100 ms; det samlede resultatet av begge modellene endret seg ikke ({{data brass/consensus-chorales/best.onset100_f1}} og {{data brass/consensus-chorales-retuned/best.onset100_f1 f2}}).</li>
+        <li><strong>Separasjon før transkripsjon</strong> ga {{data brass/slakh-transcription/pipeB-sw-muscriptor.onset100_f1}} mot {{data brass/slakh-transcription/muscriptor-medium.onset100_f1}} på miksen, på {{data m/datasets/slakh_trumpet_songs int}} syntetiske låter ({{ref fig:notes-found}}, tredje visning).</li>
+        <li><strong>Størrelsen på slagsporeren</strong> betydde lite på enkeltstemmer (avsnitt 5.3); telefoner beholder den minste modellfilen.</li>
       </ul>
-    </section>
+      {{chart solo-trackers}}
+      <p>På en sololinje som en separator allerede har hentet ut, er f0-estimatoren den sterkeste enkeltkilden, og MuScriptor, den beste modellen på mikser, er langt svakere ({{ref fig:solo-trackers}}).{{holds brass/solo-vote/sw.onset100_f1 > brass/solo-vote/mus.onset100_f1}}</p>
+      {{chart consensus}}
+      <p>Å beholde bare toner to modeller er enige om, forbedrer ikke F-målet og senker det på et fullt band ({{ref fig:consensus}}). Avstemningen brukes derfor til å anslå sikkerhet og ikke til å velge toner.</p>
+      {{chart melody}}
+      <p>For uttrekk av melodi er den øverste linjen av tonene MuScriptor støtter, å foretrekke framfor den øverste linjen av unionen av begge modellene i alle de tre settene ({{ref fig:melody}}).{{holds brass/melody/muscriptor_supported.mean > brass/melody/union.mean}}</p>
 
-    <section id="performance" aria-labelledby="performance-title">
-      <h2 id="performance-title"><span class="secno">9</span> Fart og minne</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>De små modellene er raske nok for en telefon. Et fullt band krever en datamaskin med mye minne. Bare én bærbar er målt, og ingen telefon.</p>
+      <h3 id="performance">5.9 Beregningskostnad</h3>
+      <p>{{ref fig:speed}} gir tid og minne for hver modell på én bærbar datamaskin, {{ref fig:solo-stages}} tiden for hvert modellkall i én solojobb, og {{ref fig:conversions}} samsvaret mellom modellene som er konvertert til Core ML eller til formatet Open Neural Network Exchange (ONNX), og originalene. Hele jobber ble tidsmålt på en Apple-maskin med M-prosessor (notatene oppgir ikke modellen): en solo på {{data m/jobs/solo_audio_s int}} s tok {{span m/jobs/solo_s_fast m/jobs/solo_s_slow f1}} s, og et bandopptak på {{data m/jobs/band_audio_s int}} s tok {{data m/jobs/band_s sec}}, der MuScriptor sto for {{data m/jobs/band_muscriptor_s sec}}. En konvertert modell slås bare på i appene dersom resultatet samsvarer med originalens med F ≥ {{data c/swift-f0/threshold_f1}}; tre konverteringer oppfylte ikke kravet, og hver av dem avgjorde hvor en modell kan kjøre. Tid og minne er ikke målt på noen telefon eller noe nettbrett, på en Windows-maskin eller på en maskin med mindre minne.</p>
       {{chart speed}}
       {{chart solo-stages}}
-      <p><strong>Hele jobber</strong> på en Mac med M-prosessor (notatene sier ikke hvilken), med alle steg kjørt på nytt: en solo på {{data m/jobs/solo_audio_s int}} sekunder tok {{span m/jobs/solo_s_fast m/jobs/solo_s_slow f1}} s fra start til ferdige noter, og et bandopptak på {{data m/jobs/band_audio_s int}} sekunder tok {{data m/jobs/band_s sec}}, der MuScriptor alene sto for {{data m/jobs/band_muscriptor_s sec}}.</p>
       {{chart conversions}}
-      <p>En modell slås på i appene først når den konverterte utgaven gir samme resultat som originalen: F1 på minst {{data c/swift-f0/threshold_f1}} mot originalens resultat. Tre konverteringer ble underkjent, og hver av dem avgjorde hvor en modell kan kjøre.</p>
-      <p><strong>Ikke målt:</strong> tid og minne på noen telefon eller noe nettbrett, på en Windows-PC, eller på en Mac med mindre minne. Minnet separatorene bruker i figuren, er mer enn mange bærbare har.</p>
+    </section>
+
+    <section id="discussion" aria-labelledby="discussion-title">
+      <h2 id="discussion-title"><span class="secno">6</span> Diskusjon</h2>
+      <h3>6.1 Feilanalyse</h3>
+      <ul>
+        <li><strong>Rytmen er den dominerende feilen.</strong> På enkeltstemmer er F-målet for ansats {{data brass/solo-beat-model/urmp.small0.onset_f1}} og det skrevne F-målet {{data brass/solo-beat-model/urmp.small0.written_f1}} (avsnitt 5.3). Det meste av forskjellen kan tilskrives slagrutenettet: med referanseslag plasserer de samme reglene {{data brass/quant-urmp/reference_beats.position_acc pct}} av riktige toner (avsnitt 5.2).</li>
+        <li><strong>Taktart.</strong> Taktlengden er feil for de fleste enkeltstemmer.{{holds brass/solo-beat-model/urmp.small0.meter_match < 0.5}}{{holds brass/solo-beat-model/choralebricks.small0.meter_match < 0.5}} En stemme i tredelt takt som skrives i firedelt, får alle taktstreker på feil sted, uansett hvor gode tonene er.</li>
+        <li><strong>Mellomstemmer.</strong> Fra en kvartett gjenvinnes tenoren med F = {{data brass/seat-voices/muscriptor-medium.T_f1}} og bassen med {{data brass/seat-voices/muscriptor-medium.B_f1}}, mot {{data brass/seat-voices/muscriptor-medium.S_f1}} for overstemmen (avsnitt 5.5).</li>
+        <li><strong>Oktavfeil</strong> er sjeldne. Av referansetonene i kvartettene ble {{data brass/chorales-transcription/muscriptor-medium.octave_err_rate pct}} borte mens MuScriptor ga en tone én eller to oktaver unna på samme tid, og {{data brass/chorales-transcription/basic-pitch.octave_err_rate pct}} med Basic Pitch; for kammermusikk er andelene {{data brass/urmp-transcription/muscriptor-medium.octave_err_rate pct}} og {{data brass/urmp-transcription/basic-pitch.octave_err_rate pct}}. Tellingen tar med estimerte toner som hører til en annen stemme en oktav unna, og overdriver derfor feilen.</li>
+        <li><strong>Raske passasjer</strong> mister omtrent fire av ti toner før notasjonen (avsnitt 5.7).</li>
+        <li><strong>Ornamenter deles i ekstra toner.</strong> På kontrollklipp som skal forbli én tone, med sporede slag, legger et fall til {{data brass/fast-notes/small0.ctl-fall.extra}} toner per referansetone, en scoop {{data brass/fast-notes/small0.ctl-scoop.extra}}, en rip {{data brass/fast-notes/small0.ctl-rip.extra}} og en bred vibrato nedover {{data brass/fast-notes/small0.ctl-vibdown120.extra}}; en vanlig vibrato legger til {{data brass/fast-notes/small0.ctl-vibrato.extra}}. Ingen kontrollklipp ble notert som trille.{{holds brass/fast-notes/small0.ctl.trills <= 0}}</li>
+        <li><strong>Trioler</strong> er bare undersøkt på beregnede ansatstider, ikke på opptak: med 15 ms tidsvariasjon plasseres {{data m/triplets/triplet_eighths pct}} av åttedelstriolene riktig. Evalueringssettene har ingen innspilte trioler med fasit.</li>
+        <li><strong>Varigheter.</strong> Med referanseslag får {{data brass/quant-urmp/reference_beats.duration_acc pct}} av tonene i kammermusikken og {{data brass/quant-chorales/reference_beats.duration_acc pct}} av koraltonene den noterte varigheten (avsnitt 5.2).</li>
+      </ul>
+      <h3>6.2 Trusler mot validiteten</h3>
+      <ul>
+        <li><strong>Innstilling på testdataene.</strong> Tersklene i reglene er valgt på opptakene de måles på, og tvilsmerkene evalueres på dataene de er tilpasset (avsnitt 4.2). De rapporterte verdiene er optimistiske i ukjent grad.</li>
+        <li><strong>Utvalgsstørrelse.</strong> Settene har {{data p/urmp-transcription/pieces int}} til {{data p/chorales-transcription/pieces int}} stykker, og sammenligningen av veier på et fullt band hviler på {{data m/datasets/slakh_trumpet_songs int}} syntetiske låter. Konfidensintervallene er tilsvarende brede, og én enighetsklasse har {{data m/solo_vote/n_bp_mus int}} toner.</li>
+        <li><strong>Representativitet.</strong> Koralene er langsomme og rytmisk enkle og er tatt opp én musiker om gangen; verken de eller kammerstykkene ligner et fullt band i en sal.</li>
+        <li><strong>Syntetisk materiale.</strong> Klippene med raske toner er satt sammen av enkeltsamplinger, og låtene med fullt band er syntetiske.</li>
+        <li><strong>Toleranse.</strong> Flere målesuiter (enkeltstemmer fra ende til ende, stemmer, avstemningen på separerte linjer, melodi, konsensus) lagrer bare resultater med en ansatstoleranse på ±100 ms, som er mildere enn konvensjonen på ±50 ms; der begge finnes, oppgis begge, med ±50 ms først.</li>
+        <li><strong>Måling.</strong> Tidsresultatene kommer fra enkeltkjøringer på én datamaskin; noen verdier er målt én gang og er ikke låst (vedlegget).</li>
+      </ul>
     </section>
 
     <section id="limitations" aria-labelledby="limitations-title">
-      <h2 id="limitations-title"><span class="secno">10</span> Begrensninger</h2>
-      <p class="plain"><span class="plain-label">Kort fortalt</span>Små målesett som ikke er brassband, regler stilt inn på de samme settene, og bare én vei som er kontrollert fra ende til ende.</p>
+      <h2 id="limitations-title"><span class="secno">7</span> Begrensninger</h2>
       <ul>
-        <li><strong>Ingen fasit for brassband.</strong> Alle tall kommer fra kvartetter, kammergrupper, enkeltmusikere eller syntetiske låter. Hvordan et fullt band i en sal oppfører seg, er ikke målt.</li>
-        <li><strong>Ikke noe sett holdt utenfor.</strong> Tersklene i reglene er valgt på opptakene de måles på (<a href="#data">avsnitt 4</a>).</li>
-        <li><strong>Små sett.</strong> {{data p/chorales-transcription/pieces int}} koraler, {{data p/urmp-transcription/pieces int}} kammerstykker, {{data m/datasets/slakh_trumpet_songs int}} låter. Koralene er langsomme og rytmisk enkle.</li>
-        <li><strong>Bare én vei er kontrollert fra ende til ende,</strong> og uten fasit: veien for solist med orkester må gjenskape et låst resultat. Veiene for solo, brassband og pop er satt sammen av de samme testede delene, men har ingen sperre fra ende til ende.</li>
-        <li><strong>Tvilsmerkene vurderer bare tonehøyde og ansats,</strong> og går glipp av de fleste gale toner (<a href="#doubt">6.6</a>).</li>
-        <li><strong>Mellomstemmene er arrangert.</strong> I et bandpartitur kommer bare melodien og bassen fra opptaket.</li>
-        <li><strong>Raske toner kommer fra samplinger.</strong> Klippene med raske toner er satt sammen av enkelttoner som er tatt opp, ikke spilt av et menneske, og reglene er utviklet på dem.</li>
-        <li><strong>Farten</strong> er kjent for én bærbar (<a href="#performance">avsnitt 9</a>).</li>
-        <li><strong>Få toner bak noen av enighetstallene.</strong> Presisjonen for én av gruppene hviler på {{data m/solo_vote/n_bp_mus int}} toner.</li>
+        <li>Ingen brassbandopptak med referansetoner er evaluert; oppførselen på et fullt band er ikke målt.</li>
+        <li>Bare én vei kontrolleres fra ende til ende, og uten referansetoner: veien for solist med orkester må gjenskape et låst resultat. Veiene for solo, ensemble og pop er satt sammen av de samme testede komponentene, men har ingen sperre fra ende til ende.</li>
+        <li>I noter for et ensemble er bare melodien og bassen transkribert; mellomstemmene er arrangert.</li>
+        <li>Tvilsmerkene dekker bare tonehøyde og ansats og går glipp av de fleste gale toner.</li>
+        <li>Beregningskostnaden er kjent for én bærbar datamaskin og for ingen telefon.</li>
       </ul>
     </section>
 
-    <section id="next" aria-labelledby="next-title">
-      <h2 id="next-title"><span class="secno">11</span> Veien videre</h2>
+    <section id="conclusion" aria-labelledby="conclusion-title">
+      <h2 id="conclusion-title"><span class="secno">8</span> Konklusjon og videre arbeid</h2>
+      <p>På messingensembler oppnår den beste forhåndstrente modellen et F-mål for ansats på {{data brass/chorales-transcription/muscriptor-medium.onset_f1}} til {{data brass/urmp-transcription/muscriptor-medium.onset_f1}} ved ±50 ms og {{data brass/chorales-transcription/muscriptor-medium.onset100_f1}} til {{data brass/urmp-transcription/muscriptor-medium.onset100_f1}} ved ±100 ms (recall {{data p/chorales-transcription/muscriptor-medium.onset_r}} til {{data p/urmp-transcription/muscriptor-medium.onset_r}} og {{data p/chorales-transcription/muscriptor-medium.onset100_r}} til {{data p/urmp-transcription/muscriptor-medium.onset100_r}}), og deterministiske regler noterer tonene riktig når slagrutenettet er riktig. Evalueringen tyder på at notene først og fremst går tapt i sporingen av slag og taktart, særlig for enkeltstemmer, og at mellomstemmene i et ensemble ikke lar seg gjenvinne med modellene som er undersøkt. Tvilsmerkene er presise, men har lav recall.</p>
+      <p>Videre arbeid følger av disse resultatene: estimering av slag og taktart for enstemmige linjer, med et steg der brukeren bekrefter taktarten og den første eneren; et messingsett som holdes utenfor, slik at en regel som er stilt inn, kan skilles fra en som generaliserer; sikkerhetsanslag som dekker rytme; brassbanddata, både syntetisert fra noter i det fri og innspilt med rettede noter; og målinger av beregningskostnad på telefoner.</p>
+    </section>
+
+    <section id="reproducibility" aria-labelledby="reproducibility-title">
+      <h2 id="reproducibility-title"><span class="secno">9</span> Reproduserbarhet</h2>
       <ul>
-        <li><strong>Slag og takter først.</strong> Resultatene viser hvor notene går tapt: et bedre slagrutenett for en enkelt linje, taktarten, og et steg der musikeren bekrefter taktarten og den første eneren før tonene plasseres.</li>
-        <li><strong>Et brass-sett holdt utenfor,</strong> så en regel som er stilt inn, kan skilles fra en regel som virker.</li>
-        <li><strong>Tvilsmerker som dekker rytme,</strong> og som fanger flere gale toner med like få falske alarmer.</li>
-        <li><strong>Brassbanddata:</strong> et band satt sammen fra noter i det fri, og noen ekte bandopptak med rettede noter.</li>
-        <li><strong>Tidsmåling på telefoner.</strong></li>
+        <li><strong>Kode.</strong> Systemet, målingene og denne siden ligger i det åpne repositoriet <a href="https://github.com/181192/brasscribe">github.com/181192/brasscribe</a>. Siden er bygget fra innsjekkingen som er oppgitt under tittelen.</li>
+        <li><strong>Kommandoer.</strong> <code>pixi run scribe bench list</code> lister målesuitene; <code>pixi run scribe bench cpu</code> regner ut alle på nytt fra lagrede modellresultater og sammenligner dem med <code>eval/baselines.json</code>; <code>pixi run python site/shared/research/per_piece.py</code> lager verdiene per stykke; <code>site/build.sh</code> bygger denne siden og feiler dersom et oppgitt funn ikke lenger holder.</li>
+        <li><strong>Reproduserbart fra repositoriet alene.</strong> Følgende resultater regnes ut på nytt i kontinuerlig integrasjon ved hver endring, fra låste ChoraleBricks-annotasjoner og lagrede modellresultater i repositoriet, og kan reproduseres uten å laste ned et datasett: kvartettvisningene i {{ref fig:notes-found}} og {{ref fig:rhythm}}, {{ref fig:models}}, {{ref fig:solo-instruments}}, {{ref fig:doubt}}, den første visningen i {{ref fig:voices}}, {{ref fig:inner-parts}}, stegvisningen i {{ref fig:fast-notes}} og koralserien i {{ref fig:durations}}. {{ref fig:speed}} og {{ref fig:conversions}} leses fra innsjekkede rapporter; å kjøre dem på nytt krever modellene.</li>
+        <li><strong>Krever lokal nedlasting.</strong> Resultater på URMP (kammervisningene, {{ref fig:solo-written}}), på Slakh og på separerte spor ({{ref fig:agreement}}, {{ref fig:solo-trackers}}, {{ref fig:consensus}}, {{ref fig:melody}}) krever datasettene og modellene på en lokal datamaskin; verdiene per stykke og F-målet for slag krever også evalueringsdataene. Det låste resultatet for det kommersielle opptaket kan ikke reproduseres av en leser.</li>
+        <li><strong>Tilgang til data.</strong> ChoraleBricks, URMP og Slakh er tilgjengelige fra utgiverne ({{ref table:data}}). Det kommersielle opptaket distribueres ikke.</li>
+        <li><strong>Modeller og målekode.</strong> Alle modellene er offentlige; vektene til MuScriptor krever at lisensen godtas. Modellfilene er MuScriptor medium, Basic Pitch slik den er publisert, SwiftF0 slik den er publisert, Beat This! small0 og final0, BS-RoFormer SW og MVSep Mega-53; pakkeversjonene er låst i <code>pixi.lock</code>. Målingen bruker mir_eval 0.8.2.</li>
+        <li><strong>Ikke låst.</strong> Verdiene som er listet i vedlegget, er målt én gang; kildene og kommandoene står i <code>site/shared/research/measured/measured.toml</code>.</li>
       </ul>
     </section>
 
-    <section id="licences" aria-labelledby="licences-title">
-      <h2 id="licences-title"><span class="secno">12</span> Lisenser og data</h2>
+    <section id="ethics" aria-labelledby="ethics-title">
+      <h2 id="ethics-title"><span class="secno">10</span> Etikk og lisenser</h2>
       <ul>
-        <li><strong>Ikke-kommersielt.</strong> Vektene til MuScriptor har CC BY-NC 4.0, så noter for fullt band kan bare brukes ikke-kommersielt. Hver musiker godtar lisensen med sin egen konto og laster ned filen selv.</li>
-        <li><strong>Vekter uten oppgitt lisens.</strong> BS-RoFormer SW og Mega-53 lastes ned av musikerens datamaskin fra der opphavspersonene publiserer dem. Brasscribe legger ikke ut noen av dem selv.</li>
-        <li><strong>Modellene som følger med appene</strong> (SwiftF0, Basic Pitch, Beat This!) har MIT eller Apache-2.0.</li>
-        <li><strong>Datasett.</strong> ChoraleBricks har CC BY 4.0, og repositoriet har små data avledet av det. URMP og Slakh lastes ned ved behov; repositoriet har én liten testfil avledet av 30 sekunder av et URMP-spor. Kirkeklangen som er brukt i klippene med raske toner, er fra OpenAIR, University of York (CC BY 4.0). Lisensene står i tabell 2 og ved hver referanse under.</li>
-        <li><strong>Ingen opphavsrettslig beskyttet musikk</strong> er publisert her eller følger med appene. Det innebygde eksempelet er en salmemelodi i det fri.</li>
-        <li><strong>Opptakene blir hos musikeren.</strong> Ingen opptak, og ingen noter skrevet fra et opptak, sendes til en skytjeneste. Én ting sendes: ONNX Runtime, Microsofts bibliotek som kjører modellene i Play for Android og Windows og i deler av motoren, rapporterer sin egen bruk til Microsoft med en enhets-ID. <code>THIRD_PARTY_NOTICES.md</code> sier nøyaktig hva.</li>
+        <li><strong>Modellisenser.</strong> Vektene til MuScriptor har lisensen CC BY-NC 4.0; noter laget med dem kan bare brukes ikke-kommersielt, og hver bruker godtar lisensen og laster ned vektene selv. Det er ikke oppgitt noen lisens for vektene til BS-RoFormer SW og Mega-53; de lastes ned av brukerens datamaskin fra utgiverne og videredistribueres ikke av prosjektet. SwiftF0, Basic Pitch og Beat This! har MIT eller Apache-2.0 ({{ref table:models}}).</li>
+        <li><strong>Lisensene til datasettene</strong> står i {{ref table:data}}. Repositoriet inneholder små data avledet av ChoraleBricks (CC BY 4.0) og én testfil avledet av 30 s av et URMP-spor.</li>
+        <li><strong>Opphavsrett.</strong> Ingen opphavsrettslig beskyttet musikk er publisert på denne siden eller distribuert med appene; det innebygde eksempelet er en salmemelodi i det fri.</li>
+        <li><strong>Personvern.</strong> Ingen opptak, og ingen noter avledet av et opptak, sendes til en tjener.</li>
+        <li><strong>Telemetri.</strong> ONNX Runtime, Microsoft-biblioteket som kjører modellene i appene for Android og Windows og i deler av motoren, rapporterer sin egen bruk til Microsoft med en enhets-ID. <code>THIRD_PARTY_NOTICES.md</code> dokumenterer hva som sendes.</li>
       </ul>
+    </section>
+
+    <section id="acknowledgements" aria-labelledby="acknowledgements-title">
+      <h2 id="acknowledgements-title">Takk</h2>
+      <p>Dette arbeidet hviler på forfatterne av modellene og datasettene som er sitert over, og som har gjort dem åpent tilgjengelige. Deler av programvaren og av denne teksten er skrevet med hjelp av en KI-kodeassistent og gjennomgått av forfatteren.</p>
+    </section>
+
+    <section id="cite" aria-labelledby="cite-title">
+      <h2 id="cite-title">Sitering</h2>
+      <p>K.-A. Kalliainen, «Brasscribe: Transcribing brass recordings into band scores with pretrained models and deterministic rules», Brasscribe-prosjektet, 2026. [På nett]. Tilgjengelig: https://github.com/181192/brasscribe</p>
+      <pre class="bibtex"><code>@misc{kalliainen2026brasscribe,
+  author       = {Kalliainen, Kristoffer-Andre},
+  title        = {Brasscribe: Transcribing Brass Recordings into Band Scores
+                  with Pretrained Models and Deterministic Rules},
+  year         = {2026},
+  howpublished = {The Brasscribe project},
+  url          = {https://github.com/181192/brasscribe}
+}</code></pre>
     </section>
 
     <section id="references" aria-labelledby="references-title">
       <h2 id="references-title">Referanser</h2>
-      <ol class="refs">
-        <li id="ref-1">J. Gardner, I. Simon, E. Manilow, C. Hawthorne, J. Engel. MT3: Multi-Task Multitrack Music Transcription. <i>ICLR</i> 2022. <a href="https://arxiv.org/abs/2111.03017">arXiv:2111.03017</a></li>
-        <li id="ref-2">S. Chang, E. Benetos, H. Kirchhoff, S. Dixon. YourMT3+: Multi-Instrument Music Transcription with Enhanced Transformer Architectures and Cross-Dataset Stem Augmentation. <i>IEEE MLSP</i> 2024. <a href="https://arxiv.org/abs/2407.04822">arXiv:2407.04822</a></li>
-        <li id="ref-3">S. Rouard, M. Krause, A. Roebel, C.-J. Simon-Gabriel, A. Défossez. MuScriptor: An Open Model for Multi-Instrument Music Transcription. <i>ISMIR</i> 2026. <a href="https://arxiv.org/abs/2607.08168">arXiv:2607.08168</a>. Kode MIT; vekter CC BY-NC 4.0, lukket nedlasting.</li>
-        <li id="ref-4">R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-Brocal, S. Ewert. A Lightweight Instrument-Agnostic Model for Polyphonic Note Transcription and Multipitch Estimation. <i>ICASSP</i> 2022. <a href="https://arxiv.org/abs/2203.09893">arXiv:2203.09893</a>. Apache-2.0.</li>
-        <li id="ref-5">L. Nieradzik. SwiftF0: Fast and Accurate Monophonic Pitch Detection. Forhåndstrykk, 2025. <a href="https://arxiv.org/abs/2508.18440">arXiv:2508.18440</a>. MIT.</li>
-        <li id="ref-6">J. W. Kim, J. Salamon, P. Li, J. P. Bello. CREPE: A Convolutional Representation for Pitch Estimation. <i>ICASSP</i> 2018. <a href="https://doi.org/10.1109/ICASSP.2018.8461329">doi:10.1109/ICASSP.2018.8461329</a></li>
-        <li id="ref-7">C. Hawthorne, E. Elsen, J. Song et al. Onsets and Frames: Dual-Objective Piano Transcription. <i>ISMIR</i> 2018. <a href="https://arxiv.org/abs/1710.11153">arXiv:1710.11153</a></li>
-        <li id="ref-8">F. Foscarin, J. Schlüter, G. Widmer. Beat this! Accurate beat tracking without DBN postprocessing. <i>ISMIR</i> 2024. <a href="https://arxiv.org/abs/2407.21658">arXiv:2407.21658</a>. MIT, kode og vekter.</li>
-        <li id="ref-9">F. Krebs, S. Böck, G. Widmer. An Efficient State-Space Model for Joint Tempo and Meter Tracking. <i>ISMIR</i> 2015. <a href="https://doi.org/10.5281/zenodo.1414966">doi:10.5281/zenodo.1414966</a></li>
-        <li id="ref-10">S. Böck, F. Korzeniowski, J. Schlüter, F. Krebs, G. Widmer. madmom: a new Python Audio and Music Signal Processing Library. <i>ACM Multimedia</i> 2016. <a href="https://doi.org/10.1145/2964284.2973795">doi:10.1145/2964284.2973795</a></li>
-        <li id="ref-11">W.-T. Lu, J.-C. Wang, Q. Kong, Y.-N. Hung. Music Source Separation with Band-Split RoPE Transformer. <i>ICASSP</i> 2024. <a href="https://arxiv.org/abs/2309.02612">arXiv:2309.02612</a></li>
-        <li id="ref-12">S. Rouard, F. Massa, A. Défossez. Hybrid Transformers for Music Source Separation. <i>ICASSP</i> 2023. <a href="https://arxiv.org/abs/2211.08553">arXiv:2211.08553</a></li>
-        <li id="ref-13">ZFTurbo. Music-Source-Separation-Training (kilden til modellfilen MVSep Mega-53). <a href="https://github.com/ZFTurbo/Music-Source-Separation-Training">github.com/ZFTurbo/Music-Source-Separation-Training</a>. Kode MIT; ingen lisens oppgitt for vektene.</li>
-        <li id="ref-14">D. Meredith. The ps13 pitch spelling algorithm. <i>Journal of New Music Research</i> 35(2):121–159, 2006. <a href="https://doi.org/10.1080/09298210600834961">doi:10.1080/09298210600834961</a></li>
-        <li id="ref-15">D. Meredith. Computing Pitch Names in Tonal Music: A Comparative Analysis of Pitch Spelling Algorithms. Doktoravhandling, University of Oxford, 2007.</li>
-        <li id="ref-16">C. L. Krumhansl. <i>Cognitive Foundations of Musical Pitch</i>. Oxford University Press, 1990.</li>
-        <li id="ref-17">S. Balke, A. Berndt, M. Müller. ChoraleBricks: A Modular Multitrack Dataset for Wind Music Research. <i>Transactions of the ISMIR</i> 8(1):39–54, 2025. <a href="https://doi.org/10.5334/tismir.252">doi:10.5334/tismir.252</a>; data: <a href="https://doi.org/10.5281/zenodo.20849469">doi:10.5281/zenodo.20849469</a>. CC BY 4.0.</li>
-        <li id="ref-18">B. Li, X. Liu, K. Dinesh, Z. Duan, G. Sharma. Creating a Multitrack Classical Music Performance Dataset for Multimodal Music Analysis. <i>IEEE Transactions on Multimedia</i> 21:522–535, 2019. <a href="https://doi.org/10.1109/TMM.2018.2856090">doi:10.1109/TMM.2018.2856090</a>. Lastes ned ved behov; vilkårene for videredeling er ikke sjekket.</li>
-        <li id="ref-19">E. Manilow, G. Wichern, P. Seetharaman, J. Le Roux. Cutting Music Source Separation Some Slakh. <i>IEEE WASPAA</i> 2019. <a href="https://doi.org/10.1109/WASPAA.2019.8937170">doi:10.1109/WASPAA.2019.8937170</a>. Lastes ned ved behov; vilkårene for videredeling er ikke sjekket.</li>
-        <li id="ref-20">C. Raffel, B. McFee, E. J. Humphrey et al. mir_eval: A Transparent Implementation of Common MIR Metrics. <i>ISMIR</i> 2014. Tonemålene på denne siden er regnet ut med det.</li>
-        <li id="ref-21">University of Iowa Electronic Music Studios, Musical Instrument Samples, <a href="https://theremin.music.uiowa.edu/MIS.html">theremin.music.uiowa.edu/MIS.html</a>; Versilian Studios, VSCO 2 Community Edition (CC0), <a href="https://github.com/sgossner/VSCO-2-CE">github.com/sgossner/VSCO-2-CE</a>. Trompetsamplingene bak klippene med raske toner.</li>
-        <li id="ref-22">W3C Music Notation Community Group. MusicXML 4.0. 2021. <a href="https://www.w3.org/2021/06/musicxml40/">w3.org/2021/06/musicxml40</a></li>
-        <li id="ref-23">partitura: en Python-pakke for symbolsk musikkbehandling. <a href="https://github.com/CPJKU/partitura">github.com/CPJKU/partitura</a></li>
-        <li id="ref-24">L. Nieradzik. pitch-benchmark (vedlikeholdt av forfatteren av SwiftF0). <a href="https://github.com/lars76/pitch-benchmark">github.com/lars76/pitch-benchmark</a></li>
-        <li id="ref-25">python-audio-separator (kilden til modellfilen BS-RoFormer SW). <a href="https://github.com/nomadkaraoke/python-audio-separator">github.com/nomadkaraoke/python-audio-separator</a>. Kode MIT; ingen lisens oppgitt for vektene.</li>
-      </ol>
-      <p class="muted">I repositoriet: <a href="https://github.com/181192/brasscribe/blob/main/eval/baselines.json">de låste tallene</a> · <a href="https://github.com/181192/brasscribe/blob/main/eval/README.md">hvordan målingene kjøres</a> · <a href="https://github.com/181192/brasscribe/blob/main/docs/shared/research/10-benchmark-results.md">notater fra målingene</a> · <a href="https://github.com/181192/brasscribe/blob/main/convert/README.md">modellkonverteringer</a> · <a href="https://github.com/181192/brasscribe/blob/main/site/shared/research/measured/measured.toml">tall målt én gang, med kilder</a></p>
-      <p class="to-top"><a href="#main">Til toppen</a></p>
+      {{references}}
     </section>
+
+    <section id="appendix" aria-labelledby="appendix-title">
+      <h2 id="appendix-title">Vedlegg A: Verdier som ikke er låst</h2>
+      <p>{{ref table:measured}} lister verdiene på denne siden som er målt én gang og ikke holdes av regresjonssperren, med kildene.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tabell: verdier som ikke er låst" id="table-measured">
+        <table>
+          <caption>{{label table:measured}}. Verdier målt én gang. Hver står med kilde og kommando i <code>site/shared/research/measured/measured.toml</code>.</caption>
+          <thead><tr><th scope="col">Verdi</th><th scope="col">Slik den er oppgitt</th><th scope="col">Kilde</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Toner per enighetsklasse ({{ref fig:agreement}})</th><td>{{data m/solo_vote/n_all int}}, {{data m/solo_vote/n_mus_sw int}}, {{data m/solo_vote/n_bp_sw int}}, {{data m/solo_vote/n_sw int}}, {{data m/solo_vote/n_bp_mus int}}</td><td><code>docs/shared/research/10-benchmark-results.md</code>, treveis avstemning</td></tr>
+            <tr><th scope="row">Hele jobber (avsnitt 5.9)</th><td>Solo på {{data m/jobs/solo_audio_s int}} s: {{span m/jobs/solo_s_fast m/jobs/solo_s_slow f1}} s; band på {{data m/jobs/band_audio_s int}} s: {{data m/jobs/band_s sec}}</td><td><code>docs/shared/research/13-performance-audit.md</code>, M5</td></tr>
+            <tr><th scope="row">Modellkall i en solojobb ({{ref fig:solo-stages}})</th><td>{{data m/solo_stages/beats sec}}, {{data m/solo_stages/swift_f0 sec}}, {{data m/solo_stages/basic_pitch sec}}, {{data m/solo_stages/muscriptor sec}}, {{data m/solo_stages/contour sec}}</td><td>Samme dokument, M6</td></tr>
+            <tr><th scope="row">Kvantisering før skalering av straffene (avsnitt 5.2)</th><td>{{data m/penalties/position_before pct}} plass, {{data m/penalties/subdivision_before pct}} i slaget, {{data m/penalties/duration_before pct}} varighet</td><td><code>docs/shared/research/10-benchmark-results.md</code>, rytme</td></tr>
+            <tr><th scope="row">Raske toner før og etter ({{ref fig:fast-notes}})</th><td>Recall for figuren {{data m/fast_notes/oracle_fig_before pct}} → {{data m/fast_notes/oracle_fig_after pct}} på {{data m/fast_notes/clips int}} klipp</td><td><code>docs/brasscribe/plan/fast-notes.md</code>, avsnitt 7.2</td></tr>
+            <tr><th scope="row">Trioler på beregnede ansatser (avsnitt 6.1)</th><td>{{data m/triplets/triplet_eighths pct}}</td><td>Samme dokument, avsnitt 8.2</td></tr>
+            <tr><th scope="row">F-mål for de sporede slagene (avsnitt 5.2)</th><td>{{data p/quant-chorales/beat_this.beat_f}} og {{data p/quant-urmp/beat_this.beat_f}}</td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row">Recall per stemme ({{ref fig:voices}})</th><td>Gjennomsnitt over stykker, beregnet med sperrens målekode</td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row">Modellenes fart, minne og samsvar etter konvertering ({{ref fig:speed}}, {{ref fig:conversions}})</th><td>Se figurene</td><td><code>convert/reports/*.json</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="appendix-tables" class="print-only" aria-labelledby="appendix-tables-title">
+      <h2 id="appendix-tables-title">Vedlegg B: Datatabeller til figurene</h2>
+      {{figuretables}}
+    </section>
+    <p class="to-top"><a href="#main">Til toppen</a></p>
   </article>
