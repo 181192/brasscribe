@@ -80,7 +80,11 @@ fun UpdateAppAction(vm: PlayViewModel, said: String?) {
  * says nothing. The button is outline: the screen's primary stays its own.
  */
 @Composable
-fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConnectionScreen: Boolean = false) {
+fun ConnectionStatusRow(
+    vm: PlayViewModel, modifier: Modifier = Modifier, onConnectionScreen: Boolean = false,
+    /** Not connected in two words, with the button beside them: where the row is not what the screen is for (Home with a library). */
+    brief: Boolean = false,
+) {
     val state by vm.connection.state.collectAsState()
     val c = ScribeTheme.colors
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -105,11 +109,12 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
         s is ConnectionState.NeedsUpdate && !onConnectionScreen -> stringResource(R.string.bandroom_get_title) to { vm.navigate(Screen.COMPANION) }
         else -> null
     }
+    val short = brief && s is ConnectionState.Offline
     val words = @Composable { m: Modifier ->
         Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             BcIcon(connectionIcon(state, vm.container.product.makesScoresOnThePhone), null, tint = c.text)
             Text(
-                connectionText(vm, state), style = MaterialTheme.typography.bodyMedium, color = c.text,
+                if (short) stringResource(R.string.conn_offline_brief) else connectionText(vm, state), style = MaterialTheme.typography.bodyMedium, color = c.text,
                 modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
@@ -123,24 +128,26 @@ fun ConnectionStatusRow(vm: PlayViewModel, modifier: Modifier = Modifier, onConn
     ) {
         val inner = Modifier.padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3).heightIn(min = 44.dp)
         if (action == null) words(inner.fillMaxWidth())
-        else ActionBeside(inner.fillMaxWidth(), stack = largeText(), gap = ScribeSpace.s3, words = { words(Modifier) }, action = button)
+        else ActionBeside(inner.fillMaxWidth(), stack = largeText() && !short, onALine = short, gap = ScribeSpace.s3, words = { words(Modifier) }, action = button)
     }
 }
 
 /**
  * The words with the button on the right, or the button under the words when it would leave the words
- * less than 60 % of the row (a long Norwegian label) or at large text.
+ * less than 55 % of the row (a long Norwegian label) or at large text. With [onALine], the button is on the right
+ * whenever the words still fit on one line beside it.
  */
 @Composable
 private fun ActionBeside(
-    modifier: Modifier, stack: Boolean, gap: androidx.compose.ui.unit.Dp,
+    modifier: Modifier, stack: Boolean, onALine: Boolean = false, gap: androidx.compose.ui.unit.Dp,
     words: @Composable () -> Unit, action: @Composable () -> Unit,
 ) {
     androidx.compose.ui.layout.Layout(contents = listOf(words, action), modifier = modifier) { (w, b), constraints ->
         val gapPx = gap.roundToPx()
         val max = constraints.maxWidth
         val button = b.first().measure(constraints.copy(minWidth = 0, minHeight = 0))
-        val side = !stack && button.width + gapPx <= max * 0.4f
+        val side = !stack && if (onALine) button.width + gapPx + w.first().maxIntrinsicWidth(button.height) <= max
+            else button.width + gapPx <= max * 0.45f
         if (side) {
             val text = w.first().measure(constraints.copy(minWidth = 0, maxWidth = max - button.width - gapPx, minHeight = 0))
             val h = maxOf(text.height, button.height, constraints.minHeight)
