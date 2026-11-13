@@ -43,8 +43,8 @@ file = "fretscribe-macos-arm64.zip"
 group = "mac"
 label_en = "Fretscribe for Mac"
 label_nb = "Fretscribe for Mac"
-en = "Fretscribe for a Mac from 2020 or later"
-nb = "Fretscribe for Mac fra 2020 eller nyere"
+en = "Fretscribe for a Mac with an M-series chip"
+nb = "Fretscribe for Mac med M-brikke"
 
 [[downloads]]
 file = "fretscribe-windows-x64.zip"
@@ -67,8 +67,8 @@ nb = { name = "iPhone og iPad", status = "Testversjon: trenger noen steg med App
 
 [[platforms]]
 id = "mac"
-en = { name = "Mac", status = "A Mac from 2020 or later · macOS 27 or 26", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab. Bandroom can run on the same Mac." }
-nb = { name = "Mac", status = "Mac fra 2020 eller nyere · macOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme Mac." }
+en = { name = "Mac", status = "A Mac with an M-series chip · macOS 27 or 26", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab. Bandroom can run on the same Mac." }
+nb = { name = "Mac", status = "Mac med M-brikke · macOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme Mac." }
 
 [[platforms]]
 id = "windows"
@@ -77,30 +77,33 @@ nb = { name = "Windows", status = "Tidlig versjon, ikke testet på en ekte PC en
 
 [[platforms]]
 id = "bandroom"
-en = { name = "Bandroom, on your computer", status = "Free · a Mac from 2020 or later, or a PC with Windows 11", alone = "Writes every tab, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
-nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac fra 2020 eller nyere, eller PC med Windows 11", alone = "Skriver hver tab, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
+en = { name = "Bandroom, on your computer", status = "Free · a Mac with an M-series chip, or a PC with Windows 11", alone = "Writes every tab, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
+nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac med M-brikke, eller PC med Windows 11", alone = "Skriver hver tab, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
 
 # The paper is kept under its old file name and served as "how it works", like every product's.
 [paths]
 research = "how-it-works"
 
 # The measured rates of "How sure is it?", one instrument alone: of the notes Fretscribe writes, the share that is
-# right; of the notes with a question mark, the share that was wrong. Paths into eval/baselines.json. The guitar's
+# right; of the notes with a question mark, the share that was wrong; of the wrong notes, the share that had one. Paths into eval/baselines.json. The guitar's
 # are from the players the rules were not set on.
 [[rates]]
 en = "Guitar, one note at a time"
 nb = "Gitar, én tone om gangen"
 right = "targets/fretted/suites/guitar-tab/metrics/report.solo.onset_p"
 doubted = "targets/fretted/suites/guitar-tab/metrics/report.solo.doubt_precision"
+caught = "targets/fretted/suites/guitar-tab/metrics/report.solo.doubt_recall"
 
 [[rates]]
 en = "Guitar, chords"
 nb = "Gitar, akkorder"
 right = "targets/fretted/suites/guitar-tab/metrics/report.comp.onset_p"
 doubted = "targets/fretted/suites/guitar-tab/metrics/report.comp.doubt_precision"
+caught = "targets/fretted/suites/guitar-tab/metrics/report.comp.doubt_recall"
 
 [[rates]]
 en = "Bass"
 nb = "Bass"
 right = "targets/fretted/suites/bass-tab/metrics/instrument.onset_p"
 doubted = "targets/fretted/suites/bass-tab/metrics/instrument.doubt_precision"
+caught = "targets/fretted/suites/bass-tab/metrics/instrument.doubt_recall"

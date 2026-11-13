@@ -350,8 +350,8 @@ def devices(page) -> str:
 
 
 def rates(page) -> str:
-    """What the app gets right, per instrument: of ten notes it writes, how many are right. Under them, how often a
-    question mark was worth checking. The product's [[rates]] say which measured numbers."""
+    """What the app gets right, per instrument: of ten notes it writes, how many are right. Under them, what an open
+    note is, and how often a question mark was worth checking. The product's [[rates]] say which measured numbers."""
     say, groups, marks = page.say, [], []
     for rate in page.product.data["rates"]:
         n = round(float(lookup("eval/baselines.json", rate["right"])) * 10)
@@ -359,7 +359,18 @@ def rates(page) -> str:
         groups.append(f'<li><div class="rate">{tens(page, n)}<p>{say("sure.right", n=n, name=rate[page.lang])}</p></div></li>')
     low, high = min(marks), max(marks)
     share = str(high) if low == high else say("sure.between", low=low, high=high)
-    return f'<ul class="rates">{"".join(groups)}</ul>\n<p class="sure-marks">{say("sure.marks", n=share)}</p>'
+    key = f'<p class="sure-key"><svg viewBox="0 0 20 14" width="20" height="14" aria-hidden="true"><ellipse class="open" cx="10" cy="7" rx="7.5" ry="5.5" transform="rotate(-20 10 7)"/></svg> {say("sure.key")}</p>'
+    return f'<ul class="rates">{"".join(groups)}</ul>\n{key}\n<p class="sure-marks">{say("sure.marks", n=share)}</p>'
+
+
+def limit(page) -> str:
+    """The limit, said once: of the wrong notes, how many a question mark finds (one in four, one in five), from the
+    measured share of wrong notes that had a mark, over the product's [[rates]]."""
+    say = page.say
+    ones = sorted({round(1 / float(lookup("eval/baselines.json", rate["caught"]))) for rate in page.product.data["rates"]})
+    words = say("sure.numbers")
+    n = words[ones[0]] if len(ones) == 1 else say("sure.between", low=words[ones[0]], high=words[ones[-1]])
+    return f'<p class="sure-end">{say("sure.end", n=n)}</p>'
 
 
 def measured(page) -> str:

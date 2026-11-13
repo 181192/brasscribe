@@ -66,7 +66,7 @@ computer_does = "lytter og skriver det ned"
 
 [bandroom]
 title = "Hent Bandroom"
-text = "For Mac fra 2020 eller nyere eller PC med Windows 11. Det kjører stille i bakgrunnen, og første gang det starter, laster det ned rundt 10 GB. Datamaskinen advarer deg første gang; veiledningene viser hvordan du kommer forbi det."
+text = "For Mac med M-brikke eller PC med Windows 11. Det kjører stille i bakgrunnen, og første gang det starter, laster det ned rundt 10 GB. Datamaskinen advarer deg første gang; veiledningene viser hvordan du kommer forbi det."
 mac = "Bandroom for Mac"
 windows = "Bandroom for Windows"
 setup = "Oppsett og tilkobling av telefon står i <a href=\"@brasscribe/guide/#computer\">Brasscribes veiledning</a> og <a href=\"@fretscribe/guide/#computer\">Fretscribes veiledning</a>."

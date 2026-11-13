@@ -340,8 +340,6 @@ main.downloads { max-width: 820px; padding-top: var(--scribe-space-12); padding-
 .footer-line a { min-height: 24px; display: inline-block; }
 
 @media (max-width: 900px) {
-  /* A sticky header would cover too much of a small or zoomed screen (WCAG 1.4.10). */
-  html { scroll-padding-top: var(--scribe-space-4); }
   .hero-grid, .hero .wrap.hero-grid, .grid-3, .guide { grid-template-columns: minmax(0, 1fr); }
   .device-group { max-width: 640px; margin: 0 auto; }
   .hero-grid.reverse > :first-child { order: 0; }

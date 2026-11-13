@@ -108,12 +108,14 @@ setup = "Sett opp datamaskinen"
 [sure]
 title = "Hvor sikker <em>er den?</em>"
 lead = "Spill én gitar eller bass alene, og Fretscribe treffer de fleste tonene. Og den viser deg hvor du bør høre etter: et <b class=\"uncertain\">?</b> markerer tonene den ikke var sikker på."
-right = "<b>{name}:</b> rundt {n} av 10 toner er riktige."
-alt_right = "Ti toner på en linje; {n} av dem er fylt, de som er riktige."
-marks = "Et <b class=\"uncertain\">?</b> er verdt tiden din: rundt {n} av 10 toner som fikk et, trengte å rettes."
+right = "<b>{name}:</b> rundt {n} av 10 toner har riktig tonehøyde til riktig tid."
+alt_right = "Ti toner på en linje. Fylte toner: {n}. De har riktig tonehøyde til riktig tid."
+key = "En åpen tone er en den tok feil av."
+marks = "Et <b class=\"uncertain\">?</b> er verdt tiden din: rundt {n} av 10 toner som får et ?, må rettes."
 between = "{low} eller {high}"
-source = "Vi målte dette på gitarister appen ikke er stilt inn etter, som spiller enkelttoner og akkorder, og på basslinjer spilt av en datamaskin, hvert instrument alene."
-end = "Sjekk altså tonene med ? først, og spill så gjennom og stol på ørene dine: ikke alle gale toner har et merke. En gitar plukket ut av en hel låt er vanskeligere enn en gitar alene."
+numbers = ["null", "én", "to", "tre", "fire", "fem", "seks", "sju", "åtte", "ni", "ti"]
+end = "Et ? finner omtrent én av {n} gale toner. Spill gjennom én gang, så finner ørene resten."
+source = "Vi målte dette på gitarister appen ikke er stilt inn etter, som spiller enkelttoner og akkorder, én gitar alene. Basslinjene er spilt av en datamaskin og ble også brukt mens vi laget appen, så en ekte bass kan gå dårligere. En gitar plukket ut av en hel låt er vanskeligere enn en gitar alene."
 how = "Slik målte vi det"
 
 [getit]

@@ -187,4 +187,10 @@ def rates(page) -> str:
         cells = "".join(f'<circle class="{"open" if i in spread else "right"}" cx="{5 + (i % 25) * 11}" cy="{5 + (i // 25) * 11}" r="3.6"/>' for i in range(200))
         picture = f'<svg class="twohundred" viewBox="0 0 274 87" role="img" aria-label="{shared.esc(say("sure.alt_group", k=left))}">{cells}</svg>'
         groups.append(f'<li><div class="rate">{picture}<p>{say("sure.group", name=rate[page.lang], share=share)}</p></div></li>')
-    return f'<ul class="rates">{"".join(groups)}</ul>'
+    key = f'<p class="sure-key"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><circle class="open" cx="6" cy="6" r="4.4"/></svg> {say("sure.key")}</p>'
+    return f'<ul class="rates">{"".join(groups)}</ul>\n{key}'
+
+
+def limit(page) -> str:
+    """The limit, said once, and what to do about it."""
+    return f'<p class="sure-end">{page.say("sure.end")}</p>'

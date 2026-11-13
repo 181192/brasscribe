@@ -54,7 +54,7 @@ note = "Krever iOS eller iPadOS 26 eller nyere. Ligger ikke i App Store ennå. D
 
 [groups.mac]
 title = "Mac"
-note = "Krever macOS 26 eller nyere og en Mac fra 2020 eller nyere. Mac-en advarer deg første gang: pakk ut, flytt appen til Programmer og åpne den én gang, og velg så <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>."
+note = "Krever macOS 26 eller nyere og en Mac med M-brikke. Mac-en advarer deg første gang: pakk ut, flytt appen til Programmer og åpne den én gang, og velg så <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>."
 
 [groups.windows]
 title = "Windows"

@@ -217,6 +217,9 @@ main > section > .wrap > h2 { max-width: 20em; }
 .tens .string { stroke: var(--scribe-line); stroke-width: 1; }
 .tens .right, .twohundred .right { fill: var(--scribe-brand); }
 .tens .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-border-strong); stroke-width: 1.5; }
+.sure-key { display: flex; align-items: center; gap: var(--scribe-space-2); margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
+.sure-key svg { flex: none; }
+.sure-key .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-text-muted); stroke-width: 1.2; }
 .sure-marks { margin: var(--scribe-space-8) 0 0; max-width: 40em; font-size: 1.125rem; }
 @media (forced-colors: active) {
   .tens .right, .twohundred .right { fill: CanvasText; }

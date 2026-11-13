@@ -120,12 +120,13 @@ setup = "Sett opp datamaskinen"
 
 [sure]
 title = "Hvor sikker <em>er den?</em>"
-lead = "Når ett messinginstrument spiller alene, treffer Brasscribe nesten alle tonene. Og den viser deg hvor du bør høre etter: et <b class=\"uncertain\">?</b> markerer tonene den ikke var sikker på."
-group = "<b>{name}:</b> {share} av 100 toner er riktige, eller har et ? som du kan sjekke."
+lead = "Når ett messinginstrument spiller alene, er nesten alle tonene Brasscribe skriver, riktige: aller mest for kornett og flygelhorn, færre for tuba. Og den viser deg hvor du bør høre etter: et <b class=\"uncertain\">?</b> markerer tonene den ikke var sikker på."
+group = "<b>{name}:</b> {share} av 100 toner den skriver, er riktige, eller har et ? som du bør sjekke."
 more = "mer enn {n}"
 about = "rundt {n}"
-alt_group = "To hundre toner som prikker, nesten alle fylt; {k} står åpne, de gale tonene uten spørsmålstegn."
-source = "Vi målte dette på langsomme salmer, én musiker om gangen: opptakene vi har stilt inn etter. På en øvelse blir det dårligere."
+alt_group = "To hundre toner som prikker, nesten alle fylt. Åpne prikker: {k}. Det er gale toner uten spørsmålstegn."
+key = "En åpen prikk er en gal tone uten ?."
+source = "Vi målte dette på langsomme salmer, én musiker om gangen: opptakene vi har stilt inn etter. Toner den ikke skrev, er ikke med. På en øvelse blir det dårligere."
 end = "Sjekk altså tonene med ? først, og les så gjennom stemmen med ørene åpne: ikke alle gale toner har et merke, aller minst i basstemmene. Et fullt band er vanskeligere å høre enn ett instrument, og partituret er et utkast som en musiker gjør ferdig."
 how = "Slik målte vi det"
 
