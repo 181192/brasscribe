@@ -646,6 +646,7 @@ def _guitar_tab(data: Path, mode: str) -> dict[str, float]:
         for style in G.STYLES:
             metrics, _ = G.evaluate(data, players, style)
             out.update({f"{split}.{style}.{k}": v for k, v in metrics.items()})
+            out.update({f"{split}.{style}.{k}": v for k, v in G.written_slots(data, players, style).items()})
     # Guitars in a song: Slakh, where the tracks are.
     if not G.song_entries(data) and mode == "live" and slakh.is_dir():
         G.build_songs(slakh, data)

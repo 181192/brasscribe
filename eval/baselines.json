@@ -1220,7 +1220,7 @@
           }
         },
         "guitar-tab": {
-          "source": "measured by this suite (scribe bench guitar-tab): GuitarSet's guitar alone, single lines (solo) and comping (comp), the players the rules were set on (tune: 00 to 02) apart from the players they are quoted for (report: 03 to 05); and the guitars of the Slakh excerpts from the separator's guitar stem (song). Not in 10-benchmark-results.md. violations is a hard gate: a tab must be playable",
+          "source": "measured by this suite (scribe bench guitar-tab): GuitarSet's guitar alone, single lines (solo) and comping (comp), the players the rules were set on (tune: 00 to 02) apart from the players they are quoted for (report: 03 to 05); and the guitars of the Slakh excerpts from the separator's guitar stem (song). Not in 10-benchmark-results.md. slot_* is the rhythm the reader writes on the click's beats (written_slots; docs/shared/research/18-quality-revisit.md). violations is a hard gate: a tab must be playable",
           "metrics": {
             "tune.solo.onset_f1": 0.826,
             "tune.solo.onset_p": 0.812,
@@ -1603,7 +1603,19 @@
             "report.solo.bar_ok": 0.589,
             "report.comp.bar_ok": 0.944,
             "song.bar_ok": 0.818,
-            "song_one.bar_ok": 0.833
+            "song_one.bar_ok": 0.833,
+            "tune.solo.slot_ok": 0.81,
+            "tune.solo.slot_16th": 0.945,
+            "tune.solo.slot_triplet": 0.0,
+            "tune.comp.slot_ok": 0.774,
+            "tune.comp.slot_16th": 0.938,
+            "tune.comp.slot_triplet": 0.0,
+            "report.solo.slot_ok": 0.738,
+            "report.solo.slot_16th": 0.944,
+            "report.solo.slot_triplet": 0.0,
+            "report.comp.slot_ok": 0.829,
+            "report.comp.slot_16th": 0.963,
+            "report.comp.slot_triplet": 0.0
           }
         },
         "ukulele-tab": {

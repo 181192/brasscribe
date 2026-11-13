@@ -151,6 +151,34 @@ fn dense_quantize_matches_reference() {
 }
 
 #[test]
+fn chord_quantize_matches_reference() {
+    for (i, c) in load("quantize_chords").iter().enumerate() {
+        let beats = f64s(&c["beats"]);
+        let notes: Vec<RawNote> = c["notes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|n| {
+                let mut r = RawNote::new(n["pitch"].as_i64().unwrap() as i32, n["onset"].as_f64().unwrap(), n["offset"].as_f64().unwrap());
+                r.confidence = n["confidence"].as_f64();
+                r
+            })
+            .collect();
+        let coarse: Option<Vec<(f64, f64)>> =
+            c["coarse"].as_array().map(|r| r.iter().map(|x| (x[0].as_f64().unwrap(), x[1].as_f64().unwrap())).collect());
+        let q = quantize_with(&notes, &beats, false, false, coarse.as_deref(), true);
+        let got: Vec<(i64, i64, i64, u64)> = q.iter().map(|x| (x.pitch as i64, x.start, x.end, x.confidence.to_bits())).collect();
+        let want: Vec<(i64, i64, i64, u64)> = c["quantized"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| (x[0].as_i64().unwrap(), x[1].as_i64().unwrap(), x[2].as_i64().unwrap(), x[3].as_f64().unwrap().to_bits()))
+            .collect();
+        assert_eq!(got, want, "chord quantize case {i}");
+    }
+}
+
+#[test]
 fn contour_onsets_match_reference() {
     use scribe_core::durations::Contour;
     use scribe_core::onsets::contour_notes;

@@ -289,6 +289,31 @@ pub fn snap(x: f64, grids: &HashMap<i64, i64>, default: i64) -> i64 {
     ((k as f64 + r / g) * TICKS_PER_BEAT as f64).round_ties_even() as i64
 }
 
+/// One instrument that plays chords (a tab): the notes of a strum start together, so what a grid has to hold
+/// is the onsets, not the notes. Onsets under this much of a beat after the one before them, in the same beat,
+/// are that onset again.
+pub const CHORD_SPREAD: f64 = 0.06;
+
+/// The onsets (in beats) with every chord counted once: its first note's.
+pub fn distinct_onsets(onset_beats: &[f64]) -> Vec<f64> {
+    let mut sorted = onset_beats.to_vec();
+    sorted.sort_by(py::fcmp);
+    let mut last: HashMap<i64, f64> = HashMap::new();
+    let mut kept = Vec::new();
+    for x in sorted {
+        let k = beat_index(x);
+        let f = x - k as f64;
+        if let Some(&before) = last.get(&k) {
+            if f - before < CHORD_SPREAD {
+                continue;
+            }
+        }
+        last.insert(k, f);
+        kept.push(k as f64 + f);
+    }
+    kept
+}
+
 pub fn quantize(notes: &[RawNote], beat_times: &[f64], monophonic: bool, auto_level: bool) -> Vec<QNote> {
     quantize_coarse(notes, beat_times, monophonic, auto_level, None)
 }
@@ -297,9 +322,11 @@ pub fn quantize_coarse(notes: &[RawNote], beat_times: &[f64], monophonic: bool, 
     quantize_with(notes, beat_times, monophonic, auto_level, coarse, false)
 }
 
-/// Notes on the beat grid. `dense` (a monophonic line: the solo) lets beats whose grid would lose onsets
-/// choose a finer one (`choose_grids_dense`), and moves a note that still lands on a taken slot to the next
-/// free slot of its beat's grid, at half its confidence, instead of dropping it.
+/// Notes on the beat grid. `dense` lets beats whose grid would lose onsets choose a finer one
+/// (`choose_grids_dense`). On a monophonic line (the solo) a note that still lands on a taken slot then moves
+/// to the next free slot of its beat's grid, at half its confidence, instead of being dropped. Without
+/// `monophonic` it is for one instrument that plays chords (a tab): the grids are chosen for its distinct
+/// onsets (`distinct_onsets`), so two strums are not written on one slot while a grid could hold both.
 pub fn quantize_with(
     notes: &[RawNote],
     beat_times: &[f64],
@@ -316,12 +343,15 @@ pub fn quantize_with(
     let bm = BeatMap::new(&bt).expect("two beats");
     let on: Vec<f64> = notes.iter().map(|n| bm.to_beats(n.onset)).collect();
     let off: Vec<f64> = notes.iter().map(|n| bm.to_beats(n.offset)).collect();
-    let dense = dense && monophonic;
     let grids = if dense {
         let n = bt.len();
         let mut spb: Vec<f64> = bt.windows(2).map(|w| w[1] - w[0]).collect();
         spb.push(bt[n - 1] - bt[n - 2]);
-        choose_grids_dense(&on, coarse, &spb)
+        if monophonic {
+            choose_grids_dense(&on, coarse, &spb)
+        } else {
+            choose_grids_dense(&distinct_onsets(&on), coarse, &spb)
+        }
     } else {
         choose_grids(&on, coarse)
     };
@@ -337,7 +367,7 @@ pub fn quantize_with(
             QNote { pitch: n.pitch, start, end: end.max(start + unit), onset_s: n.onset, offset_s: n.offset, confidence: n.confidence.unwrap_or(1.0), articulations: Vec::new() }
         })
         .collect();
-    if dense {
+    if dense && monophonic {
         out.sort_by(|a, b| a.start.cmp(&b.start).then(py::fcmp(&a.onset_s, &b.onset_s)).then(b.pitch.cmp(&a.pitch)));
         return monophonize_dense(out, &grids);
     }

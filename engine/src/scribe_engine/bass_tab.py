@@ -380,10 +380,11 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
 # onset off the beat counts for the subdivision it is nearest to (a quarter, a third, a half, two thirds, three
 # quarters) when it lies within COMPOUND_NEAR of it; counted for every subdivision in reach instead, a third heard
 # 10 ms early was also a quarter, and straight 6/8 at 100 BPM was lost in four takes of five. Of the onsets
-# counted, COMPOUND_SHARE or more are on a third, and there are at least COMPOUND_ONSETS of them. The share is
-# above every two-beat-bar take of GuitarSet (the highest is 0.82, players 00 to 05) and above the one bass line
-# in four that is tracked in two and played in triplets throughout (0.90); three eighths to the beat, rendered,
-# reach 0.98, and with 10 ms of jitter on every onset they stay above it at 72 to 132 BPM.
+# counted, COMPOUND_SHARE or more are on a third, and there are at least COMPOUND_ONSETS of them. The share
+# rests on three numbers: the highest of GuitarSet's two-beat-bar takes, all in 4/4 (0.802 on players 00 to 02,
+# 0.819 on 03 to 05); one Slakh bass line tracked in two and played in triplets throughout, written in four
+# (0.903); and three eighths to the beat, rendered (0.98). It costs recall on fast, loose 6/8: at 132 BPM with
+# 15 ms of jitter on every onset, 0.99 of the draws are called compound with a share of 0.8 and 0.30 with 0.92.
 # Swing and shuffles divide the beat in three too, but play its second third only (long-short): of the onsets
 # on a third, COMPOUND_BOTH or more lie on each of the two. GuitarSet's jazz takes put at most 0.10 of them on
 # the first third as the tab profile reads their notes, and at most 0.16 as the bass line reads them; a rendered

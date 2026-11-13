@@ -95,6 +95,34 @@ def quantize_dense_cases() -> list[dict]:
     return cases
 
 
+def quantize_chords_cases() -> list[dict]:
+    """One instrument that plays chords, through quantize(dense=True) without monophonic: strums of one to five
+    notes spread over a few milliseconds, in straight, dotted and tuplet rhythms, on steady and drifting grids."""
+    rng = np.random.default_rng(20261113)
+    cases = []
+    for k in range(120):
+        spb = float(rng.choice([0.3333, 0.4, 0.5, 0.6667, 0.8]))
+        nb = int(rng.integers(8, 32))
+        beats = np.cumsum(spb * rng.uniform(0.95, 1.05, size=nb)) + rng.uniform(0, 1)
+        patterns = [(0.0,), (0.0, 0.5), (0.0, 0.75), (0.0, 0.5, 0.75), (0.0, 0.25, 0.5), (0.0, 0.25, 0.5, 0.75),
+                    (0.0, 1 / 3, 2 / 3), (0.0, 2 / 3), (0.0, 0.25), (0.5,), (0.25, 0.75)]
+        jit = float(rng.choice([0.0, 0.006, 0.015, 0.03]))
+        notes = []
+        for b in range(nb - 1):
+            for f in patterns[int(rng.integers(len(patterns)))] if rng.random() < 0.9 else ():
+                t = float(np.interp(b + f, np.arange(nb), beats) + rng.uniform(-jit, jit))
+                for p in rng.choice(np.arange(40, 77), size=int(rng.integers(1, 6)), replace=False):
+                    a = t + float(rng.uniform(0, 0.012))
+                    notes.append({"pitch": int(p), "onset": a, "offset": float(a + rng.uniform(0.05, 0.6)),
+                                  "confidence": float(np.round(rng.uniform(0.2, 1.0), 3))})
+        notes.sort(key=lambda n: (n["onset"], n["pitch"]))
+        coarse = [(float(nb // 3), float(nb // 2))] if k % 4 == 3 else None
+        q = quantize(notes, beats, monophonic=False, auto_level=False, coarse=coarse, dense=True)
+        cases.append({"beats": beats.tolist(), "notes": notes, "coarse": coarse,
+                      "quantized": [[x.pitch, x.start, x.end, x.confidence] for x in q]})
+    return cases
+
+
 def onsets_cases() -> list[dict]:
     """contour_notes on seeded synthetic contours: trills, runs, repeated notes, vibrato (centred, one-sided),
     scoops, falls, rips, octave flips, frames exactly at TIGHT and runs of exactly MIN_RUN frames, with and
@@ -520,6 +548,7 @@ def main() -> None:
                 (OUT, "meter", meter_cases(rng)), (OUT, "confidence", confidence_cases(rng)),
                 (OUT_BRASS, "voice_satb", voice_satb_cases(rng)), (OUT_BRASS, "seats", seat_cases()),
                 (OUT_BRASS, "part_sources", part_sources_cases()), (OUT, "quantize_dense", quantize_dense_cases()),
+                (OUT, "quantize_chords", quantize_chords_cases()),
                 (OUT, "onsets", onsets_cases())]
     # The trill cases that also went through the difficulty levels: that half is the brass-band target's.
     trills = trills_cases()

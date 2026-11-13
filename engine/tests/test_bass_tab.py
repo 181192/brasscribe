@@ -1404,15 +1404,17 @@ def test_a_bar_of_two_beats_divided_in_three_stays_two():
     assert bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in jig]))
     # Each onset 10 ms off, early or late: a third heard early is still a third, not also a quarter.
     for bpm in (72, 100, 132):
-        beat = 60 / bpm
-        grid = np.arange(34) * beat
+        length = 60 / bpm
+        grid = np.arange(34) * length
         rng = np.random.default_rng(bpm)
         for _ in range(20):
-            heard = np.array([(i + k / 3) * beat for i in range(32) for k in range(3)]) + rng.choice((-0.01, 0.01), 96)
+            heard = np.array([(i + k / 3) * length for i in range(32) for k in range(3)]) + rng.choice((-0.01, 0.01), 96)
             assert bass_tab.compound(grid, heard), bpm
-        straight = np.array([(i + k / 4) * beat for i in range(32) for k in range(4)]) + rng.choice((-0.01, 0.01), 128)
+        straight = np.array([(i + k / 4) * length for i in range(32) for k in range(4)]) + rng.choice((-0.01, 0.01), 128)
         assert not bass_tab.compound(grid, straight), bpm
-    beat = 60 / 72
+    # Three beats of triplets, then one of eighths: six onsets in seven on a third (0.857), under COMPOUND_SHARE.
+    mixed = np.array([(i + f) * beat for i in range(32) for f in ((0, 1 / 3, 2 / 3) if i % 4 < 3 else (0, 0.5))])
+    assert not bass_tab.compound(beats[:, 0], mixed)
     few = six_eight[:9]  # too few onsets off the beat to say
     assert not bass_tab.compound(beats[:, 0], np.array([n["onset"] for n in few]))
     assert bass_tab.bar_beats(2) == 4 and bass_tab.bar_beats(3, beats[:, 0], np.array([n["onset"] for n in six_eight])) == 3

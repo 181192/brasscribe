@@ -399,6 +399,56 @@ def summarize(rows: list[dict]) -> dict[str, float]:
     return out
 
 
+# The slots a note can be written on within a beat, in ticks: the 16ths and the triplet 8ths.
+SLOT_NEAR = 0.04  # beats: a note played further than this from every slot is not counted (no saying where it belongs)
+
+
+def written_slots(data: Path, players: tuple[str, ...], style: str) -> dict[str, float]:
+    """Is each note written where it was played? GuitarSet is played to a click, and the reference holds the
+    click's beats. The tab's reader gets those beats instead of tracked ones, so only the rhythm it writes is
+    measured: of the notes the tab has right (pitch, within 50 ms) and that were played within SLOT_NEAR of a
+    16th or a triplet-8th slot of the click, the share written on that slot. `slot_16th` and `slot_triplet`
+    count the notes played on a 16th slot and on a triplet slot apart. A swung 8th is played on a triplet slot,
+    and a tab that writes swing as straight 8ths has it wrong here: `slot_triplet` says how often the player's
+    triplet feel is written, not that it should be."""
+    from scribe_engine import bass_tab, tab
+    from scribe_music.quantize import TICKS_PER_BEAT, BeatMap
+
+    slots = np.array(sorted({k * TICKS_PER_BEAT // 4 for k in range(5)} | {k * TICKS_PER_BEAT // 3 for k in range(4)}))
+    right = {"slot_ok": [0, 0], "slot_16th": [0, 0], "slot_triplet": [0, 0]}
+    for entry in entries(data):
+        ref = json.loads((entry / "reference.json").read_text())
+        if ref["player"] not in players or ref["style"] != style or not all((entry / f).exists() for f in FILES.values()):
+            continue
+        try:
+            doc = tab.played_notes(bass_tab.load_transcription(entry / FILES["bp"]), np.array(ref["beats"], dtype=float),
+                                   "guitar-6", second=bass_tab.load_transcription(entry / FILES["sw"]))
+        except ValueError:
+            continue
+        beats = BeatMap(np.array(doc["beat_times"]))
+        first = doc["first_downbeat"] * TICKS_PER_BEAT
+        by_pitch: dict[int, list[dict]] = {}
+        for n in doc["notes"]:
+            by_pitch.setdefault(n["pitch"] - doc["octave_shift"], []).append(n)
+        taken: set[int] = set()
+        for r, at in zip(ref["notes"], beats.to_beats(np.array([r["onset"] for r in ref["notes"]]))):
+            beat = int(np.floor(at + 1e-9))
+            ticks = (at - beat) * TICKS_PER_BEAT
+            slot = int(slots[np.argmin(np.abs(slots - ticks))])
+            if abs(slot - ticks) > SLOT_NEAR * TICKS_PER_BEAT:
+                continue
+            heard = [n for n in by_pitch.get(r["pitch"], []) if abs(n["onset_s"] - r["onset"]) <= 0.05 and id(n) not in taken]
+            if not heard:
+                continue
+            n = min(heard, key=lambda n: abs(n["onset_s"] - r["onset"]))
+            taken.add(id(n))
+            ok = n["start"] + first == beat * TICKS_PER_BEAT + slot
+            for key in ("slot_ok", "slot_16th" if slot % (TICKS_PER_BEAT // 4) == 0 else "slot_triplet"):
+                right[key][0] += ok
+                right[key][1] += 1
+    return {k: v[0] / v[1] for k, v in right.items() if v[1]}
+
+
 def evaluate(data: Path, players: tuple[str, ...], style: str, clean: bool = True, params: dict | None = None,
              limit: int | None = None) -> tuple[dict[str, float], list[dict]]:
     """The excerpts of `players` in one style: summary and per-excerpt rows."""
