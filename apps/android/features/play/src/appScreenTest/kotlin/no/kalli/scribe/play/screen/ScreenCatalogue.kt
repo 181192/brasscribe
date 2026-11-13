@@ -16,7 +16,7 @@ import org.junit.experimental.categories.Category
 
 /**
  * Every screen of an app, one after the other, as a phone can show it: light, dark, high contrast, 200 %
- * text, on its side, and in bokmål. Each is opened, checked by the accessibility checks, and kept as a
+ * text, on its side, in bokmål, and on a small phone (upright with larger text, and on its side). Each is opened, checked by the accessibility checks, and kept as a
  * screenshot ([shots]/<screen>-<how>.png) that a later run compares with. Every target is at least 48 dp. At 200 % no text may be cut off
  * or ellipsized, and with the keyboard the focus goes through a screen in the order it is read.
  *
@@ -138,6 +138,27 @@ abstract class ScreenCatalogue : ScreenTest() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         language("nb-NO")
         onEveryScreen("nb") { assertNoTextIsClipped() }
+    }
+
+    /**
+     * A small phone (360 × 640 dp) with the text one step up, in bokmål: the least room a screen gets upright, with
+     * the longer words. Nothing is cut off.
+     */
+    @Test
+    fun onASmallPhone() {
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        textSize(1.3f)
+        language("nb-NO")
+        onEveryScreen("small") { assertNoTextIsClipped() }
+    }
+
+    /** The small phone on its side (640 × 360 dp): the least height a screen gets. */
+    @Test
+    fun onASmallPhoneOnItsSide() {
+        rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        onEveryScreen("small-landscape")
     }
 
     @Test

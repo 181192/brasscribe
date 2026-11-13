@@ -58,6 +58,10 @@ object ScreenDevice {
         rule.waitForIdle()
     }
 
+    /** A device keeps the screen it has: the sizes of other phones are the JVM's to show. */
+    @Suppress("UNUSED_PARAMETER")
+    fun size(rule: AppRule, width: Int, height: Int): Boolean = false
+
     /** The phone's text size: 2f is 200 %. */
     fun textSize(rule: AppRule, scale: Float) {
         shell("settings put system font_scale $scale")

@@ -51,10 +51,18 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -346,6 +354,8 @@ fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null,
             }
         },
         actions = actions,
+        // On its side the bar is as low as its 48 dp buttons.
+        expandedHeight = if (shortScreen()) 48.dp else TopAppBarDefaults.TopAppBarExpandedHeight,
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = c.bg, scrolledContainerColor = c.bg),
     )
 }
@@ -373,35 +383,61 @@ fun PlayScaffold(
         containerColor = ScribeTheme.colors.bg,
         topBar = { PlayTopBar(title, onBack, backLabel, actions = actions) },
     ) { padding ->
-        // Clear of the top bar and the system bars at the sides; the band pads for the navigation bar below.
+        // Clear of the top bar and the system bars at the sides; the navigation bar's height is kept free below the band.
         val direction = LocalLayoutDirection.current
         val around = PaddingValues(top = padding.calculateTopPadding(),
             start = padding.calculateStartPadding(direction), end = padding.calculateEndPadding(direction))
-        Column(Modifier.fillMaxSize().padding(around).consumeWindowInsets(around)) {
-            val base = Modifier.weight(1f).fillMaxWidth().padding(horizontal = ScreenMargin)
-            Column(
-                modifier = if (scroll) base.verticalScroll(rememberScrollState()) else base,
-                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
-            ) {
-                content()
-                Spacer(Modifier.size(ScribeSpace.s4))
-            }
-            // Docked actions sit on an opaque band with a hairline above it, so the content ends
-            // visibly at the band instead of looking cut off behind the button.
-            Column(Modifier.fillMaxWidth().background(ScribeTheme.colors.bg)) {
-                if (bottom != null) HorizontalDivider(thickness = 1.dp, color = ScribeTheme.colors.border)
-                Column(
-                    Modifier.fillMaxWidth().navigationBarsPadding()
-                        .padding(horizontal = ScreenMargin, vertical = if (bottom != null) ScribeSpace.s3 else ScribeSpace.s0),
-                    verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
-                ) {
-                    StatusLine(status)
-                    bottom?.invoke(this)
+        // The band as it was last measured: it is the same height docked or not, so the choice below cannot flip back.
+        var bandHeight by remember { mutableIntStateOf(0) }
+        val nowStatus by rememberUpdatedState(status)
+        val nowBottom by rememberUpdatedState(bottom)
+        // Docked actions sit on an opaque band with a hairline above it, so the content ends
+        // visibly at the band instead of looking cut off behind the button.
+        val band = remember {
+            movableContentOf {
+                Column(Modifier.fillMaxWidth().background(ScribeTheme.colors.bg).onSizeChanged { bandHeight = it.height }) {
+                    if (nowBottom != null) HorizontalDivider(thickness = 1.dp, color = ScribeTheme.colors.border)
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .padding(horizontal = ScreenMargin, vertical = if (nowBottom != null) ScribeSpace.s3 else ScribeSpace.s0),
+                        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
+                    ) {
+                        StatusLine(nowStatus)
+                        nowBottom?.invoke(this)
+                    }
                 }
+            }
+        }
+        BoxWithConstraints(Modifier.fillMaxSize().padding(around).consumeWindowInsets(around)) {
+            // On a short screen (a phone on its side, a small phone with large text) a band that would take more than
+            // [BAND_SHARE] of the height stops being docked: it comes after the content and scrolls with it, so the
+            // content is not left a slit to be read through.
+            val docked = !scroll || bandHeight <= constraints.maxHeight * BAND_SHARE
+            Column(Modifier.fillMaxSize()) {
+                if (scroll) Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
+                        content()
+                        Spacer(Modifier.size(ScribeSpace.s4))
+                    }
+                    if (!docked) band()
+                } else Column(Modifier.weight(1f).fillMaxWidth().padding(horizontal = ScreenMargin), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
+                    content()
+                    Spacer(Modifier.size(ScribeSpace.s4))
+                }
+                if (docked) band()
+                // Docked or not, nothing is drawn under the navigation bar.
+                Spacer(Modifier.fillMaxWidth().background(ScribeTheme.colors.bg).windowInsetsBottomHeight(WindowInsets.navigationBars))
             }
         }
     }
 }
+
+/** The most of the height under the top bar that a docked band may take; a taller one scrolls with the content. */
+private const val BAND_SHARE = 0.4f
+
+/** A phone on its side: so little height that every bar gives some of its own to the content. */
+@Composable
+fun shortScreen(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
 
 /** The uncertainty mark as text glyphs: "?" and a boxed "?" (visual-design-tokens.md §2), in the note colour. */
 @Composable
