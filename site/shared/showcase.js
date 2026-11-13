@@ -1,5 +1,5 @@
 // What the front pages' figures do when a visitor touches them. Every figure is complete in the HTML;
-// this adds the moving parts: the strip under the headline, the steps, the device table and the tab viewer.
+// this adds the moving parts: the strip under the headline, the steps and the viewers.
 
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
 const SVG = "http://www.w3.org/2000/svg";
@@ -12,7 +12,7 @@ const make = (name, attributes = {}, parent) => {
 };
 
 // What a figure's controls stand at is kept here, so that a change of language, which draws the figure again,
-// leaves it as it stood: the same step, tuning, note, device and place in the recording.
+// leaves it as it stood: the same step, tuning, note and place in the recording.
 const memory = new Map();
 const remember = (el, kind) => {
   const key = `${kind}${[...document.querySelectorAll(`[data-${kind}]`)].indexOf(el)}`;
@@ -198,21 +198,6 @@ function stages(list) {
   list.before(nav, foot);
   list.classList.add("live");
   show(current);
-}
-
-// The device table: choosing a device shows its row alone.
-function matrix(el) {
-  const pick = el.querySelector(".matrix-pick");
-  const buttons = [...pick.querySelectorAll("button")];
-  const kept = remember(el, "matrix");
-  ready(el);
-  const choose = (device) => {
-    kept.device = device;
-    buttons.forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.device === device)));
-    for (const row of el.querySelectorAll("tbody tr")) row.hidden = !!device && row.dataset.device !== device;
-  };
-  for (const b of buttons) b.addEventListener("click", () => choose(b.getAttribute("aria-pressed") === "true" ? null : b.dataset.device));
-  if (kept.device) choose(kept.device);
 }
 
 // The tab viewer: the same notes in another tuning, as the core's solver placed them, and for the note that
@@ -431,7 +416,6 @@ function enhance(root) {
   });
   within(root, "[data-strip]").forEach(strip);
   within(root, "[data-stages]").forEach(stages);
-  within(root, "[data-matrix]").forEach(matrix);
   lazily("[data-tabdemo]", tabdemo);
   lazily("[data-partview]", partview);
 }

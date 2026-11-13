@@ -112,9 +112,8 @@ tied = " Tied to the note before."
 doubt = " Brasscribe was not sure of this note."
 
 [needs]
-title = "What you <em>need.</em>"
-lead = "Today Brasscribe writes its scores on your computer, not on the phone. Choose your device to see what it does alone, and what it needs the computer for."
-computer = "<strong>A computer with Bandroom</strong>, on the same Wi-Fi as the phone: a Mac from 2020 or later, or a PC with Windows 11. Bandroom is free, and today it writes every score, also for one instrument alone. Android phones write a single instrument by themselves again from the next release."
+title = "Brasscribe on <em>your devices.</em>"
+lead = "The app for your phone, tablet, Mac or PC, and Bandroom for your computer. Today Brasscribe writes its scores on the computer, not on the phone: each device below says what it does by itself."
 unsigned = "<strong>Your device will warn you the first time.</strong> The apps are not in any app store yet; the <a href=\"@/download/\">download page</a> shows how to get past the warning."
 private = "<strong>Your recording never leaves your own network.</strong> It goes from your phone to your own computer and nowhere else. The first time Bandroom starts it needs the internet, to download what it needs to listen (about 10 GB). For a full band it also needs a free account where the listening model is downloaded; the <a href=\"@/guide/#computer\">guide</a> shows how."
 setup = "Set up your computer"

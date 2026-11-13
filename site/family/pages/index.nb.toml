@@ -4,10 +4,11 @@ description = "Brasscribe skriver partitur for brassband fra et opptak. Fretscri
 [hero]
 brass = "Partitur til bandet ditt."
 fret = "Tab til gitaren din."
-lead = "To apper som lytter til et opptak og skriver ned det som ble spilt. Under ser du begge gjøre det, på et ekte opptak."
+lead = "Scribe er en serie apper som lytter til et opptak og skriver ned det som ble spilt. Så langt er det to apper; under ser du begge gjøre det, på et ekte opptak."
 
 [apps]
-label = "Appene"
+label = "Scribe-appene"
+devices = "For Android, iPhone og iPad, Mac og Windows, med Bandroom på datamaskinen"
 download = "Last ned"
 
 [apps.brass]

@@ -75,6 +75,11 @@ id = "windows"
 en = { name = "Windows", status = "Early version, not tested on a real PC yet · Windows 11", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars. Shares or prints a tab.", bandroom = "Writing a tab. Bandroom can run on the same PC." }
 nb = { name = "Windows", status = "Tidlig versjon, ikke testet på en ekte PC ennå · Windows 11", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter. Deler eller skriver ut en tab.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme PC." }
 
+[[platforms]]
+id = "bandroom"
+en = { name = "Bandroom, on your computer", status = "Free · a Mac from 2020 or later, or a PC with Windows 11", alone = "Writes every tab, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
+nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac fra 2020 eller nyere, eller PC med Windows 11", alone = "Skriver hver tab, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
+
 # The paper is kept under its old file name and served as "how it works", like every product's.
 [paths]
 research = "how-it-works"

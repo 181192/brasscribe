@@ -2,7 +2,7 @@
    brand token, so a figure wears the brand of the page it is on, in light and in dark. */
 
 /* What the script reveals stays out of the way until then. */
-.strip [hidden], .tabdemo [hidden], .matrix [hidden], .stages [hidden] { display: none; }
+.strip [hidden], .tabdemo [hidden], .stages [hidden] { display: none; }
 button.button { font: inherit; font-weight: 600; cursor: pointer; background: none; color: var(--scribe-text); }
 
 .tab-ink { --paper: var(--scribe-surface-raised); overflow: visible; }
@@ -158,22 +158,8 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .source { font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); max-width: 52em; margin-top: var(--scribe-space-6); }
 
 /* The device table. */
-.matrix-pick { display: flex; flex-wrap: wrap; gap: var(--scribe-space-2); margin: var(--scribe-space-5) 0 var(--scribe-space-2); }
-.matrix-pick button {
   min-height: 44px; padding: 0 var(--scribe-space-4); font: inherit; font-weight: 600; cursor: pointer; color: var(--scribe-text);
   background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm);
-}
-.matrix-pick button[aria-pressed="true"] { background: var(--scribe-primary); color: var(--scribe-on-primary); border-color: var(--scribe-primary); }
-.matrix th .status { display: block; font-weight: 400; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
-.matrix tbody th { width: 26%; min-width: 7.5em; }
-@media (max-width: 600px) {
-  /* Narrow: each device is a block, with the column's name before each answer. */
-  .matrix thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .matrix table, .matrix tbody, .matrix tr, .matrix tbody th, .matrix td { display: block; width: auto; min-width: 0; }
-  .matrix tr { padding: var(--scribe-space-3) 0; border-bottom: 1px solid var(--scribe-border); }
-  .matrix tr[hidden] { display: none; }
-  .matrix tbody th, .matrix td { border: 0; padding: var(--scribe-space-1) 0; }
-  .matrix td::before { content: attr(data-label) ": "; font-weight: 600; }
 }
 
 @media (forced-colors: active) {
@@ -185,13 +171,12 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
   .tab-ink .heard, .dots .on { fill: CanvasText; }
   .dots .off, .dots.found .off { fill: none; stroke: CanvasText; }
   .strip-pen, .strip-pen::before, .stages-nav::before, .stages-nav::after { background: CanvasText; }
-  .stages-nav button[aria-current], .matrix-pick button[aria-pressed="true"] { background: Highlight; color: HighlightText; }
+  .stages-nav button[aria-current] { background: Highlight; color: HighlightText; }
 }
 @media print {
-  .strip-controls, .stages-nav, .stages-foot, .tabdemo-controls, .tabdemo-hint, .matrix-pick { display: none; }
+  .strip-controls, .stages-nav, .stages-foot, .tabdemo-controls, .tabdemo-hint { display: none; }
   /* On paper every step is there, one under the other. */
   .stages .stage[hidden] { display: grid !important; }
-  .matrix tbody tr[hidden] { display: table-row !important; }
 }
 
 /* The front page every app shares: its parts in the same order, with the same spacing. */
@@ -206,7 +191,7 @@ main > section > .wrap > h2 { max-width: 20em; }
 .quiet { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
 .quiet a { color: var(--scribe-text-muted); }
 .getit .lead { max-width: 34em; }
-.needs-list { margin-top: var(--scribe-space-6); max-width: 46em; }
+.needs-list { margin-top: var(--scribe-space-8); max-width: 46em; }
 .sure-end { margin-top: var(--scribe-space-6); max-width: 40em; font-size: 1.125rem; font-weight: 600; }
 
 /* What you hear when the strip plays: the recording, or the notes that were written. */
@@ -254,3 +239,13 @@ main > section > .wrap > h2 { max-width: 20em; }
   .twohundred .right { fill: none; stroke: CanvasText; stroke-width: 1; }
   .twohundred .wrong { fill: CanvasText; stroke: CanvasText; }
 }
+
+/* The app on each device, and the programs on the computer: the same card for each. */
+.variants { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-5); }
+.variants li { display: flex; flex-direction: column; padding: var(--scribe-space-5); background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-top: 3px solid var(--scribe-brand); border-radius: var(--scribe-radius-md); }
+.variants h3 { margin: 0; font-size: var(--scribe-type-title-2-size); }
+.variants .status { margin: var(--scribe-space-1) 0 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.variants dl { margin: var(--scribe-space-4) 0 var(--scribe-space-5); }
+.variants dt { font-weight: 600; font-size: var(--scribe-type-callout-size); margin-top: var(--scribe-space-3); }
+.variants dd { margin: 0; color: var(--scribe-text-muted); }
+.variants .button { margin-top: auto; min-height: 44px; align-self: flex-start; }

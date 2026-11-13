@@ -38,14 +38,19 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
    Fretscribe's ruled paper and on the family home, in light and in dark. */
 .family-bar { --bar: var(--family-bar); --bar-text: var(--family-bar-text); --bar-muted: var(--family-bar-muted); background: var(--bar); color: var(--bar-text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .family-bar .wrap { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 52px; }
-.family-switch { display: flex; align-items: center; gap: 2px; flex: 1 1 auto; min-width: 0; }
-.family-switch a {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px;
+.family-path { flex: 1 1 auto; min-width: 0; }
+.family-path ol { display: flex; align-items: center; margin: 0; padding: 0; list-style: none; }
+.family-path li { display: flex; align-items: center; min-width: 0; }
+.family-path li + li::before { content: "›"; padding: 0 2px; color: var(--bar-muted); font-size: 1.125rem; }
+.family-path a {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border-radius: 8px;
   color: var(--bar-muted); text-decoration: none; font-weight: 600; font-size: 0.9375rem; white-space: nowrap;
 }
-.family-switch a:hover { color: var(--bar-text); background: rgb(255 255 255 / 0.08); }
-.family-switch a[aria-current] { color: var(--bar-text); background: rgb(255 255 255 / 0.14); }
-.family-switch a:focus-visible, .lang-switch:focus-visible { outline: 2px solid var(--bar-text); outline-offset: -2px; }
+.family-path a:hover { color: var(--bar-text); background: rgb(255 255 255 / 0.08); }
+.family-path a[aria-current] { color: var(--bar-text); }
+.family-path a:focus-visible, .lang-switch:focus-visible { outline: 2px solid var(--bar-text); outline-offset: -2px; }
+/* On a phone the path ends at the app: the row under the bar says which of its pages this is. */
+@media (max-width: 600px) { .family-path .path-page { display: none; } }
 .family-mark .mark-pen { flex: none; }
 .lang-switch {
   flex: none; min-height: 36px; padding: 0 14px; border-radius: var(--scribe-radius-full); cursor: pointer;
@@ -59,8 +64,7 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 @media (max-width: 350px) {
   /* The bar stays one line on the narrowest phones. */
   .family-bar .wrap { padding: 0 var(--scribe-space-2); gap: 0; }
-  .family-switch { gap: 0; }
-  .family-switch a { padding: 0 4px; font-size: 0.75rem; gap: 3px; }
+  .family-path a { padding: 0 4px; font-size: 0.8125rem; gap: 4px; }
   .family-mark .mark-pen { width: 14px; }
   .lang-switch { padding: 0 8px; font-size: 0.75rem; }
   .lang-short { display: inline; }
@@ -68,7 +72,7 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 }
 @media (max-width: 420px) {
   .family-bar .wrap { gap: var(--scribe-space-1); padding: 0 var(--scribe-space-3); }
-  .family-switch a { padding: 0 7px; font-size: 0.8125rem; gap: 5px; }
+  .family-path a { padding: 0 7px; gap: 6px; }
   .family-mark .mark-pen { width: 20px; }
   .lang-switch { padding: 0 9px; font-size: 0.8125rem; }
 }
@@ -332,6 +336,8 @@ main.downloads { max-width: 820px; padding-top: var(--scribe-space-12); padding-
 /* Footer */
 .site-footer { border-top: 1px solid var(--scribe-border); padding: var(--scribe-space-10) 0; color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
 .site-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--scribe-space-4); }
+.footer-line { flex-basis: 100%; }
+.footer-line a { min-height: 24px; display: inline-block; }
 
 @media (max-width: 900px) {
   /* A sticky header would cover too much of a small or zoomed screen (WCAG 1.4.10). */
@@ -365,7 +371,7 @@ main.downloads { max-width: 820px; padding-top: var(--scribe-space-12); padding-
 @media (forced-colors: active) {
   .card, details, .platforms li, .note, .device, .window, .phone-frame, .tablet-frame { border: 1px solid CanvasText; }
   .mac-frame img { filter: none; outline: 1px solid CanvasText; }
-  .product-nav nav a[aria-current="page"], .family-switch a[aria-current] { text-decoration: underline; }
+  .product-nav nav a[aria-current="page"], .family-path a[aria-current] { text-decoration: underline; }
 }
 
 @media print {

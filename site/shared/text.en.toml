@@ -3,7 +3,7 @@
 
 [bar]
 skip = "Skip to content"
-apps = "The Scribe apps"
+path = "You are here"
 all = "Scribe"
 noscript = "In English: the Norwegian version needs JavaScript."
 
@@ -36,11 +36,10 @@ tab_label = "Tab of {title}, {bars} bars, in {tuning}."
 tab_scroll = "The tab. Scroll sideways to read on."
 pick = "Choose a number in the tab to see where else that note can be played. The arrow keys move from note to note."
 as_text = "The same tab as plain text ({tuning})"
-platform = "Device"
-table = "What {name} does on each device"
-alone = "Works by itself"
-with_bandroom = "Needs Bandroom on your computer"
-which_device = "Which device do you have?"
+alone = "By itself"
+does = "What it does"
+with_bandroom = "With Bandroom"
+get = "Download for {name}"
 hear_recording = "The recording"
 hear_written = "The written notes"
 hear = "What you hear"
@@ -62,7 +61,7 @@ title = "Windows"
 note = "For Windows 11 (x64). Not signed yet: unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
 
 [groups.bandroom]
-title = "Bandroom, for your computer"
+title = "Bandroom, on your computer"
 note = "Bandroom runs on your own Mac or PC and writes down the notes for the app on your phone, over your own network. One Bandroom serves every Scribe app. <a href=\"@/guide/#computer\">How to set it up</a>."
 
 [groups.tools]

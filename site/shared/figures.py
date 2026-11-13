@@ -341,23 +341,20 @@ def screens(page) -> str:
 
 
 def devices(page) -> str:
-    """What each device can do by itself and what it needs the computer for, from the product's [[platforms]]."""
-    say, rows, lang = page.say, page.product.data["platforms"], page.lang
-    chips = "".join(f'<button type="button" data-device="{r["id"]}" aria-pressed="false">{r[lang]["name"]}</button>' for r in rows)
-    body = "".join(f'\n      <tr data-device="{r["id"]}"><th scope="row">{r[lang]["name"]}<span class="status">{r[lang]["status"]}</span></th>'
-                   f'<td data-label="{say("fig.alone")}">{r[lang]["alone"]}</td><td data-label="{say("fig.with_bandroom")}">{r[lang]["bandroom"]}</td></tr>' for r in rows)
-    name = page.product.data["name"]
-    return f"""<div class="matrix" data-matrix>
-  <div class="matrix-pick await-js" role="group" aria-label="{say("fig.which_device")}">{chips}</div>
-  <div class="table-scroll" role="region" aria-labelledby="matrix-caption-{page.product.id}" tabindex="0">
-    <table>
-      <caption id="matrix-caption-{page.product.id}" class="vh">{say("fig.table", name=name)}</caption>
-      <thead><tr><th scope="col">{say("fig.platform")}</th><th scope="col">{say("fig.alone")}</th><th scope="col">{say("fig.with_bandroom")}</th></tr></thead>
-      <tbody>{body}
-      </tbody>
-    </table>
-  </div>
-</div>"""
+    """The app on each device, and the programs on the computer, from the product's [[platforms]]: the same card
+    for each, with what it does by itself, what it needs Bandroom for, and where to get it."""
+    say, lang, cards = page.say, page.lang, []
+    for r in page.product.data["platforms"]:
+        w = r[lang]
+        needs = f'<dt>{say("fig.with_bandroom")}</dt><dd>{w["bandroom"]}</dd>' if "bandroom" in w else ""
+        link = r.get("link", f'@/download/#{r["id"]}')
+        cards.append(f"""  <li id="on-{r["id"]}">
+    <h3>{w["name"]}</h3>
+    <p class="status">{w["status"]}</p>
+    <dl><dt>{say("fig.alone" if "bandroom" in w else "fig.does")}</dt><dd>{w["alone"]}</dd>{needs}</dl>
+    <a class="button outline" href="{link}">{w.get("get", say("fig.get", name=w["name"].split(",")[0]))}</a>
+  </li>""")
+    return '<ul class="variants">\n' + "\n".join(cards) + "\n</ul>"
 
 
 def rates(page) -> str:

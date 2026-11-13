@@ -72,9 +72,16 @@ A page is its structure and its words, kept apart:
   music is drawn differently from a tab.
 - `family/`: the family home, with the same parts.
 
-The bar at the top is the same on every page: the family, the apps with the one you are on marked,
-the language. Under it each app has the same row: Overview, Guide, Download, How it works. The
-family home has no row of its own.
+The site has three levels, with the same names everywhere: **Scribe** (the line, the home at `/`),
+its **apps** (Brasscribe, Fretscribe; a new app is a new folder), and each app's **devices** (the
+app for Android, iPhone and iPad, Mac and Windows, and the programs on the computer: Bandroom, and
+Studio where an app has it). The bar at the top is the way down and back up, the same on every
+page: Scribe › the app › the page, and the language. Under it each app has the same row: Overview,
+Guide, Download, How it works. The family home shows the line first and the apps as its members;
+every app's front page has the same "on your devices" section, one card for each entry of
+`[[platforms]]` in its `product.toml` (what it does by itself, what it needs Bandroom for, where
+to get it); the download page has a part for each device with its files. The footer of every page
+names the line and its apps.
 
 What only a script can work (a figure's buttons) carries the class `await-js`: it has its room on
 the page from the start and is shown when the script has made it work, so nothing moves while the
