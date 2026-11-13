@@ -152,6 +152,8 @@ async function tabdemo(el) {
   const notes = [...el.querySelectorAll("g.note")];
   const x = notes.map((g) => g.getAttribute("transform").match(/translate\(([\d.]+)/)[1]);
   const perBeat = demo.ticks_per_beat, perBar = demo.meter.beats * perBeat;
+  // The drawing is a group of buttons now, no longer one picture.
+  const svg = el.querySelector(".tabdemo-scroll svg");
   let variant = demo.variants[demo.default], chosen = -1;
   el.querySelector(".tabdemo-controls").hidden = false;
   el.querySelector(".tabdemo-hint").hidden = false;
@@ -161,24 +163,30 @@ async function tabdemo(el) {
   const describe = (i) => {
     const [pitch, start] = demo.notes[i], place = variant.places[i];
     const at = fill(w.at, { bar: Math.floor(start / perBar) + 1, beat: Math.floor((start % perBar) / perBeat) + 1, name: w.names[pitch % 12] });
-    if (place[2]) return `${at} ${w.lost}`;
     const others = [];
     for (let k = 3; k < place.length; k += 2) others.push(where(place[k], place[k + 1]));
+    if (place[2]) return `${at} ${w.lost}`;
+    // The solver can leave a note out of a fingering though the neck has a place for it.
+    if (place[0] === null) return `${at} ${w.left} ${others.length ? fill(w.could, { places: others.join(w.or) }) : ""}`.trim();
     const doubt = demo.notes[i][3] ? ` ${w.doubt}` : "";
     return `${at} ${where(place[0], place[1])}.${doubt} ${others.length ? fill(w.also, { places: others.join(w.or) }) : w.only}`;
   };
   const draw = () => {
     variant = demo.variants[`${tuning.value}/${capo.value}`];
-    let lost = 0;
+    let lost = 0, left = 0;
     notes.forEach((g, i) => {
       const [string, fret, gone] = variant.places[i];
+      const out = gone ? "!" : string === null ? "–" : "";
       lost += gone;
-      g.setAttribute("transform", `translate(${x[i]} ${gone ? config.top - 30 : config.top + config.gap * (string - 1)})`);
-      g.classList.toggle("lost", !!gone);
-      g.querySelector("text").textContent = gone ? "!" : fret;
+      left += !gone && string === null;
+      g.setAttribute("transform", `translate(${x[i]} ${out ? config.top - 34 : config.top + config.gap * (string - 1)})`);
+      g.classList.toggle("lost", !!out);
+      g.querySelector("text").textContent = out || fret;
       g.setAttribute("aria-label", describe(i));
     });
-    const summary = fill(lost > 1 ? w.summary_lost : lost ? w.summary_lost_one : w.summary, { tuning: variant.tuning, capo: capo.selectedOptions[0].textContent.toLowerCase(), lost });
+    svg.setAttribute("aria-label", fill(config.label, { title: demo.title, bars: config.bars, tuning: variant.tuning }));
+    const summary = (left ? fill(w.summary_left, { left }) + " " : "")
+      + fill(lost > 1 ? w.summary_lost : lost ? w.summary_lost_one : w.summary, { tuning: variant.tuning, capo: capo.selectedOptions[0].textContent.toLowerCase(), lost });
     status.textContent = chosen < 0 ? summary : `${summary} ${describe(chosen)}`;
   };
   const choose = (i, focus) => {
@@ -202,8 +210,6 @@ async function tabdemo(el) {
       e.preventDefault();
     });
   });
-  // The drawing is a group of buttons now, no longer one picture.
-  const svg = el.querySelector("svg");
   svg.setAttribute("role", "group");
   tuning.addEventListener("change", draw);
   capo.addEventListener("change", draw);

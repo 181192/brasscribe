@@ -124,7 +124,7 @@ alt = "The same notes as tab: fret numbers on four string lines, with a question
 
 [en.tabdemo]
 start = "The tab as the engine wrote it for standard tuning: two notes have no place on the neck."
-summary = "{tuning}, {capo}: every note has a place."
+summary = "{tuning}, {capo}: no note is without a place on the neck."
 summary_lost = "{tuning}, {capo}: {lost} notes have no place on the neck."
 summary_lost_one = "{tuning}, {capo}: one note has no place on the neck."
 at = "Bar {bar}, beat {beat}, {name}:"
@@ -133,6 +133,9 @@ also = "It could also be played on the {places}."
 or = ", or the "
 only = "There is no other place for it."
 lost = "it has no place on the neck in this tuning."
+left = "the solver left it out of this fingering."
+could = "It could be played on the {places}."
+summary_left = "The solver left {left} out of this fingering (–)."
 doubt = "The engine is not sure about this note."
 ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th"]
 names = ["C", "C sharp", "D", "E flat", "E", "F", "F sharp", "G", "G sharp", "A", "B flat", "B"]
@@ -185,7 +188,7 @@ alt = "De samme tonene som tab: båndtall på fire strenglinjer, med et spørsm�
 
 [nb.tabdemo]
 start = "Tabben slik motoren skrev den for standardstemming: to toner har ingen plass på halsen."
-summary = "{tuning}, {capo}: alle tonene har en plass."
+summary = "{tuning}, {capo}: ingen toner er uten plass på halsen."
 summary_lost = "{tuning}, {capo}: {lost} toner har ingen plass på halsen."
 summary_lost_one = "{tuning}, {capo}: én tone har ingen plass på halsen."
 at = "Takt {bar}, slag {beat}, {name}:"
@@ -194,6 +197,9 @@ also = "Den kan også spilles på {places}."
 or = ", eller "
 only = "Den har ingen annen plass."
 lost = "den har ingen plass på halsen i denne stemmingen."
+left = "løseren tok den ikke med i dette grepet."
+could = "Den kan spilles på {places}."
+summary_left = "Løseren utelot {left} fra dette grepet (–)."
 doubt = "Motoren er ikke sikker på denne tonen."
 ordinals = ["1.", "2.", "3.", "4.", "5.", "6."]
 names = ["C", "Ciss", "D", "Ess", "E", "F", "Fiss", "G", "Giss", "A", "B", "H"]

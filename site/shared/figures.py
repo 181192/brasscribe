@@ -24,7 +24,7 @@ WORDS = {
         "tuning": "Tuning", "capo": "Capo", "no_capo": "No capo", "capo_n": "Capo on fret {n}",
         "tab_label": "Tab of {title}, {bars} bars, in {tuning}.", "tab_scroll": "The tab. Scroll sideways to read on.",
         "pick": "Choose a number in the tab to see where else that note can be played. The arrow keys move from note to note.",
-        "as_text": "The same tab as text",
+        "as_text": "The tab as text, as the engine wrote it for {tuning} tuning",
         "of_100": "{n} of 100",
         "platform": "Device", "status": "Status", "alone": "Works by itself", "with_bandroom": "Needs Bandroom on your computer",
         "which_device": "Which device do you have?",
@@ -37,7 +37,7 @@ WORDS = {
         "tuning": "Stemming", "capo": "Capo", "no_capo": "Uten capo", "capo_n": "Capo på bånd {n}",
         "tab_label": "Tab av {title}, {bars} takter, i {tuning}.", "tab_scroll": "Tabben. Rull sidelengs for å lese videre.",
         "pick": "Velg et tall i tabben for å se hvor ellers den tonen kan spilles. Piltastene går fra tone til tone.",
-        "as_text": "Den samme tabben som tekst",
+        "as_text": "Tabben som tekst, slik motoren skrev den for {tuning}-stemming",
         "of_100": "{n} av 100",
         "platform": "Enhet", "status": "Status", "alone": "Virker alene", "with_bandroom": "Trenger Bandroom på datamaskinen",
         "which_device": "Hvilken enhet har du?",
@@ -222,7 +222,8 @@ def tabdemo(page, data: str, fixture: str) -> str:
     demo = json.loads((ROOT / data).read_text())
     variant = demo["variants"][demo["default"]]
     per_bar = demo["meter"]["beats"] * demo["ticks_per_beat"]
-    k, x0, top, gap = 1.9, 34, 64, 22
+    # Notes are buttons: 24 px each way, and no two closer than that (an eighth note is 12 ticks).
+    k, x0, top, gap = 2.2, 34, 64, 26
     strings = len(variant["open"])
     last = max(n[1] + n[2] for n in demo["notes"])
     bars = math.ceil(last / per_bar)
@@ -232,34 +233,35 @@ def tabdemo(page, data: str, fixture: str) -> str:
         x = number(x0 + b * per_bar * k - 12)
         out.append(f'<path class="bar" d="M{x} {top}V{bottom}"/>')
         if b < bars:
-            out.append(f'<text class="bar-no" x="{number(x0 + b * per_bar * k - 8)}" y="{top - 40}">{b + 1}</text>')
+            out.append(f'<text class="bar-no" x="{number(x0 + b * per_bar * k - 8)}" y="{top - 52}">{b + 1}</text>')
     for i, (note, place) in enumerate(zip(demo["notes"], variant["places"])):
         x = number(x0 + note[1] * k)
-        lost = place[2]
-        y = top - 30 if lost else top + gap * (place[0] - 1)
+        # A note with no place on the neck is a "!" over the lines; one the solver left out of the fingering, a dash.
+        lost = "!" if place[2] else "–" if place[0] is None else ""
+        y = top - 34 if lost else top + gap * (place[0] - 1)
         classes = "note" + (" doubt" if note[3] else "") + (" lost" if lost else "")
-        out.append(f'<g class="{classes}" data-i="{i}" transform="translate({x} {y})"><rect class="knock" x="-9" y="-9" width="18" height="18" rx="3"/>'
-                   f'<text class="fret" y="5.5">{"!" if lost else place[1]}</text></g>')
+        out.append(f'<g class="{classes}" data-i="{i}" transform="translate({x} {y})"><rect class="knock" x="-12" y="-12" width="24" height="24" rx="4"/>'
+                   f'<text class="fret" y="5.5">{lost or place[1]}</text></g>')
         if note[3]:
-            out.append(f'<text class="mark" x="{x}" y="{top - 14}">?</text>')
+            out.append(f'<text class="mark" x="{x}" y="{top - 16}">?</text>')
     tunings = "".join(f'<option value="{p}"{" selected" if demo["default"].startswith(p + "/") else ""}>{esc(demo["variants"][p + "/0"]["tuning"])}</option>'
                       for p in demo["presets"])
     capos = "".join(f'<option value="{c}">{w["no_capo"] if c == 0 else w["capo_n"].format(n=c)}</option>' for c in demo["capos"])
     label = w["tab_label"].format(title=demo["title"], bars=bars, tuning=variant["tuning"])
     text_tab = esc((ROOT / fixture / "tab.txt").read_text().rstrip())
     words = page.product.data[page.lang]["tabdemo"]
-    config = {"top": top, "gap": gap, "words": words}
+    config = {"top": top, "gap": gap, "bars": bars, "label": w["tab_label"], "words": words}
     return f"""<div class="tabdemo" data-src="@/assets/data/{Path(data).name}" data-tabdemo="{esc(json.dumps(config, separators=(",", ":"), ensure_ascii=False))}">
   <div class="tabdemo-controls" hidden>
     <label>{w["tuning"]} <select data-tuning>{tunings}</select></label>
     <label><span class="vh">{w["capo"]}</span> <select data-capo>{capos}</select></label>
   </div>
   <div class="tabdemo-scroll" role="region" aria-label="{esc(w["tab_scroll"])}" tabindex="0">
-    <svg class="tab-ink" width="{width}" height="{bottom + 22}" viewBox="0 0 {width} {bottom + 22}" role="img" aria-label="{esc(label)}">{"".join(out)}</svg>
+    <svg class="tab-ink" width="{width}" height="{bottom + 22}" viewBox="0 0 {width} {bottom + 22}" style="--top: {top}px" role="img" aria-label="{esc(label)}">{"".join(out)}</svg>
   </div>
   <p class="tabdemo-status" data-status role="status">{words["start"]}</p>
   <p class="tabdemo-hint" hidden>{w["pick"]}</p>
-  <details><summary>{w["as_text"]}</summary><pre>{text_tab}</pre></details>
+  <details><summary>{w["as_text"].format(tuning=variant["tuning"].lower() if variant["tuning"] == "Standard" else variant["tuning"])}</summary><pre>{text_tab}</pre></details>
 </div>"""
 
 
