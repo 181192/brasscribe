@@ -32,6 +32,20 @@ NB = {
     "A download arrived damaged": "En nedlasting kom fram skadet",
     "About": "Om",
     "About Brasscribe Bandroom": "Om Brasscribe Bandroom",
+    "A phone asked for a full-band score. Open Brasscribe on this Mac to finish setting up.":
+        "En telefon ba om et partitur for fullt band. Åpne Brasscribe på denne Macen for å gjøre ferdig oppsettet.",
+    "Brasscribe is ready. Phones and tablets can send recordings now.":
+        "Brasscribe er klar. Telefoner og nettbrett kan sende opptak nå.",
+    "Tabs work now. A score for a full band needs one more download, with a free Hugging Face account. Brasscribe asks for it when a phone first sends a recording that needs it, or you can set it up now.":
+        "Tabber virker nå. Et partitur for fullt band trenger én nedlasting til, med en gratis Hugging Face-konto. Brasscribe ber om den første gang en telefon sender et opptak som trenger den, eller du kan sette den opp nå.",
+    "Set up full-band scores":
+        "Sett opp partitur for fullt band",
+    "Ready for tabs":
+        "Klar for tabber",
+    "Full-band scores":
+        "Partitur for fullt band",
+    "A score for a full band needs one more download, with a free Hugging Face account.":
+        "Et partitur for fullt band trenger én nedlasting til, med en gratis Hugging Face-konto.",
     "Accept one licence": "Godta én lisens",
     "Accept the licence on Hugging Face, then try again": "Godta lisensen på Hugging Face, og prøv igjen",
     "Access key from Hugging Face": "Tilgangsnøkkel fra Hugging Face",

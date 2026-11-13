@@ -192,6 +192,26 @@
       }
     },
     "A heading": {},
+    "A phone asked for a full-band score. Open Brasscribe on this Mac to finish setting up.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En telefon ba om et partitur for fullt band. Åpne Brasscribe på denne Macen for å gjøre ferdig oppsettet."
+          }
+        }
+      }
+    },
+    "A score for a full band needs one more download, with a free Hugging Face account.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et partitur for fullt band trenger én nedlasting til, med en gratis Hugging Face-konto."
+          }
+        }
+      }
+    },
     "About": {
       "localizations": {
         "nb": {
@@ -470,6 +490,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."
+          }
+        }
+      }
+    },
+    "Brasscribe is ready. Phones and tablets can send recordings now.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe er klar. Telefoner og nettbrett kan sende opptak nå."
           }
         }
       }
@@ -1011,6 +1041,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Frigjør plass …"
+          }
+        }
+      }
+    },
+    "Full-band scores": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partitur for fullt band"
           }
         }
       }
@@ -1697,6 +1737,16 @@
         }
       }
     },
+    "Ready for tabs": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klar for tabber"
+          }
+        }
+      }
+    },
     "Ready to make scores": {
       "localizations": {
         "nb": {
@@ -1898,6 +1948,16 @@
         }
       }
     },
+    "Set up full-band scores": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sett opp partitur for fullt band"
+          }
+        }
+      }
+    },
     "Setting up": {
       "localizations": {
         "nb": {
@@ -2074,6 +2134,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stoppet uventet"
+          }
+        }
+      }
+    },
+    "Tabs work now. A score for a full band needs one more download, with a free Hugging Face account. Brasscribe asks for it when a phone first sends a recording that needs it, or you can set it up now.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabber virker nå. Et partitur for fullt band trenger én nedlasting til, med en gratis Hugging Face-konto. Brasscribe ber om den første gang en telefon sender et opptak som trenger den, eller du kan sette den opp nå."
           }
         }
       }

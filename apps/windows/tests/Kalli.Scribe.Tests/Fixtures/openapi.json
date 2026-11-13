@@ -977,6 +977,15 @@
             "title": "Server Name",
             "type": "string"
           },
+          "setup_needed": {
+            "description": "what a job was refused for since the engine started and still is not set up on the computer. band-writer: the model that writes down a band, which needs its licence accepted and an access key",
+            "items": {
+              "const": "band-writer",
+              "type": "string"
+            },
+            "title": "Setup Needed",
+            "type": "array"
+          },
           "version": {
             "title": "Version",
             "type": "string"
@@ -4300,6 +4309,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -4359,6 +4371,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "description": "not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there"
           },
           "422": {
             "content": {

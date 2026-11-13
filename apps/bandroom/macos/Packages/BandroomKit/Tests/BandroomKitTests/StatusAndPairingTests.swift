@@ -122,6 +122,34 @@ import Testing
         #expect(answers == 2 && m.hasJobs)  // the next answer is where it is decided: the job is seen
     }
 
+    /// A first run fetches what needs no account. The band writer joins only once it is wanted: a phone sent a
+    /// recording that needs it (the engine says so in its status), or the person chose to set it up.
+    @Test func theBandWriterIsLeftOutUntilItIsWanted() {
+        let all: [ModelComponent] = [.soloistSeparator, .instrumentSeparator, .bandWriter]
+        #expect(BandWriterSetup.toFetch(missing: all, bandWriterWanted: false) == [.soloistSeparator, .instrumentSeparator])
+        #expect(BandWriterSetup.toFetch(missing: all, bandWriterWanted: true) == all)
+        #expect(BandWriterSetup.toFetch(missing: [.bandWriter], bandWriterWanted: false).isEmpty)
+    }
+
+    @Test func theEngineSaysWhenAPhoneAskedForWhatIsNotSetUp() async throws {
+        let said = #"{"server_id":"a","server_name":"b","version":"1","online_devices":0,"paired_devices":1,"pairing_open":false,"jobs_running":0,"jobs_queued":0,"setup_needed":["band-writer"]}"#
+        #expect(try JSONDecoder().decode(EngineStatus.self, from: Data(said.utf8)).setupNeeded == [BandWriterSetup.engineName])
+        let silent = said.replacingOccurrences(of: #","setup_needed":["band-writer"]"#, with: "")
+        #expect(try JSONDecoder().decode(EngineStatus.self, from: Data(silent.utf8)).setupNeeded.isEmpty)
+
+        let engine = FakeEngine()
+        let m = StatusMonitor(sleep: { _ in })
+        var asked: [[String]] = []
+        m.onSetupNeeded = { asked.append($0) }
+        m.client = engine
+        await m.refresh()
+        #expect(asked.isEmpty)
+        engine.statusValue.setupNeeded = [BandWriterSetup.engineName]
+        await m.refresh()
+        await m.refresh()  // said once, not at every check
+        #expect(asked == [[BandWriterSetup.engineName]])
+    }
+
     @Test func withoutAnEngineNothingIsBeingMade() async {
         let engine = FakeEngine()
         engine.statusValue.jobsRunning = 1

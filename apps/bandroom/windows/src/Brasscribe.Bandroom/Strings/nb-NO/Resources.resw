@@ -605,6 +605,12 @@
   <data name="Notify_Ready" xml:space="preserve">
     <value>Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå.</value>
   </data>
+  <data name="Notify_Ready_Tabs" xml:space="preserve">
+    <value>Brasscribe er klar. Telefoner og nettbrett kan sende opptak nå.</value>
+  </data>
+  <data name="Notify_BandWriter" xml:space="preserve">
+    <value>En telefon ba om et partitur for fullt band. Det trenger ett steg til på denne PC-en: åpne Innstillinger og legg inn tilgangsnøkkelen din fra Hugging Face.</value>
+  </data>
   <data name="Lan_Title" xml:space="preserve">
     <value>Telefoner finner ikke denne datamaskinen</value>
   </data>

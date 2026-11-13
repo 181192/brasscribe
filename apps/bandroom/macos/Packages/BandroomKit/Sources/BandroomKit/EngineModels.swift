@@ -55,6 +55,8 @@ public struct EngineStatus: Codable, Sendable, Equatable {
     public var pairingOpen: Bool
     public var jobsRunning: Int
     public var jobsQueued: Int
+    /// What a job was refused for since the engine started and still is not set up here (`BandWriterSetup.engineName`).
+    public var setupNeeded: [String]
 
     enum CodingKeys: String, CodingKey {
         case serverId = "server_id"
@@ -65,13 +67,28 @@ public struct EngineStatus: Codable, Sendable, Equatable {
         case pairingOpen = "pairing_open"
         case jobsRunning = "jobs_running"
         case jobsQueued = "jobs_queued"
+        case setupNeeded = "setup_needed"
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        serverId = try c.decode(String.self, forKey: .serverId)
+        serverName = try c.decode(String.self, forKey: .serverName)
+        version = try c.decode(String.self, forKey: .version)
+        onlineDevices = try c.decode(Int.self, forKey: .onlineDevices)
+        pairedDevices = try c.decode(Int.self, forKey: .pairedDevices)
+        pairingOpen = try c.decode(Bool.self, forKey: .pairingOpen)
+        jobsRunning = try c.decode(Int.self, forKey: .jobsRunning)
+        jobsQueued = try c.decode(Int.self, forKey: .jobsQueued)
+        // An engine from a developer checkout may not say it yet.
+        setupNeeded = try c.decodeIfPresent([String].self, forKey: .setupNeeded) ?? []
     }
 
     public init(serverId: String, serverName: String, version: String, onlineDevices: Int, pairedDevices: Int,
-                pairingOpen: Bool, jobsRunning: Int, jobsQueued: Int) {
+                pairingOpen: Bool, jobsRunning: Int, jobsQueued: Int, setupNeeded: [String] = []) {
         self.serverId = serverId; self.serverName = serverName; self.version = version
         self.onlineDevices = onlineDevices; self.pairedDevices = pairedDevices; self.pairingOpen = pairingOpen
-        self.jobsRunning = jobsRunning; self.jobsQueued = jobsQueued
+        self.jobsRunning = jobsRunning; self.jobsQueued = jobsQueued; self.setupNeeded = setupNeeded
     }
 }
 

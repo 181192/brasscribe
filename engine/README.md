@@ -138,6 +138,12 @@ A job option the engine refuses answers 422 with `{"code": …, "detail": …}`;
 refused the same way (`core_missing`), before any model runs. Bandroom for Mac and for Windows bundle
 `scribe-core` and point the engine they install at it with `SCRIBE_CORE_CLI`.
 
+A job that needs a model the engine cannot get by itself answers 409 the same way, with the code
+`band-writer-not-set-up`, and is not started: the band writer is gated on Hugging Face, so without the model
+in the local hub cache and without an access key (`HF_TOKEN`, or the file `huggingface-cli login` writes) it
+could only fail. `GET /v1/status` then lists `band-writer` under `setup_needed` until the model is there, which
+is how Bandroom knows to ask for the key. Tab jobs never need it.
+
 ## Configuration
 
 | Variable | Default | Purpose |

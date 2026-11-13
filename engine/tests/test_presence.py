@@ -108,7 +108,7 @@ def test_status_for_the_desktop_helper(settings):
             st = c.get("/v1/status").json()
         assert st == {"server_id": a["server_id"], "server_name": a["server_name"], "version": st["version"],
                       "online_devices": 1, "paired_devices": 2, "pairing_open": True,
-                      "jobs_running": 1, "jobs_queued": 1}
+                      "jobs_running": 1, "jobs_queued": 1, "setup_needed": []}
         c.app.state.pairing.close()
         with as_owner(c):
             assert c.get("/v1/status").json()["pairing_open"] is False

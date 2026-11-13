@@ -1339,6 +1339,11 @@ export interface components {
              * @description 'Brasscribe on <computer name>'
              */
             server_name: string;
+            /**
+             * Setup Needed
+             * @description what a job was refused for since the engine started and still is not set up on the computer. band-writer: the model that writes down a band, which needs its licence accepted and an access key
+             */
+            setup_needed?: "band-writer"[];
             /** Version */
             version: string;
         };
@@ -2969,6 +2974,13 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
+            /** @description not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3003,6 +3015,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Job"];
                 };
+            };
+            /** @description not taken: the job needs a model that is not set up on the computer (`code` band-writer-not-set-up); `detail` says what to do there */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

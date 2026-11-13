@@ -84,6 +84,8 @@ public final class StatusMonitor {
     /// Called each time the engine has answered a check, after the answer is in `status` (a restart that waits
     /// for an answer is decided again here: `onJobsChanged` is silent while the numbers stay the same).
     @ObservationIgnored public var onAnswered: (() -> Void)?
+    /// Called when what the engine says is left to set up changes to something (a job was refused for it).
+    @ObservationIgnored public var onSetupNeeded: (([String]) -> Void)?
 
     @ObservationIgnored public var client: (any EngineAPI)? {
         didSet { if client == nil { clear() } else { refreshDue = true; requestsDue = true; healthDue = true } }
@@ -153,6 +155,7 @@ public final class StatusMonitor {
         do {
             let s = try await client.status()
             let previous = status.map { [$0.jobsRunning, $0.jobsQueued] }
+            if !s.setupNeeded.isEmpty, s.setupNeeded != status?.setupNeeded { onSetupNeeded?(s.setupNeeded) }
             status = s
             reachable = true
             failedRefreshes = 0

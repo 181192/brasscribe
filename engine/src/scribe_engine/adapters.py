@@ -78,6 +78,31 @@ ADAPTERS: dict[str, Adapter] = {
 }
 
 
+def hub_ref(repo: str) -> Path:
+    """Where the local Hugging Face cache says which revision of `repo` it holds; there once the model is."""
+    hub = Path(os.environ.get("HF_HUB_CACHE", Path.home() / ".cache" / "huggingface" / "hub"))
+    return hub / f"models--{repo.replace('/', '--')}" / "refs" / "main"
+
+
+def hub_token_present() -> bool:
+    """An access key for Hugging Face, where huggingface_hub looks for one: the environment, else the file
+    `huggingface-cli login` writes."""
+    if os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"):
+        return True
+    home = Path(os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface")
+    return Path(os.environ.get("HF_TOKEN_PATH") or home / "token").is_file()
+
+
+def waits_for_setup(name: str) -> bool:
+    """Whether the adapter's model is one the engine cannot get by itself: it is gated on Hugging Face (its
+    licence is accepted there, with an account), it is not on this computer, and there is no access key to
+    fetch it with. Every other model is either here or fetched by its adapter on first use."""
+    a = ADAPTERS.get(name)
+    if a is None or not a.hub_models or hub_token_present():
+        return False
+    return any(not hub_ref(repo).exists() for repo in a.hub_models)
+
+
 def host_device() -> str:
     """Accelerator a torch adapter uses on this host: cuda, mps or cpu."""
     if os.environ.get("SCRIBE_DEVICE"):
@@ -180,9 +205,8 @@ class AdapterRegistry:
             p = self.models_dir / rel
             out.append({"name": rel, "sha256": self.hashes.file(p) if p.exists() else None, "present": p.exists(),
                         "bytes": p.stat().st_size if p.exists() else None, "licence": a.licence})
-        hub = Path(os.environ.get("HF_HUB_CACHE", Path.home() / ".cache" / "huggingface" / "hub"))
         for repo in a.hub_models:
-            ref = hub / f"models--{repo.replace('/', '--')}" / "refs" / "main"
+            ref = hub_ref(repo)
             out.append({"name": repo, "revision": ref.read_text().strip() if ref.exists() else None,
                         "present": ref.exists(), "licence": a.licence})
         ckpts = Path.home() / ".cache" / "torch" / "hub" / "checkpoints"

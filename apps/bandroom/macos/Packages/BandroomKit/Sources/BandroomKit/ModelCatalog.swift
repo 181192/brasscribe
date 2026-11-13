@@ -47,6 +47,21 @@ public enum ModelComponent: String, CaseIterable, Sendable, Codable, Comparable 
     }
 }
 
+/// The band writer is the one download that needs something of the person first: an account with Hugging Face, its
+/// licence accepted there, and an access key. Everything else (tabs, both separators) works without it, so Bandroom
+/// asks for it only once it is wanted: a phone sent a recording that needs it, or the person chose to set it up.
+public enum BandWriterSetup {
+    /// Whether it is wanted, in the app's settings.
+    public static let defaultsKey = "bandWriterWanted"
+    /// The engine's word for it in `EngineStatus.setupNeeded`.
+    public static let engineName = "band-writer"
+
+    /// Of what is missing, what Bandroom fetches and counts as left to do.
+    public static func toFetch(missing: [ModelComponent], bandWriterWanted: Bool) -> [ModelComponent] {
+        missing.filter { bandWriterWanted || !$0.needsHuggingFaceKey }
+    }
+}
+
 /// One file of a component, from its original release URL. Never re-hosted by us.
 public struct ModelFile: Sendable, Equatable {
     /// File name in the component's folder (or snapshot).

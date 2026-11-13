@@ -105,6 +105,10 @@ class EngineStatus(BaseModel):
     pairing_open: bool = Field(description="whether a pairing code is accepted right now")
     jobs_running: int
     jobs_queued: int
+    setup_needed: list[Literal["band-writer"]] = Field(default_factory=list, description="what a job was refused for "
+                                                       "since the engine started and still is not set up on the "
+                                                       "computer. band-writer: the model that writes down a band, "
+                                                       "which needs its licence accepted and an access key")
 
 
 class PairingState(BaseModel):

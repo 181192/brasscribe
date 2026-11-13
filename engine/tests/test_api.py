@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from scribe_engine import openapi, wire
+from scribe_engine import openapi, targets, wire
 from scribe_engine.api import create_app
 
 ENGINE = Path(__file__).resolve().parents[1]
@@ -140,6 +140,49 @@ def test_a_job_without_its_pdf_says_which_file_and_why(settings, audio, monkeypa
         listed = later.get("/v1/jobs")
         assert listed.status_code == 200
         assert [x["reason"] for j in listed.json() if j["id"] == job_id for x in j["missing"]] == ["musescore-not-installed", "musescore-failed"]
+
+
+def test_a_job_that_needs_the_band_writer_is_not_taken_until_it_is_set_up(settings, audio, tmp_path, monkeypatch):
+    """The band writer is gated: its licence is accepted on Hugging Face and it is fetched with the user's key.
+    Without the model and without a key the job could only fail in its first minutes, so it is not taken, the
+    phone is told what to do on the computer, and the desktop program is told what was asked for. A job that
+    does not use the band writer runs all the same."""
+    from scribe_engine import profiles
+    from scribe_engine.dag import SOURCE, Input, Pipeline, Stage
+    from scribe_engine import stages as S
+
+    def with_the_band_writer(title, params):
+        st = [Stage("transcribe.mix.muscriptor", "transcribe", {"audio": Input(SOURCE)}, S.transcribe, adapter="muscriptor",
+                    params={"output": "mix-mus.mid"}, outputs=("mix-mus.mid",)),
+              Stage("arrange", "arrange", {"a": Input("transcribe.mix.muscriptor", "mix-mus.mid")},
+                    lambda ctx: (ctx.out / "brass-band.musicxml").write_text("<score-partwise/>"), params={"title": title},
+                    outputs=("brass-band.musicxml",))]
+        return Pipeline("band", "band", st, {"brass-band.musicxml": ("arrange", "brass-band.musicxml")}, params)
+
+    monkeypatch.setitem(profiles.PROFILES, "band", profiles.Profile("band", "band", "uses the gated model", False, with_the_band_writer))
+    monkeypatch.setitem(targets.BRASS.titles, "band", "{name} band")
+    monkeypatch.delenv("HF_TOKEN")
+    monkeypatch.setenv("HF_HOME", str(tmp_path / "hf"))  # no saved key
+    hub = tmp_path / "hub"
+    monkeypatch.setenv("HF_HUB_CACHE", str(hub))  # and no model
+    with TestClient(create_app(settings)) as client:
+        assert client.get("/v1/status").json()["setup_needed"] == []
+        upload = {"file": ("song.wav", audio.read_bytes())}
+        r = client.post("/v1/jobs/upload", files=upload, data={"profile": "band"})
+        assert r.status_code == 409 and r.json()["code"] == "band-writer-not-set-up"
+        assert "Open Bandroom on the computer" in r.json()["detail"]
+        assert client.get("/v1/jobs").json() == []
+        assert client.get("/v1/status").json()["setup_needed"] == ["band-writer"]
+        light = client.post("/v1/jobs/upload", files=upload, data={"profile": "test"})  # SwiftF0 and Basic Pitch only
+        assert light.status_code == 202 and wait(client, light.json()["id"])["status"] == "succeeded"
+
+        # Bandroom fetches the model into the hub cache: the next job is taken, and nothing is left to offer.
+        ref = hub / "models--MuScriptor--muscriptor-medium" / "refs"
+        ref.mkdir(parents=True)
+        (ref / "main").write_text("0123abcd")
+        assert client.get("/v1/status").json()["setup_needed"] == []
+        again = client.post("/v1/jobs/upload", files=upload, data={"profile": "band"})
+        assert again.status_code == 202 and wait(client, again.json()["id"])["status"] == "succeeded"
 
 
 def test_errors(client):
