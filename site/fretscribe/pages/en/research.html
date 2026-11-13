@@ -6,7 +6,8 @@ styles: charts.css
 scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
-    <p id="toc-title" class="toc-title">In this paper</p>
+    <details class="toc-fold" open>
+    <summary id="toc-title" class="toc-title">In this paper</summary>
     <ol>
       <li><a href="#abstract">Abstract</a></li>
       <li><a href="#problem">1. The problem</a></li>
@@ -20,6 +21,7 @@ scripts: charts.js
       <li><a href="#next">9. What is next</a></li>
       <li><a href="#references">References</a></li>
     </ol>
+    </details>
   </nav>
 
   <article class="paper">
@@ -36,6 +38,8 @@ scripts: charts.js
       <p>Fretscribe writes tablature for bass, guitar, ukulele and mandolin from a recording. Learned models find the beats and the notes, after separating the instrument from the mix when the recording is a whole song. Rules then clean the notes, put them on the beat grid, and choose a string and a fret for every note by the easiest path for the hand. No model was trained for this. Measured with a 50 ms tolerance, a bass scores onset F1 {{span fretted/bass-tab/song.onset_f1 fretted/bass-tab/instrument.onset_f1}} on {{data fretted/bass-tab/song.tracks int}} synthesized songs, and a real guitar played alone {{span fretted/guitar-tab/report.solo.onset_f1 fretted/guitar-tab/report.comp.onset_f1}} on players the rules were not set on. A guitar inside a synthesized song scores {{data fretted/guitar-tab/song.onset_f1}}. Of the correctly heard notes of a single-line guitar part, {{data fretted/guitar-tab/report.solo.string_agreement pct}} are written on the string the player used, and {{data fretted/guitar-tab/report.comp.string_agreement pct}} in chord playing. The tempo is right for {{span fretted/bass-tab/song.tempo_ok fretted/bass-tab/instrument.tempo_ok fretted/guitar-tab/report.solo.tempo_ok fretted/guitar-tab/report.comp.tempo_ok fretted/guitar-tab/song.tempo_ok pct}} of recordings. A doubt mark is on a wrong note {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision fretted/guitar-tab/report.solo.doubt_precision fretted/guitar-tab/report.comp.doubt_precision fretted/guitar-tab/song.doubt_precision pct}} of the time, but only {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall fretted/guitar-tab/report.solo.doubt_recall fretted/guitar-tab/report.comp.doubt_recall fretted/guitar-tab/song.doubt_recall pct}} of the wrong notes are marked. Every tab that was scored is playable as written. The evidence for ukulele and mandolin is a handful of synthesized passages. None of this has been measured on a recording made with a phone.</p>
       {{holds fretted/bass-tab/song.violations <= 0}}{{holds fretted/bass-tab/instrument.violations <= 0}}{{holds fretted/guitar-tab/report.solo.violations <= 0}}{{holds fretted/guitar-tab/report.comp.violations <= 0}}{{holds fretted/guitar-tab/song.violations <= 0}}
     </section>
+
+    {{chart tab-notes}}
 
     <section id="problem" aria-labelledby="problem-title">
       <h2 id="problem-title"><span class="secno">1</span> The problem</h2>
@@ -99,7 +103,7 @@ scripts: charts.js
       <p class="plain"><span class="plain-label">In short</span>Bass is the best case. A guitar alone is usable as a draft. A guitar in a song is not there yet. The frets are a suggestion.</p>
 
       <h3 id="found">5.1 Notes found</h3>
-      {{chart tab-notes}}
+      <p>The figure for this is <a href="#fig-tab-notes">the one under the abstract</a>.</p>
       <p>A bass line is one note at a time in a register of its own, and it survives separation from a song: {{data fretted/bass-tab/song.onset_f1}} in the mix against {{data fretted/bass-tab/instrument.onset_f1}} alone. At the very bottom of a five-string bass it drops to {{span fretted/bass-tab/low_b.song.onset_f1 fretted/bass-tab/low_b.instrument.onset_f1}}. A real guitar alone scores {{data fretted/guitar-tab/report.solo.onset_f1}} on single lines and {{data fretted/guitar-tab/report.comp.onset_f1}} on chords, where notes ring over each other. Inside a song the guitar scores {{data fretted/guitar-tab/song.onset_f1}}. The second view holds the rendered passages; their scores are high, and they are the weakest evidence on the page.</p>
 
       <h3 id="strings">5.2 String and fret</h3>

@@ -6,7 +6,8 @@ styles: charts.css
 scripts: charts.js
 -->
   <nav class="toc toc-article" aria-labelledby="toc-title">
-    <p id="toc-title" class="toc-title">I denne artikkelen</p>
+    <details class="toc-fold" open>
+    <summary id="toc-title" class="toc-title">I denne artikkelen</summary>
     <ol>
       <li><a href="#abstract">Sammendrag</a></li>
       <li><a href="#problem">1. Problemet</a></li>
@@ -20,6 +21,7 @@ scripts: charts.js
       <li><a href="#next">9. Veien videre</a></li>
       <li><a href="#references">Referanser</a></li>
     </ol>
+    </details>
   </nav>
 
   <article class="paper">
@@ -36,6 +38,8 @@ scripts: charts.js
       <p>Fretscribe skriver tabulatur for bass, gitar, ukulele og mandolin fra et opptak. Lærte modeller finner slagene og tonene, etter å ha skilt instrumentet ut av miksen når opptaket er en hel låt. Regler rydder så i tonene, setter dem på slagrutenettet og velger streng og bånd for hver tone etter den letteste veien for hånden. Ingen modell er trent for dette. Målt med en toleranse på 50 ms får en bass onset-F1 {{span fretted/bass-tab/song.onset_f1 fretted/bass-tab/instrument.onset_f1}} på {{data fretted/bass-tab/song.tracks int}} syntetiske låter, og en ekte gitar spilt alene {{span fretted/guitar-tab/report.solo.onset_f1 fretted/guitar-tab/report.comp.onset_f1}} hos gitarister reglene ikke er stilt inn på. En gitar inne i en syntetisk låt får {{data fretted/guitar-tab/song.onset_f1}}. Av de riktig hørte tonene i en enkeltlinje på gitar er {{data fretted/guitar-tab/report.solo.string_agreement pct}} skrevet på den strengen gitaristen brukte, og {{data fretted/guitar-tab/report.comp.string_agreement pct}} i akkordspill. Tempoet er riktig for {{span fretted/bass-tab/song.tempo_ok fretted/bass-tab/instrument.tempo_ok fretted/guitar-tab/report.solo.tempo_ok fretted/guitar-tab/report.comp.tempo_ok fretted/guitar-tab/song.tempo_ok pct}} av opptakene. Et tvilsmerke står på en gal tone i {{span fretted/bass-tab/song.doubt_precision fretted/bass-tab/instrument.doubt_precision fretted/guitar-tab/report.solo.doubt_precision fretted/guitar-tab/report.comp.doubt_precision fretted/guitar-tab/song.doubt_precision pct}} av tilfellene, men bare {{span fretted/bass-tab/song.doubt_recall fretted/bass-tab/instrument.doubt_recall fretted/guitar-tab/report.solo.doubt_recall fretted/guitar-tab/report.comp.doubt_recall fretted/guitar-tab/song.doubt_recall pct}} av de gale tonene er merket. Alle tabber som ble målt, kan spilles slik de står. Belegget for ukulele og mandolin er en håndfull syntetiske passasjer. Ingenting av dette er målt på opptak gjort med en telefon.</p>
       {{holds fretted/bass-tab/song.violations <= 0}}{{holds fretted/bass-tab/instrument.violations <= 0}}{{holds fretted/guitar-tab/report.solo.violations <= 0}}{{holds fretted/guitar-tab/report.comp.violations <= 0}}{{holds fretted/guitar-tab/song.violations <= 0}}
     </section>
+
+    {{chart tab-notes}}
 
     <section id="problem" aria-labelledby="problem-title">
       <h2 id="problem-title"><span class="secno">1</span> Problemet</h2>
@@ -99,7 +103,7 @@ scripts: charts.js
       <p class="plain"><span class="plain-label">Kort fortalt</span>Bass er det beste tilfellet. En gitar alene er brukbar som utkast. En gitar i en låt er ikke der ennå. Båndene er et forslag.</p>
 
       <h3 id="found">5.1 Toner funnet</h3>
-      {{chart tab-notes}}
+      <p>Figuren til dette er <a href="#fig-tab-notes">den under sammendraget</a>.</p>
       <p>En basslinje er én tone om gangen i et register for seg selv, og den tåler å bli skilt ut av en låt: {{data fretted/bass-tab/song.onset_f1}} i miksen mot {{data fretted/bass-tab/instrument.onset_f1}} alene. Helt nederst på en femstrengs bass faller den til {{span fretted/bass-tab/low_b.song.onset_f1 fretted/bass-tab/low_b.instrument.onset_f1}}. En ekte gitar alene får {{data fretted/guitar-tab/report.solo.onset_f1}} på enkeltlinjer og {{data fretted/guitar-tab/report.comp.onset_f1}} på akkorder, der tonene klinger over hverandre. Inne i en låt får gitaren {{data fretted/guitar-tab/song.onset_f1}}. Den andre visningen har de syntetiske passasjene; tallene der er høye, og de er det svakeste belegget på siden.</p>
 
       <h3 id="strings">5.2 Streng og bånd</h3>
