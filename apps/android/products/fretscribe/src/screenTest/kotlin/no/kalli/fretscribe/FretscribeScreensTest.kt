@@ -38,7 +38,10 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import java.io.File
 
-/** Fretscribe's screens (see [ScreenCatalogue]), on the fixture computer that answers as the engine did for a short bass line. */
+/**
+ * Fretscribe's screens (see [ScreenCatalogue]), on the fixture computer that answers as the engine did for a short
+ * bass line; the screens that show a song are there for a guitar line too.
+ */
 @RunWith(AndroidJUnit4::class)
 class FretscribeScreensTest : ScreenCatalogue() {
     override val shots = "fretscribe"
@@ -48,8 +51,17 @@ class FretscribeScreensTest : ScreenCatalogue() {
         yourInstrumentStore(rule.activity).save(YourInstrument(FrettedInstrument.BASS_4))
     }
 
+    /** The entries that end in "-guitar": a six-string guitar, and the computer answers for the guitar line. */
+    private var guitar = false
+
+    private fun aGuitar() {
+        guitar = true
+        yourInstrumentStore(rule.activity).save(YourInstrument(FrettedInstrument.GUITAR_6))
+    }
+
     @After
     fun asItWas() {
+        guitar = false
         yourInstrumentStore(rule.activity).save(YourInstrument.DEFAULT)
         TabPlaces.forget()
         File(rule.activity.noBackupFilesDir, "recordings").deleteRecursively()
@@ -57,7 +69,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
     }
 
     /** The computer: the bass line with notes to check, as if it sounded like drop D, an octave up and a little sharp. */
-    private fun theComputer() = computer("bass-line-marks") { name, bytes ->
+    private fun theComputer() = if (guitar) computer("guitar-line") else computer("bass-line-marks") { name, bytes ->
         if (name != "tab.json" || bytes == null) bytes else JSONObject(String(bytes)).also { tab ->
             tab.put("octave_shift", -12)
             tab.getJSONObject("reference_pitch").put("cents", 30.4).put("retuned", true)
@@ -66,7 +78,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
 
     private fun whatIsThis() {
         theComputer()
-        val file = recording()
+        val file = if (guitar) recording("Guitar line.wav") else recording()
         openFromHome(file)
         waitForTag("fs-what-continue", 20_000)
         waitUntil(20_000) { ComputerProfiles.answer?.asking != true }
@@ -139,6 +151,10 @@ class FretscribeScreensTest : ScreenCatalogue() {
         },
         // (The note under the tab is the screen's bottom bar, which Tab reaches before the tab: issue 162.)
         Entry("tab-note") { theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
+        // The same three with a guitar: six strings, and the guitar line's own notes to check.
+        Entry("check-the-song-guitar") { aGuitar(); checkTheSong() },
+        Entry("tab-guitar") { aGuitar(); theTab() },
+        Entry("tab-note-guitar") { aGuitar(); theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },
         Entry("practice-recording-gone") {
