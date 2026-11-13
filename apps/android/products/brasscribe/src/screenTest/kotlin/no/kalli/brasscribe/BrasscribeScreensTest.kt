@@ -13,8 +13,11 @@ import no.kalli.scribe.play.Where
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.kalli.scribe.engine.Profile
 import no.kalli.scribe.play.screen.ScreenCatalogue
@@ -127,6 +130,24 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         },
         // The score of a recording: it says where the part shown comes from (a score opened from a file does not).
         Entry("score-of-a-recording") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }; rest() },
+        // What the score opens from its player and its menu: the practice controls, the bars to repeat, and the part read aloud.
+        Entry("practice") { theScore(); rule.onNodeWithText(text(R.string.practice)).performClick(); rest() },
+        Entry("repeat-bars") {
+            theScore(); rule.onNodeWithText(text(R.string.practice)).performClick(); rest()
+            rule.onNodeWithText(text(R.string.loop)).performScrollTo().performClick(); waitUntil(5_000) { rule.onAllNodesWithText(text(R.string.loop_set)).fetchSemanticsNodes().isNotEmpty() }; rest()
+        },
+        Entry("read-aloud", ownOrder = "the part's bars are a list of their own, longer than the screen, which the keyboard goes through line by line as it scrolls") {
+            theScore(); more()
+            rule.onNodeWithText(text(R.string.read_aloud)).performScrollTo().performClick()
+            waitUntil(5_000) { rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isEmpty() }; rest()
+        },
+        // A note being changed, from Check the notes.
+        Entry("change-note") {
+            checkTheNotes(); rest()
+            // (The note's card is in a list: on a phone on its side it is under the first screen until the list is moved to it.)
+            rule.onNodeWithTag("review-list").performScrollToNode(androidx.compose.ui.test.hasText(text(R.string.change_note)))
+            rule.onNodeWithText(text(R.string.change_note)).performClick(); rest()
+        },
         Entry("share-or-print", primaryInView = "print") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }; go(Screen.EXPORT); rest() },
         Entry("settings") { go(Screen.SETTINGS) },
         Entry("computer") { go(Screen.SETTINGS, Screen.COMPANION) },

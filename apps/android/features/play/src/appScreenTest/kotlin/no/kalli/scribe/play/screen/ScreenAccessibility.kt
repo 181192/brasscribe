@@ -33,6 +33,10 @@ object ScreenAccessibility {
         Known("text cut by the edge of a part that scrolls: the framework reads its colours from the sliver that shows, and says itself it may be only partly visible") { r ->
             r.sourceCheckClass == TextContrastCheck::class.java && r.getMessage(java.util.Locale.ENGLISH).toString().contains("partially visible")
         },
+        Known("a text field with a short value (a bar's number): its outline has more of the picture than the one or two digits in it, so the framework takes the outline's colour for the text's; the digits are in the text colour") { r ->
+            r.sourceCheckClass == TextContrastCheck::class.java && r.element?.className?.toString() == "android.widget.EditText" &&
+                (r.element?.text?.toString()?.length ?: Int.MAX_VALUE) <= 4
+        },
     )
 
     private val contrast = setOf(TextContrastCheck::class.java, ImageContrastCheck::class.java)
