@@ -171,6 +171,7 @@ public partial class App : Application
 
         var practice = new PracticeModel(new PracticeRecordings(Path.Combine(workDirectory, "recordings")),
             new PracticePlaces(Path.Combine(workDirectory, "places")), new MediaRecordingPlayers(queue));
+        Kalli.Scribe.Engine.Downloads.AppProduct = Product.ReleaseProduct;
         Kalli.Scribe.Engine.Downloads.AppFile = Product.ReleaseFile;
         Kalli.Scribe.Engine.Downloads.DesktopFile = Product.BandroomReleaseFile;
         TabFlowViewModel? flow = null;

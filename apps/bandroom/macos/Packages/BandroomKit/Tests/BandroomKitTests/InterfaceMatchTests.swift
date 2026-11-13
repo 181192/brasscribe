@@ -108,6 +108,6 @@ func enginesWire(_ name: String) throws -> String {
 
     /// A newer Bandroom is fetched as its own file from the latest release, not looked for on a page.
     @Test func theNewestBandroomIsItsOwnFileInTheLatestRelease() {
-        #expect(Wire.latestBandroom.absoluteString == "https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-macos-arm64.zip")
+        #expect(Wire.latestBandroom.absoluteString == "https://github.com/181192/brasscribe/releases/download/bandroom-latest/brasscribe-bandroom-macos-arm64.zip")
     }
 }

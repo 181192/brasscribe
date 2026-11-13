@@ -23,6 +23,9 @@ interface Product {
      */
     val releaseFile: String
 
+    /** The product's name in the releases ("brasscribe": its tags are brasscribe-vX.Y.Z, its newest files in brasscribe-latest). */
+    val releaseProduct: String
+
     /** What this app is for: of the engine's profiles, the ones of this target are its own. */
     val target: Target
 

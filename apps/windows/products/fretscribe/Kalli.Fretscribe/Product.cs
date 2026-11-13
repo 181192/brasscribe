@@ -12,6 +12,9 @@ internal static class Product
     /// <summary>It writes tab for a fretted instrument.</summary>
     public static Target Target => Target.Fretted;
 
+    /// <summary>The product's name in the releases (fretscribe-vX.Y.Z; its newest files are in fretscribe-latest).</summary>
+    public const string ReleaseProduct = "fretscribe";
+
     /// <summary>The app's file in a release, where an outdated app is sent for its update.</summary>
     public const string ReleaseFile = "fretscribe-windows-x64.zip";
 

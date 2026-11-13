@@ -17,11 +17,11 @@ protocol PlayHost: AnyObject, Observable {
     var pendingLink: PairingLink? { get set }
     /// Settings is open (the connection row's "Connect" and "Pair again" open it).
     var showSettings: Bool { get set }
-    /// Where this app and the desktop program are downloaded: always the latest release, never a version by name.
+    /// Where the desktop program is downloaded: the page of its newest release, never a version by name.
     var downloads: URL { get }
-    /// This app's own file in the latest release, for when the app is the one to update. On a Mac it is the app's
+    /// This app's own file in its newest release, for when the app is the one to update. On a Mac it is the app's
     /// archive, which the browser downloads; on iPhone and iPad a release has only an unsigned archive that the
-    /// device cannot open, so there it is the download page.
+    /// device cannot open, so there it is the page of the app's newest release.
     var appDownload: URL { get }
     /// The device was paired: what the app lists from the computer is fetched again.
     func pairedWithComputer() async

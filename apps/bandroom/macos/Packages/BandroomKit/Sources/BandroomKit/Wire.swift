@@ -7,9 +7,9 @@ public enum Wire {
     /// code it opened at start (`InterfaceMatch`, `EngineSupervisor`).
     public static let interfaceVersion = 1
 
-    /// The newest Bandroom for Mac: its own file in the latest release, never a version by name. Where Bandroom
+    /// The newest Bandroom for Mac: its own file in Bandroom's newest release (bandroom-latest), never a version by name. Where Bandroom
     /// sends the person when it is the one to update (or carries a setup tool that is too old).
-    public static let latestBandroom = URL(string: "https://github.com/181192/brasscribe/releases/latest/download/brasscribe-bandroom-macos-arm64.zip")!
+    public static let latestBandroom = URL(string: "https://github.com/181192/brasscribe/releases/download/bandroom-latest/brasscribe-bandroom-macos-arm64.zip")!
 }
 
 /// Whether Bandroom and the engine it started speak the same interface, and if not, which of the two is behind.
