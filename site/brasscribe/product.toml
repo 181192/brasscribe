@@ -1,0 +1,111 @@
+# Brasscribe on the public site. Read by site/build.py; site/README.md explains the fields.
+mount = ""                              # the site root, where Brasscribe's pages have always been
+brand = "design/brands/brasscribe"
+css = "brasscribe.css"
+icons = "dist/icons/web"
+marks = ["brand/logo/mark-brass.svg", "brand/logo/mark.svg"]
+staff_lines = 5                         # a score: five lines on the family page's sheet
+
+[logo]
+light = "brand/logo/lockup-play.svg"
+dark = "brand/logo/lockup-play-on-dark.svg"
+width = 180
+height = 32
+
+[[downloads]]
+file = "brasscribe-play-android-arm64-v8a.apk"
+group = "android"
+label_en = "Brasscribe Play for Android"
+label_nb = "Brasscribe Play for Android"
+en = "Brasscribe Play for most Android phones and tablets"
+nb = "Brasscribe Play for de fleste Android-telefoner og -nettbrett"
+
+[[downloads]]
+file = "brasscribe-play-android-universal.apk"
+group = "android"
+label_en = "Every type of processor"
+label_nb = "Alle typer prosessorer"
+en = "Brasscribe Play for Android, every type of processor"
+nb = "Brasscribe Play for Android, alle typer prosessorer"
+
+[[downloads]]
+file = "brasscribe-play-ios-unsigned.ipa"
+group = "ios"
+label_en = "Brasscribe Play for iPhone and iPad"
+label_nb = "Brasscribe Play for iPhone og iPad"
+en = "Brasscribe Play for iPhone and iPad, a <a href=\"@lang/guide/#download-ios\">test build</a> that you sign yourself"
+nb = "Brasscribe Play for iPhone og iPad, en <a href=\"@lang/guide/#download-ios\">testversjon</a> som du signerer selv"
+
+[[downloads]]
+file = "brasscribe-play-macos-arm64.zip"
+group = "mac"
+label_en = "Brasscribe Play for Mac"
+label_nb = "Brasscribe Play for Mac"
+en = "Brasscribe Play for a Mac with Apple silicon"
+nb = "Brasscribe Play for Mac med Apple-prosessor"
+
+[[downloads]]
+file = "brasscribe-play-windows-x64.zip"
+group = "windows"
+label_en = "Brasscribe Play for Windows"
+label_nb = "Brasscribe Play for Windows"
+en = "Brasscribe Play for Windows 11 (x64), a preview: not yet tried by hand on a Windows PC"
+nb = "Brasscribe Play for Windows 11 (x64), en forhåndsversjon: ikke prøvd for hånd på en Windows-PC ennå"
+
+[en]
+name = "Brasscribe"
+logo_alt = "Brasscribe Play, home"
+footer = "Brasscribe Play and Brasscribe Studio"
+footer_note = "<a href=\"@lang/\">Home</a> · <a href=\"https://github.com/181192/brasscribe\">Source</a>"
+nav = [
+  ["Home", "@lang/"],
+  ["User guide", "@lang/guide/"],
+  ["Your computer", "@lang/guide/#computer"],
+  ["Download", "@lang/download/"],
+  ["How it works", "@lang/research/"],
+  ["Source", "https://github.com/181192/brasscribe"],
+]
+
+[en.card]
+title = "A score for your band, from any recording."
+does = "Play it, record a rehearsal or open a file. Brasscribe writes down the parts for your brass band, marks the notes it wasn't sure about, and lets you practise along with the band."
+for = "Brass band players, section leaders and conductors."
+platforms = ["iPhone and iPad", "Mac", "Android", "Windows"]
+shot = "part"
+shot_alt = "The Solo Cornet part of Old Hundredth on iPhone, as written for B flat, with question marks over the uncertain notes and the player below."
+
+[en.download]
+title = "Download · Brasscribe Play"
+description = "Download Brasscribe Play for Android, iPhone, iPad, Mac and Windows, and Bandroom for your computer. The links always get the newest release."
+heading = "Download Brasscribe Play"
+lead = "Brasscribe Play is in early testing, so there is no store listing yet. Choose your device; the links always get the newest release."
+more = "Everything is also on the <a href=\"{{releases}}\">latest release on GitHub</a>. The <a href=\"@lang/guide/#download\">user guide</a> has the steps in full."
+
+[nb]
+name = "Brasscribe"
+logo_alt = "Brasscribe Play, forsiden"
+footer = "Brasscribe Play og Brasscribe Studio"
+footer_note = "<a href=\"@lang/\">Forside</a> · <a href=\"https://github.com/181192/brasscribe\">Kildekode</a>"
+nav = [
+  ["Forside", "@lang/"],
+  ["Brukerveiledning", "@lang/guide/"],
+  ["Datamaskinen din", "@lang/guide/#computer"],
+  ["Last ned", "@lang/download/"],
+  ["Slik virker det", "@lang/research/"],
+  ["Kildekode", "https://github.com/181192/brasscribe"],
+]
+
+[nb.card]
+title = "Partitur til bandet ditt, fra hvilket som helst opptak."
+does = "Spill det, ta opp en øvelse eller åpne en fil. Brasscribe skriver ned stemmene til brassbandet ditt, merker tonene den var usikker på, og lar deg øve sammen med bandet."
+for = "Brassbandmusikere, gruppeledere og dirigenter."
+platforms = ["iPhone og iPad", "Mac", "Android", "Windows"]
+shot = "part"
+shot_alt = "Solokornettstemmen til Old Hundredth på iPhone, skrevet for B, med spørsmålstegn over de usikre tonene og avspilleren under."
+
+[nb.download]
+title = "Last ned · Brasscribe Play"
+description = "Last ned Brasscribe Play for Android, iPhone, iPad, Mac og Windows, og Bandroom til datamaskinen. Lenkene henter alltid den nyeste utgivelsen."
+heading = "Last ned Brasscribe Play"
+lead = "Brasscribe Play er i tidlig testing og ligger ikke i noen appbutikk ennå. Velg enheten din; lenkene henter alltid den nyeste utgivelsen."
+more = "Alt ligger også i <a href=\"{{releases}}\">siste utgivelse på GitHub</a>. <a href=\"@lang/guide/#download\">Brukerveiledningen</a> har alle stegene."

@@ -1,0 +1,75 @@
+<!--
+title: Scribe apps: a score for your band, a tab for your guitar
+description: Brasscribe writes a brass band score from a recording. Fretscribe writes tab for guitar, bass, ukulele and mandolin. Both run on your own devices, with nothing sent online.
+og_title: Brasscribe and Fretscribe
+og_description: Play it. Get it written down.
+og_image: @/assets/brasscribe/shots/part-en-light.png
+-->
+  <section class="family-hero">
+    <div class="wrap">
+      <h1>
+        <span class="voice" data-brand="brasscribe">A score for your band.</span>
+        <span class="voice" data-brand="fretscribe">A tab for your guitar.</span>
+      </h1>
+      <p class="lead">Two apps that listen to a recording and write down what was played. Each is made for its own players; both keep your music on your own devices.</p>
+    </div>
+  </section>
+
+  <section class="sheets" aria-label="The apps">
+    <div class="wrap sheet-grid">
+      {{products}}
+    </div>
+  </section>
+
+  <section id="together" aria-labelledby="together-title">
+    <div class="wrap together">
+      <div>
+        <h2 id="together-title">Your phone asks. Your computer listens.</h2>
+        <p>Picking single notes out of a recording is heavy work, more than a phone should do on a bus. So the apps share one helper: <strong>Bandroom</strong>, a program on your own Mac or PC.</p>
+        <dl class="story">
+          <dt>Bandroom on the computer</dt>
+          <dd>Does the listening and the writing, for a full band or a full song. One Bandroom serves both apps and every phone you pair with it.</dd>
+          <dt>The app on your phone</dt>
+          <dd>Records, opens files, shows the score or the tab and plays along with you. Pair it once; after that it finds the computer by itself.</dd>
+          <dt>Private and local</dt>
+          <dd>The recording goes from your phone to your own computer and nowhere else. No account, no upload. Bandroom needs the internet once, to download what it listens with.</dd>
+        </dl>
+      </div>
+      <figure>
+        <svg class="diagram diagram-home" viewBox="0 0 320 356" role="img" aria-labelledby="home-title home-desc" xmlns="http://www.w3.org/2000/svg">
+          <title id="home-title">Where your recording goes</title>
+          <desc id="home-desc">The recording goes from the app on your phone to Bandroom on your computer, and the score or tab comes back, all inside your own network. Nothing goes to the internet.</desc>
+          <rect class="net" x="6" y="64" width="308" height="286" rx="14"/>
+          <text class="lbl" x="22" y="90">Your own network</text>
+          <rect class="box" x="24" y="8" width="272" height="40" rx="8"/>
+          <text class="t" x="160" y="33" text-anchor="middle">The internet: nothing is sent</text>
+          <rect class="box model" x="60" y="108" width="200" height="72" rx="10"/>
+          <text class="t" x="160" y="139" text-anchor="middle">The app on your phone</text>
+          <text class="s" x="160" y="160" text-anchor="middle">records, shows, plays along</text>
+          <path class="arrow" d="M124 184 V252"/><path class="head" d="M124 260 l-5 -10 h10 z"/>
+          <path class="arrow" d="M196 260 V192"/><path class="head" d="M196 184 l-5 10 h10 z"/>
+          <text class="s" x="114" y="226" text-anchor="end">recording</text>
+          <text class="s" x="206" y="226">score or tab</text>
+          <rect class="box model" x="40" y="264" width="240" height="72" rx="10"/>
+          <text class="t" x="160" y="295" text-anchor="middle">Bandroom on your computer</text>
+          <text class="s" x="160" y="316" text-anchor="middle">listens and writes it down</text>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <section id="bandroom" aria-labelledby="bandroom-title">
+    <div class="wrap">
+      <div class="reading">
+        <h2 id="bandroom-title">Get Bandroom</h2>
+        <p>For a Mac with Apple silicon or a Windows 11 PC. It runs quietly in the background, and the first run downloads about 10 GB.</p>
+        <div class="actions">
+          <a class="button outline" href="{{file brasscribe-bandroom-macos-arm64.zip}}">Bandroom for Mac</a>
+          <a class="button outline" href="{{file brasscribe-bandroom-windows-x64.zip}}">Bandroom for Windows</a>
+        </div>
+        <p class="muted after-actions">Setting it up and pairing a phone is in <a href="@brasscribe/guide/#computer">Brasscribe's guide</a> and <a href="@fretscribe/guide/#computer">Fretscribe's guide</a>.</p>
+      </div>
+    </div>
+  </section>
+  <!--slot open-a-picture: when an app can open a picture of sheet music, it is told on that app's page first,
+      and here once more than one app has it. Say nothing about it before it is in a release. -->

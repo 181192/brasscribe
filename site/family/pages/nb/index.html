@@ -1,0 +1,75 @@
+<!--
+title: Scribe-appene: partitur til bandet, tab til gitaren
+description: Brasscribe skriver partitur for brassband fra et opptak. Fretscribe skriver tab for gitar, bass, ukulele og mandolin. Begge kjører på dine egne enheter, og ingenting sendes til nettet.
+og_title: Brasscribe og Fretscribe
+og_description: Spill det. Få det skrevet ned.
+og_image: @/assets/brasscribe/shots/part-nb-light.png
+-->
+  <section class="family-hero">
+    <div class="wrap">
+      <h1>
+        <span class="voice" data-brand="brasscribe">Partitur til bandet ditt.</span>
+        <span class="voice" data-brand="fretscribe">Tab til gitaren din.</span>
+      </h1>
+      <p class="lead">To apper som lytter til et opptak og skriver ned det som ble spilt. Hver av dem er laget for sine musikere; begge lar musikken din bli på dine egne enheter.</p>
+    </div>
+  </section>
+
+  <section class="sheets" aria-label="Appene">
+    <div class="wrap sheet-grid">
+      {{products}}
+    </div>
+  </section>
+
+  <section id="together" aria-labelledby="together-title">
+    <div class="wrap together">
+      <div>
+        <h2 id="together-title">Telefonen spør. Datamaskinen lytter.</h2>
+        <p>Å plukke enkelttoner ut av et opptak er tungt arbeid, mer enn en telefon bør gjøre på bussen. Derfor deler appene én hjelper: <strong>Bandroom</strong>, et program på din egen Mac eller PC.</p>
+        <dl class="story">
+          <dt>Bandroom på datamaskinen</dt>
+          <dd>Gjør lyttingen og skrivingen, for et fullt band eller en hel sang. Ett Bandroom betjener begge appene og alle telefonene du kobler til.</dd>
+          <dt>Appen på telefonen</dt>
+          <dd>Spiller inn, åpner filer, viser partituret eller tabben og spiller sammen med deg. Koble til én gang; etterpå finner den datamaskinen selv.</dd>
+          <dt>Privat og lokalt</dt>
+          <dd>Opptaket går fra telefonen til din egen datamaskin og ingen andre steder. Ingen konto, ingen opplasting. Bandroom trenger internett én gang, for å laste ned det den lytter med.</dd>
+        </dl>
+      </div>
+      <figure>
+        <svg class="diagram diagram-home" viewBox="0 0 320 356" role="img" aria-labelledby="home-title home-desc" xmlns="http://www.w3.org/2000/svg">
+          <title id="home-title">Hvor opptaket ditt går</title>
+          <desc id="home-desc">Opptaket går fra appen på telefonen til Bandroom på datamaskinen, og partituret eller tabben kommer tilbake, alt inne i ditt eget nettverk. Ingenting går til internett.</desc>
+          <rect class="net" x="6" y="64" width="308" height="286" rx="14"/>
+          <text class="lbl" x="22" y="90">Ditt eget nettverk</text>
+          <rect class="box" x="24" y="8" width="272" height="40" rx="8"/>
+          <text class="t" x="160" y="33" text-anchor="middle">Internett: ingenting sendes</text>
+          <rect class="box model" x="60" y="108" width="200" height="72" rx="10"/>
+          <text class="t" x="160" y="139" text-anchor="middle">Appen på telefonen</text>
+          <text class="s" x="160" y="160" text-anchor="middle">spiller inn, viser, spiller med</text>
+          <path class="arrow" d="M124 184 V252"/><path class="head" d="M124 260 l-5 -10 h10 z"/>
+          <path class="arrow" d="M196 260 V192"/><path class="head" d="M196 184 l-5 10 h10 z"/>
+          <text class="s" x="114" y="226" text-anchor="end">opptak</text>
+          <text class="s" x="206" y="226">partitur eller tab</text>
+          <rect class="box model" x="40" y="264" width="240" height="72" rx="10"/>
+          <text class="t" x="160" y="295" text-anchor="middle">Bandroom på datamaskinen</text>
+          <text class="s" x="160" y="316" text-anchor="middle">lytter og skriver det ned</text>
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <section id="bandroom" aria-labelledby="bandroom-title">
+    <div class="wrap">
+      <div class="reading">
+        <h2 id="bandroom-title">Hent Bandroom</h2>
+        <p>For Mac med Apple-prosessor eller PC med Windows 11. Det kjører stille i bakgrunnen, og første gang laster det ned rundt 10 GB.</p>
+        <div class="actions">
+          <a class="button outline" href="{{file brasscribe-bandroom-macos-arm64.zip}}">Bandroom for Mac</a>
+          <a class="button outline" href="{{file brasscribe-bandroom-windows-x64.zip}}">Bandroom for Windows</a>
+        </div>
+        <p class="muted after-actions">Oppsett og tilkobling av telefon står i <a href="@brasscribe/guide/#computer">Brasscribes veiledning</a> og <a href="@fretscribe/guide/#computer">Fretscribes veiledning</a>.</p>
+      </div>
+    </div>
+  </section>
+  <!--slot open-a-picture: når en app kan åpne et bilde av noter, fortelles det først på den appens side,
+      og her når mer enn én app har det. Ikke nevn det før det er i en utgivelse. -->

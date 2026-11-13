@@ -1,0 +1,26 @@
+# The family page: the apps side by side, and what they share. Read by site/build.py.
+family = true
+mount = "apps"
+# The spacing and type scale are the same in every brand, so one brand's tokens are the base;
+# family.css replaces the colours and faces with neutral ones, and each product's sheet wears
+# its own brand (assets/brands.css, made by the build).
+brand = "design/brands/brasscribe"
+css = "brasscribe.css"
+icons = "dist/icons/web"
+styles = ["assets/brands.css", "family.css"]
+
+[logo]
+light = "brand/logo/mark.svg"
+dark = "brand/logo/mark.svg"
+width = 0
+height = 0
+
+[en]
+name = "Scribe apps"
+footer = "Brasscribe and Fretscribe are free and open source."
+footer_note = "<a href=\"https://github.com/181192/brasscribe\">Source</a>"
+
+[nb]
+name = "Scribe-appene"
+footer = "Brasscribe og Fretscribe er gratis og har åpen kildekode."
+footer_note = "<a href=\"https://github.com/181192/brasscribe\">Kildekode</a>"
