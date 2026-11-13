@@ -69,6 +69,10 @@ Never commit:
   (e.g. *Old Hundredth*) for tests, screenshots and docs;
 - references to anyone's employer or internal systems (internal package registries, hostnames).
 
+One exception to the first point: the notice files of others' work under `licences/upstream/`, and the app files
+written from them in `licences/dist/`, are kept word for word as published, e-mail addresses of their authors
+included, because the licences require the notices to be passed on unchanged.
+
 `data/`, `models/` and the band SoundFonts are not in git on purpose; tests that need them skip
 themselves when they are missing.
 

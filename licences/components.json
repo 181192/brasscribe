@@ -566,7 +566,7 @@
       "texts": ["Apache-2.0"],
       "notice": ["Guava, AutoValue, Dagger, Error Prone annotations and J2ObjC annotations: Copyright (C) The Guava Authors and Google LLC. JSpecify: Copyright The JSpecify Authors. JSR 305 and javax.inject / jakarta.inject annotations. kaml, snakeyaml-engine-kmp and urlencoder, which come with alphaTab."],
       "apps": ["@android"],
-      "covers": {"maven": ["com.google.guava:*", "com.google.auto.value:*", "com.google.dagger:*", "com.google.errorprone:*", "com.google.j2objc:*", "com.google.code.findbugs:*", "org.jspecify:*", "javax.inject:*", "jakarta.inject:*", "com.charleskorn.kaml:*", "it.krzeminski:*", "net.thauvin.erik.urlencoder:*"]}
+      "covers": {"maven": ["com.google.guava:*", "com.google.auto.value:*", "com.google.dagger:*", "com.google.errorprone:*", "com.google.j2objc:*", "com.google.code.findbugs:jsr305", "org.jspecify:*", "javax.inject:*", "jakarta.inject:*", "com.charleskorn.kaml:*", "it.krzeminski:*", "net.thauvin.erik.urlencoder:*"]}
     },
     {
       "id": "slf4j",
@@ -576,7 +576,7 @@
       "texts": ["MIT"],
       "notice": ["Copyright (c) 2004-2023 QOS.ch. All rights reserved."],
       "apps": ["@android"],
-      "covers": {"maven": ["org.slf4j:*"]}
+      "covers": {"maven": ["org.slf4j:slf4j-api"]}
     },
     {
       "id": "checker-qual",
@@ -586,7 +586,7 @@
       "texts": ["MIT"],
       "notice": ["Copyright 2004-present by the Checker Framework developers"],
       "apps": ["@android"],
-      "covers": {"maven": ["org.checkerframework:*"]}
+      "covers": {"maven": ["org.checkerframework:checker-qual"]}
     },
     {
       "id": "windows-app-sdk",
