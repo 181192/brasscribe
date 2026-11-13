@@ -171,6 +171,7 @@ jobs:
         run: |
           pixi run pytest -q design/tooling
           python3 design/tooling/build.py --check
+          python3 design/tooling/family.py --check
 
       - name: Contrast of the design tokens (every brand, every mode, reports up to date)
         run: python3 qa/shared/tools/contrast.py --brands

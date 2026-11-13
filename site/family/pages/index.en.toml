@@ -1,0 +1,71 @@
+title = "Scribe: a score for your band, a tab for your guitar"
+description = "Brasscribe writes a brass band score from a recording. Fretscribe writes tab for guitar, bass, ukulele and mandolin. Both work on your own devices, and your recording never leaves your own network."
+
+[hero]
+brass = "A score for your band."
+fret = "A tab for your guitar."
+lead = "Two apps that listen to a recording and write down what was played. Below, each one is doing it, on a real recording."
+
+[apps]
+label = "The apps"
+download = "Download"
+
+[apps.brass]
+title = "Brasscribe"
+text = "Record a rehearsal or open a file. Brasscribe writes a part for every player in your brass band, marks the notes it wasn't sure of, and plays along while you practise."
+see = "See Brasscribe"
+
+[apps.fret]
+title = "Fretscribe"
+text = "Play a riff or open a recording. Fretscribe writes it down as tab for your instrument and your tuning, and plays the recording along while you practise."
+see = "See Fretscribe"
+
+[which]
+title = "Which one is for you?"
+both = "Both are free, both run on Android, iPhone and iPad, Mac and Windows, and you can have both: they share the same helper on your computer."
+
+[which.brass]
+if = "You play in a brass band"
+then = "Brasscribe"
+get = "A score and a part for every seat, written for B flat or E flat."
+shot = "The Solo Cornet part in Brasscribe on a phone, with question marks over the uncertain notes and the player below."
+
+[which.fret]
+if = "You play guitar, bass, ukulele or mandolin"
+then = "Fretscribe"
+get = "Tab in your tuning, with the recording to play along to."
+shot = "A tab in Fretscribe on a phone, with the player below."
+
+[together]
+title = "Your phone asks. Your computer listens."
+lead = "Picking single notes out of a recording is heavy work, more than a phone should do on a bus. So the apps share one helper: <strong>Bandroom</strong>, a free program on your own Mac or PC."
+diagram = "Where your recording goes: from the app on your phone to Bandroom on your computer, and the score or tab comes back, all inside your own network. Nothing goes to the internet."
+
+[together.computer]
+title = "Bandroom on the computer"
+text = "Does the listening and the writing: every band score and every tab, today. One Bandroom serves both apps and every phone you connect."
+
+[together.phone]
+title = "The app on your phone"
+text = "Records, opens files, shows the score or the tab and plays along with you. Connect it once; after that it finds the computer by itself."
+
+[together.private]
+title = "Private and local"
+text = "Your recording never leaves your own network: it goes from your phone to your own computer and nowhere else. The first time Bandroom starts it needs the internet, to download what it needs to listen (about 10 GB). For Brasscribe's band scores it also needs a free account where the listening model is downloaded; the guide shows how."
+
+[together.d]
+network = "Your own network"
+internet = "The internet: nothing is sent"
+phone = "The app on your phone"
+phone_does = "records, shows, plays along"
+up = "recording"
+down = "score or tab"
+computer = "Bandroom on your computer"
+computer_does = "listens and writes it down"
+
+[bandroom]
+title = "Get Bandroom"
+text = "For a Mac from 2020 or later or a Windows 11 PC. It runs quietly in the background, and the first time it starts it downloads about 10 GB. Your computer will warn you the first time; the guides show how to get past it."
+mac = "Bandroom for Mac"
+windows = "Bandroom for Windows"
+setup = "Setting it up and connecting a phone is in <a href=\"@brasscribe/guide/#computer\">Brasscribe's guide</a> and <a href=\"@fretscribe/guide/#computer\">Fretscribe's guide</a>."

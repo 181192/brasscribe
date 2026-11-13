@@ -1,0 +1,125 @@
+title = "Fretscribe: gjør et opptak om til tab"
+description = "Spill et riff, ta opp en sang eller åpne en fil. Fretscribe skriver det ned som tab for gitar, bass, ukulele eller mandolin, i din stemming, og du øver sammen med opptaket."
+
+[hero]
+title = "Gjør et opptak om til <em>tab.</em>"
+lead = "Spill et riff eller åpne et opptak, så skriver Fretscribe det ned som tab for instrumentet og stemmingen din."
+get = "Last ned"
+see = "Se hvordan"
+strip_label = "Opptaket av en gitarist, som lydbølge til høyre, blir til tab til venstre når det passerer pennen: {notes} toner i {bars} takter, {doubt} av dem med spørsmålstegn."
+strip_note = "Et ekte opptak: en gitarist som plukker akkordene fra Pachelbels kanon, fra <a href=\"https://doi.org/10.5281/zenodo.3371780\">GuitarSet</a> (CC BY 4.0). Fretscribe skrev tabben, spørsmålstegnene også. Spill gir deg opptaket, eller tonene den skrev."
+
+[get]
+title = "Dette <em>får du.</em>"
+lead = "En tab du kan lese med en gang, og øve med."
+
+[[get.items]]
+title = "Tab for ditt instrument"
+text = "Gitar, bass, ukulele eller mandolin, med de strengene du har og den stemmingen du spiller i."
+[[get.items]]
+title = "Du får se før den skriver"
+text = "Først viser den stemmingen, tonearten og tempoet den hørte. Er noe galt, retter du det før et eneste bånd blir skrevet."
+[[get.items]]
+title = "Ærlige spørsmålstegn"
+text = "En tone den er usikker på, får et ?. Velg den, så spiller den takten sakte, og du kan høre selv."
+[[get.items]]
+title = "Noe å øve med"
+text = "Opptaket ditt spiller sammen med tabben, saktere hvis du vil, og gjentar de taktene du velger."
+
+[[screens.items]]
+shot = "home"
+alt = "Hjem i Fretscribe: Åpne et opptak, Spill inn med mikrofonen og Spill inn det som spilles."
+title = "Åpne eller spill inn"
+text = "Åpne et opptak du har, spill inn med mikrofonen, eller ta opp det en annen app på telefonen spiller."
+[[screens.items]]
+shot = "what-is-this"
+alt = "Hva er dette? med to valg: Bare instrumentet mitt, og En hel sang, der Fretscribe plukker ut bassen."
+title = "Hva er dette?"
+text = "Bare instrumentet ditt, eller en hel sang der stemmen din plukkes ut."
+[[screens.items]]
+shot = "check"
+alt = "Sjekk sangen: stemmingen den hørte, oktaven, toneart og tempo, 2 toner merket med spørsmålstegn, og Vis tabben."
+title = "Sjekk sangen"
+text = "Stemmingen, tonearten og tempoet den hørte, før noe blir skrevet som bånd."
+[[screens.items]]
+shot = "note"
+alt = "En tone med spørsmålstegn valgt i tabben, med Spill denne takten sakte og Neste."
+title = "Øv"
+text = "Spill opptaket saktere, gjenta de vanskelige taktene, og sjekk tonene med ?."
+
+[steps]
+title = "Fra lyd til tab, <em>steg for steg.</em>"
+lead = "De første taktene av opptaket over, på hvert steg underveis."
+
+[[steps.items]]
+title = "Opptaket"
+text = "Et riff i mikrofonen, eller en fil du har. Dette er hvor sterkt gitaren lyder, øyeblikk for øyeblikk."
+alt = "En lydbølge: plukkede toner, hver sterk først og så svakere."
+[[steps.items]]
+title = "Finner pulsen"
+text = "Først pulsen. Fretscribe hørte {tempo} slag i minuttet, {beats} i takten: en strek på hvert slag, kraftigere der en takt begynner."
+alt = "Den samme lydbølgen med en strek på hvert slag og en kraftigere strek ved hver takt."
+[[steps.items]]
+title = "Hører tonene"
+text = "To lyttere går gjennom lyden. Den ene hører hele akkorder, den andre følger én enkelt linje. Hver blokk er en tone en av dem hørte, høyere toner høyere opp."
+alt = "Én takt med toner som blokker, høyere toner høyere opp: mange fra den første lytteren, noen få fra den andre i en annen farge."
+[[steps.items]]
+title = "Plasserer tonene"
+text = "Ingen spiller nøyaktig på slaget. Hver tone flyttes fra der den ble hørt, det stiplede omrisset, til det nærmeste stedet du ville lest den."
+alt = "Den samme takten: hver tone begynner nå på et slag eller mellom to, med et stiplet omriss der den ble hørt."
+[[steps.items]]
+title = "Velger strenger og bånd"
+text = "Hver tone kan spilles flere steder på halsen. Fretscribe velger der hånda flytter seg minst: her er {open} av de {notes} tonene på løse strenger."
+alt = "To takter som tab: båndtall på {strings} strenglinjer."
+
+[try]
+title = "De samme tonene, <em>din stemming.</em>"
+lead = "Tabben til opptaket over. Bytt stemming: tonene blir stående, båndene flytter seg. Velg et tall for å se alle stedene den tonen kan spilles."
+
+[try.words]
+summary = "{tuning}: alle tonene har en plass på halsen."
+summary_lost = "{tuning}: {lost} toner har ingen plass på halsen."
+summary_lost_one = "{tuning}: én tone har ingen plass på halsen."
+summary_left = "{left} til er utelatt her (–)."
+at = "Takt {bar}, slag {beat}, {name}:"
+place = "{string} streng, bånd {fret}"
+also = "Den kan også spilles på {places}."
+could = "Den kan spilles på {places}."
+or = ", eller "
+only = "Den har ingen annen plass."
+lost = "den har ingen plass på halsen i denne stemmingen."
+nowhere = "ingen stemming her har plass til den."
+left = "den er utelatt her."
+doubt = "Fretscribe er ikke sikker på denne tonen."
+neck = "Halsen: den fylte prikken er plassen i tabben, ringene er de andre plassene for denne tonen."
+legend_doubt = "Fretscribe er ikke sikker"
+legend_lost = "ingen plass på halsen"
+legend_left = "utelatt"
+ordinals = ["1.", "2.", "3.", "4.", "5.", "6."]
+names = ["C", "Ciss", "D", "Ess", "E", "F", "Fiss", "G", "Giss", "A", "B", "H"]
+
+[needs]
+title = "Dette <em>trenger du.</em>"
+lead = "Fretscribe skriver ikke tabber på egen hånd. Velg enheten din for å se hva den gjør alene, og hva den trenger datamaskinen til."
+computer = "<strong>En datamaskin med Bandroom</strong>, på samme Wi-Fi som telefonen: en Mac fra 2020 eller nyere, eller en PC med Windows 11. Bandroom er gratis, og det skriver hver tab."
+unsigned = "<strong>Enheten din advarer deg første gang.</strong> Appene ligger ikke i noen appbutikk ennå; <a href=\"@/download/\">nedlastingssiden</a> viser hvordan du kommer forbi advarselen."
+private = "<strong>Opptaket forlater aldri ditt eget nettverk.</strong> Det går fra telefonen til din egen datamaskin og ingen andre steder. Første gang Bandroom starter, trenger det internett for å laste ned det den trenger for å lytte (rundt 10 GB)."
+setup = "Sett opp datamaskinen"
+
+[sure]
+title = "Hvor sikker <em>er den?</em>"
+lead = "Når Fretscribe setter et <b class=\"uncertain\">?</b> over en tone, har den som regel rett. Men mange gale toner går den glipp av."
+doubted = "<b>{name}:</b> rundt {n} av 10 toner med ? var virkelig feil."
+wrong = "<b>{name}:</b> bare rundt {n} av 10 gale toner fikk et ?."
+alt_doubted = "Ti toner med spørsmålstegn; {n} av dem er feil."
+alt_wrong = "Ti gale toner; {n} av dem har et spørsmålstegn."
+source = "Vi målte dette på basslinjer og gitarstemmer plukket ut av hele låter spilt av en datamaskin, der vi kjenner de riktige tonene. Opptaket ditt kan gå bedre eller dårligere."
+end = "Sjekk altså tonene med ? først, og stol på ørene dine for resten."
+how = "Slik målte vi det"
+
+[getit]
+title = "Hent <em>Fretscribe.</em>"
+lead = "Gratis, og en tidlig versjon: den ligger ikke i noen appbutikk ennå, så du laster den ned her, for Android, iPhone og iPad, Mac og Windows."
+download = "Last ned"
+guide = "Les veiledningen"
+family = "Se Scribe-appene"

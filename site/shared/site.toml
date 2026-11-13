@@ -1,5 +1,10 @@
 # What every product page shares. Read by site/build.py.
 
+# The address the site is served at: canonical links and shared previews are made from it. Every link in the
+# pages is relative, so nothing else knows it. The host itself is a setting of the repository's Pages
+# (site/README.md), not a file here.
+base = "https://scribe.kalli.app/"
+
 # Where release files come from. One line here moves every download link on the site; a product
 # with releases of its own sets `releases` in its product.toml instead.
 releases = "https://github.com/181192/brasscribe/releases/latest"
@@ -10,16 +15,16 @@ file = "brasscribe-bandroom-macos-arm64.zip"
 group = "bandroom"
 label_en = "Bandroom for Mac"
 label_nb = "Bandroom for Mac"
-en = "Bandroom for a Mac with Apple silicon: <a href=\"@lang/guide/#computer\">your computer</a> does the heavy work"
-nb = "Bandroom for Mac med Apple-prosessor: <a href=\"@lang/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
+en = "Bandroom for a Mac from 2020 or later: <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
+nb = "Bandroom for Mac fra 2020 eller nyere: <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
 
 [[downloads]]
 file = "brasscribe-bandroom-windows-x64.zip"
 group = "bandroom"
 label_en = "Bandroom for Windows"
 label_nb = "Bandroom for Windows"
-en = "Bandroom for Windows 11 (x64): <a href=\"@lang/guide/#computer\">your computer</a> does the heavy work"
-nb = "Bandroom for Windows 11 (x64): <a href=\"@lang/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
+en = "Bandroom for Windows 11 (x64): <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
+nb = "Bandroom for Windows 11 (x64): <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
 
 [[downloads]]
 file = "scribe-core-macos-arm64.tar.gz"
@@ -45,41 +50,17 @@ group = "tools"
 en = "Checksums to check the downloads"
 nb = "Sjekksummer for å kontrollere nedlastingene"
 
-# Headings and notes of the download page's groups. A product adds its own under [<lang>.groups].
-[en.groups.android]
-title = "Android"
-note = "Needs Android 16 or newer. Allow installs from your browser or file manager, then open the APK. It updates an earlier version in place, and what you have made stays. Most phones and tablets take the first file."
-[en.groups.ios]
-title = "iPhone and iPad"
-note = "Needs iOS or iPadOS 26 or newer. Not in the App Store yet. This is a test build without a signature, which you sign with your own Apple Account before it installs: <a href=\"@lang/guide/#download-ios\">how to sign and install it</a>."
-[en.groups.mac]
-title = "Mac"
-note = "Needs macOS 26 or newer and Apple silicon. Not notarised yet: unzip, move the app to Applications and open it once, then choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>."
-[en.groups.windows]
-title = "Windows"
-note = "For Windows 11 (x64). Not signed yet: unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
-[en.groups.bandroom]
-title = "Bandroom, for your computer"
-note = "Bandroom runs on your own Mac or PC and writes down the notes for the app on your phone, over your own network. One Bandroom serves every Scribe app. <a href=\"@lang/guide/#computer\">How to set it up</a>."
-[en.groups.tools]
-title = "For the tech person"
-note = "The command-line tool behind the apps, and the checksums of every file in the release."
-
-[nb.groups.android]
-title = "Android"
-note = "Krever Android 16 eller nyere. Tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og det du har laget blir liggende. De fleste telefoner og nettbrett bruker den første filen."
-[nb.groups.ios]
-title = "iPhone og iPad"
-note = "Krever iOS eller iPadOS 26 eller nyere. Ligger ikke i App Store ennå. Dette er en testversjon uten signatur, som du signerer med din egen Apple-konto før den kan installeres: <a href=\"@lang/guide/#download-ios\">slik signerer og installerer du den</a>."
-[nb.groups.mac]
-title = "Mac"
-note = "Krever macOS 26 eller nyere og Apple-prosessor. Ikke notarisert ennå: pakk ut, flytt appen til Programmer og åpne den én gang, og velg så <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>."
-[nb.groups.windows]
-title = "Windows"
-note = "For Windows 11 (x64). Ikke signert ennå: pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>."
-[nb.groups.bandroom]
-title = "Bandroom, til datamaskinen"
-note = "Bandroom kjører på din egen Mac eller PC og skriver ned notene for appen på telefonen, over ditt eget nettverk. Ett Bandroom betjener alle Scribe-appene. <a href=\"@lang/guide/#computer\">Slik setter du det opp</a>."
-[nb.groups.tools]
-title = "For den tekniske"
-note = "Kommandolinjeverktøyet bak appene, og sjekksummene for alle filene i utgivelsen."
+# Addresses the site had before the family home moved to the top: each sends its visitor on.
+[redirects]
+"guide" = "brasscribe/guide"
+"download" = "brasscribe/download"
+"research" = "brasscribe/how-it-works"
+"apps" = ""
+"nb" = "brasscribe?lang=nb"
+"nb/guide" = "brasscribe/guide?lang=nb"
+"nb/download" = "brasscribe/download?lang=nb"
+"nb/research" = "brasscribe/how-it-works?lang=nb"
+"apps/nb" = "?lang=nb"
+"fretscribe/nb" = "fretscribe?lang=nb"
+"fretscribe/nb/guide" = "fretscribe/guide?lang=nb"
+"fretscribe/nb/download" = "fretscribe/download?lang=nb"

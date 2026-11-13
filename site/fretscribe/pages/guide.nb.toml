@@ -1,0 +1,104 @@
+title = "Brukerveiledning · Fretscribe"
+description = "Slik gjør du et opptak om til tab med Fretscribe: velg instrument, åpne eller spill inn, sjekk hva den hørte, og øv med tabben."
+
+
+[top]
+h21 = "I denne veiledningen"
+li1 = "<a href=\"#get-started\">Kom i gang</a>"
+li2 = "<a href=\"#download\">Last ned</a>"
+li3 = "<a href=\"#computer\">Datamaskinen din</a>"
+li4 = "<a href=\"#instrument\">Instrumentet ditt</a>"
+li5 = "<a href=\"#open\">Åpne eller spill inn</a>"
+li6 = "<a href=\"#what-is-this\">Hva er dette?</a>"
+li7 = "<a href=\"#check\">Sjekk sangen</a>"
+li8 = "<a href=\"#tab\">Les og øv</a>"
+li9 = "<a href=\"#problems\">Hvis noe går galt</a>"
+
+[get_started]
+h11 = "Kom i gang"
+p1 = "Fretscribe gjør et opptak om til tab for gitar, bass, ukulele eller mandolin. Denne veiledningen går gjennom det én gang, fra opptaket til tabben du øver med."
+p2 = "Du trenger to ting:"
+li1 = "<strong>Fretscribe-appen</strong> på Android 16 eller nyere, iOS eller iPadOS 26 eller nyere, macOS 26 eller nyere, eller Windows 11."
+li2 = "<strong><a href=\"#computer\">Bandroom på en datamaskin</a></strong> på samme Wi-Fi: en Mac med Apple-prosessor, eller en PC med Windows 11. Bandroom skriver hver tab. Uten det åpner appen tabbene du har laget, men kan ikke skrive en ny."
+p3 = "Fretscribe er en tidlig versjon. Den ligger ikke i noen appbutikk, og nedlastingene er ikke signert ennå, så hver enhet trenger noen ekstra steg første gang: se <a href=\"#download\">Last ned</a>."
+p4 = "Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og spør så <a href=\"#instrument\">hva du spiller</a>. Den ber om mikrofonen først når du spiller inn."
+shot1 = "Bandroom på datamaskinen, i Innstillinger: Ikke tilkoblet. Åpne Bandroom på datamaskinen, den heter Brasscribe Bandroom i listen over programmer, og velg Koble til en telefon. Skann koden på datamaskinen, et felt for den sekssifrede koden, Spør på datamaskinen i stedet, og Koble til."
+
+[download]
+h21 = "Last ned"
+p1 = "Last ned filen for enheten din fra <a href=\"{{releases}}\">siste utgivelse på GitHub</a>. Lenkene under henter alltid nyeste versjon, og <a href=\"@/download/\">nedlastingssiden</a> har dem per enhet."
+li1 = "<strong>Android:</strong> krever Android 16 eller nyere. Tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og sangene dine blir liggende."
+li2 = "<strong>Mac:</strong> krever macOS 26 eller nyere. Appene er ikke notarisert ennå. Pakk ut, flytt appen til Programmer og åpne den én gang. macOS stopper den; gå til <strong>Systeminnstillinger › Personvern og sikkerhet</strong>, velg <strong>Åpne likevel</strong> og bekreft."
+li3 = "<strong>Windows:</strong> krever Windows 11 (x64). Fretscribe for Windows er en forhåndsversjon: den er ikke prøvd for hånd på en Windows-PC ennå. Appene er ikke signert ennå. Pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>."
+h31 = "iPhone og iPad (testversjon)"
+p2 = "Fretscribe ligger ikke i App Store. Filen <code>fretscribe-ios-unsigned.ipa</code> er appen uten signatur, og en iPhone eller iPad installerer ikke en app som ikke er signert. Derfor signerer du den selv, med din egen Apple-konto; en gratis konto holder, og en gratis signatur varer i sju dager. Stegene er de samme som for Brasscribe Play: <a href=\"@brasscribe/guide/#download-ios\">slik signerer og installerer du en testversjon</a>, med Fretscribes fil i stedet for Brasscribes."
+shot1 = "Instrumentet ditt: Instrument, bass. Strenger, 4 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre nederst."
+shot2 = "Hjem: Ikke tilkoblet, Fretscribe trenger datamaskinen din for å skrive en tab, med Koble til. Åpne et opptak. Spill inn med mikrofonen, spill et riff eller en hel sang. Spill inn det som spilles, fra en annen app på telefonen. Sangene dine under, der ingenting er skrevet ned ennå."
+
+[computer]
+h21 = "Datamaskinen din"
+p1 = "Bandroom på datamaskinen skriver ned tonene og sender tabben til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder."
+p2 = "På en Mac med Apple-prosessor (macOS 26 eller nyere) eller en PC med Windows 11 (x64) installerer du Bandroom fra <a href=\"#download\">nedlastingen</a>. I listen over programmer heter det Brasscribe Bandroom: det er det samme programmet som Brasscribe bruker, og det kjører stille i bakgrunnen. Første gang laster det ned det det trenger, rundt 10 GB, så sørg for rundt 15 GB ledig plass; internett trengs bare for disse nedlastingene. <a href=\"@brasscribe/guide/#computer\">Brasscribes veiledning</a> har hele den første oppstarten."
+p3 = "Så kobler du til telefonen:"
+li1 = "Åpne Bandroom på datamaskinen og velg <strong>Koble til en telefon</strong>. Den viser en sekssifret kode og en QR-kode."
+li2 = "Sett telefonen på samme Wi-Fi som datamaskinen."
+li3 = "Velg <strong>Koble til</strong> på Hjem i Fretscribe, eller åpne Innstillinger og så <strong>Bandroom på datamaskinen</strong>."
+li4 = "Velg <strong>Skann koden på datamaskinen</strong>, eller skriv inn de seks sifrene og velg <strong>Koble til</strong>. Med <strong>Spør på datamaskinen i stedet</strong> svarer du ja på datamaskinen."
+p4 = "Dette gjør du én gang for hver telefon eller hvert nettbrett. Før det er gjort, står det <strong>Ikke tilkoblet</strong> på Hjem, og Fretscribe kan ikke skrive en tab."
+shot1 = "Hva er dette? Bare instrumentet mitt, ett instrument som spiller, uten noe annet. En hel sang, et band eller en plate, Fretscribe plukker ut bassen. På datamaskinen din: Bandroom på datamaskinen skriver ned tonene. Opptaket sendes ikke til nettet."
+shot2 = "Sjekk sangen: Stemming, høres ut som Drop D, skrevet for standard, med Bruk Drop D. Oktav, skrevet én oktav lavere enn den ble hørt, med Skriv den slik den ble hørt. Kammertone, litt over. Toneart og tempo. Toner å sjekke, 2 toner merket med spørsmålstegn. Vis tabben."
+shot3 = "Tabben til Bass line: Standard, uten capo, og tempoet øverst. 2 toner merket med spørsmålstegn, Sjekk dem, og 1 tone uten plass. Tabben, med et spørsmålstegn over en tone i takt 3 og et utropstegn i takt 7. Avspilleren: spill, start på nytt, forrige og neste takt, Takt 1, slag 1, Tempo 100 % og Gjenta takter."
+
+[instrument]
+h21 = "Instrumentet ditt"
+p1 = "Fretscribe spør om dette én gang og husker det til tabbene dine. Du kan endre det i Innstillinger, og <strong>Ikke nå</strong> starter deg på gitar i standardstemming."
+li1 = "<strong>Instrument:</strong> gitar, bass, ukulele eller mandolin."
+li2 = "<strong>Strenger:</strong> hvor mange instrumentet ditt har."
+li3 = "<strong>Vanlig stemming:</strong> standard, en senket stemming eller dropstemming, DADGAD eller en åpen stemming."
+li4 = "<strong>Hvilken hånd er på halsen?</strong> Venstre hånd for de fleste; høyre hånd for et venstrehendt instrument eller et som spilles opp ned. Tabben ser lik ut uansett."
+li5 = "<strong>Du leser:</strong> tab."
+shot1 = "Gjenta takter: opptaket spiller disse taktene om og om igjen. Fra takt 1, til takt 4, og Avbryt."
+
+[open]
+h21 = "Åpne eller spill inn"
+p1 = "Velg én på Hjem:"
+li1 = "<strong>Åpne et opptak:</strong> en lydfil du har."
+li2 = "<strong>Spill inn med mikrofonen:</strong> spill et riff eller en hel sang."
+li3 = "<strong>Spill inn det som spilles:</strong> det en annen app på telefonen spiller."
+p2 = "Fretscribe kan ikke laste ned fra en lenke. Spill inn det som spilles, eller åpne en fil du har. Den åpner ikke note- eller tabfiler ennå. Det du har skrevet ned, ligger under <strong>Sangene dine</strong>, hver med instrumentet, stemmingen og tonene som gjenstår å sjekke."
+
+[what_is_this]
+h21 = "Hva er dette?"
+p1 = "Fretscribe spør hva opptaket er, fordi den lytter forskjellig til hvert av dem:"
+li1 = "<strong>Bare instrumentet mitt:</strong> instrumentet ditt alene."
+li2 = "<strong>En hel sang:</strong> et band eller en plate. Fretscribe plukker ut stemmen til instrumentet ditt."
+p2 = "Så skriver Bandroom på datamaskinen ned tonene. Skjermen sier hva hvert steg er og viser hvor langt den har kommet: lytter etter pulsen, skriver ned tonene, plasserer dem i takter, velger strenger og bånd, setter opp tabben. Ha Fretscribe åpen til tabben er klar, eller velg <strong>Avbryt</strong>."
+
+[check]
+h21 = "Sjekk sangen"
+p1 = "Før du får noen tab, viser Fretscribe hva den hørte. Er noe feil her, blir båndene feil også, så se over:"
+li1 = "<strong>Stemming:</strong> når opptaket høres ut som en annen stemming enn din, sier den fra og tilbyr den."
+li2 = "<strong>Oktav:</strong> når tonene er flyttet en oktav for å passe instrumentet ditt, kan du få dem skrevet slik de ble hørt."
+li3 = "<strong>Kammertone:</strong> vises når opptaket ligger litt over eller under vanlig kammertone. Fretscribe tar hensyn til det."
+li4 = "<strong>Toneart og tempo.</strong>"
+li5 = "<strong>Toner å sjekke:</strong> hvor mange toner den var usikker på. De er merket <span class=\"uncertain\"><strong>?</strong></span> i tabben."
+li6 = "<strong>Toner uten plass:</strong> toner som ikke kan spilles på instrumentet ditt slik det er stemt. Det betyr som regel at stemmingen er feil."
+p2 = "Velg <strong>Vis tabben</strong>. Du kan endre svarene senere."
+
+[tab]
+h21 = "Les og øv"
+p1 = "Tabben viser stemmen din, med stemmingen og capoen øverst. Avspilleren ligger under:"
+li1 = "<strong>Spill</strong> spiller opptaket ditt og følger tabben, takt og slag. Pilene går til forrige og neste takt."
+li2 = "<strong>Tempo</strong> spiller opptaket saktere eller raskere."
+li3 = "<strong>Gjenta takter</strong> spiller taktene du velger, om og om igjen."
+li4 = "Knappene øverst gjør tabben større eller mindre, eller fyller skjermen med den."
+p2 = "En tone Fretscribe var usikker på, har et <span class=\"uncertain\"><strong>?</strong></span> over seg. Velg tonen, eller <strong>Sjekk dem</strong>, så sier Fretscribe hvor den er og tilbyr <strong>Spill denne takten sakte</strong>, så du kan høre selv. Et <strong>!</strong> merker en tone som ikke har noen plass på instrumentet ditt slik det er stemt."
+p3 = "Merkene finner noen av de gale tonene, ikke de fleste, så en tone uten merke kan også være feil. Du kan ikke endre en enkelt tone i appen ennå. Feil stemming eller oktav retter du i <a href=\"#check\">Sjekk sangen</a>, og datamaskinen skriver tabben på nytt."
+
+[problems]
+h21 = "Hvis noe går galt"
+li1 = "<strong>Ikke tilkoblet:</strong> sjekk at Bandroom kjører på datamaskinen og at telefonen er på samme Wi-Fi, og velg <strong>Koble til</strong>. Gjestenett og kontornett hindrer ofte enheter i å se hverandre."
+li2 = "<strong>Datamaskinen kjenner ikke lenger igjen telefonen:</strong> koble den til på nytt, som under <a href=\"#computer\">Datamaskinen din</a>."
+li3 = "<strong>Appen sier at Fretscribe eller Bandroom må oppdateres:</strong> appen og Bandroom må være fra samme utgivelse. Last ned den den nevner, på nytt."
+li4 = "<strong>Båndene ser feil ut overalt:</strong> gå tilbake til <a href=\"#check\">Sjekk sangen</a> og se på stemmingen og oktaven."
+p1 = "<a href=\"#main\">Til toppen</a>"

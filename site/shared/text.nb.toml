@@ -1,0 +1,70 @@
+# Words every page uses: the bar, the app's row of pages, the figures, the download page's groups.
+# The same keys are in text.en.toml; the build fails when they differ.
+
+[bar]
+skip = "Hopp til innholdet"
+apps = "Scribe-appene"
+all = "Scribe"
+noscript = "På engelsk: den norske versjonen trenger JavaScript."
+
+[nav]
+label = "Sidene til denne appen"
+overview = "Oversikt"
+guide = "Veiledning"
+download = "Last ned"
+how = "Slik virker det"
+
+[downloads]
+files = "Filene i siste utgivelse"
+file = "Fil"
+for = "For"
+
+[fig]
+play = "Spill"
+pause = "Pause"
+position = "Posisjon i opptaket"
+bar_beat = "Takt {bar}, slag {beat}"
+stage = "Steg {n} av {total}"
+previous = "Forrige steg"
+next = "Neste steg"
+steps = "Steg"
+tuning = "Stemming"
+capo = "Capo"
+no_capo = "Uten capo"
+capo_n = "Capo på bånd {n}"
+tab_label = "Tab av {title}, {bars} takter, i {tuning}."
+tab_scroll = "Tabben. Rull sidelengs for å lese videre."
+pick = "Velg et tall i tabben for å se hvor ellers den tonen kan spilles. Piltastene går fra tone til tone."
+as_text = "Den samme tabben som ren tekst ({tuning})"
+platform = "Enhet"
+table = "Dette gjør {name} på hver enhet"
+alone = "Virker alene"
+with_bandroom = "Trenger Bandroom på datamaskinen"
+which_device = "Hvilken enhet har du?"
+hear_recording = "Opptaket"
+hear_written = "De skrevne notene"
+hear = "Det du hører"
+
+[groups.android]
+title = "Android"
+note = "Krever Android 16 eller nyere. Tillat installering fra nettleseren eller filbehandleren, og åpne APK-filen. Den oppdaterer en tidligere versjon, og det du har laget blir liggende. De fleste telefoner og nettbrett bruker den første filen."
+
+[groups.ios]
+title = "iPhone og iPad"
+note = "Krever iOS eller iPadOS 26 eller nyere. Ligger ikke i App Store ennå. Dette er en testversjon uten signatur, som du signerer med din egen Apple-konto før den kan installeres: <a href=\"@/guide/#download-ios\">slik signerer og installerer du den</a>."
+
+[groups.mac]
+title = "Mac"
+note = "Krever macOS 26 eller nyere og Apple-prosessor. Ikke notarisert ennå: pakk ut, flytt appen til Programmer og åpne den én gang, og velg så <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>."
+
+[groups.windows]
+title = "Windows"
+note = "For Windows 11 (x64). Ikke signert ennå: pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>."
+
+[groups.bandroom]
+title = "Bandroom, til datamaskinen"
+note = "Bandroom kjører på din egen Mac eller PC og skriver ned notene for appen på telefonen, over ditt eget nettverk. Ett Bandroom betjener alle Scribe-appene. <a href=\"@/guide/#computer\">Slik setter du det opp</a>."
+
+[groups.tools]
+title = "For den tekniske"
+note = "Kommandolinjeverktøyet bak appene, og sjekksummene for alle filene i utgivelsen."

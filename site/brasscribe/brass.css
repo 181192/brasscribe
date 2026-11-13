@@ -1,0 +1,32 @@
+/* Brasscribe's pages: brass and engraved music. The tokens (assets/brasscribe.css) carry the colours and the
+   type; this is what the shared stylesheets do differently for this brand. */
+
+/* The headline is engraved: Instrument Serif, large, the italic in brass. */
+h1 { font-size: clamp(2.6rem, 6.4vw, 4.5rem); }
+.hero { background: linear-gradient(180deg, var(--scribe-brand-tint), var(--scribe-bg) 62%); }
+
+/* The page is a part on a music stand: a system's five lines open every section, as the pen's line does on
+   Fretscribe's ruled paper. */
+main > section h2::before {
+  content: ""; display: block; width: 96px; height: 25px; margin-bottom: var(--scribe-space-4);
+  background:
+    radial-gradient(ellipse 7px 5px at 82px 15.5px, var(--scribe-brand) 98%, transparent) no-repeat,
+    linear-gradient(var(--scribe-brand), var(--scribe-brand)) 88.5px 0 / 1.5px 16px no-repeat,
+    repeating-linear-gradient(180deg, var(--scribe-line) 0 1px, transparent 1px 6px);
+  opacity: 0.9;
+}
+main > section + section { border-top: 0; }
+main > section:nth-of-type(even) { background: var(--scribe-surface); }
+/* What is laid on the stand stands a little off it. */
+.strip-stage, .stage-figure, .partview, .matrix .table-scroll, .flow .phone-frame { box-shadow: var(--scribe-elevation-1); }
+.matrix .table-scroll, .missed { background: var(--scribe-surface-raised); }
+.matrix .table-scroll { border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); padding: 0 var(--scribe-space-4); }
+.gets li { border-top-color: var(--scribe-brand); }
+.sure-end { font-family: var(--scribe-font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.25; }
+.stages-nav button { font-family: var(--scribe-font-display); font-size: 1.25rem; font-weight: 400; }
+
+@media (max-width: 600px) {
+  .hero { padding-top: var(--scribe-space-6); }
+  .hero .strip { margin-top: var(--scribe-space-5); }
+}
+@media (forced-colors: active) { main > section h2::before { display: none; } }

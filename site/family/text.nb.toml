@@ -1,0 +1,5 @@
+# Ord som alle sidene til familieforsiden bruker. De samme nøklene står i text.en.toml.
+
+[footer]
+line = "Brasscribe og Fretscribe er gratis og har åpen kildekode."
+note = "<a href=\"https://github.com/181192/brasscribe\">Kildekode</a>"

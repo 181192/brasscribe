@@ -113,12 +113,20 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
 
 ## Not distributed
 
-The evaluation datasets (ChoraleBricks CC BY 4.0, URMP, Slakh) and the PANNs tagger used for
+The evaluation datasets (ChoraleBricks CC BY 4.0, GuitarSet CC BY 4.0, URMP, Slakh) and the PANNs tagger used for
 research are downloaded on request by the development tools and never bundled. The repository keeps
-small derived test data only:
+small derived test data, and two short excerpts for the public site:
 
 - `eval/fixtures/`: MIDI, beats and pitch contours computed from the ChoraleBricks v1.1.0 recordings
   (CC BY 4.0, Zenodo 10.5281/zenodo.20849469; see `eval/README.md`). Bandroom's bundled workspace
   includes this folder.
+- `site/brasscribe/take/` and `site/brasscribe/figures/`: 14.6 s of the opening of J. S. Bach's "Ich steh an deiner
+  Krippe hier" from ChoraleBricks v1.1.0 (S. Balke, A. Berndt, M. Müller; CC BY 4.0, Zenodo 10.5281/zenodo.20849469),
+  two trumpets, a baritone and a tuba mixed to mono (`take.mp3`), with what the engine wrote from it. Shown and
+  played on the public site, with this credit. Made by `site/brasscribe/make_take.py`.
+- `site/fretscribe/take/` and `site/fretscribe/figures/`: 15.2 s of take `04_SS3-98-C_comp` of GuitarSet (Q. Xi,
+  R. Bittner, J. Pauwels, X. Ye, J. P. Bello, ISMIR 2018; CC BY 4.0, Zenodo 10.5281/zenodo.3371780) as mono
+  `take.mp3`, with what the engine wrote from it. Shown and played on the public site, with this credit. Made by
+  `site/fretscribe/make_take.py`.
 - `apps/android/features/score/pitch/src/test/resources/`: Basic Pitch notes and Beat This! beats of 30 s of one URMP
   track (URMP, University of Rochester; B. Li et al., IEEE Trans. Multimedia 2019).

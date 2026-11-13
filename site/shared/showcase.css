@@ -27,6 +27,29 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 /* Where a note was heard, once it has been moved onto the beat. */
 .tab-ink .ghost { fill: none; stroke: var(--scribe-border-strong); stroke-width: 1; stroke-dasharray: 2 2; }
 
+/* Engraved notation (site/brasscribe/make_figures.py): its ink and its letters are the page's. */
+.score-ink { color: var(--scribe-ink); fill: currentColor; font-family: var(--scribe-font-display); overflow: visible; }
+.score-ink path, .score-ink ellipse, .score-ink polyline, .score-ink polygon, .score-ink rect { stroke: currentColor; }
+.score-ink .doubt, .score-ink .dir, .score-ink .bracketSpan { color: var(--scribe-uncertain); }
+.score-strip .strip-ink > svg, .score-strip .strip-sound > svg { top: 12px; }
+.stage-figure.score-ink { padding: var(--scribe-space-3); }
+.stage-figure.band { max-height: none; max-width: 520px; }
+.tab-ink .heard.strings { opacity: 0.35; }
+.tab-ink .heard.bass { opacity: 0.6; }
+.partview { margin-top: var(--scribe-space-6); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); padding: var(--scribe-space-4); }
+.partview [hidden] { display: none; }
+.partview .tabdemo-status { margin-top: var(--scribe-space-3); min-height: 3.2em; }
+.partview .note { cursor: pointer; outline: none; }
+.partview .note .hit { fill: transparent; stroke: none; }
+.partview .note:hover { color: var(--scribe-brand-text); }
+.partview .note.chosen .hit { fill: var(--scribe-brand-tint); stroke: var(--scribe-brand); stroke-width: 14; }
+.partview .note:focus-visible .hit { stroke: var(--scribe-focus); stroke-width: 26; }
+.partview details { margin-bottom: 0; }
+.part-list { columns: 2 12em; margin: 0; padding-left: 2.2em; font-size: var(--scribe-type-callout-size); }
+
+.steps-note { margin: var(--scribe-space-8) 0 0; font-size: var(--scribe-type-callout-size); }
+.sure-end { margin-top: var(--scribe-space-6); max-width: 46em; }
+
 /* The strip under the headline. */
 .strip { --t: 520; margin: var(--scribe-space-10) 0 0; }
 .strip-stage {
@@ -37,9 +60,9 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 }
 .strip-ink { position: absolute; inset: 0 auto 0 0; width: var(--pen); overflow: hidden; }
 .strip-sound { position: absolute; inset: 0 0 0 var(--pen); overflow: hidden; }
-.strip-ink svg, .strip-sound svg { position: absolute; top: 0; max-width: none; transform: translateX(calc(var(--t) * -1px)); will-change: transform; }
-.strip-ink svg { left: 100%; }
-.strip-sound svg { left: 0; }
+.strip-ink > svg, .strip-sound > svg { position: absolute; top: 0; max-width: none; transform: translateX(calc(var(--t) * -1px)); will-change: transform; }
+.strip-ink > svg { left: 100%; }
+.strip-sound > svg { left: 0; }
 .strip-pen { position: absolute; top: 14px; bottom: 14px; left: var(--pen); width: 2px; margin-left: -1px; background: var(--scribe-brand); border-radius: 1px; }
 .strip-pen::before { content: ""; position: absolute; left: -5px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: var(--scribe-brand); }
 .strip-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-3) var(--scribe-space-4); margin-top: var(--scribe-space-4); }
@@ -50,16 +73,16 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .strip figcaption { margin-top: var(--scribe-space-3); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); max-width: 52em; }
 @media (min-width: 901px) { .strip-stage { --pen: 38%; } }
 /* Under a headline the strip runs the full width of the page, and closes the hero. */
-.hero:has(> .strip) { padding-bottom: 0; }
-.hero > .strip { margin-top: var(--scribe-space-8); }
-.hero > .strip .strip-controls, .hero > .strip figcaption { max-width: 1120px; margin-left: auto; margin-right: auto; padding: 0 var(--scribe-space-6); }
-.hero > .strip figcaption { padding-bottom: var(--scribe-space-10); }
+.hero:has(.strip) { padding-bottom: 0; }
+.hero .strip { margin-top: var(--scribe-space-8); }
+.hero .strip .strip-controls, .hero .strip figcaption { max-width: 1120px; margin-left: auto; margin-right: auto; padding: 0 var(--scribe-space-6); }
+.hero .strip figcaption { padding-bottom: var(--scribe-space-10); }
 
 /* The steps from sound to written music. Without the script they are a list; with it, one at a time. */
 .stages { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; gap: var(--scribe-space-10); }
 .stage { display: grid; gap: var(--scribe-space-5); grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; }
 .stage[hidden] { display: none; }
-.stage-figure { width: 100%; height: auto; max-width: 600px; overflow: hidden; background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); }
+.stage-figure { width: 100%; height: auto; max-width: 600px; max-height: 340px; overflow: hidden; background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); }
 .stage h3 { margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-title-2-size); }
 .stage-count { margin: 0 0 var(--scribe-space-1); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
 .stage-engine { margin: 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
@@ -79,7 +102,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .stages-nav button.done { border-color: var(--scribe-brand); color: var(--scribe-brand-text); }
 .stages-nav button[aria-current] { background: var(--scribe-brand); border-color: var(--scribe-brand); color: var(--scribe-bg); }
 .stages.live { margin-top: var(--scribe-space-6); }
-.stages-foot { display: flex; gap: var(--scribe-space-3); margin-top: var(--scribe-space-5); }
+.stages-foot { display: flex; gap: var(--scribe-space-3); margin-top: var(--scribe-space-4); }
 .stages-foot .button { min-height: 44px; }
 .stages-foot .button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
 @media (min-width: 901px) {
@@ -164,4 +187,70 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
   .strip-pen, .strip-pen::before, .stages-nav::before, .stages-nav::after { background: CanvasText; }
   .stages-nav button[aria-current], .matrix-pick button[aria-pressed="true"] { background: Highlight; color: HighlightText; }
 }
-@media print { .strip-controls, .stages-nav, .stages-foot, .tabdemo-controls, .matrix-pick { display: none; } }
+@media print {
+  .strip-controls, .stages-nav, .stages-foot, .tabdemo-controls, .tabdemo-hint, .matrix-pick { display: none; }
+  /* On paper every step is there, one under the other. */
+  .stages .stage[hidden] { display: grid !important; }
+  .matrix tbody tr[hidden] { display: table-row !important; }
+}
+
+/* The front page every app shares: its parts in the same order, with the same spacing. */
+.hero { padding-top: var(--scribe-space-10); }
+.hero .lead { max-width: 30em; margin-bottom: 0; }
+.hero .actions { margin-top: var(--scribe-space-5); }
+main > section > .wrap > h2 { max-width: 20em; }
+.gets { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: var(--scribe-space-6) var(--scribe-space-8); }
+.gets h3 { margin: 0 0 var(--scribe-space-1); font-size: var(--scribe-type-headline-size); }
+.gets p { margin: 0; color: var(--scribe-text-muted); }
+.gets li { padding-top: var(--scribe-space-3); border-top: 2px solid var(--scribe-brand); }
+.quiet { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
+.quiet a { color: var(--scribe-text-muted); }
+.getit .lead { max-width: 34em; }
+.needs-list { margin-top: var(--scribe-space-6); max-width: 46em; }
+.sure-end { margin-top: var(--scribe-space-6); max-width: 40em; font-size: 1.125rem; font-weight: 600; }
+
+/* What you hear when the strip plays: the recording, or the notes that were written. */
+.strip-hear { display: inline-flex; border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); overflow: hidden; }
+.strip-hear button { min-height: 44px; padding: 0 var(--scribe-space-4); font: inherit; font-size: var(--scribe-type-callout-size); font-weight: 600; cursor: pointer; color: var(--scribe-text); background: none; border: 0; }
+.strip-hear button + button { border-left: 1px solid var(--scribe-border-strong); }
+.strip-hear button[aria-pressed="true"] { background: var(--scribe-primary); color: var(--scribe-on-primary); }
+.strip-hear button:focus-visible { outline-offset: -3px; }
+.strip figcaption a { color: inherit; }
+
+/* The two listeners of the "hearing" step: one filled, the other an outline over it. */
+.tab-ink .listener-2 rect { fill: none; stroke: var(--scribe-ink); stroke-width: 1.5; }
+.tab-ink .listener-2 .rang { stroke: var(--scribe-ink); opacity: 0.5; }
+.stage-figure.band { display: grid; gap: 2px; padding: var(--scribe-space-3); }
+.stage-figure.band svg { width: 100%; height: auto; }
+
+/* A measured rate as ten notes on a line: a cross through a wrong one, a question mark over a marked one. */
+.rates { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.rates .rate { display: block; }
+.rates .rate p { margin-top: var(--scribe-space-1); }
+.tens { display: block; width: 100%; max-width: 300px; height: auto; }
+.tens .string { stroke: var(--scribe-line); stroke-width: 1; }
+.tens .mark { font: 700 15px var(--scribe-font-text); text-anchor: middle; fill: var(--scribe-uncertain); }
+.tens .right ellipse { fill: var(--scribe-ink); }
+.tens .wrong ellipse { fill: var(--scribe-surface-raised); stroke: var(--scribe-uncertain); stroke-width: 1.5; }
+.tens .cross { stroke: var(--scribe-uncertain); stroke-width: 1.5; stroke-linecap: round; }
+@media (forced-colors: active) {
+  .tens .right ellipse, .tens .mark { fill: CanvasText; }
+  .tens .wrong ellipse { fill: Canvas; stroke: CanvasText; }
+  .tens .cross, .tens .string { stroke: CanvasText; }
+  .strip-hear button[aria-pressed="true"] { background: Highlight; color: HighlightText; }
+}
+
+/* The part viewer: the players' parts under each other. */
+.part-stack { display: grid; gap: var(--scribe-space-2); width: max-content; }
+.part-stack svg { display: block; }
+
+/* Two hundred notes as dots, the wrong ones without a mark standing out. */
+.twohundred { display: block; width: 100%; max-width: 300px; height: auto; }
+.twohundred .right { fill: var(--scribe-border-strong); }
+.twohundred .wrong { fill: var(--scribe-uncertain); stroke: var(--scribe-uncertain); stroke-width: 2.5; }
+.twohundred + p { font-size: 1.125rem; max-width: 18em; margin-top: var(--scribe-space-3); }
+.sure-source { margin: var(--scribe-space-8) 0 0; max-width: 40em; color: var(--scribe-text-muted); }
+@media (forced-colors: active) {
+  .twohundred .right { fill: none; stroke: CanvasText; stroke-width: 1; }
+  .twohundred .wrong { fill: CanvasText; stroke: CanvasText; }
+}
