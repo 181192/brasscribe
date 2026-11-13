@@ -213,7 +213,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
 
@@ -227,7 +227,7 @@ jobs:
           cargo build --release -p scribe-ffi
 
       - name: Install cbindgen
-        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2
+        uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2
         with:
           tool: cbindgen
 
@@ -382,7 +382,7 @@ jobs:
 
       # The screens run against the host build of the core (the JVM tests load it through JNA).
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
           shared-key: android
@@ -391,7 +391,7 @@ jobs:
         working-directory: core
         run: cargo build --release -p scribe-ffi
 
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           # The action's cache is a separate component under Gradle's Terms of Use; the plain cache
           # step below holds what Gradle downloads instead.
@@ -493,7 +493,7 @@ jobs:
       # The screens run against the host build of the core (the JVM tests load it through JNA).
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
       # The same build as job android makes: its cache is read here, and not saved a second time.
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
           shared-key: android
@@ -503,7 +503,7 @@ jobs:
         working-directory: core
         run: cargo build --release -p scribe-ffi
 
-      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           # The action's cache is a separate component under Gradle's Terms of Use; the plain cache
           # step below holds what Gradle downloads instead.
