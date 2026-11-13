@@ -76,8 +76,11 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     ranked by fit, the recording's offset from A = 440, tempo, key and meter, and the octave shift. The tab itself is
     `tab.musicxml`, written by the same crate (`scribe-core tab`), and `tab.pdf` and `tab.mid` through MuseScore
     when it is installed; `/musicxml`, `/pdf` and `/midi` of the job serve them. A file MuseScore does not
-    write does not fail the job: the log and the export stage's `export.json` (`missing`) name it, and the next
-    job tries again.
+    write does not fail the job: the job's `missing` names it with the reason and what to do (as do the log and
+    the export stage's `export.json`), asking for the file answers 404 with the same words, and the next job
+    tries again. A band job on a computer without MuseScore lists its PDF, MIDI and MP3 the same way. A
+    MuseScore that is started and does not get going (no file written, no processor time used) is stopped after
+    half a minute, not at the conversion's ten-minute limit.
   - The same tab is also written as text, by the same crate from the same request: `tab.txt` for a monospace
     font (a page, a message), and `tab-instructions.en.txt` and `tab-instructions.nb.txt`, the tab in words bar
     by bar and beat by beat, for a screen reader or a braille display

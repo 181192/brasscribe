@@ -164,7 +164,8 @@ def export(ctx: StageContext) -> None:
     """Score PDF, MIDI and (optionally) MP3, plus one PDF per part, via the MuseScore CLI.
 
     MuseScore 4 aborts during shutdown after writing its output, so success is
-    judged by the output file, never the exit code.
+    judged by the output file, never the exit code. Without MuseScore the job has its score and no PDF, MIDI
+    or MP3: export.json lists them as skipped, and the job's result names them (runner.missing_outputs).
     """
     score = ctx.inputs["score"]
     xml = score / BAND.musicxml
@@ -177,9 +178,12 @@ def export(ctx: StageContext) -> None:
         dsts = [ctx.out / BAND.file(ext) for ext in formats]
         parts = sorted((score / "parts").glob("*.musicxml"))
         part_dsts = [ctx.out / "parts" / part.with_suffix(".pdf").name for part in parts]
-        missing = musescore.convert_many([(xml, dsts)], cancel=ctx.executor.cancel)  # stopping the job stops MuseScore
-        missing += musescore.convert_many(list(zip(parts, part_dsts)),
-                                          style=PART_STYLE if PART_STYLE.exists() else None, cancel=ctx.executor.cancel)
+        try:
+            missing = musescore.convert_many([(xml, dsts)], cancel=ctx.executor.cancel)  # stopping the job stops MuseScore
+            missing += musescore.convert_many(list(zip(parts, part_dsts)),
+                                              style=PART_STYLE if PART_STYLE.exists() else None, cancel=ctx.executor.cancel)
+        except musescore.NotStarting as e:
+            raise StageFailed(ctx.stage.name, f"{e}. {musescore.advice()}") from None
         if missing:
             raise StageFailed(ctx.stage.name, f"MuseScore did not write {missing[0].name}")
         written = [d.name for d in dsts] + [f"parts/{d.name}" for d in part_dsts]
@@ -193,7 +197,8 @@ def export(ctx: StageContext) -> None:
     accessible = accessible_exports(score, ctx)
     written += accessible.pop("written")
     (ctx.out / "export.json").write_text(json.dumps({"musescore": mscore, "written": written,
-                                                     "skipped": [] if mscore else formats, **accessible}, indent=1))
+                                                     "skipped": [] if mscore else [BAND.file(ext) for ext in formats],
+                                                     **accessible}, indent=1))
 
 
 def _level_mp3(mp3: Path, score: Path, ctx: StageContext) -> dict | None:

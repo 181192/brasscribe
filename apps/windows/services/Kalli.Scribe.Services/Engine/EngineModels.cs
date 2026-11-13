@@ -58,6 +58,13 @@ public sealed record ArrangementOptions(string Lineup = "full", string Difficult
 public sealed record StageState(string Name, string Status, string? Device = null, string? Kind = null, double? Seconds = null,
     double? QueueWaitS = null, double? RunS = null);
 
+/// <summary>
+/// A file a succeeded job should have had and has not (its PDF, its MIDI). <c>Reason</c> is one of the engine's words
+/// (musescore-not-installed, musescore-not-starting, musescore-failed), and <c>Message</c> says in English what
+/// happened and what to do on the computer.
+/// </summary>
+public sealed record MissingOutput(string Name, string Reason, string Message);
+
 public sealed record Job(
     string Id,
     string Profile,
@@ -73,7 +80,8 @@ public sealed record Job(
     IReadOnlyList<string>? Outputs = null,
     string? PreviousRunId = null,
     string? DeviceName = null,
-    string? Target = null)
+    string? Target = null,
+    IReadOnlyList<MissingOutput>? Missing = null)
 {
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;

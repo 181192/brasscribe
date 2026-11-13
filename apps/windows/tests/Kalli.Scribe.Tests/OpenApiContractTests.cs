@@ -34,6 +34,7 @@ public class OpenApiContractTests
         ["AudioRef"] = typeof(AudioRef),
         ["JobCreate"] = typeof(JobCreate),
         ["Job"] = typeof(Job),
+        ["MissingOutput"] = typeof(MissingOutput),
         ["StageState"] = typeof(StageState),
         ["Artifact"] = typeof(Artifact),
         ["StageArtifacts"] = typeof(StageArtifacts),

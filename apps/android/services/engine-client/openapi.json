@@ -1188,6 +1188,14 @@
             "title": "Id",
             "type": "string"
           },
+          "missing": {
+            "description": "files a succeeded job should have had and has not (its PDF, its MIDI), each with why. The rest of the job is whole; asking for one of these files answers 404 with the same message",
+            "items": {
+              "$ref": "#/components/schemas/MissingOutput"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
           "outputs": {
             "description": "names fetchable under /v1/jobs/{id}/artifacts/{name}",
             "items": {
@@ -1662,6 +1670,37 @@
           "beats"
         ],
         "title": "Meter",
+        "type": "object"
+      },
+      "MissingOutput": {
+        "properties": {
+          "message": {
+            "description": "what happened and what to do about it on the computer, in English; an app with its own words for `reason` shows those instead",
+            "title": "Message",
+            "type": "string"
+          },
+          "name": {
+            "description": "the file the job would have had under /v1/jobs/{id}/artifacts/{name}",
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "description": "musescore-not-installed: there is no MuseScore on the computer. musescore-not-starting: it was started, wrote nothing and did no work, and was stopped. musescore-failed: it ran and left the file out",
+            "enum": [
+              "musescore-not-installed",
+              "musescore-not-starting",
+              "musescore-failed"
+            ],
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "reason",
+          "message"
+        ],
+        "title": "MissingOutput",
         "type": "object"
       },
       "ModelFile": {

@@ -131,6 +131,63 @@ def test_on_macos_musescore_runs_in_a_home_of_its_own(tmp_path, monkeypatch, pla
     assert not (user_home / "Documents").exists()
 
 
+def _stand_in(tmp_path, monkeypatch, body: str):
+    monkeypatch.setattr(musescore, "LOCK_FILE", tmp_path / "mscore.flock")
+    exe = tmp_path / "mscore"
+    exe.write_text(f"#!{sys.executable}\nimport json, sys, time\n{body}")
+    exe.chmod(0o755)
+    monkeypatch.setattr(musescore, "binary", lambda: str(exe))
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
+def test_a_musescore_that_does_not_get_going_is_stopped_within_seconds(tmp_path, monkeypatch):
+    """Started, it writes nothing and does no work (it waits for a folder it may not open, or for an answer to
+    a dialog of its own): that is not waited out to the conversion's time limit."""
+    _stand_in(tmp_path, monkeypatch, "time.sleep(120)\n")
+    monkeypatch.setattr(musescore, "START_PATIENCE", 2.0)
+    started = time.monotonic()
+    with pytest.raises(musescore.NotStarting, match="did not get going"):
+        musescore.convert_many([(tmp_path / "a.musicxml", tmp_path / "a.pdf")], timeout=120.0)
+    assert time.monotonic() - started < 30
+    with musescore._lock():  # and the next conversion is not kept waiting for it
+        pass
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the stand-in MuseScore here is a script with a #! line")
+def test_a_musescore_that_works_slowly_is_left_to_finish(tmp_path, monkeypatch):
+    """Busy for longer than the patience before its first file is there, and then quiet for longer than the
+    patience with one file written: neither is a MuseScore that does not get going."""
+    _stand_in(tmp_path, monkeypatch, """outs = [e["out"] for e in json.load(open(sys.argv[sys.argv.index("-j") + 1]))]
+until = time.monotonic() + 6
+while time.monotonic() < until:
+    pass
+open(outs[0], "w").write("first")
+time.sleep(5)
+open(outs[1], "w").write("second")
+""")
+    monkeypatch.setattr(musescore, "START_PATIENCE", 3.0)  # more than a start can take on a busy machine
+    outs = [tmp_path / "a.pdf", tmp_path / "a.mid"]
+    assert musescore.convert_many([(tmp_path / "a.musicxml", outs)], timeout=60.0) == []
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="the child here is started through a shell")
+def test_processor_time_is_read_for_the_whole_tree(tmp_path):
+    import subprocess
+
+    from scribe_music.process_tree import cpu_seconds, kill_tree
+
+    spin = "import time\nuntil = time.monotonic() + 30\nwhile time.monotonic() < until:\n    pass\n"
+    proc = subprocess.Popen(["/bin/sh", "-c", f'"{sys.executable}" -c "{spin}" & wait'])
+    try:
+        deadline = time.monotonic() + 20
+        while (cpu_seconds(proc.pid) or 0.0) < 1.0:  # the shell itself uses none: this is its child's
+            assert time.monotonic() < deadline
+            time.sleep(0.2)
+    finally:
+        kill_tree(proc)
+    assert cpu_seconds(proc.pid) is None  # gone
+
+
 def test_the_conversions_folder_is_deleted_although_something_still_writes_into_it(tmp_path):
     """MuseScore's helpers can outlive it for a moment and write into the home once more: the delete is tried
     again until the folder is gone, rather than leaving the late file behind."""

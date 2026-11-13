@@ -298,7 +298,7 @@ def test_the_band_export_renders_only_with_the_musescore_it_was_keyed_on(tmp_pat
                           stage=SimpleNamespace(name="export"), params={"audio": False, "musescore": None},
                           executor=SimpleNamespace(cancel=None))
     S.export(ctx)
-    assert launched == [] and json.loads((tmp_path / "export.json").read_text())["skipped"] == ["pdf", "mid"]
+    assert launched == [] and json.loads((tmp_path / "export.json").read_text())["skipped"] == ["brass-band.pdf", "brass-band.mid"]
     ctx.params = {"audio": False, "musescore": "0123456789abcdef"}
     S.export(ctx)
     assert launched and json.loads((tmp_path / "export.json").read_text())["musescore"] == "mscore"

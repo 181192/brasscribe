@@ -223,7 +223,17 @@ data class Job(
     @SerialName("previous_run_id") val previousRunId: String? = null,
     /** The paired device that started the job; null when started on the engine's own computer. */
     @SerialName("device_name") val deviceName: String? = null,
+    /** Files a succeeded job should have had and has not (its PDF, its MIDI), each with why. */
+    val missing: List<MissingOutput> = emptyList(),
 )
+
+/**
+ * A file a succeeded job lacks. [reason] is one of the engine's words (musescore-not-installed,
+ * musescore-not-starting, musescore-failed; kept as text so a reason a newer engine adds still reads), and
+ * [message] says in English what happened and what to do on the computer.
+ */
+@Serializable
+data class MissingOutput(val name: String, val reason: String, val message: String)
 
 @Serializable
 data class Artifact(
