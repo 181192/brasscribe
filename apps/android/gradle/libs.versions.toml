@@ -11,7 +11,7 @@ navigation = "2.10.2"
 coreKtx = "1.19.1"
 alphaTab = "1.8.4"
 # alphaTab 1.8.4 pulls alphaSkia 3.4.135, whose 64-bit libraries are 4 KB aligned; 3.5.147 is 16 KB aligned.
-alphaSkia = "3.5.147"
+alphaSkia = "4.0.157"
 oboe = "1.11.0"
 media3 = "1.11.1"
 onnxruntime = "1.31.1"
