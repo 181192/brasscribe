@@ -412,13 +412,14 @@ class Page:
             self.used |= {"title", "description"}
         if self.whole:
             # One whole body per language: the Norwegian one is swapped in as it is.
-            bodies = {}
+            bodies, sources = {}, self.body
             for lang in LANGS:
-                self.lang, self.plain = lang, True
+                # While a language is written, the page is that language's page: its body, its numbering.
+                self.lang, self.plain, self.body = lang, True, sources[lang]
                 for kept in ("figures", "paper"):  # the research pages number their figures and sources from one in each language
                     self.__dict__.pop(kept, None)
-                bodies[lang] = self.links(self.macros(self.body[lang]).replace("@lang/", "@/"))
-            self.lang, self.plain = "en", False
+                bodies[lang] = self.links(self.macros(self.body).replace("@lang/", "@/"))
+            self.lang, self.plain, self.body = "en", False, sources
             nb["main"] = bodies["nb"].rstrip()
             main = bodies["en"]
         else:
