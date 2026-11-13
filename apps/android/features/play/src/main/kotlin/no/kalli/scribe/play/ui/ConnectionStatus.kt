@@ -58,7 +58,7 @@ fun openAppUpdate(context: android.content.Context, vm: PlayViewModel) {
     runCatching {
         context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(appDownload(vm.container.product)))
             .addCategory(android.content.Intent.CATEGORY_BROWSABLE))
-    }.onFailure { vm.say(R.string.bandroom_no_browser) }
+    }.onFailure { vm.say(R.string.update_no_browser) }
 }
 
 /**

@@ -11,8 +11,6 @@ struct FretscribeModelTests {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../../../fixtures/\(name)").standardizedFileURL
     }
 
-    /// A tab job carries the player's instrument, tuning and reading, and what "What is this?" was answered with; none of
-    /// the band's options.
     /// When this app is the one to update, a Mac goes straight to the app's own file in the latest release.
     @Test func anOutdatedAppIsSentToItsOwnFile() {
         let model = FretscribeModel(defaults: UserDefaults(suiteName: "fs-model-\(UUID().uuidString)")!)
@@ -23,6 +21,8 @@ struct FretscribeModelTests {
         #endif
     }
 
+    /// A tab job carries the player's instrument, tuning and reading, and what "What is this?" was answered with; none of
+    /// the band's options.
     @Test func aTabJobSaysTheInstrumentAndTheRecording() {
         let fields = FretscribeModel.fields(instrument: YourInstrument(.bass5, tuning: "drop-a", reads: .tabAndNotation), recording: .song)
         let sent = Dictionary(uniqueKeysWithValues: fields.map { ($0.name, $0.value) })
