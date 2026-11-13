@@ -16,7 +16,7 @@ main_class: wrap guide
       <li><a href="#output">How should the score be?</a></li>
       <li><a href="#score">The score and the player</a></li>
       <li><a href="#share">Share or print</a></li>
-      <li><a href="#computer">Brasscribe on your computer</a></li>
+      <li><a href="#computer">Bandroom on your computer</a></li>
       <li><a href="#access">Accessibility</a></li>
       <li><a href="#trouble">When something goes wrong</a></li>
       <li><a href="#credits">Sounds and credits</a></li>
@@ -31,7 +31,7 @@ main_class: wrap guide
       <p>Brasscribe Play runs on iPhone, iPad, Mac, Android and Windows. It is in early testing, so there is no store listing yet. Android phones, Macs and Windows PCs can <a href="#download">download it</a> (Windows as a preview). For iPhone and iPad there is a <a href="#download-ios">test build</a> that the band's tech person signs and puts on the device.</p>
       <p>The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href="#instrument">what you play</a>. It asks for the microphone only when you first record.</p>
       <div class="note">
-        <p><strong>Solo or full band?</strong> A full band is always written by Bandroom on your computer, on the same Wi-Fi as the phone. A single instrument is written by the app itself on Android and on a Windows PC; on iPhone, iPad and Mac it goes through the computer too, for now. See <a href="#computer">Brasscribe on your computer</a>.</p>
+        <p><strong>Solo or full band?</strong> A full band is always written by Bandroom on your computer, on the same Wi-Fi as the phone. A single instrument is written by the app itself on Android and on a Windows PC; on iPhone, iPad and Mac it goes through the computer too, for now. See <a href="#computer">Bandroom on your computer</a>.</p>
       </div>
     </section>
 
@@ -50,7 +50,7 @@ main_class: wrap guide
         <li><strong>Which devices:</strong> an iPhone with iOS 26 or newer, or an iPad with iPadOS 26 or newer.</li>
         <li><strong>Sign and install:</strong> use a sideloading tool on a computer: a program that signs the file with your Apple Account and puts the app on the iPhone or iPad. Xcode cannot sign this file. With Xcode on a Mac you build the app from the <a href="https://github.com/181192/brasscribe#readme">source code on GitHub</a> instead.</li>
         <li><strong>The first time:</strong> the device asks you to turn on <strong>Developer Mode</strong> (<strong>Settings › Privacy &amp; Security</strong>) and to trust your account under <strong>Settings › General › VPN &amp; Device Management</strong>.</li>
-        <li><strong>Scores come from the computer at first:</strong> a newly installed test build makes its scores through <a href="#computer">Brasscribe on your computer</a>. To write down a solo on the iPhone or iPad itself, the app needs its listening files, and it does not yet know where to get them: the tech person fills in <strong>Download address</strong> in the app's Settings, under <strong>On this device › Details for the band's tech person</strong>.</li>
+        <li><strong>Scores come from the computer at first:</strong> a newly installed test build makes its scores through <a href="#computer">Bandroom on your computer</a>. To write down a solo on the iPhone or iPad itself, the app needs its listening files, and it does not yet know where to get them: the tech person fills in <strong>Download address</strong> in the app's Settings, under <strong>On this device › Details for the band's tech person</strong>.</li>
         <li><strong>Seven days:</strong> a signature from a free Apple Account lasts 7 days. After that the app does not open until you sign it again. Sign with the same account and the same tool, and your scores and settings stay.</li>
         <li><strong>A few apps:</strong> a free Apple Account can keep only a few apps like this on a device at a time.</li>
         <li><strong>Not tried on a device yet:</strong> the file is built and checked for every release, but nobody has installed it on an iPhone or iPad this way yet, so reports are welcome.</li>
@@ -262,8 +262,8 @@ main_class: wrap guide
     </section>
 
     <section id="computer">
-      <h2>Brasscribe on your computer</h2>
-      <p>For a full band, Brasscribe on your computer (a Mac or PC) makes the score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else.</p>
+      <h2>Bandroom on your computer</h2>
+      <p>For a full band, Bandroom on your computer (a Mac or PC) makes the score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else.</p>
       <figure class="wide">
         <div class="window">
           <div class="window-bar" aria-hidden="true"><i></i><i></i><i></i><span>Brasscribe Studio · Score viewer</span></div>
@@ -274,17 +274,17 @@ main_class: wrap guide
           </picture>
         </div>
       </figure>
-      <p>On a Mac with Apple silicon or a Windows PC (x64), install <strong>Brasscribe Bandroom</strong> from the <a href="#download">download</a>. It runs quietly in the background; look for the Brasscribe mark in the menu bar at the top of a Mac's screen, or in the notification area of the Windows taskbar.</p>
+      <p>On a Mac with Apple silicon or a Windows PC (x64), install <strong>Bandroom</strong> (Brasscribe Bandroom in the list of programs) from the <a href="#download">download</a>. It runs quietly in the background; look for the Brasscribe mark in the menu bar at the top of a Mac's screen, or in the notification area of the Windows taskbar.</p>
       <ul>
         <li>The first run downloads what Brasscribe needs, about 10 GB, so keep about 15 GB free. The internet is needed only for these downloads.</li>
         <li>It asks for an access key from Hugging Face, to download the band writer. That model is free for non-commercial use only (CC BY-NC 4.0): accept its licence with your own Hugging Face account. Its makers add one condition: use it only for music you have the rights to, and you take responsibility for that. Bandroom keeps the key in your Keychain on a Mac, and in Credential Manager on Windows.</li>
-        <li>On a Mac, after you update Bandroom, macOS asks once whether it may use its saved key. Enter your Mac password and choose <strong>Always Allow</strong>. Bandroom waits until you answer, then brings its engine up to date by itself.</li>
+        <li>On a Mac, after you update Bandroom, macOS asks once whether it may use its saved key. Enter your Mac password and choose <strong>Always Allow</strong>. Bandroom waits until you answer, then finishes its update by itself.</li>
       </ul>
       <p>Then connect your phone:</p>
       <ol>
         <li>On the computer, choose <strong>Pair a phone</strong>. It shows a six-digit code and a QR code.</li>
         <li>Put your phone on the <strong>same Wi-Fi</strong> as the computer.</li>
-        <li>In the app, open <strong>Settings</strong>, then <strong>Brasscribe on your computer</strong>.</li>
+        <li>In the app, open <strong>Settings</strong>, then the page for your computer. Some of the apps still call it <strong>Brasscribe on your computer</strong>.</li>
         <li>Your computer appears in the list, for example <em>Brasscribe on Studio Mac</em>. Choose it. On Windows, choose <strong>Find on this network</strong> first.</li>
         <li>Type the six-digit code and choose <strong>Connect</strong>, or scan the QR code with the phone's camera.</li>
       </ol>
@@ -366,8 +366,8 @@ pixi run serve-lan</code></pre>
         <p>A solo take can't be written down for the percussion part yet. Record the band instead: you get a percussion part when the recording has drums.</p>
       </details>
       <details>
-        <summary>"Brasscribe on your computer is too old"</summary>
-        <p>Update Brasscribe Bandroom, or the engine, on the computer. An older one can still make a score, but not for every instrument or choice.</p>
+        <summary>"Bandroom on your computer is too old"</summary>
+        <p>Update Bandroom on the computer, or the engine if you run it by hand. Some of the apps say “Brasscribe on your computer” in this message. An older one can still make a score, but not for every instrument or choice.</p>
       </details>
     </section>
 
