@@ -3203,6 +3203,16 @@
         }
       }
     },
+    "Download the latest version": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last ned den nyeste versjonen"
+          }
+        }
+      }
+    },
     "Open the download page": {
       "localizations": {
         "nb": {

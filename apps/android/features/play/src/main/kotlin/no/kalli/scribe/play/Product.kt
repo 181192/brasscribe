@@ -17,6 +17,12 @@ interface Product {
     /** The app's name, as the screens say it. */
     val name: String
 
+    /**
+     * The start of the app's file names in a release ("brasscribe-play-android"): the file for this phone is
+     * `<releaseFile>-arm64-v8a.apk`, and the one for every processor `<releaseFile>-universal.apk`.
+     */
+    val releaseFile: String
+
     /** What this app is for: of the engine's profiles, the ones of this target are its own. */
     val target: Target
 

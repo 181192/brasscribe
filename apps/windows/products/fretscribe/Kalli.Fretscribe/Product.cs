@@ -12,6 +12,12 @@ internal static class Product
     /// <summary>It writes tab for a fretted instrument.</summary>
     public static Target Target => Target.Fretted;
 
+    /// <summary>The app's file in a release, where an outdated app is sent for its update.</summary>
+    public const string ReleaseFile = "fretscribe-windows-x64.zip";
+
+    /// <summary>Bandroom's file for Windows in a release, where an outdated Bandroom on this PC is updated from.</summary>
+    public const string BandroomReleaseFile = "brasscribe-bandroom-windows-x64.zip";
+
     /// <summary>Settings, the work folder, the practice recordings, the crash log: %LOCALAPPDATA%\Fretscribe.</summary>
     public static readonly AppFolder Folder = new("Fretscribe");
 

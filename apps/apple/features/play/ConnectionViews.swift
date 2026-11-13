@@ -120,8 +120,8 @@ struct ConnectionStatusRow: View {
     }
 }
 
-/// Where the update is, for the one of the two that needs it. It is made outside the app: this app's from its download
-/// page, the computer's on the computer, from the address to type there. Shown wherever the update words are: the
+/// Where the update is, for the one of the two that needs it. It is made outside the app: this app's from its own file
+/// in the latest release (its download page on iPhone and iPad), the computer's on the computer, from the address to type there. Shown wherever the update words are: the
 /// connection row, a pairing that was refused, and a score asked of the computer.
 struct UpdateAction: View {
     let which: InterfaceMatch.Update
@@ -134,7 +134,14 @@ struct UpdateAction: View {
     var body: some View {
         switch which {
         case .app:
-            Link(destination: downloads) { Text("Open the download page") }
+            // Straight to the app's own file where the device can open it (a Mac); else to the page it is on.
+            Link(destination: host!.appDownload) {
+                #if os(macOS)
+                Text("Download the latest version")
+                #else
+                Text("Open the download page")
+                #endif
+            }
                 .buttonStyle(SecondaryButtonStyle(outline: true, minHeight: 44))
                 .accessibilityIdentifier("\(place)GetUpdate")
         case .computer:

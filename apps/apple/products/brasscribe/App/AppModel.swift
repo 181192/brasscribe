@@ -425,6 +425,14 @@ final class AppModel: PlayHost {
 
     /// Brasscribe Play and Bandroom are downloaded from the repository's latest release.
     let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
+    /// Brasscribe Play's own file in the latest release (`PlayHost.appDownload`).
+    var appDownload: URL {
+        #if os(macOS)
+        downloads.appending(path: "download/brasscribe-play-macos-arm64.zip")
+        #else
+        downloads
+        #endif
+    }
 
     func recorded(_ url: URL, title: String) { acceptRecording(url, title: title) }
     func recordedSilence() { show(.silence) }

@@ -55,7 +55,8 @@ public sealed partial class ErrorViewModel(IStrings s) : ObservableObject
         PrimaryLabel = s["Error_TryAgain"];
         SecondaryLabel = s["Error_ChooseAnother"];
         bool update = kind is ErrorKind.UpdateApp or ErrorKind.UpdateBandroom;
-        LinkUri = update ? Engine.ConnectionMonitor.LatestRelease : null;
+        // (The engine's address is not known here: an older Bandroom gets the page, which has it for both systems.)
+        LinkUri = update ? Engine.Downloads.For(kind == ErrorKind.UpdateApp ? Engine.InterfaceAnswer.UpdateApp : Engine.InterfaceAnswer.UpdateBandroom, engineOnThisPc: false) : null;
         LinkHelp = update ? s["Error_GetUpdate_Help"] : "";
         LinkLabel = update ? s["Error_GetUpdate"] : "";
         DetailsHeading = s["Error_DetailsHeading"];

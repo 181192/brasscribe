@@ -159,6 +159,8 @@ public partial class App : Application
         var ui = new DispatcherQueueDispatcher(queue);
         var announcer = new UiaAnnouncer(() => window?.AnnouncerHost, queue);
         var dialogs = new WinFileDialogs(() => window is null ? 0 : WinRT.Interop.WindowNative.GetWindowHandle(window));
+        Kalli.Scribe.Engine.Downloads.AppFile = Product.ReleaseFile;
+        Kalli.Scribe.Engine.Downloads.DesktopFile = Product.BandroomReleaseFile;
         var core = CoreBridge.Create(Product.Target);
 
         var synthOut = new BufferedSynthOutput();

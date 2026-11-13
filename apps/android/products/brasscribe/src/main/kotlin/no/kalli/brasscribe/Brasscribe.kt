@@ -28,6 +28,7 @@ import no.kalli.scribe.play.ui.theme.ProductColors
 /** What makes this build Brasscribe: its name, the screens it opens with and the scores it makes. */
 object Brasscribe : Product {
     override val name = "Brasscribe"
+    override val releaseFile = "brasscribe-play-android"
 
     /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
     override val opensScores = true

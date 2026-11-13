@@ -60,6 +60,7 @@ import no.kalli.scribe.play.ui.theme.ProductColors
 /** What makes this build Fretscribe: its name, the screens it opens with and the tabs it makes. */
 object Fretscribe : Product {
     override val name = "Fretscribe"
+    override val releaseFile = "fretscribe-android"
 
     /**
      * Home has no Open a tab: a MusicXML file opened from Home would show on Brasscribe's score screen, not in the tab

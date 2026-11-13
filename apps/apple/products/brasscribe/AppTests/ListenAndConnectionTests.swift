@@ -171,6 +171,16 @@ import TranscriptionKit
     #expect(AppModel().downloads.absoluteString == "https://github.com/181192/brasscribe/releases/latest")
 }
 
+/// When this app is the one to update, a Mac goes straight to the app's own file in the latest release; an iPhone
+/// or iPad, which cannot open a release's unsigned archive, goes to the page.
+@Test @MainActor func anOutdatedAppIsSentToItsOwnFile() {
+    #if os(macOS)
+    #expect(AppModel().appDownload.absoluteString == "https://github.com/181192/brasscribe/releases/latest/download/brasscribe-play-macos-arm64.zip")
+    #else
+    #expect(AppModel().appDownload == AppModel().downloads)
+    #endif
+}
+
 /// Tests and screenshots never read or write the real Keychain.
 @Test @MainActor func testsUseAnInMemoryCredentialStore() {
     #expect(AppModel.makeCredentialStore() is InMemoryCredentialStore)
