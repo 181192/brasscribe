@@ -195,6 +195,26 @@ def choose_grids_dense(onset_beats: np.ndarray, coarse: list[tuple[float, float]
     return choice
 
 
+# One instrument that plays chords (a tab): the notes of a strum start together, so what a grid has to hold is
+# the onsets, not the notes. Onsets under CHORD_SPREAD of a beat after the one before them, in the same beat, are
+# that onset again.
+CHORD_SPREAD = 0.06
+
+
+def distinct_onsets(onset_beats: np.ndarray) -> np.ndarray:
+    """The onsets (in beats) with every chord counted once: its first note's."""
+    last: dict[int, float] = {}
+    kept = []
+    for x in np.sort(onset_beats):
+        k = int(np.floor(x + 1 / 12))
+        f = x - k
+        if k in last and f - last[k] < CHORD_SPREAD:
+            continue
+        last[k] = f
+        kept.append(k + f)
+    return np.array(kept)
+
+
 def snap(x: float, grids: dict[int, int], default: int = 4) -> int:
     k = int(np.floor(x + 1 / 12))
     g = grids.get(k, default)
@@ -203,9 +223,12 @@ def snap(x: float, grids: dict[int, int], default: int = 4) -> int:
 
 def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False, auto_level: bool = True,
              coarse: list[tuple[float, float]] | None = None, dense: bool = False) -> list[QNote]:
-    """Notes on the beat grid. `dense` (a monophonic line: the solo) lets beats whose grid would lose onsets choose
-    a finer one (choose_grids_dense), and moves a note that still lands on a taken slot to the next free slot of
-    its beat's grid, at half its confidence, instead of dropping it."""
+    """Notes on the beat grid. `dense` lets beats whose grid would lose onsets choose a finer one
+    (choose_grids_dense). On a monophonic line (the solo) a note that still lands on a taken slot then moves to
+    the next free slot of its beat's grid, at half its confidence, instead of being dropped. Without `monophonic`
+    it is for one instrument that plays chords (a tab): the grids are chosen for its distinct onsets
+    (distinct_onsets), so two strums are not written on one slot while a grid could hold both. The tab
+    profiles do not ask for it yet (docs/shared/research/18-quality-revisit.md, §2)."""
     if not notes:
         return []
     if auto_level:
@@ -213,8 +236,8 @@ def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False
     bm = BeatMap(beat_times)
     on = bm.to_beats(np.array([n["onset"] for n in notes]))
     off = bm.to_beats(np.array([n["offset"] for n in notes]))
-    if dense and monophonic:
-        grids = choose_grids_dense(on, coarse, np.r_[np.diff(bm.t), bm.t[-1] - bm.t[-2]])
+    if dense:
+        grids = choose_grids_dense(on if monophonic else distinct_onsets(on), coarse, np.r_[np.diff(bm.t), bm.t[-1] - bm.t[-2]])
     else:
         grids = choose_grids(on, coarse)
     out = []

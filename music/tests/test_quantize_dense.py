@@ -98,3 +98,51 @@ def test_three_note_sixteenth_figures_stay_sixteenths():
                 notes, beats = jittered(140, pattern, 4, jitter, seed)
                 q = quantize(notes, beats, monophonic=True, auto_level=False, dense=True)
                 assert all(x.start % 6 == 0 for x in q), (pattern, jitter, seed, [x.start % 24 for x in q])
+
+
+def _strums(pattern, beat=0.5, beats=16, size=3, late=0.0):
+    """`size`-note strums at the fractions of `pattern` in every beat, each strum's notes a few ms apart."""
+    notes = []
+    for i in range(beats):
+        for f in pattern:
+            t = (i + f) * beat + late
+            notes += [{"pitch": 48 + 5 * c, "onset": t + 0.004 * c, "offset": t + 0.2 * beat} for c in range(size)]
+    return notes, np.arange(beats + 2) * beat
+
+
+def _slots(q):
+    return sorted({x.start % 24 for x in q})
+
+
+def test_chords_keep_their_own_slots():
+    """One instrument playing chords: an 8th and two 16ths, a dotted 8th and a 16th, and triplets are written on
+    their own slots, where the plain choice puts two strums on one slot."""
+    for pattern, slots in (((0, 0.5, 0.75), [0, 12, 18]), ((0, 0.75), [0, 18]), ((0, 1 / 3, 2 / 3), [0, 8, 16]),
+                           ((0, 0.25, 0.5, 0.75), [0, 6, 12, 18])):
+        for late in (0.0, 0.012):
+            notes, beats = _strums(pattern, late=late)
+            q = quantize(notes, beats, monophonic=False, auto_level=False, dense=True)
+            assert _slots(q) == slots, (pattern, late)
+            assert len(q) == len(notes)
+            starts = {}
+            for x in q:  # a strum's notes stay on one slot
+                starts.setdefault(round(x.onset_s - 0.004 * ((x.pitch - 48) // 5), 6), set()).add(x.start)
+            assert all(len(s) == 1 for s in starts.values())
+    notes, beats = _strums((0, 0.5, 0.75), late=0.012)
+    assert _slots(quantize(notes, beats, monophonic=False, auto_level=False)) != [0, 12, 18]
+
+
+def test_chords_that_fit_a_plain_grid_keep_it():
+    """Straight 8ths stay 8ths, and swung 8ths (long-short, two onsets to the beat) are not evidence of triplets."""
+    for pattern in ((0, 0.5), (0, 2 / 3), (0,)):
+        notes, beats = _strums(pattern)
+        plain = quantize(notes, beats, monophonic=False, auto_level=False)
+        dense = quantize(notes, beats, monophonic=False, auto_level=False, dense=True)
+        assert [(x.pitch, x.start, x.end) for x in dense] == [(x.pitch, x.start, x.end) for x in plain]
+
+
+def test_distinct_onsets_count_a_chord_once():
+    from scribe_music.quantize import distinct_onsets
+
+    on = np.array([1.0, 1.01, 1.02, 1.5, 1.52, 1.97, 2.0, 2.3])
+    assert distinct_onsets(on).tolist() == [1.0, 1.5, 1.97, 2.3]
