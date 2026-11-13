@@ -87,118 +87,131 @@ let pagesDraw: Bool = {
     #endif
 }()
 
-@MainActor
-@Suite(.serialized, .enabled(if: pagesDraw)) struct TabPageTests {
-    @Test(.timeLimit(.minutes(2))) func engravesOfflineInBothAppearancesAndFollowsTheCursor() async throws {
-        let page = TabPage()
-        let window = hosted(page)
-        defer { _ = window }
-        let xml = try fixture("bass-line/tab.musicxml")
+/// Every test that starts a web page or a player, one at a time: together they ask more of WebKit and of the
+/// system's media services than a small machine (a CI runner, a simulator just booted) gives in the time a test
+/// waits, and each then fails for the others' load, not for a fault of its own.
+@Suite(.serialized) struct OneAtATime {}
 
-        let t0 = Date()
-        let e = try await page.show(musicXML: xml, palette: light)
-        let first = Date().timeIntervalSince(t0)
-        #expect(page.networkBlocked)
-        #expect(e.height > 50)
-        #expect(e.bars.count == 15)
-        #expect(!e.resources.isEmpty)
-        #expect(e.resources.allSatisfy { $0.hasPrefix("\(TabPage.scheme)://") }, "\(e.resources)")
-        #expect(e.resources.contains { $0.hasSuffix("Bravura.woff2") })
-        #expect(e.fonts.contains { $0.hasSuffix(":loaded") }, "\(e.fonts)")
-        let lightShot = try await snapshot(page)
-        save(lightShot, "tab-light.png")
-        let ink = share(of: light.ink, in: lightShot)
-        #expect(ink > 0.001, "light ink share \(ink)")
+extension OneAtATime {
+    @MainActor
+    @Suite(.serialized, .enabled(if: pagesDraw)) struct TabPageTests {
+        @Test(.timeLimit(.minutes(3))) func engravesOfflineInBothAppearancesAndFollowsTheCursor() async throws {
+            let page = TabPage()
+            let window = hosted(page)
+            defer { _ = window }
+            let xml = try fixture("bass-line/tab.musicxml")
 
-        // The cursor: a beat in bar 3, from Swift to the page and back.
-        var times: [Double] = []
-        for i in 0..<60 {
-            let t = Date()
-            let r = try await page.cursor(bar: i % e.bars.count, tick: (i * 240) % 3840)
-            times.append(Date().timeIntervalSince(t) * 1000)
-            #expect(r != nil)
+            let t0 = Date()
+            let e = try await page.show(musicXML: xml, palette: light)
+            let first = Date().timeIntervalSince(t0)
+            #expect(page.networkBlocked)
+            #expect(e.height > 50)
+            #expect(e.bars.count == 15)
+            #expect(!e.resources.isEmpty)
+            #expect(e.resources.allSatisfy { $0.hasPrefix("\(TabPage.scheme)://") }, "\(e.resources)")
+            #expect(e.resources.contains { $0.hasSuffix("Bravura.woff2") })
+            #expect(e.fonts.contains { $0.hasSuffix(":loaded") }, "\(e.fonts)")
+            let lightShot = try await snapshot(page)
+            save(lightShot, "tab-light.png")
+            let ink = share(of: light.ink, in: lightShot)
+            #expect(ink > 0.001, "light ink share \(ink)")
+
+            // The cursor: a beat in bar 3, from Swift to the page and back.
+            var times: [Double] = []
+            for i in 0..<60 {
+                let t = Date()
+                let r = try await page.cursor(bar: i % e.bars.count, tick: (i * 240) % 3840)
+                times.append(Date().timeIntervalSince(t) * 1000)
+                #expect(r != nil)
+            }
+            let r = try #require(try await page.cursor(bar: 2, tick: 960))
+            let box = try #require(e.bars.first { $0.bar == 2 })
+            #expect(r.minX >= box.x && r.minX <= box.x + box.w, "cursor \(r) in bar \(box)")
+            let cursorShot = try await snapshot(page)
+            save(cursorShot, "tab-cursor.png")
+            #expect(share(of: light.cursor, in: cursorShot) > 0)
+
+            let t1 = Date()
+            _ = try await page.palette(dark)
+            let again = Date().timeIntervalSince(t1)
+            let darkShot = try await snapshot(page)
+            save(darkShot, "tab-dark.png")
+            #expect(share(of: dark.ink, in: darkShot) > 0.001)
+            #expect(share(of: light.ink, in: darkShot) < 0.0001)
+
+            times.sort()
+            print("TAB spike: first engraving \(Int(first * 1000)) ms (alphaTab \(e.milliseconds) ms), dark again \(Int(again * 1000)) ms, "
+                  + "cursor round trip median \(String(format: "%.1f", times[times.count / 2])) ms, p95 \(String(format: "%.1f", times[times.count * 95 / 100])) ms, "
+                  + "resources \(e.resources.map { URL(string: $0)!.lastPathComponent }), fonts \(e.fonts)")
         }
-        let r = try #require(try await page.cursor(bar: 2, tick: 960))
-        let box = try #require(e.bars.first { $0.bar == 2 })
-        #expect(r.minX >= box.x && r.minX <= box.x + box.w, "cursor \(r) in bar \(box)")
-        let cursorShot = try await snapshot(page)
-        save(cursorShot, "tab-cursor.png")
-        #expect(share(of: light.cursor, in: cursorShot) > 0)
 
-        let t1 = Date()
-        _ = try await page.palette(dark)
-        let again = Date().timeIntervalSince(t1)
-        let darkShot = try await snapshot(page)
-        save(darkShot, "tab-dark.png")
-        #expect(share(of: dark.ink, in: darkShot) > 0.001)
-        #expect(share(of: light.ink, in: darkShot) < 0.0001)
+        @Test(.timeLimit(.minutes(3))) func doubtfulNumeralsTakeTheDoubtColour() async throws {
+            let page = TabPage()
+            let window = hosted(page)
+            defer { _ = window }
+            // the first note of the bass line: bar 0, low E string (alphaTab counts strings from the lowest, 1), fret 0, tick 0
+            let e = try await page.show(musicXML: try fixture("bass-line/tab.musicxml"), palette: light, doubtful: ["0:1:0:0"])
+            #expect(e.bars.count == 15)
+            let shot = try await snapshot(page)
+            save(shot, "tab-doubt.png")
+            #expect(share(of: light.uncertain, in: shot) > 0)
+        }
 
-        times.sort()
-        print("TAB spike: first engraving \(Int(first * 1000)) ms (alphaTab \(e.milliseconds) ms), dark again \(Int(again * 1000)) ms, "
-              + "cursor round trip median \(String(format: "%.1f", times[times.count / 2])) ms, p95 \(String(format: "%.1f", times[times.count * 95 / 100])) ms, "
-              + "resources \(e.resources.map { URL(string: $0)!.lastPathComponent }), fonts \(e.fonts)")
+        /// Two engravings asked for at once both get their answer, one after the other.
+        @Test(.timeLimit(.minutes(3))) func twoEngravingsAskedAtOnceBothAnswer() async throws {
+            let page = TabPage()
+            let window = hosted(page)
+            defer { _ = window }
+            let xml = try fixture("bass-line/tab.musicxml")
+            async let first = page.show(musicXML: xml, palette: light)
+            async let second = page.show(musicXML: try fixture("guitar-line/tab.musicxml"), palette: dark, scale: 1.5)
+            let (a, b) = try await (first, second)
+            #expect(a.bars.count == 15)
+            #expect(b.bars.count > 0 && b.bars.count != 15)
+            #expect(page.engraving == b)
+        }
     }
 
-    @Test(.timeLimit(.minutes(1))) func doubtfulNumeralsTakeTheDoubtColour() async throws {
-        let page = TabPage()
-        let window = hosted(page)
-        defer { _ = window }
-        // the first note of the bass line: bar 0, low E string (alphaTab counts strings from the lowest, 1), fret 0, tick 0
-        let e = try await page.show(musicXML: try fixture("bass-line/tab.musicxml"), palette: light, doubtful: ["0:1:0:0"])
-        #expect(e.bars.count == 15)
-        let shot = try await snapshot(page)
-        save(shot, "tab-doubt.png")
-        #expect(share(of: light.uncertain, in: shot) > 0)
+    /// What holds on every platform, also where a page cannot start: a package's tests on the iPhone simulator have no window
+    /// scene, and its web view may never load there. The rule that keeps the page off the network is in place before the
+    /// page is first loaded, and the web view is hidden from VoiceOver. Where the page does load (the Mac here, and
+    /// Fretscribe's app-hosted tests on the iPhone), it loads only the app's own files.
+    @MainActor
+    @Suite(.serialized) struct TabPageEverywhereTests {
+        @Test(.timeLimit(.minutes(3))) func thePageIsOfflineAndHiddenFromVoiceOver() async throws {
+            let page = TabPage()
+            let end = Date().addingTimeInterval(TabPage.testPatience)
+            while !page.networkBlocked, Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+            #expect(page.networkBlocked)
+            #if os(macOS)
+            await page.loaded()
+            let asked = page.requested
+            #expect(asked.allSatisfy { $0.hasPrefix("\(TabPage.scheme)://") }, "\(asked)")
+            #expect(asked.contains { $0.hasSuffix("alphaTab.min.js") } && asked.contains { $0.hasSuffix("tab.js") })
+            #expect(page.webView.isAccessibilityElement() == false)
+            #expect(page.webView.isAccessibilityHidden())
+            #else
+            #expect(page.webView.accessibilityElementsHidden)
+            #endif
+        }
     }
 
-    /// Two engravings asked for at once both get their answer, one after the other.
-    @Test(.timeLimit(.minutes(1))) func twoEngravingsAskedAtOnceBothAnswer() async throws {
-        let page = TabPage()
-        let window = hosted(page)
-        defer { _ = window }
-        let xml = try fixture("bass-line/tab.musicxml")
-        async let first = page.show(musicXML: xml, palette: light)
-        async let second = page.show(musicXML: try fixture("guitar-line/tab.musicxml"), palette: dark, scale: 1.5)
-        let (a, b) = try await (first, second)
-        #expect(a.bars.count == 15)
-        #expect(b.bars.count > 0 && b.bars.count != 15)
-        #expect(page.engraving == b)
-    }
-}
-
-/// What holds on every platform, also where a page cannot start: a package's tests on the iPhone simulator have no window
-/// scene, and its web view may never load there. The rule that keeps the page off the network is in place before the
-/// page is first loaded, and the web view is hidden from VoiceOver. Where the page does load (the Mac here, and
-/// Fretscribe's app-hosted tests on the iPhone), it loads only the app's own files.
-@MainActor
-@Suite(.serialized) struct TabPageEverywhereTests {
-    @Test(.timeLimit(.minutes(1))) func thePageIsOfflineAndHiddenFromVoiceOver() async throws {
-        let page = TabPage()
-        let end = Date().addingTimeInterval(20)
-        while !page.networkBlocked, Date() < end { try await Task.sleep(for: .milliseconds(50)) }
-        #expect(page.networkBlocked)
-        #if os(macOS)
-        await page.loaded()
-        let asked = page.requested
-        #expect(asked.allSatisfy { $0.hasPrefix("\(TabPage.scheme)://") }, "\(asked)")
-        #expect(asked.contains { $0.hasSuffix("alphaTab.min.js") } && asked.contains { $0.hasSuffix("tab.js") })
-        #expect(page.webView.isAccessibilityElement() == false)
-        #expect(page.webView.isAccessibilityHidden())
-        #else
-        #expect(page.webView.accessibilityElementsHidden)
-        #endif
+    /// The page fails closed: when the rule that keeps it off the network cannot be made, it is never loaded, and every
+    /// engraving fails.
+    @MainActor
+    @Test(.timeLimit(.minutes(3))) func withoutItsNetworkRuleThePageIsNotLoaded() async throws {
+        let page = TabPage(rules: "not a rule list")
+        let end = Date().addingTimeInterval(TabPage.testPatience)
+        while page.unavailable == nil, Date() < end { try await Task.sleep(for: .milliseconds(50)) }
+        #expect(page.unavailable != nil)
+        #expect(!page.networkBlocked)
+        await #expect(throws: TabPage.PageError.self) { _ = try await page.show(musicXML: try fixture("bass-line/tab.musicxml"), palette: light) }
+        #expect(page.requested.isEmpty)
     }
 }
 
-/// The page fails closed: when the rule that keeps it off the network cannot be made, it is never loaded, and every
-/// engraving fails.
-@MainActor
-@Test(.timeLimit(.minutes(1))) func withoutItsNetworkRuleThePageIsNotLoaded() async throws {
-    let page = TabPage(rules: "not a rule list")
-    let end = Date().addingTimeInterval(20)
-    while page.unavailable == nil, Date() < end { try await Task.sleep(for: .milliseconds(50)) }
-    #expect(page.unavailable != nil)
-    #expect(!page.networkBlocked)
-    await #expect(throws: TabPage.PageError.self) { _ = try await page.show(musicXML: try fixture("bass-line/tab.musicxml"), palette: light) }
-    #expect(page.requested.isEmpty)
+extension TabPage {
+    /// How long a test waits for the page to get somewhere before it calls it a failure. A wait ends as soon as
+    /// what it waits for is there, so a long one costs nothing where the machine is quick.
+    static let testPatience: TimeInterval = 90
 }
