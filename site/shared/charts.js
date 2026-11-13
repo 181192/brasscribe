@@ -228,7 +228,7 @@
 
   function start() {
     fold();
-    Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart]"), function (figure) {
+    Array.prototype.forEach.call(document.querySelectorAll("figure[data-chart]:not(.is-live)"), function (figure) {
       try { new Chart(figure); } catch (e) {
         // The table stays: a figure never ends up empty.
         figure.classList.remove("is-live");
@@ -238,4 +238,6 @@
     });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+  // A page that swaps its content for another language puts new figures in: draw those.
+  document.addEventListener("scribe:lang", start);
 })();
