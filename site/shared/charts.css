@@ -1,0 +1,136 @@
+/* Figures drawn by charts.js, and the small drawings that explain a measure. Written against the
+   --scribe-… tokens every brand has; a page that uses a figure names this file in its header.
+
+   Series colours: each brand's own hues (Brasscribe's model colours; Fretscribe's cursor blue, doubt
+   amber and loop green), stepped until every pair passes for red-green colour blindness and for full
+   colour vision on the brand's page colour, light and dark. Values are never read from colour alone:
+   each has its number beside it, the key names the series, and the data table repeats everything. */
+.chart {
+  --chart-1: #0072B2; --chart-2: #A65E00; --chart-3: #1C8665;
+  --chart-grid: var(--scribe-border); --chart-zero: var(--scribe-border-strong);
+  margin: var(--scribe-space-8) 0; padding: var(--scribe-space-5); border: 1px solid var(--scribe-border);
+  border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised);
+}
+.chart[data-brand="fretscribe"] { --chart-1: #1F5FAD; --chart-2: #9A5200; --chart-3: #007A5E; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chart { --chart-1: #5C92D6; --chart-2: #C08300; --chart-3: #43AA8B; }
+}
+:root[data-theme="dark"] .chart { --chart-1: #5C92D6; --chart-2: #C08300; --chart-3: #43AA8B; }
+@media (max-width: 520px) { .chart { padding: var(--scribe-space-4) var(--scribe-space-3); } }
+
+.paper .chart-title, .chart-title {
+  font-family: var(--scribe-font-text); font-size: 1.125rem; font-weight: 600; line-height: 1.3; margin: 0 0 var(--scribe-space-1);
+  text-wrap: balance;
+}
+.chart-sub { color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); margin: 0 0 var(--scribe-space-4); }
+.chart-plot { position: relative; }
+.chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-3) var(--scribe-space-6); margin-bottom: var(--scribe-space-2); }
+.chart-views { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-2); border: 0; padding: 0; margin: 0; min-width: 0; }
+.chart-views legend { float: left; padding: 0; margin-right: var(--scribe-space-2); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.chart-views label { position: relative; display: inline-flex; }
+.chart-views input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.chart-views span {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--scribe-space-4);
+  border: 1px solid var(--scribe-border-strong); border-radius: 999px; font-size: var(--scribe-type-callout-size);
+}
+.chart-views input:checked + span { background: var(--scribe-primary); color: var(--scribe-on-primary); border-color: var(--scribe-primary); }
+.chart-views input:focus-visible + span { outline: 2px solid var(--scribe-focus); outline-offset: 2px; }
+.chart-key { display: flex; flex-wrap: wrap; gap: var(--scribe-space-1) var(--scribe-space-4); list-style: none; padding: 0; margin: 0; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
+.chart-key li { display: inline-flex; align-items: center; gap: var(--scribe-space-2); margin: 0; }
+.chart-key[hidden] { display: none; }
+.chart-key i, .chart-tip i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; flex: none; }
+.chart i.s1 { background: var(--chart-1); } .chart i.s2 { background: var(--chart-2); } .chart i.s3 { background: var(--chart-3); }
+.chart-note { min-height: 1.4em; margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+
+.chart-svg { display: block; overflow: visible; font-family: var(--scribe-font-text); }
+.chart-grid { stroke: var(--chart-grid); stroke-width: 1; }
+.chart-grid.zero { stroke: var(--chart-zero); }
+.chart-tick, .chart-axis { fill: var(--scribe-text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chart-label { fill: var(--scribe-text); font-size: 14px; }
+.chart-count { fill: var(--scribe-text-muted); font-size: 12px; }
+.chart-mark { stroke: var(--scribe-text); stroke-width: 1.5; }
+.chart-mark-label { fill: var(--scribe-text); font-size: 12px; font-weight: 600; }
+.chart-value { fill: var(--scribe-text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chart-hit { fill: transparent; }
+.chart-row { outline: none; cursor: default; }
+.chart-row.is-on .chart-hit { fill: var(--scribe-surface); }
+.chart-row:focus-visible .chart-hit { stroke: var(--scribe-focus); stroke-width: 2; }
+.chart-bar.s1, .chart-mean.s1, .chart-piece.s1 { fill: var(--chart-1); } .chart-range.s1 { stroke: var(--chart-1); }
+.chart-bar.s2, .chart-mean.s2, .chart-piece.s2 { fill: var(--chart-2); } .chart-range.s2 { stroke: var(--chart-2); }
+.chart-bar.s3, .chart-mean.s3, .chart-piece.s3 { fill: var(--chart-3); } .chart-range.s3 { stroke: var(--chart-3); }
+.chart-range { stroke-width: 2; stroke-linecap: round; opacity: 0.3; }
+.chart-piece { opacity: 0.5; }
+.chart-mean { stroke: var(--scribe-surface-raised); stroke-width: 2; }
+.chart-row.is-on .chart-mean { stroke: var(--scribe-surface); }
+@media (prefers-reduced-motion: no-preference) {
+  .chart-svg.is-new .chart-bar { animation: chart-grow 0.28s ease-out; transform-box: fill-box; transform-origin: left center; }
+  .chart-svg.is-new .chart-mean, .chart-svg.is-new .chart-piece, .chart-svg.is-new .chart-range { animation: chart-fade 0.28s ease-out; }
+}
+@keyframes chart-grow { from { transform: scaleX(0.6); } }
+@keyframes chart-fade { from { opacity: 0; } }
+
+/* The exact values of the row under the pointer or the keyboard. It keeps its room, so the page never jumps. */
+.chart-tip {
+  position: sticky; bottom: var(--scribe-space-2); z-index: 2;  /* in view while its figure is, also under a tall plot on a phone */
+  min-height: 5.6em; margin-top: var(--scribe-space-3); padding: var(--scribe-space-2) var(--scribe-space-3);
+  border-left: 3px solid var(--scribe-border-strong); background: var(--scribe-surface);
+  border-radius: 0 var(--scribe-radius-sm) var(--scribe-radius-sm) 0;
+  font-size: var(--scribe-type-caption-size); line-height: 1.45; color: var(--scribe-text-muted);
+}
+.chart-tip.is-on { color: var(--scribe-text); border-left-color: var(--scribe-brand); }
+@media (max-width: 600px) { .chart-tip { min-height: 8.6em; } .chart-tip.is-on { box-shadow: 0 0 0 1px var(--scribe-border-strong), 0 4px 14px rgb(0 0 0 / 0.2); } }
+.chart-tip p { margin: 0; }
+.chart-tip-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--scribe-space-2); }
+.chart-tip-row b { font-size: var(--scribe-type-callout-size); font-variant-numeric: tabular-nums; }
+.chart-tip-row i { align-self: center; height: 3px; }
+.chart-tip-range, .chart-tip-n { color: var(--scribe-text-muted); }
+.chart-tip-title { font-weight: 600; }
+
+.chart-data { margin-top: var(--scribe-space-3); font-size: var(--scribe-type-callout-size); }
+.chart-data summary { display: inline-flex; align-items: center; min-height: 36px; cursor: pointer; color: var(--scribe-brand-text); font-weight: 600; }
+.chart-data summary:focus-visible { outline: 2px solid var(--scribe-focus); outline-offset: 2px; border-radius: var(--scribe-radius-xs); }
+.chart-data .table-scroll { margin: var(--scribe-space-2) 0 var(--scribe-space-4); }
+.chart:not(.is-live) .chart-data summary { display: none; }
+.chart figcaption { margin-top: var(--scribe-space-3); }
+
+@media (forced-colors: active) {
+  .chart-bar, .chart-mean, .chart-piece { fill: CanvasText; }
+  .chart-bar.s2, .chart-mean.s2 { fill: Canvas; stroke: CanvasText; stroke-width: 2; }
+  .chart-bar.s3 { fill: GrayText; }
+  .chart-range { stroke: CanvasText; opacity: 1; }
+  .chart-views input:checked + span { background: Highlight; color: HighlightText; forced-color-adjust: none; }
+  .chart i.s1 { background: CanvasText; } .chart i.s2 { background: Canvas; border: 2px solid CanvasText; } .chart i.s3 { background: GrayText; }
+}
+@media print {
+  .chart { break-inside: avoid; border-color: #999; }
+  .chart-controls .chart-views, .chart-tip, .chart-data summary { display: none; }
+}
+
+/* Small drawings that explain a measure: a time line or a bar with notes on it. */
+.measures { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--scribe-space-4); margin: var(--scribe-space-5) 0; padding: 0; list-style: none; }
+.measures > li { margin: 0; padding: var(--scribe-space-4); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); }
+.paper .measures h3 { margin: 0 0 var(--scribe-space-1); font-family: var(--scribe-font-text); font-size: var(--scribe-type-headline-size); font-weight: 600; line-height: 1.3; }
+.measures p { margin: var(--scribe-space-2) 0 0; font-size: var(--scribe-type-callout-size); }
+.measures .formula { font-family: var(--scribe-font-mono); font-size: 0.85em; color: var(--scribe-text-muted); }
+.mv { display: block; width: 100%; height: auto; margin: var(--scribe-space-2) 0; font-family: var(--scribe-font-text); }
+.mv .ln { stroke: var(--scribe-line); stroke-width: 1; fill: none; }
+.mv .bold { stroke: var(--scribe-text); stroke-width: 1.5; fill: none; }
+.mv .win { fill: var(--scribe-brand-tint); stroke: var(--scribe-brand); stroke-width: 1; }
+.mv .ref { fill: var(--scribe-text); }
+.mv .ok { fill: var(--scribe-success); }
+.mv .bad { fill: var(--scribe-surface-raised); stroke: var(--scribe-error); stroke-width: 2; }
+.mv .txt { fill: var(--scribe-text-muted); font-size: 11px; }
+.mv .strong { fill: var(--scribe-text); font-size: 12px; font-weight: 600; }
+.mv .q { fill: var(--scribe-uncertain); font-size: 13px; font-weight: 700; }
+@media (forced-colors: active) {
+  .mv .ln, .mv .bold { stroke: CanvasText; } .mv .ref, .mv .ok, .mv .txt, .mv .strong, .mv .q { fill: CanvasText; }
+  .mv .bad { fill: Canvas; stroke: CanvasText; } .mv .win { fill: Canvas; stroke: CanvasText; }
+}
+
+/* The contents list of a paper: a list beside the text on a wide screen, folded above it on a narrow one. */
+.toc-fold { border: 0; background: none; margin: 0; padding: 0; }
+.toc-fold > summary.toc-title { padding: 0 var(--scribe-space-3); min-height: 44px; }
+@media (min-width: 901px) {
+  .toc-fold > summary.toc-title { pointer-events: none; min-height: 0; }
+  .toc-fold > summary.toc-title::before { content: none; }
+}

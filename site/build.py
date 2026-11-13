@@ -13,7 +13,8 @@ site works under any path or host:
 Macros: {{shot <slot> sizes="…" alt="…" [load="lazy|high"]}}, {{file <name>}} (the download URL of a
 release file), {{releases}}, {{downloads}} (the table of release files), {{products}} (family page),
 {{figure <name> …}} (a figure drawn from the repository's data: site/shared/figures.py, or the product's
-own figures.py), {{data <file> <path/to/value> [as="percent"]}} (a number from a JSON file in the repository).
+own figures.py), {{data <file> <path/to/value> [as="percent"]}} (a number from a JSON file in the repository), and
+the research pages' measurements and figures ({{data <key> [format]}}, {{chart …}} and more: site/research.py).
 A page's header may name `styles:` and `scripts:` (files in the product's folder or in site/shared).
 """
 
@@ -28,6 +29,8 @@ import struct
 import sys
 import tomllib
 from pathlib import Path
+
+import research
 
 SITE = Path(__file__).resolve().parent
 ROOT = SITE.parent
@@ -240,6 +243,8 @@ class Page:
             if name == "releases":
                 return self.product.releases
             if name == "data":
+                if len(words) == 1 or words[1] in research.FORMATS:  # a named measurement: site/research.py
+                    return research.macro(self, name, words, args)
                 value = figures().lookup(words[0], words[1])
                 return str(round(value * 100)) if args.get("as") == "percent" else str(value)
             if name == "figure":
@@ -254,6 +259,8 @@ class Page:
                 made = self.downloads_table()
             elif name == "products":
                 made = self.product_sheets()
+            elif name in research.MACROS:
+                made = research.macro(self, name, words, args)
             else:
                 sys.exit(f"{self.dir}: unknown macro {{{{{name}}}}}")
             # A block keeps the indentation of the line its macro stands on.

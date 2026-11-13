@@ -1,0 +1,93 @@
+# Numbers the research pages show that are not in eval/baselines.json: counts that describe an eval
+# set, and measurements that were made once and are recorded only in prose under docs/.
+# Each table says where its numbers come from. A number that cannot be traced to a run is not here.
+# site/research.py reads this file: a page prints a value with {{data m/<table>/<field>}}.
+
+[datasets]
+# Counted from the repository and the benchmark doc.
+source = "eval/fixtures/choralebricks-solo (one <stem>.notes.csv per stem); docs/shared/research/10-benchmark-results.md, 'Song benchmark: Slakh trumpet-lead tracks'"
+choralebricks_solo_stems = 93     # find eval/fixtures/choralebricks-solo -name '*.notes.csv' | wc -l
+slakh_trumpet_songs = 2           # BabySlakh Track00006 and Track00014
+fast_notes_frozen_clips = 253     # ls eval/fixtures/fast-notes | wc -l
+
+[solo_vote]
+# Notes per agreement class behind the precisions gated in the solo-vote suite.
+source = "docs/shared/research/10-benchmark-results.md, 'Solo line: three-way vote (MuScriptor, Basic Pitch, SwiftF0)'"
+command = "python -m scribe_eval.solo_vote_bench"
+dataset = "Mega-53 solo stems of the 10 ChoraleBricks brass quartets and Slakh Track00006 and Track00014"
+n_all = 193
+n_mus_sw = 110
+n_bp_sw = 578
+n_sw = 297
+n_bp_mus = 14
+
+[jobs]
+# Whole jobs on the computer, every stage forced to run, one stage at a time.
+source = "docs/shared/research/13-performance-audit.md, 'M5. Engine stage timings from run manifests', stage parallelism 1"
+command = "SCRIBE_STAGE_PARALLELISM=1 pixi run scribe run --profile <solo|brass-band> --cold all <recording>"
+machine = "Apple M-series Mac, macOS 26"
+band_audio_s = 247      # the whole test recording: beats, MuScriptor, Basic Pitch, arrange, export
+band_s = 95.6
+band_muscriptor_s = 75  # "in the band job MuScriptor alone is 75 s" (same section)
+solo_audio_s = 30       # beats, SwiftF0, Basic Pitch, MuScriptor, contour, arrange, export
+solo_s_fast = 21.4
+solo_s_slow = 23.2
+
+[triplets]
+# Share of notes the dense quantizer puts on their true slot; computed onsets with timing jitter, no audio.
+source = "docs/brasscribe/plan/fast-notes.md, '8.2 Triplets with timing jitter', table 'Dense probe', column 'After'"
+command = "python docs/shared/research/fastnotes/dense_probe.py"
+dataset = "computed onsets: triplet eighths at 100 BPM with 15 ms jitter; sextuplets at 100 BPM with 10 ms jitter"
+triplet_eighths = 0.97
+sextuplets = 0.94
+
+[solo_stages]
+# The model calls of the 30-second solo job above, in seconds.
+source = "docs/shared/research/13-performance-audit.md, 'M6. Adapter start-up cost': 'In the solo job above, the five adapter calls took …'"
+machine = "Apple M-series Mac, macOS 26"
+beats = 1.8
+swift_f0 = 0.3
+basic_pitch = 2.5
+muscriptor = 9.1
+contour = 0.3
+
+[penalties]
+# The quantizer on the 10 chorales with reference beats, before its complexity penalties were scaled by 20.
+# The values after are gated (quant-chorales, reference_beats.*).
+source = "docs/shared/research/10-benchmark-results.md, 'Rhythm: beat tracking and quantization', row 'Reference beats (from alignments), original penalties'"
+command = "python -m scribe_eval.quant_bench"
+position_before = 0.89
+subdivision_before = 0.89
+duration_before = 0.76
+
+[fast_notes]
+# The solo path on all 306 synthetic fast-note clips, before and after the fast-notes change. The gate
+# (fast-notes suite) holds the after-values on the subset frozen in eval/fixtures/fast-notes, so these differ from it.
+source = "docs/brasscribe/plan/fast-notes.md, '7.2 Before → after', rows 'Synthetic, all 306 clips'"
+command = "python -m scribe_eval.fast_notes_bench --beats oracle,small0"
+clips = 306
+oracle_fig_before = 0.261
+oracle_fig_after = 0.436
+oracle_f1_before = 0.395
+oracle_f1_after = 0.539
+oracle_alt_before = 0.110
+oracle_alt_after = 0.300
+small0_fig_before = 0.221
+small0_fig_after = 0.361
+small0_f1_before = 0.366
+small0_f1_after = 0.479
+small0_alt_before = 0.095
+small0_alt_after = 0.176
+
+[solo_stems]
+# Single-instrument recordings per instrument behind the solo-instruments suite, and how many wrong notes
+# the written lines have in all for the two instruments the baseline file's own note names.
+source = "python -m scribe_eval.solo_instruments_bench --json <file> ('stems' per instrument, on eval/fixtures/choralebricks-solo); eval/baselines.json, solo-instruments 'source': 'far fewer wrong ones (trumpet 16 -> 3, flugelhorn 17 -> 8)'"
+baritone = 24
+flugelhorn = 20
+trumpet = 20
+tuba = 10
+horn = 11
+trombone = 8
+wrong_notes_trumpet = 3
+wrong_notes_flugelhorn = 8

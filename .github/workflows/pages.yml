@@ -3,7 +3,7 @@ name: pages
 on:
   push:
     branches: [main]
-    paths: ["site/**", "design/brands/*/dist/**", "design/brands/*/brand/**", "design/brands/brasscribe/mockups/png/**", ".github/workflows/pages.yml"]
+    paths: ["site/**", "eval/baselines.json", "convert/reports/**", "design/brands/*/dist/**", "design/brands/*/brand/**", "design/brands/brasscribe/mockups/png/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
