@@ -30,6 +30,7 @@ NB = {
     "1. Sign in and choose **Agree** on the MuScriptor page.": "1. Logg inn og velg **Agree** på MuScriptor-siden.",
     "2. Come back here. Brasscribe downloads it for you.": "2. Kom tilbake hit. Brasscribe laster den ned for deg.",
     "A download arrived damaged": "En nedlasting kom fram skadet",
+    "About": "Om",
     "About Brasscribe Bandroom": "Om Brasscribe Bandroom",
     "Accept one licence": "Godta én lisens",
     "Accept the licence on Hugging Face, then try again": "Godta lisensen på Hugging Face, og prøv igjen",
@@ -257,6 +258,7 @@ NB = {
     "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.":
         "Skillerne har ingen oppgitt lisens, så Brasscribe deler dem ikke videre. Macen laster dem ned der de som laget dem, publiserer dem.",
     "The soloist separator isn't downloaded yet.": "Solistskilleren er ikke lastet ned ennå.",
+    "Third-party licences": "Tredjepartslisenser",
     "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.":
         "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker.",
     "This code works while this window is open, and only once.": "Koden virker så lenge dette vinduet er åpent, og bare én gang.",

@@ -5103,6 +5103,16 @@
         }
       }
     },
+    "Third-party licences": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tredjepartslisenser"
+          }
+        }
+      }
+    },
     "This device is paired with %@. If you pair with %@, this device uses it instead.": {
       "localizations": {
         "nb": {

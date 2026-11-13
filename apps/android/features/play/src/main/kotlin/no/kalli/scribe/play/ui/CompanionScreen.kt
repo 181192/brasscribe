@@ -301,6 +301,8 @@ fun AboutScreen(vm: PlayViewModel) {
         ScreenTitle(stringResource(R.string.about_title))
         Text(stringResource(R.string.about_text), style = MaterialTheme.typography.bodyLarge)
         Text(stringResource(R.string.about_font), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
+        ListRow(stringResource(R.string.licences_title), { vm.navigate(no.kalli.scribe.play.Screen.LICENCES) },
+            modifier = Modifier.testTag("about-licences"))
         Text("CoreBridge: ${vm.container.core.name}", style = MaterialTheme.typography.bodySmall, color = ScribeTheme.colors.textMuted)
         VersionRow(vm)
     }

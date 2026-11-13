@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- DirectML build of ONNX Runtime; never together with the CPU package (both ship onnxruntime.dll). -->
@@ -61,6 +61,8 @@
     <!-- The brass italic of the display face ("a score.") is its own font file, not a slanted Regular. -->
     <Content Include="$(DesignDir)brand\fonts\InstrumentSerif-Italic.ttf" Link="Assets\Fonts\InstrumentSerif-Italic.ttf" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)dist\icons\windows\Assets\*" Link="Assets\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <!-- What the app ships of others' work, with every licence's text (licences/README.md); Settings opens it. -->
+    <Content Include="$(DesignDir)..\..\..\licences\dist\brasscribe-windows.txt" Link="Licences\third-party.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(DesignDir)brand\logo\mark-brass.svg" Link="Assets\Brand\mark-brass.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
@@ -107,4 +109,6 @@
     <Compile Include="$(CatalogueDir)**\*.cs" Link="Catalogue\%(RecursiveDir)%(Filename)%(Extension)" />
     <ProjectReference Include="..\..\..\tools\ScreenCheck.Core\ScreenCheck.Core.csproj" />
   </ItemGroup>
+  <!-- The notice files Microsoft publishes with the Windows App SDK and the .NET runtime go next to third-party.txt. -->
+  <Import Project="$(DesignDir)..\..\..\licences\windows-notices.targets" />
 </Project>

@@ -2807,6 +2807,16 @@
         }
       }
     },
+    "Third-party licences": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tredjepartslisenser"
+          }
+        }
+      }
+    },
     "This device can't play the recording. You can still read the tab.": {
       "localizations": {
         "nb": {

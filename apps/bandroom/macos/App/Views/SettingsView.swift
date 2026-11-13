@@ -66,6 +66,10 @@ struct SettingsView: View {
                 .pickerStyle(.radioGroup)
                 .labelsHidden()
             }
+            Section("About") {
+                // The licences of what Bandroom ships, in the program that opens text files on this Mac.
+                Button("Third-party licences") { app.openLicences() }
+            }
             Section("Details for the band's tech person") {
                 TextField("Engine from a checkout (folder with pixi.toml)", text: $checkout)
                 Text("Takes effect the next time Brasscribe starts.").font(.caption).foregroundStyle(Color.Scribe.textMuted)

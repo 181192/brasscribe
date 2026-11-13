@@ -271,6 +271,7 @@ prop("PairingCodeBox", "Header", "Code", "Kode")
 prop("PairingCodeBox", "PlaceholderText", "The six digits your computer shows", "De seks sifrene datamaskinen viser")
 text_button("ConnectButton", "Connect", "Koble til", "Open Brasscribe on your computer and choose Pair a device, then type the code here", "Åpne Brasscribe på datamaskinen og velg Koble til en enhet, og skriv inn koden her")
 prop("SettingsAboutHeading", "Text", "About", "Om")
+prop("LicencesButton", "Content", "Third-party licences", "Tredjepartslisenser")
 prop("AboutText", "Text",
      "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1). "
      "Listening on this PC uses Microsoft's ONNX Runtime (MIT), which sends usage data to Microsoft through Windows' diagnostic data, never the recording.",

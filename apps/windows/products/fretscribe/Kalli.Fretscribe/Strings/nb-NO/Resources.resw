@@ -555,6 +555,9 @@
   <data name="Library_Yesterday" xml:space="preserve">
     <value>I går</value>
   </data>
+  <data name="LicencesButton.Content" xml:space="preserve">
+    <value>Tredjepartslisenser</value>
+  </data>
   <data name="MatchCodeLabel.Text" xml:space="preserve">
     <value>Datamaskinen viser det samme tallet</value>
   </data>

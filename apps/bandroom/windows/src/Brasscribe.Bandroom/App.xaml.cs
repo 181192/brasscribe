@@ -748,6 +748,21 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         return true;
     }
 
+    /// <summary>The file of third-party licences beside the app (licences/dist, written by scripts/licences.py).</summary>
+    internal static string LicencesFile => Path.Combine(AppContext.BaseDirectory, "Licences", "third-party.txt");
+
+    public void OpenLicences()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(LicencesFile) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException or InvalidOperationException)
+        {
+            // No program for text files, or the file is gone: nothing to show, and nothing else in Settings depends on it.
+        }
+    }
+
     public void OpenModelPage() => _ = Windows.System.Launcher.LaunchUriAsync(ModelComponent.BandWriter.Page());
 
     /// <summary>Restarts a running engine now if nothing is being made, else once the score is done.</summary>

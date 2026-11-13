@@ -130,6 +130,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("computer") { go(Screen.SETTINGS, Screen.COMPANION) },
         Entry("computer-scanner") { pairingScanner(); waitForTag("pair-camera", 5_000) },
         Entry("about") { go(Screen.SETTINGS, Screen.ABOUT) },
+        Entry("about-licences") { go(Screen.SETTINGS, Screen.ABOUT, Screen.LICENCES); waitForTag("licences", 5_000) },
         Entry("help") { go(Screen.HELP) },
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
         Entry("problem-recording-kept") { aRecordingWithoutItsScore() },

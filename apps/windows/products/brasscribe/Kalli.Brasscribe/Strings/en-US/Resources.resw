@@ -807,6 +807,9 @@
   <data name="Library_Yesterday" xml:space="preserve">
     <value>Yesterday</value>
   </data>
+  <data name="LicencesButton.Content" xml:space="preserve">
+    <value>Third-party licences</value>
+  </data>
   <data name="LineupChoices.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Which band?</value>
   </data>

@@ -18,7 +18,7 @@ on memory or on this file.
 | Design rules and tokens | [design/README.md](design/README.md) and `design/tooling/` |
 | Why the architecture is as it is | [docs/shared/research/00-summary.md](docs/shared/research/00-summary.md) |
 | Per-app build and toolchain | the README in the app's directory (`apps/<app>/`, `apps/bandroom/<os>/`) |
-| Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) |
+| Licences of what is bundled | [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); the texts the apps ship: [licences/README.md](licences/README.md) |
 
 ## How to work
 
@@ -68,6 +68,10 @@ Never commit:
 - copyrighted music: recordings, scores or renders of real pieces. Use the public-domain fixtures
   (e.g. *Old Hundredth*) for tests, screenshots and docs;
 - references to anyone's employer or internal systems (internal package registries, hostnames).
+
+One exception to the first point: the notice files of others' work under `licences/upstream/`, and the app files
+written from them in `licences/dist/`, are kept word for word as published, e-mail addresses of their authors
+included, because the licences require the notices to be passed on unchanged.
 
 `data/`, `models/` and the band SoundFonts are not in git on purpose; tests that need them skip
 themselves when they are missing.

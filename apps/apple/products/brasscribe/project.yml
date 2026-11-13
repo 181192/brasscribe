@@ -65,6 +65,9 @@ targets:
         buildPhase: resources
       - path: ../../../../design/brands/brasscribe/dist/apple/Fonts/OFL.txt
         buildPhase: resources
+      # What the app ships of others' work, with every licence's text (licences/README.md); About shows it.
+      - path: ../../../../licences/dist/brasscribe-apple.txt
+        buildPhase: resources
       - path: ../../../../design/brands/brasscribe/brand/fonts/InstrumentSerif-Italic.ttf
         buildPhase: resources
       - path: ../../../../design/brands/brasscribe/brand/logo/mark.svg

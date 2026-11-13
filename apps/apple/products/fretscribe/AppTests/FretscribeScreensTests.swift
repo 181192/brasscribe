@@ -144,6 +144,11 @@ import TranscriptionKit
         try await sheet("settings", model: full) { SettingsView() }
         try await sheet("first-run", model: Self.model()) { FirstRunView() }
         try await window("your-instrument", model: full) { YourInstrumentView(fromSettings: true) }
+        try await window("about", model: full) { AboutView() }
+        // The app's own file of licences: there, and shown from its first part on.
+        try await window("licences", model: full, shows: { nodes in
+            nodes.contains { $0.label == "alphaTab" } ? nil : "the list of what the app ships"
+        }) { ThirdPartyLicencesView(resource: "fretscribe-apple") }
     }
 }
 #endif

@@ -207,6 +207,9 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
           dotnet publish products/brasscribe/Kalli.Brasscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+            if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
+          }
           if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
           # ONNX Runtime's onnxruntime_providers_shared.dll imports vcruntime140.dll, so it ships app-locally
           # (a redistributable file of Visual Studio), next to the exe where the loader looks first.
@@ -333,6 +336,9 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/Fretscribe"
           dotnet publish products/fretscribe/Kalli.Fretscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -o $out
           if (-not (Test-Path "$out/Fretscribe.exe")) { throw "Fretscribe.exe was not published" }
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+            if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
+          }
           # No core and no band sounds. (onnxruntime.dll comes with the Windows App SDK itself, for Windows ML.)
           foreach ($f in @("scribe_ffi.dll", "SoundFonts", "Models")) {
             if (Test-Path (Join-Path $out $f)) { throw "$f is in the download, and Fretscribe uses none of it" }
@@ -411,6 +417,9 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+            if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
+          }
           foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/cli.py", "workspace/music/src/scribe_music/__init__.py", "workspace/eval/scribe_eval/suites.py", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
             if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }
           }

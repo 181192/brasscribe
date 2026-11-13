@@ -157,6 +157,7 @@ NB = {
     "Switch between the score and the original recording at the same place.": "Bytt mellom partituret og originalopptaket på samme sted.",
     "Talking score": "Talende partitur",
     "Talking score (text)": "Talende partitur (tekst)",
+    "Third-party licences": "Tredjepartslisenser",
     "The notation engine could not start.": "Notesettingen kunne ikke starte.",
     "The performer did not keep a steady beat here, so rhythms are approximate.": "Utøveren holdt ikke jevn puls her, så rytmene er omtrentlige.",
     "This decides how the music is taken apart. Brasscribe never guesses.": "Dette avgjør hvordan musikken tas fra hverandre. Brasscribe gjetter aldri.",
