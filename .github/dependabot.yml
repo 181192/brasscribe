@@ -22,6 +22,13 @@ updates:
       minor-and-patch: { update-types: [minor, patch] }
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
+    ignore:
+      # The command line reads NumPy .npz files with it, and nothing else. zip 9 brings nothing for that and
+      # adds eight crates to the shipped binary (nix, zeroize and its derive macro, getrandom, constant_time_eq
+      # and theirs), which it needs for writing and encrypting archives. Stay on 8 while it gets fixes; when
+      # moving, `ZipFile::name()` returns a Result (core/cli/src/main.rs, load_npz).
+      - dependency-name: zip
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: npm
     directory: /studio
