@@ -95,10 +95,12 @@ wrong_notes_flugelhorn = 8
 [review_marks_held_out]
 # The "?" on a solo line when the model has not seen the recordings: fitted on the URMP parts and the
 # separated stems, scored on the ChoraleBricks parts, with 8 % of the notes marked. The odd/even numbers
-# are the confidence bench's own split of the same recordings.
+# are the confidence bench's own split of the same recordings (odd_even_command: "single", "after"; it marks
+# 9.2 % of the notes there).
 source = "docs/shared/research/18-quality-revisit.md, 'The \"?\" marks on a solo line: what they miss'"
 command = "cd eval && uv run python -W ignore ../docs/shared/research/quality/marks_held_out.py ../data/runs/music-core/solo-beats ../data/runs/music-core/stem-contours"
 dataset = "fit: URMP single parts and Mega-53 solo stems (21 380 notes); scored: ChoraleBricks brass-quartet parts (1 346 notes, 60 wrong)"
+odd_even_command = "cd eval && uv run python -W ignore -m scribe_eval.confidence_bench --single ../data/runs/music-core/solo-beats --stem-contours ../data/runs/music-core/stem-contours"
 marked_share = 0.08
 wrong_notes_caught = 0.317
 mark_precision = 0.176

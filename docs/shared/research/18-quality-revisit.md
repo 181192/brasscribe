@@ -14,10 +14,10 @@ blind.
 - **Brass ensembles:** with the true beats, 94 to 98 % of the transcribed notes are written on the right
   position. With tracked beats it is 44 to 50 %. The loss is the beat grid: held chords (fermatas), and pieces
   tracked at half the notated level. No rule tried here fixes either without knowing the score.
-- **Tabs:** one in twenty notes played on a 16th slot is written on another slot, and a triplet is never
-  written. Choosing the grid for the distinct onsets of the instrument, not per note, takes the 16th-slot
-  errors from 3.7–6.2 % to 1.2–2.7 % on GuitarSet, but regresses gated metrics on the chord-melody passages.
-  The quantizer has the option and the bench has the metric; the tab profiles do not use it yet (§2).
+- **Tabs:** a note played on a 16th between the 8ths is written on another slot one time in three, and a
+  triplet is never written. Choosing the grid for the distinct onsets of the instrument, not per note, takes
+  those 16ths from 0.56–0.72 right to 0.85–0.92 on GuitarSet, but regresses gated metrics on the chord-melody
+  passages. The quantizer has the option and the bench has the metric; the tab profiles do not use it yet (§2).
 - **6/8 counted in two** was lost to 10 ms of timing jitter. Landed ([#150](https://github.com/181192/brasscribe/issues/150)).
 - **A newer beat tracker (md_beat_this) writes more notes on the right beat** on the brass ensembles (0.49 →
   0.53 and 0.45 → 0.57) but loses two pieces Beat This! had; five more models are worth a bench (§4).
@@ -80,8 +80,9 @@ Raw Basic Pitch, same outcome classes. Tune: players 00 to 02; report: 03 to 05.
 - **The player's string** is the tab's weakest number: `string_agreement` 0.38 to 0.46 on single lines and 0.70
   on comping. The tab fingers a line where it is easiest to play; the players of GuitarSet improvise up the
   neck. Nothing in the audio is used to tell which string sounded.
-- **The rhythm that is written** (new metric, below): 94 to 96 % of the notes played on a 16th slot of the click
-  were written on it, and none of the notes played on a triplet slot.
+- **The rhythm that is written** (new metric, below): notes played on the beat or on the 8th are always written
+  there; of the notes played on a 16th between the 8ths, 56 to 72 % are; of the notes played on a triplet slot,
+  none.
 - **Tempo and bar** on single lines: `tempo_ok` 0.61 to 0.72, `bar_ok` 0.59 to 0.70
   ([#245](https://github.com/181192/brasscribe/issues/245)).
 
@@ -100,16 +101,20 @@ the grids for the instrument's distinct onsets (a strum counts once) and lets a 
 onsets on one slot choose again, with the evidence rules the solo line already has (a tuplet needs a run of
 beats that hold exactly three onsets and fit it four times better than 16ths).
 
-`guitar-tab` has new gated metrics, `slot_*` (`guitar_tab_bench.written_slots`: the tab's reader on the click's
-beats, the share of correctly heard notes written on the slot they were played on). With the tab reader
-switched to the option (`dense=clean` in `tab.played_notes`):
+`guitar-tab` has new gated metrics, `slot_*` (`guitar_tab_bench.written_slots`): the tab's reader on the
+click's beats (at the level the reader chooses; it changes the level in 6 of the 360 takes), and the share of
+correctly heard notes written on the slot they were played on. A note counts when it was played within 0.04 of
+a beat of a slot; GuitarSet's onsets sit about 0.03 of a beat after the click, so that is 53 to 59 % of the
+notes the tab has right (`slot_counted`). `slot_16th_off` is the two 16ths between the 8ths, 7 to 15 % of the
+counted notes: the beat and the 8th are written right every time, so `slot_16th`, which pools all four, hides
+most of the error. Today, and with the tab reader switched to the option (`written_slots(dense=True)`):
 
-| | 16th slots, today → with the option | all slots | notes compared |
+| | 16ths between the 8ths (`slot_16th_off`) | all 16th slots (`slot_16th`) | all slots (`slot_ok`) |
 |---|---|---|---|
-| tune, single lines | 0.945 → 0.986 | 0.810 → 0.847 | 4 269 → 4 340 |
-| tune, comping | 0.938 → 0.973 | 0.774 → 0.806 | 8 894 → 9 065 |
-| report, single lines | 0.944 → 0.978 | 0.738 → 0.768 | 3 383 → 3 408 |
-| report, comping | 0.963 → 0.988 | 0.829 → 0.864 | 8 625 → 8 798 |
+| tune, single lines | 0.677 → 0.919 | 0.945 → 0.986 | 0.810 → 0.847 |
+| tune, comping | 0.652 → 0.853 | 0.938 → 0.973 | 0.774 → 0.806 |
+| report, single lines | 0.721 → 0.893 | 0.944 → 0.978 | 0.738 → 0.768 |
+| report, comping | 0.564 → 0.874 | 0.963 → 0.988 | 0.829 → 0.864 |
 
 No constant was chosen on GuitarSet. On synthetic strums (16 beats, 30 draws): an 8th and two 16ths 0.72–0.88 →
 0.99–1.00 of the onsets on their slot; a dotted 8th and a 16th 0.72–0.92 → 0.91–0.99; triplets 0.33 → 1.00 up
@@ -184,8 +189,9 @@ held out. Two measurements:
   (confidence 0.94 at the median), and a late onset is not something the model was asked about.
 - **Held out for real.** Fitted on the URMP parts and the separated stems only and scored on the ChoraleBricks
   parts (1 346 candidate notes, 60 wrong): marking 8 % of the notes catches 0.32 of the wrong ones at a
-  precision of 0.18. On the bench's own split (odd recordings of the same sets) the same model catches 0.65 at
-  0.60. The model does not carry from one set of recordings to another.
+  precision of 0.18. On the bench's own split (odd recordings of the same sets, `confidence_bench`) the model
+  catches 0.65 at 0.60 with 9 % marked. On these 60 wrong notes the model does not carry from one set of
+  recordings to another; a larger held-out set could move that number either way.
 - **Tried:** how far the SwiftF0 contour sits from the written semitone over the note (median distance after
   taking out the recording's own tuning, and the share of frames nearer another semitone), as one and two more
   inputs. Held out, recall at 8 % marked fell from 0.32 to 0.28, 0.23 and 0.25; on the fitting data nothing

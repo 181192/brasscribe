@@ -1615,7 +1615,31 @@
             "report.solo.slot_triplet": 0.0,
             "report.comp.slot_ok": 0.829,
             "report.comp.slot_16th": 0.963,
-            "report.comp.slot_triplet": 0.0
+            "report.comp.slot_triplet": 0.0,
+            "tune.solo.slot_16th_off": 0.677,
+            "tune.solo.slot_counted": 0.534,
+            "tune.solo.slot_excerpts": {
+              "value": 90.0,
+              "tolerance": 0
+            },
+            "tune.comp.slot_16th_off": 0.652,
+            "tune.comp.slot_counted": 0.544,
+            "tune.comp.slot_excerpts": {
+              "value": 90.0,
+              "tolerance": 0
+            },
+            "report.solo.slot_16th_off": 0.721,
+            "report.solo.slot_counted": 0.542,
+            "report.solo.slot_excerpts": {
+              "value": 90.0,
+              "tolerance": 0
+            },
+            "report.comp.slot_16th_off": 0.564,
+            "report.comp.slot_counted": 0.587,
+            "report.comp.slot_excerpts": {
+              "value": 90.0,
+              "tolerance": 0
+            }
           }
         },
         "ukulele-tab": {

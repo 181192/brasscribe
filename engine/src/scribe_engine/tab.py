@@ -569,6 +569,8 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar
     pickup = first_down * TICKS_PER_BEAT
+    # Not `dense` yet: it writes the 16ths between the 8ths far more often where they were played, and regresses
+    # the chord-melody passages (docs/shared/research/18-quality-revisit.md, §2, says what switching it on needs).
     quantized = quantize(notes, times, monophonic=False, auto_level=False)
     heard_at = {(n["onset"], n["pitch"]): n["heard_at"] for n in notes if "heard_at" in n}
     on_top = {(n["onset"], n["pitch"]) for n in notes if n.get("on_top")}

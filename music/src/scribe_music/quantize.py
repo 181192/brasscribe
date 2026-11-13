@@ -227,7 +227,8 @@ def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False
     (choose_grids_dense). On a monophonic line (the solo) a note that still lands on a taken slot then moves to
     the next free slot of its beat's grid, at half its confidence, instead of being dropped. Without `monophonic`
     it is for one instrument that plays chords (a tab): the grids are chosen for its distinct onsets
-    (distinct_onsets), so two strums are not written on one slot while a grid could hold both."""
+    (distinct_onsets), so two strums are not written on one slot while a grid could hold both. The tab
+    profiles do not ask for it yet (docs/shared/research/18-quality-revisit.md, §2)."""
     if not notes:
         return []
     if auto_level:
