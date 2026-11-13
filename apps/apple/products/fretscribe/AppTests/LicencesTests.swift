@@ -3,7 +3,7 @@ import Testing
 @testable import Fretscribe
 
 /// The file of third-party licences the app ships (licences/dist, written by scripts/licences.py), as About shows it.
-struct LicencesTests {
+@MainActor struct LicencesTests {
     @Test func aFileIsShownAsHeadingsParagraphsAndDividers() {
         let file = "Third-party licences: An app\n\nWhat this is.\n\nContents\n\n- A font (OFL-1.1)\n\n"
             + "========\n\nA font\nhttps://example.org/font\nLicence: OFL-1.1\n\nCopyright someone.\n\n"

@@ -33,7 +33,7 @@ struct ThirdPartyLicencesView: View {
         Bundle.main.url(forResource: resource, withExtension: "txt").flatMap { try? String(contentsOf: $0, encoding: .utf8) } ?? ""
     }
 
-    enum Part: Equatable {
+    enum Part: Equatable, Sendable {
         case rule
         case heading(String)
         case paragraph(String)
@@ -41,7 +41,7 @@ struct ThirdPartyLicencesView: View {
 
     /// The file as it is shown: its first line is the screen's title and is left out, a line of "=" is a divider,
     /// and the first line after one is that part's heading.
-    static func parts(of text: String) -> [Part] {
+    nonisolated static func parts(of text: String) -> [Part] {
         var parts: [Part] = []
         var afterRule = false
         let paragraphs = text.components(separatedBy: "\n\n").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
