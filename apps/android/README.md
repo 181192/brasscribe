@@ -15,7 +15,7 @@ apps/android/scripts/device-tests.sh smoke   # emulator or device
 
 Each app is a module of its own under `products/`: `products/brasscribe` (application id `no.kalli.brasscribe`) and `products/fretscribe` (`no.kalli.fretscribe`), so their tasks are the module's: `:products:fretscribe:assembleDebug`, `:products:brasscribe:testDebugUnitTest`, `:products:fretscribe:installDebug`. The APKs are in `products/<app>/build/outputs/apk/<build type>/`. A product module holds what is the app's own: its `Product` (`Brasscribe.kt`, `Fretscribe.kt`: the app's name, what it makes, its navigation, its theme and its window colours), its screens, its words, complete, in English and bokmål (`src/main/res`), and its build. The flow both apps share (Home, recording, writing down, the library, sharing, pairing, Settings, Help, the problems, and `PlayViewModel`) is `features/play`, which names no product: it asks the `Product` the app's `PlayApplication` hands it. The band SoundFont, the on-device models and what runs them (`features/score/pitch` and ONNX Runtime, behind `OnPhone`: `OnPhoneModels` in Brasscribe, `OnPhone.None` in Fretscribe) are Brasscribe's, so the Fretscribe APK does not carry them. Fretscribe has the release's version too, unless a build is given another (`-Pfretscribe.versionName=… -Pfretscribe.versionCode=…`): today the two are released together ([Releases](#releases-and-updates-on-a-phone)).
 
-Some inputs come from outside git and are used only when present:
+Some inputs come from outside git and are used only when present, except where a row says a release needs them:
 
 | Input | From | Used for |
 |---|---|---|
