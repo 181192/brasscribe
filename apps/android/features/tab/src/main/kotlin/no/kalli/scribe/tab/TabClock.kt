@@ -35,6 +35,9 @@ class TabClock(
 
     val bars: Int get() = measures.size
 
+    /** The written measure [bar] (counted from 0); past either end, the nearest one. */
+    fun measure(bar: Int): TabMeasure = measures[bar.coerceIn(0, bars - 1)]
+
     private fun secondsOf(ticks: Int): Double {
         val beat = (ticks - lead).toDouble() / TabIndex.TICKS + firstDownbeat
         val last = beatTimes.size - 1

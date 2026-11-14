@@ -123,6 +123,9 @@ class FretscribeScreensTest : ScreenCatalogue() {
         settle()
         File(rule.activity.noBackupFilesDir, "recordings").deleteRecursively()
         rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
+        // The tab's own notes play; Sound says where the recording is.
+        waitForTag("fs-practice-sound", 20_000)
+        rule.onNodeWithTag("fs-practice-sound").performClick()
         waitForTag("fs-practice-get", 20_000)
         rest()
     }
@@ -176,10 +179,12 @@ class FretscribeScreensTest : ScreenCatalogue() {
             rule.onNodeWithTag("fs-tab-note-next").performClick(); rest()
         },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
+        Entry("practice-sound") { theTab(); rule.onNodeWithTag("fs-practice-sound").performClick(); waitForTag("fs-sound-done", 5_000); rest() },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },
         Entry("practice-recording-gone") {
             aSongWithoutItsRecording()
-            rule.onNodeWithTag("fs-practice-get").performClick()
+            // (On a small phone on its side Sound scrolls: the button is brought into view.)
+            rule.onNodeWithTag("fs-practice-get").performScrollTo().performClick()
             waitUntil(10_000) { rule.onAllNodesWithTag("fs-practice-get").fetchSemanticsNodes().isEmpty() }
             rest()
         },

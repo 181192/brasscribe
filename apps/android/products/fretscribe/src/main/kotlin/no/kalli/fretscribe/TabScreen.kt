@@ -10,6 +10,7 @@ import no.kalli.scribe.design.R as DesignR
 import no.kalli.scribe.tab.PracticeModel
 import no.kalli.scribe.tab.RecordingState
 import no.kalli.scribe.tab.TabClock
+import no.kalli.scribe.tab.TabSoundState
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -230,7 +231,8 @@ internal fun tabPalette(c: ScribeColors, own: FretscribeColors) = TabPalette(
  *
  * It is also where the song is practised (design/brands/fretscribe/flows.md §9): the recording is the sound, a
  * cursor stands at the beat it is at and the page follows it, and the player under the tab ([PracticeBar])
- * slows it down with its pitch kept and repeats the bars chosen. Space plays and pauses; with the screen or
+ * slows it down with its pitch kept and repeats the bars chosen. The tab's own notes can be heard in place of
+ * the recording or over it, a bar can be counted in, and the beats can tick (C and M). Space plays and pauses; with the screen or
  * the tab in focus, the left arrow goes back to the start of the repeat (a bar back when nothing is repeated)
  * and the right arrow a bar on.
  */
@@ -287,7 +289,7 @@ fun TabScreen(vm: PlayViewModel) {
     val clock = remember(s, r.composition) { s?.let { TabClock.of(it.index, it.tab, r.composition) } }
     val recording = source?.file
     LaunchedEffect(practice, song, s, clock, recording) {
-        if (s != null) practice.open(song, r.jobId, clock, recording, vm.savedScores.value.mapNotNull { it.jobId }.toSet())
+        if (s != null) practice.open(song, r.jobId, clock, recording, vm.savedScores.value.mapNotNull { it.jobId }.toSet(), tabSoundOf(context, s))
     }
     // Leaving the tab, or the app, stops the sound; the song stays where it was.
     DisposableEffect(practice) { onDispose { practice.endSlowly(); practice.leave() } }
@@ -306,7 +308,8 @@ fun TabScreen(vm: PlayViewModel) {
     // The bar (counted from 0) and the beat the recording is at, for the player's line.
     var place by remember(song) { mutableStateOf<Pair<Int, Int>?>(null) }
     val reducedMotion = remember { android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f }
-    val canPlay = clock != null && practice.recording == RecordingState.HERE
+    // The recording plays, or the tab's own sound does when the recording is not on the phone.
+    val canPlay = clock != null && practice.canPlay
     // Full screen: the tab alone, the controls a tap away (TabFocus). Back leaves it first.
     var focus by rememberSaveable(stateSaver = listSaver(save = { listOf(it.on, it.controls) }, restore = { TabFocus(it[0], it[1]) })) { mutableStateOf(TabFocus()) }
     val inFocus = focus.on && s != null && s.index.bars > 0
@@ -341,6 +344,10 @@ fun TabScreen(vm: PlayViewModel) {
         }
     }
     var playerHeight by remember { mutableIntStateOf(0) }
+    // Sound (what is heard, the count-in, the metronome) is asked for from the header or from the player.
+    var sounds by rememberSaveable { mutableStateOf(false) }
+    val fetches = r.jobId != null && remember(practice.recording) { vm.container.engine() != null }
+    if (sounds) SoundDialog(practice, fetches, { vm.container.engine()?.let(practice::fetch) }) { sounds = false }
     // One scroll moves the header (when it is not pinned), the marks and alphaTab's page.
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
@@ -433,6 +440,11 @@ fun TabScreen(vm: PlayViewModel) {
             if (it.type != KeyEventType.KeyDown) false
             else if (it.key == Key.Spacebar && canPlay) { if (it.nativeKeyEvent.repeatCount == 0) practice.toggle(); true }
             else if (it.key == Key.Escape && inFocus) { focus = focus.leave(); true }
+            // C and M turn the count-in and the metronome on and off.
+            else if ((it.key == Key.C || it.key == Key.M) && canPlay && practice.tabSound && !it.isCtrlPressed && !it.isAltPressed && !it.isMetaPressed) {
+                if (it.nativeKeyEvent.repeatCount == 0) { if (it.key == Key.C) practice.countIn(!practice.countIn) else practice.metronome(!practice.metronome) }
+                true
+            }
             else if (it.key == Key.F && !it.isCtrlPressed && !it.isAltPressed && !it.isMetaPressed && (focus.on || (s != null && s.index.bars > 0))) {
                 if (it.nativeKeyEvent.repeatCount == 0) focus = if (focus.on) focus.leave() else focus.enter()
                 true
@@ -446,6 +458,8 @@ fun TabScreen(vm: PlayViewModel) {
                 stringResource(R.string.fs_tab_chip, tuningName(s.tuning), if (s.capo > 0) stringResource(R.string.fs_tab_capo, s.capo) else stringResource(R.string.fs_tab_no_capo)))
             else title
             if (!inFocus) PlayTopBar(barTitle, vm::back, null, titleIsHeading = true) {
+                // Sound, on a phone on its side: the header that has it upright is a scroll up, and the player is one row.
+                if (noteInOneRow && clock != null && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice) { sounds = true }
                 if (s != null && s.index.bars > 0) IconButton({ focus = focus.enter() }, Modifier.size(48.dp).testTag("fs-tab-full-screen")) {
                     BcIcon(R.drawable.ic_fs_fullscreen, stringResource(R.string.fs_tab_full_screen))
                 }
@@ -542,6 +556,10 @@ fun TabScreen(vm: PlayViewModel) {
             // (The player under the tab has its own room.)
             val pinned = !landscape && headerHeight * 3 <= area - playerHeight
             val inset = if (inFocus || pinned) 0 else headerHeight
+            // Where Sound is asked for does not hang on what is measured: upright it is in the header, on a phone on its side
+            // in the top bar, and with large text upright (where the header scrolls away with the page), on a wide screen
+            // on its side and in full screen it is the player's last button.
+            val soundInHeader = !landscape && fontScale < 1.3f
             val header: @Composable () -> Unit = {
                 // The tuning, the tempo and what is marked are one row, and wrap onto a second only when they do not fit.
                 FlowRow(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }.padding(horizontal = ScribeSpace.s4),
@@ -562,6 +580,9 @@ fun TabScreen(vm: PlayViewModel) {
                     // The tempo, which the page's own header would say: the page keeps the music.
                     if (tempo != null) Text(stringResource(R.string.fs_tab_tempo, tempo), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
                         modifier = Modifier.testTag("fs-tab-tempo").semantics { contentDescription = tempoSpoken.orEmpty() })
+                    // Sound: here on an upright phone, where this row has the room for it; else it is the player's last button.
+                    // (Also when the tab's sound could not be made: Sound says so.)
+                    if (soundInHeader && clock != null && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice) { sounds = true }
                     if (s.marks.doubtful > 0) Row(
                         // To the first "?" on the page, with its note open (Check the song only counts them).
                         Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-marked")
@@ -698,10 +719,8 @@ fun TabScreen(vm: PlayViewModel) {
                 s.marks.noPlace.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_tab_no_place_count, it, it) },
             ).joinToString(". ") + "."
             val player: @Composable () -> Unit = {
-                PracticeBar(practice, s.index.measures, place, follows = clock != null,
-                    canFetch = r.jobId != null && remember(practice.recording) { vm.container.engine() != null },
-                    withNote = noteShown,
-                    onFetch = { vm.container.engine()?.let(practice::fetch) })
+                PracticeBar(practice, s.index.measures, place, follows = clock != null, canFetch = fetches, withNote = noteShown,
+                    onFetch = { vm.container.engine()?.let(practice::fetch) }, soundHere = inFocus || !(soundInHeader || noteInOneRow), onSound = { sounds = true })
             }
             Box(Modifier.fillMaxSize()) {
             // (The controls come first in the keyboard's order, and are drawn over the tab.)

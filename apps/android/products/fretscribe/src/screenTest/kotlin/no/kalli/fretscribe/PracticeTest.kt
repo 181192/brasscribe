@@ -33,6 +33,7 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasAnyAncestor
@@ -129,25 +130,7 @@ class PracticeTest : ScreenTest() {
     private val index: TabIndex by lazy { TabIndex.parse(asset("tab.musicxml")) }
     private val clock: TabClock by lazy { TabClock.of(index, tabData, null)!! }
 
-    /** The recording: a decaying tone on each note of the tab, at the second it was heard, as a WAV file's bytes. */
-    private fun sound(): ByteArray {
-        val rate = 22_050
-        val notes = org.json.JSONObject(asset("tab.json")).getJSONArray("notes")
-        val length = ((0 until notes.length()).maxOf { notes.getJSONObject(it).getDouble("offset_s") } + 1.0)
-        val samples = FloatArray((length * rate).toInt())
-        for (i in 0 until notes.length()) {
-            val n = notes.getJSONObject(i)
-            val hz = 440.0 * Math.pow(2.0, (n.getInt("pitch") - 69) / 12.0)
-            val from = (n.getDouble("onset_s") * rate).toInt().coerceAtLeast(0)
-            val to = (n.getDouble("offset_s") * rate).toInt().coerceAtMost(samples.size)
-            for (k in from until to) samples[k] += (Math.sin(2 * Math.PI * hz * (k - from) / rate) * Math.exp(-3.0 * (k - from) / rate) * 0.4).toFloat()
-        }
-        val data = ByteBuffer.allocate(samples.size * 2).order(ByteOrder.LITTLE_ENDIAN).also { b -> samples.forEach { b.putShort((it.coerceIn(-1f, 1f) * 32_000).toInt().toShort()) } }.array()
-        val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-            .put("RIFF".toByteArray()).putInt(36 + data.size).put("WAVEfmt ".toByteArray()).putInt(16).putShort(1).putShort(1)
-            .putInt(rate).putInt(rate * 2).putShort(2).putShort(16).put("data".toByteArray()).putInt(data.size).array()
-        return header + data
-    }
+    private fun sound(): ByteArray = bassLineRecording(asset("tab.json"))
 
     /** Home, the recording, What is this?, the notes written down, Check the song, Show the tab: the tab is engraved and the player is there. */
     private fun practise(): TabView {
@@ -656,10 +639,18 @@ class PracticeTest : ScreenTest() {
         computerHasRecording = false
         rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
         engraved()
+        // The tab's own notes play in the recording's place, and Sound says what became of the recording.
+        waitForTag("fs-practice-sound", 20_000)
+        waitForTag("fs-practice-play", 20_000)
+        rule.onNodeWithTag("fs-practice-play").assertIsDisplayed()
+        rule.onNodeWithTag("fs-practice-sound").assertContentDescriptionEquals("Sound: The tab's notes")
+        rule.onNodeWithTag("fs-practice-sound").performClick()
         waitForTag("fs-practice-get", 20_000)
         rule.onNodeWithTag("fs-practice-says").assertTextEquals("The recording is not on this phone.")
         assertTrue(isLive("fs-practice-says"))
-        assertEquals(0, rule.onAllNodesWithTag("fs-practice-play").fetchSemanticsNodes().size)
+        rule.onNodeWithTag("fs-sound-recording").assertIsNotEnabled()
+        rule.onNodeWithTag("fs-sound-both").assertIsNotEnabled()
+        rule.onNodeWithTag("fs-sound-tab").assertIsSelected()
         rule.onNodeWithTag("fs-practice-get").assertHeightIsAtLeast(48.dp)
         checkAccessibility()
         shotOf("practice-not-on-this-phone")
@@ -668,6 +659,7 @@ class PracticeTest : ScreenTest() {
         waitUntil(10_000) { practice.recording == RecordingState.GONE }
         rule.onNodeWithTag("fs-practice-says").assertTextEquals("Your computer doesn't have the recording any more. You can still read the tab.")
         assertEquals(0, rule.onAllNodesWithTag("fs-practice-get").fetchSemanticsNodes().size)
+        rule.onNodeWithTag("fs-sound-done").performClick()
         // The tab is still there to read.
         rule.onNodeWithTag("fs-tab").assertIsDisplayed()
 
@@ -677,9 +669,15 @@ class PracticeTest : ScreenTest() {
         settle()
         rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
         engraved()
+        waitForTag("fs-practice-sound", 20_000)
+        rule.onNodeWithTag("fs-practice-sound").performClick()
         waitForTag("fs-practice-get", 20_000)
         rule.onNodeWithTag("fs-practice-get").performClick()
-        waitForTag("fs-practice-play", 20_000)
+        waitUntil(20_000) { practice.recording == RecordingState.HERE }
+        // With the recording on the phone it is what is heard, as chosen.
+        rule.onNodeWithTag("fs-sound-recording").assertIsSelected()
+        rule.onNodeWithTag("fs-sound-done").performClick()
+        rule.onNodeWithTag("fs-practice-sound").assertContentDescriptionEquals("Sound: The recording")
         assertEquals(1, kept.listFiles()?.size)
         rule.onNodeWithTag("fs-practice-play").performClick()
         waitUntilPlaying()
