@@ -131,15 +131,27 @@ jobs:
       - name: On-device models
         uses: ./.github/actions/on-device-models
 
-      # The band SoundFont is not in git. With the pinned pack's 16-bit file (cached per pack) the playback
-      # package's tests that play the band run here: the Old Hundredth fixture through the real player and
-      # output stage against the shared levels, and the band's presets. Without it they skip themselves, and a
-      # level that has moved shows only on a machine that has the sounds. (The full-band phrase tests still
-      # skip: they need data/sounds/phrases, which sounds/phrases.py writes and CI does not.)
-      - name: Fetch the band SoundFont for the level tests
+      # The band SoundFonts are not in git. With the pinned pack's two files (the Mac's 16-bit one and the
+      # phone's, which the output-stage tests play too; cached per pack) the playback package's tests that play
+      # the band run here, through the real player and output stage against the shared
+      # levels: the Old Hundredth fixture, the band's presets, and (with the phrases below) the full-band phrase
+      # and the dynamics. Without it they skip themselves, and a level that has moved shows only on a machine
+      # that has the sounds.
+      - name: Fetch the band SoundFonts for the level tests
         uses: ./.github/actions/band-sounds
         with:
-          files: brasscribe-band-16bit.sf2
+          files: brasscribe-band-16bit.sf2 brasscribe-band-mobile.sf2
+
+      # The test phrases the level tests play are written by a script, not kept in git (sounds/phrases.py). It
+      # needs only mido, installed with what mido itself needs at the versions and file hashes sounds/uv.lock
+      # pins: pip refuses any other file.
+      - name: Write the band's test phrases
+        working-directory: .
+        run: |
+          python3 -m venv "$RUNNER_TEMP/phrases"
+          .github/scripts/lock-requirements.py sounds/uv.lock mido packaging > "$RUNNER_TEMP/phrases/requirements.txt"
+          "$RUNNER_TEMP/phrases/bin/pip" install --quiet --require-hashes -r "$RUNNER_TEMP/phrases/requirements.txt"
+          "$RUNNER_TEMP/phrases/bin/python" sounds/phrases.py -o data/sounds/phrases
 
       # Tests that need data/golden (SCRIBE_FIXTURES) skip themselves when it is absent.
       - name: Test (packages, macOS app)
