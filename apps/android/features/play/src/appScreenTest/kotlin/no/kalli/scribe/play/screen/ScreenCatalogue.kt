@@ -17,7 +17,7 @@ import org.junit.experimental.categories.Category
 
 /**
  * Every screen of an app, one after the other, as a phone can show it: light, dark, high contrast, 200 %
- * text, on its side, in bokmål, and on a small phone (upright with larger text, and on its side). Each is opened, checked by the accessibility checks, and kept as a
+ * text, on its side, in bokmål (and, for the screens the site shows, in bokmål and dark), and on a small phone (upright with larger text, and on its side). Each is opened, checked by the accessibility checks, and kept as a
  * screenshot ([shots]/<screen>-<how>.png) that a later run compares with. Every target is at least 48 dp. At 200 % no text may be cut off
  * or ellipsized, and with the keyboard the focus goes through a screen in the order it is read.
  *
@@ -51,6 +51,18 @@ abstract class ScreenCatalogue : ScreenTest() {
 
     protected abstract val screens: List<Entry>
 
+    /**
+     * The screens the public site shows (by [Entry.name]): they are also taken dark and in bokmål, for the site's
+     * Norwegian pages in dark mode. Only these, to keep the run short; none for an app the site shows no screens of.
+     */
+    protected open val onSite: Set<String> = emptySet()
+
+    /**
+     * Puts back what one screen may have left for the next (an app's own settings, a place it remembers), so each
+     * screen is drawn the same whichever screens ran before it: a picture is compared with the one of the run before.
+     */
+    protected open fun beforeEach() {}
+
     private companion object {
         /** No release's version, so it cannot be taken for one. */
         const val FIXED_VERSION = "0.0.0"
@@ -76,12 +88,13 @@ abstract class ScreenCatalogue : ScreenTest() {
         rule.waitForIdle()
     }
 
-    /** Shows every screen in turn and does [check] on it; all that failed are reported together. */
-    private fun onEveryScreen(how: String, check: (Entry) -> Unit = {}) {
+    /** Shows every screen in turn (or those named in [only]) and does [check] on it; all that failed are reported together. */
+    private fun onEveryScreen(how: String, only: Set<String>? = null, check: (Entry) -> Unit = {}) {
         val failed = mutableListOf<String>()
-        for (screen in screens) {
+        for (screen in screens.filter { only == null || it.name in only }) {
             try {
                 fromHome()
+                beforeEach()
                 screen.open()
                 // (A moment of something under way is looked at as it is: time that passes would end it.)
                 if (screen.steady) settle() else rule.waitForIdle()
@@ -144,6 +157,15 @@ abstract class ScreenCatalogue : ScreenTest() {
         onEveryScreen("nb") { assertNoTextIsClipped() }
     }
 
+    @Test
+    fun inBokmalDark() {
+        assumeTrue("the site shows none of this app's screens", onSite.isNotEmpty())
+        assertEquals("screens the site names that the catalogue does not have", emptySet<String>(), onSite - screens.map { it.name }.toSet())
+        rule.runOnUiThread { container.updateAppearance(Appearance.DARK) }
+        language("nb-NO")
+        onEveryScreen("nb-dark", onSite) { assertNoTextIsClipped() }
+    }
+
     /**
      * A small phone (360 × 640 dp) with the text one step up, in bokmål: the least room a screen gets upright, with
      * the longer words. Nothing is cut off.
@@ -178,6 +200,7 @@ abstract class ScreenCatalogue : ScreenTest() {
         for (screen in screens) {
             try {
                 fromHome()
+                beforeEach()
                 screen.open()
                 settle()
                 val all = tabThrough()

@@ -24,23 +24,23 @@ title = "A ? where it is not sure"
 text = "Choose a note with a ? and it plays that bar slowly, so you can hear for yourself. Then play along with the recording, slower if you like, the hard bars again and again."
 
 [[screens.items]]
+shot = "instrument-guitar"
+alt = "Your instrument: Instrument, Guitar. Strings, 6 strings. Usual tuning, Standard. Which hand is on the neck? Left hand on the neck, most players. You read, Tab. Save at the bottom."
+title = "Your instrument"
+text = "Guitar, bass, ukulele or mandolin, its strings, and the tuning you play in."
+[[screens.items]]
 shot = "home"
 alt = "Home in Fretscribe: Open a recording, Record with the microphone and Record what's playing."
 title = "Open or record"
 text = "Open a recording you have, play into the microphone, or record what another app on the phone is playing."
 [[screens.items]]
-shot = "what-is-this"
-alt = "What is this? with two choices: Just my instrument, and A full song, where Fretscribe picks out the bass."
+shot = "what-is-this-guitar"
+alt = "What is this? for Guitar line.wav, with two choices: Just my instrument, and A full song, where Fretscribe picks out the guitar."
 title = "What is this?"
 text = "Just your instrument, or a full song where your part is picked out."
 [[screens.items]]
-shot = "check"
-alt = "Check the song: the tuning it heard, the octave, the key and tempo, 2 notes marked with a question mark, and Show the tab."
-title = "Check the song"
-text = "The tuning, the key and the tempo it heard, before anything is written as frets."
-[[screens.items]]
-shot = "note"
-alt = "A note with a question mark chosen in the tab, with Play this bar slowly and Next."
+shot = "tab-guitar"
+alt = "The tab of Guitar line in Standard, no capo: chords in 3/4 from bar 1, 1 note marked with a question mark and 2 notes with no place, and the player below with Play, the speed and Repeat bars."
 title = "Practise"
 text = "Slow the recording down, repeat the hard bars, and check the notes with a ?."
 
