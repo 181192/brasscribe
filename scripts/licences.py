@@ -205,6 +205,15 @@ def problems() -> list[str]:
         for n, where in sorted(uncovered(kind, names, m).items()):
             found.append(f"{n} ({where}) is not in licences/components.json: add it to the component "
                          f"it belongs to (covers.{kind}) with its licence, or to not_shipped.{kind} when no app ships it")
+    for c in m["components"]:
+        checked = c.get("checked")
+        for pin in (checked or {}).get("pins", []):
+            found_in = re.search(pin["is"], (ROOT / pin["file"]).read_text(encoding="utf-8"), re.M)
+            if not found_in:
+                found.append(f"{pin['file']} no longer names the version of {c['name']}: fix the pattern in licences/components.json")
+            elif found_in.group(1) not in checked["versions"]:
+                found.append(f"{pin['file']} pins {c['name']} {found_in.group(1)}, whose licence has not been read: read it ({c['url']}), "
+                             f"then add the version to checked.versions of {c['id']} in licences/components.json")
     locked = set(locked_crates())
     if locked != set(cargo):
         found.append("licences/cargo.json is not the crates of core/Cargo.lock"

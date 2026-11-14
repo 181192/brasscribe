@@ -108,9 +108,18 @@
       "licence": "MPL-2.0",
       "texts": ["MPL-2.0"],
       "notice": ["Copyright (c) 2025, Daniel Kuschny and Contributors. All rights reserved."],
-      "note": "Unmodified package. The source is at the address above.",
+      "note": "Unmodified package. The source is at the address above. From 1.9.0 alphaTab draws a small \"alphaTab.net\" mark above the first system of a score of more than 10 bars or 2 tracks, and asks that it stays visible: nothing in the apps hides or covers it.",
       "apps": ["brasscribe-android", "fretscribe-android", "fretscribe-apple", "brasscribe-windows", "fretscribe-windows", "bandroom-mac", "bandroom-windows"],
-      "covers": {"maven": ["net.alphatab:alphaTab"], "nuget": ["AlphaTab"], "npm": ["@coderline/alphatab"]}
+      "covers": {"maven": ["net.alphatab:alphaTab"], "nuget": ["AlphaTab"], "npm": ["@coderline/alphatab"]},
+      "checked": {
+        "versions": ["1.8.4", "1.9.0"],
+        "pins": [
+          {"file": "studio/package.json", "is": "\"@coderline/alphatab\": \"([^\"]+)\""},
+          {"file": "apps/android/gradle/libs.versions.toml", "is": "^alphaTab = \"([^\"]+)\""},
+          {"file": "apps/windows/Directory.Packages.props", "is": "Include=\"AlphaTab\" Version=\"([^\"]+)\""},
+          {"file": "apps/apple/scripts/fetch-alphatab.sh", "is": "^VERSION=(.+)$"}
+        ]
+      }
     },
     {
       "id": "sonivox",
