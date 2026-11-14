@@ -114,4 +114,46 @@ class TabRewriteTest {
         assertEquals(1, both.tabStaff)
         assertEquals(notes(TabIndex.parse(xml)), notes(both).map { it.copy(staff = 0) })
     }
+
+    /**
+     * A tab with the player's fixes, written again: a note left out, a ghost note and a doubtful note kept as it is go
+     * with their notes (found on the new page by pitch and start); a moved note goes back to where Fretscribe wrote it,
+     * with its "?". Each kind in another tuning, with a capo that keeps the sound, and with one that keeps the shapes.
+     */
+    @Test
+    fun theFixesThatStillMeanTheSameGoWithTheirNotes() {
+        val xml = page("guitar-line/tab.musicxml")
+        val index = TabIndex.parse(xml)
+        val (_, tuning) = TabRewrite.written(xml, index)!!
+        val pieces = index.pieces.filter { it.staff == index.markStaff && it.first && it.string != null }
+        val doubtful = pieces.first { it.confidence != null }
+        // (Notes above the lowest string with a capo on the second fret: they have a place in every case.)
+        val (out, ghost, moved) = pieces.filter { it.note != doubtful.note && it.pitch >= 45 }.let { Triple(it[0], it[1], it[2]) }
+        val elsewhere = FixNote.places(moved.pitch, SongFacts.openStrings(xml)).first { it.string != moved.string }
+        var fixed = no.kalli.scribe.tab.TabEdits.leaveOut(xml, out.note)
+        fixed = no.kalli.scribe.tab.TabEdits.ghost(fixed, ghost.note, true)
+        fixed = no.kalli.scribe.tab.TabEdits.keep(fixed, doubtful.note)
+        fixed = no.kalli.scribe.tab.TabEdits.place(fixed, moved.note, elsewhere.string, elsewhere.fret)
+        assertEquals(1, no.kalli.scribe.tab.TabEdits.moved(fixed))
+        fun key(p: TabPiece) = Triple(p.bar, p.onset, p.pitch)
+        for ((case, written) in listOf(
+            "drop D" to TabRewrite.rewriteKeepingFixes("Song", fixed, FrettedInstrument.GUITAR_6, "drop-d", 0, TabLayout.TAB),
+            "a capo keeping the sound" to TabRewrite.rewriteKeepingFixes("Song", fixed, FrettedInstrument.GUITAR_6, tuning, 2, TabLayout.TAB),
+            "a capo keeping the shapes" to TabRewrite.rewriteKeepingFixes("Song", fixed, FrettedInstrument.GUITAR_6, tuning, 2, TabLayout.TAB, keepShapes = true),
+        )) {
+            val after = TabIndex.parse(written)
+            val shift = if (case.endsWith("shapes")) 2 else 0
+            fun on(p: TabPiece) = after.pieces.first { it.staff == after.markStaff && it.first && Triple(it.bar, it.onset, it.pitch) == key(p).copy(third = p.pitch + shift) }
+            fun edit(p: TabPiece) = no.kalli.scribe.tab.TabEdits.of(written, on(p).note)
+            assertTrue("$case: left out", edit(out).leftOut)
+            assertTrue("$case: a ghost note", edit(ghost).ghost)
+            assertTrue("$case: kept as it is", edit(doubtful).checked)
+            assertEquals("$case: the moved note is no longer moved", null, edit(moved).was)
+            assertEquals("$case: nothing else is fixed", 3, no.kalli.scribe.tab.TabEdits.fixed(written))
+            // The left-out note is still in the file, to be put back.
+            assertEquals(case, listOf(on(out).note), no.kalli.scribe.tab.TabEdits.leftOut(written))
+        }
+        // A page without fixes is written as before.
+        assertEquals(rewritten(xml, FrettedInstrument.GUITAR_6, "drop-d"), TabRewrite.rewriteKeepingFixes("Song", xml, FrettedInstrument.GUITAR_6, "drop-d", 0, TabLayout.TAB))
+    }
 }

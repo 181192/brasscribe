@@ -378,6 +378,11 @@
     <string name="fs_tuning_write">Skriv tabben på nytt</string>
     <string name="fs_tuning_writing">Skriver tabben på nytt …</string>
     <string name="fs_tuning_failed">Tabben kunne ikke skrives slik. Prøv en annen stemming eller capo.</string>
+    <string name="fs_tuning_again_write">Skriv den på nytt</string>
+    <plurals name="fs_tuning_moved_lost">
+        <item quantity="one">Noten du flyttet, går tilbake dit Fretscribe skrev den: med en annen stemming eller capo finnes plassen på nytt. De andre rettingene dine blir med.</item>
+        <item quantity="other">De %1$d notene du flyttet, går tilbake dit Fretscribe skrev dem: med en annen stemming eller capo finnes plassene på nytt. De andre rettingene dine blir med.</item>
+    </plurals>
     <string name="fs_tuning_on_phone">Skrevet på denne telefonen, ut fra notene i tabben. Oktaven og hva som ble tatt opp, endrer du i Sjekk sangen, med datamaskinen.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>

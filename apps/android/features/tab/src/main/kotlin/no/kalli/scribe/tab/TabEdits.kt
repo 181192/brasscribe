@@ -107,6 +107,28 @@ object TabEdits {
         instruction(CHECKED).replace(out) { it.value.replace(CHECKED, CONFIDENCE) }
     }
 
+    /** How many notes the player has moved to another place. */
+    fun moved(musicXml: String): Int =
+        NOTE.findAll(musicXml).map { it.value }.filter { it.has(WAS) }.mapNotNull { it.noteIndex() }.distinct().count()
+
+    /**
+     * Every moved note back where Fretscribe wrote it, with its "?" when it had one; what else was fixed (left out, a
+     * ghost note, kept as it is) stays.
+     */
+    fun unmoved(musicXml: String): String = NOTE.replace(musicXml) { m ->
+        val piece = m.value
+        val was = instruction(WAS).find(piece)?.groupValues?.get(1)?.trim()?.split(Regex("\\s+"))?.mapNotNull { it.toIntOrNull() }?.takeIf { it.size == 2 }
+            ?: return@replace piece
+        var out = STRING.replace(piece) { it.groupValues[1] + was[0] + it.groupValues[3] }
+        out = FRET.replace(out) { it.groupValues[1] + was[1] + it.groupValues[3] }
+        instruction(CHECKED).replace(out.without(WAS)) { it.value.replace(CHECKED, CONFIDENCE) }
+    }
+
+    /** The confidence Fretscribe gave [note] before the player kept it as it is; null when it was not kept. */
+    fun keptConfidence(musicXml: String, note: Int): Double? =
+        NOTE.findAll(musicXml).map { it.value }.filter { it.noteIndex() == note }
+            .firstNotNullOfOrNull { instruction(CHECKED).find(it)?.groupValues?.get(1)?.trim()?.toDoubleOrNull() }
+
     /** What the player changed about [note]; nothing for a note the file does not have. */
     fun of(musicXml: String, note: Int): NoteEdit {
         val pieces = NOTE.findAll(musicXml).map { it.value }.filter { it.noteIndex() == note }.toList()

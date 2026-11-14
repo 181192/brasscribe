@@ -308,7 +308,7 @@ class TabViewTest : TabScreenTest() {
         // The chip opens Tuning and capo, which leads on to Check the song, and Show the tab comes back.
         rule.onNodeWithTag("fs-tab-tuning").performClick()
         waitForTag("fs-tuning-check", 5_000)
-        rule.onNodeWithTag("fs-tuning-check").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-tuning-check").performClick()
         waitForTag("fs-show-tab")
         assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT), vm.screen.value)
         rule.onNodeWithTag("fs-show-tab").performClick()
@@ -1014,7 +1014,7 @@ class TabViewTest : TabScreenTest() {
         assertEquals("at 100 % again the same line is at the top", reading, barInView(tab))
         rule.onNodeWithTag("fs-tab-tuning").performClick()
         waitForTag("fs-tuning-check", 5_000)
-        rule.onNodeWithTag("fs-tuning-check").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-tuning-check").performClick()
         waitForTag("fs-show-tab")
         rule.onNodeWithTag("fs-show-tab").performClick()
         assertStillThere("after Check the song")

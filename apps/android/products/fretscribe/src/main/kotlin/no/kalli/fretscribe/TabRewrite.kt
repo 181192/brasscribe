@@ -11,6 +11,7 @@ import kotlinx.serialization.json.putJsonObject
 import no.kalli.scribe.core.frettedTabJson
 import no.kalli.scribe.engine.FrettedInstrument
 import no.kalli.scribe.engine.TabLayout
+import no.kalli.scribe.tab.TabEdits
 import no.kalli.scribe.tab.TabIndex
 
 /**
@@ -42,7 +43,8 @@ object TabRewrite {
         return SongFacts.OPEN_STRINGS.entries.firstOrNull { it.value == open }?.key?.let(FrettedInstrument::ofPreset)
     }
 
-    private class Written(val pitch: Int, val start: Int, val dur: Int, val confidence: Double, val string: Int?)
+    /** A note asked for: [from] is its place in the page's own notes, when it is one of them. */
+    private class Written(val pitch: Int, val start: Int, val dur: Int, val confidence: Double, val string: Int?, val from: Int? = null)
 
     private val SOURCE = Regex("""<\?fretted-source\s+([^?]*)\?>\s*""")
 
@@ -83,13 +85,15 @@ object TabRewrite {
             val first = pieces.firstOrNull { it.first } ?: pieces.first()
             val start = starts[first.bar] + first.onset
             val end = pieces.maxOf { starts[it.bar] + it.onset + it.length }
-            written += Written(first.pitch, ticks(start - lead), ticks(end - start).coerceAtLeast(1), pieces.firstNotNullOfOrNull { it.confidence } ?: 1.0, first.string)
+            // A note the player kept as it is asks with the doubt Fretscribe gave it: it is kept again on the new page.
+            val doubt = pieces.firstNotNullOfOrNull { it.confidence } ?: TabEdits.keptConfidence(musicXml, first.note) ?: 1.0
+            written += Written(first.pitch, ticks(start - lead), ticks(end - start).coerceAtLeast(1), doubt, first.string, first.note)
         }
         val from = source(musicXml)
         if (from != null) {
             // Each note of the source with the string the page has it on, when the page has it.
             val placed = written.groupBy { it.start to it.pitch }.mapValues { it.value.toMutableList() }
-            return from.map { n -> Written(n.pitch, n.start, n.dur, n.confidence, placed[n.start to n.pitch]?.removeFirstOrNull()?.string) }
+            return from.map { n -> placed[n.start to n.pitch]?.removeFirstOrNull().let { p -> Written(n.pitch, n.start, n.dur, n.confidence, p?.string, p?.from) } }
         }
         // A note with no place is only named on the computer's page ("! D1"): it is asked for again, a beat long.
         index.noPlace.filter { it.staff == index.markStaff && it.bar < index.measures.size }.forEach { n ->
@@ -110,7 +114,7 @@ object TabRewrite {
 
     private fun asked(musicXml: String, index: TabIndex, capo: Int, keepShapes: Boolean): List<Written> {
         val moved = if (keepShapes) capo - index.capo else 0
-        return notes(musicXml, index).map { Written(it.pitch + moved, it.start, it.dur, it.confidence, it.string) }
+        return notes(musicXml, index).map { Written(it.pitch + moved, it.start, it.dur, it.confidence, it.string, it.from) }
     }
 
     private fun request(title: String, musicXml: String, index: TabIndex, kind: FrettedInstrument, tuning: String, capo: Int, layout: TabLayout?, notes: List<Written>, keepShapes: Boolean): String {
@@ -142,6 +146,26 @@ object TabRewrite {
     fun rewrite(title: String, musicXml: String, index: TabIndex, kind: FrettedInstrument, tuning: String, capo: Int, layout: TabLayout?, keepShapes: Boolean = false): String {
         val notes = asked(musicXml, index, capo, keepShapes)
         return withSource(write(request(title, musicXml, index, kind, tuning, capo, layout, notes, keepShapes)), notes)
+    }
+
+    /**
+     * The song's own file [raw], with the player's fixes ([TabEdits]), written again as [rewrite] does. What still means
+     * the same in the new tuning or capo goes with each note (the core numbers the new page's notes as they were asked
+     * for): a note left out, a ghost note, a doubtful note kept as it is. A moved note cannot go with it (its places
+     * are found anew): it is asked for where Fretscribe wrote it, with its "?" ([TabEdits.moved] says how many).
+     */
+    fun rewriteKeepingFixes(title: String, raw: String, kind: FrettedInstrument, tuning: String, capo: Int, layout: TabLayout?, keepShapes: Boolean = false): String {
+        val page = TabEdits.unmoved(raw)
+        val index = TabIndex.parse(page)
+        val notes = asked(page, index, capo, keepShapes)
+        var out = withSource(write(request(title, page, index, kind, tuning, capo, layout, notes, keepShapes)), notes)
+        notes.forEachIndexed { i, n ->
+            val was = n.from?.let { TabEdits.of(page, it) } ?: return@forEachIndexed
+            if (was.leftOut) out = TabEdits.leaveOut(out, i)
+            if (was.ghost) out = TabEdits.ghost(out, i, true)
+            if (was.checked) out = TabEdits.keep(out, i)
+        }
+        return out
     }
 
     /** The page the core writes for [request] (the core's library must be loaded); throws what the core refuses. */
