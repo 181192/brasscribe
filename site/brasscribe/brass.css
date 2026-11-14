@@ -41,3 +41,7 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 /* Brasscribe's display face is drawn small for its size: names set side by side with another app's are scaled up
    to stand at the same optical size. */
 :root { --site-display-scale: 1.2; }
+
+/* The numbers of the screens and the titles of the tally cards are set as the parts are: in the engraver's serif. */
+.flow h3::before { font-family: var(--scribe-font-display); font-weight: 400; font-size: 0.95rem; }
+.tally h3 { font-family: var(--scribe-font-display); font-weight: 400; font-size: calc(var(--scribe-type-headline-size) * 1.45); line-height: 1.15; }

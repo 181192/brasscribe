@@ -357,9 +357,11 @@ class Page:
             else:
                 body = "\n".join(device(g, i == 0) for i, g in enumerate(v["files"])) + "\n" + tech(v["files"])
             parts.append(f"{head}\n{body}\n</section>")
+        # The tools are for the tech person too: what they are is said, the files (and their processors) are folded.
         parts.append(f'<section id="tools" aria-labelledby="tools-title">\n  <h2 id="tools-title">{say("groups.tools.title")}</h2>\n'
-                     f'  <ul class="tech-files">' + "".join(f'\n    <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>' for x in groups["tools"])
-                     + f'\n  </ul>\n  <p>{say("groups.tools.note")}</p>\n</section>')
+                     f'  <p>{say("groups.tools.note")}</p>\n  <details class="tech"><summary>{say("download.files")}</summary>\n    <ul class="tech-files">'
+                     + "".join(f'\n      <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>' for x in groups["tools"])
+                     + '\n    </ul>\n  </details>\n</section>')
         parts.append(f'</div>\n<p class="muted">{say("download.more")}</p>\n')
         self.lang = "en"
         return "\n".join(parts)

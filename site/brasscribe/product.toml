@@ -103,17 +103,17 @@ research = "how-it-works"
 [[sure]]
 right = ["trumpet.seat_recall", "flugelhorn.seat_recall"]
 missed = ["trumpet.q_missed/value", "flugelhorn.q_missed/value"]
-en = { title = "Cornet and flugelhorn", where = "one player, hymn tunes" }
-nb = { title = "Kornett og flygelhorn", where = "én musiker, salmer" }
+en = { seats = "Cornets · Flugelhorn", title = "Cornet and flugelhorn", where = "one player, hymn tunes" }
+nb = { seats = "Kornetter · Flygelhorn", title = "Kornett og flygelhorn", where = "én musiker, salmer" }
 
 [[sure]]
 right = ["horn.seat_recall", "baritone.seat_recall", "trombone.seat_recall"]
 missed = ["horn.q_missed/value", "baritone.q_missed/value", "trombone.q_missed/value"]
-en = { title = "Horn, baritone and trombone", where = "one player, hymn tunes" }
-nb = { title = "Horn, baryton og trombone", where = "én musiker, salmer" }
+en = { seats = "Tenor horns · Baritones · Trombones", title = "Horn, baritone and trombone", where = "one player, hymn tunes" }
+nb = { seats = "Althorn · Barytoner · Tromboner", title = "Horn, baryton og trombone", where = "én musiker, salmer" }
 
 [[sure]]
 right = ["tuba.seat_recall"]
 missed = ["tuba.q_missed/value"]
-en = { title = "Tuba", where = "one player, hymn tunes", note = "read the bass part with your ears open" }
-nb = { title = "Tuba", where = "én musiker, salmer", note = "les basstemmen med ørene åpne" }
+en = { seats = "E♭ and B♭ basses", title = "Tuba", where = "one player, hymn tunes", note = "read the bass part with your ears open" }
+nb = { seats = "Ess- og B-basser", title = "Tuba", where = "én musiker, salmer", note = "les basstemmen med ørene åpne" }

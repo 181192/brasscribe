@@ -11,7 +11,7 @@ title = "Dette gjør det."
 listens = "<strong>Lytter og skriver.</strong> Hvert bandpartitur og hver tab skrives her, for alle Scribe-appene og alle telefonene og nettbrettene du kobler til."
 home = "<strong>Blir hjemme.</strong> Opptaket går fra telefonen til din egen datamaskin, og ingen andre steder."
 quiet = "<strong>Går stille.</strong> Det ligger i menylinjen på en Mac, eller i varslingsområdet i Windows, og starter når du trenger det."
-studio = "<strong>Studio følger med.</strong> For den tekniske i bandet: velg <strong>Åpne Studio</strong> i menyen for å se hvert steg i hvordan partituret ble til."
+studio = "<strong>Studio følger med.</strong> For den tekniske, i et band eller på egen hånd: velg <strong>Åpne Studio</strong> i menyen for å se hvert steg i hvordan partituret ble til."
 
 [get]
 title = "Last det ned."

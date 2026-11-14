@@ -45,11 +45,13 @@ text = "Ett instrument, et brassband, en solist med band, eller pop og rock. Sva
 [[screens.items]]
 shot = "review"
 alt = "Sjekk tonene: takt 2 i solokornett, skrevet Fiss, usikker, med Hør denne takten, Endre tone, Hopp over og Behold."
+part = "Solokornett"
 title = "Sjekk tonene"
 text = "Notene med ?, én om gangen: hør, behold eller endre."
 [[screens.items]]
 shot = "part"
 alt = "Solokornettstemmen på iPhone med spørsmålstegn over de usikre notene og avspilleren under. Demp stemmen min er på."
+part = "Solokornett"
 title = "Stemmen din"
 text = "Din egen stemme slik den skrives for instrumentet ditt, med bandet som spiller rundt deg."
 

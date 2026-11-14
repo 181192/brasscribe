@@ -258,6 +258,9 @@ section + section { border-top: 1px solid var(--scribe-border); }
   transform: translateY(-2px);
 }
 .flow p { color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); margin: 0; }
+/* A part's name, set as a part's header is: small capitals, spaced (the strip's part name, a tally card's seats). */
+.seats { margin: 0 0 4px; font: 600 0.8125rem/1.3 var(--scribe-font-text); font-variant-caps: all-small-caps; letter-spacing: 0.04em; color: var(--scribe-text-muted); }
+.flow .seats { margin-bottom: var(--scribe-space-1); }
 
 ul.ticks { list-style: none; padding: 0; margin: 0 0 var(--scribe-space-4); display: grid; gap: var(--scribe-space-3); }
 ul.ticks li { position: relative; padding-left: 1.6em; }

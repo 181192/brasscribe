@@ -39,20 +39,20 @@ nb = "Bandroom for Windows 11: <a href=\"@/guide/#computer\">datamaskinen</a> gj
 [[downloads]]
 file = "scribe-core-macos-arm64.tar.gz"
 group = "tools"
-en = "The <code>scribe-core</code> command-line tool, for the tech person"
-nb = "Kommandolinjeverktøyet <code>scribe-core</code>, for den tekniske"
+en = "The <code>scribe-core</code> command-line tool for Mac"
+nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Mac"
 
 [[downloads]]
 file = "scribe-core-linux-x86_64.tar.gz"
 group = "tools"
-en = "The <code>scribe-core</code> command-line tool for Linux (x86-64)"
-nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Linux (x86-64)"
+en = "The <code>scribe-core</code> command-line tool for Linux"
+nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Linux"
 
 [[downloads]]
 file = "scribe-core-windows-x86_64.zip"
 group = "tools"
-en = "The <code>scribe-core</code> command-line tool for Windows (x64)"
-nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Windows (x64)"
+en = "The <code>scribe-core</code> command-line tool for Windows"
+nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Windows"
 
 [[downloads]]
 file = "SHA256SUMS"
