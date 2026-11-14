@@ -157,8 +157,56 @@ class ChoicesRoomTest : ScreenTest() {
         for (tag in listOf("print", "share", "save")) {
             whole(tag)
             assertEquals("$tag has its words on one line", 1, lines(tag))
+            assertEquals("$tag is like the others: no icon at this size", 0, icons(tag))
         }
+        chosenInView()
         assertNoTextIsClipped()
+    }
+
+    /** The icons in the button [tag]. */
+    private fun icons(tag: String): Int = rule.onAllNodes(androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.hasTestTag(tag)) and
+        androidx.compose.ui.test.hasTestTag("button-icon"), useUnmergedTree = true).fetchSemanticsNodes().size
+
+    /** What the buttons make (the chosen formats and the number of files) is on the first screen, whole, under the title. */
+    private fun chosenInView() {
+        whole("export-chosen")
+        val chosen = rule.onNodeWithTag("export-chosen").fetchSemanticsNode()
+        val words = chosen.config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
+        // The formats and the number of files, and nothing more: what the marks mean is said under the formats.
+        assertEquals("PDF · " + rule.activity.resources.getQuantityString(no.kalli.scribe.play.R.plurals.export_count, 1, 1), words)
+        // A screen reader is told where it goes.
+        assertEquals(text(no.kalli.scribe.play.R.string.export_go_to_formats), chosen.config[SemanticsActions.OnClick].label)
+        // It goes to the formats.
+        rule.onNodeWithTag("export-chosen").performClick()
+        rest()
+        whole("export-format-PDF")
+    }
+
+    @Test
+    fun onANarrowPhoneWithDefaultTextTheThreeAreAlikeAndDocked() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 320, 568))
+        language("nb-NO")
+        shareOrPrint()
+        shot("share-or-print-narrow-100")
+        // Share and Save are one row under Print.
+        assertTrue("Save is beside Share", node("save").boundsInWindow.left >= node("share").boundsInWindow.right)
+        for (tag in listOf("print", "share", "save")) {
+            whole(tag)
+            assertEquals("$tag has its words on one line", 1, lines(tag))
+            assertEquals("$tag is like the others: no icon on a narrow phone", 0, icons(tag))
+        }
+        chosenInView()
+        assertNoTextIsClipped()
+    }
+
+    @Test
+    fun onItsSideWhatTheButtonsMakeIsInViewWithThem() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        language("nb-NO")
+        shareOrPrint()
+        shot("share-or-print-small-landscape")
+        for (tag in listOf("print", "share", "save")) whole(tag)
+        chosenInView()
     }
 
     @Test
@@ -172,5 +220,6 @@ class ChoicesRoomTest : ScreenTest() {
             whole(tag)
             assertEquals("$tag has its words on one line", 1, lines(tag))
         }
+        chosenInView()
     }
 }

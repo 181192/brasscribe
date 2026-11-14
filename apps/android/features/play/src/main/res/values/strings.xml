@@ -247,6 +247,7 @@
     <!-- Share or print -->
     <string name="export_title">Share or print</string>
     <string name="export_formats">Formats</string>
+    <string name="export_go_to_formats">Go to the formats</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">For printing and the music stand</string>
     <!-- Share or print, under PDF: which PDF it is. -->
@@ -278,10 +279,10 @@
     <string name="export_share">Share…</string>
     <string name="export_save">Save to Files</string>
     <plurals name="export_count">
-        <item quantity="one">%d file · uncertain notes keep their “?” marks</item>
-        <item quantity="other">%d files · uncertain notes keep their “?” marks</item>
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
     </plurals>
-    <string name="export_marks_note">“?” means Brasscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
+    <string name="export_marks_note">“?” means Brasscribe wasn\'t sure about a note. A boxed “?” means very unsure. The files keep these marks.</string>
     <string name="exported">Ready: %1$s</string>
     <string name="exported_files">Saved %1$d files</string>
     <string name="export_failed">That didn\'t work: %1$s</string>

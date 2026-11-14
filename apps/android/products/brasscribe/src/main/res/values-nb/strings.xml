@@ -388,6 +388,7 @@
     <string name="export">Del eller skriv ut</string>
     <string name="export_title">Del eller skriv ut</string>
     <string name="export_formats">Formater</string>
+    <string name="export_go_to_formats">Gå til formatene</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">Til utskrift og notestativet</string>
     <string name="export_pdf_computer">Til utskrift og notestativet. Fra Bandroom på datamaskinen.</string>
@@ -416,10 +417,10 @@
     <string name="export_share">Del …</string>
     <string name="export_save">Lagre i Filer</string>
     <plurals name="export_count">
-        <item quantity="one">%d fil · usikre toner beholder «?»-merkene</item>
-        <item quantity="other">%d filer · usikre toner beholder «?»-merkene</item>
+        <item quantity="one">%d fil</item>
+        <item quantity="other">%d filer</item>
     </plurals>
-    <string name="export_marks_note">«?» betyr at Brasscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
+    <string name="export_marks_note">«?» betyr at Brasscribe var usikker på en tone. «?» i en boks betyr svært usikker. Filene beholder merkene.</string>
     <string name="exported">Klar: %1$s</string>
     <string name="exported_files">Lagret %1$d filer</string>
     <string name="export_failed">Det gikk ikke: %1$s</string>
