@@ -62,6 +62,49 @@ final class TabSoundCore: @unchecked Sendable {
     }
 }
 
+/// The clicks of one render cycle, made before the notes' instrument and the clicks are pulled (the mixer's
+/// pre-render pass) and handed out when the clicks are. Used on the sound's thread only; made once, never grown.
+final class ClickBuffer: @unchecked Sendable {
+    static let capacity = 8_192
+    let left = UnsafeMutablePointer<Float>.allocate(capacity: capacity)
+    let right = UnsafeMutablePointer<Float>.allocate(capacity: capacity)
+    /// Frames made for this cycle.
+    var frames = 0
+
+    deinit {
+        left.deallocate()
+        right.deallocate()
+    }
+
+    /// Makes the next `count` frames: the notes are handed to the instrument for this cycle, the clicks kept here.
+    func make(_ count: Int, _ core: TabSoundCore) {
+        var done = 0
+        while done < count {
+            let n = min(count - done, Self.capacity)
+            left.update(repeating: 0, count: n)
+            right.update(repeating: 0, count: n)
+            core.render(frames: n, left: left, right: right)
+            done += n
+        }
+        frames = min(count, Self.capacity)
+    }
+
+    /// Copies the clicks made for this cycle into the node's output.
+    func take(_ count: Int, left out: UnsafeMutablePointer<Float>, right outRight: UnsafeMutablePointer<Float>) {
+        let n = min(count, frames)
+        out.update(from: left, count: n)
+        outRight.update(from: right, count: n)
+        if count > n {
+            (out + n).update(repeating: 0, count: count - n)
+            (outRight + n).update(repeating: 0, count: count - n)
+        }
+        frames = 0
+    }
+}
+
+/// A value that is handed to another thread on purpose, where it is used alone.
+struct Handed<T>: @unchecked Sendable { let value: T }
+
 /// The instrument on an `AVAudioUnitSampler`: notes are handed to it for the frame they start at.
 final class SamplerVoices: TabVoices, @unchecked Sendable {
     private let send: AUScheduleMIDIEventBlock?
@@ -114,43 +157,157 @@ public final class EngineTabSoundPlayer: TabSoundPlaying {
 
     private let engine = AVAudioEngine()
     private let sampler = AVAudioUnitSampler()
+    /// The notes and the clicks meet here, before the limiter.
+    private let mix = AVAudioMixerNode()
+    /// Keeps a full chord with a click over it, and anything else that adds up, under full scale.
+    private let limiter = AVAudioUnitEffect(audioComponentDescription: AudioComponentDescription(
+        componentType: kAudioUnitType_Effect, componentSubType: kAudioUnitSubType_PeakLimiter,
+        componentManufacturer: kAudioUnitManufacturer_Apple, componentFlags: 0, componentFlagsMask: 0))
     private let core: TabSoundCore
+    private let clickBuffer = ClickBuffer()
+    private var observer: Int?
     private let end: Double
+    private let soundFont: URL
+    private let program: UInt8
     private weak var listener: (any RecordingPlayerListener)?
     private var watch: Task<Void, Never>?
+    private var notices: [any NSObjectProtocol] = []
+    /// The sound was taken away on purpose (headphones pulled out, a call): it pauses rather than starting again.
+    private var takenAway = false
     private var at = 0.0
 
     public private(set) var asked = false
 
-    /// Throws when the SoundFont cannot be read or has no such program.
+    /// The player for `score`, without its instrument yet: `load` reads it.
     public init(score: TabSoundScore, program: UInt8, soundFont: URL, listener: any RecordingPlayerListener, silent: Bool = false,
                 offline: Bool = false) throws {
         self.listener = listener
+        self.soundFont = soundFont
+        self.program = program
         end = score.end
         let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2)!
         if offline { try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 4096) }
         let core = TabSoundCore(synth: TabSynth(score: score, voices: SamplerVoices(sampler), sampleRate: format.sampleRate))
         self.core = core
-        let clicks = AVAudioSourceNode(format: format) { _, _, frames, buffers -> OSStatus in
-            let out = UnsafeMutableAudioBufferListPointer(buffers)
-            guard out.count >= 2, let left = out[0].mData?.assumingMemoryBound(to: Float.self),
-                  let right = out[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
-            left.update(repeating: 0, count: Int(frames))
-            right.update(repeating: 0, count: Int(frames))
-            core.render(frames: Int(frames), left: left, right: right)
-            return noErr
-        }
+        let clickBuffer = clickBuffer
+        let clicks = AVAudioSourceNode(format: format, renderBlock: Self.theClicks(clickBuffer))
         engine.attach(sampler)
         engine.attach(clicks)
-        engine.connect(sampler, to: engine.mainMixerNode, format: format)
-        engine.connect(clicks, to: engine.mainMixerNode, format: format)
+        engine.attach(mix)
+        engine.attach(limiter)
+        engine.connect(sampler, to: mix, format: format)
+        engine.connect(clicks, to: mix, format: format)
+        engine.connect(mix, to: limiter, format: format)
+        engine.connect(limiter, to: engine.mainMixerNode, format: format)
+        // Each cycle the notes are handed to the instrument, and the clicks made, before the mixer pulls either: the
+        // notes sound in the cycle they are written for, with the clicks, whichever of the two the mixer pulls first.
+        observer = mix.auAudioUnit.token(byAddingRenderObserver: Self.beforeTheMix(clickBuffer, core))
         // The notes go out 6 dB down (the clicks are made at their level): a full chord with a click over it, and the
         // recording beside it in the device's mixer, have room.
         sampler.overallGain = -6
         if silent { engine.mainMixerNode.outputVolume = 0 }
-        try sampler.loadSoundBankInstrument(at: soundFont, program: program, bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
-                                            bankLSB: UInt8(kAUSampler_DefaultBankLSB))
+        watchTheDevice()
+    }
+
+    /// Where instruments are read, one after the other.
+    private static let reading = DispatchQueue(label: "no.kalli.scribe.tab.instrument", qos: .userInitiated)
+
+    /// The tab's sound on this device with its instrument read, or nil when the build has no SoundFont or it cannot be read.
+    public static func make(score: TabSoundScore, program: UInt8, listener: any RecordingPlayerListener) async -> (any TabSoundPlaying)? {
+        guard let font = soundFont, let player = try? EngineTabSoundPlayer(score: score, program: program, soundFont: font, listener: listener) else { return nil }
+        do { try await player.load() } catch {
+            PracticeModel.log.warning("the tab's instrument could not be read: \(error.localizedDescription, privacy: .public)")
+            player.release()
+            return nil
+        }
+        return player
+    }
+
+    /// The notes' level in dB (they go out at -6); for the tests.
+    var notesGain: Float {
+        get { sampler.overallGain }
+        set { sampler.overallGain = newValue }
+    }
+
+    /// Reads the instrument from the SoundFont, away from the main thread (it is over a megabyte to parse). Throws
+    /// when the SoundFont cannot be read or has no such program.
+    public func load() async throws {
+        let sampler = Handed(value: sampler), font = soundFont, program = program
+        // One instrument is read at a time: Core Audio stops the process when two samplers read theirs at once.
+        try await withCheckedThrowingContinuation { (done: CheckedContinuation<Void, any Error>) in
+            Self.reading.async {
+                do {
+                    try sampler.value.loadSoundBankInstrument(at: font, program: program, bankMSB: UInt8(kAUSampler_DefaultMelodicBankMSB),
+                                                              bankLSB: UInt8(kAUSampler_DefaultBankLSB))
+                    done.resume()
+                } catch {
+                    done.resume(throwing: error)
+                }
+            }
+        }
         engine.prepare()
+    }
+
+    /// The device's sound changing under the player: a new output (headphones plugged in, another device chosen on a
+    /// Mac) stops the engine, and it starts again where it was; headphones pulled out, or a call, pause it.
+    private func watchTheDevice() {
+        let center = NotificationCenter.default
+        notices.append(center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.outputChanged() }
+        })
+        #if os(iOS)
+        notices.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { [weak self] note in
+            let reason = (note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt).flatMap(AVAudioSession.RouteChangeReason.init)
+            MainActor.assumeIsolated { if reason == .oldDeviceUnavailable { self?.soundTakenAway() } }
+        })
+        notices.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
+            let kind = (note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt).flatMap(AVAudioSession.InterruptionType.init)
+            MainActor.assumeIsolated { if kind == .began { self?.soundTakenAway() } }
+        })
+        #endif
+    }
+
+    /// Headphones pulled out, a call: the song pauses where it is.
+    func soundTakenAway() {
+        takenAway = true
+        if asked { stop(at: position); listener?.recordingPlaying(false) }
+    }
+
+    /// The engine stopped for a new output: it starts again, unless the sound was taken away on purpose.
+    func outputChanged() {
+        guard asked, !engine.isInManualRenderingMode else { return }
+        if takenAway { stop(at: position); listener?.recordingPlaying(false); return }
+        if !engine.isRunning { restart() }
+    }
+
+    // The two blocks the sound's thread runs are made outside the main actor: made inside it, they would check on
+    // that thread that they run on the main one, and stop the app.
+
+    nonisolated private static func theClicks(_ clicks: ClickBuffer) -> AVAudioSourceNodeRenderBlock {
+        { _, _, frames, buffers -> OSStatus in
+            let out = UnsafeMutableAudioBufferListPointer(buffers)
+            guard out.count >= 2, let left = out[0].mData?.assumingMemoryBound(to: Float.self),
+                  let right = out[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
+            clicks.take(Int(frames), left: left, right: right)
+            return noErr
+        }
+    }
+
+    nonisolated private static func beforeTheMix(_ clicks: ClickBuffer, _ core: TabSoundCore) -> AURenderObserver {
+        { flags, _, frames, _ in
+            if flags.contains(.unitRenderAction_PreRender) { clicks.make(Int(frames), core) }
+        }
+    }
+
+    /// For the tests: the device stops the engine, as it does for a new output.
+    func deviceStoppedTheEngine() { engine.stop() }
+
+    private func restart() {
+        do { try engine.start() } catch {
+            PracticeModel.log.warning("the tab's sound could not go on on the new output: \(error.localizedDescription, privacy: .public)")
+            stop(at: position)
+            listener?.recordingPlaying(false)
+        }
     }
 
     public var playing: Bool { asked && engine.isRunning }
@@ -163,7 +320,7 @@ public final class EngineTabSoundPlayer: TabSoundPlaying {
     public var position: Double {
         guard asked else { return at }
         // What is heard now was rendered a moment ago.
-        let behind = engine.isInManualRenderingMode ? 0 : engine.outputNode.presentationLatency
+        let behind = (engine.isInManualRenderingMode ? 0 : engine.outputNode.presentationLatency) + limiter.auAudioUnit.latency
         let (rendered, counting, turned) = core.with { ($0.position - behind * $0.speed, $0.countingIn, $0.turns > $0.turnsAtJump) }
         if counting { return at }
         var heard = rendered
@@ -193,6 +350,7 @@ public final class EngineTabSoundPlayer: TabSoundPlaying {
             return
         }
         asked = true
+        takenAway = false
         core.run(true)
         watch?.cancel()
         watch = Task { [weak self] in
@@ -201,7 +359,12 @@ public final class EngineTabSoundPlayer: TabSoundPlaying {
                 try? await Task.sleep(for: .milliseconds(50))
                 guard let self, self.asked else { return }
                 if self.core.ended { self.reachedEnd(); return }
-                if !self.engine.isRunning { self.stop(at: self.position); self.listener?.recordingPlaying(false); return }
+                // Stopped under it: a new output is played on (its notice may come after this look); else it pauses.
+                if !self.engine.isRunning {
+                    if self.takenAway { self.stop(at: self.position); self.listener?.recordingPlaying(false); return }
+                    self.restart()
+                    if !self.asked { return }
+                }
             }
         }
         listener?.recordingPlaying(true)
@@ -241,6 +404,10 @@ public final class EngineTabSoundPlayer: TabSoundPlaying {
         asked = false
         core.run(false)
         engine.stop()
+        for notice in notices { NotificationCenter.default.removeObserver(notice) }
+        notices = []
+        if let observer { mix.auAudioUnit.removeRenderObserver(observer) }
+        observer = nil
     }
 
     /// For the tests, with `offline`: the next `frames` frames of what would be heard, one channel.

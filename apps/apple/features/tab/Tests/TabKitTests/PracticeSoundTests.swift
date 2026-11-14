@@ -40,7 +40,7 @@ struct PracticeSoundTests {
     let made = Made()
     let suite = "practice-sound-tests-\(UUID().uuidString)"
 
-    final class Made { var players: [FakePlayer] = []; var tabs: [FakeTabSound] = [] }
+    final class Made { var players: [FakePlayer] = []; var tabs: [FakeTabSound] = []; var readied: [Bool] = [] }
 
     init() throws {
         index = TabIndex.parse(musicXML: try fixtureText("bass-line/tab.musicxml"))
@@ -58,6 +58,9 @@ struct PracticeSoundTests {
                                  let t = FakeTabSound(program: program, listener: listener)
                                  made.tabs.append(t)
                                  return t
+                             }, readyToPlay: {
+                                 // Whether anything already played when the device's sound was readied.
+                                 made.readied.append(made.tabs.contains { $0.asked } || made.players.contains { $0.asked })
                              })
     }
 
@@ -188,5 +191,76 @@ struct PracticeSoundTests {
         m.metronome(true)
         recording.pause()
         #expect(!m.playing && !tab.asked)
+    }
+
+    @Test func theDevicesSoundIsReadiedBeforeAnythingPlays() async throws {
+        // On an iPhone: the audio session set for playing, so the silent switch and a locked phone do not mute it.
+        let m = model()
+        m.open(song: "song", job: "job-1", clock: clock, inHand: nil, tab: source)
+        await m.settled()
+        m.toggle()
+        #expect(m.playing && made.readied == [false])
+        m.toggle()
+        m.countIn(true)
+        m.toggle()
+        #expect(m.counting && made.readied == [false, false])
+    }
+
+    @Test func whileTheTabsSoundIsMadeNothingPlaysAndASoundMadeTooLateGoes() async throws {
+        let made = made
+        var finish: [CheckedContinuation<Void, Never>] = []
+        let m = PracticeModel(recordings: dir.file("recordings"), places: dir.file("places"), choices: UserDefaults(suiteName: suite)!,
+                              makePlayer: { file, listener in FakePlayer(file: file, listener: listener) },
+                              makeTabPlayer: { _, program, listener in
+                                  await withCheckedContinuation { finish.append($0) }
+                                  let t = FakeTabSound(program: program, listener: listener)
+                                  made.tabs.append(t)
+                                  return t
+                              })
+        m.open(song: "song", job: "job-1", clock: clock, inHand: nil, tab: source)
+        while finish.isEmpty { await Task.yield() }
+        #expect(m.tabSoundLoading && !m.tabSound && !m.tabSoundFailed)
+        // The same page again while it is made makes no second one.
+        m.open(song: "song", job: "job-1", clock: clock, inHand: nil, tab: source)
+        for _ in 0..<20 { await Task.yield() }
+        #expect(finish.count == 1)
+        finish.removeFirst().resume()
+        await m.settled()
+        #expect(!m.tabSoundLoading && m.tabSound && m.canPlay && made.tabs.count == 1)
+        // Another song while the sound is made: the late one is let go.
+        m.open(song: "other", job: "job-2", clock: clock, inHand: nil, tab: TabSoundSource(index: index, program: EngineTabSoundPlayer.steel))
+        while finish.isEmpty { await Task.yield() }
+        m.leave()
+        finish.removeFirst().resume()
+        for _ in 0..<20 { await Task.yield() }
+        #expect(made.tabs.count == 2 && made.tabs[1].released && !m.tabSound && !m.tabSoundLoading)
+    }
+
+    @Test func theRecordingPlayedWhileTheTabsSoundIsMadeIsJoinedByIt() async throws {
+        var finish: [CheckedContinuation<Void, Never>] = []
+        var recordings: [FakePlayer] = [], tabs: [FakeTabSound] = []
+        let choices = UserDefaults(suiteName: suite)!
+        choices.set(PracticeSound.both.rawValue, forKey: PracticeModel.soundKey)
+        let m = PracticeModel(recordings: dir.file("recordings"), places: dir.file("places"), choices: choices,
+                              makePlayer: { file, listener in let p = FakePlayer(file: file, listener: listener); recordings.append(p); return p },
+                              makeTabPlayer: { _, program, listener in
+                                  await withCheckedContinuation { finish.append($0) }
+                                  let t = FakeTabSound(program: program, listener: listener)
+                                  tabs.append(t)
+                                  return t
+                              })
+        m.open(song: "song", job: "job-1", clock: clock, inHand: take(), tab: source)
+        while finish.isEmpty || recordings.isEmpty { await Task.yield() }
+        for _ in 0..<20 { await Task.yield() }
+        // Played while the tab's sound is made: the recording alone.
+        m.toggle()
+        let recording = try #require(recordings.last)
+        #expect(m.playing && recording.asked && m.tabSoundLoading)
+        recording.position = 1.5
+        finish.removeFirst().resume()
+        await m.settled()
+        // Both were chosen: the tab's sound joins where the recording is.
+        let tab = try #require(tabs.last)
+        #expect(m.tabSound && tab.asked && tab.notes && tab.seeks.last == 1.5)
     }
 }

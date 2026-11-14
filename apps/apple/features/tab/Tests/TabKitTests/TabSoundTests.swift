@@ -165,11 +165,12 @@ struct EngineTabSoundPlayerTests {
 
     func level(_ sound: ArraySlice<Float>) -> Double { (sound.reduce(0.0) { $0 + Double($1) * Double($1) } / Double(max(sound.count, 1))).squareRoot() }
 
-    @Test func theNotesSoundWhereTheyAreWrittenOnEveryProgram() throws {
+    @Test func theNotesSoundWhereTheyAreWrittenOnEveryProgram() async throws {
         let font = try #require(EngineTabSoundPlayer.soundFont, "make alphatab puts the SoundFont in the package")
         for program in [EngineTabSoundPlayer.bass, EngineTabSoundPlayer.nylon, EngineTabSoundPlayer.steel] {
             let told = ToldListener()
             let p = try EngineTabSoundPlayer(score: score, program: program, soundFont: font, listener: told, offline: true)
+            try await p.load()
             p.play()
             #expect(p.playing)
             let sound = try p.rendered(frames: 88_200)
@@ -183,12 +184,13 @@ struct EngineTabSoundPlayerTests {
         }
     }
 
-    @Test func aFullChordWithAClickOverItGoesOutUnderFullScale() throws {
+    @Test func aFullChordWithAClickOverItGoesOutUnderFullScale() async throws {
         // Six notes struck at once, on the first beat of a bar with the metronome on.
         let font = try #require(EngineTabSoundPlayer.soundFont)
         let chord = TabSoundScore(notes: (0..<6).map { SoundNote(start: 0.1, end: 1.0, pitch: 40 + 5 * $0) }, beats: [SoundBeat(at: 0.1, first: true)], end: 1.0)
         for program in [EngineTabSoundPlayer.steel, EngineTabSoundPlayer.bass] {
             let p = try EngineTabSoundPlayer(score: chord, program: program, soundFont: font, listener: ToldListener(), offline: true)
+            try await p.load()
             p.metronome = true
             p.play()
             let sound = try p.rendered(frames: 44_100)
@@ -199,9 +201,75 @@ struct EngineTabSoundPlayerTests {
         }
     }
 
-    @Test func theMetronomeIsMixedInAndTheNotesCanBeLeftOut() throws {
+    /// The first frame louder than a whisper.
+    func onset(_ sound: [Float]) -> Int? { sound.firstIndex { abs($0) > 0.002 } }
+
+    @Test func aNoteSoundsOnItsFrameWithTheClickNotABufferLate() async throws {
+        // A note and a click both at 0.5 s (frame 22 050, inside the sixth 4 096-frame buffer): a note handed to the
+        // instrument after it had played its buffer would sound 4 096 frames late.
+        let font = try #require(EngineTabSoundPlayer.soundFont)
+        let both = TabSoundScore(notes: [SoundNote(start: 0.5, end: 0.9, pitch: 45)], beats: [SoundBeat(at: 0.5, first: true)], end: 1.0)
+        let notes = try EngineTabSoundPlayer(score: both, program: EngineTabSoundPlayer.bass, soundFont: font, listener: ToldListener(), offline: true)
+        try await notes.load()
+        notes.play()
+        let note = try #require(onset(try notes.rendered(frames: 44_100)))
+        notes.release()
+        let clicks = try EngineTabSoundPlayer(score: both, program: EngineTabSoundPlayer.bass, soundFont: font, listener: ToldListener(), offline: true)
+        try await clicks.load()
+        clicks.notes = false
+        clicks.metronome = true
+        clicks.play()
+        let click = try #require(onset(try clicks.rendered(frames: 44_100)))
+        clicks.release()
+        #expect(abs(click - 22_050) < 300, "the click at \(click)")
+        #expect(abs(note - 22_050) < 300, "the note at \(note)")
+        #expect(abs(note - click) < 300, "the note at \(note), the click at \(click)")
+    }
+
+    @Test func whatAddsUpPastFullScaleIsLimited() async throws {
+        // Twelve notes struck at once and a click, with the notes 18 dB louder than they go out: the limiter keeps it
+        // under full scale.
+        let font = try #require(EngineTabSoundPlayer.soundFont)
+        let loud = TabSoundScore(notes: (0..<12).map { SoundNote(start: 0.1, end: 1.0, pitch: 40 + 3 * $0) }, beats: [SoundBeat(at: 0.1, first: true)], end: 1.0)
+        let p = try EngineTabSoundPlayer(score: loud, program: EngineTabSoundPlayer.steel, soundFont: font, listener: ToldListener(), offline: true)
+        try await p.load()
+        p.notesGain = 12
+        p.metronome = true
+        p.play()
+        let sound = try p.rendered(frames: 44_100)
+        let peak = sound.map { abs($0) }.max() ?? 0
+        #expect(peak > 0.3, "it sounds (\(peak))")
+        #expect(peak <= 1.0, "it peaks at \(peak)")
+        p.release()
+    }
+
+    @Test func aNewOutputIsPlayedOnAndHeadphonesPulledOutPause() async throws {
+        // On the device's own output, made silent. Where there is no output to play on (a machine without sound), there
+        // is nothing to look at.
+        let font = try #require(EngineTabSoundPlayer.soundFont)
+        let told = ToldListener()
+        let p = try EngineTabSoundPlayer(score: score, program: EngineTabSoundPlayer.bass, soundFont: font, listener: told, silent: true)
+        try await p.load()
+        p.play()
+        guard p.playing else { p.release(); return }
+        // Headphones plugged in, another output chosen on a Mac: the engine stops, and the song goes on.
+        p.deviceStoppedTheEngine()
+        p.outputChanged()
+        #expect(p.playing && p.asked)
+        try await Task.sleep(for: .milliseconds(120))
+        #expect(p.playing && told.said == ["playing"])
+        // Headphones pulled out: it pauses where it is, and a new output then does not start it.
+        p.soundTakenAway()
+        #expect(!p.asked && told.said == ["playing", "paused"])
+        p.outputChanged()
+        #expect(!p.asked)
+        p.release()
+    }
+
+    @Test func theMetronomeIsMixedInAndTheNotesCanBeLeftOut() async throws {
         let font = try #require(EngineTabSoundPlayer.soundFont)
         let p = try EngineTabSoundPlayer(score: score, program: EngineTabSoundPlayer.bass, soundFont: font, listener: ToldListener(), offline: true)
+        try await p.load()
         p.notes = false
         p.metronome = true
         p.play()
@@ -214,10 +282,11 @@ struct EngineTabSoundPlayerTests {
         p.release()
     }
 
-    @Test func itIsPausedWhereItIsAndCountsABarIn() throws {
+    @Test func itIsPausedWhereItIsAndCountsABarIn() async throws {
         let font = try #require(EngineTabSoundPlayer.soundFont)
         let told = ToldListener()
         let p = try EngineTabSoundPlayer(score: score, program: EngineTabSoundPlayer.bass, soundFont: font, listener: told, offline: true)
+        try await p.load()
         p.seek(to: 0.25)
         p.countIn(beats: 2, beatSeconds: 0.25)
         p.play()

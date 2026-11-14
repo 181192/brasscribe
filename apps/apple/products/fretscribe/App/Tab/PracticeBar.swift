@@ -26,7 +26,8 @@ struct PracticeBar: View {
 
     var body: some View {
         let state = practice.recording
-        if follows && state == .looking {
+        // Nothing is said while it is still being found out what there is to play: the recording looked for, the tab's sound made.
+        if follows && (state == .looking || (state != .here && practice.tabSoundLoading)) {
             EmptyView()
         } else {
             VStack(spacing: 0) {
