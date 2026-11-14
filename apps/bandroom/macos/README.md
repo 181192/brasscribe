@@ -37,9 +37,10 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   installed for another lockfile, is installed again at the next launch. One that fails does not hold up the
   others: the panel (and the setup window) names it, with its own words for no connection and a full disk, and
   Try again. Every environment installs from wheels and conda packages, so a Mac needs neither Apple's developer
-  tools nor `git` (`pixi.toml` says how for the separator and beat-this). Bandroom needs no `uv`. Homebrew's
-  folder is last on the engine's `PATH`, for what the app does not carry: `ffmpeg` (beat-this, Mega-53 and audio
-  that is not WAV are decoded with it) and a MuseScore installed with Homebrew. An engine installed by a Bandroom
+  tools nor `git` (`pixi.toml` says how for the separator and beat-this). Bandroom needs no `uv`. `ffmpeg`
+  comes with the engine's environment. Homebrew's folder is last on the engine's `PATH` only so that a MuseScore
+  installed with Homebrew (`mscore`, for the PDF, MIDI and MP3 exports) is found; one from musescore.org in
+  `/Applications` is not. An engine installed by a Bandroom
   that ran the adapters another way (earlier builds, with `uv`, inside the app) has no markers, so its update
   installs every environment; nothing is carried over, and the old folders went with the old app.
 - **Sheet music from pictures.** The engine's `sheet` and `sheet-tab` profiles need a reader of printed music,

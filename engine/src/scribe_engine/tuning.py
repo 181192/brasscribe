@@ -20,6 +20,7 @@ from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
+from scribe_music.programs import ffmpeg
 
 from .hashing import source_fingerprint
 
@@ -98,7 +99,7 @@ def _decoded(path: Path, tmp: str, mono: bool = False) -> Path:
         return path
     except (RuntimeError, sf.LibsndfileError):
         wav = Path(tmp) / "decoded.wav"
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(path), "-vn", "-c:a", "pcm_f32le",
+        subprocess.run([ffmpeg(), "-loglevel", "error", "-y", "-i", str(path), "-vn", "-c:a", "pcm_f32le",
                         *(["-ac", "1"] if mono else []), str(wav)], check=True)
         return wav
 

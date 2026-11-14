@@ -55,6 +55,16 @@ MEGA53_STEMS = 53
 STDERR_TAIL = 4000  # characters of a failed model's stderr to pass on
 
 
+def _ffmpeg() -> str:
+    """The ffmpeg of the environment this runs in (the engine's carries one: pixi.toml), else the one on PATH, so a
+    run outside `pixi run` still decodes with the same ffmpeg and never quietly with another."""
+    own = Path(sys.prefix) / ("Library/bin/ffmpeg.exe" if os.name == "nt" else "bin/ffmpeg")
+    return str(own) if own.is_file() else shutil.which("ffmpeg") or "ffmpeg"
+
+
+FFMPEG = _ffmpeg()
+
+
 def runner() -> str:
     """The uv projects are locked for macOS on Apple silicon only; anywhere else pixi is the default."""
     default = "uv" if sys.platform == "darwin" and platform.machine() == "arm64" else "pixi"
@@ -114,7 +124,7 @@ def readable(src: Path, tmp: str) -> Path:
     if src.suffix.lower() in SNDFILE_SUFFIXES:
         return src
     audio = Path(tmp) / f"{src.stem}.wav"
-    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-vn", str(audio)], check=True)
+    subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-i", str(src), "-vn", str(audio)], check=True)
     return audio
 
 
@@ -136,7 +146,7 @@ def beat_this(src: Path, dst: Path) -> None:
     model = os.environ.get("BEAT_THIS_MODEL")  # e.g. small0, the model the Play apps run on device
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "input.wav"
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-ar", "44100", "-ac", "2",
+        subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-i", str(src), "-ar", "44100", "-ac", "2",
                         str(audio)], check=True)
         with atomic(dst) as part:
             run("beat-this", ["beat_this", str(audio), "-o", str(part), *(["--model", model] if model else [])])
@@ -203,7 +213,7 @@ def mega53(src: Path, dst: Path) -> None:
     models = MODELS / "mega53"
     with tempfile.TemporaryDirectory() as tmp:
         name = src.stem
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-ar", "44100", "-ac", "2",
+        subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-i", str(src), "-ar", "44100", "-ac", "2",
                         str(Path(tmp) / f"{name}.wav")], check=True)
         (Path(tmp) / "out").mkdir()
         run("mega53", ["python", str(HERE / "mega53" / "msst" / "inference.py"), "--model_type", "bs_roformer",
@@ -213,7 +223,7 @@ def mega53(src: Path, dst: Path) -> None:
         # MSST writes a stem that peaks above full scale as WAV instead of FLAC (16-bit, clipped all the same).
         stems = Path(tmp) / "out" / name
         for f in sorted(stems.glob("*.wav")):
-            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(f), str(f.with_suffix(".flac"))], check=True)
+            subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-i", str(f), str(f.with_suffix(".flac"))], check=True)
             f.unlink()
         flacs = sorted(stems.glob("*.flac"))
         if len(flacs) < MEGA53_STEMS:
