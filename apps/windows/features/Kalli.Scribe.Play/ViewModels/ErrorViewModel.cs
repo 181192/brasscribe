@@ -6,7 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Kalli.Scribe.ViewModels;
 
 /// <summary>What went wrong, for the error screen.</summary>
-public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable, UpdateApp, UpdateBandroom }
+public enum ErrorKind { ComputerUnreachable, ScoreFailed, RecordingUnreadable, UpdateApp, UpdateBandroom, PagesFailed }
 
 /// <summary>
 /// An error with a way forward (design/brands/brasscribe/system.md §5, Errors with recovery): the title says what
@@ -62,6 +62,25 @@ public sealed partial class ErrorViewModel(IStrings s) : ObservableObject
         Details = kind == ErrorKind.ComputerUnreachable
             ? s.Format("Error_ComputerUnreachable_Details", technical ?? "")
             : technical ?? "";
+    }
+
+    /// <summary>
+    /// Pages of printed music that were not read: why, in the app's words (<paramref name="reason"/>, from EngineErrors),
+    /// with Try again and Change the pages; the pages are kept.
+    /// </summary>
+    public void ShowPages(string reason, string? technical)
+    {
+        Kind = ErrorKind.PagesFailed;
+        Title = s["Error_PagesFailed_Title"];
+        Reason = reason;
+        Steps.Clear();
+        Steps.Add(s["Error_PagesFailed_Step1"]);
+        PrimaryLabel = s["Error_TryAgain"];
+        SecondaryLabel = s["Error_PagesFailed_Change"];
+        LinkUri = null;
+        LinkHelp = LinkLabel = "";
+        DetailsHeading = s["Error_DetailsHeading"];
+        Details = technical ?? "";
     }
 
     [RelayCommand]

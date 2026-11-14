@@ -19,6 +19,12 @@ public static class EngineErrors
         ["invalid_options"] = "Error_Options",
         // Not taken: the computer has not been set up for a full band yet.
         ["band_writer_not_set_up"] = "Error_BandWriterNotSetUp",
+        // Pages of printed music the computer would not read (engine: pages.py, sheet.py).
+        [Pages.NotAPage] = "Error_Pages_NotAPage",
+        [Pages.WrongInput] = "Error_Pages_WrongInput",
+        [Pages.PageTooLarge] = "Error_Pages_PageTooLarge",
+        [Pages.TooManyPages] = "Error_Pages_TooManyPages",
+        [Pages.ReaderMissing] = "Error_Pages_ReaderMissing",
     };
 
     /// <summary>The string key for an engine failure.</summary>
@@ -27,6 +33,8 @@ public static class EngineErrors
         { Interface: InterfaceAnswer.UpdateApp } => "Error_UpdateApp_Title",
         { Interface: InterfaceAnswer.UpdateBandroom } => "Error_UpdateBandroom_Title",
         { Code: { } code } when Codes.TryGetValue(code, out var key) => key,
+        // A read of pages that failed, by the fixed words its error ends with.
+        { Code: EngineException.JobFailed } when Pages.FailureOf(e.Message) is { } failure => $"Error_Pages_{failure}",
         { Code: EngineException.JobFailed } => "Transcribe_Failed",
         { Code: EngineException.Timeout } => "Error_Timeout",
         { Status: null } => "Error_Unreachable",

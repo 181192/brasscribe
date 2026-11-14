@@ -28,6 +28,10 @@ public sealed record SaveTarget(Stream Stream, string DisplayName);
 public interface IFileDialogs
 {
     Task<string?> PickOpenAsync(IEnumerable<string> extensions);
+
+    /// <summary>Several files at once, in the order the picker gives them (pages of sheet music); empty when cancelled.</summary>
+    async Task<IReadOnlyList<string>> PickOpenManyAsync(IEnumerable<string> extensions) =>
+        await PickOpenAsync(extensions) is { } one ? [one] : [];
     Task<SaveTarget?> PickSaveAsync(string suggestedName, string extension, string description);
 
     /// <summary>A folder for several files at once (every part); null when cancelled or not supported.</summary>

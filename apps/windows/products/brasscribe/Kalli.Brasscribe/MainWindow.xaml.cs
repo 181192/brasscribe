@@ -128,6 +128,7 @@ public sealed partial class MainWindow : Window
         Screen.ChooseOutput => typeof(ChooseOutputPage),
         Screen.Score => typeof(ScoreScreen),
         Screen.Error => typeof(ErrorPage),
+        Screen.Pages => typeof(PagesPage),
         _ => typeof(HomePage),
     };
 
@@ -155,6 +156,7 @@ public sealed partial class MainWindow : Window
             Screen.SourceKind => (_s["Back_Home"], ViewModel.Kind.Source?.DisplayName ?? "", ""),
             Screen.Transcribing => (ViewModel.Transcription.IsRunning ? null : _s["Back_Home"], ViewModel.Transcription.Title, ""),
             Screen.Error => (_s["Back_Home"], ViewModel.Transcription.Title, ""),
+            Screen.Pages => (_s["Back_Home"], _s["Pages_Title"], ""),
             Screen.Review => (song, _s.Format("Title_CheckNotes", song), ""),
             Screen.ChooseOutput => (song, song, ""),
             Screen.Score when score.IsPartView => (_s["Back_FullScore"], song, ""),

@@ -26,7 +26,7 @@ public enum TranscriptionFailure { None, ComputerUnreachable, Failed, RecordingU
 
 /// <summary>A finished transcription.</summary>
 public sealed record TranscriptionResult(string JobId, Composition Composition, string MusicXml, IReadOnlyList<string> Outputs, SourceAudio Source,
-    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null);
+    string? AudioId = null, string? Profile = null, ArrangementOptions? Options = null, Evidence? Evidence = null, bool FromPages = false);
 
 /// <summary>
 /// Runs a transcription on the companion engine: upload, job, live progress in plain language with
@@ -98,6 +98,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     public static IReadOnlyList<string> StepKeys(string profile) => profile switch
     {
         "solo" => ["Ready", "Beats", "Notes", "Arrange", "Layout"],
+        // Pages of printed music: sent, read, laid out; nothing is heard or arranged.
+        PagesProfile => ["SendPages", "Read", "Layout"],
         _ => ["Ready", "Beats", "Separate", "Notes", "Arrange", "Layout"],
     };
 
@@ -109,8 +111,12 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         "transcribe" or "contour" or "f0" or "solo" or "vote" => "Notes",
         "arrange" => "Arrange",
         "export" or "render" or "musicxml" => "Layout",
+        "read" => "Read",
         _ => "",
     };
+
+    /// <summary>The engine's profile that reads pages of printed music into a score as it is written.</summary>
+    public const string PagesProfile = "sheet";
 
     private void ResetSteps(string profile, string kindLabel)
     {
@@ -118,7 +124,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         Steps.Clear();
         foreach (var key in StepKeys(profile))
             Steps.Add(new TranscriptionStep(key, _s[key == "Separate" && profile == "orchestra-with-soloist" ? "Transcribe_Step_SeparateSoloist" : $"Transcribe_Step_{key}"]));
-        SetStep("Ready");
+        SetStep(StepKeys(profile)[0]);
     }
 
     private void SetStep(string key)
@@ -249,45 +255,9 @@ public sealed partial class TranscriptionViewModel : ObservableObject
                 throw;
             }
             if (_refusedTake?.Take == take) _refusedTake = null;
-            _jobId = job.Id;
-            estimator.Start();
-
-            await foreach (var ev in engine.StreamEventsAsync(job.Id, ct: ct))
-            {
-                if (ev.Type == "stage")
-                {
-                    if (ev.Stage is { } stage && ev.Status == "started")
-                    {
-                        StageText = StageName(stage);
-                        if (StepOf(stage) is { Length: > 0 } step) _ui.Post(() => SetStep(step));
-                    }
-                    if (ev.Device is { } device) DeviceText = _s.Format("Transcribe_Device", device.ToUpperInvariant());
-                    if (ev.Fraction is { } f) Update(estimator, f);
-                }
-                else if (ev.Type == "job" && ev.Status is { } status)
-                {
-                    if (status == JobStatus.Failed) throw new EngineException(ev.Error ?? "job failed", code: EngineException.JobFailed);
-                    if (status == JobStatus.Cancelled) throw new OperationCanceledException();
-                }
-            }
-
-            job = await engine.GetJobAsync(job.Id, ct);
-            if (job.Status != JobStatus.Succeeded) throw new EngineException(job.Error ?? "job failed", code: EngineException.JobFailed);
-            var composition = await engine.GetCompositionAsync(job.Id, ct);
-            string xml;
-            await using (var s = await engine.DownloadAsync(job.Id, JobDownload.MusicXml, ct))
-            using (var reader = new StreamReader(s))
-                xml = await reader.ReadToEndAsync(ct);
-
-            Percent = 100;
-            foreach (var st in Steps) { st.IsDone = true; st.IsCurrent = false; }
-            StageText = _s["Transcribe_Done"];
-            EtaText = "";
-            Evidence? evidence = null;
-            try { evidence = await engine.GetEvidenceAsync(job.Id, ct); }
-            catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
-            _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
-            Completed?.Invoke(this, new TranscriptionResult(job.Id, composition, xml, job.Outputs ?? [], source, audioId, profile, options, evidence));
+            var done = await FollowAsync(engine, job, estimator, ct);
+            Completed?.Invoke(this, new TranscriptionResult(done.Job.Id, done.Composition, done.Xml, done.Job.Outputs ?? [], source, audioId, profile,
+                options, done.Evidence));
         }
         catch (OperationCanceledException e) when (!ct.IsCancellationRequested && e.InnerException is TimeoutException)
         {
@@ -320,6 +290,129 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         catch (IOException e)
         {
             // The connection broke off while a download was read.
+            Fail(new EngineException("The connection to the engine broke off.", null, e));
+        }
+        finally
+        {
+            IsRunning = false;
+            _jobId = null;
+        }
+    }
+
+
+    /// <summary>A job the engine took, followed to its end: progress in plain words, then the score it made.</summary>
+    private async Task<(Job Job, Composition Composition, string Xml, Evidence? Evidence)> FollowAsync(IEngineClient engine, Job job,
+        ProgressEstimator estimator, CancellationToken ct)
+    {
+        _jobId = job.Id;
+        estimator.Start();
+
+        await foreach (var ev in engine.StreamEventsAsync(job.Id, ct: ct))
+        {
+            if (ev.Type == "stage")
+            {
+                if (ev.Stage is { } stage && ev.Status == "started")
+                {
+                    StageText = StageName(stage);
+                    if (StepOf(stage) is { Length: > 0 } step) _ui.Post(() => SetStep(step));
+                }
+                if (ev.Device is { } device) DeviceText = _s.Format("Transcribe_Device", device.ToUpperInvariant());
+                if (ev.Fraction is { } f) Update(estimator, f);
+            }
+            else if (ev.Type == "job" && ev.Status is { } status)
+            {
+                if (status == JobStatus.Failed) throw new EngineException(ev.Error ?? "job failed", code: EngineException.JobFailed);
+                if (status == JobStatus.Cancelled) throw new OperationCanceledException();
+            }
+        }
+
+        job = await engine.GetJobAsync(job.Id, ct);
+        if (job.Status != JobStatus.Succeeded) throw new EngineException(job.Error ?? "job failed", code: EngineException.JobFailed);
+        var composition = await engine.GetCompositionAsync(job.Id, ct);
+        string xml;
+        await using (var s = await engine.DownloadAsync(job.Id, JobDownload.MusicXml, ct))
+        using (var reader = new StreamReader(s))
+            xml = await reader.ReadToEndAsync(ct);
+
+        Percent = 100;
+        foreach (var st in Steps) { st.IsDone = true; st.IsCurrent = false; }
+        StageText = _s["Transcribe_Done"];
+        EtaText = "";
+        Evidence? evidence = null;
+        try { evidence = await engine.GetEvidenceAsync(job.Id, ct); }
+        catch (Exception e) when (e is EngineException or NotSupportedException or System.Text.Json.JsonException) { }
+        _announcer.Announce(_s["Transcribe_Done"], AnnouncementKind.Important);
+        return (job, composition, xml, evidence);
+    }
+
+    /// <summary>
+    /// Pages of printed music, in order, read on the computer into a score as it is written (<see cref="PagesProfile"/>):
+    /// nothing is heard or arranged. The pages stay where they are on this PC.
+    /// </summary>
+    public async Task RunPagesAsync(IReadOnlyList<string> pages, string title, string kindLabel)
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var ct = _cts.Token;
+        var engine = _engine();
+        var estimator = new ProgressEstimator(_clock);
+        IsRunning = true;
+        ErrorText = null;
+        ErrorDetail = null;
+        Failure = TranscriptionFailure.None;
+        IsConfirmingCancel = false;
+        ResetSteps(PagesProfile, kindLabel);
+        Percent = 0;
+        Title = title;
+        StageText = _s["Transcribe_Stage_SendPages"];
+        EtaText = _s["Transcribe_Eta_Unknown"];
+        _announcer.Announce(_s.Format("Transcribe_Started", title, kindLabel), AnnouncementKind.Important);
+        try
+        {
+            var health = await engine.GetHealthAsync(ct);
+            var match = InterfaceMatch.Of(health.InterfaceVersion);
+            if (match != InterfaceAnswer.Same)
+            {
+                StopForUpdate(match, InterfaceMatch.Details(health.InterfaceVersion));
+                return;
+            }
+            DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
+            Job job;
+            try { job = await engine.CreateJobFromPagesAsync(pages, PagesProfile, title, ct: ct); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { throw new UnreadableRecordingException(e); }
+            var done = await FollowAsync(engine, job, estimator, ct);
+            var source = new SourceAudio("", title, TimeSpan.Zero, null, false);
+            Completed?.Invoke(this, new TranscriptionResult(done.Job.Id, done.Composition, done.Xml, done.Job.Outputs ?? [], source,
+                Profile: PagesProfile, Evidence: done.Evidence, FromPages: true));
+        }
+        catch (OperationCanceledException e) when (!ct.IsCancellationRequested && e.InnerException is TimeoutException)
+        {
+            Fail(new EngineException("the request timed out", null, e, EngineException.Timeout));
+        }
+        catch (OperationCanceledException)
+        {
+            StageText = _s["Transcribe_Cancelled"];
+            _announcer.Announce(StageText, AnnouncementKind.Important);
+        }
+        catch (EngineException e) when (e.Interface is { } answer)
+        {
+            StopForUpdate(answer, e.Message);
+        }
+        catch (EngineException e)
+        {
+            Fail(e);
+        }
+        catch (UnreadableRecordingException e)
+        {
+            // A page on this PC was moved, deleted or is locked by another app: nothing was read.
+            ErrorText = _s["Error_PagesUnreadable"];
+            ErrorDetail = e.InnerException?.Message;
+            Failure = TranscriptionFailure.Failed;
+            _announcer.Announce(_s.Format("Transcribe_Error", ErrorText), AnnouncementKind.Important);
+            FailedWith?.Invoke(this, Failure);
+        }
+        catch (IOException e)
+        {
             Fail(new EngineException("The connection to the engine broke off.", null, e));
         }
         finally
@@ -422,6 +515,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             "transcribe" or "contour" or "f0" or "solo" or "vote" => "Transcribe_Stage_Notes",
             "arrange" => "Transcribe_Stage_Arrange",
             "export" or "render" or "musicxml" => "Transcribe_Stage_Engrave",
+            "read" => "Transcribe_Stage_Read",
             _ => "Transcribe_Stage_Working",
         };
         return _s[key];

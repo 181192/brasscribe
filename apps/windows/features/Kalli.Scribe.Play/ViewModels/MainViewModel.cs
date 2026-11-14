@@ -12,7 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 namespace Kalli.Scribe.ViewModels;
 
 /// <summary>The screens of the Play flow (design/brands/brasscribe/system.md §3). The part view is the score screen with one part chosen.</summary>
-public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, Error, ChooseOutput, WhatDoYouPlay }
+public enum Screen { Start, SourceKind, Transcribing, Score, FirstRun, Review, Error, ChooseOutput, WhatDoYouPlay, Pages }
 
 /// <summary>
 /// The flow of the app: start (import or record) → "What is this?" → transcription → score.
@@ -31,7 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
         StartViewModel start, SourceKindViewModel kind, TranscriptionViewModel transcription, ScoreViewModel score,
         ExportViewModel export, OutputOptionsViewModel output, SettingsViewModel settings,
         Func<Uri, string?, IEngineClient> engineFactory, IAnnouncer announcer, IStrings strings, ICoreBridge core,
-        ScoreLibrary? library = null)
+        ScoreLibrary? library = null, PagesViewModel? pages = null)
     {
         Start = start;
         Kind = kind;
@@ -73,6 +73,7 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Error = new ErrorViewModel(strings);
         Library = library;
+        Pages = pages;
         // Every change of the connection: whichever engine answers next is asked for its interface version first. Before
         // the library's own handler, which fetches the computer's scores again from that engine.
         Settings.Connection.PropertyChanged += (_, e) =>
@@ -125,6 +126,11 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Error.Retry += async (_, _) =>
         {
+            if (_readingPages && Pages is { HasPages: true })
+            {
+                await ReadPagesAsync(Pages.Pages.Select(p => p.Path).ToList());
+                return;
+            }
             if (_lastChoice is { } choice)
             {
                 BeginTake(choice.Kind.Profile);
@@ -133,9 +139,16 @@ public sealed partial class MainViewModel : ObservableObject
             }
             else Screen = Screen.Start;
         };
-        Error.Alternative += (_, _) => Screen = Screen.Start;
+        // After pages that were not read: back to them, to change them; after a recording: Home.
+        Error.Alternative += (_, _) => Screen = _readingPages && Pages is not null ? Screen.Pages : Screen.Start;
         Transcription.FailedWith += (_, failure) =>
         {
+            if (_readingPages && failure == TranscriptionFailure.Failed)
+            {
+                Error.ShowPages(Transcription.ErrorText ?? _s["Error_PagesFailed_Reason"], Transcription.ErrorDetail);
+                Screen = Screen.Error;
+                return;
+            }
             Error.Show(failure switch
             {
                 TranscriptionFailure.ComputerUnreachable => ErrorKind.ComputerUnreachable,
@@ -160,6 +173,20 @@ public sealed partial class MainViewModel : ObservableObject
             await Kind.RefreshFromEngineAsync(Engine);
         };
         Start.ScoreOpened += (_, path) => OpenScoreFile(path);
+        if (Pages is not null)
+        {
+            Start.PagesOpened += (_, paths) =>
+            {
+                Pages.Add(paths);
+                OpenPages();
+            };
+            Pages.ComputerThere = Settings.Connection.State == ConnectionState.Connected;
+            Settings.Connection.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ConnectionMonitor.State)) Pages.ComputerThere = Settings.Connection.State == ConnectionState.Connected;
+            };
+            Pages.ReadRequested += async (_, paths) => await ReadPagesAsync(paths);
+        }
         // "Change what I play" on "What is this?" goes through Settings: the refusal follows the answer.
         Settings.PropertyChanged += (_, e) =>
         {
@@ -174,6 +201,7 @@ public sealed partial class MainViewModel : ObservableObject
                 return;
             }
             _lastChoice = choice;
+            _readingPages = false;
             _result = null;
             // A solo take has no harmony for a quartet; a quartet chosen for an earlier take goes back to the band.
             BeginTake(choice.Kind.Profile);
@@ -184,6 +212,11 @@ public sealed partial class MainViewModel : ObservableObject
         };
         Transcription.Completed += (_, r) =>
         {
+            if (r.FromPages)
+            {
+                ShowReadPages(r);
+                return;
+            }
             bool rearranged = _result is not null && r.AudioId is not null && r.AudioId == _result.AudioId;
             _result = r;
             Output.IsSoloTake = Lineups.IsSoloTake(r.Composition, r.Profile);
@@ -657,7 +690,9 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Screen.SourceKind => Screen.Start,
             // After a failure: back to the score being re-arranged, or to the choice with the source kept.
+            Screen.Transcribing when _readingPages => Screen.Pages,
             Screen.Transcribing => _result is not null ? Screen.Score : Screen.SourceKind,
+            Screen.Pages => Screen.Start,
             // The music stand closes first; the part view goes back to the full score; the full score goes Home.
             Screen.Score when Score.Stand.IsOpen => LeaveStand(),
             Screen.Score when Score.SelectedPartIndex >= 0 => BackToFullScore(),
@@ -689,8 +724,59 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Back works everywhere except while a transcription runs (Cancel is the way out then).</summary>
-    private bool CanGoBack() => Screen is Screen.SourceKind or Screen.Score or Screen.Review or Screen.Error or Screen.ChooseOutput
+    private bool CanGoBack() => Screen is Screen.SourceKind or Screen.Score or Screen.Review or Screen.Error or Screen.ChooseOutput or Screen.Pages
                                 || Screen == Screen.Transcribing && !Transcription.IsRunning;
+
+    /// <summary>The app's words (the preview scenes say a failure as the app would).</summary>
+    public IStrings Strings => _s;
+
+    /// <summary>Sheet music from a picture: the pages in hand, before they are read. Null where the app has no pages screen.</summary>
+    public PagesViewModel? Pages { get; }
+
+    /// <summary>The run on the transcribing screen reads pages (its failure goes back to them).</summary>
+    private bool _readingPages;
+
+    /// <summary>"Open sheet music" on Home: the pages screen, with the pages in hand.</summary>
+    [RelayCommand]
+    private void OpenPages()
+    {
+        if (Pages is null || Transcription.IsRunning) return;
+        Pages.ComputerThere = Settings.Connection.State == ConnectionState.Connected;
+        Screen = Screen.Pages;
+    }
+
+    /// <summary>The pages, read on the computer into a score as it is written; cancelled, back to them.</summary>
+    private async Task ReadPagesAsync(IReadOnlyList<string> paths)
+    {
+        if (paths.Count == 0) return;
+        _readingPages = true;
+        _result = null;
+        Screen = Screen.Transcribing;
+        string title = Path.GetFileNameWithoutExtension(paths[0]);
+        await Transcription.RunPagesAsync(paths, title, _s["Pages_KindLabel"]);
+        if (!Transcription.IsRunning && _result is null && Screen == Screen.Transcribing && Transcription.ErrorText is null)
+            Screen = Screen.Pages; // cancelled: back to the pages, kept
+    }
+
+    /// <summary>A score read from pages: kept in Your scores and opened as it was written, without the band's questions.</summary>
+    private void ShowReadPages(TranscriptionResult r)
+    {
+        _result = r;
+        _readingPages = false;
+        Pages?.Clear();
+        Output.HasEngineJob = false;
+        Output.LayerSource = null;
+        Output.IsSoloTake = Output.IsBandTake = Output.HasSoloist = false;
+        Output.ShowingSaved(Lineups.Recorded(r.Composition), Lineups.RecordedDifficulty(r.Composition), r.Composition);
+        _myPartOverride = null;
+        Score.Evidence = r.Evidence;
+        Score.Load(r.MusicXml, r.Composition);
+        _libraryId = null;
+        Keep(() => _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
+            Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence, null).Id);
+        ForgetReviewChanges();
+        Screen = Screen.Score;
+    }
 
     /// <summary>For tests: the last transcription result.</summary>
     public TranscriptionResult? LastResult => _result;

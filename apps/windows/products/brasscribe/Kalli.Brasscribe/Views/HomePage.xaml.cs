@@ -67,6 +67,14 @@ public sealed partial class HomePage : Page, IScreenPage
     {
         if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
         var items = await e.DataView.GetStorageItemsAsync();
+        // Several pictures or PDFs dropped at once are the pages of one piece, in the order given.
+        var pages = items.OfType<StorageFile>().Select(f => f.Path).Where(p => Kalli.Scribe.Capture.MediaTypes.Classify(p) == MediaKind.Page).ToList();
+        if (pages.Count > 1 && Main.Pages is { } list)
+        {
+            list.Add(pages);
+            Main.OpenPagesCommand.Execute(null);
+            return;
+        }
         if (items.FirstOrDefault() is StorageFile file) await ViewModel.OpenPathAsync(file.Path);
     }
 }

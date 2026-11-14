@@ -45,6 +45,18 @@
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Noen takter har ingen fast puls (ad lib.). Rytmene der er omtrentlige.</value>
   </data>
+  <data name="AddPagesBody.Text" xml:space="preserve">
+    <value>PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Legg til bilder eller en PDF</value>
+  </data>
+  <data name="AddPagesTitle.Text" xml:space="preserve">
+    <value>Legg til bilder eller en PDF</value>
+  </data>
   <data name="AppPicker.Header" xml:space="preserve">
     <value>App som skal tas opp</value>
   </data>
@@ -326,6 +338,51 @@
   </data>
   <data name="Error_Options" xml:space="preserve">
     <value>Brasscribe på datamaskinen kunne ikke bruke disse valgene. Prøv andre valg, eller oppdater Brasscribe på datamaskinen.</value>
+  </data>
+  <data name="Error_PagesFailed_Change" xml:space="preserve">
+    <value>Endre sidene</value>
+  </data>
+  <data name="Error_PagesFailed_Reason" xml:space="preserve">
+    <value>Noe gikk galt mens Bandroom på datamaskinen leste sidene.</value>
+  </data>
+  <data name="Error_PagesFailed_Step1" xml:space="preserve">
+    <value>Sidene dine ligger her fortsatt. Du kan prøve igjen, eller endre dem.</value>
+  </data>
+  <data name="Error_PagesFailed_Title" xml:space="preserve">
+    <value>Notene kunne ikke leses</value>
+  </data>
+  <data name="Error_PagesUnreadable" xml:space="preserve">
+    <value>En av sidene kan ikke leses på denne PC-en: den er flyttet, slettet eller åpen i en annen app. Legg den til på nytt.</value>
+  </data>
+  <data name="Error_Pages_DiskFull" xml:space="preserve">
+    <value>Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt.</value>
+  </data>
+  <data name="Error_Pages_NoMusic" xml:space="preserve">
+    <value>Fant ingen noter på siden. Bandroom leser trykte noter på notelinjer: bruk en skarp og rett skanning eller et bilde av hele siden. Håndskrevne noter og tab blir ikke lest.</value>
+  </data>
+  <data name="Error_Pages_NotAPage" xml:space="preserve">
+    <value>En av sidene er verken et bilde eller en PDF som Bandroom kan lese.</value>
+  </data>
+  <data name="Error_Pages_NotRead" xml:space="preserve">
+    <value>Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning.</value>
+  </data>
+  <data name="Error_Pages_OnlyTab" xml:space="preserve">
+    <value>Det sto bare tab på siden. Bandroom leser noter på notelinjer, ikke tab.</value>
+  </data>
+  <data name="Error_Pages_PageTooLarge" xml:space="preserve">
+    <value>En av sidene er for stor til at Bandroom kan lese den: en fil kan være høyst 50 MB. Del en stor PDF i flere.</value>
+  </data>
+  <data name="Error_Pages_ReaderFilesMissing" xml:space="preserve">
+    <value>Datamaskinen fikk ikke lastet ned filene noteleseren trenger. Sjekk internettforbindelsen på den, og send sidene på nytt.</value>
+  </data>
+  <data name="Error_Pages_ReaderMissing" xml:space="preserve">
+    <value>Noteleseren er ikke installert på datamaskinen. Åpne Innstillinger i Bandroom der, finn Noter fra bilder og velg Installer noteleseren. Prøv så igjen.</value>
+  </data>
+  <data name="Error_Pages_TooManyPages" xml:space="preserve">
+    <value>Det er mer enn 40 sider til sammen (hver side i en PDF teller). Send færre om gangen.</value>
+  </data>
+  <data name="Error_Pages_WrongInput" xml:space="preserve">
+    <value>Bandroom på datamaskinen kan ikke lese noter ennå. Oppdater Bandroom der, og prøv igjen.</value>
   </data>
   <data name="Error_PercussionSolo" xml:space="preserve">
     <value>Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet: et opptak med trommer får en slagverkstemme.</value>
@@ -1020,6 +1077,57 @@
   <data name="Output_YourPartNone" xml:space="preserve">
     <value>Du dirigerer eller lytter: alle stemmene åpnes.</value>
   </data>
+  <data name="PageList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sidene, i den rekkefølgen de leses</value>
+  </data>
+  <data name="PagesHeading.Text" xml:space="preserve">
+    <value>Noter fra et bilde</value>
+  </data>
+  <data name="PagesIntro.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen leser de trykte notene og skriver dem som et partitur du kan spille etter. Ingenting arrangeres: stemmene blir som de står på siden.</value>
+  </data>
+  <data name="PagesListHeading.Text" xml:space="preserve">
+    <value>Sidene, i den rekkefølgen de leses</value>
+  </data>
+  <data name="PagesNeedsComputer.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen må til for å lese noter.</value>
+  </data>
+  <data name="PagesOrderHint.Text" xml:space="preserve">
+    <value>Sidene leses i denne rekkefølgen. Flytt en side for å endre den.</value>
+  </data>
+  <data name="Pages_KindLabel" xml:space="preserve">
+    <value>Noter</value>
+  </data>
+  <data name="Pages_LeftOut_Many" xml:space="preserve">
+    <value>{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.</value>
+  </data>
+  <data name="Pages_LeftOut_One" xml:space="preserve">
+    <value>Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.</value>
+  </data>
+  <data name="Pages_MoveDown" xml:space="preserve">
+    <value>Flytt side {0} ned</value>
+  </data>
+  <data name="Pages_MoveUp" xml:space="preserve">
+    <value>Flytt side {0} opp</value>
+  </data>
+  <data name="Pages_Moved" xml:space="preserve">
+    <value>Side {0} er nå side {1}.</value>
+  </data>
+  <data name="Pages_Page" xml:space="preserve">
+    <value>Side {0}</value>
+  </data>
+  <data name="Pages_Remove" xml:space="preserve">
+    <value>Fjern side {0}</value>
+  </data>
+  <data name="Pages_Removed" xml:space="preserve">
+    <value>Side {0} er fjernet.</value>
+  </data>
+  <data name="Pages_Title" xml:space="preserve">
+    <value>Noter fra et bilde</value>
+  </data>
+  <data name="Pages_TooMany" xml:space="preserve">
+    <value>Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.</value>
+  </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Kode</value>
   </data>
@@ -1142,6 +1250,12 @@
   </data>
   <data name="ReadBarItem.Text" xml:space="preserve">
     <value>Les takten</value>
+  </data>
+  <data name="ReadPagesButton.Content" xml:space="preserve">
+    <value>Les notene</value>
+  </data>
+  <data name="ReadPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Send sidene til datamaskinen, som leser dem til et partitur</value>
   </data>
   <data name="RecordAppBody.Text" xml:space="preserve">
     <value>Bare appen du velger, ikke andre lyder</value>
@@ -1533,6 +1647,9 @@
   <data name="Screen_FirstRun" xml:space="preserve">
     <value>Velkommen</value>
   </data>
+  <data name="Screen_Pages" xml:space="preserve">
+    <value>Noter fra et bilde</value>
+  </data>
   <data name="Screen_Review" xml:space="preserve">
     <value>Sjekk tonene</value>
   </data>
@@ -1868,6 +1985,18 @@
   </data>
   <data name="Settings_Link_NotFound" xml:space="preserve">
     <value>Fant ikke Brasscribe på {0}. Sjekk at denne PC-en er på samme nettverk som datamaskinen.</value>
+  </data>
+  <data name="SheetMusicBody.Text" xml:space="preserve">
+    <value>Et bilde eller en PDF av notene</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Bilder eller en PDF av trykte noter, som datamaskinen leser til et partitur</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Åpne noter</value>
+  </data>
+  <data name="SheetMusicTitle.Text" xml:space="preserve">
+    <value>Åpne noter</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Neste eller forrige takt</value>
@@ -2340,6 +2469,12 @@
   <data name="Transcribe_Stage_Notes" xml:space="preserve">
     <value>Skriver ned tonene</value>
   </data>
+  <data name="Transcribe_Stage_Read" xml:space="preserve">
+    <value>Leser notene på sidene</value>
+  </data>
+  <data name="Transcribe_Stage_SendPages" xml:space="preserve">
+    <value>Sender sidene til datamaskinen</value>
+  </data>
   <data name="Transcribe_Stage_Separate" xml:space="preserve">
     <value>Skiller instrumentene</value>
   </data>
@@ -2373,8 +2508,14 @@
   <data name="Transcribe_Step_Notes" xml:space="preserve">
     <value>Skriver ned tonene</value>
   </data>
+  <data name="Transcribe_Step_Read" xml:space="preserve">
+    <value>Leser notene</value>
+  </data>
   <data name="Transcribe_Step_Ready" xml:space="preserve">
     <value>Gjør opptaket klart</value>
+  </data>
+  <data name="Transcribe_Step_SendPages" xml:space="preserve">
+    <value>Sender sidene</value>
   </data>
   <data name="Transcribe_Step_Separate" xml:space="preserve">
     <value>Skiller instrumentene</value>

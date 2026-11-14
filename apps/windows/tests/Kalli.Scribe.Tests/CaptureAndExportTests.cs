@@ -47,6 +47,8 @@ public class CaptureAndExportTests
     [InlineData("clip.MP4", MediaKind.Video)]
     [InlineData("score.musicxml", MediaKind.Score)]
     [InlineData("notes.docx", MediaKind.Unsupported)]
+    [InlineData("Hymn page 1.JPG", MediaKind.Page)]
+    [InlineData("hymn.pdf", MediaKind.Page)]
     [InlineData("https://www.youtube.com/watch?v=x", MediaKind.Unsupported)]
     public void Media_kinds(string path, MediaKind kind) => Assert.Equal(kind, MediaTypes.Classify(path));
 

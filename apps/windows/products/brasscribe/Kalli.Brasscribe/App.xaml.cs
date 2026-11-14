@@ -200,7 +200,8 @@ public partial class App : Application
             new OutputOptionsViewModel(core, announcer, Strings),
             settingsVm,
             EngineFactory, announcer, Strings, core,
-            new ScoreLibrary(System.IO.Path.Combine(workDirectory, "library")))
+            new ScoreLibrary(System.IO.Path.Combine(workDirectory, "library")),
+            new PagesViewModel(dialogs, announcer, Strings))
         {
             LayerCacheRoot = System.IO.Path.Combine(workDirectory, "layers"),
         };

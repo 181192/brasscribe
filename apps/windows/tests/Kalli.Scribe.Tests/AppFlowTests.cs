@@ -106,7 +106,7 @@ public class AppFlowTests
             new SettingsViewModel(Settings(firstRun), said, strings, new FakeBrowse(() => []),
                 clients: (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token }),
             (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token },
-            said, strings, core, library);
+            said, strings, core, library, new PagesViewModel(new NoDialogs(), said, strings));
         return (main, said);
     }
 
@@ -128,6 +128,51 @@ public class AppFlowTests
     {
         for (int i = 0; i < 200 && !condition(); i++) await Task.Delay(20);
         Assert.True(condition(), "timed out waiting for the flow");
+    }
+
+    /// <summary>
+    /// A picture opened from Home goes to the pages; Read the notes sends them to the pages endpoint and opens the score
+    /// as it was written, without the band's questions; a read that found no notes says so and goes back to the pages.
+    /// </summary>
+    [Fact]
+    public async Task Sheet_music_from_a_picture_is_read_into_a_score_or_said_why_not()
+    {
+        bool noNotes = false;
+        const string Done = "id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n";
+        const string NoNotes = "id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"failed\",\"error\":\"read: StageFailed: read: no notes were found on the page\"}\n\n";
+        var engine = Engine(Done, first: r => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
+        {
+            ("POST", "/v1/jobs/pages") => FakeHandler.Json(JobRunning.Replace("brass-band", "sheet"), HttpStatusCode.Accepted),
+            ("GET", "/v1/jobs/j1/events") when noNotes => FakeHandler.Sse(NoNotes),
+            _ => null,
+        });
+        var (main, _) = Build(engine);
+        Assert.Equal(ConnectionState.Connected, await main.Settings.Connection.CheckAsync());
+
+        string page = Path.Combine(Path.GetTempPath(), $"hymn-{Guid.NewGuid():N}.png");
+        await File.WriteAllBytesAsync(page, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13]);
+        await main.Start.OpenPathAsync(page);
+        Assert.Equal(Screen.Pages, main.Screen);
+        Assert.Single(main.Pages!.Pages);
+        Assert.True(main.Pages.ReadCommand.CanExecute(null));
+
+        main.Pages.ReadCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Score);
+        Assert.True(main.LastResult!.FromPages);
+        Assert.Contains(engine.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/jobs/pages");
+        Assert.DoesNotContain(engine.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
+        Assert.Empty(main.Pages.Pages);
+
+        noNotes = true;
+        main.Pages.Add([page]);
+        main.OpenPagesCommand.Execute(null);
+        main.Pages.ReadCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Error);
+        Assert.Equal(ErrorKind.PagesFailed, main.Error.Kind);
+        Assert.StartsWith("No notes were found on the page.", main.Error.Reason);
+        main.Error.ChooseAnotherCommand.Execute(null);
+        Assert.Equal(Screen.Pages, main.Screen);
+        Assert.Single(main.Pages.Pages);
     }
 
     [Fact]
@@ -334,6 +379,8 @@ public class AppFlowTests
     [InlineData("score", Screen.Score)]
     [InlineData("part", Screen.Score)]
     [InlineData("export", Screen.Score)]
+    [InlineData("pages", Screen.Pages)]
+    [InlineData("pages-unread", Screen.Error)]
     public void Screenshot_scenes_show_their_screen(string scene, Screen expected)
     {
         var (main, _) = Build(Engine(""), firstRun: true);
@@ -372,6 +419,12 @@ public class AppFlowTests
             Assert.True(main.Error.HasLink);
         }
         if (scene == "error") Assert.False(main.Error.HasLink);
+        if (scene == "pages") Assert.Equal(["Page 1", "Page 2", "Page 3"], main.Pages!.Pages.Select(p => p.Place));
+        if (scene == "pages-unread")
+        {
+            Assert.Equal(ErrorKind.PagesFailed, main.Error.Kind);
+            Assert.Equal("Change the pages", main.Error.SecondaryLabel);
+        }
         // Every scene is one the Axe.Windows and Tab walk starts too.
         Assert.Contains(scene, PlayScanScenes());
         if (scene == "transcribing")

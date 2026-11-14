@@ -258,6 +258,51 @@
   <data name="Error_Options" xml:space="preserve">
     <value>Bandroom on your computer couldn't use these choices. Try other choices, or update Bandroom on your computer.</value>
   </data>
+  <data name="Error_PagesFailed_Change" xml:space="preserve">
+    <value>Change the pages</value>
+  </data>
+  <data name="Error_PagesFailed_Reason" xml:space="preserve">
+    <value>Something went wrong while Bandroom on your computer was reading the pages.</value>
+  </data>
+  <data name="Error_PagesFailed_Step1" xml:space="preserve">
+    <value>Your pages are still here. You can try again, or change them.</value>
+  </data>
+  <data name="Error_PagesFailed_Title" xml:space="preserve">
+    <value>The notes couldn't be read</value>
+  </data>
+  <data name="Error_PagesUnreadable" xml:space="preserve">
+    <value>One of the pages can't be read on this PC: it was moved, deleted or is open in another app. Add it again.</value>
+  </data>
+  <data name="Error_Pages_DiskFull" xml:space="preserve">
+    <value>Your computer's disk is full. Free some space on it, then send the pages again.</value>
+  </data>
+  <data name="Error_Pages_NoMusic" xml:space="preserve">
+    <value>No notes were found on the page. Bandroom reads printed notes on a staff: use a sharp, straight scan or picture of the whole page. Handwritten music and tab are not read.</value>
+  </data>
+  <data name="Error_Pages_NotAPage" xml:space="preserve">
+    <value>One of the pages is not a picture or a PDF that Bandroom can read.</value>
+  </data>
+  <data name="Error_Pages_NotRead" xml:space="preserve">
+    <value>Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.</value>
+  </data>
+  <data name="Error_Pages_OnlyTab" xml:space="preserve">
+    <value>Only a tab staff was found on the page. Bandroom reads notes on a staff, not tab.</value>
+  </data>
+  <data name="Error_Pages_PageTooLarge" xml:space="preserve">
+    <value>One of the pages is too large for Bandroom to read: a file can be 50 MB at most. Split a large PDF into parts.</value>
+  </data>
+  <data name="Error_Pages_ReaderFilesMissing" xml:space="preserve">
+    <value>Your computer couldn't download the files its reader of printed music needs. Check its internet connection, then send the pages again.</value>
+  </data>
+  <data name="Error_Pages_ReaderMissing" xml:space="preserve">
+    <value>The reader of printed music is not installed on your computer. In Bandroom there, open Settings, find Sheet music from pictures and choose Install the reader. Then try again.</value>
+  </data>
+  <data name="Error_Pages_TooManyPages" xml:space="preserve">
+    <value>There are more than 40 pages in all (every page of a PDF counts). Send fewer at a time.</value>
+  </data>
+  <data name="Error_Pages_WrongInput" xml:space="preserve">
+    <value>Bandroom on your computer can't read sheet music yet. Update Bandroom there, then try again.</value>
+  </data>
   <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
     <value>Fretscribe couldn't open the recording on this PC. It may have been moved or deleted, or another app is using it.</value>
   </data>
@@ -1446,6 +1491,12 @@
   <data name="Transcribe_Stage_Notes" xml:space="preserve">
     <value>Writing down the notes</value>
   </data>
+  <data name="Transcribe_Stage_Read" xml:space="preserve">
+    <value>Reading the notes on the pages</value>
+  </data>
+  <data name="Transcribe_Stage_SendPages" xml:space="preserve">
+    <value>Sending the pages to your computer</value>
+  </data>
   <data name="Transcribe_Stage_Separate" xml:space="preserve">
     <value>Picking out your instrument</value>
   </data>
@@ -1479,8 +1530,14 @@
   <data name="Transcribe_Step_Notes" xml:space="preserve">
     <value>Writing down the notes</value>
   </data>
+  <data name="Transcribe_Step_Read" xml:space="preserve">
+    <value>Reading the notes</value>
+  </data>
   <data name="Transcribe_Step_Ready" xml:space="preserve">
     <value>Getting the recording ready</value>
+  </data>
+  <data name="Transcribe_Step_SendPages" xml:space="preserve">
+    <value>Sending the pages</value>
   </data>
   <data name="Transcribe_Step_Separate" xml:space="preserve">
     <value>Picking out your instrument</value>

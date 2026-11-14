@@ -77,6 +77,14 @@ public interface IEngineClient
     Task<IReadOnlyList<ProfileInfo>> ListProfilesAsync(CancellationToken ct = default);
     Task<AudioRef> UploadAudioAsync(Stream audio, string filename, CancellationToken ct = default);
     Task<Job> CreateJobAsync(JobCreate request, CancellationToken ct = default);
+
+    /// <summary>
+    /// A job that reads pages of printed music (pictures or PDFs, <c>POST /v1/jobs/pages</c>), in the order given, with
+    /// the profile's options by their form names. A refusal carries the engine's code (<see cref="Pages"/>).
+    /// </summary>
+    Task<Job> CreateJobFromPagesAsync(IReadOnlyList<string> pages, string profile, string? title,
+        IReadOnlyDictionary<string, string>? options = null, CancellationToken ct = default) =>
+        throw new NotSupportedException("This engine client cannot send pages.");
     Task<Job> GetJobAsync(string jobId, CancellationToken ct = default);
     Task<Job> CancelJobAsync(string jobId, CancellationToken ct = default);
     IAsyncEnumerable<JobEvent> StreamEventsAsync(string jobId, int after = -1, CancellationToken ct = default);
@@ -240,6 +248,37 @@ public sealed class EngineClient : IEngineClient
         var b = new System.Text.StringBuilder(name.Length);
         foreach (char c in name) b.Append(c is '"' or '\\' || char.IsControl(c) ? '_' : c);
         return b.Length == 0 ? "audio.wav" : b.ToString();
+    }
+
+    public async Task<Job> CreateJobFromPagesAsync(IReadOnlyList<string> pages, string profile, string? title,
+        IReadOnlyDictionary<string, string>? options = null, CancellationToken ct = default)
+    {
+        var form = new MultipartFormDataContent { HeaderEncodingSelector = (_, _) => System.Text.Encoding.UTF8 };
+        form.Add(new StringContent(profile), "profile");
+        if (title is { Length: > 0 }) form.Add(new StringContent(title), "title");
+        form.Add(new StringContent("true"), "render_audio");
+        foreach (var (name, value) in options ?? new Dictionary<string, string>()) form.Add(new StringContent(value), name);
+        var opened = new List<Stream>();
+        try
+        {
+            for (int i = 0; i < pages.Count; i++)
+            {
+                var stream = File.OpenRead(pages[i]);
+                opened.Add(stream);
+                var file = new StreamContent(stream);
+                file.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                // The engine reads what a page is from its bytes; the name keeps the order readable in its logs.
+                string ext = Path.GetExtension(pages[i]) is { Length: > 1 } e ? e : ".bin";
+                file.Headers.TryAddWithoutValidation("Content-Disposition",
+                    $"form-data; name=\"files\"; filename=\"page-{i + 1:000}{QuotedFileName(ext)}\"");
+                form.Add(file);
+            }
+            return await SendJsonAsync(HttpMethod.Post, "v1/jobs/pages", form, EngineJsonContext.Default.Job, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            foreach (var stream in opened) await stream.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     public Task<Job> CreateJobAsync(JobCreate request, CancellationToken ct = default) =>

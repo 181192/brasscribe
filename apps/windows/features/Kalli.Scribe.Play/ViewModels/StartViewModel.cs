@@ -51,6 +51,9 @@ public sealed partial class StartViewModel : ObservableObject
     /// <summary>Raised when a MusicXML file was opened: it goes straight to the score.</summary>
     public event EventHandler<string>? ScoreOpened;
 
+    /// <summary>Raised when a picture or PDF of printed music was opened or dropped: it goes to the pages.</summary>
+    public event EventHandler<IReadOnlyList<string>>? PagesOpened;
+
     public ObservableCollection<AudioApp> Apps { get; } = [];
 
     [ObservableProperty] public partial AudioApp? SelectedApp { get; set; }
@@ -94,7 +97,11 @@ public sealed partial class StartViewModel : ObservableObject
             case MediaKind.Score:
                 ScoreOpened?.Invoke(this, path);
                 return;
-            case MediaKind.Unsupported:
+            // An app without a pages screen says it can't open it, as before.
+            case MediaKind.Page when PagesOpened is not null:
+                PagesOpened(this, [path]);
+                return;
+            case MediaKind.Unsupported or MediaKind.Page:
                 Fail(_s.Format("Start_Error_Unsupported", Path.GetFileName(path)));
                 return;
         }

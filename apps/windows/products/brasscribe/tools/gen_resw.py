@@ -879,6 +879,69 @@ add("Start_Error_NeedsCodec", "Windows couldn't read {0}. Files like this may ne
     "Windows kunne ikke lese {0}. Slike filer kan trenge Webmedieutvidelser fra Microsoft Store. Prøv en MP3-, WAV- eller MP4-fil, eller ta det opp i stedet.")
 
 
+# ---- sheet music from a picture (Views/PagesPage.xaml, PagesViewModel, the engine's refusals and failed reads) ----
+name("SheetMusicButton", "Open sheet music", "Åpne noter")
+help_("SheetMusicButton", "Pictures or a PDF of printed music, read by your computer into a score", "Bilder eller en PDF av trykte noter, som datamaskinen leser til et partitur")
+prop("SheetMusicTitle", "Text", "Open sheet music", "Åpne noter")
+prop("SheetMusicBody", "Text", "A picture or a PDF of the notes", "Et bilde eller en PDF av notene")
+add("Pages_Title", "Sheet music from a picture", "Noter fra et bilde")
+prop("PagesHeading", "Text", "Sheet music from a picture", "Noter fra et bilde")
+prop("PagesIntro", "Text", "Bandroom on your computer reads the printed notes and writes them as a score you can play from. Nothing is arranged: the parts stay as they are on the page.",
+     "Bandroom på datamaskinen leser de trykte notene og skriver dem som et partitur du kan spille etter. Ingenting arrangeres: stemmene blir som de står på siden.")
+name("AddPagesButton", "Add pictures or a PDF", "Legg til bilder eller en PDF")
+help_("AddPagesButton", "PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.",
+      "PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.")
+prop("AddPagesTitle", "Text", "Add pictures or a PDF", "Legg til bilder eller en PDF")
+prop("AddPagesBody", "Text", "PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.",
+     "PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.")
+prop("PagesListHeading", "Text", "Pages, in the order they are read", "Sidene, i den rekkefølgen de leses")
+name("PageList", "Pages, in the order they are read", "Sidene, i den rekkefølgen de leses")
+prop("PagesOrderHint", "Text", "The pages are read in this order. Move a page to change it.", "Sidene leses i denne rekkefølgen. Flytt en side for å endre den.")
+prop("PagesNeedsComputer", "Text", "Reading sheet music needs Bandroom on your computer.", "Bandroom på datamaskinen må til for å lese noter.")
+text_button("ReadPagesButton", "Read the notes", "Les notene", "Send the pages to your computer, which reads them into a score",
+            "Send sidene til datamaskinen, som leser dem til et partitur")
+add("Pages_Page", "Page {0}", "Side {0}")
+add("Pages_MoveUp", "Move page {0} up", "Flytt side {0} opp")
+add("Pages_MoveDown", "Move page {0} down", "Flytt side {0} ned")
+add("Pages_Remove", "Remove page {0}", "Fjern side {0}")
+add("Pages_Moved", "Page {0} is now page {1}.", "Side {0} er nå side {1}.")
+add("Pages_Removed", "Page {0} is removed.", "Side {0} er fjernet.")
+add("Pages_LeftOut_One", "One file is not a PNG, JPEG or WebP picture or a PDF, so it was left out. Save a photo from a phone as JPEG first.",
+    "Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
+add("Pages_LeftOut_Many", "{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.",
+    "{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
+add("Pages_TooMany", "At most {0} pages can be read at once. The rest were left out.", "Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.")
+add("Pages_KindLabel", "Sheet music", "Noter")
+add("Transcribe_Step_SendPages", "Sending the pages", "Sender sidene")
+add("Transcribe_Step_Read", "Reading the notes", "Leser notene")
+add("Transcribe_Stage_SendPages", "Sending the pages to your computer", "Sender sidene til datamaskinen")
+add("Transcribe_Stage_Read", "Reading the notes on the pages", "Leser notene på sidene")
+add("Error_PagesFailed_Title", "The notes couldn't be read", "Notene kunne ikke leses")
+add("Error_PagesFailed_Step1", "Your pages are still here. You can try again, or change them.", "Sidene dine ligger her fortsatt. Du kan prøve igjen, eller endre dem.")
+add("Error_PagesFailed_Reason", "Something went wrong while Bandroom on your computer was reading the pages.",
+    "Noe gikk galt mens Bandroom på datamaskinen leste sidene.")
+add("Screen_Pages", "Sheet music from a picture", "Noter fra et bilde")
+add("Error_PagesFailed_Change", "Change the pages", "Endre sidene")
+add("Error_PagesUnreadable", "One of the pages can't be read on this PC: it was moved, deleted or is open in another app. Add it again.",
+    "En av sidene kan ikke leses på denne PC-en: den er flyttet, slettet eller åpen i en annen app. Legg den til på nytt.")
+add("Error_Pages_NotAPage", "One of the pages is not a picture or a PDF that Bandroom can read.", "En av sidene er verken et bilde eller en PDF som Bandroom kan lese.")
+add("Error_Pages_WrongInput", "Bandroom on your computer can't read sheet music yet. Update Bandroom there, then try again.",
+    "Bandroom på datamaskinen kan ikke lese noter ennå. Oppdater Bandroom der, og prøv igjen.")
+add("Error_Pages_PageTooLarge", "One of the pages is too large for Bandroom to read: a file can be 50 MB at most. Split a large PDF into parts.",
+    "En av sidene er for stor til at Bandroom kan lese den: en fil kan være høyst 50 MB. Del en stor PDF i flere.")
+add("Error_Pages_TooManyPages", "There are more than 40 pages in all (every page of a PDF counts). Send fewer at a time.",
+    "Det er mer enn 40 sider til sammen (hver side i en PDF teller). Send færre om gangen.")
+add("Error_Pages_ReaderMissing", "The reader of printed music is not installed on your computer. In Bandroom there, open Settings, find Sheet music from pictures and choose Install the reader. Then try again.",
+    "Noteleseren er ikke installert på datamaskinen. Åpne Innstillinger i Bandroom der, finn Noter fra bilder og velg Installer noteleseren. Prøv så igjen.")
+add("Error_Pages_NoMusic", "No notes were found on the page. Bandroom reads printed notes on a staff: use a sharp, straight scan or picture of the whole page. Handwritten music and tab are not read.",
+    "Fant ingen noter på siden. Bandroom leser trykte noter på notelinjer: bruk en skarp og rett skanning eller et bilde av hele siden. Håndskrevne noter og tab blir ikke lest.")
+add("Error_Pages_OnlyTab", "Only a tab staff was found on the page. Bandroom reads notes on a staff, not tab.", "Det sto bare tab på siden. Bandroom leser noter på notelinjer, ikke tab.")
+add("Error_Pages_ReaderFilesMissing", "Your computer couldn't download the files its reader of printed music needs. Check its internet connection, then send the pages again.",
+    "Datamaskinen fikk ikke lastet ned filene noteleseren trenger. Sjekk internettforbindelsen på den, og send sidene på nytt.")
+add("Error_Pages_DiskFull", "Your computer's disk is full. Free some space on it, then send the pages again.", "Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt.")
+add("Error_Pages_NotRead", "Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.",
+    "Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning.")
+
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):
     lines = [HEADER]

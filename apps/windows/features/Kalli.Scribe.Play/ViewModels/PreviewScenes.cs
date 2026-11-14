@@ -12,13 +12,21 @@ public static class PreviewScenes
 {
     public static readonly string[] Names =
         ["first-run", "home", "home-offline", "home-update", "home-update-app", "what-is-this", "transcribing", "review", "review-listening",
-         "choose-output", "score", "part", "export", "error", "error-update", "error-update-app"];
+         "choose-output", "score", "part", "export", "error", "error-update", "error-update-app", "pages", "pages-unread"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = Engine.Wire.ServerNamePrefix + "Studio PC";
 
     /// <summary>The piece in the sample scenes: the public-domain fixture in apps/fixtures/old-hundredth.</summary>
     public const string SampleTitle = "Old Hundredth";
+
+    /// <summary>A made-up page for the pages scene: a file that starts as a PNG does.</summary>
+    private static string SamplePage(int n)
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"{SampleTitle} page {n}.png");
+        File.WriteAllBytes(path, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13]);
+        return path;
+    }
 
     /// <summary>Shows <paramref name="scene"/>. Returns false for an unknown name or a score scene without a score.</summary>
     public static bool Show(MainViewModel main, string scene, string? scorePath)
@@ -62,6 +70,17 @@ public static class PreviewScenes
                 main.Transcription.ShowProgress(SampleTitle, "orchestra-with-soloist",
                     main.Kind.Options.First(o => o.Kind == SourceKind.OrchestraWithSoloist).Label, "Notes", 62, TimeSpan.FromMinutes(2));
                 main.Screen = Screen.Transcribing;
+                return true;
+            case "pages" when main.Pages is { } pages:
+                // Three pages in hand: made-up pictures, which the scene never sends.
+                pages.Clear();
+                pages.Add([.. Enumerable.Range(1, 3).Select(SamplePage)]);
+                main.Screen = Screen.Pages;
+                return true;
+            case "pages-unread" when main.Pages is not null:
+                main.Transcription.ShowProgress(SampleTitle, TranscriptionViewModel.PagesProfile, "", "Read", 40, null);
+                main.Error.ShowPages(main.Strings["Error_Pages_NoMusic"], "read: StageFailed: read: no notes were found on the page");
+                main.Screen = Screen.Error;
                 return true;
             case "error":
                 main.Transcription.ShowProgress(SampleTitle, "orchestra-with-soloist", "", "Ready", 0, null);

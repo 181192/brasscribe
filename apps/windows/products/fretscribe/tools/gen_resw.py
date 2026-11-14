@@ -622,6 +622,36 @@ HEADER = """<?xml version="1.0" encoding="utf-8"?>
   </resheader>
 """
 
+# ---- sheet music from a picture: the shared reading of pages and the engine's refusals and failed reads ----
+add("Transcribe_Step_SendPages", "Sending the pages", "Sender sidene")
+add("Transcribe_Step_Read", "Reading the notes", "Leser notene")
+add("Transcribe_Stage_SendPages", "Sending the pages to your computer", "Sender sidene til datamaskinen")
+add("Transcribe_Stage_Read", "Reading the notes on the pages", "Leser notene på sidene")
+add("Error_PagesFailed_Title", "The notes couldn't be read", "Notene kunne ikke leses")
+add("Error_PagesFailed_Step1", "Your pages are still here. You can try again, or change them.", "Sidene dine ligger her fortsatt. Du kan prøve igjen, eller endre dem.")
+add("Error_PagesFailed_Reason", "Something went wrong while Bandroom on your computer was reading the pages.",
+    "Noe gikk galt mens Bandroom på datamaskinen leste sidene.")
+add("Error_PagesFailed_Change", "Change the pages", "Endre sidene")
+add("Error_PagesUnreadable", "One of the pages can't be read on this PC: it was moved, deleted or is open in another app. Add it again.",
+    "En av sidene kan ikke leses på denne PC-en: den er flyttet, slettet eller åpen i en annen app. Legg den til på nytt.")
+add("Error_Pages_NotAPage", "One of the pages is not a picture or a PDF that Bandroom can read.", "En av sidene er verken et bilde eller en PDF som Bandroom kan lese.")
+add("Error_Pages_WrongInput", "Bandroom on your computer can't read sheet music yet. Update Bandroom there, then try again.",
+    "Bandroom på datamaskinen kan ikke lese noter ennå. Oppdater Bandroom der, og prøv igjen.")
+add("Error_Pages_PageTooLarge", "One of the pages is too large for Bandroom to read: a file can be 50 MB at most. Split a large PDF into parts.",
+    "En av sidene er for stor til at Bandroom kan lese den: en fil kan være høyst 50 MB. Del en stor PDF i flere.")
+add("Error_Pages_TooManyPages", "There are more than 40 pages in all (every page of a PDF counts). Send fewer at a time.",
+    "Det er mer enn 40 sider til sammen (hver side i en PDF teller). Send færre om gangen.")
+add("Error_Pages_ReaderMissing", "The reader of printed music is not installed on your computer. In Bandroom there, open Settings, find Sheet music from pictures and choose Install the reader. Then try again.",
+    "Noteleseren er ikke installert på datamaskinen. Åpne Innstillinger i Bandroom der, finn Noter fra bilder og velg Installer noteleseren. Prøv så igjen.")
+add("Error_Pages_NoMusic", "No notes were found on the page. Bandroom reads printed notes on a staff: use a sharp, straight scan or picture of the whole page. Handwritten music and tab are not read.",
+    "Fant ingen noter på siden. Bandroom leser trykte noter på notelinjer: bruk en skarp og rett skanning eller et bilde av hele siden. Håndskrevne noter og tab blir ikke lest.")
+add("Error_Pages_OnlyTab", "Only a tab staff was found on the page. Bandroom reads notes on a staff, not tab.", "Det sto bare tab på siden. Bandroom leser noter på notelinjer, ikke tab.")
+add("Error_Pages_ReaderFilesMissing", "Your computer couldn't download the files its reader of printed music needs. Check its internet connection, then send the pages again.",
+    "Datamaskinen fikk ikke lastet ned filene noteleseren trenger. Sjekk internettforbindelsen på den, og send sidene på nytt.")
+add("Error_Pages_DiskFull", "Your computer's disk is full. Free some space on it, then send the pages again.", "Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt.")
+add("Error_Pages_NotRead", "Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.",
+    "Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning.")
+
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):
     lines = [HEADER]
