@@ -80,9 +80,9 @@ describe("pages", () => {
   it("has words in both languages for every way the engine says pages could not be read", () => {
     const sheet = engine("sheet.py");
     const said = [...sheet.matchAll(/^(?:NO_MUSIC|NOT_READ|ONLY_TAB) = "([^"]+)"|^ {4}"\w+": f?"([^"]+)",$/gm)].map((m) => (m[1] ?? m[2]).replace("{pages.MAX_PAGES}", String(MAX_PAGES)));
-    expect(said).toHaveLength(6);
+    expect(said).toHaveLength(7);
     const names = said.map((words) => readFailure(`read: StageFailed: read: ${words}`));
-    expect(new Set(names).size).toBe(6);
+    expect(new Set(names).size).toBe(7);
     for (const name of names) {
       expect(name, "a failure Studio has no words for").not.toBeNull();
       for (const l of ["en", "nb"] as const) expect(messages[l]).toHaveProperty([`run.unread.${name}`]);

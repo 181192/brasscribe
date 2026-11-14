@@ -74,6 +74,7 @@
    {
     "id": "old-hundredth-unread",
     "profile": "sheet",
+    "input": "pages",
     "target": "brass",
     "title": "Old Hundredth (a page lying on its side)",
     "audio_id": "0c9e4b7a1d3f5826",
@@ -101,6 +102,7 @@
    {
     "id": "old-hundredth-sheet",
     "profile": "sheet",
+    "input": "pages",
     "target": "brass",
     "title": "Old Hundredth — from the page (draft)",
     "audio_id": "5f1d7c3a9e2b4860",
@@ -150,6 +152,7 @@
    {
     "id": "old-hundredth-failed",
     "profile": "brass-band",
+    "input": "audio",
     "target": "brass",
     "title": "Old Hundredth (beat grid failed)",
     "audio_id": null,
@@ -177,6 +180,7 @@
    {
     "id": "old-hundredth-b",
     "profile": "orchestra-with-soloist",
+    "input": "audio",
     "target": "brass",
     "title": "Old Hundredth (two notes changed)",
     "audio_id": null,
@@ -197,6 +201,7 @@
    {
     "id": "old-hundredth-a",
     "profile": "orchestra-with-soloist",
+    "input": "audio",
     "target": "brass",
     "title": "Old Hundredth",
     "audio_id": null,
@@ -217,6 +222,7 @@
    {
     "id": "guitar-line",
     "profile": "tab",
+    "input": "audio",
     "target": "fretted",
     "title": "Guitar line",
     "audio_id": "ae3be0fa611d53ec",
@@ -300,6 +306,7 @@
   "body": {
    "id": "guitar-line",
    "profile": "tab",
+   "input": "audio",
    "target": "fretted",
    "title": "Guitar line",
    "audio_id": "ae3be0fa611d53ec",
@@ -554,6 +561,7 @@
   "body": {
    "id": "old-hundredth-a",
    "profile": "orchestra-with-soloist",
+   "input": "audio",
    "target": "brass",
    "title": "Old Hundredth",
    "audio_id": null,
@@ -790,6 +798,7 @@
   "body": {
    "id": "old-hundredth-failed",
    "profile": "brass-band",
+   "input": "audio",
    "target": "brass",
    "title": "Old Hundredth (beat grid failed)",
    "audio_id": null,
@@ -877,6 +886,7 @@
   "body": {
    "id": "old-hundredth-sheet",
    "profile": "sheet",
+   "input": "pages",
    "target": "brass",
    "title": "Old Hundredth — from the page (draft)",
    "audio_id": "5f1d7c3a9e2b4860",
@@ -1058,6 +1068,7 @@
   "body": {
    "id": "old-hundredth-unread",
    "profile": "sheet",
+   "input": "pages",
    "target": "brass",
    "title": "Old Hundredth (a page lying on its side)",
    "audio_id": "0c9e4b7a1d3f5826",

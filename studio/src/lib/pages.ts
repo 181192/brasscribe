@@ -69,6 +69,7 @@ const READ_FAILURES: [string, string][] = [
   ["the pages could not be read", "not_read"],
   ["the reader's files could not be fetched: check the network and try again", "weights_missing"],
   ["no staff of notes was found on the page: a tab staff is not read", "only_tab"],
+  ["the computer's disk is full: free some space on it and try again", "no_space"],
 ];
 
 /** Which of the reader's failures `error` is, or null for any other error. */
