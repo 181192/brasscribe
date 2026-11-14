@@ -5,8 +5,10 @@ import Observation
 /// (pixi.toml, pixi.lock and the engine source) into `<data>/envs`, then `pixi install` from the lockfile; a
 /// checkout only needs the install. The install always runs: an environment left from an earlier build may not
 /// match the lockfile just copied in, and the engine must not install it at launch (it would outlast the health
-/// timeout). With an environment that matches, it takes seconds. After an app update: replace that copy with the app's (`WorkspaceSwap`) and
-/// install again only when the lockfile changed; a failure puts the old copy back.
+/// timeout). With an environment that matches, it takes seconds. After an app update: replace that copy with the app's
+/// (`WorkspaceSwap`) and install again only when the lockfile changed; a failure puts the old copy back. Only the
+/// engine's own environment is installed here: the engine can start once it is there, and the models'
+/// environments are installed behind it (`ModelEnvironments`).
 @MainActor
 @Observable
 public final class Bootstrapper {
@@ -23,6 +25,8 @@ public final class Bootstrapper {
     public private(set) var isUpdate = false
     /// Set when the last run failed because pixi refused the workspace (too old for it).
     public private(set) var pixiRefusal: PixiRefusal?
+    /// Set when the last run failed and what the install wrote says why: no connection, or a full disk.
+    public private(set) var trouble: InstallTrouble?
 
     @ObservationIgnored private let launcher: ProcessLauncher
     /// The `pixi install` under way. It runs in its own process group, so quitting Bandroom doesn't stop it.
@@ -43,6 +47,11 @@ public final class Bootstrapper {
         }
     }
 
+    /// A copy or an install is under way.
+    public var isInstalling: Bool {
+        phase == .copying || phase == .installing
+    }
+
     /// An update is under way.
     public var isUpdating: Bool {
         isUpdate && (phase == .copying || phase == .installing)
@@ -50,44 +59,45 @@ public final class Bootstrapper {
 
     public func run(configuration: EngineConfiguration, bundledWorkspace: URL?, base: [String: String] = ProcessInfo.processInfo.environment) async {
         isUpdate = false
-        pixiRefusal = nil
+        reset()
         do {
-            if case .installed(let workspace, _) = configuration.source {
+            if case .installed(let workspace) = configuration.source {
                 phase = .copying
                 guard let bundledWorkspace else { throw LaunchFailure.notInstalled("this build has no engine workspace") }
                 try await Task.detached { try WorkspaceSwap.install(from: bundledWorkspace, into: workspace).commit() }.value
             }
             phase = .installing
-            let (status, log) = try await install(configuration, base: base)
-            phase = status == 0 ? .done : .failed("pixi install stopped with \(ExitStatus.describe(status)); see \(log.path)")
+            let failed = try await installEngine(configuration, base: base)
+            phase = failed.map { .failed(Self.stopped($0)) } ?? .done
         } catch {
             phase = .failed(String(describing: error))
         }
     }
 
     /// Replaces the installed workspace with the app's; the engine must be stopped first. Returns whether the new
-    /// copy is in place. On failure the old copy is back as it was, and `phase` says why.
+    /// copy is in place. The engine's environment is installed again when the lockfile changed, or it is not there
+    /// (or was not installed to its end), and a failure there puts the old copy back.
     @discardableResult
     public func update(configuration: EngineConfiguration, bundledWorkspace: URL, lockChanged: Bool,
                        base: [String: String] = ProcessInfo.processInfo.environment) async -> Bool {
         isUpdate = true
-        pixiRefusal = nil
-        let workspace = configuration.source.workspace
+        reset()
+        let source = configuration.source
         phase = .copying
         do {
-            let swap = try await Task.detached { try WorkspaceSwap.install(from: bundledWorkspace, into: workspace) }.value
-            if lockChanged || !configuration.source.isEnvironmentReady {
+            let swap = try await Task.detached { try WorkspaceSwap.install(from: bundledWorkspace, into: source.workspace) }.value
+            if lockChanged || !source.isEnvironmentReady || !source.isInstalled(configuration.environmentName) {
                 phase = .installing
-                let result: (status: Int32, log: URL)
+                let failed: Installed?
                 do {
-                    result = try await install(configuration, base: base)
+                    failed = try await installEngine(configuration, base: base)
                 } catch {
                     try? swap.rollback()
                     throw error
                 }
-                if result.status != 0 {
+                if let failed {
                     try? swap.rollback()
-                    phase = .failed("pixi install stopped with \(ExitStatus.describe(result.status)); see \(result.log.path)")
+                    phase = .failed(Self.stopped(failed))
                     return false
                 }
             }
@@ -105,6 +115,17 @@ public final class Bootstrapper {
         }
     }
 
+    private func reset() {
+        pixiRefusal = nil
+        trouble = nil
+    }
+
+    /// Shows a run that stopped, without running one: for the screen catalogue.
+    public func showFailed(_ why: String, trouble: InstallTrouble?) {
+        phase = .failed(why)
+        self.trouble = trouble
+    }
+
     /// Stops a `pixi install` under way (quitting, removing Brasscribe); the run then fails.
     public func cancel(grace: TimeInterval = 5) {
         guard let pid = installPid else { return }
@@ -112,8 +133,17 @@ public final class Bootstrapper {
         launcher.terminate(pid: pid, grace: grace)
     }
 
-    private func install(_ configuration: EngineConfiguration, base: [String: String]) async throws -> (status: Int32, log: URL) {
-        let plan = try configuration.installPlan(base: base)
+    private typealias Installed = (status: Int32, log: URL, environment: String)
+
+    private static func stopped(_ result: Installed) -> String {
+        "pixi install -e \(result.environment) stopped with \(ExitStatus.describe(result.status)); see \(result.log.path)"
+    }
+
+    /// `pixi install` of the engine's environment, marked installed for this lockfile when it ran to its end;
+    /// returns what stopped it, nil when it did not.
+    private func installEngine(_ configuration: EngineConfiguration, base: [String: String]) async throws -> Installed? {
+        let name = configuration.environmentName
+        let plan = try configuration.installPlan(base: base, environment: name)
         let status: Int32 = try await withCheckedThrowingContinuation { cont in
             do {
                 installPid = try launcher.launch(plan) { cont.resume(returning: $0) }
@@ -122,7 +152,12 @@ public final class Bootstrapper {
             }
         }
         installPid = nil
-        if status != 0 { pixiRefusal = PixiRefusal.inLatestRun(log: plan.log) }
-        return (status, plan.log)
+        guard status == 0 else {
+            pixiRefusal = PixiRefusal.inLatestRun(log: plan.log)
+            trouble = InstallTrouble.inLatestRun(log: plan.log)
+            return (status, plan.log, name)
+        }
+        if case .installed = configuration.source { try? configuration.source.markInstalled(name) }
+        return nil
     }
 }

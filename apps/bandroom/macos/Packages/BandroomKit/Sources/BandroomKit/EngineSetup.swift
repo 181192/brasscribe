@@ -1,17 +1,19 @@
 import Darwin
+import CryptoKit
 import Foundation
 
 /// Where the engine comes from.
 public enum EngineSource: Equatable, Sendable {
     /// A developer checkout of the repository: `pixi run` in it, its models and adapters.
     case checkout(URL)
-    /// The workspace Bandroom copies into `<data>/envs` on first run (§5.1 option A).
-    case installed(workspace: URL, adapters: URL?)
+    /// The workspace Bandroom copies into `<data>/envs` on first run (§5.1 option A): the engine, its adapters and
+    /// their environments all live there, in the data folder, so an app update leaves them in place.
+    case installed(workspace: URL)
 
     public var workspace: URL {
         switch self {
         case .checkout(let url): url
-        case .installed(let ws, _): ws
+        case .installed(let ws): ws
         }
     }
 
@@ -32,9 +34,62 @@ public enum EngineSource: Equatable, Sendable {
     /// The command the engine is started with: the entry point `pixi install` puts in the environment's `bin`.
     public static let command = "scribe"
 
+    /// The environments of the models the engine runs (pixi.toml), each named as its adapter: an installed engine
+    /// runs every adapter through pixi, in these, so setup installs them and no job has to.
+    public static let adapterEnvironments = ["swift-f0", "basic-pitch", "beat-this", "separator", "muscriptor", "mega53", "panns"]
+
+    /// Where pixi keeps the environment `name` of this workspace.
+    public func environment(_ name: String) -> URL {
+        workspace.appending(path: ".pixi/envs/\(name)", directoryHint: .isDirectory)
+    }
+
     /// Whether `pixi install` has already made the engine environment: it holds the command this app starts.
     public var isEnvironmentReady: Bool {
-        FileManager.default.fileExists(atPath: workspace.appending(path: ".pixi/envs/default/bin/\(Self.command)").path)
+        FileManager.default.fileExists(atPath: environment("default").appending(path: "bin/\(Self.command)").path)
+    }
+
+    /// The models' environments Bandroom installs behind the engine, in order: for an installed engine every
+    /// adapter's, then the reader of printed music's where it was installed here (kept up to date, never installed
+    /// unasked). A checkout runs its adapters in their own projects, as a developer set them up: none.
+    public var adapterEnvironmentsToInstall: [String] {
+        guard case .installed = self else { return [] }
+        return Self.adapterEnvironments + (isReaderInstalled ? [SheetReader.adapter] : [])
+    }
+
+    /// Those of them not installed for this workspace's lockfile: never installed, stopped part-way (pixi makes the
+    /// folder first, so a folder says nothing), or installed for another lockfile.
+    public var pendingModelEnvironments: [String] {
+        let hash = lockHash
+        return adapterEnvironmentsToInstall.filter { hash == nil || marker($0) != hash }
+    }
+
+    // MARK: what was installed, and for which lockfile
+
+    /// One file per environment, `env-<name>`, holding the SHA-256 of the pixi.lock it was installed from; written
+    /// only once `pixi install` of it ran to its end. Beside the environments, outside what an update replaces.
+    var setupMarkers: URL { workspace.appending(path: ".bandroom-setup", directoryHint: .isDirectory) }
+
+    /// The SHA-256 of the workspace's pixi.lock, nil when there is none.
+    public var lockHash: String? {
+        guard let data = try? Data(contentsOf: workspace.appending(path: "pixi.lock")) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    func marker(_ environment: String) -> String? {
+        (try? String(contentsOf: setupMarkers.appending(path: "env-\(environment)"), encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Whether `environment` was installed to its end for this workspace's lockfile.
+    public func isInstalled(_ environment: String) -> Bool {
+        lockHash.map { marker(environment) == $0 } ?? false
+    }
+
+    /// Records that `pixi install` of `environment` ran to its end for this workspace's lockfile.
+    public func markInstalled(_ environment: String) throws {
+        guard let hash = lockHash else { return }
+        try FileManager.default.createDirectory(at: setupMarkers, withIntermediateDirectories: true)
+        try Data(hash.utf8).write(to: setupMarkers.appending(path: "env-\(environment)"), options: .atomic)
     }
 
     /// Whether the engine may be started once the workspace was checked against the app's. After a failed update the
@@ -86,9 +141,7 @@ public struct EngineConfiguration: Equatable, Sendable {
         if let path = fromEnv ?? fromSetting {
             return .checkout(URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true))
         }
-        let adapters = bundle.resourceURL?.appending(path: "workspace/ml/adapters")
-        return .installed(workspace: paths.workspace,
-                          adapters: adapters.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil })
+        return .installed(workspace: paths.workspace)
     }
 
     /// The pixi binary: bundled with the app, then the usual install places. A login-item launch gets a bare
@@ -109,8 +162,10 @@ public struct EngineConfiguration: Equatable, Sendable {
         var env = base.filter { key, _ in
             ["HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "SHELL", "__CF_USER_TEXT_ENCODING", "HF_HOME", "HF_HUB_CACHE", "HF_TOKEN"].contains(key)
         }
+        // pixi first: the adapter runner calls it by name. Homebrew's folder stays last, for what Bandroom does not
+        // carry: ffmpeg (beat-this, Mega-53 and audio that is not WAV are decoded with it) and a MuseScore (`mscore`).
         let pixiDir = pixi?.deletingLastPathComponent().path
-        env["PATH"] = ([pixiDir].compactMap { $0 } + ["/usr/bin", "/bin", "/usr/sbin", "/sbin", "/opt/homebrew/bin"]).joined(separator: ":")
+        env["PATH"] = ([pixiDir].compactMap { $0 } + Self.systemPath + [Self.homebrewPath]).joined(separator: ":")
         env["SCRIBE_DATA"] = paths.data.path
         env["SCRIBE_COMPUTER_NAME"] = computerName
         env["SCRIBE_ADMIN_TOKEN"] = adminToken
@@ -122,14 +177,20 @@ public struct EngineConfiguration: Equatable, Sendable {
         case .checkout:
             // A checkout brings its own ml/adapters; the engine finds them from its repo root.
             break
-        case .installed(_, let adapters):
-            if let adapters { env["SCRIBE_ADAPTERS"] = adapters.path }
+        case .installed:
+            // The adapters run from the data folder's copy, through pixi, in environments beside it: nothing is
+            // written into the app, nothing is lost with an app update, and no other tool has to be on this Mac.
+            env["SCRIBE_ADAPTERS"] = source.adaptersFolder.path
+            env["SCRIBE_ADAPTER_RUNNER"] = "pixi"
             // The installed workspace has no core/ to build; a checkout uses its own build.
             if let coreCLI { env["SCRIBE_CORE_CLI"] = coreCLI.path }
             env["PIXI_CACHE_DIR"] = paths.pixiCache.path
         }
         return env
     }
+
+    static let systemPath = ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+    static let homebrewPath = "/opt/homebrew/bin"
 
     public func launchPlan(port: Int, base: [String: String]) throws -> LaunchPlan {
         guard let pixi else { throw LaunchFailure.notInstalled("pixi not found") }
@@ -143,11 +204,12 @@ public struct EngineConfiguration: Equatable, Sendable {
                           log: paths.engineLog, port: port)
     }
 
-    /// `pixi install` for the engine environment (first run, and after an update).
-    public func installPlan(base: [String: String]) throws -> LaunchPlan {
+    /// `pixi install` for one environment of the workspace: the engine's by default (first run, and after an
+    /// update), or an adapter's.
+    public func installPlan(base: [String: String], environment name: String? = nil) throws -> LaunchPlan {
         guard let pixi else { throw LaunchFailure.notInstalled("pixi not found") }
         return LaunchPlan(executable: pixi,
-                          arguments: ["install", "--manifest-path", source.manifest.path, "--frozen", "-e", environmentName],
+                          arguments: ["install", "--manifest-path", source.manifest.path, "--frozen", "-e", name ?? environmentName],
                           environment: environment(base: base), workingDirectory: source.workspace,
                           log: paths.logs.appending(path: "setup.log"), port: 0)
     }

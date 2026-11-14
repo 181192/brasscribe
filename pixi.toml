@@ -152,7 +152,9 @@ muscriptor = ">=0.3.0"
 muscriptor = "muscriptor"
 
 [feature.beat-this.pypi-dependencies]
-beat-this = { git = "https://github.com/CPJKU/beat_this", rev = "v1.1.0" }
+# The release on PyPI (the same files as the v1.1.0 tag): a git source needs git, which a Mac without
+# Apple's developer tools does not have.
+beat-this = "==1.1.0"
 soundfile = ">=0.14.0"
 soxr = ">=1.1.0"
 
@@ -189,6 +191,11 @@ c-compiler = "*"
 
 [feature.separator.target.win-64.dependencies]
 c-compiler = "*"
+
+# On a Mac diffq would be built from source (no wheel for Python 3.12), which needs Apple's developer tools.
+# Only audio-separator's Demucs models use it, and the separator runs a BS-Roformer model, so a Mac goes without.
+[feature.separator.pypi-options.dependency-overrides]
+diffq = { version = ">=0.2", env-markers = "sys_platform != 'darwin'" }
 
 [feature.panns.pypi-dependencies]
 librosa = ">=1.0.0"

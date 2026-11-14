@@ -37,7 +37,7 @@ expect() {
 clean=$(staged clean)
 expect 0 "a clean staged workspace" "$clean"
 
-# A Mac Bandroom that was run: the reader's environment is beside its project, inside the app.
+# A checkout that ran its adapters with uv: the reader's environment is beside its project.
 ran=$(staged ran)
 mkdir -p "$ran/workspace/ml/adapters/homr/.venv/lib/python3.12/site-packages/homr"
 : > "$ran/workspace/ml/adapters/homr/.venv/pyvenv.cfg"
@@ -49,12 +49,17 @@ other=$(staged other)
 mkdir -p "$other/workspace/ml/adapters/separator/.venv/bin"
 expect 1 "a workspace with another adapter's .venv" "$other" "adapters/separator/.venv"
 
-# The package itself, under whatever environment holds it: pixi's on Windows has no .venv in its path.
+# The package itself, under whatever environment holds it, named .venv, .pixi or neither.
 pixi=$(staged pixi)
-mkdir -p "$pixi/workspace/.pixi/envs/homr/Lib/site-packages/homr/transformer"
-: > "$pixi/workspace/.pixi/envs/homr/Lib/site-packages/homr/__init__.py"
+mkdir -p "$pixi/workspace/env/homr/Lib/site-packages/homr/transformer"
+: > "$pixi/workspace/env/homr/Lib/site-packages/homr/__init__.py"
 expect 1 "a workspace with site-packages/homr" "$pixi" "site-packages/homr"
 expect 1 "a workspace with site-packages/homr" "$pixi" "must not be in a build"
+
+# pixi's environments, any of them: Bandroom makes them in the data folder, and none belongs in a build.
+envs=$(staged envs)
+mkdir -p "$envs/workspace/.pixi/envs/beat-this/bin"
+expect 1 "a workspace with pixi's environments" "$envs" ".pixi"
 
 # A folder named homr that is not the package (the adapter's project folder) is fine; so is a file named .venv.
 named=$(staged named)

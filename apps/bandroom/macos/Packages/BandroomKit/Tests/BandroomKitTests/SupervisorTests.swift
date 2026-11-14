@@ -143,7 +143,7 @@ import Testing
                                          computerName: "Kari's MacBook", adminToken: "secret")
         let sup = EngineSupervisor(configuration: config, launcher: launcher, makeClient: { _, _ in engine },
                                    sleep: { _ in await Task.yield() }, now: { clock.now }, pickPort: { port },
-                                   baseEnvironment: ["HOME": "/Users/test", "PATH": "/nowhere"])
+                                   baseEnvironment: ["HOME": "/tmp/home", "PATH": "/nowhere"])
         return (sup, paths.engineStatus)
     }
 
@@ -361,7 +361,7 @@ import Testing
         #expect(EngineSource.checkout(checkout).modelsFolder(paths: paths).path == paths.models.path)
         #expect(engineModels(.checkout(checkout)) == paths.models.path)
         // Installed: always the data folder's.
-        let installed = EngineSource.installed(workspace: paths.workspace, adapters: nil)
+        let installed = EngineSource.installed(workspace: paths.workspace)
         #expect(installed.modelsFolder(paths: paths).path == paths.models.path)
         #expect(engineModels(installed) == paths.models.path)
     }
@@ -399,7 +399,7 @@ import Testing
         let found = try #require(EngineConfiguration.findCoreCLI(resources: resources))
         #expect(found.path == cli.path)
         let paths = BandroomPaths(data: resources.appending(path: "data"), logs: resources.appending(path: "logs"))
-        let installed = EngineConfiguration(source: .installed(workspace: paths.workspace, adapters: nil), pixi: nil, paths: paths,
+        let installed = EngineConfiguration(source: .installed(workspace: paths.workspace), pixi: nil, paths: paths,
                                             computerName: "Mac", adminToken: "secret", coreCLI: found)
         // The variable is not inherited from Bandroom's own environment: only the bundled binary is passed on.
         #expect(installed.environment(base: ["SCRIBE_CORE_CLI": "/elsewhere"])["SCRIBE_CORE_CLI"] == cli.path)
@@ -410,5 +410,39 @@ import Testing
         let checkout = EngineConfiguration(source: .checkout(resources), pixi: nil, paths: paths, computerName: "Mac",
                                            adminToken: "secret", coreCLI: found)
         #expect(checkout.environment(base: [:])["SCRIBE_CORE_CLI"] == nil)
+    }
+}
+
+/// What the engine is started with must be enough by itself: the adapters run through the pixi the app carries, from
+/// the data folder, so no uv is needed. Homebrew's folder is on the PATH last, and only for the programs Bandroom
+/// does not carry (ffmpeg, which some adapters decode with, and a MuseScore installed with Homebrew).
+@Suite struct EngineEnvironmentTests {
+    @Test func theEngineNeedsNoUvAndRunsTheAppsPixi() throws {
+        let root = tempDir()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
+        let pixi = root.appending(path: "Bandroom.app/Contents/Resources/bin/pixi")
+        let config = EngineConfiguration(source: .installed(workspace: paths.workspace), pixi: pixi, paths: paths,
+                                         computerName: "Mac", adminToken: "secret")
+        let env = config.environment(base: ["PATH": "/opt/homebrew/bin:/usr/local/bin", "SCRIBE_ADAPTER_RUNNER": "uv", "HOME": "/tmp/home"])
+        // The runner is said, never left to the engine's default for a Mac (uv), and never inherited.
+        #expect(env["SCRIBE_ADAPTER_RUNNER"] == "pixi")
+        // pixi is called by name by the adapter runner: the app's own comes first on the PATH.
+        let path = try #require(env["PATH"]).split(separator: ":").map(String.init)
+        #expect(path.first == pixi.deletingLastPathComponent().path)
+        // Homebrew's folder is last, for ffmpeg and MuseScore; what Bandroom's own PATH held is not passed on.
+        #expect(path.last == "/opt/homebrew/bin" && !path.contains("/usr/local/bin"))
+        #expect(path.dropFirst().dropLast() == ["/usr/bin", "/bin", "/usr/sbin", "/sbin"])
+        // Adapters, their environments and pixi's cache are all in the data folder, none inside the app.
+        for key in ["SCRIBE_ADAPTERS", "PIXI_CACHE_DIR", "SCRIBE_MODELS", "SCRIBE_DATA"] {
+            let value = try #require(env[key], "\(key)")
+            #expect(value.hasPrefix(paths.data.path) && !value.contains(".app/"), "\(key)")
+        }
+        #expect(config.source.environment("beat-this").path.hasPrefix(paths.data.path))
+        // The engine and every install are started by the app's pixi by its full path, not looked up.
+        try FileManager.default.createDirectory(at: paths.workspace, withIntermediateDirectories: true)
+        FileManager.default.createFile(atPath: config.source.manifest.path, contents: Data())
+        #expect(try config.launchPlan(port: 8765, base: [:]).executable == pixi)
+        #expect(try config.installPlan(base: [:], environment: "swift-f0").arguments.suffix(2) == ["-e", "swift-f0"])
     }
 }

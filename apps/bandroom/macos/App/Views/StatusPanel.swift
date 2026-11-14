@@ -96,6 +96,11 @@ struct StatusPanel: View {
             if let job = app.monitor.job { NowCard(job: job) }
         case .running:
             Text("Ready. Phones and tablets can send recordings.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
+            // the models' environments, installed behind the engine: several GB the first time
+            if case .installing(let step) = app.modelEnvironments.phase {
+                Text("Getting the listening tools ready: \(step.index) of \(step.count)")
+                    .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
+            }
         case .stopped:
             Text("Phones can't send recordings until you start it.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
         case .updating:

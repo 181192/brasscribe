@@ -245,10 +245,16 @@ struct SetupView: View {
                 ProblemCard(title: Strings.problemTitle(.pixiTooOld(refusal)), why: Strings.problemWhy(.pixiTooOld(refusal), engine: .notRunning),
                             symbol: "exclamationmark.triangle.fill", tint: Color.Scribe.warning)
             } else if case .failed(let why) = boot {
-                ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill",
-                            tint: Color.Scribe.warning)
+                toolsProblem(why)
             }
             if case .failed(let e) = d.phase { downloadProblem(e) }
+            // A model's environment that failed behind the engine's: the rest of setup goes on, and it can be tried again.
+            if case .failed(_, let trouble) = app.modelEnvironments.phase {
+                ProblemCard(title: Strings.problemTitle(.modelsNotInstalled(trouble)),
+                            why: Strings.problemWhy(.modelsNotInstalled(trouble), engine: .notRunning),
+                            symbol: trouble == .network ? "wifi.exclamationmark" : "exclamationmark.triangle.fill", tint: Color.Scribe.warning)
+                Button { app.installModelEnvironments() } label: { Text("Try again") }.buttonStyle(.brOutline)
+            }
             if items.contains(where: { $0 != .bandWriter }) {
                 Text("The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.")
                     .brFont(.caption).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
@@ -345,6 +351,25 @@ struct SetupView: View {
         return amount
     }
 
+    /// Why the listening tools (the engine's and the models' environments) weren't set up, in words when the install
+    /// said: no connection, or a full disk; otherwise what stopped, with the log to read.
+    @ViewBuilder private func toolsProblem(_ why: String) -> some View {
+        let warn = Color.Scribe.warning
+        switch app.bootstrapper.trouble {
+        case .network:
+            ProblemCard(title: String(localized: "The download stopped"),
+                        why: String(localized: "Check the internet connection, then try again. It continues where it stopped."),
+                        symbol: "wifi.exclamationmark", tint: warn)
+        case .diskFull:
+            ProblemCard(title: String(localized: "Not enough space"),
+                        why: String(localized: "The disk is full, so the listening tools weren't set up. Free some space, then try again."),
+                        symbol: "internaldrive", tint: warn)
+            Button { app.openStorageSettings() } label: { Text("Free up space…") }.buttonStyle(.brOutline)
+        case nil:
+            ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill", tint: warn)
+        }
+    }
+
     /// Each reason in its own words, with the one thing that fixes it.
     @ViewBuilder private func downloadProblem(_ e: DownloadError) -> some View {
         let warn = Color.Scribe.warning
@@ -394,7 +419,10 @@ struct SetupView: View {
         let bundled = Bundle.main.resourceURL?.appending(path: "workspace")
         Task {
             await app.bootstrapper.run(configuration: config, bundledWorkspace: bundled)
-            if app.bootstrapper.phase == .done { app.downloadMissing() }
+            if app.bootstrapper.phase == .done {
+                app.downloadMissing()
+                app.installModelEnvironments()
+            }
         }
     }
 

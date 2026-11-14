@@ -17,6 +17,8 @@ final class AppModel {
     let bootstrapper = Bootstrapper()
     /// Replaces the engine workspace in the data folder after the app itself was updated (design/shared/server-app.md §3.8).
     let updater = Bootstrapper()
+    /// The models' environments, installed behind the engine once its own is there.
+    let modelEnvironments = ModelEnvironments()
     /// Why the last engine update failed; the previous engine runs meanwhile when it can still be started, and Try
     /// again runs the update once more. (Set from outside only by the tests of what the panel then leads with.)
     var updateFailure: String?
@@ -175,6 +177,7 @@ final class AppModel {
         supervisor.log = { log.write($0) }
         downloader.log = { log.write($0) }
         reader.log = { log.write($0) }
+        modelEnvironments.log = { log.write($0) }
         downloader.onFinished = { [weak self] in self?.downloadsFinished() }
         supervisor.onHealthy = { [weak self] client in self?.engineAnswered(client) }
         supervisor.onFailure = { [weak self] why in self?.notifyFailure(why) }
@@ -255,6 +258,7 @@ final class AppModel {
         bootstrapper.cancel()
         updater.cancel()
         reader.cancel()
+        modelEnvironments.cancel()
         supervisor.shutdown()
         releaseSleep()
     }
@@ -276,13 +280,14 @@ final class AppModel {
             // engine, which restarts with the key if it's allowed later.
             await self.savedKey.settled(within: .seconds(2))
             if !self.isRunning { self.supervisor.start() }
+            if self.updateFailure == nil { self.installModelEnvironments() }
         }
     }
 
     /// Compares the installed workspace's stamp with the app's and replaces it when they differ. Stops the engine
     /// first; `pixi install` runs again only when the lockfile changed.
     func updateWorkspaceIfNeeded() async {
-        guard case .installed(let workspace, _) = supervisor.configuration.source else { return }
+        guard case .installed(let workspace) = supervisor.configuration.source else { return }
         // an app without a workspace of its own has nothing to update the installed one to
         guard let bundled = bundledWorkspace else { workspaceIsThisApps = true; return }
         let (check, stamp) = await Task.detached {
@@ -298,6 +303,7 @@ final class AppModel {
         logger.write("engine workspace \(from) is not this app's (\(stamp?.short ?? "?")): updating\(lockChanged ? ", lockfile changed" : "")")
         await stopEngine()
         reader.cancel()  // it runs with the engine that is about to be replaced
+        modelEnvironments.cancel()  // and these install into its workspace
         let ok = await updater.update(configuration: supervisor.configuration, bundledWorkspace: bundled, lockChanged: lockChanged)
         if ok {
             updateFailure = nil
@@ -307,6 +313,18 @@ final class AppModel {
             let why = if case .failed(let e) = updater.phase { e } else { "unknown" }
             updateFailure = why
             logger.write("engine update failed, the previous workspace is back: \(why)")
+        }
+    }
+
+    /// Installs the models' environments that are not there for this workspace's lockfile, behind the running
+    /// engine: never installed, stopped part-way, or from before a lockfile change. Also Try again after one failed.
+    /// A job that needs one before it is there has its own `pixi run` install it.
+    func installModelEnvironments() {
+        guard !demo, case .installed = supervisor.configuration.source, supervisor.configuration.source.isEnvironmentReady,
+              !bootstrapper.isInstalling, !updater.isUpdating, !modelEnvironments.isInstalling else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            await self.modelEnvironments.install(configuration: self.supervisor.configuration, base: self.environment)
         }
     }
 
@@ -413,6 +431,7 @@ final class AppModel {
         if let refusal = pixiRefusal { list.append(.pixiTooOld(refusal)) }
         if let failedUpdate, interfaceMismatch != .engine { list.append(failedUpdate) }
         if case .running = phase, !modelsToFetch.isEmpty { list.append(.missingDownload(modelsToFetch)) }
+        if case .failed(_, let trouble) = modelEnvironments.phase { list.append(.modelsNotInstalled(trouble)) }
         return list
     }
 
@@ -420,7 +439,7 @@ final class AppModel {
     var mismatchProblem: Problem? {
         guard let behind = interfaceMismatch else { return nil }
         // the demo's engine is an installed one that an update could replace, or one from a checkout
-        let source: EngineSource = demo ? (demoCheckout ? .checkout(paths.data) : .installed(workspace: paths.workspace, adapters: nil))
+        let source: EngineSource = demo ? (demoCheckout ? .checkout(paths.data) : .installed(workspace: paths.workspace))
             : supervisor.configuration.source
         return .interfaceMismatch(behind, fix: MismatchFix.of(behind: behind, source: source, engineIsThisApps: !demo && workspaceIsThisApps,
                                                               updateTried: engineUpdateTried))
@@ -444,6 +463,7 @@ final class AppModel {
         case .lowDisk: openStorageSettings()
         case .missingDownload: openWindow("setup")
         case .noFreePort: tryAgain()
+        case .modelsNotInstalled: installModelEnvironments()
         case .updateFailed: retryUpdate()
         case .notResponding: restartNow()
         case .pixiTooOld, .updateRefused, .interfaceMismatch(_, fix: .getBandroom): openLatestRelease()
@@ -648,6 +668,7 @@ final class AppModel {
         bootstrapper.cancel()
         updater.cancel()
         reader.cancel()
+        modelEnvironments.cancel()
         supervisor.shutdown()
         releaseSleep()
         try? SMAppService.mainApp.unregister()
@@ -815,6 +836,7 @@ final class AppModel {
         // installing it again.
         if bootstrapper.phase == .done, case .installed = supervisor.configuration.source { workspaceIsThisApps = true }
         if !isRunning { supervisor.start() }
+        installModelEnvironments()
     }
 
     // MARK: pairing requests

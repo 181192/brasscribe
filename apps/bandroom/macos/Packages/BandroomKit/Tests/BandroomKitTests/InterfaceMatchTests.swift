@@ -80,7 +80,7 @@ func enginesWire(_ name: String) throws -> String {
 
     // MARK: what Bandroom offers to do about it
 
-    static let installed = EngineSource.installed(workspace: URL(fileURLWithPath: "/tmp/envs/brasscribe"), adapters: nil)
+    static let installed = EngineSource.installed(workspace: URL(fileURLWithPath: "/tmp/envs/brasscribe"))
     static let checkout = EngineSource.checkout(URL(fileURLWithPath: "/tmp/checkout"))
 
     @Test func anOlderBandroomIsFixedByANewerOne() {
