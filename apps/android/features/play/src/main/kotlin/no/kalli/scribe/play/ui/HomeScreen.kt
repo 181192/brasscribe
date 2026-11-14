@@ -195,16 +195,24 @@ fun HomeScreen(vm: PlayViewModel) {
                 IconButton({ vm.navigate(Screen.HELP) }, Modifier.size(48.dp)) { BcIcon(DesignR.drawable.ic_bc_help, stringResource(R.string.help)) }
                 IconButton({ vm.navigate(Screen.SETTINGS) }, Modifier.size(48.dp)) { BcIcon(DesignR.drawable.ic_bc_settings, stringResource(R.string.settings)) }
             }
-            Text(
-                buildAnnotatedString {
-                    append(stringResource(R.string.home_hero_start))
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brandText)) { append(stringResource(R.string.home_hero_end)) }
-                },
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier.padding(top = ScribeSpace.s4).focusRequester(titleFocus).focusable().semantics { heading() },
-            )
-            Lead(stringResource(R.string.home_tagline))
-            ConnectionStatusRow(vm)
+            // Home with nothing made yet says what the app is for. Once there is something under "Your scores", that is
+            // what a player comes back for: the headline, the lead and the lines under the ways in step aside, so the
+            // list starts on the first screen of a small phone.
+            val kept by vm.keptRecordings.collectAsState()
+            val library = scores.isNotEmpty() || kept.isNotEmpty()
+            if (!library) {
+                Text(
+                    buildAnnotatedString {
+                        append(stringResource(R.string.home_hero_start))
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = c.brandText)) { append(stringResource(R.string.home_hero_end)) }
+                    },
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier.padding(top = ScribeSpace.s4).focusRequester(titleFocus).focusable().semantics { heading() },
+                )
+                Lead(stringResource(R.string.home_tagline))
+            }
+            // (With a library the row is one line: what not being connected means is known by then.)
+            ConnectionStatusRow(vm, brief = library)
             StatusLine(status)
             val importProgress by vm.importProgress.collectAsState()
             if (busy) importProgress.let { p ->
@@ -214,22 +222,21 @@ fun HomeScreen(vm: PlayViewModel) {
             PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = DesignR.drawable.ic_bc_import_file)
             RowGroup {
                 ListRow(stringResource(R.string.home_record_mic), recorder.startMicrophone, icon = DesignR.drawable.ic_bc_record_mic,
-                    subtitle = stringResource(R.string.home_record_mic_desc), enabled = !busy)
+                    subtitle = stringResource(R.string.home_record_mic_desc).takeIf { !library }, enabled = !busy)
                 RowDivider()
                 ListRow(stringResource(R.string.home_record_device), recorder.askDevice, icon = DesignR.drawable.ic_bc_record_device,
-                    subtitle = stringResource(R.string.home_record_device_desc), enabled = !busy)
+                    subtitle = stringResource(R.string.home_record_device_desc).takeIf { !library }, enabled = !busy)
                 // Most pickers give MusicXML no type of its own, so the wildcard has to be there too.
                 if (vm.container.product.opensScores) {
                     RowDivider()
                     ListRow(stringResource(R.string.home_open_score), {
                         pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
-                    }, icon = DesignR.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc), enabled = !busy)
+                    }, icon = DesignR.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy)
                 }
             }
-            InfoNote(stringResource(R.string.home_links_tip), boxed = false)
+            if (!library) InfoNote(stringResource(R.string.home_links_tip), boxed = false)
             SectionLabel(stringResource(R.string.home_your_scores))
-            val kept by vm.keptRecordings.collectAsState()
-            if (scores.isEmpty() && kept.isEmpty()) {
+            if (!library) {
                 // Empty state: what will appear here, with the mark.
                 Row(Modifier.padding(vertical = ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
                     BrandMark(32.dp)
@@ -263,6 +270,8 @@ fun HomeScreen(vm: PlayViewModel) {
                         )
                     }
                 }
+                // (The tip about links is under the list, for whoever looks for a way to paste one.)
+                InfoNote(stringResource(R.string.home_links_tip), boxed = false)
             }
             Spacer(Modifier.height(ScribeSpace.s4))
         }
