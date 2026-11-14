@@ -131,15 +131,16 @@ jobs:
       - name: On-device models
         uses: ./.github/actions/on-device-models
 
-      # The band SoundFont is not in git. With the pinned pack's 16-bit file (cached per pack) the playback
-      # package's tests that play the band run here, through the real player and output stage against the shared
+      # The band SoundFonts are not in git. With the pinned pack's two files (the Mac's 16-bit one and the
+      # phone's, which the output-stage tests play too; cached per pack) the playback package's tests that play
+      # the band run here, through the real player and output stage against the shared
       # levels: the Old Hundredth fixture, the band's presets, and (with the phrases below) the full-band phrase
       # and the dynamics. Without it they skip themselves, and a level that has moved shows only on a machine
       # that has the sounds.
-      - name: Fetch the band SoundFont for the level tests
+      - name: Fetch the band SoundFonts for the level tests
         uses: ./.github/actions/band-sounds
         with:
-          files: brasscribe-band-16bit.sf2
+          files: brasscribe-band-16bit.sf2 brasscribe-band-mobile.sf2
 
       # The test phrases the level tests play are written by a script, not kept in git (sounds/phrases.py: it
       # needs only mido, at the version sounds/uv.lock pins).
