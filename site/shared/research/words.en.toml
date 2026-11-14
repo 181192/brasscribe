@@ -120,7 +120,7 @@ caption = "Doubt marks on solo lines. The held-out row is the primary result. Th
 source = "<code>measured.toml</code>, table <code>review_marks_held_out</code>; <code>eval/baselines.json</code>, suite solo-instruments, <code>q_hit</code> and <code>q_false_alarm</code>."
 views_name = "Evaluation"
 held_label = "Held out and in-set"
-held_note = "The same confidence model, fitted on the URMP parts and the separated stems, with {m/review_marks_held_out/marked_share|pct} of the notes marked on the held-out recordings. The in-set row is the confidence benchmark's own split and is optimistic."
+held_note = "A refit of the confidence model, not the released one: fitted on the URMP parts and the separated stems only, with {m/review_marks_held_out/marked_share|pct} of the notes marked on the held-out recordings. The in-set row is the confidence benchmark's own split and is optimistic."
 held_axis = "Share of the wrong notes (recall); share of the marks (precision)"
 held_series2 = "Marks that sit on a wrong note (precision)"
 held_row1 = "Held out: scored on the ChoraleBricks parts"
@@ -465,7 +465,7 @@ row1 = "Single lines, guitarists used for tuning"
 row2 = "Chords, guitarists used for tuning"
 row3 = "Single lines, guitarists only reported"
 row4 = "Chords, guitarists only reported"
-caption = "Written rhythm at the sixteenth level. Notes played on the beat or on the eighth are all written on their slot and are not shown. The second series is implemented in the quantiser but not used, because it regresses other gated metrics (Section 5.3)."
+caption = "Written rhythm at the sixteenth level. Notes played on the beat or on the eighth are all written on their slot and are not shown. The second series was measured once and is not gated; it is implemented in the quantiser but not used, because it regresses other gated metrics (Section 5.3)."
 source = "<code>eval/baselines.json</code>, suite guitar-tab, <code>slot_16th_off</code>; the second series from <code>measured.toml</code>, table <code>tab_grid_choice</code>."
 
 [figure.tab-heldout]

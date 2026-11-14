@@ -120,7 +120,7 @@ caption = "Tvilsmerker på sololinjer. Raden for holdt utenfor er hovedresultate
 source = "<code>measured.toml</code>, tabellen <code>review_marks_held_out</code>; <code>eval/baselines.json</code>, suiten solo-instruments, <code>q_hit</code> og <code>q_false_alarm</code>."
 views_name = "Evaluering"
 held_label = "Holdt utenfor og i settet"
-held_note = "Den samme sikkerhetsmodellen, tilpasset URMP-stemmene og de separerte stemmene, med {m/review_marks_held_out/marked_share|pct} av tonene merket på opptakene som er holdt utenfor. Raden for i settet er sikkerhetsmålingens egen deling og er optimistisk."
+held_note = "En ny tilpasning av sikkerhetsmodellen, ikke den utgitte: tilpasset bare URMP-stemmene og de separerte stemmene, med {m/review_marks_held_out/marked_share|pct} av tonene merket på opptakene som er holdt utenfor. Raden for i settet er sikkerhetsmålingens egen deling og er optimistisk."
 held_axis = "Andel av de gale tonene (recall); andel av merkene (presisjon)"
 held_series2 = "Merker som står på en gal tone (presisjon)"
 held_row1 = "Holdt utenfor: målt på ChoraleBricks-stemmene"
@@ -465,7 +465,7 @@ row1 = "Enkeltlinjer, gitarister brukt til innstilling"
 row2 = "Akkorder, gitarister brukt til innstilling"
 row3 = "Enkeltlinjer, gitarister som bare er rapportert"
 row4 = "Akkorder, gitarister som bare er rapportert"
-caption = "Skrevet rytme på sekstendelsnivå. Toner spilt på slaget eller på åttedelen skrives alle på sin plass og er ikke vist. Den andre serien er implementert i kvantiseringen, men brukes ikke, fordi den svekker andre låste mål (avsnitt 5.3)."
+caption = "Skrevet rytme på sekstendelsnivå. Toner spilt på slaget eller på åttedelen skrives alle på sin plass og er ikke vist. Den andre serien er målt én gang og er ikke låst; den er implementert i kvantiseringen, men brukes ikke, fordi den svekker andre låste mål (avsnitt 5.3)."
 source = "<code>eval/baselines.json</code>, suiten guitar-tab, <code>slot_16th_off</code>; den andre serien fra <code>measured.toml</code>, tabellen <code>tab_grid_choice</code>."
 
 [figure.tab-heldout]
