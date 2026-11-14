@@ -25,8 +25,8 @@ from the preview: a `feat` since the product's last release means a minor bump, 
 Pre-releases (`PRODUCT-vX.Y.Z-beta.N`) are tagged by hand on `main`; the script makes only `X.Y.Z`. If a run stops
 halfway, `git switch main`, delete the local `release/PRODUCT-vX.Y.Z` branch, and start again.
 
-A product's first release under its own tag takes a version above 0.14.0, the last release of everything together
-(`v0.14.0`), and its notes count from there. Android needs it: an app installs only over a lower `versionCode`, and
+A product's first release under its own tag takes a version above 0.15.0, the last release of everything together
+(`v0.15.0`), and its notes count from there. Android needs it: an app installs only over a lower `versionCode`, and
 both apps had 20 in that release. `CHANGELOG.md` is the history up to that release; `changelogs/PRODUCT.md` goes on
 from it. App and engine must still match (the interface version): a change that raises the number is released for
 Bandroom and for every app it breaks, one release each.
@@ -46,7 +46,7 @@ site, the READMEs and the apps' own update links all use these two addresses. Th
 (`releases/latest`) is Bandroom's highest full release, by the same rule: apps from before the products had releases of their own send people there
 for Bandroom, and every release's notes name the newest of each app.
 
-Once, before the first release of each product: `scripts/latest-release.sh --seed v0.14.0` makes the four
+Once, before the first release of each product: `scripts/latest-release.sh --seed v0.15.0` makes the four
 `PRODUCT-latest` releases from the files of the last release of everything together, so the links work from the day
 they are merged.
 

@@ -10,7 +10,7 @@
 #                                               workflow asks before it marks a release as the repository's latest)
 #   scripts/latest-release.sh --seed TAG        once, by the owner, before the first release of each product: make
 #                                               every PRODUCT-latest from the files of TAG, a release of everything
-#                                               together (v0.14.0), so the links work from the start
+#                                               together (v0.15.0), so the links work from the start
 #
 # The release is changed in place and never deleted, so a link keeps working while it is updated: the files are
 # replaced one by one, then the tag is moved, then the words. Only a product's highest full release is put
