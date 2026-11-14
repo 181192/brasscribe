@@ -60,7 +60,8 @@ A page is its structure and its words, kept apart:
   (`remember` in `shared/showcase.js`). Without JavaScript the page
   is in English and says so. When the page is to be read in Norwegian, `shared/early.js` (in every
   page's head) fetches `nb.json` at once and keeps the page hidden until its words are in, so no
-  English is seen first.
+  English is seen first. `nb.json` holds the page's words and its first figure; the other figures'
+  words are in `nb-more.json`, put in when they come.
 - A number or a reference that a macro prints in the structure (`{{data …}}` in a table cell) and that
   reads differently in Norwegian (0.66, 0,66) is swapped where it stands, like a word.
 - A page may still be one whole file per language (`pages/en/<name>.html` and
@@ -110,7 +111,7 @@ What only a script can work (a figure's buttons) carries the class `await-js`: i
 the page from the start and is shown when the script has made it work, so nothing moves while the
 page loads. An app's `preload` in `product.toml` names the font files of its headline.
 
-What moves by itself (a strip writing itself out, the pen lines) moves once a visit: after that, and
+What moves by itself (a strip writing itself out, the pen lines) moves once in half an hour: after that, and
 without the script or with less motion, a page opens as it stands at rest. A strip is drawn from the
 start where the script will begin, so nothing jumps when it arrives.
 
