@@ -15,7 +15,9 @@ const origin = "http://tab-page.test";
 type Box = { left: number; top: number; right: number; bottom: number };
 const meets = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
-for (const scale of [1, 1.5]) test(`nothing of the tab page's or the app's is drawn over alphaTab's mark (scale ${scale})`, async ({ page }) => {
+// (A start of 1.0 line spaces is a blank text too short for a mark, as a font that alphaTab takes for a short line would make it:
+// the page finds alphaTab's mark over the app's and grows the text until it is not.)
+for (const [scale, markText] of [[1, undefined], [1.5, undefined], [1, 1.0], [1.5, 1.0]] as const) test(`nothing of the tab page's or the app's is drawn over alphaTab's mark (scale ${scale}, text ${markText ?? "as shipped"})`, async ({ page }) => {
   await page.route(`${origin}/**`, (route) => {
     const path = new URL(route.request().url()).pathname;
     const file = path.startsWith("/alphatab/") ? join(alphatab, path.slice("/alphatab/".length)) : join(pageDir, path === "/" ? "index.html" : path.slice(1));
@@ -34,7 +36,7 @@ for (const scale of [1, 1.5]) test(`nothing of the tab page's or the app's is dr
   // (A tick is counted from the bar's start; strings from the top line.)
   const marks = [{ tick: 0, string: 3, fret: 0 }, { tick: 960, string: 4, fret: 3 }].map((m) => ({ staff: 0, bar: 3, tick: m.tick, notes: [{ string: m.string, fret: m.fret, pitchClass: null, doubt: true }] }));
   const palette = { ink: "#000000", string: "#555555", uncertain: "#0000ff", cursor: "#cc0000", cursorTint: "rgba(204,0,0,0.3)" };
-  await page.evaluate(([s, p, m, sc]) => (window as unknown as { tab: { show: (s: string, o: unknown) => void } }).tab.show(s as string, { scale: sc, palette: p, staff: "tab", doubtful: [], marks: m, markStaff: 0 }), [song, palette, marks, scale]);
+  await page.evaluate(([s, p, m, sc, mt]) => (window as unknown as { tab: { show: (s: string, o: unknown) => void } }).tab.show(s as string, { scale: sc, palette: p, staff: "tab", doubtful: [], marks: m, markStaff: 0, markText: mt }), [song, palette, marks, scale, markText]);
   await expect.poll(() => rendered !== null, { timeout: 20_000 }).toBe(true);
   await page.waitForTimeout(1500);
 
@@ -63,7 +65,7 @@ for (const scale of [1, 1.5]) test(`nothing of the tab page's or the app's is dr
     for (const tick of [0, 480]) {
       await page.evaluate(([b, t]) => (window as unknown as { tab: { cursorAt: (b: number, t: number) => unknown } }).tab.cursorAt(b as number, t as number), [bar, tick]);
       const found = await page.evaluate(() => ["cursor", "beat"].map((id) => { const b = document.getElementById(id)!.getBoundingClientRect(); return { id, left: b.left, top: b.top, right: b.right, bottom: b.bottom, h: b.height }; }));
-      for (const f of found) if (f.h > 0) expect(meets(f, mark!), `${f.id} in bar ${bar} at ${tick}`).toBe(false);
+      for (const f of found) if (f.h > 0) expect(meets(f, mark!), `${f.id} in bar ${bar} at ${tick}: ${JSON.stringify(f)} against ${JSON.stringify(mark)}`).toBe(false);
     }
   }
 });

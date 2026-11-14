@@ -20,11 +20,14 @@
   let placed = []; // [{mark: index into marks, beat, doubtful: [Note]}]
   const MARK_SPACE = ' '; // the blank text of a marked beat: alphaTab keeps a band above the staff for it
   const MARK_LINE_SPACES = 1.4; // a mark's height in tab line spaces
-  // The height of the blank text that keeps the band for a mark. More than the mark: alphaTab 1.9 rests its own
-  // "alphaTab.net" mark above that text, and how tall alphaTab takes a line of text to be depends on the font it finds,
-  // so with the text as tall as the mark alone (or a little over) the two can overlap (the browser test in
-  // studio/browser/apple-tab-page.spec.ts fails then, on some machines' fonts only).
-  const MARK_TEXT_SPACES = 2.0;
+  // The height of the blank text that keeps the band for a mark. A little more than the mark: alphaTab 1.9 rests its own
+  // "alphaTab.net" mark above that text. How tall alphaTab takes a line of text to be depends on the font it finds, so the
+  // page measures where the mark was drawn and, while a mark of the app's stands under it, makes the text taller and
+  // engraves again (publish).
+  const MARK_TEXT_SPACES = 1.6;
+  const MARK_TEXT_STEP = 0.4; // what the text grows by while a mark is still under alphaTab's own
+  const MARK_TEXT_MAX = 4.4;
+  let markText = MARK_TEXT_SPACES;
 
   window.onerror = (msg, src, line) => post({ kind: 'error', message: String(msg) + ' (' + src + ':' + line + ')' });
 
@@ -32,6 +35,15 @@
     const e = at.NotationElement;
     return [e.ScoreTitle, e.ScoreSubTitle, e.ScoreArtist, e.ScoreAlbum, e.ScoreWords, e.ScoreMusic,
       e.ScoreWordsAndMusic, e.ScoreCopyright, e.TrackNames, e.GuitarTuning, e.EffectTempo];
+  }
+
+  // The blank text of a marked beat, at the height markText says (in tab line spaces).
+  function markFont(s) {
+    const r = s.display.resources;
+    const text = r.elementFonts.get(at.NotationElement.EffectText);
+    if (!text) return;
+    const family = text.families ? text.families[0] : text.family;
+    r.elementFonts.set(at.NotationElement.EffectText, new at.model.Font(family, markText * lineSpacing(s), text.style, text.weight));
   }
 
   function settings(opts) {
@@ -59,11 +71,7 @@
     // as a mark, the band is the room the marks need, on the lines that have marks and on no others. The band is lifted
     // by a bar number, so a mark stands above the bar's number.
     try {
-      const text = r.elementFonts.get(at.NotationElement.EffectText);
-      if (text) {
-        const family = text.families ? text.families[0] : text.family;
-        r.elementFonts.set(at.NotationElement.EffectText, new at.model.Font(family, MARK_TEXT_SPACES * lineSpacing(s), text.style, text.weight));
-      }
+      markFont(s);
       s.display.effectBandPaddingBottom = s.display.effectBandPaddingBottom + r.barNumberFont.size;
     } catch (e) { /* an alphaTab without these keeps its own band */ }
     applyPalette(s, opts.palette);
@@ -200,6 +208,23 @@
     return { x: last.realBounds.x + last.realBounds.w - w, y: top, w, h: Math.max(0, staffTop - top) };
   }
 
+  // Where alphaTab drew its "alphaTab.net" mark, in the page's pixels: the curved outlines of the one path that holds it (the
+  // staff lines it rests on are straight). Null when it is not in the engraving.
+  function drawnAttribution() {
+    const origin = el.getBoundingClientRect();
+    for (const path of el.querySelectorAll('svg path')) {
+      const d = path.getAttribute('d') || '';
+      if (!/[Cc]/.test(d) || path.getBBox().width < 40) continue;
+      const probe = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      probe.setAttribute('d', d.split(/(?=M)/).filter((part) => /[Cc]/.test(part)).join(''));
+      path.parentNode.appendChild(probe);
+      const r = probe.getBoundingClientRect();
+      probe.remove();
+      if (r.width > 0 && r.height > 0) return { x: r.left - origin.left - 1, y: r.top - origin.top - 1, w: r.width + 2, h: r.height + 2 }; // (a pixel of margin)
+    }
+    return null;
+  }
+
   // The vertical extent [top, top + height] of a cursor box at x..x+w, kept out of the attribution's zone.
   function clearOfAttribution(x, w, top, height) {
     const z = attribution;
@@ -212,7 +237,7 @@
     beats = new Map(); barBoxes = new Map();
     const lookup = api.boundsLookup;
     if (!lookup) return null;
-    attribution = attributionZone(lookup);
+    attribution = drawnAttribution() || attributionZone(lookup);
     const bars = [];
     for (const sys of lookup.staffSystems) for (const mb of sys.bars) {
       const v = mb.visualBounds;
@@ -248,6 +273,14 @@
     const m = measure();
     if ((!m || m.bars.length === 0) && tries < 60) { requestAnimationFrame(() => publish(tries + 1)); return; }
     if (!m) { post({ kind: 'error', message: 'the page has no bounds' }); return; }
+    // A mark of the app's under alphaTab's own: the text that keeps its band grows, and the page is engraved again.
+    const z = attribution;
+    if (z && markText < MARK_TEXT_MAX && m.marks.some((b) => b.x - b.w / 2 < z.x + z.w && z.x < b.x + b.w / 2 && b.top < z.y + z.h && z.y < b.bottom)) {
+      markText += MARK_TEXT_STEP;
+      markFont(api.settings);
+      setTimeout(() => { api.updateSettings(); api.renderScore(score, [0]); }, 0);
+      return;
+    }
     document.getElementById('page').style.height = m.height + 'px';
     post({ kind: 'rendered', height: m.height, width: el.clientWidth, bars: m.bars, lines: m.lines, marks: m.marks, ms: Math.round(performance.now() - started),
       fonts: [...document.fonts].map((f) => f.family + ':' + f.status) });
@@ -261,6 +294,7 @@
       doubtful = new Set(opts.doubtful || []);
       marks = opts.marks || [];
       markStaff = opts.markStaff || 0;
+      markText = opts.markText || MARK_TEXT_SPACES; // (opts.markText: the starting height, for the tests)
       if (!api) {
         api = new at.AlphaTabApi(el, settings(opts));
         api.error.on((e) => post({ kind: 'error', message: String(e && e.message || e) }));
@@ -268,6 +302,7 @@
       } else {
         // every call is a new page: its size and colours too, as its staves (below)
         api.settings.display.scale = opts.scale || 1;
+        markFont(api.settings);
         applyPalette(api.settings, opts.palette);
         api.updateSettings();
       }
