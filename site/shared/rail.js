@@ -123,6 +123,12 @@ const pen = new IntersectionObserver((entries) => {
     }
   }
 }, { threshold: 0.6 });
-const drawPens = () => document.querySelectorAll(".pen-heading:not(.drawn), .line-hero:not(.drawn)").forEach((el) => pen.observe(el));
+// Once a visit: on a page that has played (early.js), the lines stand drawn from the start.
+const drawPens = () => document.querySelectorAll(".pen-heading:not(.drawn), .line-hero:not(.drawn)").forEach((el) => {
+  if (document.documentElement.classList.contains("played")) {
+    el.classList.add("drawn");
+    document.documentElement.setAttribute("data-penned", "");
+  } else pen.observe(el);
+});
 document.addEventListener("scribe:lang", drawPens);
 drawPens();

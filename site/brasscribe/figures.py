@@ -116,7 +116,7 @@ def hero(page) -> str:
     ink = svg.replace("<svg ", f'<svg class="score-ink" width="{width}" height="{height}" aria-hidden="true" focusable="false" ', 1)
     f = facts(page, data)
     return shared.strip_frame(page, config, ink, wave, width, height, page.say("hero.strip_label", **f), page.say("hero.strip_note", **f),
-                              "score-strip", f" --t: {round(interpolate(points, 6.0))}", header=part["name"][page.lang])
+                              "score-strip", header=part["name"][page.lang])
 
 
 def steps(page) -> str:
