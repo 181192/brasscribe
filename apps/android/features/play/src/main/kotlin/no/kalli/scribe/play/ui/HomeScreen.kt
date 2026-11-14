@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,6 +45,8 @@ import no.kalli.scribe.audio.TakeSink
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -186,20 +189,25 @@ fun HomeScreen(vm: PlayViewModel) {
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin),
             verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
         ) {
+            // Home with nothing made yet says what the app is for. Once there is something under "Your scores", that is
+            // what a player comes back for: the headline, the lead and the lines under the ways in step aside, so the
+            // list starts on the first screen of a small phone. On a short screen (a phone on its side) the connection stands
+            // in the lockup's row and the ways in are one row, the others by their icons, named in full.
+            val kept by vm.keptRecordings.collectAsState()
+            val library = scores.isNotEmpty() || kept.isNotEmpty()
+            val compact = library && shortScreen()
             // The lockup: the mark and the wordmark in the display face, and Settings.
             Row(Modifier.fillMaxWidth().padding(top = ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
                 BrandMark(36.dp)
                 Spacer(Modifier.size(ScribeSpace.s2))
                 Text(stringResource(R.string.brand_name), style = MaterialTheme.typography.headlineMedium.copy(fontFamily = MaterialTheme.typography.displaySmall.fontFamily),
-                    modifier = Modifier.weight(1f))
+                    modifier = if (compact) Modifier else Modifier.weight(1f))
+                if (compact) {
+                    ConnectionStatusRow(vm, Modifier.weight(1f).padding(horizontal = ScribeSpace.s4), brief = true)
+                }
                 IconButton({ vm.navigate(Screen.HELP) }, Modifier.size(48.dp)) { BcIcon(DesignR.drawable.ic_bc_help, stringResource(R.string.help)) }
                 IconButton({ vm.navigate(Screen.SETTINGS) }, Modifier.size(48.dp)) { BcIcon(DesignR.drawable.ic_bc_settings, stringResource(R.string.settings)) }
             }
-            // Home with nothing made yet says what the app is for. Once there is something under "Your scores", that is
-            // what a player comes back for: the headline, the lead and the lines under the ways in step aside, so the
-            // list starts on the first screen of a small phone.
-            val kept by vm.keptRecordings.collectAsState()
-            val library = scores.isNotEmpty() || kept.isNotEmpty()
             if (!library) {
                 Text(
                     buildAnnotatedString {
@@ -212,26 +220,38 @@ fun HomeScreen(vm: PlayViewModel) {
                 Lead(stringResource(R.string.home_tagline))
             }
             // (With a library the row is one line: what not being connected means is known by then.)
-            ConnectionStatusRow(vm, brief = library)
+            if (!compact) {
+                ConnectionStatusRow(vm, brief = library)
+            }
             StatusLine(status)
             val importProgress by vm.importProgress.collectAsState()
             if (busy) importProgress.let { p ->
                 if (p != null && p > 0f) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border, drawStopIndicator = {})
                 else LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
             }
-            PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = DesignR.drawable.ic_bc_import_file)
-            RowGroup {
-                ListRow(stringResource(R.string.home_record_mic), recorder.startMicrophone, icon = DesignR.drawable.ic_bc_record_mic,
-                    subtitle = stringResource(R.string.home_record_mic_desc).takeIf { !library }, enabled = !busy)
-                RowDivider()
-                ListRow(stringResource(R.string.home_record_device), recorder.askDevice, icon = DesignR.drawable.ic_bc_record_device,
-                    subtitle = stringResource(R.string.home_record_device_desc).takeIf { !library }, enabled = !busy)
+            val openScoreAction = {
                 // Most pickers give MusicXML no type of its own, so the wildcard has to be there too.
-                if (vm.container.product.opensScores) {
+                pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
+            }
+            // On its side: Open a recording and the icons in one row. Upright: Open a recording, the icons under it.
+            if (compact) {
+                Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
+                    PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, Modifier.weight(1f), enabled = !busy, icon = DesignR.drawable.ic_bc_import_file)
+                    OtherWaysIn(recorder, if (vm.container.product.opensScores) openScoreAction else null, busy, Modifier.width(72.dp))
+                }
+            } else {
+                PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = DesignR.drawable.ic_bc_import_file)
+                // (With a library the rows leave out their chevrons, so their words keep to one line on a small phone.)
+                RowGroup {
+                    ListRow(stringResource(R.string.home_record_mic), recorder.startMicrophone, icon = DesignR.drawable.ic_bc_record_mic,
+                        subtitle = stringResource(R.string.home_record_mic_desc).takeIf { !library }, enabled = !busy, chevron = !library)
                     RowDivider()
-                    ListRow(stringResource(R.string.home_open_score), {
-                        pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
-                    }, icon = DesignR.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy)
+                    ListRow(stringResource(R.string.home_record_device), recorder.askDevice, icon = DesignR.drawable.ic_bc_record_device,
+                        subtitle = stringResource(R.string.home_record_device_desc).takeIf { !library }, enabled = !busy, chevron = !library)
+                    if (vm.container.product.opensScores) {
+                        RowDivider()
+                        ListRow(stringResource(R.string.home_open_score), openScoreAction, icon = DesignR.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy, chevron = !library)
+                    }
                 }
             }
             if (!library) InfoNote(stringResource(R.string.home_links_tip), boxed = false)
@@ -430,3 +450,24 @@ fun RecordScreen(vm: PlayViewModel) {
 
 /** Whole minutes of a 48 kHz take the phone keeps in memory to make its score itself. */
 fun phoneMinutes(): Int = (no.kalli.scribe.audio.AudioDecoder.maxSamplesInMemory / (48_000L * 60)).toInt()
+
+/**
+ * The ways in after Open a recording, by their icons, each [modifier] wide (in a row the caller makes). While a
+ * recording is being opened ([busy]) they do nothing, as the rows do.
+ */
+@Composable
+private fun OtherWaysIn(recorder: Recorder, openScore: (() -> Unit)?, busy: Boolean, modifier: Modifier) {
+    WayIn(DesignR.drawable.ic_bc_record_mic, stringResource(R.string.home_record_mic), { if (!busy) recorder.startMicrophone() }, modifier.testTag("home-record-mic"))
+    WayIn(DesignR.drawable.ic_bc_record_device, stringResource(R.string.home_record_device), { if (!busy) recorder.askDevice() }, modifier.testTag("home-record-device"))
+    if (openScore != null) WayIn(DesignR.drawable.ic_bc_file, stringResource(R.string.home_open_score), { if (!busy) openScore() }, modifier.testTag("home-open-score"))
+}
+
+/** A way in by its icon alone, named in full for a screen reader: in a row of them where Home has little height. */
+@Composable
+private fun WayIn(@androidx.annotation.DrawableRes icon: Int, name: String, onClick: () -> Unit, modifier: Modifier) {
+    androidx.compose.material3.OutlinedButton(onClick, modifier.heightIn(min = 48.dp).semantics { contentDescription = name }, shape = no.kalli.scribe.design.ScribeButtonShape,
+        border = androidx.compose.foundation.BorderStroke(1.dp, ScribeTheme.colors.borderStrong),
+        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = ScribeTheme.colors.text)) {
+        BcIcon(icon, null)
+    }
+}
