@@ -126,6 +126,12 @@ struct PracticeView: View {
         #endif
     }
 
+    /// A short phone screen (an iPhone SE, any phone on its side): the player keeps to two rows, so its share of
+    /// the height holds all of it. The screen is about 600 pt high under the navigation bar on an SE and 690 pt
+    /// on the smallest phone with a taller screen.
+    static let shortScreenHeight: CGFloat = 660
+    private var short: Bool { !wide && screenHeight > 0 && screenHeight < Self.shortScreenHeight }
+
     #if os(macOS)
     /// The parts column's width, and the screen width from which the score and the column both fit.
     static let partsWidth: CGFloat = 320
@@ -170,7 +176,7 @@ struct PracticeView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 if let missing = model.bandSoundsMissing { BandSoundsMissingLine(details: missing.details) }
-                PlayerBar(model: model, wide: wide).layoutProbe("playerBar")
+                PlayerBar(model: model, wide: wide, short: short).layoutProbe("playerBar")
             }
             // the phone's chrome grows to about twice the default text size; past that the music keeps its room
             .dynamicTypeSize(wide ? DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility5 : DynamicTypeSize.xSmall ... DynamicTypeSize.accessibility2)
@@ -355,7 +361,9 @@ struct ScoreToolbar: View {
                         HStack(spacing: Space.s2) { parts; Spacer(minLength: 0); view }
                         sourcePill
                     }
-                    VStack(alignment: .leading, spacing: Space.s1) { parts; sourcePill; view }
+                    // where the pill's words do not fit beside or under the part (larger text, a narrow phone): one row,
+                    // the pill as its icon (its name and explanation unchanged), so View is not pushed out of the band
+                    HStack(spacing: Space.s2) { parts; sourcePill(iconOnly: true); Spacer(minLength: 0); viewMenu(iconOnly: true) }
                 }
             } else if typeSize >= .accessibility1 {
                 // the largest text sizes: one control per row, nothing squeezed
@@ -402,8 +410,10 @@ struct ScoreToolbar: View {
     }
 
     /// Where the part shown comes from: a small outline pill that explains itself.
-    @ViewBuilder private var sourcePill: some View {
-        if let id = model.shownPart, let kind = model.partSources[id] { SourceLabel(kind: kind, compact: true) }
+    private var sourcePill: some View { sourcePill(iconOnly: false) }
+
+    @ViewBuilder private func sourcePill(iconOnly: Bool) -> some View {
+        if let id = model.shownPart, let kind = model.partSources[id] { SourceLabel(kind: kind, compact: true, iconOnly: iconOnly) }
     }
 
     @ViewBuilder private var controls: some View {
@@ -623,6 +633,8 @@ struct BandSoundsMissingLine: View {
 struct PlayerBar: View {
     @Bindable var model: PracticeModel
     let wide: Bool
+    /// A short phone screen: Speed and the practice menu on one row under the transport.
+    var short = false
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var editRepeat = false
 
@@ -821,6 +833,20 @@ struct PlayerBar: View {
     /// words), the practice controls are one menu, as at the accessibility sizes: four chips one over the other
     /// took the score's room and left the last of them under the screen.
     @ViewBuilder private var chipsPhone: some View {
+        if short {
+            // A short screen (an iPhone SE) has room under the score for one row: Speed, and Practice with the rest
+            // (Repeat, Mute my part, count-in, metronome, the recording). Two rows ran under the screen's edge.
+            ViewThatFits(in: .horizontal) {
+                // Speed as wide as its words: cut, it would hide the speed it names
+                HStack(spacing: Space.s2) { speedChip.fixedSize(horizontal: true, vertical: false); practiceMenuAll }.lineLimit(1)
+                practiceMenuAll
+            }
+        } else {
+            chipRows
+        }
+    }
+
+    @ViewBuilder private var chipRows: some View {
         ViewThatFits(in: .horizontal) {
             VStack(spacing: Space.s2) {
                 HStack(spacing: Space.s2) { speedChip; repeatChip }

@@ -2,7 +2,8 @@ import XCTest
 
 #if os(iOS)
 /// On a phone the music keeps the screen: the score gets at least 55 % of the height inside the safe
-/// area and at least two systems, at the default text size, at XXL (also in bokmål) and at AX3, and no control sits over it.
+/// area and at least two systems, at the default text size, at XXL (also in bokmål) and at AX3, and no control sits over it
+/// or is cut by the screen's edge. Run on the newest iPhone and on an iPhone SE, the shortest screen (`make test-iphone-small`).
 final class ScoreHeightUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -32,6 +33,10 @@ final class ScoreHeightUITests: XCTestCase {
         XCTAssertTrue(score.waitForExistence(timeout: 60))
         let staves = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'staff-'"))
         XCTAssertTrue(staves.firstMatch.waitForExistence(timeout: 60))
+        let picture = XCTAttachment(screenshot: app.screenshot())
+        picture.name = "score-\(textSize ?? "default")-\(nb ? "nb" : "en")"
+        picture.lifetime = .keepAlways
+        add(picture)
 
         // the safe area: from the top of the navigation bar to the bottom of the practice screen
         let nav = app.navigationBars.firstMatch.frame
