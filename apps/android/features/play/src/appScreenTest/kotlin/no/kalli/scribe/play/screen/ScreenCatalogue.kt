@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.SemanticsMatcher
 import no.kalli.scribe.play.Appearance
 import no.kalli.scribe.test.Slow
@@ -36,7 +37,10 @@ abstract class ScreenCatalogue : ScreenTest() {
         val name: String, val steady: Boolean = true, val ownOrder: String? = null,
         val cutAtLargeText: Set<String> = emptySet(), val notReached: Set<Control> = emptySet(),
         /** Test tags of elements left out of the order comparison (an image that sits outside the scrolling part), and whatever has its bounds; the rest is still compared. */
-        val apartFromOrder: Set<String> = emptySet(), val open: () -> Unit,
+        val apartFromOrder: Set<String> = emptySet(),
+        /** The test tag of the screen's primary button where it is to be in view, whole, as the screen opens, also on a small phone on its side. */
+        val primaryInView: String? = null,
+        val open: () -> Unit,
     )
 
     /**
@@ -153,12 +157,18 @@ abstract class ScreenCatalogue : ScreenTest() {
         onEveryScreen("small") { assertNoTextIsClipped() }
     }
 
-    /** The small phone on its side (640 × 360 dp): the least height a screen gets. Nothing is cut off. */
+    /** The small phone on its side (640 × 360 dp): the least height a screen gets. Nothing is cut off, and a screen's primary button is in view where it has one docked. */
     @Test
     fun onASmallPhoneOnItsSide() {
         rule.runOnUiThread { container.updateAppearance(Appearance.LIGHT) }
         assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
-        onEveryScreen("small-landscape") { assertNoTextIsClipped() }
+        onEveryScreen("small-landscape") { screen ->
+            assertNoTextIsClipped()
+            screen.primaryInView?.let { tag ->
+                val primary = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
+                assertEquals("the primary button ($tag) is in view, whole", primary.size.height.toFloat(), primary.boundsInWindow.height, 1f)
+            }
+        }
     }
 
     @Test

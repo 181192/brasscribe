@@ -19,7 +19,6 @@ import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.ViewModelProvider
 import no.kalli.scribe.engine.FixtureSource
 import no.kalli.scribe.play.screen.ScreenDevice
@@ -79,11 +78,11 @@ abstract class TabScreenTest : ScreenTest() {
         waitForTag("fs-what-continue", 20_000)
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performClick()
-        rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-what-continue").performClick()
         waitForTag("fs-show-tab")
         rule.onNode(isHeading() and androidx.compose.ui.test.hasText(text(R.string.fs_check_title))).assertIsDisplayed()
         showing = true
-        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-show-tab").performClick()
         return engraved()
     }
 

@@ -133,12 +133,6 @@ fun ExportScreen(vm: PlayViewModel) {
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
-            laying?.let { (done, of) ->
-                androidx.compose.material3.LinearProgressIndicator({ if (of == 0) 0f else done.toFloat() / of }, Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
-                // Not a live region: Every part would be said some 25 times. Its end is said (exported).
-                Text(stringResource(R.string.export_laying_out, minOf(done + 1, of), of), style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.semantics { testTag = "export-progress" })
-            }
             val printButton = @Composable { m: Modifier -> PrimaryButton(stringResource(R.string.export_print), {
                 // Every part: one print job, the players' PDFs one after another.
                 make { files ->
@@ -170,10 +164,15 @@ fun ExportScreen(vm: PlayViewModel) {
                 if (print) printButton(Modifier)
                 Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) { shareAndSave(Modifier.weight(1f)) }
             }
-            Text(
-                pluralStringResource(R.plurals.export_count, fileCount, fileCount),
-                style = MaterialTheme.typography.bodySmall, color = c.textMuted,
-            )
+        },
+        // (Not among the buttons: they stay where they are while the pages are laid out.)
+        progress = laying?.let { (done, of) ->
+            {
+                androidx.compose.material3.LinearProgressIndicator({ if (of == 0) 0f else done.toFloat() / of }, Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
+                // Not a live region: Every part would be said some 25 times. Its end is said (exported).
+                Text(stringResource(R.string.export_laying_out, minOf(done + 1, of), of), style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.semantics { testTag = "export-progress" })
+            }
         },
     ) {
         ScreenTitle(stringResource(R.string.export_title))
@@ -218,6 +217,11 @@ fun ExportScreen(vm: PlayViewModel) {
                 )
             }
         }
+        // How many files the choices above make: under them, and not in the band with the buttons, which then stay docked on a short screen.
+        Text(
+            pluralStringResource(R.plurals.export_count, fileCount, fileCount),
+            style = MaterialTheme.typography.bodySmall, color = c.textMuted,
+        )
         InfoNote(stringResource(R.string.export_marks_note), boxed = false)
     }
 }

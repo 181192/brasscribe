@@ -309,7 +309,7 @@ class TabViewTest : TabScreenTest() {
         rule.onNodeWithTag("fs-tab-tuning").performClick()
         waitForTag("fs-show-tab")
         assertEquals(listOf(Screen.HOME, Screen.PROFILE, Screen.OUTPUT), vm.screen.value)
-        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-show-tab").performClick()
         engraved()
         // The line goes to the first "?" on the page, with its note open, and stays on the tab.
         rule.onNodeWithTag("fs-tab-marked").performClick()
@@ -910,7 +910,7 @@ class TabViewTest : TabScreenTest() {
         assertEquals("at 100 % again the same line is at the top", reading, barInView(tab))
         rule.onNodeWithTag("fs-tab-tuning").performClick()
         waitForTag("fs-show-tab")
-        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-show-tab").performClick()
         assertStillThere("after Check the song")
         assertEquals(reading, barInView(tab))
     }

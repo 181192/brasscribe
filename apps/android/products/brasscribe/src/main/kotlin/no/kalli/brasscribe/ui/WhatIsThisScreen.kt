@@ -99,11 +99,7 @@ fun ProfileScreen(vm: PlayViewModel) {
     PlayScaffold(
         title = source?.let { s -> if (s.durationS > 0) "${s.name} · ${clock(s.durationS)}" else s.name },
         onBack = vm::back, backLabel = stringResource(R.string.home), status = status,
-        bottom = {
-            if (profile == null) Text(stringResource(R.string.profile_choose_one), style = MaterialTheme.typography.bodyMedium,
-                color = ScribeTheme.colors.textMuted)
-            PrimaryButton(stringResource(R.string.continue_label), vm::startTranscription, enabled = ready, modifier = Modifier.semantics { testTag = "continue" })
-        },
+        bottom = { PrimaryButton(stringResource(R.string.continue_label), vm::startTranscription, enabled = ready, modifier = Modifier.semantics { testTag = "continue" }) },
     ) {
         ScreenTitle(stringResource(R.string.profile_title), Modifier.focusRequester(headingFocus).focusable())
         Lead(stringResource(R.string.profile_hint))
@@ -119,6 +115,9 @@ fun ProfileScreen(vm: PlayViewModel) {
             OutlineButton(stringResource(R.string.change_what_i_play), { vm.openSeatPicker(no.kalli.scribe.play.SeatPickerMode.SETTINGS) })
         }
         Text(stringResource(R.string.profile_not_sure), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
+        // (Last in the content, right over the button, and not in the band with it: a lone button stays docked on a short screen.)
+        if (profile == null) Text(stringResource(R.string.profile_choose_one), style = MaterialTheme.typography.bodyMedium,
+            color = ScribeTheme.colors.textMuted)
         if (profile != null) {
             val onPhone = where == Where.DEVICE
             RowGroup {

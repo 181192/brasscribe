@@ -176,7 +176,7 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
             rule.onNodeWithTag("fs-check-change-capo").performScrollTo().assert(hasText(w[5])).assertHeightIsAtLeast(48.dp)
             rule.onNodeWithTag("fs-check-left-out").performScrollTo().assertContentDescriptionEquals(w[6])
             rule.onNodeWithTag("fs-check-added").performScrollTo().assertContentDescriptionEquals(w[7])
-            rule.onNodeWithText(w[8]).assertIsDisplayed()
+            rule.onNodeWithText(w[8]).performScrollTo().assertIsDisplayed()
             checkAccessibility()
             rule.onNodeWithTag("fs-check-tuning").performScrollTo()
             shot("guitar-check-the-song-${lang.take(2)}-light")

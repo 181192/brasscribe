@@ -377,6 +377,8 @@ fun PlayScaffold(
     backLabel: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
     bottom: (@Composable ColumnScope.() -> Unit)? = null,
+    /** How far something under way has come: over the actions like a status message, and like it no part of their measure. */
+    progress: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Scaffold(
@@ -412,8 +414,10 @@ fun PlayScaffold(
                             verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3), content = bottom,
                         )
                     }
-                    Box(Modifier.layoutId(Part.STATUS).fillMaxWidth().padding(horizontal = ScreenMargin)) {
-                        StatusLine(status, Modifier.padding(top = if (bottom != null) ScribeSpace.s3 else ScribeSpace.s0))
+                    Column(Modifier.layoutId(Part.STATUS).fillMaxWidth().background(ScribeTheme.colors.bg).padding(horizontal = ScreenMargin)) {
+                        val over = Modifier.padding(top = if (bottom != null) ScribeSpace.s3 else ScribeSpace.s0)
+                        StatusLine(status, over)
+                        if (progress != null) Column(over, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3), content = progress)
                     }
                 },
             ) { parts, constraints ->
@@ -465,7 +469,8 @@ private enum class Part { CONTENT, HAIRLINE, ACTIONS, STATUS }
 
 /**
  * The most of the height under the top bar and above the navigation bar that docked actions may take: a third. Taller
- * ones scroll with the content. (One button stays docked on a phone on its side; a button with a line over it does not.)
+ * ones scroll with the content. (One button stays docked on a phone on its side; with a line of text over it, it would not: such a line
+ * belongs last in the content.)
  */
 private const val BAND_SHARE = 1 / 3f
 

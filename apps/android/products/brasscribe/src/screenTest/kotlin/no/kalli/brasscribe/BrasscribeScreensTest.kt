@@ -107,7 +107,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("home-score-options") { theScoresOptions() },
         Entry("home-score-delete") { theScoresOptions(); rule.onNodeWithTag("score-delete").performClick(); rest() },
         Entry("record") { go(Screen.RECORD) },
-        Entry("what-is-this") { whatIsThis() },
+        Entry("what-is-this", primaryInView = "continue") { whatIsThis() },
         Entry("transcribing", steady = false) {
             whatIsThis()
             rule.runOnUiThread { vm.chooseProfile(Profile.ORCHESTRA_WITH_SOLOIST); vm.where.value = Where.COMPANION; vm.startTranscription() }
@@ -125,7 +125,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
             waitForTag("stand-score", 20_000)
             rest()
         },
-        Entry("share-or-print") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }; go(Screen.EXPORT); rest() },
+        Entry("share-or-print", primaryInView = "print") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }; go(Screen.EXPORT); rest() },
         Entry("settings") { go(Screen.SETTINGS) },
         Entry("computer") { go(Screen.SETTINGS, Screen.COMPANION) },
         Entry("computer-scanner") { pairingScanner(); waitForTag("pair-camera", 5_000) },

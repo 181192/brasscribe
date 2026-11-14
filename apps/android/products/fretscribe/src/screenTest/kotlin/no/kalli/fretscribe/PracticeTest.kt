@@ -156,9 +156,9 @@ class PracticeTest : ScreenTest() {
         waitForTag("fs-what-continue", 20_000)
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performClick()
-        rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-what-continue").performClick()
         waitForTag("fs-show-tab")
-        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-show-tab").performClick()
         val tab = engraved()
         waitForTag("fs-practice-play", 20_000)
         return tab
