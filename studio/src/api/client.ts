@@ -5,7 +5,7 @@ import type {
   JobEvent, Manifest, PagesJob, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
   SuiteRun, ValidationIssue, PartSources,
 } from "./types";
-import { pageFormat, type SheetSummary } from "../lib/pages";
+import { inputKind, type SheetSummary } from "../lib/pages";
 import { interfaceMatch, type InterfaceMatch } from "./wire";
 
 /** The engine answered 404 for a route it does not have (as opposed to a missing resource). */
@@ -241,31 +241,18 @@ export const api = {
   sheetSummary: (id: string, opts?: CallOptions) =>
     get<SheetSummary>(`/v1/jobs/${enc(id)}/artifacts/sheet.json`, "GET /v1/jobs/{id}/artifacts/{name}", undefined, opts),
   /**
-   * The input of a job that read pages. What it is, is read from its first bytes: a picture is fetched whole,
-   * to be shown; of a PDF or an archive (which may be large) no more than that is fetched.
+   * The input of a job that read pages. What it is, is said by the answer's media type: a picture is fetched whole,
+   * to be shown; of a PDF or an archive (which may be large) nothing more than the headers is fetched.
    */
   pagesInput: async (id: string, opts: CallOptions = {}): Promise<PagesInput> => {
     const r = await request(`/v1/jobs/${enc(id)}/input`, { signal: opts.signal }, 300);
     if (!r.ok) return fail(r, "GET /v1/jobs/{id}/input");
-    const reader = r.body!.getReader();
-    const chunks: Uint8Array[] = [];
-    let head = new Uint8Array(0);
-    let type: string | undefined;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (value) {
-        chunks.push(value);
-        if (head.length < 12) head = Uint8Array.of(...head, ...value.subarray(0, 12));
-      }
-      if (type === undefined && (head.length >= 12 || done)) {
-        type = pageFormat(head) ?? "";
-        if (!type.startsWith("image/")) {
-          await reader.cancel().catch(() => undefined);
-          return { kind: type === "application/pdf" ? "pdf" : type === "application/zip" ? "archive" : "other" };
-        }
-      }
-      if (done) return { kind: "picture", picture: new Blob(chunks as BlobPart[], { type }) };
+    const what = inputKind(r.headers.get("Content-Type"));
+    if (what.kind !== "picture") {
+      await r.body?.cancel().catch(() => undefined);
+      return what;
     }
+    return { kind: "picture", picture: new Blob([await r.arrayBuffer()], { type: what.type }) };
   },
   eventsUrl: (id: string, after = -1) => url(`/v1/jobs/${enc(id)}/events?after=${after}`),
   suites: () => get<SuiteInfo[]>("/v1/suites"),

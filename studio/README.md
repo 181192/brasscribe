@@ -92,7 +92,7 @@ Screenshots go to `docs/screenshots/`.
   - FFT, spectrogram and energy
   - the talking score (`talking.ts`, checked against `docs/shared/accessibility/talking-score-vectors.json`), built from MusicXML (`talkingxml.ts`) and navigated by note, beat, bar, part and uncertain note (`navigator.ts`)
   - the notation diff that marks changed notes in Compare (`xmldiff.ts`)
-  - pages of printed music as a run's input (`pages.ts`): which profiles read them, their order and limits in the new-run form, what a run's input is by its first bytes, and the engine's fixed words for pages that could not be read
+  - pages of printed music as a run's input (`pages.ts`): which profiles read them, their order and limits in the new-run form, what a run's input is by the media type the engine sends it with, and the engine's fixed words for pages that could not be read; the instruments and tunings a tab from pages is written for (`fretted.ts`), checked against the engine's
   - what a score's staves show (notation, tablature or both) and the alphaTab stave profile that draws it (`stavelayout.ts`)
 - `src/components/`: custom elements:
   - `bs-score`: alphaTab with transport, loop, speed, zoom, parts, mute and solo, and keyboard navigation; a score, a tab, or a tab under its notation, as the file has it

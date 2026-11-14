@@ -249,6 +249,7 @@ class PagesTest {
         }
         // What the computer refuses before a job is made.
         assertEquals(R.string.error_page_too_large, ErrorWords.of(EngineException(413, "v1/jobs/pages: 413", InputRefusal.PAGE_TOO_LARGE)))
+        assertEquals(R.string.error_too_many_pages, ErrorWords.of(EngineException(413, "v1/jobs/pages: 413", InputRefusal.TOO_MANY_PAGES)))
         assertEquals(R.string.error_reader_missing, ErrorWords.of(EngineException(503, "v1/jobs/pages: 503", InputRefusal.READER_MISSING)))
         assertEquals(Problem.PAGES_FAILED, PlayViewModel.pagesProblem(EngineException(503, "v1/jobs/pages: 503", InputRefusal.READER_MISSING)))
         assertEquals(Problem.PAGES_FAILED, PlayViewModel.pagesProblem(PagesNotReadException()))

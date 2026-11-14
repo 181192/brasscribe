@@ -96,6 +96,16 @@ export const VIEWS: View[] = [
   // Printed music as the source: the pages in order, each with the buttons that move it or take it out, and the
   // profiles that read pages.
   { name: "runs-pages", route: "runs", prepare: pagesChosen },
+  // A tab from pages: the instrument and its tuning, a ukulele's two offered once it is chosen.
+  {
+    name: "runs-pages-tab", route: "runs",
+    prepare: async (p) => {
+      await pagesChosen(p);
+      await p.locator("#run-profile").selectOption("sheet-tab");
+      await p.locator("#run-instrument").selectOption("ukulele");
+      await expect(p.locator("#run-tuning option")).toHaveCount(2);
+    },
+  },
   // The pages sent and turned down by the engine (one of them is not a page): the reason in Studio's words.
   {
     name: "runs-pages-refused", route: "runs", expectedErrors: [/status of 415/],

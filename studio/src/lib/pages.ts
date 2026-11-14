@@ -1,6 +1,6 @@
 // Pages: printed music a job reads instead of a recording (pictures or PDFs, in order). What the new-run
 // form and the run view need to know of them, apart from the DOM.
-import type { Job, ProfileInfo } from "../api/types";
+import type { ProfileInfo } from "../api/types";
 
 /** What a job reads: a recording, or pages of printed music. */
 export type Input = ProfileInfo["input"];
@@ -8,6 +8,8 @@ export type Input = ProfileInfo["input"];
 /** The most pages one job takes, and the largest one file may be (engine: pages.py). */
 export const MAX_PAGES = 40;
 export const MAX_PAGE_BYTES = 50 * 1024 * 1024;
+/** The two limits as the words say them: {max} pages, {mb} MB. */
+export const PAGE_LIMITS = { max: MAX_PAGES, mb: MAX_PAGE_BYTES / 1024 / 1024 };
 
 /** What the file chooser offers for pages. A file is a page by what it holds, which the engine reads; this is by its name. */
 export const PAGE_ACCEPT = "image/png,image/jpeg,image/webp,application/pdf,.png,.jpg,.jpeg,.webp,.pdf";
@@ -38,27 +40,18 @@ export function pagesProblem(files: readonly { size: number }[]): "none" | "too_
   return files.some((f) => f.size > MAX_PAGE_BYTES) ? "too_large" : null;
 }
 
-/**
- * The job read pages. Its profile says so where the engine lists it; a run kept from before the reader was
- * taken off the computer is known by its first stage, which reads the pages.
- */
-export function readsPages(job: Pick<Job, "profile" | "stages">, profiles: ProfileInfo[]): boolean {
-  const profile = profiles.find((p) => p.name === job.profile);
-  return profile ? profile.input === "pages" : job.stages[0]?.name === "read";
-}
+/** The pictures a job's input is shown as, by the media type the engine sends it with; anything else is a file to open. */
+const PICTURES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 /**
- * The media type of a job's input, by its first bytes (as the engine tells pages apart): a picture, a PDF, or
- * the archive several pages are kept as. Null for anything else.
+ * What a job's input is, by the media type of the engine's answer: one of the three pictures (the blob's type is
+ * taken from this fixed list, never from the header), a PDF, the archive several pages are kept as, or other.
  */
-export function pageFormat(head: Uint8Array): "image/png" | "image/jpeg" | "image/webp" | "application/pdf" | "application/zip" | null {
-  const starts = (...bytes: number[]) => bytes.every((b, i) => head[i] === b);
-  const text = (from: number, s: string) => [...s].every((c, i) => head[from + i] === c.charCodeAt(0));
-  if (starts(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return "image/png";
-  if (starts(0xff, 0xd8, 0xff)) return "image/jpeg";
-  if (text(0, "RIFF") && text(8, "WEBP")) return "image/webp";
-  if (text(0, "%PDF-")) return "application/pdf";
-  return text(0, "PK") ? "application/zip" : null;
+export function inputKind(contentType: string | null): { kind: "picture"; type: (typeof PICTURES)[number] } | { kind: "pdf" | "archive" | "other" } {
+  const media = (contentType ?? "").split(";")[0].trim().toLowerCase();
+  const picture = PICTURES.find((t) => t === media);
+  if (picture) return { kind: "picture", type: picture };
+  return { kind: media === "application/pdf" ? "pdf" : media === "application/zip" ? "archive" : "other" };
 }
 
 /** The words a job that could not read its pages ends its error with (engine: sheet.py), by the name Studio's own words have. */

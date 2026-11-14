@@ -82,6 +82,7 @@ object ErrorWords {
             "band_writer_not_set_up" -> R.string.error_band_writer_not_set_up
             no.kalli.scribe.engine.InputRefusal.NOT_A_PAGE -> R.string.error_not_a_page
             no.kalli.scribe.engine.InputRefusal.PAGE_TOO_LARGE -> R.string.error_page_too_large
+            no.kalli.scribe.engine.InputRefusal.TOO_MANY_PAGES -> R.string.error_too_many_pages
             no.kalli.scribe.engine.InputRefusal.READER_MISSING -> R.string.error_reader_missing
             else -> when (e.status) {
                 0 -> R.string.error_unreachable
