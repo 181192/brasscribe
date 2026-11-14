@@ -1,54 +1,98 @@
-/* The family home. Its colours and type are the family's own tokens (design/brands/scribe, the midpoint of the
-   brands'); each app's part carries data-brand, and inside it every token is that app's (assets/brands.css), so
-   the apps look like themselves side by side. */
+/* The family's pages: the desk. Its colours and type are the family's own tokens (design/brands/scribe: the
+   midpoint of the brands', one step back, so an app's sheet is the lightest thing on it) and its one motif is the
+   pen line (line.css: --family-pen-…). Each app's part carries data-brand, and inside it every token is that app's
+   (assets/brands.css), so the apps lie on the desk as sheets of their own paper. */
 
-h2 { font-weight: 650; letter-spacing: -0.02em; font-size: clamp(1.6rem, 3.4vw, 2.25rem); }
-.brand-text { font-weight: 650; font-size: 1.0625rem; color: var(--scribe-text); min-height: 44px; }
+h1, h2 { font-family: var(--scribe-font-display); font-weight: var(--family-display-weight); letter-spacing: var(--family-display-tracking); }
+h1 { font-size: clamp(2.25rem, 6vw, 3.75rem); line-height: 1.08; }
+h2 { font-size: clamp(1.75rem, 3.4vw, 2.25rem); }
 section + section { border-top: 0; }
+main > section:nth-of-type(even) { background: var(--scribe-surface); }
 
-/* The headline: one line in each app's own voice. */
-.family-hero { padding: var(--scribe-space-12) 0 var(--scribe-space-8); }
-.family-hero h1 { font-size: clamp(2.35rem, 7.2vw, 4.5rem); line-height: 1.08; margin-bottom: var(--scribe-space-6); }
-.voice { display: block; font-family: var(--scribe-font-display); color: var(--scribe-brand-text); }
-.voice[data-brand="fretscribe"] { font-weight: 600; font-size: 0.86em; letter-spacing: -0.02em; line-height: 1.25; }
+/* The pen line: drawn under the last words of the headline and under every heading of a section, ending in its dot.
+   Always ink, always horizontal; it is never a brand's colour. */
+.pen-words { background: linear-gradient(currentColor, currentColor) 0 92% / 100% var(--family-pen-width) no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding-bottom: 0.08em; }
+.pen-words::after {
+  content: ""; display: inline-block; width: var(--family-pen-dot); height: var(--family-pen-dot); border-radius: 50%;
+  background: currentColor; margin-left: 2px; vertical-align: -0.16em;
+}
+.pen-heading::after {
+  content: ""; display: block; width: 72px; height: var(--family-pen-dot); margin-top: var(--scribe-space-3);
+  background: radial-gradient(circle at calc(100% - var(--family-pen-dot) / 2) 50%, currentColor calc(var(--family-pen-dot) / 2 - 0.5px), transparent calc(var(--family-pen-dot) / 2)),
+    linear-gradient(currentColor, currentColor) 0 50% / calc(100% - var(--family-pen-dot) + 1px) var(--family-pen-width) no-repeat;
+}
+@media (forced-colors: active) { .pen-words { text-decoration: underline; background: none; } }
 
-/* The two apps, each at work in its own colours and type. */
-.apps { padding: 0 0 var(--scribe-space-12); }
-.apps > .wrap > h2 { margin-bottom: var(--scribe-space-5); }
-.app-devices { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
-.app-devices a { color: var(--scribe-text-muted); display: inline-block; min-height: 24px; }
+/* 1. The line: what it is, in five words, and a door to each app. */
+.line-hero { padding: var(--scribe-space-12) 0 var(--scribe-space-10); }
+.line-hero h1 { max-width: 13em; margin-bottom: var(--scribe-space-5); }
+.line-hero .lead { max-width: 34em; }
+.doors { list-style: none; margin: var(--scribe-space-6) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--scribe-space-3); }
+.door { gap: 10px; background: var(--scribe-surface-raised); }
+.door .chip { width: 12px; height: 12px; }
+.text-link { display: inline-flex; align-items: center; min-height: 48px; font-weight: 600; }
+
+/* 2. The apps: a sheet each, in its own paper and face, laid on the desk. */
+.apps { padding: var(--scribe-space-4) 0 var(--scribe-space-16); }
 .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--scribe-space-6); }
 .app {
-  display: flex; flex-direction: column; overflow: hidden;
+  position: relative; display: flex; flex-direction: column; overflow: hidden; scroll-margin-top: calc(52px + var(--scribe-space-4));
   background: var(--scribe-bg); color: var(--scribe-text); font-family: var(--scribe-font-text);
-  border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); box-shadow: var(--scribe-elevation-2);
+  border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md);
 }
+/* Pointing at a sheet puts the family's pen on it: its line drawn along the sheet's top edge. */
+.app::before {
+  content: ""; position: absolute; left: 0; top: 0; height: var(--family-pen-width); width: 0; background: var(--family-bar);
+  transition: width var(--scribe-duration-slow) ease-out;
+}
+.app:hover::before, .app:focus-within::before { width: 100%; }
+@media (prefers-reduced-motion: reduce) { .app::before { transition: none; } }
 .app .strip { margin: 0; }
 .app .strip-stage { --pen: 46%; background: var(--scribe-surface-raised); border-top: 0; -webkit-mask-image: none; mask-image: none; }
 .app .strip-controls, .app .strip figcaption { padding: 0 var(--scribe-space-5); }
-.app-text { padding: var(--scribe-space-6) var(--scribe-space-5) var(--scribe-space-6); margin-top: auto; }
-/* The app's name stands over its strip: on a phone the name is read before the music. */
-.app h3 { font-family: var(--scribe-font-display); font-size: clamp(2rem, 5vw, 2.75rem); font-weight: 400; letter-spacing: -0.01em; margin: 0; padding: 0 var(--scribe-space-5); height: 4.5rem; display: flex; align-items: center; color: var(--scribe-brand-text); }
-.app[data-brand="fretscribe"] h3 { font-weight: 600; font-size: clamp(1.8rem, 4.4vw, 2.4rem); }
+.app-for { margin: var(--scribe-space-5) var(--scribe-space-5) 0; font-weight: 600; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
+.app h2 { font-family: var(--scribe-font-display); font-size: calc(2.25rem * var(--site-display-scale, 1)); font-weight: var(--site-display-weight, 400); letter-spacing: -0.01em; line-height: 1.1; margin: 0; padding: var(--scribe-space-1) var(--scribe-space-5) var(--scribe-space-4); color: var(--scribe-brand-text); }
+[data-brand="brasscribe"] { --site-display-scale: 1.2; }
+[data-brand="fretscribe"] { --site-display-weight: 600; }
+.app-text { padding: var(--scribe-space-6) var(--scribe-space-5); margin-top: auto; }
+.app-text .actions { align-items: center; margin-top: var(--scribe-space-5); }
 .app .button { min-height: 48px; }
 
-/* Which one is for you: two answers, each in its app's colours. */
-.which { list-style: none; padding: 0; margin: var(--scribe-space-6) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--scribe-space-5); }
-.which a {
-  display: grid; grid-template-columns: minmax(0, 1fr) clamp(96px, 26%, 150px); align-items: center; gap: var(--scribe-space-5); height: 100%; padding: var(--scribe-space-5) var(--scribe-space-6); text-decoration: none;
-  background: var(--scribe-bg); color: var(--scribe-text); font-family: var(--scribe-font-text);
-  border: 1px solid var(--scribe-border-strong); border-left: 6px solid var(--scribe-brand); border-radius: var(--scribe-radius-md);
+/* 3. Where they run: every app's places as one table. On a phone, a card per app. */
+.lines-scroll { margin: var(--scribe-space-8) 0 0; }
+.lines { font-size: var(--scribe-type-callout-size); background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); border-collapse: separate; border-spacing: 0; overflow: hidden; }
+.lines th, .lines td { padding: var(--scribe-space-3) var(--scribe-space-4); vertical-align: top; }
+.lines thead th { font-weight: 600; color: var(--scribe-text); white-space: nowrap; }
+.lines thead th .variant-glyph { display: block; margin-bottom: 4px; }
+.lines tbody th { font-weight: 650; white-space: nowrap; }
+.lines tbody th .chip { margin-right: 8px; }
+.lines td a { display: block; min-height: 44px; text-decoration: none; border-radius: var(--scribe-radius-sm); }
+.lines td a:hover .tag { border-color: var(--scribe-text); }
+.lines td a .variant-glyph, .lines td a .cell-name { display: none; }
+.lines td.none { color: var(--scribe-text-muted); }
+.lines tr.shared th, .lines tr.shared td { border-top: 1.5px dashed var(--scribe-border-strong); border-bottom: 0; }
+.lines tr.shared th .variant-glyph { vertical-align: -4px; margin-right: 8px; }
+.lines tr.shared td a { display: flex; flex-wrap: wrap; align-items: center; gap: var(--scribe-space-2) var(--scribe-space-4); }
+.lines tr.shared .cell-name { display: inline; color: var(--scribe-text-muted); }
+.lines tr.shared .tags { margin: 0; }
+@media (max-width: 700px) {
+  .lines-scroll { overflow: visible; }
+  .lines, .lines tbody, .lines tr, .lines th, .lines td { display: block; border: 0; }
+  .lines thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .lines { background: none; border: 0; }
+  .lines tr { display: flex; flex-wrap: wrap; gap: var(--scribe-space-2); padding: var(--scribe-space-4); margin-bottom: var(--scribe-space-4); background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); }
+  .lines tr.shared { border: 1.5px dashed var(--scribe-border-strong); }
+  .lines tbody th { flex-basis: 100%; padding: 0 0 var(--scribe-space-1); }
+  .lines td { padding: 0; }
+  .lines td.none { display: none; }
+  .lines td a { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: var(--scribe-space-2) var(--scribe-space-3); border: 1px solid var(--scribe-border); border-radius: 12px; background: var(--scribe-bg); }
+  .lines td a .variant-glyph, .lines td a .cell-name { display: inline; font-weight: 600; color: var(--scribe-text); }
+  .lines td a .tags { margin: 0; }
+  .lines tr.shared td { flex-basis: 100%; }
+  .lines tr.shared td a { border: 0; padding: 0; background: none; }
 }
-.which a:hover { border-color: var(--scribe-brand); color: var(--scribe-text); }
-.which-words { display: grid; gap: var(--scribe-space-1); }
-.which .phone-frame { display: block; padding: 4px; border-radius: 14px; }
-.which .phone-frame img { border-radius: 10px; }
-.which-if { color: var(--scribe-text-muted); }
-.which-then { font-family: var(--scribe-font-display); font-size: 2rem; line-height: 1.1; color: var(--scribe-brand-text); }
-[data-brand="fretscribe"] .which-then { font-weight: 600; font-size: 1.75rem; }
-.which-both { margin-top: var(--scribe-space-5); max-width: 44em; color: var(--scribe-text-muted); }
 
-/* What the apps share. */
+/* 4. Bandroom: what the apps share. */
 .together { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: var(--scribe-space-12); align-items: center; }
 .together figure { margin: 0; }
 .diagram-home { max-width: 340px; }
@@ -57,15 +101,43 @@ section + section { border-top: 0; }
 .diagram-home .box { fill: none; stroke-dasharray: 2 4; }
 .diagram-home .box.model { stroke-dasharray: none; }
 .diagram-home .lbl { letter-spacing: 0; font-size: 13px; fill: var(--scribe-text-muted); }
+.diagram .arrow.pen { stroke: var(--scribe-text); stroke-width: var(--family-pen-width); stroke-linecap: round; }
+.diagram .pen-dot { fill: var(--scribe-text); }
 .story { margin: var(--scribe-space-6) 0 0; }
 .story dt { font-weight: 650; margin-top: var(--scribe-space-5); }
-.story dd { margin: var(--scribe-space-1) 0 0; color: var(--scribe-text-muted); max-width: 34em; }
-.plain { list-style: none; padding: 0; margin: var(--scribe-space-5) 0 0; display: grid; gap: var(--scribe-space-2); max-width: 52rem; color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
-.plain strong { color: var(--scribe-text); }
-#bandroom { padding-top: 0; }
-.after-actions { margin-top: var(--scribe-space-5); font-size: var(--scribe-type-callout-size); }
+.story dd { margin: var(--scribe-space-1) 0 0; color: var(--scribe-text-muted); max-width: 30em; }
+
+/* 5. How sure: a door to each app's own answer, in its own paper. */
+.sure-doors { list-style: none; margin: var(--scribe-space-8) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-5); }
+.sure-doors a {
+  display: grid; gap: var(--scribe-space-1); padding: var(--scribe-space-5) var(--scribe-space-6); height: 100%; text-decoration: none;
+  background: var(--scribe-bg); color: var(--scribe-text); font-family: var(--scribe-font-text); font-weight: 600;
+  border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md);
+}
+.sure-doors a:hover { border-color: var(--scribe-text); color: var(--scribe-text); }
+.sure-app { font-family: var(--scribe-font-display); font-weight: var(--site-display-weight, 400); font-size: calc(1.75rem * var(--site-display-scale, 1)); line-height: 1.1; color: var(--scribe-brand-text); }
+
+/* 6. Close. */
+.close .doors { margin-top: var(--scribe-space-5); }
+
+/* The Bandroom page. */
+.bandroom-hero h1 { font-size: clamp(2.5rem, 7vw, 4rem); }
+.pen-list { list-style: none; padding: 0; margin: var(--scribe-space-6) 0 0; display: grid; gap: var(--scribe-space-4); max-width: 44em; }
+.pen-list li { position: relative; padding-left: 40px; }
+.pen-list li::before { content: ""; position: absolute; left: 0; top: 0.75em; width: 22px; height: var(--family-pen-width); background: currentColor; }
+.pen-list li::after { content: ""; position: absolute; left: 22px; top: calc(0.75em + var(--family-pen-width) / 2 - var(--family-pen-dot) / 2); width: var(--family-pen-dot); height: var(--family-pen-dot); border-radius: 50%; background: currentColor; }
+.first-steps { max-width: 44em; padding-left: 1.4em; display: grid; gap: var(--scribe-space-3); margin: var(--scribe-space-6) 0; }
+.after-actions { margin-top: var(--scribe-space-5); font-size: var(--scribe-type-callout-size); max-width: 44em; }
+
 @media (max-width: 900px) {
   .together { grid-template-columns: minmax(0, 1fr); gap: var(--scribe-space-8); }
-  .family-hero { padding-top: var(--scribe-space-8); }
+  .line-hero { padding-top: var(--scribe-space-8); }
 }
-@media (forced-colors: active) { .diagram .net { fill: Canvas; stroke: CanvasText; } }
+@media (max-width: 600px) {
+  .doors { flex-direction: column; }
+  .door { justify-content: flex-start; }
+}
+@media (forced-colors: active) {
+  .diagram .net { fill: Canvas; stroke: CanvasText; }
+  .chip { forced-color-adjust: none; }
+}

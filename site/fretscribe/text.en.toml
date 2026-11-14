@@ -4,8 +4,7 @@
 brand = "Fretscribe, overview"
 
 [footer]
-line = "Fretscribe, an early version"
-note = "Tab drawn with alphaTab (MPL-2.0). Type: Atkinson Hyperlegible Next (OFL). <a href=\"https://github.com/181192/brasscribe\">Source</a>"
+note = "Tab drawn with alphaTab (MPL-2.0). Type: Atkinson Hyperlegible Next (OFL)."
 
 [take]
 title = "Canon progression"

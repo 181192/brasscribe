@@ -1,0 +1,53 @@
+<!--
+main_class: bandroom-page
+-->
+  <section id="top" class="line-hero bandroom-hero" aria-labelledby="bandroom-title">
+    <div class="wrap together">
+      <div>
+        <h1 id="bandroom-title" data-t="hero.title"></h1>
+        <p class="lead" data-t="hero.lead"></p>
+        <div class="actions">
+          <a class="button primary" href="#get" data-t="hero.get"></a>
+        </div>
+      </div>
+      <figure>
+        {{figure listening}}
+      </figure>
+    </div>
+  </section>
+
+  <section id="does" aria-labelledby="does-title">
+    <div class="wrap">
+      <h2 id="does-title" class="pen-heading" data-t="does.title"></h2>
+      <ul class="pen-list">
+        <li data-t="does.listens"></li>
+        <li data-t="does.home"></li>
+        <li data-t="does.quiet"></li>
+        <li data-t="does.studio"></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="get" aria-labelledby="get-title">
+    <div class="wrap">
+      <h2 id="get-title" class="pen-heading" data-t="get.title"></h2>
+      <p class="lead" data-t="get.lead"></p>
+      <div class="actions">
+        <a class="button primary" href="{{file brasscribe-bandroom-macos-arm64.zip}}" data-t="get.mac"></a>
+        <a class="button outline" href="{{file brasscribe-bandroom-windows-x64.zip}}" data-t="get.windows"></a>
+      </div>
+      <p class="muted after-actions" data-t="get.warn"></p>
+    </div>
+  </section>
+
+  <section id="first" aria-labelledby="first-title">
+    <div class="wrap">
+      <h2 id="first-title" class="pen-heading" data-t="first.title"></h2>
+      <ol class="first-steps">
+        <li data-t="first.download"></li>
+        <li data-t="first.key"></li>
+        <li data-t="first.pair"></li>
+      </ol>
+      <p data-t="first.guides"></p>
+    </div>
+  </section>

@@ -44,3 +44,5 @@ main > section h2::before {
   .hero .strip { margin-top: var(--scribe-space-5); }
 }
 @media (forced-colors: active) { main > section { background: none; } main > section h2::before { display: none; } }
+
+:root { --site-display-weight: 600; }

@@ -33,72 +33,85 @@ a:hover { color: var(--scribe-accent); text-decoration-thickness: 2px; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--scribe-space-6); }
 .reading { max-width: 720px; }
 
-/* The family bar: the same on every page of every app. Its colours are the family's (--family-bar…, from
-   design/brands/scribe, put before this file by the build), so it looks the same on Brasscribe's brass, on
-   Fretscribe's ruled paper and on the family home, in light and in dark. */
-/* It stays at the top of the window, so the way home and the language are always in reach. */
-.site-header { display: contents; }
-/* Not on a low or much enlarged window, where it would cover too much of the page (WCAG 1.4.10). */
-@media (max-height: 480px) { .family-bar { position: static !important; } }
-.family-bar { position: sticky; top: 0; z-index: 20; --bar: var(--family-bar); --bar-text: var(--family-bar-text); --bar-muted: var(--family-bar-muted); background: var(--bar); color: var(--bar-text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-.family-bar .wrap { display: flex; align-items: center; gap: var(--scribe-space-3); min-height: 52px; }
-.family-path { flex: 1 1 auto; min-width: 0; }
-.family-path ol { display: flex; align-items: center; margin: 0; padding: 0; list-style: none; }
-.family-path li { display: flex; align-items: center; min-width: 0; }
-.family-path li + li::before { content: "›"; padding: 0 2px; color: var(--bar-muted); font-size: 1.125rem; }
-.family-path a {
-  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border-radius: 8px;
-  color: var(--bar-muted); text-decoration: none; font-weight: 600; font-size: 0.9375rem; white-space: nowrap;
+/* The line bar: the same on every page of every app, a path from the line down. Its colours are the family's
+   (--family-…, design/brands/scribe/dist/web/line.css, put before this file by the build), so it looks the same on
+   Brasscribe's brass, on Fretscribe's ruled paper and on the family home, in light and in dark. It stays at the top
+   of the window, so the apps and the language are in reach from anywhere on a page. */
+.family-bar {
+  --bar: var(--family-bar); --bar-text: var(--family-bar-text); --bar-muted: var(--family-bar-muted);
+  position: sticky; top: 0; z-index: 20; background: var(--bar); color: var(--bar-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-.family-path a:hover { color: var(--bar-text); background: rgb(255 255 255 / 0.08); }
-.family-path a[aria-current] { color: var(--bar-text); }
-.family-path a:focus-visible, .lang-switch:focus-visible { outline: 2px solid var(--bar-text); outline-offset: -2px; }
-.family-path .path-apps { gap: 2px; }
-.family-path .path-apps a[aria-current] { background: rgb(255 255 255 / 0.14); }
+/* A short window (a phone on its side, a page zoomed in) keeps its room for the page (WCAG 1.4.10). */
+@media (max-height: 480px) { .family-bar { position: static; } }
+.family-bar .wrap { display: flex; align-items: center; gap: var(--scribe-space-2); min-height: 52px; }
+.line-path { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: var(--scribe-space-1); }
+.line-apps { display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; min-width: 0; }
+.line-path a {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 8px;
+  color: var(--bar-text); text-decoration: none; font-weight: 600; font-size: 0.9375rem; white-space: nowrap;
+}
+.line-path a:hover { color: var(--bar-text); background: rgb(255 255 255 / 0.08); }
+/* The app you are in is marked: a fill, and an underline in its chip's colour (which forced colours keep). */
+.line-apps a[aria-current] { background: rgb(255 255 255 / 0.14); box-shadow: inset 0 -2px 0 var(--chip); }
+.line-path a:focus-visible, .lang-switch:focus-visible { outline: 2px solid var(--bar-text); outline-offset: -2px; }
+.line-sep { color: var(--bar-muted); opacity: 0.7; font-size: 1.125rem; padding: 0 2px; }
+.chip { flex: none; display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--chip); }
 .family-mark .mark-pen { flex: none; }
+/* On the family's own pages the pen is down: its line runs out of the mark to the edge of the window. */
+.family-bar.pen-down .family-mark { position: relative; }
+.family-bar.pen-down .family-mark::before {
+  content: ""; position: absolute; right: calc(100% - 13px); top: 50%; width: 100vw; height: var(--family-pen-width);
+  margin-top: calc(var(--family-pen-width) / -2); background: currentColor; pointer-events: none;
+}
+.family-bar.pen-down { overflow-x: clip; }
 .lang-switch {
-  flex: none; min-height: 36px; padding: 0 14px; border-radius: var(--scribe-radius-full); cursor: pointer;
-  font: inherit; font-size: 0.875rem; color: var(--bar-text); background: none; border: 1px solid var(--bar-muted);
+  flex: none; min-height: 44px; padding: 0 16px; border-radius: var(--scribe-radius-full); cursor: pointer;
+  font: inherit; font-size: 0.9375rem; font-weight: 600; color: var(--bar-text); background: none; border: 1px solid var(--bar-muted);
 }
 .lang-switch:hover { background: rgb(255 255 255 / 0.08); }
 .lang-switch[hidden] { display: none; }
 .lang-short { display: none; }
 .lang-note { flex: 0 1 auto; font-size: 0.8125rem; line-height: 1.3; color: var(--bar-muted); text-align: right; }
 @media (max-width: 700px) { .family-bar .wrap:has(.lang-note) { flex-wrap: wrap; } .lang-note { flex-basis: 100%; text-align: left; padding: 0 7px var(--scribe-space-2); } }
-@media (max-width: 350px) {
+@media (max-width: 600px) {
+  .line-sep { display: none; }
+  .family-bar .wrap { gap: var(--scribe-space-1); padding: 0 var(--scribe-space-2); }
+  .line-path a { padding: 0 8px; gap: 6px; }
+  .family-mark .mark-pen { width: 20px; }
+  .lang-switch { padding: 0 12px; }
+}
+@media (max-width: 400px) {
   /* The bar stays one line on the narrowest phones. */
-  .family-bar .wrap { padding: 0 var(--scribe-space-2); gap: 0; }
-  .family-path a { padding: 0 4px; font-size: 0.8125rem; gap: 4px; }
+  .line-path { gap: 0; }
+  .line-apps { gap: 0; }
+  .line-path a { padding: 0 5px; font-size: 0.8125rem; gap: 4px; }
   .family-mark .mark-pen { width: 14px; }
-  .lang-switch { padding: 0 8px; font-size: 0.75rem; }
+  .chip { width: 8px; height: 8px; }
+  .lang-switch { padding: 0 10px; font-size: 0.8125rem; }
+}
+@media (max-width: 360px) {
   .lang-short { display: inline; }
   .lang-long { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
-@media (max-width: 420px) {
-  .family-bar .wrap { gap: var(--scribe-space-1); padding: 0 var(--scribe-space-3); }
-  .family-path a { padding: 0 7px; gap: 6px; }
-  .family-mark .mark-pen { width: 20px; }
-  .lang-switch { padding: 0 9px; font-size: 0.8125rem; }
-}
 
-/* Under it, the app's own row: its name and its pages, the same pages in the same order for every app. */
+/* Under it, the app's own row: its name, set in its display face, and the same four pages in the same order for
+   every app. A brand sets --site-display-scale so both names stand at the same optical size. */
 .product-nav { border-bottom: 1px solid var(--scribe-border); background: var(--scribe-bg); }
 .product-nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 0 var(--scribe-space-6); min-height: 56px; }
-.brand { flex: none; font-family: var(--scribe-font-display); font-size: 1.5rem; line-height: 1; color: var(--scribe-text); }
-/* The pages stay on one line; on a narrow screen the line scrolls sideways and the logo steps aside. */
-.product-nav nav { display: flex; align-items: center; gap: 0 var(--scribe-space-5); min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.product-nav nav::-webkit-scrollbar { display: none; }
-@media (max-width: 700px) {
-  /* Where the row is wider than the screen, its end fades: there is more to the side. */
-  .product-nav nav { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); padding-right: 28px; }
-  .brand { display: none; }
-  .product-nav .wrap { min-height: 48px; }
-  .product-nav nav { gap: 0 var(--scribe-space-4); }
+.app-name { flex: none; font-family: var(--scribe-font-display); font-weight: var(--site-display-weight, 400); font-size: calc(22px * var(--site-display-scale, 1)); line-height: 1; color: var(--scribe-text); }
+/* The pages stay on one line; on a narrow screen the name steps aside and the pages fill the row. */
+.product-nav ul { display: flex; align-items: center; gap: 0 var(--scribe-space-5); margin: 0; padding: 0; list-style: none; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.product-nav ul::-webkit-scrollbar { display: none; }
+@media (max-width: 600px) {
+  .app-name { display: none; }
+  .product-nav .wrap { min-height: 48px; padding: 0 var(--scribe-space-4); }
+  .product-nav ul { flex: 1 1 auto; justify-content: space-between; gap: 0 var(--scribe-space-3); }
 }
 /* What a script must make work keeps its room, unseen, until the script has. */
 .await-js { visibility: hidden; }
-.product-nav nav a { white-space: nowrap; flex: none; display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; font-weight: 600; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
-.product-nav nav a[aria-current="page"], .product-nav nav a:hover { color: var(--scribe-text); box-shadow: inset 0 -2px 0 var(--scribe-brand); }
+.product-nav a { white-space: nowrap; flex: none; display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; font-weight: 600; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
+.product-nav a[aria-current="page"], .product-nav a:hover { color: var(--scribe-text); box-shadow: inset 0 -2px 0 var(--scribe-brand); }
 
 /* What the language script swaps as a whole takes no box of its own. */
 .slot { display: contents; }
@@ -294,7 +307,7 @@ details > :not(summary) { margin-left: var(--scribe-space-5); margin-right: var(
 details > :last-child { margin-bottom: var(--scribe-space-5); }
 details > summary + * { margin-top: var(--scribe-space-4); }
 
-.table-scroll { overflow-x: auto; margin: var(--scribe-space-4) 0 var(--scribe-space-6); border-radius: var(--scribe-radius-sm); }
+.table-scroll { position: relative; overflow-x: auto; margin: var(--scribe-space-4) 0 var(--scribe-space-6); border-radius: var(--scribe-radius-sm); }
 table { border-collapse: collapse; width: 100%; font-size: var(--scribe-type-callout-size); }
 caption { text-align: left; font-weight: 600; padding-bottom: var(--scribe-space-2); }
 th, td { text-align: left; padding: var(--scribe-space-3); border-bottom: 1px solid var(--scribe-border); vertical-align: top; }
@@ -334,10 +347,15 @@ main.downloads { max-width: 820px; padding-top: var(--scribe-space-12); padding-
 .download-groups p { font-size: var(--scribe-type-callout-size); margin: 0; }
 
 /* Footer */
-.site-footer { border-top: 1px solid var(--scribe-border); padding: var(--scribe-space-10) 0; color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
-.site-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--scribe-space-4); }
-.footer-line { flex-basis: 100%; }
-.footer-line a { min-height: 24px; display: inline-block; }
+/* Footer: one structure on every page. The line and everything in it, then the credits of the page's owner. */
+.site-footer { border-top: 1px solid var(--scribe-border); padding: var(--scribe-space-8) 0 var(--scribe-space-10); color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); }
+.site-footer p { margin: 0; }
+.footer-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--scribe-space-5); color: var(--scribe-text); font-size: var(--scribe-type-body-size); }
+.footer-line a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; font-weight: 500; }
+.footer-line a:hover { text-decoration: underline; }
+.footer-line .family-mark { font-weight: 650; margin-right: var(--scribe-space-2); }
+.footer-line a.here { font-weight: 700; }
+.footer-note { margin-top: var(--scribe-space-2) !important; font-size: 14px; max-width: 60em; }
 
 @media (max-width: 900px) {
   .hero-grid, .hero .wrap.hero-grid, .grid-3, .guide { grid-template-columns: minmax(0, 1fr); }
@@ -369,7 +387,7 @@ main.downloads { max-width: 820px; padding-top: var(--scribe-space-12); padding-
 @media (forced-colors: active) {
   .card, details, .platforms li, .note, .device, .window, .phone-frame, .tablet-frame { border: 1px solid CanvasText; }
   .mac-frame img { filter: none; outline: 1px solid CanvasText; }
-  .product-nav nav a[aria-current="page"], .family-path a[aria-current] { text-decoration: underline; }
+  .product-nav a[aria-current="page"], .line-apps a[aria-current] { text-decoration: underline; }
 }
 
 @media print {
@@ -463,3 +481,68 @@ main.guide { padding-left: var(--scribe-space-6); padding-right: var(--scribe-sp
   .paper .table-scroll { overflow: visible; }
   .paper a { text-decoration: none; }
 }
+
+/* Where it runs: the variant rail and its panels. The same six places in the same order with the same glyphs in
+   every app (the glyphs are the family's: design/tooling/icons.json); Bandroom's chip is dashed, the line's own.
+   Without the script every panel is there, one under the other, and a chip leads to its panel; with it the chips
+   are tabs and one panel shows. */
+.rail { display: flex; flex-wrap: wrap; gap: var(--scribe-space-2); list-style: none; margin: var(--scribe-space-6) 0 0; padding: 0; }
+.rail a {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised);
+  color: var(--scribe-text); text-decoration: none; font-weight: 600;
+}
+.rail a:hover { border-color: var(--scribe-text); color: var(--scribe-text); }
+.rail a[aria-selected="true"] { border-color: var(--scribe-text); box-shadow: inset 0 0 0 1px var(--scribe-text); }
+.rail a.shared { border-style: dashed; }
+.rail small { font-weight: 400; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
+.variant-glyph { flex: none; }
+.tags { display: flex; flex-wrap: wrap; gap: var(--scribe-space-2); list-style: none; margin: var(--scribe-space-3) 0; padding: 0; }
+.tag { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--scribe-radius-full); border: 1px solid var(--scribe-border-strong); font-size: var(--scribe-type-caption-size); font-weight: 600; color: var(--scribe-text); background: var(--scribe-surface-raised); }
+.tag-device { font-weight: 400; color: var(--scribe-text-muted); }
+/* A word and a shape for each state: a filled dot is ready, a half dot a test version, a ring an early one. */
+.tag::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.tag.test::before { background: linear-gradient(90deg, currentColor 50%, transparent 50%); box-shadow: inset 0 0 0 1.5px currentColor; }
+.tag.early::before { background: none; box-shadow: inset 0 0 0 1.5px currentColor; }
+.variants { margin-top: var(--scribe-space-2); }
+.variant-panel {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--scribe-space-6); align-items: center;
+  margin-top: var(--scribe-space-5); padding: var(--scribe-space-6); scroll-margin-top: calc(52px + var(--scribe-space-4));
+  background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md);
+}
+.variant-panel[data-variant="bandroom"] { border: 1.5px dashed var(--scribe-border-strong); }
+.variant-panel h3 { margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-title-2-size); }
+.variant-does { font-size: 1.125rem; margin: 0; }
+.variant-needs { color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); margin: 0 0 var(--scribe-space-5); max-width: 36em; }
+.variant-panel .button { min-height: 48px; }
+.variant-shot { width: 180px; }
+.variant-shot.tablet { width: 280px; }
+.variant-shot.mac, .variant-shot.desktop { width: min(440px, 40vw); }
+html.js .variant-panel:not(:first-of-type), .variant-panel[hidden] { display: none; }
+html.js .variant-panel.chosen { display: grid; }
+.variant-panel:not(:has(.variant-shot)) { grid-template-columns: minmax(0, 1fr); }
+html.js .variants:has(.variant-panel.chosen) .variant-panel:first-of-type:not(.chosen) { display: none; }
+@media (max-width: 700px) {
+  /* On a phone the picture stands small beside the words, so the section stays short. */
+  .variant-panel { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title title" "does does" "tags shot" "needs shot" "go go"; align-items: start; gap: 0 var(--scribe-space-4); padding: var(--scribe-space-4); }
+  .variant-text { display: contents; }
+  .variant-panel h3 { grid-area: title; }
+  .variant-does { grid-area: does; }
+  .variant-panel .tags { grid-area: tags; flex-direction: column; align-items: flex-start; }
+  .variant-needs { grid-area: needs; margin-bottom: var(--scribe-space-4); }
+  .variant-panel .button { grid-area: go; }
+  .variant-shot { grid-area: shot; margin-top: var(--scribe-space-3); }
+  .variant-panel:not(:has(.variant-shot)) { grid-template-areas: "title" "does" "tags" "needs" "go"; }
+  .variant-panel h3 { font-size: var(--scribe-type-headline-size); }
+  .variant-does { font-size: var(--scribe-type-body-size); }
+  .variant-shot, .variant-shot.tablet { width: 96px; }
+  .variant-shot.mac, .variant-shot.desktop { width: 120px; }
+  .variant-shot .phone-frame { padding: 3px; border-radius: 12px; }
+  .variant-shot .phone-frame img { border-radius: 9px; }
+  .rail a { padding: 0 10px; }
+  /* The chosen place's panel names its devices; the chips keep to their names, so they share a line. */
+  .rail small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 400px) { .variant-shot, .variant-shot.tablet { width: 80px; } }
+@media print { html.js .variant-panel { display: grid !important; } .rail { display: none; } }
+@media (forced-colors: active) { .rail a[aria-selected="true"] { outline: 2px solid CanvasText; } .tag::before { forced-color-adjust: none; background-color: CanvasText; } }

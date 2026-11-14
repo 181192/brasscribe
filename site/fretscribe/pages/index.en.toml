@@ -99,11 +99,10 @@ ordinals = ["1st", "2nd", "3rd", "4th", "5th", "6th"]
 names = ["C", "C sharp", "D", "E flat", "E", "F", "F sharp", "G", "G sharp", "A", "B flat", "B"]
 
 [needs]
-title = "Fretscribe on <em>your devices.</em>"
-lead = "The app for your phone, tablet, Mac or PC, and Bandroom for your computer. Fretscribe does not write tabs by itself: each device below says what it does alone."
-unsigned = "<strong>Your device will warn you the first time.</strong> The apps are not in any app store yet; the <a href=\"@/download/\">download page</a> shows how to get past the warning."
-private = "<strong>Your recording never leaves your own network.</strong> It goes from your phone to your own computer and nowhere else. The first time Bandroom starts it needs the internet, to download what it needs to listen (about 10 GB)."
-setup = "Set up your computer"
+title = "Where it <em>runs.</em>"
+lead = "The app is on your phone, tablet or computer. <strong>Bandroom</strong>, on your own Mac or PC, does the listening."
+line = "Free. Not in the app stores yet, so the first install takes three extra taps: the <a href=\"@/download/\">download page</a> shows them."
+setup = "Set up Bandroom"
 
 [sure]
 title = "How sure <em>is it?</em>"

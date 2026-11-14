@@ -9,5 +9,3 @@ css = "scribe.css"
 favicon = "brand/favicon.svg"
 og_image = "@/brasscribe/assets/shots/mac-score-en-light.png"  # the picture other sites show for the home
 styles = ["assets/brands.css", "family.css"]
-# The faces of the headline, one line in each app's own.
-preload = ["../brasscribe/fonts/InstrumentSerif-Regular.ttf", "../fretscribe/fonts/AtkinsonHyperlegibleNext-wght.ttf"]

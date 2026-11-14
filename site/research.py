@@ -457,7 +457,7 @@ def chart(spec: dict, name: str, page) -> str:
             body.append(f'<tr>{"".join(cells)}</tr>')
         note = " ".join(x for x in (view["note"], f'{w["n"]}: {e(shared)}.' if shared else "") if x)
         caption = view["l"] + (f'<span class="src">{note}</span>' if note else "")
-        tables.append(f'<div class="table-scroll" tabindex="0" role="region" aria-label="{e(w["datatable"])}: {e(view["l"])}">\n<table>\n'
+        tables.append(f'<div class="table-scroll" tabindex="0" role="region" aria-label="{e(w["datatable"])}, {e(w["figure"].lower())} {page.figures}: {e(view["l"])}">\n<table>\n'
                       f'<caption>{caption}</caption>\n<thead><tr>{"".join(head)}</tr></thead>\n'
                       f'<tbody>\n{chr(10).join(body)}\n</tbody>\n</table>\n</div>')
     # What was measured on, inside the caption: per view where the rows share it, per row where they do not.

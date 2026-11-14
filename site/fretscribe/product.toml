@@ -8,11 +8,6 @@ og_image = "@/assets/shots/tab-en-light.png"
 marks = ["brand/logo-mark.svg", "brand/logo-mark-dark.svg"]
 preload = ["AtkinsonHyperlegibleNext-wght.ttf"]  # the face of the headline
 
-[logo]
-light = "brand/lockup.svg"
-dark = "brand/lockup-dark.svg"
-width = 222
-height = 32
 
 [[downloads]]
 file = "fretscribe-android-arm64-v8a.apk"
@@ -54,31 +49,38 @@ label_nb = "Fretscribe for Windows"
 en = "Fretscribe for Windows 11, an early version, not tested on a real PC yet"
 nb = "Fretscribe for Windows 11, en tidlig versjon, ikke testet på en ekte PC ennå"
 
-# What each device does by itself and what it needs the computer for: the table on the front page.
-[[platforms]]
-id = "android"
-en = { name = "Android", status = "Android 17 or 16", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab." }
-nb = { name = "Android", status = "Android 17 eller 16", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab." }
+# Where it runs: the app's places on the variant rail, in the rail's order (phone, tablet, mac, windows, then
+# Bandroom from site.toml). Fretscribe has no Studio. Each says what you do there, what it needs, and how ready each
+# device is (ready, test or early: the words are under [variants] in shared/text.<lang>.toml). `files` are the
+# download page's groups for it; `shot` a screenshot of that place, when there is one.
+[[variants]]
+id = "phone"
+files = ["android", "ios"]
+devices = [{ name = "Android", status = "ready" }, { name = "iPhone", status = "test" }]
+shot = "tab"
+en = { does = "Record a riff, check the ? notes, play along.", needs = "Android 17 or 16, or an iPhone with iOS 27 or 26.", alt = "A tab in Fretscribe on a phone, with the player below." }
+nb = { does = "Spill inn et riff, sjekk notene med ?, spill med.", needs = "Android 17 eller 16, eller iPhone med iOS 27 eller 26.", alt = "En tab i Fretscribe på en telefon, med spilleren under." }
 
-[[platforms]]
-id = "ios"
-en = { name = "iPhone and iPad", status = "Test version: needs a few steps with your Apple account · iOS, iPadOS 27 or 26", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab." }
-nb = { name = "iPhone og iPad", status = "Testversjon: trenger noen steg med Apple-kontoen din · iOS, iPadOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab." }
+[[variants]]
+id = "tablet"
+files = ["android", "ios"]
+devices = [{ name = "iPad", status = "test" }, { name = "Android", status = "ready" }]
+en = { does = "The tab across the whole screen, with the recording to play along to.", needs = "iPadOS 27 or 26, or an Android tablet with Android 17 or 16." }
+nb = { does = "Tabben over hele skjermen, med opptaket å spille sammen med.", needs = "iPadOS 27 eller 26, eller et Android-nettbrett med Android 17 eller 16." }
 
-[[platforms]]
+[[variants]]
 id = "mac"
-en = { name = "Mac", status = "A Mac with an M-series chip · macOS 27 or 26", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars.", bandroom = "Writing a tab. Bandroom can run on the same Mac." }
-nb = { name = "Mac", status = "Mac med M-brikke · macOS 27 eller 26", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme Mac." }
+files = ["mac"]
+devices = [{ name = "Mac", status = "ready" }]
+en = { does = "Your tabs on a big screen, with Speed and Repeat bars.", needs = "A Mac with an M-series chip, with macOS 27 or 26." }
+nb = { does = "Tabbene dine på stor skjerm, med Tempo og Gjenta takter.", needs = "Mac med M-brikke, med macOS 27 eller 26." }
 
-[[platforms]]
+[[variants]]
 id = "windows"
-en = { name = "Windows", status = "Early version, not tested on a real PC yet · Windows 11", alone = "Records, opens the tabs you have made, and plays them with Speed and Repeat bars. Shares or prints a tab.", bandroom = "Writing a tab. Bandroom can run on the same PC." }
-nb = { name = "Windows", status = "Tidlig versjon, ikke testet på en ekte PC ennå · Windows 11", alone = "Spiller inn, åpner tabbene du har laget, og spiller dem med Tempo og Gjenta takter. Deler eller skriver ut en tab.", bandroom = "Å skrive en tab. Bandroom kan kjøre på samme PC." }
-
-[[platforms]]
-id = "bandroom"
-en = { name = "Bandroom, on your computer", status = "Free · a Mac with an M-series chip, or a PC with Windows 11", alone = "Writes every tab, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
-nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac med M-brikke, eller PC med Windows 11", alone = "Skriver hver tab, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
+files = ["windows"]
+devices = [{ name = "Windows", status = "early" }]
+en = { does = "Your tabs on a big screen; share or print them.", needs = "A PC with Windows 11 (x64)." }
+nb = { does = "Tabbene dine på stor skjerm; del eller skriv dem ut.", needs = "PC med Windows 11 (x64)." }
 
 # The paper is kept under its old file name and served as "how it works", like every product's.
 [paths]

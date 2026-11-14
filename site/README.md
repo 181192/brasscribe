@@ -14,7 +14,8 @@ missing in one of the two languages, and on words a page has but does not use.
 
 | Address | What |
 |---|---|
-| `/` | The family home: both apps at work, which one is for whom, what they share |
+| `/` | The family home: the line, its apps at work, where they run, Bandroom, how sure they are |
+| `/bandroom/` | Bandroom, the helper on the computer every app shares |
 | `/brasscribe/`, `/fretscribe/` | An app's front page |
 | `/<app>/guide/`, `/<app>/download/`, `/<app>/how-it-works/` | The same pages, at the same names, for every app |
 
@@ -24,8 +25,11 @@ Addresses the site had before (`/guide/`, `/research/`, `/apps/`, every `/nb/…
 pages that send the visitor on, to the same place on the page (`#…`); they are listed under
 `[redirects]` in `shared/site.toml`.
 
-The bar's colours, the family's mark and the family home's palette are the family's own look,
-made from the brands' by `design/tooling/family.py` (`design/brands/scribe/`).
+The family's look is a desk with a pen: its palette (one step behind the apps' paper), its display
+face's weight, the pen line, the bar's colours and each app's chip in it, the glyphs of the places
+an app runs, and the one doubt colour of the site's own figures are all made by
+`design/tooling/family.py` (`design/brands/scribe/`: `dist/web/scribe.css`, `line.css`,
+`variants/`). The site's stylesheets use those tokens and type no colour of the family's.
 
 ### The site's host
 
@@ -62,27 +66,38 @@ A page is its structure and its words, kept apart:
 
 ## What is where
 
-- `shared/`: `site.css` (the family bar, the app's row of pages, the base of every page),
-  `showcase.css` and `showcase.js` (the figures), `scribe.js` and `early.js` (the language),
+- `shared/`: `site.css` (the line bar, the app's row of pages, the variant rail, the base of every
+  page), `showcase.css` and `showcase.js` (the figures), `scribe.js` and `early.js` (the language),
+  `rail.js` (the variant rail's tabs),
   `product.html` (the one structure of every app's front page), `figures.py`, `text.<lang>.toml`,
-  `site.toml` (where the site and the release files are, the old addresses), `make_shots.py`,
+  `site.toml` (where the site, the source and the release files are, Bandroom's place on every
+  rail, the old addresses), `make_shots.py`,
   `take_tools.py`.
-- `<app>/`: `product.toml` (brand, logo, release files, what each device does, which measured
+- `<app>/`: `product.toml` (brand, release files, where it runs, which measured
   rates to show), `text.<lang>.toml`, `pages/`, `shots.txt` and `shots/`, its brand stylesheet
   (`brass.css`, `ruled-paper.css`), `take/` and `figures/` (below), and `figures.py` when its
   music is drawn differently from a tab.
-- `family/`: the family home, with the same parts.
+- `family/`: the family home and the Bandroom page, with the same parts.
 
-The site has three levels, with the same names everywhere: **Scribe** (the line, the home at `/`),
-its **apps** (Brasscribe, Fretscribe; a new app is a new folder), and each app's **devices** (the
-app for Android, iPhone and iPad, Mac and Windows, and the programs on the computer: Bandroom, and
-Studio where an app has it). The bar at the top is the way down and back up, the same on every
-page: Scribe › its apps, with the one you are in marked, and the language. Under it each app has the same row: Overview,
-Guide, Download, How it works. The family home shows the line first and the apps as its members;
-every app's front page has the same "on your devices" section, one card for each entry of
-`[[platforms]]` in its `product.toml` (what it does by itself, what it needs Bandroom for, where
-to get it); the download page has a part for each device with its files. The footer of every page
-names the line and its apps.
+The site has three levels, with one name each, everywhere: **Scribe** (the line, the home at `/`),
+its **apps** (Brasscribe, Fretscribe; a new app is a new folder), and the **places each app runs**:
+Phone, Tablet, Mac, Windows, Bandroom and Studio, always in that order with the same glyphs; an app
+leaves out a place it does not have (Fretscribe has no Studio) and never reorders the rest.
+
+- **The line bar**, at the top of every page and in reach while you scroll: the pen mark and
+  "Scribe" as the root of a path, then the apps, each with its chip, the one you are in marked.
+  Scribe is never the marked step; on the family's own pages its pen is down, its line running to
+  the edge. Then the language.
+- **The app row**, under it on every app page: the app's name in its own face and the same four
+  pages: Overview, Guide, Download, How it works.
+- **The variant rail**: a chip per place, a link to its panel that the script makes a tab
+  (`shared/rail.js`). Bandroom's chip is dashed: it is the line's, shared by every app, and its
+  page is `/bandroom/`. An app's places are `[[variants]]` in its `product.toml` (what you do
+  there, what it needs, how ready each device is, its download groups, a screenshot), Bandroom's
+  is `[bandroom]` in `shared/site.toml`. The rail and its panels are an app's "Where it runs", the
+  anchors of its download page, and, as one table of every app, the family home's "Where they run".
+- **The footer**, one structure on every page: the line, its apps, Bandroom and the source, then
+  the credits of the page's owner.
 
 What only a script can work (a figure's buttons) carries the class `await-js`: it has its room on
 the page from the start and is shown when the script has made it work, so nothing moves while the
@@ -91,9 +106,9 @@ page loads. An app's `preload` in `product.toml` names the font files of its hea
 ## An app's front page
 
 Every app's front page is `shared/product.html`: the same parts in the same order (a hero that
-performs, what you get, see it work, try it, what you need, how sure it is, get it). An app gives
+performs, what you get, see it work, try it, where it runs, how sure it is, get it). An app gives
 it its words (`pages/index.<lang>.toml`), its brand, and its figures under the same names: `hero`,
-`steps`, `viewer`, `rates`, `devices`, `gets`, `screens`.
+`steps`, `viewer`, `rates`, `devices` (the rail and its panels), `gets`, `screens`.
 
 ## Figures, recordings and numbers
 
@@ -125,8 +140,9 @@ the engine answered and no number is typed into a page:
 3. A take (`make_take.py`), and `figures.py` if its music is not a tab.
 4. `text.<lang>.toml`, `pages/index.<lang>.toml` (the words of the front page) and a guide.
 
-The app then has its front page, its download page, its place in the bar and its strip on the
-family home (add its part to `family/pages/index.html`).
+The app then has its front page, its download page, its place in the bar, its row in the home's
+table of where the apps run, and its chip colour (its brand's colour on a dark ground, from
+`design/tooling/family.py`). Its sheet on the family home is added in `family/pages/index.html`.
 
 ## Download links
 

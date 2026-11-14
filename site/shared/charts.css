@@ -143,6 +143,8 @@
 
 /* The contents list of a paper: a list beside the text on a wide screen, folded above it on a narrow one. */
 .toc-fold { border: 0; background: none; margin: 0; padding: 0; }
+/* Until the script has folded it on a narrow screen, the list already looks folded, so the paper does not move. */
+@media (max-width: 900px) { html.js .toc-fold:not([data-folded]) > ol { display: none; } }
 .toc-fold > summary.toc-title { padding: 0 var(--scribe-space-3); min-height: 44px; }
 @media (min-width: 901px) {
   .toc-fold > summary.toc-title { pointer-events: none; min-height: 0; }

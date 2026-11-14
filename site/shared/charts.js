@@ -225,6 +225,7 @@
   function fold() {
     var list = document.querySelector("details.toc-fold");
     if (list && window.matchMedia && window.matchMedia("(max-width: 900px)").matches) list.open = false;
+    if (list) list.setAttribute("data-folded", "");
   }
 
   // The figures that are drawn and answer. The page puts a figure's markup back when the language changes (a copy

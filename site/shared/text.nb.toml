@@ -3,9 +3,13 @@
 
 [bar]
 skip = "Hopp til innholdet"
-path = "Du er her"
+apps = "Scribe-appene"
+home = "Scribe, alle appene"
 all = "Scribe"
 noscript = "På engelsk: den norske versjonen trenger JavaScript."
+
+[footer]
+source = "Kildekode"
 
 [nav]
 label = "Sidene til denne appen"
@@ -36,13 +40,72 @@ tab_label = "Tab av {title}, {bars} takter, i {tuning}."
 tab_scroll = "Tabben. Rull sidelengs for å lese videre."
 pick = "Velg et tall i tabben for å se hvor ellers den tonen kan spilles. Piltastene går fra tone til tone."
 as_text = "Den samme tabben som ren tekst ({tuning})"
-alone = "Alene"
-does = "Dette gjør den"
-with_bandroom = "Med Bandroom"
-get = "Last ned for {name}"
 hear_recording = "Opptaket"
 hear_written = "De skrevne notene"
 hear = "Det du hører"
+
+
+# Hvor en app kjører: de seks stedene, like i alle appene og i denne rekkefølgen (variantlisten). Symbolene er
+# familiens (design/tooling/icons.json, "variants"). Bandroom har stiplet kant: den hører til hele serien, ikke appen.
+[variants]
+label = "Her kjører den"
+choose = "Velg hvor du skal bruke den"
+tags = "Status"
+ready = "Klar"
+test = "Testversjon"
+early = "Tidlig versjon"
+shared = "Felles for alle Scribe-appene"
+none = "Ikke for denne appen"
+matrix = "Hvor hver Scribe-app kjører, og hvor klar den er"
+
+[variants.phone]
+name = "Telefon"
+sub = "Android, iPhone"
+title = "{app} for Android og iPhone"
+download = "Last ned til telefonen"
+
+[variants.tablet]
+name = "Nettbrett"
+sub = "iPad, Android"
+title = "{app} for iPad og Android-nettbrett"
+download = "Last ned til nettbrettet"
+
+[variants.mac]
+name = "Mac"
+sub = ""
+title = "{app} for Mac"
+download = "Last ned for Mac"
+
+[variants.windows]
+name = "Windows"
+sub = "tidlig"
+title = "{app} for Windows"
+download = "Last ned for Windows"
+
+[variants.bandroom]
+name = "Bandroom"
+sub = "for alle Scribe-appene"
+title = "Bandroom, på datamaskinen"
+download = "Last ned Bandroom"
+
+[variants.studio]
+name = "Studio"
+sub = "i nettleseren"
+title = "{app} Studio"
+download = "Last ned Bandroom, med Studio"
+
+
+# Bildet av hvor et opptak går (familieforsiden, Bandroom-siden).
+[listening]
+label = "Hvor opptaket går: fra appen på telefonen til Bandroom på datamaskinen, og partituret eller tabben kommer tilbake, alt i ditt eget nettverk. Ingenting går ut på internett."
+network = "Ditt eget nettverk"
+internet = "Internett: ingenting sendes"
+phone = "Appen på telefonen"
+phone_does = "spiller inn, viser, spiller med"
+up = "opptak"
+down = "partitur eller tab"
+computer = "Bandroom på datamaskinen"
+computer_does = "lytter og skriver det ned"
 
 [groups.android]
 title = "Android"

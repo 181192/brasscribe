@@ -2,8 +2,8 @@
 /* Scribe, the family: every colour is the midpoint of the brands' (design/tooling/family.py says how). */
 
 :root {
-  --scribe-bg: #F2F0EA;
-  --scribe-surface: #EAE8E1;
+  --scribe-bg: #EAE8E1;
+  --scribe-surface: #F2F0EA;
   --scribe-surface-raised: #FAF9F5;
   --scribe-text: #1B1C1C;
   --scribe-text-muted: #545555;

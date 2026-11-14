@@ -318,18 +318,32 @@ class Page:
 
     # The download page, from the product's data ----------------------------------------------
     def download_page(self, lang: str) -> str:
+        """The download page: the variant rail at the top, then a part for each place the app runs, under the rail's
+        anchors, each with the release files of its groups; the tech person's files last."""
         self.lang = lang
-        p = self.product
+        p, shared = self.product, figures()
+        self.shared = shared
         groups: dict[str, list[dict]] = {}
         for item in p.downloads(self.site.shared_downloads):
             groups.setdefault(item["group"], []).append(item)
-        parts = [f'<h1>{self.say("download.heading")}</h1>\n<p class="lead">{self.say("download.lead")}</p>\n<div class="download-groups">']
-        for group, items in groups.items():
+
+        def files(group: str, named: bool) -> str:
+            items = groups[group]
             links = "".join(
                 f'\n    <li><a class="button {"primary" if i == 0 else "outline"}" href="{self.file(x["file"])}">{x.get("label_" + lang, x["file"])}</a>'
                 f'<span class="muted">{x[lang]}</span></li>' for i, x in enumerate(items))
-            parts.append(f'<section id="{group}" aria-labelledby="{group}-title">\n  <h2 id="{group}-title">{self.say(f"groups.{group}.title")}</h2>\n'
-                         f'  <ul class="download-files">{links}\n  </ul>\n  <p>{self.say(f"groups.{group}.note")}</p>\n</section>')
+            title = f'  <h3>{self.say(f"groups.{group}.title")}</h3>\n' if named else ""  # a place with one device needs no second name
+            return f'{title}  <ul class="download-files">{links}\n  </ul>\n  <p>{self.say(f"groups.{group}.note")}</p>'
+
+        parts = [f'<h1>{self.say("download.heading")}</h1>\n<p class="lead">{self.say("download.lead")}</p>\n{shared.rail(self)}\n<div class="download-groups">']
+        for v in shared.places(self):
+            vid, w = v["id"], v[lang]
+            body = "\n".join(files(g, len(v["files"]) > 1) for g in v["files"]) if v["files"] else f'  <p><a href="@family/bandroom/">{self.say("variants.studio.download")}</a></p>'
+            parts.append(f'<section id="{vid}" aria-labelledby="{vid}-title">\n  <h2 id="{vid}-title">{self.say(f"variants.{vid}.title", app=p.data["name"])}</h2>\n'
+                         f'  <p class="variant-does">{w["does"]}</p>\n  {shared.tags(self, v)}\n  <p class="variant-needs">{w["needs"]}</p>\n{body}\n</section>')
+        parts.append(f'<section id="tools" aria-labelledby="tools-title">\n  <h2 id="tools-title">{self.say("groups.tools.title")}</h2>\n'
+                     f'  <ul class="download-files">' + "".join(f'\n    <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>' for x in groups["tools"])
+                     + f'\n  </ul>\n  <p>{self.say("groups.tools.note")}</p>\n</section>')
         parts.append(f'</div>\n<p class="muted">{self.say("download.more")}</p>\n')
         self.lang = "en"
         return "\n".join(parts)
@@ -361,51 +375,57 @@ class Page:
 
     # The whole page --------------------------------------------------------------------------
     def chrome(self) -> tuple[str, str]:
-        """What stands around every page: the family bar and the product's own row above, the footer below."""
+        """What stands around every page: the line bar and the app's own row above, the footer below.
+
+        The bar is a path from the line down: Scribe, then its apps, the one you are in marked. Scribe is the root of
+        the path and never the marked step; on the family's own pages its pen is down (the line runs to the edge).
+        Under it, each app has the same row: its name and the same four pages in the same order."""
         p, site = self.product, self.site
-        # The bar is the way down: the line first, then its apps with the one you are in marked. Each is one tap away.
-        leaf = posixpath.relpath(self.dir.strip("/") or ".", p.mount or ".")
-        apps = "".join(f'<a href="@{q.id}/"{(" aria-current=\"page\"" if leaf == "." else " aria-current=\"true\"") if q is p else ""}>{q.data["name"]}</a>'
-                       for q in site.products.values())
-        steps = [f'<li><a class="family-mark" href="@family/"{" aria-current=\"page\"" if p.family else ""}>{site.mark}<span data-t="bar.all"></span></a></li>',
-                 f'<li class="path-apps">{apps}</li>']
-        bar = f"""<div class="family-bar">
+        apps = []
+        for q in site.products.values():
+            here = "" if q is not p else ' aria-current="page"' if self.link(q.id, "") == "./" else ' aria-current="true"'
+            apps.append(f'\n        <li><a href="@{q.id}/"{here}><span class="chip" style="--chip: var(--family-chip-{q.id})"></span>{q.data["name"]}</a></li>')
+        home = ' aria-current="page"' if p.family and self.link("family", "") == "./" else ""
+        bar = f"""<header class="family-bar{" pen-down" if p.family else ""}">
   <div class="wrap">
-    <nav class="family-path" data-t-aria-label="bar.path">
-      <ol>{"".join(steps)}</ol>
+    <nav class="line-path" data-t-aria-label="bar.apps">
+      <a class="family-mark" href="@family/"{home} data-t-aria-label="bar.home">{site.mark}<span data-t="bar.all"></span></a>
+      <span class="line-sep" aria-hidden="true">/</span>
+      <ul class="line-apps">{"".join(apps)}
+      </ul>
     </nav>
     <button type="button" class="lang-switch" data-lang-switch hidden></button>
     <noscript><span class="lang-note" data-t="bar.noscript"></span></noscript>
   </div>
-</div>
+</header>
 """
-        if p.family:
-            brand = ""
-            items = [(key, href) for key, href in p.data.get("nav", [])]
-        else:
-            brand = f'\n    <span class="brand" aria-hidden="true">{p.data["name"]}</span>'  # the bar above names the app for everyone
+        row = ""
+        if not p.family:
             # The same pages in the same order for every product.
             items = [("nav.overview", "@/"), ("nav.guide", "@/guide/"), ("nav.download", "@/download/"), ("nav.how", "@/how-it-works/")]
             items = [(key, href) for key, href in items if href == "@/" or href.strip("@/") in {p.served(n) for n in p.pages()}]
-        nav = []
-        for key, href in items:
-            current = ' aria-current="page"' if self.link("", href[2:]) == "./" else ""
-            nav.append(f'\n      <a href="{href}"{current} data-t="{key}"></a>')
-        row = "" if not items else f"""<div class="product-nav">
-  <div class="wrap">{brand}
-    <nav data-t-aria-label="nav.label">{"".join(nav)}
-    </nav>
+            nav = []
+            for key, href in items:
+                current = ' aria-current="page"' if self.link("", href[2:]) == "./" else ""
+                nav.append(f'\n        <li><a href="{href}"{current} data-t="{key}"></a></li>')
+            row = f"""<nav class="product-nav" data-t-aria-label="nav.label">
+  <div class="wrap">
+    <span class="app-name">{p.data["name"]}</span>
+    <ul>{"".join(nav)}
+    </ul>
   </div>
-</div>
+</nav>
 """
+        # One footer everywhere: the line and everything in it, then the credits of the page's owner.
+        here = lambda q: ' class="here"' if q is p else ""
+        links = "".join(f'<a href="@{q.id}/"{here(q)}>{q.data["name"]}</a>' for q in site.products.values())
         foot = f"""<footer class="site-footer">
   <div class="wrap">
-    <span class="footer-line"><a href="@family/" data-t="bar.all"></a>: {", ".join(f'<a href="@{q.id}/">{q.data["name"]}</a>' for q in site.products.values())}</span>
-    <span data-t="footer.line"></span>
-    <span data-t="{"footer.note" if self.whole else self.meta.get("footer", "footer.note")}"></span>
+    <p class="footer-line"><a class="family-mark" href="@family/">{site.mark}<span data-t="bar.all"></span></a>{links}<a href="@family/bandroom/"{' class="here"' if self.name == "bandroom" else ""}>Bandroom</a><a href="{site.source}" data-t="footer.source"></a></p>
+    <p class="footer-note" data-t="{"footer.note" if self.whole else self.meta.get("footer", "footer.note")}"></p>
   </div>
 </footer>"""
-        return f'<header class="site-header">\n{bar}{row}</header>\n', foot
+        return bar + row, foot
 
     def render(self) -> tuple[str, dict]:
         p, site = self.product, self.site
@@ -453,6 +473,7 @@ class Page:
         for font in p.data.get("preload", []):  # the headline's face, so the headline is not drawn twice
             head.append(f'<link rel="preload" href="@/assets/fonts/{font}" as="font" type="font/ttf" crossorigin>')
         head.append('<script type="module" src="@family/scribe.js"></script>')
+        head.append('<script type="module" src="@family/rail.js"></script>')
         head.append('<link rel="icon" href="@/favicon.svg" type="image/svg+xml">')
         if "icons" in p.data:
             head += ['<link rel="icon" href="@/favicon.ico" sizes="any">', '<link rel="apple-touch-icon" href="@/apple-touch-icon.png">']
@@ -500,11 +521,14 @@ class Site:
         conf = tomllib.loads((SITE / "shared" / "site.toml").read_text())
         self.base = conf.get("base", "").rstrip("/") + "/" if conf.get("base") else ""
         self.redirects = conf.get("redirects", {})
+        self.source = conf["source"]
+        self.bandroom = conf["bandroom"]  # Bandroom's place on every app's rail
         self.shared_downloads = conf.get("downloads", [])
         self.text = words(lambda lang: SITE / "shared" / f"text.{lang}.toml")
         scribe = ROOT / "design" / "brands" / "scribe"
         self.mark = (scribe / "brand" / "mark.svg").read_text().strip()
-        self.bar = (scribe / "dist" / "web" / "bar.css").read_text()  # the bar's colours are the family's, on every page
+        self.line = (scribe / "dist" / "web" / "line.css").read_text()  # what the family puts on every page: the bar, the pen, the doubt mark
+        self.glyphs = {f.stem: f.read_text().strip() for f in sorted((scribe / "dist" / "web" / "variants").glob("*.svg"))}
         self.early = re.sub(r"\s*\n\s*", "", (SITE / "shared" / "early.js").read_text().split("*/", 1)[-1])
         every = [Product(f.parent, conf) for f in sorted(SITE.glob("*/product.toml"))]
         self.products = {p.id: p for p in every if not p.family}
@@ -517,7 +541,7 @@ class Site:
         if (web / "fonts").exists():  # the family has no face of its own
             shutil.copytree(web / "fonts", assets / "fonts", dirs_exist_ok=True)
         logo_dir.mkdir(parents=True, exist_ok=True)
-        for logo in [p.data["logo"]["light"], p.data["logo"]["dark"], *p.data.get("marks", [])] if "logo" in p.data else []:
+        for logo in p.data.get("marks", []):
             shutil.copy(p.brand / logo, logo_dir)
 
     def build(self) -> None:
@@ -530,7 +554,7 @@ class Site:
             shutil.copy(web / p.data["css"], out / "assets")
             shutil.copy(web / "fonts.css", out / "assets")
             # Each product's folder holds everything its pages load but the language script, which is the family's.
-            (out / "site.css").write_text(self.bar + "\n" + (SITE / "shared" / "site.css").read_text())
+            (out / "site.css").write_text(self.line + "\n" + (SITE / "shared" / "site.css").read_text())
             for css in p.data.get("styles", []):
                 if (p.dir / css).exists():  # the family's brands.css is made below
                     shutil.copy(p.dir / css, out)
@@ -545,6 +569,7 @@ class Site:
             if p.family:
                 self.family_assets(out / "assets")
                 shutil.copy(SITE / "shared" / "scribe.js", out)
+                shutil.copy(SITE / "shared" / "rail.js", out)
             for name, source in p.pages().items():
                 page = Page(self, p, name, source)
                 # What a page names in its header: from the product's folder, else from site/shared.
@@ -589,11 +614,17 @@ class Site:
 
 
 def check(out: Path) -> None:
-    """Every local link and image in the built pages points at something that was built."""
-    bad = []
+    """Every local link and image in the built pages points at something that was built, and a link to a place on a
+    page (#…) at a place that page has, in English and in Norwegian (nb.json may add ids of its own)."""
+    bad, ids = [], {}
+    for page in out.rglob("index.html"):
+        found = set(re.findall(r'\bid="([^"]+)"', page.read_text()))
+        nb = page.parent / "nb.json"
+        if nb.exists():
+            found |= set(re.findall(r'\bid=\\?"([^"\\]+)', nb.read_text()))
+        ids[page.resolve()] = found
     for page in out.rglob("index.html"):
         text = page.read_text()
-        ids = set(re.findall(r'\bid="([^"]+)"', text))
         for attr, value in re.findall(r'(?<![-\w])(href|src|srcset)="([^"]*)"', text):
             for url in ([u.split()[0] for u in value.split(", ")] if attr == "srcset" else [value]):
                 if re.match(r"[a-z]+:", url):
@@ -604,7 +635,7 @@ def check(out: Path) -> None:
                     target = target / "index.html"
                 if not target.exists() or out.resolve() not in target.parents:
                     bad.append(f"{page.relative_to(out)}: {url}")
-                elif frag and target == page.resolve() and frag not in ids:
+                elif frag and target in ids and frag not in ids[target]:
                     bad.append(f"{page.relative_to(out)}: no id for {url}")
     if bad:
         sys.exit("broken links:\n  " + "\n  ".join(bad))

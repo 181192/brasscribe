@@ -1,0 +1,28 @@
+title = "Bandroom: lyttingen, for alle Scribe-appene"
+description = "Bandroom er et gratis program til din egen Mac eller PC. Det lytter til opptakene fra telefonen og skriver partituret eller tabben, for alle Scribe-appene, i ditt eget nettverk."
+
+[hero]
+title = "Bandroom"
+lead = "Én hjelper på datamaskinen lytter for alle appene. Telefonen spør; Bandroom, på din egen Mac eller PC, skriver partituret eller tabben og sender det tilbake."
+get = "Last ned Bandroom"
+
+[does]
+title = "Dette gjør det."
+listens = "<strong>Lytter og skriver.</strong> Hvert bandpartitur og hver tab skrives her, for alle Scribe-appene og alle telefonene og nettbrettene du kobler til."
+home = "<strong>Blir hjemme.</strong> Opptaket går fra telefonen til din egen datamaskin, og ingen andre steder."
+quiet = "<strong>Går stille.</strong> Det ligger i menylinjen på en Mac, eller i varslingsområdet i Windows, og starter når du trenger det."
+studio = "<strong>Studio følger med.</strong> For den tekniske i bandet: velg <strong>Åpne Studio</strong> i menyen for å se hvert steg i hvordan partituret ble til."
+
+[get]
+title = "Last det ned."
+lead = "Gratis, for Mac med M-brikke eller PC med Windows 11. I listen over programmer heter det Brasscribe Bandroom: det er samme program for alle appene."
+mac = "Last ned for Mac"
+windows = "Last ned for Windows (tidlig versjon)"
+warn = "Datamaskinen advarer deg første gang, slik den gjør for alle programmer som ikke kommer fra en appbutikk. Veiledningene viser hvordan du kommer forbi."
+
+[first]
+title = "Første start."
+download = "Det laster ned det det trenger for å lytte, rundt 10 GB, så ha rundt 15 GB ledig. Internett trengs bare til dette."
+key = "For Brasscribes bandpartiturer ber det om en tilgangsnøkkel fra en gratis Hugging Face-konto, der lyttemodellen ligger."
+pair = "Velg <strong>Koble til en telefon</strong>, og så <strong>Koble til</strong> i appen på telefonen. Det gjør du én gang for hver telefon."
+guides = "Steg for steg, med bilder: <a href=\"@brasscribe/guide/#computer\">veiledningen til Brasscribe</a> og <a href=\"@fretscribe/guide/#computer\">veiledningen til Fretscribe</a>."

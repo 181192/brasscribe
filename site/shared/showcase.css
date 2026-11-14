@@ -192,7 +192,7 @@ main > section > .wrap > h2 { max-width: 20em; }
 .quiet { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
 .quiet a { color: var(--scribe-text-muted); }
 .getit .lead { max-width: 34em; }
-.needs-list { margin-top: var(--scribe-space-8); max-width: 46em; }
+.needs-line { margin: var(--scribe-space-6) 0 0; max-width: 46em; color: var(--scribe-text-muted); }
 .sure-end { margin-top: var(--scribe-space-6); max-width: 40em; font-size: 1.125rem; font-weight: 600; }
 
 /* What you hear when the strip plays: the recording, or the notes that were written. */
@@ -237,12 +237,3 @@ main > section > .wrap > h2 { max-width: 20em; }
 .twohundred .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-text-muted); stroke-width: 1.2; }
 .sure-source { margin: var(--scribe-space-8) 0 0; max-width: 40em; color: var(--scribe-text-muted); }
 
-/* The app on each device, and the programs on the computer: the same card for each. */
-.variants { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-5); }
-.variants li { display: flex; flex-direction: column; padding: var(--scribe-space-5); background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-top: 3px solid var(--scribe-brand); border-radius: var(--scribe-radius-md); }
-.variants h3 { margin: 0; font-size: var(--scribe-type-title-2-size); }
-.variants .status { margin: var(--scribe-space-1) 0 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
-.variants dl { margin: var(--scribe-space-4) 0 var(--scribe-space-5); }
-.variants dt { font-weight: 600; font-size: var(--scribe-type-callout-size); margin-top: var(--scribe-space-3); }
-.variants dd { margin: 0; color: var(--scribe-text-muted); }
-.variants .button { margin-top: auto; min-height: 44px; align-self: flex-start; }

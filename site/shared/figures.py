@@ -332,21 +332,114 @@ def screens(page) -> str:
     return '<ol class="flow">\n' + "\n".join(items) + "\n</ol>"
 
 
+def places(page, product=None) -> list[dict]:
+    """Where an app runs, in the rail's order: its own places from [[variants]], with the family's Bandroom fifth."""
+    product = product or page.product
+    own = {v["id"]: v for v in product.data["variants"]}
+    shared = {"id": "bandroom", "files": ["bandroom"], **page.site.bandroom}
+    return [own[k] if k != "bandroom" else shared for k in RAIL if k in own or k == "bandroom"]
+
+
+RAIL = ("phone", "tablet", "mac", "windows", "bandroom", "studio")  # the same order in every app
+
+
+def tags(page, place: dict) -> str:
+    """How ready each device of a place is: a word and a shape, never a colour alone."""
+    say = page.say
+    return (f'<ul class="tags" aria-label="{esc(say("variants.tags"))}">'
+            + "".join(f'<li class="tag {d["status"]}"><span class="tag-device">{d["name"]}</span> {say("variants." + d["status"])}</li>' for d in place["devices"])
+            + "</ul>")
+
+
+def rail(page, product=None, base: str = "#") -> str:
+    """The variant rail: one chip per place, glyph and name and a short note. A chip is a link to its place; the
+    script makes the chips tabs over the panels. Bandroom's chip is dashed: it is the line's, shared by every app."""
+    say, chips = page.say, []
+    for v in places(page, product):
+        sub = say(f"variants.{v['id']}.sub")
+        shared = ' class="shared"' if v["id"] == "bandroom" else ""
+        chips.append(f'<li><a href="{base}{v["id"]}"{shared} data-variant="{v["id"]}">{page.site.glyphs[v["id"]]}'
+                     f'<span class="rail-name">{say(f"variants.{v["id"]}.name")}</span>{f" <small>{sub}</small>" if sub else ""}</a></li>')
+    return f'<ul class="rail" aria-label="{esc(say("variants.label"))}">' + "".join(chips) + "</ul>"
+
+
 def devices(page) -> str:
-    """The app on each device, and the programs on the computer, from the product's [[platforms]]: the same card
-    for each, with what it does by itself, what it needs Bandroom for, and where to get it."""
-    say, lang, cards = page.say, page.lang, []
-    for r in page.product.data["platforms"]:
-        w = r[lang]
-        needs = f'<dt>{say("fig.with_bandroom")}</dt><dd>{w["bandroom"]}</dd>' if "bandroom" in w else ""
-        link = r.get("link", f'@/download/#{r["id"]}')
-        cards.append(f"""  <li id="on-{r["id"]}">
-    <h3>{w["name"]}</h3>
-    <p class="status">{w["status"]}</p>
-    <dl><dt>{say("fig.alone" if "bandroom" in w else "fig.does")}</dt><dd>{w["alone"]}</dd>{needs}</dl>
-    <a class="button outline" href="{link}">{w.get("get", say("fig.get", name=w["name"].split(",")[0]))}</a>
-  </li>""")
-    return '<ul class="variants">\n' + "\n".join(cards) + "\n</ul>"
+    """Where it runs: the rail, and a panel per place with what you do there, how ready it is, what it needs and where
+    to get it. Without the script every panel is there, one under the other; with it, the chosen one."""
+    say, name, panels = page.say, page.product.data["name"], []
+    for v in places(page):
+        w, vid = v[page.lang], v["id"]
+        href = "@family/bandroom/" if vid in ("bandroom", "studio") else f"@/download/#{vid}"
+        shot = ""
+        if v.get("shot"):
+            kind = page.product.kinds[v["shot"]]
+            frame = {"phone": "phone-frame", "tablet": "tablet-frame"}.get(kind, "mac-frame" if kind == "mac" else "window")
+            sizes = {"phone": "180px", "tablet": "280px"}.get(kind, "(max-width: 600px) 92vw, 520px")
+            shot = f'\n    <div class="variant-shot {kind}"><div class="{frame}">{page.shot(v["shot"], sizes, "", "lazy", said=w["alt"])}</div></div>'
+        panels.append(f"""  <div class="variant-panel" id="{vid}" data-variant="{vid}">
+    <div class="variant-text">
+      <h3>{say(f"variants.{vid}.title", app=name)}</h3>
+      <p class="variant-does">{w["does"]}</p>
+      {tags(page, v)}
+      <p class="variant-needs">{w["needs"]}</p>
+      <a class="button secondary" href="{href}">{say(f"variants.{vid}.download")}</a>
+    </div>{shot}
+  </div>""")
+    return f'<div class="variants" data-rail-root>\n  {rail(page)}\n' + "\n".join(panels) + "\n</div>"
+
+
+def matrix(page) -> str:
+    """Where every Scribe app runs, as one table: an app per row, a place per column, each cell the devices and how
+    ready they are, leading to that part of the app's download page. Bandroom is one row under them all."""
+    say, apps = page.say, list(page.site.products.values())
+    columns = [k for k in RAIL if k != "bandroom" and any(k in {v["id"] for v in q.data["variants"]} for q in apps)]
+    head = "".join(f'<th scope="col">{page.site.glyphs[k]}<span>{say(f"variants.{k}.name")}</span></th>' for k in columns)
+    rows = []
+    for q in apps:
+        own = {v["id"]: v for v in q.data["variants"]}
+        cells = []
+        for k in columns:
+            label = say(f"variants.{k}.name")
+            if k in own:
+                cells.append(f'<td data-label="{esc(label)}"><a href="@{q.id}/download/#{k}">{page.site.glyphs[k]}<span class="cell-name">{label}</span>{tags(page, own[k])}</a></td>')
+            else:
+                cells.append(f'<td class="none" data-label="{esc(label)}"><span aria-hidden="true">–</span><span class="vh">{say("variants.none")}</span></td>')
+        rows.append(f'<tr data-brand="{q.id}"><th scope="row"><span class="chip" style="--chip: var(--family-chip-{q.id})"></span>{q.data["name"]}</th>{"".join(cells)}</tr>')
+    shared = {"id": "bandroom", **page.site.bandroom}
+    rows.append(f'<tr class="shared"><th scope="row">{page.site.glyphs["bandroom"]}Bandroom</th><td colspan="{len(columns)}" data-label="{esc(say("variants.shared"))}">'
+                f'<a href="@family/bandroom/"><span class="cell-name">{say("variants.shared")}</span>{tags(page, shared)}</a></td></tr>')
+    return f"""<div class="table-scroll lines-scroll" role="region" aria-labelledby="lines-caption" tabindex="0">
+  <table class="lines">
+    <caption id="lines-caption" class="vh">{say("variants.matrix")}</caption>
+    <thead><tr><td></td>{head}</tr></thead>
+    <tbody>
+      {"\n      ".join(rows)}
+    </tbody>
+  </table>
+</div>"""
+
+
+def listening(page) -> str:
+    """Where a recording goes: from the app on the phone to Bandroom on your own computer and back, inside your own
+    network. The arrows are the family's pen line; nothing goes to the internet."""
+    w = page.group("listening.")
+    t = lambda k: esc(w[k])
+    return f"""<svg class="diagram diagram-home" viewBox="0 0 320 356" role="img" aria-label="{t('label')}" xmlns="http://www.w3.org/2000/svg">
+  <rect class="net" x="6" y="64" width="308" height="286" rx="14"/>
+  <text class="lbl" x="22" y="90">{t('network')}</text>
+  <rect class="box" x="24" y="8" width="272" height="40" rx="8"/>
+  <text class="t" x="160" y="33" text-anchor="middle">{t('internet')}</text>
+  <rect class="box model" x="60" y="108" width="200" height="72" rx="10"/>
+  <text class="t" x="160" y="139" text-anchor="middle">{t('phone')}</text>
+  <text class="s" x="160" y="160" text-anchor="middle">{t('phone_does')}</text>
+  <path class="arrow pen" d="M124 186 V250"/><circle class="pen-dot" cx="124" cy="256" r="4"/>
+  <path class="arrow pen" d="M196 256 V192"/><circle class="pen-dot" cx="196" cy="186" r="4"/>
+  <text class="s" x="114" y="226" text-anchor="end">{t('up')}</text>
+  <text class="s" x="206" y="226">{t('down')}</text>
+  <rect class="box model" x="40" y="264" width="240" height="72" rx="10"/>
+  <text class="t" x="160" y="295" text-anchor="middle">{t('computer')}</text>
+  <text class="s" x="160" y="316" text-anchor="middle">{t('computer_does')}</text>
+</svg>"""
 
 
 def rates(page) -> str:
