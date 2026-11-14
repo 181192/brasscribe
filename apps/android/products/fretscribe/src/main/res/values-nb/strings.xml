@@ -311,6 +311,22 @@
     <string name="fs_practice_metronome_tip">Et klikk på hvert slag.</string>
     <string name="fs_practice_sound_done">Ferdig</string>
     <string name="fs_sound_failed">Denne telefonen klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.</string>
+
+    <!-- Stemming og capo, fra tabben -->
+    <string name="fs_tuning_title">Stemming og capo</string>
+    <string name="fs_tuning_capo">Capo</string>
+    <string name="fs_tuning_capo_none">Ingen</string>
+    <string name="fs_tuning_capo_at">Bånd %1$d</string>
+    <string name="fs_tuning_capo_lower">Capo ett bånd ned</string>
+    <string name="fs_tuning_capo_higher">Capo ett bånd opp</string>
+    <string name="fs_tuning_keep_sound">Behold lyden</string>
+    <string name="fs_tuning_keep_sound_tip">De samme notene, på nye bånd regnet fra capoen.</string>
+    <string name="fs_tuning_keep_shapes">Behold grepene</string>
+    <string name="fs_tuning_keep_shapes_tip">De samme båndene og strengene. Sangen klinger høyere eller lavere.</string>
+    <string name="fs_tuning_write">Skriv tabben på nytt</string>
+    <string name="fs_tuning_writing">Skriver tabben på nytt …</string>
+    <string name="fs_tuning_failed">Tabben kunne ikke skrives slik. Prøv en annen stemming eller capo.</string>
+    <string name="fs_tuning_on_phone">Skrevet på denne telefonen, ut fra notene i tabben. Oktaven og hva som ble tatt opp, endrer du i Sjekk sangen, med datamaskinen.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
 </resources>

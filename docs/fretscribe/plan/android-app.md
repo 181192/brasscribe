@@ -71,7 +71,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 | d0 | `engine-client`: bass tab profile, `Tab` models, `getTab`, a fixture | low |
 | d | Done: open a recording, send a `tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
 | e | Done in a first form: Check the song from `/tab` (tuning, capo, octave, reference pitch, key and tempo, notes to check, notes left out); a change is a new job. Still to come: Other… tunings, and the capo that would fit (the computer does not suggest one) | none |
-| f1 | Done: the tab view to read: alphaTab, "?" and "!" from the data, fret numbers in Fretscribe Tab. Still to come: the layers menu, Show ? for, the tuning and capo sheet | low |
+| f1 | Done: the tab view to read: alphaTab, "?" and "!" from the data, fret numbers in Fretscribe Tab. The tuning and capo sheet writes the tab again on the phone for another tuning or capo (keep the sound or keep the shapes), through the core's bindings. Still to come: the layers menu, Show ? for, Custom tunings | low |
 | f2 | Done in a first form: Practice. The recording as the sound with a cursor that follows it, 5% speed steps with the pitch kept, repeat by bar, a 64 dp transport, and the recording fetched from the computer for a song opened without it. Sound: the recording, the tab's notes or both, with a count-in and a metronome; a song without its recording plays the tab's notes. Still to come: the speed trainer and 1% steps, saved repeats, hiding the controls while it plays, Lock the tab, and the line that scrolls past a fixed cursor | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |
 | g | Fix a note: fretboard strip, pitch stepper, pins, provenance, undo | low |
