@@ -1,5 +1,7 @@
 import Foundation
+import ImageIO
 import ScoreKit
+import UniformTypeIdentifiers
 import TranscriptionKit
 
 /// Opens one key screen directly (`-screen <name>`), for the screenshots in docs/screenshots
@@ -58,6 +60,18 @@ enum ScreenshotScenes {
             // the small band: a seat without its own part there gets the notice
             guard let p = openScore(), let comp = p.loadComposition() else { return }
             _ = try? app.rearrange(p, composition: comp, output: OutputChoice(lineup: .minimalBand))
+        case "pages", "pages-unread":
+            // three pages of printed music in hand; then a read that found no notes on them
+            app.pageList.clear()
+            for _ in 1...3 { if let page = scenePage() { app.pageList.add(photo: page) } }
+            app.path = [.pages]
+            if name == "pages-unread" {
+                let job = PagesJob(request: TranscriptionRequest(pages: app.pageList.pages.map(\.url), profile: AppModel.sheetProfile),
+                                   service: FrozenService())
+                job.error = TranscriptionError.jobFailed("read: StageFailed: read: no notes were found on the page")
+                app.pageJobs[job.id] = job
+                app.path.append(.readingPages(job.id))
+            }
         case "error":
             app.show(.silence)
         case "settings":
@@ -71,6 +85,21 @@ enum ScreenshotScenes {
 extension ScreenshotScenes {
     /// Where a scene's recording would be; nothing is there.
     static var sceneRecording: URL { FileManager.default.temporaryDirectory.appending(path: "Band practice.m4a") }
+
+    /// A page of printed music for the scenes: a white sheet with six staves, as a JPEG.
+    static func scenePage() -> Data? {
+        guard let ctx = CGContext(data: nil, width: 600, height: 800, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 600, height: 800))
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        for staff in 0..<6 { for line in 0..<5 { ctx.fill(CGRect(x: 40, y: 700 - staff * 110 - line * 12, width: 520, height: 2)) } }
+        guard let image = ctx.makeImage() else { return nil }
+        let data = NSMutableData()
+        guard let out = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(out, image, nil)
+        return CGImageDestinationFinalize(out) ? data as Data : nil
+    }
 
     /// The fixture score's title ("Old Hundredth").
     @MainActor static func fixtureTitle(_ app: AppModel) -> String {

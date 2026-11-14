@@ -69,6 +69,18 @@ the system opens one of them. When the other app is installed too, the one that 
 and hands the link to the other under that app's own scheme (`brasscribe:`, `fretscribe:`) when the player chooses it
 (`features/play/PairingLinks.swift`). Pairing from inside an app (scanning, the code, the computer's name) is as before.
 
+**Sheet music from a picture.** Both apps have Open sheet music on Home, and take a picture or a PDF that is opened,
+dropped or shared with them. The pages screen (`features/play/PagesViews.swift`) keeps the pages in order: pictures or
+PDFs from Files, pictures from the photo library, and on iPhone and iPad a photo from the camera, each moved or removed
+before Read the notes sends them to `POST /v1/jobs/pages` (Brasscribe Play: profile `sheet`, the score as it is written,
+opened without the lineup questions; Fretscribe: `sheet-tab` for the player's instrument, then Check the song, with no
+recording to practise with). PNG, JPEG, WebP and PDF go as they are; any other picture the system opens (an iPhone's
+HEIC) goes as an upright JPEG, its longest side at most 3000 pixels (`TranscriptionKit/Pages.swift`). A file over
+50 MB, and pages past 40, are left out on the device and said. The computer's refusals (`not_a_page`,
+`page_too_large`, `too_many_pages`, `reader_missing`, `wrong_input`) and the fixed words a read that failed ends with
+(`engine/src/scribe_engine/sheet.py`) are said in the app's words; package tests hold both lists to the engine's. The
+pages in hand live in the app's temporary folder: they are not kept once the system closes the app.
+
 ## iPhone and iPad (test build)
 
 Each release has `brasscribe-play-ios-unsigned.ipa`: Brasscribe Play for iPhone and iPad (one file for

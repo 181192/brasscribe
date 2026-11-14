@@ -112,10 +112,15 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         public let title: String?
         public let created: Double?
         public let audioID: String?
+        /// What the job read: "audio" (a recording) or "pages" (printed music).
+        public let input: String?
         enum CodingKeys: String, CodingKey {
-            case id, status, progress, stages, outputs, error, profile, target, title, created
+            case id, status, progress, stages, outputs, error, profile, target, title, created, input
             case audioID = "audio_id"
         }
+
+        /// The job read pages of printed music, not a recording.
+        public var readPages: Bool { input == "pages" }
 
         /// The job belongs to an app that makes [target]'s output. A job without a target, or of another target,
         /// does not.
@@ -416,6 +421,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     /// refused for unfinished setup is not sent again: the job is asked for by the recording's id (`refusedTake`).
     func upload(_ req: TranscriptionRequest) async throws -> Job {
         try await requireMatch()
+        if !req.pages.isEmpty { return try await uploadPages(req) }
         let take = Self.take(req.audioURL)
         if let audioID = takeRefused(matching: take) {
             do { return try await job(audioID: audioID, req, take: take) } catch TranscriptionError.http(404, _) {
@@ -460,6 +466,47 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
             if code == 409 { note(refusal: data, of: take) }
             throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self))
         }
+        return try JSONDecoder().decode(Job.self, from: data)
+    }
+
+    /// Pages of printed music, in order, as one job (`POST /v1/jobs/pages`, the files under `files`), streamed from a
+    /// temporary file like a recording. A refusal keeps the computer's whole answer, which names its code.
+    private func uploadPages(_ req: TranscriptionRequest) async throws -> Job {
+        let boundary = "scribe-\(UUID().uuidString)"
+        let tmp = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
+        FileManager.default.createFile(atPath: tmp.path, contents: nil)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        let h = try FileHandle(forWritingTo: tmp)
+        defer { try? h.close() }
+        func field(_ name: String, _ value: String) throws {
+            try h.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n".utf8))
+        }
+        try field("profile", req.profile)
+        if let t = req.title { try field("title", t) }
+        try field("render_audio", "false")
+        for f in req.fields { try field(f.name, f.value) }
+        for (i, page) in req.pages.enumerated() {
+            // the engine reads what a page is from its bytes; the name only keeps the order readable in its logs
+            let name = "page-\(String(format: "%03d", i + 1)).\(page.pathExtension.isEmpty ? "bin" : page.pathExtension)"
+            try h.write(contentsOf: Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"files\"; filename=\"\(name)\"\r\nContent-Type: application/octet-stream\r\n\r\n".utf8))
+            let src = try FileHandle(forReadingFrom: page)
+            defer { try? src.close() }
+            while let chunk = try src.read(upToCount: 1 << 20), !chunk.isEmpty { try h.write(contentsOf: chunk) }
+            try h.write(contentsOf: Data("\r\n".utf8))
+        }
+        try h.write(contentsOf: Data("--\(boundary)--\r\n".utf8))
+        try h.close()
+
+        var r = request("v1/jobs/pages", method: "POST")
+        r.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let (data, resp): (Data, URLResponse)
+        do { (data, resp) = try await session.upload(for: r, fromFile: tmp) } catch {
+            interface = nil
+            throw TranscriptionError.unreachable(error.localizedDescription)
+        }
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        if code == 401 { throw TranscriptionError.notPaired }
+        guard (200..<300).contains(code) else { throw TranscriptionError.http(code, String(decoding: data.prefix(4000), as: UTF8.self)) }
         return try JSONDecoder().decode(Job.self, from: data)
     }
 

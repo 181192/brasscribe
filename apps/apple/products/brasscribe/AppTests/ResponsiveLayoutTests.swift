@@ -275,10 +275,10 @@ import TranscriptionKit
             #expect(column.width <= cap + 1, "\(name): the column is \(column.width) wide at 2560, more than \(cap)")
         }
 
-        // Home: the two ways in fill the row in two equal columns (no empty third)
+        // Home: the three ways in fill the row in three equal columns (no empty fourth)
         for size in ["min", "1280x800", "2560x1400"] {
             guard let x = windows.first(where: { $0.screen == "home-scores" })?.at(size),
-                  let a = x.probes["wayIn-record"], let b = x.probes["wayIn-capture"], let drop = x.probes["dropArea"] else {
+                  let a = x.probes["wayIn-record"], let b = x.probes["wayIn-sheetMusic"], let drop = x.probes["dropArea"] else {
                 Issue.record("home at \(size): no ways in"); continue
             }
             #expect(abs(a.width - b.width) <= 1, "home at \(size): the ways in differ in width")

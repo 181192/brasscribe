@@ -1,11 +1,13 @@
 #if os(macOS)
 import AppKit
 import Foundation
+import ImageIO
 import ScoreKit
 import ScreenCatalogue
 import SwiftUI
 import Testing
 import TranscriptionKit
+import UniformTypeIdentifiers
 @testable import BrasscribePlay
 
 /// The screen catalogue of Play for Mac (README, Testing): every screen and sheet off screen at one window size, in
@@ -121,6 +123,24 @@ import TranscriptionKit
         }
     }
 
+    static let pagesLead = String(localized: "Bandroom on your computer reads the printed notes and writes them as a score you can play from. Nothing is arranged: the parts stay as they are on the page.")
+
+    /// A page of printed music as a phone would send it: a white sheet with five staff lines.
+    static func pagePicture(_ name: String) throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appending(path: "catalogue-\(UUID().uuidString)-\(name)")
+        let ctx = try #require(CGContext(data: nil, width: 600, height: 800, bitsPerComponent: 8, bytesPerRow: 0,
+                                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 600, height: 800))
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        for staff in 0..<6 { for line in 0..<5 { ctx.fill(CGRect(x: 40, y: 700 - staff * 110 - line * 12, width: 520, height: 2)) } }
+        let image = try #require(ctx.makeImage())
+        let out = try #require(CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(out, image, nil)
+        #expect(CGImageDestinationFinalize(out))
+        return url
+    }
+
     @Test func everyScreen() async throws {
         AXTree.enableInProcess()
         LayoutFixtures.freshLibrary()
@@ -169,6 +189,19 @@ import TranscriptionKit
         try await window("review", app: full) { ReviewView(piece: piece) }
         try piece.saveComposition(composition)
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
+        // Sheet music from a picture: none in hand yet, three in hand, and a read that found no notes
+        try await window("pages-empty", app: full) { PagesView(list: PageList(), lead: Self.pagesLead, computerThere: true) {} }
+        let inHand = PageList()
+        inHand.add(try (1...3).map { try Self.pagePicture("Hymn page \($0).png") })
+        try await window("pages-in-hand", app: full) { PagesView(list: inHand, lead: Self.pagesLead, computerThere: true) {} }
+        try await window("pages-offline", app: LayoutFixtures.app(connection: .offline)) {
+            PagesView(list: inHand, lead: Self.pagesLead, computerThere: false) {}
+        }
+        let unread = PagesJob(request: TranscriptionRequest(pages: inHand.pages.map(\.url), profile: "sheet"), service: FrozenService())
+        unread.error = TranscriptionError.jobFailed("read: StageFailed: read: no notes were found on the page")
+        try await window("pages-unread", app: full) {
+            ReadingPagesView(job: unread, otherWords: ErrorWords.plain, layingOut: "", tryAgain: {}, changePages: {})
+        }
         // A score asked of a computer with another version: the update words, and where to get the update
         for (name, update) in [("problem-update-computer", InterfaceMatch.Update.computer), ("problem-update-app", .app)] {
             try await window(name, app: full) { ProblemView(problem: .needsUpdate(update)) }

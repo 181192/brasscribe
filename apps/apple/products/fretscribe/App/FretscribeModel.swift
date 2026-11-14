@@ -40,6 +40,10 @@ enum Route: Hashable {
     case check(TabSong)
     case tab(TabSong)
     case problem(FretscribeProblem)
+    /// The pages of printed music in hand, before they are read.
+    case pages
+    /// The pages being read on the computer.
+    case readingPages(UUID)
 }
 
 /// A row in Your songs: a song on this device, or a finished tab on the paired computer.
@@ -69,6 +73,9 @@ final class FretscribeModel: PlayHost {
     var computerJobs: [CompanionService.Job] = [] { didSet { rebuild() } }
     var path: [Route] = []
     var jobs: [UUID: TabJob] = [:]
+    /// Pages of printed music in hand, and the reading of them on the computer.
+    let pageList = PageList()
+    var pageJobs: [UUID: PagesJob] = [:]
     var showSettings = false
     var showRecorder = false
     var showCapture = false
@@ -223,7 +230,8 @@ final class FretscribeModel: PlayHost {
         do {
             let xml = try await svc.artifact(.musicXML, jobID: jobID)
             let tab = try? await svc.artifact(.tab, jobID: jobID)
-            let song = try TabSong.create(title: title, jobID: jobID, musicXML: xml, tab: tab, recording: nil)
+            let pages = computerJobs.first { $0.id == jobID }?.readPages == true
+            let song = try TabSong.create(title: title, jobID: jobID, musicXML: xml, tab: tab, recording: nil, fromPages: pages)
             refresh()
             path = [.tab(song)]
         } catch {
@@ -267,6 +275,12 @@ final class FretscribeModel: PlayHost {
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let ext = url.pathExtension.lowercased()
         if ["musicxml", "xml", "mxl", "gp", "gp5", "gpx"].contains(ext) { show(.sheetMusic); return }
+        // a picture or a PDF of the notes: the computer reads it, with any other pages in hand
+        if let type = UTType(filenameExtension: ext), type.conforms(to: .image) || type.conforms(to: .pdf) {
+            pageList.add([url])
+            openPages()
+            return
+        }
         if let type = UTType(filenameExtension: ext), !type.conforms(to: .audiovisualContent) {
             show(.cantOpenFile(String(localized: "Fretscribe opens recordings and videos.")))
             return
@@ -312,6 +326,47 @@ final class FretscribeModel: PlayHost {
             } catch {
                 job.failure = error.localizedDescription
             }
+        }
+    }
+
+    // MARK: sheet music
+
+    /// The engine's profile that reads pages into a tab.
+    static let sheetProfile = "sheet-tab"
+
+    /// The pages screen, over Home, with the pages in hand.
+    func openPages() {
+        if path.last != .pages { path = [.pages] }
+    }
+
+    /// The tab's options for pages: the player's instrument, tuning and what they read. Nothing was recorded.
+    nonisolated static func pageFields(instrument: YourInstrument) -> [EngineField] {
+        let o = instrument.valid().jobOptions()
+        return [EngineField("instrument", o.instrument), EngineField("tuning", o.tuning), EngineField("layout", o.layout)]
+    }
+
+    /// The pages in hand, read on the computer into a tab for the player's instrument; Check the song follows. The
+    /// pages stay in hand until the tab is there.
+    func readPages() {
+        let pages = pageList.pages
+        guard let first = pages.first else { return }
+        let title = first.name == String(localized: "Sheet music") ? first.name : (first.name as NSString).deletingPathExtension
+        let request = TranscriptionRequest(pages: pages.map(\.url), profile: Self.sheetProfile, title: title,
+                                           fields: Self.pageFields(instrument: instrument))
+        let job = PagesJob(request: request, service: service())
+        job.onRefused = { [weak self] in self?.connection.poke() }
+        pageJobs[job.id] = job
+        path.append(.readingPages(job.id))
+        let svc = job.service
+        job.start { [weak self] result in
+            guard let self else { return }
+            let tab = try? await svc.artifact(.tab, jobID: result.jobID)
+            let song = try TabSong.create(title: title, jobID: self.useFixtureService ? nil : result.jobID, musicXML: result.musicXML,
+                                          tab: tab, recording: nil, fromPages: true)
+            self.pageList.clear()
+            self.refresh()
+            self.pageJobs[job.id] = nil
+            self.path = [.check(song)]
         }
     }
 

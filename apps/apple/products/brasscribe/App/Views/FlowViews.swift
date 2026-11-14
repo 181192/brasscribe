@@ -419,6 +419,7 @@ extension StageKind {
         case .arranging: return String(localized: "Arranging for brass band")
         case .engraving: return String(localized: "Laying out the pages")
         case .rendering: return String(localized: "Making the audio")
+        case .reading: return String(localized: "Reading the notes on the pages")
         case .working: return String(localized: "Working")
         }
     }

@@ -155,6 +155,7 @@ struct TranscribingView: View {
         case .arranging: String(localized: "Choosing strings and frets")
         case .engraving, .rendering: String(localized: "Laying out the tab")
         case .working: String(localized: "Getting ready")
+        case .reading: String(localized: "Reading the notes on the pages")
         }
     }
 }
@@ -339,7 +340,7 @@ struct ProblemView: View {
     private var title: String {
         switch problem {
         case .cantOpenFile: String(localized: "This file couldn't be opened")
-        case .sheetMusic: String(localized: "Fretscribe can't open sheet music yet")
+        case .sheetMusic: String(localized: "Fretscribe can't open a MusicXML file yet")
         case .copyProtected: String(localized: "This recording is protected")
         case .silence: String(localized: "Nothing was heard")
         case .tabFailed: String(localized: "The tab couldn't be made")
@@ -350,7 +351,7 @@ struct ProblemView: View {
     private var text: String {
         switch problem {
         case .cantOpenFile: String(localized: "Fretscribe couldn't read the sound in it.")
-        case .sheetMusic: String(localized: "It makes tabs from recordings. Open a recording, or record what you play.")
+        case .sheetMusic: String(localized: "It makes tabs from recordings, and from a picture or a PDF of the notes. Under Open sheet music on Home, choose pictures or a PDF.")
         case .copyProtected: String(localized: "Fretscribe can't use it: it is copy-protected. Play it and record it instead.")
         case .silence: String(localized: "The recording is silent. Check the microphone and try again.")
         case .tabFailed: String(localized: "Something went wrong while Bandroom on your computer was working on it.")

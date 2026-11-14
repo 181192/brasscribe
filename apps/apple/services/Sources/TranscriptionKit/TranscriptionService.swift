@@ -9,7 +9,10 @@ public struct EngineField: Sendable, Equatable {
 }
 
 public struct TranscriptionRequest: Sendable {
+    /// The recording; for pages, the first of them.
     public var audioURL: URL
+    /// Pages of printed music to read, in order, in place of a recording (`POST /v1/jobs/pages`); empty for a recording.
+    public var pages: [URL] = []
     /// The engine's profile id.
     public var profile: String
     public var title: String?
@@ -19,6 +22,13 @@ public struct TranscriptionRequest: Sendable {
         self.audioURL = audioURL; self.profile = profile; self.title = title; self.fields = fields
     }
 
+    /// Pages of printed music read by `profile` (a profile that reads pages: `sheet`, `sheet-tab`).
+    public init(pages: [URL], profile: String, title: String? = nil, fields: [EngineField] = []) {
+        precondition(!pages.isEmpty, "a job reads at least one page")
+        self.init(audioURL: pages[0], profile: profile, title: title, fields: fields)
+        self.pages = pages
+    }
+
     /// The value sent as [name]; nil when it is not sent.
     public func field(_ name: String) -> String? { fields.last { $0.name == name }?.value }
 }
@@ -26,9 +36,12 @@ public struct TranscriptionRequest: Sendable {
 /// Plain-language step names; the app localises them.
 public enum StageKind: String, Sendable, CaseIterable {
     case uploading, preparing, separating, findingBeat, transcribing, arranging, engraving, rendering, working
+    /// Reading the notes on pages of printed music (the engine's `read` stage).
+    case reading
 
     /// Map an engine stage name/kind onto a step a musician understands.
     public static func classify(name: String?, kind: String?) -> StageKind {
+        if name == "read" || kind == "read" { return .reading }
         let s = "\(name ?? "") \(kind ?? "")".lowercased()
         if s.contains("upload") { return .uploading }
         if s.contains("separat") || s.contains("stem") || s.contains("roformer") || s.contains("demucs") { return .separating }

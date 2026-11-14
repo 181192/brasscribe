@@ -161,6 +161,16 @@
         }
       }
     },
+    "%lld files are not pictures or PDFs, so they were left out.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld filer er verken bilder eller PDF-er, og ble ikke tatt med."
+          }
+        }
+      }
+    },
     "%lld note marked ?": {
       "localizations": {
         "nb": {
@@ -451,6 +461,26 @@
         }
       }
     },
+    "A picture, a photo or a PDF of the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et bilde, et foto eller en PDF av notene"
+          }
+        }
+      }
+    },
+    "A screenshot or a photo of the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et skjermbilde eller et foto av notene"
+          }
+        }
+      }
+    },
     "A “?” above a note means Fretscribe wasn't sure of it. A boxed “!” marks a note your instrument can't play there. Listen to that bar of the recording to check it.": {
       "localizations": {
         "nb": {
@@ -467,6 +497,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Om"
+          }
+        }
+      }
+    },
+    "Add a page first.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til en side først."
+          }
+        }
+      }
+    },
+    "Add pictures or a PDF": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til bilder eller en PDF"
           }
         }
       }
@@ -501,12 +551,62 @@
         }
       }
     },
+    "At most 40 pages can be read at once. The rest were left out.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Høyst 40 sider kan leses om gangen. Resten ble ikke tatt med."
+          }
+        }
+      }
+    },
     "B, E, A, D": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "H, E, A, D"
+          }
+        }
+      }
+    },
+    "Bandroom on your computer can't read sheet music yet. Update Bandroom there, then try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen kan ikke lese noter ennå. Oppdater Bandroom der, og prøv igjen."
+          }
+        }
+      }
+    },
+    "Bandroom on your computer reads the pages. You can switch to another app while it does.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen leser sidene. Du kan bytte til en annen app så lenge."
+          }
+        }
+      }
+    },
+    "Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen leser de trykte notene og skriver dem som tab for instrumentet ditt."
+          }
+        }
+      }
+    },
+    "Bandroom reads printed notes on a staff. Take the picture straight on, in good light, with the whole page sharp. Handwritten music and tab are not read.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom leser trykte noter på notelinjer. Ta bildet rett ovenfra, i godt lys, slik at hele siden er skarp. Håndskrevne noter og tab blir ikke lest."
           }
         }
       }
@@ -721,6 +821,16 @@
         }
       }
     },
+    "Change the pages": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endre sidene"
+          }
+        }
+      }
+    },
     "Check that your computer shows %@, then choose Allow there.": {
       "localizations": {
         "nb": {
@@ -751,12 +861,32 @@
         }
       }
     },
+    "Choose from your photos": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg blant bildene dine"
+          }
+        }
+      }
+    },
     "Choose one to continue.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Velg én for å fortsette."
+          }
+        }
+      }
+    },
+    "Choose pictures or a PDF": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg bilder eller en PDF"
           }
         }
       }
@@ -1081,12 +1211,12 @@
         }
       }
     },
-    "Fretscribe can't open sheet music yet": {
+    "Fretscribe can't open a MusicXML file yet": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fretscribe kan ikke åpne noter ennå"
+            "value": "Fretscribe kan ikke åpne MusicXML-filer ennå"
           }
         }
       }
@@ -1321,12 +1451,12 @@
         }
       }
     },
-    "It makes tabs from recordings. Open a recording, or record what you play.": {
+    "It makes tabs from recordings, and from a picture or a PDF of the notes. Under Open sheet music on Home, choose pictures or a PDF.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Den lager tabber fra opptak. Åpne et opptak, eller spill inn det du spiller."
+            "value": "Den lager tab fra opptak, og fra et bilde eller en PDF av notene. Under Åpne noter på Hjem velger du bilder eller en PDF."
           }
         }
       }
@@ -1507,6 +1637,26 @@
         }
       }
     },
+    "Move page %lld down": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytt side %lld ned"
+          }
+        }
+      }
+    },
+    "Move page %lld up": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytt side %lld opp"
+          }
+        }
+      }
+    },
     "MP3, WAV, M4A, MP4 and most other formats": {
       "localizations": {
         "nb": {
@@ -1593,6 +1743,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fant ingen mikrofon. Koble til en og prøv igjen."
+          }
+        }
+      }
+    },
+    "No notes were found on the page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ingen noter på siden"
           }
         }
       }
@@ -1777,12 +1937,62 @@
         }
       }
     },
+    "One file is not a picture or a PDF, so it was left out.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Én fil er verken et bilde eller en PDF, og ble ikke tatt med."
+          }
+        }
+      }
+    },
     "One instrument playing, with nothing else.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Ett instrument som spiller, uten noe annet."
+          }
+        }
+      }
+    },
+    "One of the pages is not a picture or a PDF that Bandroom can read.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En av sidene er verken et bilde eller en PDF som Bandroom kan lese."
+          }
+        }
+      }
+    },
+    "One of the pages is too large for Bandroom to read: a file can be 50 MB at most. Split a large PDF into parts.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En av sidene er for stor til at Bandroom kan lese den: en fil kan være høyst 50 MB. Del en stor PDF i flere."
+          }
+        }
+      }
+    },
+    "Only a tab staff was found": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det sto bare tab på siden"
+          }
+        }
+      }
+    },
+    "Only a tab staff was found on the page. Bandroom reads notes on a staff, not tab.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det sto bare tab på siden. Bandroom leser noter på notelinjer, ikke tab."
           }
         }
       }
@@ -1847,6 +2057,16 @@
         }
       }
     },
+    "Open sheet music": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne noter"
+          }
+        }
+      }
+    },
     "Open the download page": {
       "localizations": {
         "nb": {
@@ -1863,6 +2083,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpner tabben…"
+          }
+        }
+      }
+    },
+    "Page %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side %lld"
+          }
+        }
+      }
+    },
+    "Page %lld is now page %lld.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side %lld er nå side %lld."
+          }
+        }
+      }
+    },
+    "Page %lld is removed.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side %lld er fjernet."
+          }
+        }
+      }
+    },
+    "Pages, in the order they are read": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sidene, i den rekkefølgen de leses"
           }
         }
       }
@@ -2067,6 +2327,46 @@
         }
       }
     },
+    "Read the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les notene"
+          }
+        }
+      }
+    },
+    "Reading sheet music needs Bandroom on your computer.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandroom på datamaskinen må til for å lese noter."
+          }
+        }
+      }
+    },
+    "Reading the notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leser notene"
+          }
+        }
+      }
+    },
+    "Reading the notes on the pages": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leser notene på sidene"
+          }
+        }
+      }
+    },
     "Record": {
       "localizations": {
         "nb": {
@@ -2167,6 +2467,16 @@
         }
       }
     },
+    "Remove page %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern side %lld"
+          }
+        }
+      }
+    },
     "Repeat bar %@": {
       "localizations": {
         "nb": {
@@ -2257,6 +2567,16 @@
         }
       }
     },
+    "Sending the pages to your computer": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sender sidene til datamaskinen"
+          }
+        }
+      }
+    },
     "Sending the recording to your computer": {
       "localizations": {
         "nb": {
@@ -2283,6 +2603,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Innstillinger"
+          }
+        }
+      }
+    },
+    "Several pages become one piece, in the order you set": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flere sider blir ett stykke, i den rekkefølgen du setter"
+          }
+        }
+      }
+    },
+    "Sheet music": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noter"
+          }
+        }
+      }
+    },
+    "Sheet music from a picture": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noter fra et bilde"
           }
         }
       }
@@ -2353,6 +2703,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saktere"
+          }
+        }
+      }
+    },
+    "Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning."
           }
         }
       }
@@ -2477,6 +2837,16 @@
         }
       }
     },
+    "Stop reading the notes?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slutte å lese notene?"
+          }
+        }
+      }
+    },
     "Stop repeating": {
       "localizations": {
         "nb": {
@@ -2497,12 +2867,32 @@
         }
       }
     },
+    "Stopped. The pages are still here.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppet. Sidene ligger her fortsatt."
+          }
+        }
+      }
+    },
     "Stopped. You can start again from the recording.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Stoppet. Du kan starte på nytt fra opptaket."
+          }
+        }
+      }
+    },
+    "Straight on, in good light, with the whole page in the picture": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rett ovenfra, i godt lys, med hele siden i bildet"
           }
         }
       }
@@ -2577,6 +2967,26 @@
         }
       }
     },
+    "Take a photo of a page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bilde av en side"
+          }
+        }
+      }
+    },
+    "Take a photo of the next page": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bilde av neste side"
+          }
+        }
+      }
+    },
     "Technical details": {
       "localizations": {
         "nb": {
@@ -2639,6 +3049,16 @@
         }
       }
     },
+    "That isn't a picture or a PDF": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dette er verken et bilde eller en PDF"
+          }
+        }
+      }
+    },
     "The computer can't be reached. Check that the desktop program says Running, and that both are on the same network.": {
       "localizations": {
         "en": {
@@ -2695,6 +3115,36 @@
         }
       }
     },
+    "The notes couldn't be read": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notene kunne ikke leses"
+          }
+        }
+      }
+    },
+    "The pages are kept. You can send them again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sidene blir liggende. Du kan sende dem på nytt."
+          }
+        }
+      }
+    },
+    "The pages are read in this order. Move a page to change it.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sidene leses i denne rekkefølgen. Flytt en side for å endre den."
+          }
+        }
+      }
+    },
     "The pairing link is for any of them. Each app connects on its own.": {
       "localizations": {
         "nb": {
@@ -2743,6 +3193,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bandroom på datamaskinen"
+          }
+        }
+      }
+    },
+    "The reader of printed music is not installed on your computer. In Bandroom there, open Settings, find Sheet music from pictures and choose Install the reader. Then try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noteleseren er ikke installert på datamaskinen. Åpne Innstillinger i Bandroom der, finn Noter fra bilder og velg Installer noteleseren. Prøv så igjen."
           }
         }
       }
@@ -2883,6 +3343,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deretter: %@."
+          }
+        }
+      }
+    },
+    "There are more than 40 pages in all (every page of a PDF counts). Send fewer at a time.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det er mer enn 40 sider til sammen (hver side i en PDF teller). Send færre om gangen."
           }
         }
       }
@@ -3361,6 +3831,16 @@
         }
       }
     },
+    "Your computer couldn't download the files its reader of printed music needs. Check its internet connection, then send the pages again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen fikk ikke lastet ned filene noteleseren trenger. Sjekk internettforbindelsen på den, og send sidene på nytt."
+          }
+        }
+      }
+    },
     "Your computer doesn't have the recording any more. You can still read the tab.": {
       "localizations": {
         "nb": {
@@ -3371,12 +3851,32 @@
         }
       }
     },
+    "Your computer's disk is full. Free some space on it, then send the pages again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt."
+          }
+        }
+      }
+    },
     "Your instrument": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Instrumentet ditt"
+          }
+        }
+      }
+    },
+    "Your pages are still here. You can try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sidene dine ligger her fortsatt. Du kan prøve igjen."
           }
         }
       }

@@ -1,11 +1,13 @@
 #if os(macOS)
 import AppKit
 import Foundation
+import ImageIO
 import ScreenCatalogue
 import SwiftUI
 import Testing
 import TabKit
 import TranscriptionKit
+import UniformTypeIdentifiers
 @testable import Fretscribe
 
 /// The screen catalogue of Fretscribe for Mac: every screen and sheet off screen at one window size, in light, dark and
@@ -113,6 +115,22 @@ import TranscriptionKit
         }
     }
 
+    /// A page of printed music as a phone would send it: a white sheet with five staff lines.
+    static func pagePicture(_ name: String) throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appending(path: "catalogue-\(UUID().uuidString)-\(name)")
+        let ctx = try #require(CGContext(data: nil, width: 600, height: 800, bitsPerComponent: 8, bytesPerRow: 0,
+                                         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 600, height: 800))
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        for staff in 0..<6 { for line in 0..<5 { ctx.fill(CGRect(x: 40, y: 700 - staff * 110 - line * 12, width: 520, height: 2)) } }
+        let image = try #require(ctx.makeImage())
+        let out = try #require(CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(out, image, nil)
+        #expect(CGImageDestinationFinalize(out))
+        return url
+    }
+
     @Test func everyScreen() async throws {
         AXTree.enableInProcess()
         let songs = FileManager.default.temporaryDirectory.appending(path: "fs-catalogue-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -144,6 +162,17 @@ import TranscriptionKit
         for _ in 0..<500 where full.practice.tabSoundLoading { try await Task.sleep(for: .milliseconds(10)) }
         #expect(!full.practice.tabSoundLoading)
         try await sheet("sound", model: full) { SoundSheet(practice: full.practice, canFetch: true, onFetch: {}) {} }
+        // Sheet music from a picture: three pages in hand, and a read that found only a tab staff
+        let lead = String(localized: "Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.")
+        let inHand = PageList()
+        inHand.add(try (1...3).map { try Self.pagePicture("Riff page \($0).png") })
+        try await window("pages-in-hand", model: full) { PagesView(list: inHand, lead: lead, computerThere: true) {} }
+        let unread = PagesJob(request: TranscriptionRequest(pages: inHand.pages.map(\.url), profile: "sheet-tab"),
+                              service: FixtureService(directory: Self.fixture("bass-line"), stepDelay: 0, outputName: "tab"))
+        unread.error = TranscriptionError.jobFailed("read: StageFailed: read: no staff of notes was found on the page: a tab staff is not read")
+        try await window("pages-unread", model: full) {
+            ReadingPagesView(job: unread, otherWords: { _ in "" }, layingOut: "", tryAgain: {}, changePages: {})
+        }
 
         try await sheet("settings", model: full) { SettingsView() }
         try await sheet("first-run", model: Self.model()) { FirstRunView() }

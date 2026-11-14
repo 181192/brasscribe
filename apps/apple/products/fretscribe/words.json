@@ -100,7 +100,6 @@
   "Faster": "Raskere",
   "Fretscribe allowed for it.": "Fretscribe tok hensyn til det.",
   "Fretscribe can't follow the recording in this tab. You can still read it.": "Fretscribe kan ikke følge opptaket i denne tabben. Du kan fortsatt lese den.",
-  "Fretscribe can't open sheet music yet": "Fretscribe kan ikke åpne noter ennå",
   "Fretscribe can't use it: it is copy-protected. Play it and record it instead.": "Fretscribe kan ikke bruke det: Det er kopibeskyttet. Spill det av og ta det opp i stedet.",
   "Fretscribe couldn't get it from your computer.": "Fretscribe fikk ikke hentet den fra datamaskinen din.",
   "Fretscribe couldn't read the sound in it.": "Fretscribe klarte ikke å lese lyden i den.",
@@ -119,7 +118,6 @@
   "Guitar": "Gitar",
   "Help": "Hjelp",
   "High G": "Høy G",
-  "It makes tabs from recordings. Open a recording, or record what you play.": "Den lager tabber fra opptak. Åpne et opptak, eller spill inn det du spiller.",
   "Just my instrument": "Bare instrumentet mitt",
   "Key and tempo": "Toneart og tempo",
   "Keys": "Taster",
@@ -269,13 +267,16 @@
   "Metronome": "Metronom",
   "A click on every beat.": "Et klikk på hvert slag.",
   "Done": "Ferdig",
-  "This device couldn't make the sound for the tab's notes, the count-in and the metronome.": "Denne enheten klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen."
+  "This device couldn't make the sound for the tab's notes, the count-in and the metronome.": "Denne enheten klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.",
+  "Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.": "Bandroom på datamaskinen leser de trykte notene og skriver dem som tab for instrumentet ditt.",
+  "Fretscribe can't open a MusicXML file yet": "Fretscribe kan ikke åpne MusicXML-filer ennå",
+  "It makes tabs from recordings, and from a picture or a PDF of the notes. Under Open sheet music on Home, choose pictures or a PDF.": "Den lager tab fra opptak, og fra et bilde eller en PDF av notene. Under Åpne noter på Hjem velger du bilder eller en PDF."
  },
  "info_nb": {
   "CFBundleDisplayName": "Fretscribe",
   "NSMicrophoneUsageDescription": "Fretscribe tar opp spillingen din for å skrive den ned som tabb.",
   "NSAudioCaptureUsageDescription": "Fretscribe tar opp lyden som spilles på denne Macen for å skrive den ned som tabb.",
   "NSLocalNetworkUsageDescription": "Fretscribe snakker med Bandroom på din egen datamaskin, som skriver ned tonene.",
-  "NSCameraUsageDescription": "Fretscribe skanner koden datamaskinen viser, for å koble seg til den."
+  "NSCameraUsageDescription": "Fretscribe skanner koden datamaskinen viser, for å koble seg til den, og tar bilder av noter som datamaskinen leser."
  }
 }

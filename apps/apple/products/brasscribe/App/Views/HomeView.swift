@@ -116,6 +116,18 @@ struct HomeView: View {
                 .card(padding: 0)
                 .accessibilityLabel(Text("Record with the microphone"))
                 .accessibilityIdentifier("record")
+                Button { app.openPages() } label: {
+                    Image(systemName: BrasscribeIcon.file.systemName)
+                        .font(Font.Scribe.headline)
+                        .foregroundStyle(Color.Scribe.text)
+                        .frame(width: 72)
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .card(padding: 0)
+                .accessibilityLabel(Text("Open sheet music"))
+                .accessibilityIdentifier("sheetMusic")
             }
             .fixedSize(horizontal: false, vertical: true)
         } else {
@@ -126,16 +138,20 @@ struct HomeView: View {
                     WayInRow(icon: BrasscribeIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
                              subtitle: phoneLibrary ? nil : String(localized: "Play your part in the room")) { app.showRecorder = true }
                         .accessibilityIdentifier("record")
+                    Divider().overlay(Color.Scribe.border)
+                    WayInRow(icon: BrasscribeIcon.file.systemName, title: String(localized: "Open sheet music"),
+                             subtitle: phoneLibrary ? nil : String(localized: "A picture, a photo or a PDF of the notes")) { app.openPages() }
+                        .accessibilityIdentifier("sheetMusic")
                 }
                 .card(padding: 0)
             }
         }
     }
 
-    /// The cards under the drop area. The Mac has two ways in, side by side in two equal columns.
+    /// The cards under the drop area. The Mac has three ways in, side by side in three equal columns.
     private var waysInColumns: [GridItem] {
         #if os(macOS)
-        Array(repeating: GridItem(.flexible(), spacing: Space.s4), count: 2)
+        Array(repeating: GridItem(.flexible(), spacing: Space.s4), count: 3)
         #else
         [GridItem(.adaptive(minimum: 220), spacing: Space.s4)]
         #endif
@@ -168,6 +184,10 @@ struct HomeView: View {
                     .accessibilityIdentifier("capture")
                     .layoutProbe("wayIn-capture")
                 #endif
+                WayInCard(icon: BrasscribeIcon.file.systemName, title: String(localized: "Open sheet music"),
+                          subtitle: String(localized: "A picture, a photo or a PDF of the notes")) { app.openPages() }
+                    .accessibilityIdentifier("sheetMusic")
+                    .layoutProbe("wayIn-sheetMusic")
             }
         }
     }

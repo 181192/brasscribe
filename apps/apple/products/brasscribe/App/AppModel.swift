@@ -24,6 +24,10 @@ enum Route: Hashable {
     case output(Piece)
     case score(Piece)
     case problem(Problem)
+    /// The pages of printed music in hand, before they are read.
+    case pages
+    /// The pages being read on the computer.
+    case readingPages(UUID)
 }
 
 @Observable @MainActor
@@ -40,6 +44,9 @@ final class AppModel: PlayHost {
     var deleteTarget: ScoreEntry?
     var path: [Route] = []
     var jobs: [UUID: TranscriptionJob] = [:]
+    /// Pages of printed music in hand, and the reading of them on the computer.
+    let pageList = PageList()
+    var pageJobs: [UUID: PagesJob] = [:]
     var showSettings = false
     var showFirstRun = false
     var showRecorder = false
@@ -274,7 +281,9 @@ final class AppModel: PlayHost {
             let names = Set(computerJobs.first { $0.id == jobID }?.outputs ?? [])
             let result = TranscriptionResult(jobID: jobID, composition: comp, musicXML: xml,
                                              available: ArtifactKind.available(in: names), evidence: evidence)
-            let p = try Piece.create(title: title, profile: profile, result: result, original: nil, video: nil, fixtureDirectory: nil)
+            let pages = computerJobs.first { $0.id == jobID }?.readPages == true
+            let p = try Piece.create(title: title, profile: profile, result: result, original: nil, video: nil, fixtureDirectory: nil,
+                                     fromPages: pages)
             refresh()
             path = [review ? .review(p) : .score(p)]
         } catch {
@@ -395,9 +404,15 @@ final class AppModel: PlayHost {
             await openScoreFile(url, title: title)
             return
         }
-        // a PDF, an image, a document: not something to listen to
+        // a picture or a PDF of the notes: the computer reads it, with any other pages in hand
+        if let type, type.conforms(to: .image) || type.conforms(to: .pdf) {
+            pageList.add([url])
+            openPages()
+            return
+        }
+        // a document: not something to listen to
         if let type, !type.conforms(to: .audiovisualContent) {
-            show(.cantOpenFile(String(localized: "Brasscribe opens recordings, videos and MusicXML scores (.musicxml, .xml or .mxl).")))
+            show(.cantOpenFile(String(localized: "Brasscribe opens recordings, videos, MusicXML scores (.musicxml, .xml or .mxl), and pictures or PDFs of sheet music.")))
             return
         }
         let asset = AVURLAsset(url: url)
@@ -455,6 +470,37 @@ final class AppModel: PlayHost {
             show(.notAScore(error.localizedDescription))
         }
     }
+
+    // MARK: sheet music
+
+    /// The pages screen, over Home, with the pages in hand.
+    func openPages() {
+        if path.last != .pages { path = [.pages] }
+    }
+
+    /// The pages in hand, read on the computer into a score as it is written: nothing is arranged. The score opens
+    /// once it is there; the pages stay in hand until then.
+    func readPages() {
+        let pages = pageList.pages
+        guard let first = pages.first else { return }
+        let title = first.name == String(localized: "Sheet music") ? first.name : (first.name as NSString).deletingPathExtension
+        let job = PagesJob(request: TranscriptionRequest(pages: pages.map(\.url), profile: Self.sheetProfile, title: title), service: service())
+        job.onRefused = { [weak self] in self?.connection.poke() }
+        pageJobs[job.id] = job
+        path.append(.readingPages(job.id))
+        job.start { [weak self] result in
+            guard let self else { return }
+            let p = try Piece.create(title: title, profile: nil, result: result, original: nil, video: nil,
+                                     fixtureDirectory: self.useFixtureService ? self.fixtureDirectory : nil, fromPages: true)
+            self.pageList.clear()
+            self.refresh()
+            self.pageJobs[job.id] = nil
+            self.path = [.score(p)]
+        }
+    }
+
+    /// The engine's profile that reads pages into a score as it is written.
+    static let sheetProfile = "sheet"
 
     // MARK: transcription
 
