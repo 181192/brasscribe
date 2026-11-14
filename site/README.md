@@ -8,7 +8,9 @@ site/build.sh && python3 -m http.server -d site/_site 8000
 
 `site/build.sh` checks that nothing names a version, then runs `site/build.py` (Python's standard
 library only). The build fails on a link, an image or an anchor that points at nothing, on words
-missing in one of the two languages, and on words a page has but does not use.
+missing in one of the two languages, and on words a page has but does not use. It also fails when it has read a file
+that `inputs.txt` does not name, or when the workflows that build and check the site (`pages.yml`, and the `site`
+filter in `ci.yml`) do not name exactly what `inputs.txt` names.
 
 ## Where things are served
 
@@ -113,7 +115,8 @@ page loads. An app's `preload` in `product.toml` names the font files of its hea
 
 `shared/tests/languages.mjs` (its first lines say how to run it) changes the language of built pages back and
 forth in a browser and fails when what the scripts add to a page is doubled or lost, or a figure is left in the
-other language. Run it after a change to `shared/scribe.js` or to a script that adds to a page.
+other language, also when the other figures' words (`nb-more.json`) fail once. CI runs it, after the build, on a
+pull request that touches the site.
 
 What moves by itself (a strip writing itself out, the pen lines) moves once in half an hour: after that, and
 without the script or with less motion, a page opens as it stands at rest. A strip is drawn from the

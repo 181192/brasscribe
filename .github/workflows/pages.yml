@@ -3,7 +3,8 @@ name: pages
 on:
   push:
     branches: [main]
-    paths: ["site/**", "eval/baselines.json", "convert/reports/**", "design/brands/*/dist/**", "design/brands/*/brand/**", "design/brands/brasscribe/mockups/png/**", ".github/workflows/pages.yml"]
+    # What the site build reads (site/inputs.txt, which site/build.py checks this against), and this file.
+    paths: ["site/**", "eval/baselines.json", "convert/reports/**", "design/brands/*/dist/**", "design/brands/*/brand/**", "core/targets/fretted/src/tab.rs", "README.md", "**/README.md", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:

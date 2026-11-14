@@ -668,8 +668,73 @@ def check(out: Path) -> None:
         sys.exit("broken links:\n  " + "\n  ".join(bad))
 
 
+def glob_re(pattern: str) -> re.Pattern:
+    """A path pattern as GitHub's path filters read it: ** any folders, * any name within one."""
+    out = re.escape(pattern).replace(r"\*\*/", "(?:.*/)?").replace(r"\*\*", ".*").replace(r"\*", "[^/]*")
+    return re.compile(out + "$")
+
+
+def inputs() -> list[str]:
+    return [line.strip() for line in (SITE / "inputs.txt").read_text().splitlines() if line.strip() and not line.startswith("#")]
+
+
+def watch_reads() -> set[str]:
+    """Every file of the repository outside the output that the build opens or copies, as it does."""
+    import builtins
+    import shutil
+    seen: set[str] = set()
+
+    def note(path) -> None:
+        try:
+            full = Path(path).resolve()
+        except TypeError:
+            return
+        if ROOT in full.parents and OUT not in full.parents and full != OUT and full.is_file():
+            seen.add(full.relative_to(ROOT).as_posix())
+
+    real_open = builtins.open
+
+    def opening(file, mode="r", *args, **kwargs):
+        if isinstance(file, (str, Path)) and not any(m in mode for m in "wax+"):
+            note(file)
+        return real_open(file, mode, *args, **kwargs)
+    builtins.open = opening
+    for name in ("read_text", "read_bytes"):
+        real = getattr(Path, name)
+        setattr(Path, name, lambda self, *a, _real=real, **k: (note(self), _real(self, *a, **k))[1])
+    for name in ("copy", "copy2", "copyfile"):
+        real = getattr(shutil, name)
+        setattr(shutil, name, lambda src, dst, *a, _real=real, **k: (note(src), _real(src, dst, *a, **k))[1])
+    real_tree = shutil.copytree
+
+    def copying_tree(src, dst, *a, **k):
+        for f in Path(src).rglob("*"):
+            note(f)
+        return real_tree(src, dst, *a, **k)
+    shutil.copytree = copying_tree
+    return seen
+
+
+def check_inputs(read: set[str]) -> None:
+    """What the build read is covered by site/inputs.txt, and the workflows that build or check the site name exactly
+    those patterns (each with its own file), so a change to any input builds and checks the site."""
+    patterns = inputs()
+    rules = [glob_re(p) for p in patterns]
+    loose = sorted(f for f in read if not any(r.match(f) for r in rules))
+    if loose:
+        sys.exit("the build read files site/inputs.txt does not name (add them there and to the workflows):\n  " + "\n  ".join(loose))
+    for workflow, line in ((".github/workflows/ci.yml", r"^\s*site: \[(.*)\]"), (".github/workflows/pages.yml", r"^\s*paths: \[(.*)\]")):
+        found = re.search(line, (ROOT / workflow).read_text(), re.M)
+        named = set(re.findall(r"['\"]([^'\"]+)['\"]", found.group(1))) - {workflow} if found else set()
+        if named != set(patterns):
+            sys.exit(f"{workflow} does not name what site/inputs.txt names: missing {sorted(set(patterns) - named)}, "
+                     f"extra {sorted(named - set(patterns))}")
+
+
 if __name__ == "__main__":
+    read = watch_reads()
     Site().build()
     check(OUT)
     research.finish(OUT)
+    check_inputs(read)
     print(f"site built in {OUT}")
