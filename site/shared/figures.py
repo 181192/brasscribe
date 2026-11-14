@@ -432,7 +432,9 @@ def screens(page) -> str:
     items = []
     for item in page.say("screens.items"):
         shot = page.shot(item["shot"], "(max-width: 520px) 44vw, 232px", "", "lazy", said=item["alt"]).replace("\n", "\n      ")
-        items.append(f'  <li>\n    <div class="phone-frame">\n      {shot}\n    </div>\n    <h3>{item["title"]}</h3>\n    <p>{item["text"]}</p>\n  </li>')
+        # A screen that shows one player's part is headed with that part's name, as the part itself is.
+        part = f'\n    <p class="seats">{item["part"]}</p>' if "part" in item else ""
+        items.append(f'  <li>\n    <div class="phone-frame">\n      {shot}\n    </div>\n    <h3>{item["title"]}</h3>{part}\n    <p>{item["text"]}</p>\n  </li>')
     # On a phone the screens are a row that scrolls by itself, a screen at a time; the page does not.
     return (f'<div class="flow-scroll" role="region" aria-label="{esc(page.say("fig.screens"))}" tabindex="0">\n<ol class="flow">\n'
             + "\n".join(items) + "\n</ol>\n</div>")
@@ -442,6 +444,47 @@ def icon(page, size: str = "64") -> str:
     """The app's mark, beside its name: in the hero on a desktop, and on its sheet on the family home."""
     mark = Path(page.product.data["marks"][0]).name
     return f'<img class="app-icon" src="@/assets/logo/{mark}" width="{size}" height="{size}" alt="">'
+
+
+def lineup(page, only: str = "") -> str:
+    """Each place an app runs, shown as itself: a phone, a tablet on its stand, a Mac's window, and Bandroom in the
+    menu bar, with the marks of the apps that run there. The screens are the apps' own; Bandroom is drawn, not shot.
+    only="bandroom": Bandroom's alone (its own page)."""
+    say, apps = page.say, list(page.site.products.values())
+    # The phone shows Fretscribe's tab, the tablet and the Mac Brasscribe's parts: both apps are seen at work.
+    shown = {"phone": page.site.products["fretscribe"], "tablet": page.site.products["brasscribe"], "mac": page.site.products["brasscribe"]}
+
+    def mark(q) -> str:
+        # An app whose mark has a dark form shows it on a dark page.
+        names = [Path(m).name for m in q.data["marks"]]
+        dark = f'<source media="(prefers-color-scheme: dark)" srcset="@{q.id}/assets/logo/{names[1]}">' if len(names) > 1 and "dark" in names[1] else ""
+        return (f'<picture>{dark}<img class="lineup-mark" src="@{q.id}/assets/logo/{names[0]}" width="20" height="20" '
+                f'alt="{esc(q.data["name"])}"></picture>')
+
+    def marks(place: str) -> str:
+        return "".join(mark(q) for q in apps if place in {v["id"] for v in q.data["variants"]})
+
+    def caption(place: str, extra: str = "") -> str:
+        sub = say(f"variants.{place}.sub")
+        return (f'<p class="lineup-name">{page.site.glyphs[place]}<span>{say(f"variants.{place}.name")}</span>'
+                f'{f" <small>{sub}</small>" if sub else ""}</p><p class="lineup-apps">{extra or marks(place)}</p>')
+
+    items = []
+    if not only:
+        for place, frame, size in (("phone", "phone-frame", "120px"), ("tablet", "tablet-frame", "190px"), ("mac", "mac-frame", "(max-width: 700px) 70vw, 380px")):
+            q = shown[place]
+            v = next(x for x in q.data["variants"] if x["id"] == place)
+            shot = page.shot(v["shot"], size, "", "lazy", product=q, said=v[page.lang]["alt"])
+            stand = '<span class="stand" aria-hidden="true"></span>' if place == "tablet" else ""
+            items.append(f'<li class="lineup-{place}"><div class="lineup-device"><div class="{frame}">{shot}</div>{stand}</div>{caption(place)}</li>')
+    bar = (f'<div class="menubar" aria-hidden="true"><div class="menubar-bar"><i></i><i></i><span class="menubar-mine">{page.site.glyphs["bandroom"]}</span><i></i></div>'
+           f'<div class="menubar-panel">{page.site.glyphs["bandroom"]}<span>Bandroom</span></div></div>')
+    items.append(f'<li class="lineup-bandroom"><div class="lineup-device">{bar}</div>{caption("bandroom", esc(say("lineup.where")))}</li>')
+    if only:
+        return f'<ul class="lineup alone">' + "".join(items) + "</ul>"
+    # On a narrow screen the row scrolls by itself, and the keyboard can scroll it.
+    return (f'<div class="lineup-scroll" role="region" aria-label="{esc(say("lineup.label"))}" tabindex="0"><ul class="lineup">'
+            + "".join(items) + "</ul></div>")
 
 
 def places(page, product=None) -> list[dict]:
@@ -602,7 +645,7 @@ def tally(page, first: str = "", link: str = "") -> str:
         app = f'<p class="tally-app">{product.data["name"]}</p>\n  ' if link else ""
         more = f'\n  <p class="tally-more"><a href="@/#sure">{say("sure.more", app=product.data["name"])}</a></p>' if link else ""
         out.append(f"""<article class="tally" aria-labelledby="{uid}-title"{f' data-brand="{product.id}"' if link else ""}>
-  {app}<h3 id="{uid}-title">{w["title"]}</h3>
+  {app}<h3 id="{uid}-title"{' class="seats"' if "seats" in w else ""}>{w.get("seats") or w["title"]}</h3>
   <p class="where">{w["where"]}</p>
   <p class="big"><span class="big-n">{c["right"]}</span> <span class="big-of">{say("sure.of_first" if i == 1 else "sure.of")}</span></p>
   <div class="hundred" role="img" aria-labelledby="{uid}-key">{cells}</div>

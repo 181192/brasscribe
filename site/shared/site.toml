@@ -16,8 +16,8 @@ releases = "https://github.com/181192/brasscribe/releases/latest"
 # words are the family's. Its page is the family's /bandroom/.
 [bandroom]
 devices = [{ name = "Mac", status = "ready" }, { name = "Windows", status = "early" }]
-en = { does = "Writes every band score and every tab, for every Scribe app in the house.", needs = "A Mac with an M-series chip, or a PC with Windows 11. Free." }
-nb = { does = "Skriver hvert bandpartitur og hver tab, for alle Scribe-appene i huset.", needs = "Mac med M-brikke, eller PC med Windows 11. Gratis." }
+en = { does = "Writes every band score and every tab, for every Scribe app in the house.", needs = "A Mac from late 2020 or newer, or a PC with Windows 11. Free." }
+nb = { does = "Skriver hvert bandpartitur og hver tab, for alle Scribe-appene i huset.", needs = "Mac fra slutten av 2020 eller nyere, eller PC med Windows 11. Gratis." }
 
 # Release files every product's download page and table list after its own.
 [[downloads]]
@@ -25,8 +25,8 @@ file = "brasscribe-bandroom-macos-arm64.zip"
 group = "bandroom"
 label_en = "Bandroom for Mac"
 label_nb = "Bandroom for Mac"
-en = "Bandroom for a Mac with an M-series chip: <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
-nb = "Bandroom for Mac med M-brikke: <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
+en = "Bandroom for a Mac with an M-series chip (Apple silicon): <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
+nb = "Bandroom for Mac med M-brikke (Apple silicon): <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
 
 [[downloads]]
 file = "brasscribe-bandroom-windows-x64.zip"
@@ -39,20 +39,20 @@ nb = "Bandroom for Windows 11: <a href=\"@/guide/#computer\">datamaskinen</a> gj
 [[downloads]]
 file = "scribe-core-macos-arm64.tar.gz"
 group = "tools"
-en = "The <code>scribe-core</code> command-line tool, for the tech person"
-nb = "Kommandolinjeverktøyet <code>scribe-core</code>, for den tekniske"
+en = "The <code>scribe-core</code> command-line tool for Mac"
+nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Mac"
 
 [[downloads]]
 file = "scribe-core-linux-x86_64.tar.gz"
 group = "tools"
-en = "The <code>scribe-core</code> command-line tool for Linux (x86-64)"
-nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Linux (x86-64)"
+en = "The <code>scribe-core</code> command-line tool for Linux"
+nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Linux"
 
 [[downloads]]
 file = "scribe-core-windows-x86_64.zip"
 group = "tools"
-en = "The <code>scribe-core</code> command-line tool for Windows (x64)"
-nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Windows (x64)"
+en = "The <code>scribe-core</code> command-line tool for Windows"
+nb = "Kommandolinjeverktøyet <code>scribe-core</code> for Windows"
 
 [[downloads]]
 file = "SHA256SUMS"

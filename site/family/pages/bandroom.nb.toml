@@ -11,11 +11,11 @@ title = "Dette gjør det."
 listens = "<strong>Lytter og skriver.</strong> Hvert bandpartitur og hver tab skrives her, for alle Scribe-appene og alle telefonene og nettbrettene du kobler til."
 home = "<strong>Blir hjemme.</strong> Opptaket går fra telefonen til din egen datamaskin, og ingen andre steder."
 quiet = "<strong>Går stille.</strong> Det ligger i menylinjen på en Mac, eller i varslingsområdet i Windows, og starter når du trenger det."
-studio = "<strong>Studio følger med.</strong> For den tekniske i bandet: velg <strong>Åpne Studio</strong> i menyen for å se hvert steg i hvordan partituret ble til."
+studio = "<strong>Studio følger med.</strong> For den tekniske, i et band eller på egen hånd: velg <strong>Åpne Studio</strong> i menyen for å se hvert steg i hvordan partituret ble til."
 
 [get]
 title = "Last det ned."
-lead = "Gratis, for Mac med M-brikke eller PC med Windows 11. I listen over programmer heter det Brasscribe Bandroom: det er samme program for alle appene."
+lead = "Gratis, for Mac fra slutten av 2020 eller nyere eller PC med Windows 11. I listen over programmer heter det Brasscribe Bandroom: det er samme program for alle appene."
 mac = "Last ned for Mac"
 windows = "Last ned for Windows (tidlig versjon)"
 warn = "Datamaskinen advarer deg første gang, slik den gjør for alle programmer som ikke kommer fra en appbutikk. Veiledningene viser hvordan du kommer forbi."

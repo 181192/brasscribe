@@ -45,11 +45,13 @@ text = "One instrument, a brass band, a soloist with band, or pop and rock. Your
 [[screens.items]]
 shot = "review"
 alt = "Check the notes: bar 2 of Solo Cornet, written F sharp, uncertain, with Listen to this bar, Change note, Skip and Keep."
+part = "Solo Cornet"
 title = "Check the notes"
 text = "The notes with a ?, one at a time: listen, keep or change."
 [[screens.items]]
 shot = "part"
 alt = "The Solo Cornet part on iPhone with question marks over the uncertain notes and the player below. Mute my part is on."
+part = "Solo Cornet"
 title = "Your part"
 text = "Your own part as written for your instrument, with the band playing around you."
 
