@@ -180,6 +180,12 @@ class FretscribeScreensTest : ScreenCatalogue() {
         },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-sound") { theTab(); rule.onNodeWithTag("fs-practice-sound").performClick(); waitForTag("fs-sound-done", 5_000); rest() },
+        // The speed trainer turned on, with a repeat saved for the song.
+        Entry("practice-repeat-trainer") {
+            theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000)
+            rule.onNodeWithTag("fs-practice-repeat-save").performScrollTo().performClick(); waitForTag("fs-practice-saved", 5_000)
+            rule.onNodeWithTag("fs-practice-trainer").performScrollTo().performClick(); waitForTag("fs-practice-trainer-from", 5_000); rest()
+        },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },
         Entry("practice-recording-gone") {
             aSongWithoutItsRecording()

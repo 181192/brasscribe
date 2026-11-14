@@ -311,6 +311,16 @@
     <string name="fs_practice_metronome_tip">Et klikk på hvert slag.</string>
     <string name="fs_practice_sound_done">Ferdig</string>
     <string name="fs_sound_failed">Denne telefonen klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.</string>
+    <!-- Tempotreneren og de lagrede gjentakelsene, i Gjenta takter -->
+    <string name="fs_trainer">Tempotrener</string>
+    <string name="fs_trainer_tip">Starter på %1$d %% og går %3$d %% raskere etter hver %4$d. gang gjennom, opp til %2$d %%.</string>
+    <string name="fs_trainer_from">Start på</string>
+    <string name="fs_trainer_to">Opp til</string>
+    <string name="fs_trainer_every">Ganger gjennom på hvert tempo</string>
+    <string name="fs_trainer_less">%1$s: mindre</string>
+    <string name="fs_trainer_more">%1$s: mer</string>
+    <string name="fs_practice_repeat_save">Lagre denne gjentakelsen</string>
+    <string name="fs_practice_repeat_forget">Glem denne gjentakelsen</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
 </resources>

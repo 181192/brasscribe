@@ -53,6 +53,7 @@ class TabSoundPlayer(
     // The sound thread's own: the frames written since the output was last emptied, and the frame a count-in ended at.
     private var written = 0L
     private var countedBy = 0L
+    private var turned = 0
 
     @Volatile private var running = false
     @Volatile private var released = false
@@ -121,6 +122,8 @@ class TabSoundPlayer(
             track.write(bytes, bytes.remaining(), AudioTrack.WRITE_BLOCKING)
             written += FRAMES
             if (wasCounting && !synth.countingIn) countedBy = written
+            // (A turn of the stretch is told when it is rendered, a moment before it is heard.)
+            if (synth.turns != turned) { turned = synth.turns; main.post { if (asked) listener.onTurned() } }
             tell(synth)
             if (!more) {
                 // The end of the tab: what is rendered plays out, then the song has ended.

@@ -39,6 +39,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import no.kalli.scribe.tab.PracticeSound
+import no.kalli.scribe.tab.SpeedTrainer
 import no.kalli.scribe.tab.TabSoundState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -236,7 +237,7 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
             if (!early) repeatChip()
             if (soundHere && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice, onSound)
         }
-        if (choosing) RepeatDialog(measures, repeat, place?.first ?: 0, { practice.repeat(it); choosing = false }) { choosing = false }
+        if (choosing) RepeatDialog(practice, measures, repeat, place?.first ?: 0, { practice.repeat(it); choosing = false }) { choosing = false }
     }
 }
 
@@ -406,9 +407,19 @@ private fun StepButton(sign: String, name: String, tag: String, enabled: Boolean
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: Int, onSet: (RepeatBars?) -> Unit, close: () -> Unit) {
+private fun RepeatDialog(practice: PracticeModel, measures: List<TabMeasure>, repeat: RepeatBars?, bar: Int, onSet: (RepeatBars?) -> Unit, close: () -> Unit) {
     val c = ScribeTheme.colors
     val last = measures.lastIndex.coerceAtLeast(0)
+    // The speed trainer, as it runs or as it would start: off until it is turned on here.
+    val running = practice.trainer
+    var training by rememberSaveable { mutableStateOf(running != null) }
+    var trainFrom by rememberSaveable { mutableIntStateOf((running ?: SpeedTrainer.DEFAULT).from) }
+    var trainTo by rememberSaveable { mutableIntStateOf((running ?: SpeedTrainer.DEFAULT).to) }
+    var trainEvery by rememberSaveable { mutableIntStateOf((running ?: SpeedTrainer.DEFAULT).every) }
+    fun set(bars: RepeatBars) {
+        onSet(bars)
+        practice.train(if (training) SpeedTrainer(trainFrom, trainTo, every = trainEvery) else null)
+    }
     var from by rememberSaveable { mutableIntStateOf((repeat?.first ?: bar).coerceIn(0, last)) }
     var to by rememberSaveable { mutableIntStateOf((repeat?.last ?: (bar + 3)).coerceIn(from, last)) }
     fun number(i: Int) = measures.getOrNull(i)?.number ?: (i + 1).toString()
@@ -418,6 +429,18 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 Text(stringResource(R.string.fs_practice_repeat_tip), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+                // The repeats saved for this song: one tap starts one.
+                val saved = practice.savedRepeats
+                if (saved.isNotEmpty()) FlowRow(Modifier.fillMaxWidth().testTag("fs-practice-saved"), horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
+                    verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
+                    saved.forEach { bars ->
+                        val words = if (bars.first == bars.last) stringResource(R.string.fs_practice_repeat_set_one, number(bars.first))
+                            else stringResource(R.string.fs_practice_repeat_set, number(bars.first), number(bars.last))
+                        PracticeChip(if (bars.first == bars.last) number(bars.first) else stringResource(R.string.fs_practice_repeat_bars_brief, number(bars.first), number(bars.last)),
+                            bars == repeat, { set(bars) }, Modifier.widthIn(min = 48.dp).testTag("fs-practice-saved-${bars.first}-${bars.last}"),
+                            icon = DesignR.drawable.ic_bc_loop, role = Role.Button, accessibleName = words)
+                    }
+                }
                 val fromBar: @Composable (Modifier) -> Unit = { m ->
                     BarStepper(stringResource(R.string.loop_from), number(from), "from", from > 0, from < last,
                         { from--; }, { from++; if (to < from) to = from }, m)
@@ -432,11 +455,38 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
                 else { fromBar(Modifier.fillMaxWidth()); toBar(Modifier.fillMaxWidth()) }
                 if (measures.firstOrNull()?.pickup == true) Text(stringResource(R.string.fs_practice_repeat_pickup), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 // The buttons scroll with the rest: with large text on a phone on its side the dialog is taller than the screen.
-                Button({ onSet(RepeatBars(from, to)) }, Modifier.fillMaxWidth().padding(top = ScribeSpace.s2).heightIn(min = 52.dp).testTag("fs-practice-repeat-set"), shape = ScribeButtonShape) {
+                // The speed trainer: the bars start slow and go faster by themselves.
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = training, role = Role.Switch) { training = it }.testTag("fs-practice-trainer"),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.fs_trainer), style = MaterialTheme.typography.bodyLarge, color = c.text)
+                        Text(stringResource(R.string.fs_trainer_tip, trainFrom, trainTo, PracticeSpeed.STEP, trainEvery), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+                    }
+                    Switch(checked = training, onCheckedChange = null, colors = SwitchDefaults.colors(
+                        checkedTrackColor = c.primary, checkedThumbColor = c.onPrimary, uncheckedTrackColor = c.surfaceRaised, uncheckedThumbColor = c.borderStrong, uncheckedBorderColor = c.borderStrong))
+                }
+                if (training) {
+                    BarStepper(stringResource(R.string.fs_trainer_from), stringResource(R.string.speed_value, trainFrom), "trainer-from",
+                        trainFrom > PracticeSpeed.MIN, trainFrom < trainTo - PracticeSpeed.STEP + 1, { trainFrom -= PracticeSpeed.STEP }, { trainFrom += PracticeSpeed.STEP }, Modifier.fillMaxWidth(),
+                        less = stringResource(R.string.fs_trainer_less, stringResource(R.string.fs_trainer_from)), more = stringResource(R.string.fs_trainer_more, stringResource(R.string.fs_trainer_from)))
+                    BarStepper(stringResource(R.string.fs_trainer_to), stringResource(R.string.speed_value, trainTo), "trainer-to",
+                        trainTo > trainFrom + PracticeSpeed.STEP - 1, trainTo < PracticeSpeed.MAX, { trainTo -= PracticeSpeed.STEP }, { trainTo += PracticeSpeed.STEP }, Modifier.fillMaxWidth(),
+                        less = stringResource(R.string.fs_trainer_less, stringResource(R.string.fs_trainer_to)), more = stringResource(R.string.fs_trainer_more, stringResource(R.string.fs_trainer_to)))
+                    BarStepper(stringResource(R.string.fs_trainer_every), trainEvery.toString(), "trainer-every",
+                        trainEvery > 1, trainEvery < SpeedTrainer.MOST_TIMES, { trainEvery-- }, { trainEvery++ }, Modifier.fillMaxWidth(),
+                        less = stringResource(R.string.fs_trainer_less, stringResource(R.string.fs_trainer_every)), more = stringResource(R.string.fs_trainer_more, stringResource(R.string.fs_trainer_every)))
+                }
+                Button({ set(RepeatBars(from, to)) }, Modifier.fillMaxWidth().padding(top = ScribeSpace.s2).heightIn(min = 52.dp).testTag("fs-practice-repeat-set"), shape = ScribeButtonShape) {
                     Text(if (from == to) stringResource(R.string.fs_practice_repeat_set_one, number(from)) else stringResource(R.string.fs_practice_repeat_set, number(from), number(to)),
                         style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
                 }
                 FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2, Alignment.End)) {
+                    // The bars chosen are kept for the song, or taken out again when they are kept already.
+                    val chosen = RepeatBars(from, to)
+                    if (chosen in practice.savedRepeats) PlainButton(stringResource(R.string.fs_practice_repeat_forget), { practice.forgetRepeat(chosen) }, Modifier.testTag("fs-practice-repeat-forget"))
+                    else PlainButton(stringResource(R.string.fs_practice_repeat_save), { practice.saveRepeat(chosen) }, Modifier.testTag("fs-practice-repeat-save"))
                     if (repeat != null) PlainButton(stringResource(R.string.loop_clear), { onSet(null) }, Modifier.testTag("fs-practice-repeat-stop"))
                     PlainButton(stringResource(R.string.cancel), close, Modifier.testTag("fs-practice-repeat-cancel"))
                 }
@@ -446,16 +496,20 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
     )
 }
 
-/** One end of the repeat: its name, a bar earlier, the bar's number (said when it changes), a bar later. */
+/**
+ * One end of the repeat: its name, a bar earlier, the bar's number (said when it changes), a bar later. The trainer's
+ * numbers are stepped the same way, with [less] and [more] as the names of their steps.
+ */
 @Composable
-private fun BarStepper(label: String, value: String, tag: String, canGoDown: Boolean, canGoUp: Boolean, down: () -> Unit, up: () -> Unit, modifier: Modifier = Modifier) {
+private fun BarStepper(label: String, value: String, tag: String, canGoDown: Boolean, canGoUp: Boolean, down: () -> Unit, up: () -> Unit, modifier: Modifier = Modifier,
+    less: String = stringResource(R.string.fs_practice_bar_earlier, label), more: String = stringResource(R.string.fs_practice_bar_later, label)) {
     val c = ScribeTheme.colors
     val spoken = stringResource(R.string.fs_practice_bar_value, label, value)
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f).clearAndSetSemantics { }, style = MaterialTheme.typography.bodyLarge, color = c.text)
-        StepButton("−", stringResource(R.string.fs_practice_bar_earlier, label), "fs-practice-$tag-down", canGoDown, onClick = down)
+        StepButton("−", less, "fs-practice-$tag-down", canGoDown, onClick = down)
         Text(value, style = MaterialTheme.typography.titleMedium, color = c.text, textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(min = 40.dp).testTag("fs-practice-$tag").semantics { contentDescription = spoken; liveRegion = LiveRegionMode.Polite })
-        StepButton("+", stringResource(R.string.fs_practice_bar_later, label), "fs-practice-$tag-up", canGoUp, onClick = up)
+        StepButton("+", more, "fs-practice-$tag-up", canGoUp, onClick = up)
     }
 }
