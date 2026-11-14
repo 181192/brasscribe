@@ -126,13 +126,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
 
     PlayScaffold(
         title = source?.name?.substringBeforeLast('.'), onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
-        bottom = {
-            // Only said when it is so: the result offers a change, and the computer is there to make it.
-            val ready = heard as? Heard.Ready
-            if (ready != null && canChange && SongCheck.rows(ready.tab).any { changes(it) })
-                Text(stringResource(R.string.fs_check_later), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
-            PrimaryButton(stringResource(R.string.fs_show_tab), { vm.navigate(Screen.SCORE) }, Modifier.testTag("fs-show-tab"))
-        },
+        bottom = { PrimaryButton(stringResource(R.string.fs_show_tab), { vm.navigate(Screen.SCORE) }, Modifier.testTag("fs-show-tab")) },
     ) {
         ScreenTitle(stringResource(R.string.fs_check_title), Modifier.focusRequester(headingFocus).focusable())
         when (val h = heard) {
@@ -154,6 +148,10 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                         SongRowView(row, changes[i]?.takeIf { canChange }) { writeAgain(it, h) }
                     }
                 }
+                // Only said when it is so: the result offers a change, and the computer is there to make it. Under the
+                // rows it is about, and not in the band with the button: a lone button stays docked on a short screen.
+                if (canChange && rows.any { changes(it) })
+                    Text(stringResource(R.string.fs_check_later), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
             }
         }
     }

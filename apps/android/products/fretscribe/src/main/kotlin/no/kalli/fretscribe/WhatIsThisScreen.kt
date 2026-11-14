@@ -128,23 +128,20 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
+    // One line says what is still missing; the computer comes first, since the row above has its button.
+    val missing = when {
+        !inHand -> R.string.fs_what_no_recording
+        !there -> R.string.fs_what_connect_first
+        asking -> R.string.fs_what_asking
+        tooOld -> tooOldWords(mine.kind)
+        answer.recording == null -> R.string.profile_choose_one
+        else -> null
+    }
+    val why = missing?.let { stringResource(it) }
     PlayScaffold(
         title = source?.let { s -> if (s.durationS > 0) "${s.name} · ${clock(s.durationS)}" else s.name },
         onBack = vm::back, backLabel = stringResource(R.string.home), status = status,
         bottom = {
-            // One line says what is still missing; the computer comes first, since the row above has its button.
-            val missing = when {
-                !inHand -> R.string.fs_what_no_recording
-                !there -> R.string.fs_what_connect_first
-                asking -> R.string.fs_what_asking
-                tooOld -> tooOldWords(mine.kind)
-                answer.recording == null -> R.string.profile_choose_one
-                else -> null
-            }
-            val why = missing?.let { stringResource(it) }
-            // The line can change while the screen is open (the computer answers): a screen reader is told, without interrupting.
-            if (why != null) Text(why, Modifier.testTag("fs-what-missing").semantics { liveRegion = LiveRegionMode.Polite },
-                style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
             PrimaryButton(stringResource(R.string.continue_label), {
                 // From here the recording is written down afresh, for the player's instrument as it is now.
                 SongAnswers.set(source, SongAnswer(answer.recording))
@@ -173,5 +170,10 @@ fun WhatIsThisScreen(vm: PlayViewModel) {
             // Connect or Pair this phone again, as on Home: the pairing screen, or another try at a paired computer.
             ConnectionStatusRow(vm, Modifier.testTag("fs-what-connect"))
         }
+        // Last in the content, right over the button, and not in the band with it: a lone button stays docked on a
+        // short screen. The line can change while the screen is open (the computer answers): a screen reader is told,
+        // without interrupting.
+        if (why != null) Text(why, Modifier.testTag("fs-what-missing").semantics { liveRegion = LiveRegionMode.Polite },
+            style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
     }
 }

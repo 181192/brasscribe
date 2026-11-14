@@ -76,13 +76,13 @@ class FretscribeScreensTest : ScreenCatalogue() {
         whatIsThis()
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performScrollTo().performClick()
-        rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-what-continue").performClick()
         waitForTag("fs-show-tab")
     }
 
     private fun theTab() {
         checkTheSong()
-        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-show-tab").performClick()
         waitForTag("fs-tab", 30_000)
         waitUntil(30_000) { TabScreenProbe.view?.let { it.engraving.value != null && it.scale == TabScreenProbe.wanted } == true }
         // And the player under the tab, which comes once the recording has been looked for on the phone (on another thread).
@@ -122,7 +122,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("home-with-a-song") { checkTheSong(); waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }; rule.runOnUiThread { vm.home() }; rest() },
         Entry("home-song-options") { theSongsOptions() },
         Entry("home-song-delete") { theSongsOptions(); rule.onNodeWithTag("score-delete").performClick(); rest() },
-        Entry("what-is-this") { whatIsThis() },
+        Entry("what-is-this", primaryInView = "fs-what-continue") { whatIsThis() },
         Entry("writing-down", steady = false) {
             whatIsThis()
             rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
@@ -130,7 +130,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
             rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
             waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
         },
-        Entry("check-the-song") { checkTheSong() },
+        Entry("check-the-song", primaryInView = "fs-show-tab") { checkTheSong() },
         Entry("tab") { theTab() },
         Entry("tab-full-screen") { theTab(); rule.onNodeWithTag("fs-tab-full-screen").performClick(); waitForTag("fs-tab-focus-minimal", 5_000); rest() },
         Entry("tab-full-screen-controls", apartFromOrder = setOf("fs-tab")) {
