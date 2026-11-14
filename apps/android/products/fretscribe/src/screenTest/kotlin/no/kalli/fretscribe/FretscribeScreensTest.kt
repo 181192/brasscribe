@@ -154,8 +154,11 @@ class FretscribeScreensTest : ScreenCatalogue() {
         // The same three with a guitar: six strings, and the guitar line's own notes to check.
         Entry("check-the-song-guitar") { aGuitar(); checkTheSong() },
         Entry("tab-guitar") { aGuitar(); theTab() },
-        // "Check it" goes to the first note with a question mark (the first mark of this line is a note with no place).
-        Entry("tab-note-guitar") { aGuitar(); theTab(); rule.onNodeWithTag("fs-tab-marked").performClick(); waitForTag("fs-tab-note", 5_000); rest() },
+        // The first mark of this line is a note with no place; "Next ?" goes on to the note with a question mark.
+        Entry("tab-note-guitar") {
+            aGuitar(); theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000)
+            rule.onNodeWithTag("fs-tab-note-next").performClick(); rest()
+        },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },
         Entry("practice-recording-gone") {
