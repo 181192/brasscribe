@@ -57,6 +57,12 @@ abstract class ScreenCatalogue : ScreenTest() {
      */
     protected open val onSite: Set<String> = emptySet()
 
+    /**
+     * Puts back what one screen may have left for the next (an app's own settings, a place it remembers), so each
+     * screen is drawn the same whichever screens ran before it: a picture is compared with the one of the run before.
+     */
+    protected open fun beforeEach() {}
+
     private companion object {
         /** No release's version, so it cannot be taken for one. */
         const val FIXED_VERSION = "0.0.0"
@@ -88,6 +94,7 @@ abstract class ScreenCatalogue : ScreenTest() {
         for (screen in screens.filter { only == null || it.name in only }) {
             try {
                 fromHome()
+                beforeEach()
                 screen.open()
                 // (A moment of something under way is looked at as it is: time that passes would end it.)
                 if (screen.steady) settle() else rule.waitForIdle()
@@ -193,6 +200,7 @@ abstract class ScreenCatalogue : ScreenTest() {
         for (screen in screens) {
             try {
                 fromHome()
+                beforeEach()
                 screen.open()
                 settle()
                 val all = tabThrough()

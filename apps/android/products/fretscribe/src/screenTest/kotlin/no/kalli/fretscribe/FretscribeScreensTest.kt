@@ -48,8 +48,8 @@ class FretscribeScreensTest : ScreenCatalogue() {
 
     // The screens site/fretscribe/shots.txt takes from here.
     override val onSite = setOf(
-        "home", "home-with-a-song", "your-instrument", "what-is-this", "check-the-song", "tab", "practice-repeat",
-        "tab-full-screen", "computer", "tab-guitar",
+        "home", "your-instrument", "what-is-this", "check-the-song", "tab", "practice-repeat", "computer",
+        "your-instrument-guitar", "what-is-this-guitar", "tab-guitar",
     )
 
     @Before
@@ -63,6 +63,13 @@ class FretscribeScreensTest : ScreenCatalogue() {
     private fun aGuitar() {
         guitar = true
         yourInstrumentStore(rule.activity).save(YourInstrument(FrettedInstrument.GUITAR_6))
+    }
+
+    /** Each screen starts with the bass and opens a tab at its top: a guitar, or a bar read before, is not carried on. */
+    override fun beforeEach() {
+        guitar = false
+        yourInstrumentStore(rule.activity).save(YourInstrument(FrettedInstrument.BASS_4))
+        TabPlaces.forget()
     }
 
     @After
@@ -137,7 +144,8 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("first-run") { rule.runOnUiThread { container.firstRunDone = false; vm.navigate(Screen.FIRST_RUN) } },
         Entry("your-instrument") { rule.runOnUiThread { vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }; waitForTag("fs-keep", 5_000) },
         Entry("home") { },
-        Entry("home-with-a-song") { checkTheSong(); waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }; rule.runOnUiThread { vm.home() }; rest() },
+        // (Home steps its headline aside once the song is in the list it shows: the picture waits for that.)
+        Entry("home-with-a-song") { checkTheSong(); waitUntil(10_000) { vm.savedScores.value.isNotEmpty() }; rule.runOnUiThread { vm.home() }; waitUntil(10_000) { vm.scores.value.isNotEmpty() }; rest() },
         Entry("home-song-options") { theSongsOptions() },
         Entry("home-song-delete") { theSongsOptions(); rule.onNodeWithTag("score-delete").performClick(); rest() },
         Entry("what-is-this", primaryInView = "fs-what-continue") { whatIsThis() },
@@ -157,7 +165,9 @@ class FretscribeScreensTest : ScreenCatalogue() {
         },
         // (The note under the tab is the screen's bottom bar, which Tab reaches before the tab: issue 162.)
         Entry("tab-note") { theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000); rest() },
-        // The same three with a guitar: six strings, and the guitar line's own notes to check.
+        // The same with a guitar: six strings, and the guitar line's own recording and notes to check.
+        Entry("your-instrument-guitar") { aGuitar(); rule.runOnUiThread { vm.navigate(Screen.SETTINGS); vm.openSeatPicker(SeatPickerMode.SETTINGS) }; waitForTag("fs-keep", 5_000) },
+        Entry("what-is-this-guitar", primaryInView = "fs-what-continue") { aGuitar(); whatIsThis() },
         Entry("check-the-song-guitar") { aGuitar(); checkTheSong() },
         Entry("tab-guitar") { aGuitar(); theTab() },
         // The first mark of this line is a note with no place; "Next ?" goes on to the note with a question mark.

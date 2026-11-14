@@ -9,12 +9,10 @@
 # To swap a shot, change its paths here, run the script, and update the alt text on the pages.
 A=apps/android/docs/screenshots/fretscribe
 home          phone    $A/home-light.png             $A/home-dark.png              $A/home-nb.png              $A/home-nb-dark.png
-songs         phone    $A/home-with-a-song-light.png $A/home-with-a-song-dark.png  $A/home-with-a-song-nb.png  $A/home-with-a-song-nb-dark.png
 instrument    phone    $A/your-instrument-light.png  $A/your-instrument-dark.png   $A/your-instrument-nb.png   $A/your-instrument-nb-dark.png
 what-is-this  phone    $A/what-is-this-light.png     $A/what-is-this-dark.png      $A/what-is-this-nb.png      $A/what-is-this-nb-dark.png
 check         phone    $A/check-the-song-light.png   $A/check-the-song-dark.png    $A/check-the-song-nb.png    $A/check-the-song-nb-dark.png
 tab           phone    $A/tab-light.png              $A/tab-dark.png               $A/tab-nb.png               $A/tab-nb-dark.png
 repeat        phone    $A/practice-repeat-light.png  $A/practice-repeat-dark.png   $A/practice-repeat-nb.png   $A/practice-repeat-nb-dark.png
-full-screen   phone    $A/tab-full-screen-light.png  $A/tab-full-screen-dark.png   $A/tab-full-screen-nb.png   $A/tab-full-screen-nb-dark.png
 computer      phone    $A/computer-light.png         $A/computer-dark.png          $A/computer-nb.png          $A/computer-nb-dark.png
 tab-guitar    phone    $A/tab-guitar-light.png       $A/tab-guitar-dark.png        $A/tab-guitar-nb.png        $A/tab-guitar-nb-dark.png
