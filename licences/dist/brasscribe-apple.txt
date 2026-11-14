@@ -19,6 +19,9 @@ Contents
 - University of Iowa Musical Instrument Samples (band sounds) (Free for any use)
 - MuseScore MS Basic SoundFont (band sounds) (MIT)
 - Instrument Serif font (OFL-1.1)
+- SwiftF0 (model) (MIT)
+- Basic Pitch (model) (Apache-2.0)
+- Beat This! (model) (MIT)
 
 ========================================
 
@@ -238,6 +241,47 @@ https://github.com/Instrument/instrument-serif
 Licence: OFL-1.1
 
 Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif)
+
+========================================
+
+SwiftF0 (model)
+https://github.com/lars76/swift-f0
+Licence: MIT
+
+Copyright (c) 2025-2026 Lars Nieradzik
+
+In Brasscribe Play for Mac, iPhone and iPad the model is in Core ML form with a fixed 30-second window, in the app's Models folder beside NOTICE.md, which says the same as this entry. The weights are unchanged.
+
+========================================
+
+Basic Pitch (model)
+https://github.com/spotify/basic-pitch
+Licence: Apache-2.0
+
+Basic Pitch
+Copyright 2022 Spotify AB
+
+This product includes software developed at Spotify AB (http://www.spotify.com/).
+
+This product includes software from Librosa (ISC). Copyright (C) 2013--2017, librosa development team.
+This product includes software from mir_eval (MIT). Copyright (C) 2014 Colin Raffel
+This product includes software from numpy (BSD). Copyright (C) 2005-2022, NumPy Developers.
+This product includes software from pretty-midi (MIT). Copyright (C) 2014 Colin Raffel
+This product includes software from resampy (ISC). Copyright (C) 2016, Brian McFee
+This product includes software from scipy (BSD). Copyright (C) 2001-2002 Enthought, Inc. 2003-2022, SciPy Developers
+This product includes software from tensorflow (Apache 2.0). Copyright (C) 2019 Google, LLC
+
+The lines above are the notice Basic Pitch is published with. The app carries its model only, changed from the published one: on Android in ONNX form with the batch fixed to 1 and the padding of its convolutions written out; on Mac, iPhone and iPad in Core ML form with the batch fixed to 1, in the app's Models folder beside NOTICE.md, which repeats this notice. The weights are unchanged.
+
+========================================
+
+Beat This! (model)
+https://github.com/CPJKU/beat_this
+Licence: MIT
+
+Copyright (c) 2024 Institute of Computational Perception, JKU Linz, Austria
+
+In Brasscribe Play for Mac, iPhone and iPad the small model's network is in Core ML form, in the app's Models folder beside NOTICE.md, which says the same as this entry.
 
 ========================================
 

@@ -9,12 +9,15 @@
 #        a relative path is taken from the directory it is run in)
 # Brasscribe Play needs what `make project` needs (Verovio and the core with their iOS device slices), and the
 # phone band SoundFont in data/sounds/band unless IPA_ALLOW_NO_BAND_SOUNDS=1 (a local try-out; never a release).
+# It also needs the on-device models in models/converted (python3 convert/models_pack.py fetch) unless
+# IPA_ALLOW_NO_MODELS=1 (a local try-out; never a release).
 # Fretscribe needs alphaTab (fetched when its project is generated).
 #
 # The file is checked before it is kept: one app for iPhone and iPad, iOS 26.0 as the oldest system it
 # runs on (and no binary inside that needs a newer one), the texts iOS shows when it asks
 # for the microphone and the local network, every binary built for iOS devices on arm64 (not the
-# simulator), and no signature or provisioning profile left inside.
+# simulator), the on-device models, and no signature or
+# provisioning profile left inside.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 PRODUCT="${PRODUCT:-brasscribe}"
@@ -91,6 +94,24 @@ else
   fail "the app has no band SoundFont (pixi run fetch-sounds, or IPA_ALLOW_NO_BAND_SOUNDS=1 for a try-out)"
 fi
 [ "$PRODUCT" = fretscribe ] || [ -d "$app/VerovioResources" ] || fail "the app has no VerovioResources (notation fonts)"
+
+# The on-device models (scripts/stage-models.sh): each a compiled model with its weights, and their notice.
+if [ "$PRODUCT" = brasscribe ]; then
+  absent=""
+  for m in swift-f0-window-fp32 nmp-b1-fp32 beat-this-small0-fp32; do
+    { [ -s "$app/Models/$m.mlmodelc/model.mil" ] && [ -s "$app/Models/$m.mlmodelc/weights/weight.bin" ]; } || absent="$absent $m"
+  done
+  [ -z "$absent" ] && { [ -s "$app/Models/NOTICE.md" ] || fail "the on-device models are in the app without their NOTICE.md (sources and licences)"; }
+  if [ -z "$absent" ]; then
+    echo "ok: on-device models ($(du -sh "$app/Models" | cut -f1))"
+  elif [ -n "${IPA_ALLOW_NO_MODELS:-}" ]; then
+    echo "warning: no on-device models in the app ($absent ); it will make its scores on the computer" >&2
+  else
+    fail "the app has no on-device models ($absent ): python3 convert/models_pack.py fetch, or IPA_ALLOW_NO_MODELS=1 for a try-out"
+  fi
+elif [ -d "$app/Models" ]; then
+  fail "Fretscribe carries on-device models; it has no use for them"
+fi
 
 # zip, not ditto: no resource forks or __MACOSX entries; -y keeps symlinks as they are.
 rm -f "$OUT"

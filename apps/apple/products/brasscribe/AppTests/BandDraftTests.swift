@@ -53,10 +53,7 @@ import TranscriptionKit
 
 @Test @MainActor func theServiceFollowsTheRoute() {
     let app = AppModel()
-    let saved = app.modelDownloadURL
-    defer { app.modelDownloadURL = saved }
-    // a download address counts as the listening files being there
-    app.modelDownloadURL = "http://192.0.2.1:8765/models/"
+    app.assumeModelsReady = true
     app.connection.stage(.offline, record: nil)
     app.connection.localAddress = nil
     #expect(app.service(for: .brassBand) is OnDeviceBandDraftService)
@@ -75,9 +72,9 @@ import TranscriptionKit
 /// when bands are drafts on this device, and a too-long draft can be moved to the computer.
 @Test @MainActor func tryAgainKeepsTheComputerThePlayerChose() {
     let app = AppModel()
-    let saved = (app.modelDownloadURL, app.bandDraftOnDevice)
-    defer { (app.modelDownloadURL, app.bandDraftOnDevice) = saved; app.jobs.values.forEach { $0.cancel() } }
-    app.modelDownloadURL = "http://192.0.2.1:8765/models/"
+    let saved = app.bandDraftOnDevice
+    defer { app.bandDraftOnDevice = saved; app.jobs.values.forEach { $0.cancel() } }
+    app.assumeModelsReady = true
     app.bandDraftOnDevice = true
     let src = PendingSource(audioURL: URL(fileURLWithPath: "/nonexistent/band.wav"), title: "Band")
 

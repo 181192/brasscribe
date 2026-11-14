@@ -42,23 +42,23 @@ class Rule:
     coreml: tuple[str, ...] = ()  # pinned .mlpackage.zip files whose compiled .mlmodelc must be in `folder`
     notice: bool = False  # `folder`/NOTICE.md (convert/on-device-models-NOTICE.md) must be there
     none: str = ""  # no model of this suffix anywhere ("" = no such rule)
-    enforced: bool = True  # False: report only (the build does not bundle them yet)
+    enforced: bool = True  # False: report only (for an app whose build does not bundle them yet)
 
 
 ANDROID = ("swift-f0-window.onnx", "nmp-b1.onnx", "beat-this-small0.onnx")
-APPLE = ("swift-f0-window-fp32.mlpackage.zip", "nmp-b1-fp32.mlpackage.zip", "beat-this-small0-fp16.mlpackage.zip")
+APPLE = ("swift-f0-window-fp32.mlpackage.zip", "nmp-b1-fp32.mlpackage.zip", "beat-this-small0-fp32.mlpackage.zip")
 
 # First match wins. brasscribe-*.apk also matches the unsigned APKs Gradle writes (brasscribe-<abi>-release-unsigned.apk).
 RULES = (
     Rule("brasscribe-*.apk", "Play for Android", "assets/models/", onnx=ANDROID, notice=True),
     Rule("fretscribe-*.apk", "Fretscribe for Android", none=".onnx"),
-    # The Apple apps bundle the models once their build stages them (apps/apple/scripts/stage-models.sh).
+    # The Apple apps' build compiles the packages into the bundle (apps/apple/scripts/stage-models.sh).
     Rule("brasscribe-play-ios*.ipa", "Play for iPhone and iPad", "Payload/BrasscribePlay.app/Models/",
-         coreml=APPLE, notice=True, enforced=False),
+         coreml=APPLE, notice=True),
     Rule("brasscribe-play-macos*.zip", "Play for Mac", "Brasscribe Play.app/Contents/Resources/Models/",
-         coreml=APPLE, notice=True, enforced=False),
-    Rule("fretscribe-ios*.ipa", "Fretscribe for iPhone and iPad", none=".mlmodelc", enforced=False),
-    Rule("fretscribe-macos*.zip", "Fretscribe for Mac", none=".mlmodelc", enforced=False),
+         coreml=APPLE, notice=True),
+    Rule("fretscribe-ios*.ipa", "Fretscribe for iPhone and iPad", none=".mlmodelc"),
+    Rule("fretscribe-macos*.zip", "Fretscribe for Mac", none=".mlmodelc"),
     # Play for Windows listens on the computer's engine only: no model in its download.
     Rule("brasscribe-play-windows*.zip", "Play for Windows", none=".onnx"),
 )

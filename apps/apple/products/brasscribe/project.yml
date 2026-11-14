@@ -57,6 +57,12 @@ targets:
         type: folder
         buildPhase: resources
         optional: true
+      # The on-device models (scripts/stage-models.sh), compiled for each platform:
+      # OnDeviceKit loads Models/<name>.mlmodelc
+      - path: Models/${platform}/Models
+        type: folder
+        buildPhase: resources
+        optional: true
       # The design system, linked from design/brands/brasscribe/dist (regenerate there, never copy here).
       # App/Icon.xcassets is generated from design/brands/brasscribe/dist/icons/apple by scripts/check-prereqs.sh.
       - path: ../../../../design/brands/brasscribe/dist/apple/BrasscribeDesign.swift

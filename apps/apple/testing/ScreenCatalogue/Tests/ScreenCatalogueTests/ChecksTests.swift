@@ -22,6 +22,22 @@ struct ChecksTests {
         #expect(Checks.isSmall(radio, among: [radio, crowded]))
     }
 
+    /// A sheet's footer over its form: the form's rows go on under the footer, out of the scroll area's view.
+    @Test func aSwitchScrolledUnderASheetsFooterIsNotBesideTheFootersButton() {
+        let form = CGRect(x: 0, y: 63, width: 600, height: 642), window = CGRect(x: 0, y: 0, width: 600, height: 800)
+        let done = button("Done", 507, 717, 73, 44)
+        let under = AXNode(role: "AXCheckBox", label: "Keep", frame: CGRect(x: 533, y: 762, width: 38, height: 18), viewport: form)
+        #expect(under.isOutOfView)
+        #expect(!Checks.run([under, done], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+        // a row still in view that ends just above the footer is beside its button
+        let visible = AXNode(role: "AXCheckBox", label: "Turn", frame: CGRect(x: 533, y: 698, width: 38, height: 18), viewport: form)
+        #expect(!visible.isOutOfView)
+        #expect(Checks.run([visible, done], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+        // and two rows under the footer are still beside each other
+        let crowded = AXNode(role: "AXCheckBox", label: "Other", frame: CGRect(x: 533, y: 772, width: 38, height: 18), viewport: form)
+        #expect(Checks.run([under, crowded, done], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+    }
+
     @Test func aControlAfterOneBelowItIsOutOfOrder() {
         #expect(Checks.order([button("Lower", 10, 100), button("Upper", 10, 20)]).count == 1)
         #expect(Checks.order([button("Right", 200, 20), button("Left", 10, 20)]).count == 1)

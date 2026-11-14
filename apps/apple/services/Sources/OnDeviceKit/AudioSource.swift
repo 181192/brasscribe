@@ -10,7 +10,7 @@ public enum OnDeviceError: Error, CustomStringConvertible, Equatable {
     public var description: String {
         switch self {
         case .audio(let s): return "audio: \(s)"
-        case .modelMissing(let s): return "model not downloaded: \(s)"
+        case .modelMissing(let s): return "model not in the app: \(s)"
         case .model(let s): return "model: \(s)"
         case .nothingFound(let s): return s
         }

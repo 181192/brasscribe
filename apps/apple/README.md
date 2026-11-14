@@ -61,9 +61,9 @@ own Apple Account; a free one is enough. The app needs iOS or iPadOS 26 or newer
   from this source with your own team instead ([Build](#build)). The first time, the device asks you to
   turn on Developer Mode (Settings › Privacy & Security) and to trust your account under Settings ›
   General › VPN & Device Management.
-- **Scores come from the computer at first.** The on-device models are not in the app, and the address
-  they download from is empty until someone types it in (Settings › On this device › Details for the
-  band's tech person › Download address). Until then the app makes its scores through the paired computer.
+- **Solos are written down on the device.** The on-device models are in the app, so one instrument on
+  its own becomes a score with no computer and no network. A whole band's score still comes from the
+  paired computer (away from it, a brass band gets a quick draft on the device).
 - **Seven days.** A signature from a free Apple Account lasts 7 days; after that the app does not open
   until it is signed again. Signed with the same account and the same tool it is the same app, so its
   scores, settings and paired computer stay. Another account or tool gives the app another bundle id:
@@ -85,8 +85,8 @@ The paired computer is kept in the Keychain without an access group, so it lands
 signature gives the app. Scores are in the app's own Application Support folder and settings in its own
 defaults, and nothing reads the bundle id. Finding the computer on the local network, the `scribe:`
 pairing address, the microphone, the camera and playing in the background are declared in `Info.plist`
-alone. The on-device models are not in the app: they download only once a download address is set in
-Settings (see "Offline solos" below).
+alone. The on-device models are in the app (see "Offline solos" below): the script refuses to make the
+file without them and their notice.
 
 The macOS UI tests run only in a headless macOS VM, never on your desktop: see [docs/shared/dev/macos-vm.md](../../docs/shared/dev/macos-vm.md).
 
@@ -174,12 +174,32 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
   solo cornet at about −11. The limiter has no attack or release, so it never pumps at the Stop fade,
   and below the threshold Mute and Only this keep the balance. The metronome and the original recording
   bypass it.
-- **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0
-  and Basic Pitch (Core ML fp32, CPU/GPU) and Beat This small0 (fp16 on devices, fp32 in the simulator,
-  whose Core ML returns zeros for the fp16 program), with the upstream frontends and decoders ported to
-  Swift. The Rust core's solo-with-band path then writes the score. The models (about 6 MB) download on
-  demand from the address in Settings, or come from `SCRIBE_MODELS` (a `models/converted/` folder)
-  during development. They are not in the app.
+- **Offline solos.** On iPhone, iPad and Mac a solo is transcribed on the device (`OnDeviceKit`): SwiftF0,
+  Basic Pitch and Beat This small0 (Core ML fp32, on the CPU and GPU), with the upstream frontends and decoders ported to
+  Swift. The Rust core's solo-with-band path then writes the score. The models are in the app: nothing
+  is downloaded. `scripts/stage-models.sh` (`make models`, and every `make project`) compiles the
+  packages in `models/converted/` for each platform into `products/brasscribe/Models/` (not committed),
+  which becomes the bundle's `Models/` folder, where `ModelStore` looks first. The packages are not in
+  git: `python3 convert/models_pack.py fetch` at the repository root downloads the pack pinned in
+  `convert/on-device-models.json` (needs the GitHub CLI, logged in), and a release build stops without
+  them. Packages that differ from the pin stop the script too (`SCRIBE_ALLOW_UNPINNED_MODELS=1` to try a
+  conversion of your own). An app built without them makes every score on the computer and says so in Settings. The package
+  tests, which have no app around them, compile the packages themselves from `SCRIBE_MODELS` or
+  `models/converted/`. Fretscribe has no on-device path and carries no models.
+  - *Memory.* Every model reads a bounded window at a time (SwiftF0 about 30 s, Basic Pitch 2 s, Beat
+    This 30 s), so the models' own memory does not grow with the recording; the decoded samples and the
+    note frames do. A solo longer than the free memory allows (`OnDeviceBudget`, as for a band draft) is
+    refused before anything is loaded, and the computer can make it.
+  - *fp32, not the Neural Engine.* Beat This in fp16 is half the size, but on the reference clip it puts
+    one more downbeat than the published model, on every compute unit of a Mac, and the core then writes
+    half as many bars (`OfflineSoloTests` fails with it). fp32 on the CPU and GPU gives the published
+    model's beats exactly, so all three models run that way on every device and in the simulators.
+  - *Checked on a Mac and in the simulators, not on a phone.* `BundledModelsTests` (a tune → the app's
+    own models → a score), `OfflineSoloTests` (parity with the Python pipeline) and the UI test from an
+    imported recording to the score run on the Mac and in the iPhone and iPad simulators, which compute
+    on the Mac's hardware. Not yet verified on an iPhone or iPad: the same numbers from an A-series GPU,
+    how long a solo takes there, and the memory a long take really needs (the budget's figures were
+    measured on a Mac).
 - **Band drafts.** A brass band recording is made on the device as a draft when the computer is not
   there (no computer paired, or Offline / needs pairing) or when Settings › On this device › "Make band
   drafts on this device" is on (`AppModel.maker(for:)`). `OnDeviceBandDraftService` runs Basic Pitch on

@@ -241,16 +241,6 @@
         }
       }
     },
-    "%lld MB to download": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld MB å laste ned"
-          }
-        }
-      }
-    },
     "%lld notes from written %@": {
       "localizations": {
         "nb": {
@@ -1577,26 +1567,6 @@
         }
       }
     },
-    "Download address": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nedlastingsadresse"
-          }
-        }
-      }
-    },
-    "Download the listening files": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Last ned lyttefilene"
-          }
-        }
-      }
-    },
     "Draft": {
       "localizations": {
         "nb": {
@@ -2283,16 +2253,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lytt til denne takten"
-          }
-        }
-      }
-    },
-    "Listening files": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyttefiler"
           }
         }
       }
@@ -3093,12 +3053,12 @@
         }
       }
     },
-    "One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.": {
+    "One instrument on its own can be written down here, with nothing sent anywhere and nothing to download.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ett instrument alene kan skrives ned her, uten at noe sendes noe sted. Lyttefilene (omtrent 6 MB) lastes ned én gang."
+            "value": "Ett instrument alene kan skrives ned her, uten at noe sendes noe sted og uten noe å laste ned."
           }
         }
       }
@@ -3713,16 +3673,6 @@
         }
       }
     },
-    "Ready": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klar"
-          }
-        }
-      }
-    },
     "Record": {
       "localizations": {
         "nb": {
@@ -3829,16 +3779,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tar opp …"
-          }
-        }
-      }
-    },
-    "Remove the listening files": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fjern lyttefilene"
           }
         }
       }
@@ -4761,26 +4701,6 @@
         }
       }
     },
-    "The listening files are ready.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyttefilene er klare."
-          }
-        }
-      }
-    },
-    "The listening files couldn't be downloaded. Check the connection and try again.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lyttefilene kunne ikke lastes ned. Sjekk tilkoblingen og prøv igjen."
-          }
-        }
-      }
-    },
     "The music alone, for playing from the stand (F)": {
       "localizations": {
         "nb": {
@@ -5113,6 +5033,16 @@
         }
       }
     },
+    "This build of the app can't write music down by itself, so your computer makes every score. Install the app again from its download page.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne utgaven av appen kan ikke skrive ned musikk selv, så datamaskinen lager alle partiturene. Installer appen på nytt fra nedlastingssiden."
+          }
+        }
+      }
+    },
     "This device is paired with %@. If you pair with %@, this device uses it instead.": {
       "localizations": {
         "nb": {
@@ -5279,6 +5209,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "For langt for et utkast på denne enheten"
+          }
+        }
+      }
+    },
+    "Too long to write down on this device": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For langt til å skrives ned på denne enheten"
           }
         }
       }

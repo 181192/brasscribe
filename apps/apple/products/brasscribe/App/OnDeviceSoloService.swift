@@ -10,12 +10,17 @@ import TranscriptionKit
 /// MuScriptor has no on-device conversion yet, so Basic Pitch fills its confirmation slot.
 struct OnDeviceSoloService: TranscriptionService {
     let store: ModelStore
+    /// Free memory in bytes, read when a solo starts (tests pass their own).
+    var available: @Sendable () -> Int = { OnDeviceBudget.available }
     var displayName: String { String(localized: "this device") }
 
-    init(store: ModelStore = .shared) { self.store = store }
+    init(store: ModelStore = .shared, available: @escaping @Sendable () -> Int = { OnDeviceBudget.available }) {
+        self.store = store
+        self.available = available
+    }
 
     func transcribe(_ request: TranscriptionRequest) -> AsyncThrowingStream<TranscriptionEvent, Error> {
-        let store = self.store
+        let store = self.store, available = self.available
         return AsyncThrowingStream { continuation in
             let task = Task.detached(priority: .userInitiated) {
                 do {
@@ -24,6 +29,11 @@ struct OnDeviceSoloService: TranscriptionService {
                         continuation.yield(.progress(.init(stage: stage, fraction: f, etaSeconds: nil, device: "on device")))
                     }
                     report(.preparing, 0)
+                    // the same models and buffers as a band draft, so the same room: a take that would not
+                    // fit is refused before anything is loaded, and the computer can make it
+                    let seconds = OnDeviceBandDraftService.duration(of: request.audioURL)
+                    let room = OnDeviceBudget.maxSeconds(available: available())
+                    if let seconds, seconds > room { throw DraftTooLong(seconds: seconds, maxSeconds: room, solo: true) }
                     let solo = try await SoloTranscriber(store: store).transcribe(request.audioURL) { step, f in
                         switch step {
                         case .preparing: report(.preparing, 0.05)

@@ -39,7 +39,8 @@ enum ErrorWords {
 
     /// A title more specific than "The score couldn't be made", when there is one.
     static func title(_ error: Error) -> String? {
-        error is DraftTooLong ? String(localized: "Too long for a draft on this device") : nil
+        guard let e = error as? DraftTooLong else { return nil }
+        return e.solo ? String(localized: "Too long to write down on this device") : String(localized: "Too long for a draft on this device")
     }
 
     /// The words for `error`, a generic line when nothing more is known.

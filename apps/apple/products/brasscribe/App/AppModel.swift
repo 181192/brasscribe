@@ -130,7 +130,7 @@ final class AppModel: PlayHost {
         showSettings = true
     }
 
-    /// Solos are transcribed on this device when the models are there (or can be fetched);
+    /// Solos are transcribed on this device when the models are in the app;
     /// everything else goes to the paired computer.
     var soloOnDevice: Bool = UserDefaults.standard.object(forKey: "soloOnDevice") as? Bool ?? true {
         didSet { UserDefaults.standard.set(soloOnDevice, forKey: "soloOnDevice") }
@@ -138,10 +138,6 @@ final class AppModel: PlayHost {
     /// What the player plays (Settings › Your instrument, and the first run's second step).
     var seat: SeatChoice = .stored {
         didSet { if seat != oldValue { seat.save() } }
-    }
-
-    var modelDownloadURL: String = UserDefaults.standard.string(forKey: "modelDownloadURL") ?? "" {
-        didSet { UserDefaults.standard.set(modelDownloadURL, forKey: "modelDownloadURL"); ModelStore.shared.remoteBase = URL(string: modelDownloadURL) }
     }
 
     /// A brass band recording is made as a draft on this device even when the computer is there
@@ -179,15 +175,17 @@ final class AppModel: PlayHost {
         }
     }
 
-    /// Screenshot scenes only: the listening files count as there, so the draft's words show.
+    /// Screenshot scenes and tests only: the listening files count as there, so the draft's words show.
     @ObservationIgnored var assumeModelsReady = false
+
+    /// The listening files are in this build of the app. A release always has them; a build made
+    /// without them makes every score on the computer.
+    var modelsReady: Bool { assumeModelsReady || ModelStore.shared.missing.isEmpty }
 
     func maker(for profile: SourceProfile) -> Maker {
         if useFixtureService { return .computer }
-        ModelStore.shared.remoteBase = URL(string: modelDownloadURL)
-        let ready = assumeModelsReady || ModelStore.shared.missing.isEmpty || ModelStore.shared.remoteBase != nil
         return Self.maker(for: profile, soloOnDevice: soloOnDevice, bandDraftOnDevice: bandDraftOnDevice,
-                          computerThere: computerThere, modelsReady: ready)
+                          computerThere: computerThere, modelsReady: modelsReady)
     }
 
     func service(for profile: SourceProfile) -> TranscriptionService {

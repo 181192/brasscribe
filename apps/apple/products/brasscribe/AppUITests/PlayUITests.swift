@@ -260,16 +260,20 @@ final class PlayUITests: XCTestCase {
     /// A recorded solo becomes a readable part with no computer: on-device models and the core.
     func testOfflineSoloToReadablePart() throws {
         guard let clip = dataDir()?.appending(path: "runs/apple/entertainer-tpt1-30s.wav") else { throw XCTSkip("needs data/") }
-        let models = ProcessInfo.processInfo.environment["SCRIBE_MODELS"]
-            ?? clip.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-                .deletingLastPathComponent().appending(path: "models/converted").path
-        guard FileManager.default.fileExists(atPath: clip.path), FileManager.default.fileExists(atPath: models) else {
-            throw XCTSkip("needs the URMP clip and models/converted")
+        // the models are the app's own (scripts/stage-models.sh): a build without them cannot run this
+        #if os(iOS)
+        let platform = "iOS"
+        #else
+        let platform = "macOS"
+        #endif
+        let staged = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Models/\(platform)/Models/swift-f0-window-fp32.mlmodelc")
+        guard FileManager.default.fileExists(atPath: clip.path), FileManager.default.fileExists(atPath: staged.path) else {
+            throw XCTSkip("needs the URMP clip and an app built with the on-device models")
         }
         app.terminate()
         app.launchArguments = ["-reset", "-ApplePersistenceIgnoreState", "YES", "-skip-first-run"]
         app.launchEnvironment["SCRIBE_OPEN_AUDIO"] = clip.path
-        app.launchEnvironment["SCRIBE_MODELS"] = models
         app.launchEnvironment["SCRIBE_COMPANION"] = "http://127.0.0.1:1"   // no computer
         launchApp()
         let solo = app.descendants(matching: .any)["profile-solo"].firstMatch

@@ -5,10 +5,12 @@ import OnDeviceKit
 import ScoreKit
 import TranscriptionKit
 
-/// A recording longer than this device's free memory can hold for a band draft.
+/// A recording longer than this device's free memory can hold for a band draft, or (`solo`) for a
+/// solo written down here.
 struct DraftTooLong: Error, CustomStringConvertible {
     var seconds: Double
     var maxSeconds: Double
+    var solo = false
     var description: String { "recording \(Int(seconds)) s, room for \(Int(maxSeconds)) s" }
 }
 
