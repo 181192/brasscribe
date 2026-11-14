@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
+import { attribution, axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { compare } from "./compare.mjs";
 import { serveApi } from "./api";
 import { stale, type Known } from "./known";
@@ -174,4 +174,26 @@ test("known findings: an entry that matches nothing is reported, so a fixed one 
   expect(stale([{ check: k.check, what: "button.tip-btn has focus under div.table-wrap" }], k.view, k.variant, [k])).toEqual([]);
   // An entry is for one view and variant: in another it is neither matched nor missed.
   expect(stale([], "runs", k.variant, [k])).toEqual([]);
+});
+
+test("attribution: an overlay on alphaTab's mark is found, and a view with the mark but nothing over it is not", async ({ page }) => {
+  await openView(page, { route: "runs/old-hundredth-a/score" }, light);
+  await page.waitForSelector(".score-surface svg path");
+  await page.waitForTimeout(1500);
+  expect(await attribution(page)).toEqual([]);
+  // The mark's own box: a "?" of ours put on it.
+  await page.evaluate(() => {
+    const path = [...document.querySelectorAll(".score-surface svg path")].find((p) => /[Cc]/.test(p.getAttribute("d") ?? "") && (p as SVGGraphicsElement).getBBox().width > 40)!;
+    const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    probe.setAttribute("d", path.getAttribute("d")!.split(/(?=M)/).filter((part) => /[Cc]/.test(part)).join(""));
+    path.parentNode!.appendChild(probe);
+    const r = probe.getBoundingClientRect();
+    probe.remove();
+    const q = document.createElement("span");
+    q.className = "q broken-over-the-mark";
+    q.style.cssText = `position:fixed;left:${r.left + r.width / 2}px;top:${r.top}px;width:10px;height:10px`;
+    q.textContent = "?";
+    document.querySelector(".score-marks")!.append(q);
+  });
+  expect((await attribution(page)).map((f) => f.what)).toContainEqual(expect.stringMatching(/span\.q\.broken-over-the-mark covers alphaTab's mark$/));
 });

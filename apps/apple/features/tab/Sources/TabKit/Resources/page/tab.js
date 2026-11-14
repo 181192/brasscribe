@@ -16,9 +16,14 @@
   let barBoxes = new Map(); // bar index -> {x, y, w, h}
   let marks = []; // what the app marks: [{staff, bar, tick, notes: [{string, fret, pitchClass, doubt}]}]
   let markStaff = 0; // the staff the marks and the cursor stand on
+  let attribution = null; // {x, y, w, h}: where alphaTab's own "alphaTab.net" mark can be; nothing of ours is drawn over it
   let placed = []; // [{mark: index into marks, beat, doubtful: [Note]}]
   const MARK_SPACE = ' '; // the blank text of a marked beat: alphaTab keeps a band above the staff for it
   const MARK_LINE_SPACES = 1.4; // a mark's height in tab line spaces
+  // The height of the blank text that keeps the band for a mark. A little more than the mark: alphaTab 1.9 rests its own
+  // "alphaTab.net" mark above that text, and with the text as tall as the mark alone the two overlap (the browser test
+  // in studio/browser/apple-tab-page.spec.ts fails then).
+  const MARK_TEXT_SPACES = 1.6;
 
   window.onerror = (msg, src, line) => post({ kind: 'error', message: String(msg) + ' (' + src + ':' + line + ')' });
 
@@ -56,7 +61,7 @@
       const text = r.elementFonts.get(at.NotationElement.EffectText);
       if (text) {
         const family = text.families ? text.families[0] : text.family;
-        r.elementFonts.set(at.NotationElement.EffectText, new at.model.Font(family, MARK_LINE_SPACES * lineSpacing(s), text.style, text.weight));
+        r.elementFonts.set(at.NotationElement.EffectText, new at.model.Font(family, MARK_TEXT_SPACES * lineSpacing(s), text.style, text.weight));
       }
       s.display.effectBandPaddingBottom = s.display.effectBandPaddingBottom + r.barNumberFont.size;
     } catch (e) { /* an alphaTab without these keeps its own band */ }
@@ -180,10 +185,33 @@
     return out;
   }
 
+  // alphaTab 1.9 draws "♪ alphaTab.net" in a score of more than 10 bars, and asks that it stays visible: right-aligned to the
+  // last bar of the first system, above everything alphaTab placed over the top staff (the app's marks are in that band as
+  // blank text, so it rests above them). It is at a height alphaTab does not report, so the zone is the band above the staff.
+  function attributionZone(lookup) {
+    if (score.masterBars.length <= 10 && api.tracks.length <= 2) return null;
+    const sys = lookup.staffSystems[0];
+    if (!sys || sys.bars.length === 0) return null;
+    const last = sys.bars[sys.bars.length - 1];
+    const top = sys.visualBounds.y;
+    const staffTop = last.bars.length > 0 ? last.bars[0].realBounds.y : top;
+    const w = 78 * (api.settings.display.scale || 1);
+    return { x: last.realBounds.x + last.realBounds.w - w, y: top, w, h: Math.max(0, staffTop - top) };
+  }
+
+  // The vertical extent [top, top + height] of a cursor box at x..x+w, kept out of the attribution's zone.
+  function clearOfAttribution(x, w, top, height) {
+    const z = attribution;
+    if (!z || x >= z.x + z.w || x + w <= z.x || top >= z.y + z.h || top + height <= z.y) return { top, height };
+    const below = z.y + z.h;
+    return { top: below, height: Math.max(0, top + height - below) };
+  }
+
   function measure() {
     beats = new Map(); barBoxes = new Map();
     const lookup = api.boundsLookup;
     if (!lookup) return null;
+    attribution = attributionZone(lookup);
     const bars = [];
     for (const sys of lookup.staffSystems) for (const mb of sys.bars) {
       const v = mb.visualBounds;
@@ -274,8 +302,10 @@
       if (!box || !stops || stops.length === 0) return null;
       let stop = stops[0];
       for (const s of stops) if (s.tick <= tick) stop = s;
-      cursor.style.cssText = 'display:block;left:' + stop.x + 'px;top:' + box.y + 'px;height:' + box.h + 'px;background:' + palette.cursor;
-      beatWash.style.cssText = 'display:block;left:' + (stop.x - stop.w / 2) + 'px;top:' + box.y + 'px;width:' + stop.w + 'px;height:' + box.h + 'px;background:' + (palette.cursorTint || 'transparent');
+      const line = clearOfAttribution(stop.x, 2, box.y, box.h);
+      const wash = clearOfAttribution(stop.x - stop.w / 2, stop.w, box.y, box.h);
+      cursor.style.cssText = 'display:block;left:' + stop.x + 'px;top:' + line.top + 'px;height:' + line.height + 'px;background:' + palette.cursor;
+      beatWash.style.cssText = 'display:block;left:' + (stop.x - stop.w / 2) + 'px;top:' + wash.top + 'px;width:' + stop.w + 'px;height:' + wash.height + 'px;background:' + (palette.cursorTint || 'transparent');
       return { x: stop.x, y: box.y, h: box.h };
     },
   };

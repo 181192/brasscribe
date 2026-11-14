@@ -9,6 +9,7 @@ import { Navigator, type Stop } from "../lib/navigator";
 import { SharedSynth, type ApiLike } from "../lib/sharedsynth";
 import { soundFontBytes } from "../lib/soundfontstore";
 import { frettedProgram, makeDrawable, playsGeneral, readable, showsTab, staveLayout, STAVE_PROFILE, type StaveLayout } from "../lib/stavelayout";
+import { attributionZone, clearOf } from "../lib/attribution";
 import { MASTER_VOLUME, PartSoundResolver, RELEASE_TAIL_S, percussionKits, playbackChannels, type Mapping, type TrackSound } from "../lib/partsound";
 import { PICKUP_BAR, type PitchMode, type Verbosity } from "../lib/talking";
 import { buildTalkingScore, partNameNb, type TalkingScore } from "../lib/talkingxml";
@@ -640,6 +641,7 @@ export class ScoreElement extends HTMLElement {
         this.bands?.append(h("span", { class: "adlib", style: `left:${ox + r.x}px;top:${oy + r.y}px;width:${r.w}px;height:${r.h}px` }));
       }
     }
+    const zone = attributionZone(lookup.staffSystems as unknown as Parameters<typeof attributionZone>[0], api.score.masterBars.length, api.tracks.length, api.settings.display.scale);
     api.score.tracks.forEach((track, ti) => {
       const part = this.xml!.parts[ti];
       if (!part?.notes.some((n) => n.level)) return;
@@ -669,7 +671,9 @@ export class ScoreElement extends HTMLElement {
           const glyph = 1.6 * space; // cap height of the "?"
           const font = Math.round(glyph / 0.72);
           const staffTop = bb.barBounds.visualBounds.y;
-          const y = Math.min(staffTop, nb.noteHeadBounds.y) - font - space * 0.4;
+          const wide = font * 0.8;
+          // alphaTab's own mark is not to be covered: a "?" that would stand on it is lifted to just above it.
+          const y = clearOf({ x: x - wide / 2, y: Math.min(staffTop, nb.noteHeadBounds.y) - font - space * 0.4, w: wide, h: font }, zone);
           layer.append(h("span", { class: `q ${level}`, style: `left:${ox + x}px;top:${oy + y}px;font-size:${font}px` }, "?"));
         });
       });

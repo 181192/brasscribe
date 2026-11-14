@@ -378,6 +378,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (layout.Generation != _renderer.Generation) return; // a newer render is on its way
 
         _layout = layout;
+        _layoutScale = ViewModel.ZoomPercent / 100.0;
         _requested.Clear();
         Notation.ReduceMotion = !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
         Notation.SetPageSlots(layout.Pages.Select(p => (p.Id, new Rect(p.X, p.Y, p.Width, p.Height))), layout.Width, layout.Height);
@@ -548,6 +549,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (!ViewModel.Stand.IsOpen) return; // left while laying out
 
         _layout = layout;
+        _layoutScale = _standScale;
         _requested.Clear();
         Notation.ReduceMotion = ReduceMotion();
         Notation.SetPageSlots(layout.Pages.Select(p => (p.Id, new Rect(p.X, p.Y, p.Width, p.Height))), layout.Width, layout.Height);
@@ -621,6 +623,13 @@ public sealed partial class ScoreScreen : Page, IScreenPage
 
     private IReadOnlyList<Box> _loopBoxes = [];
 
+    /// <summary>The notation scale of <see cref="_layout"/>: the size of alphaTab's own "alphaTab.net" mark follows it.</summary>
+    private double _layoutScale = 1;
+
+    /// <summary>Where alphaTab draws its "alphaTab.net" mark, which no overlay is drawn over.</summary>
+    private Box? Attribution(AlphaTabScorePlayer player) =>
+        _layout?.Bounds is { } b && player.Score is { } score ? ScoreGeometry.AttributionArea(score, b, _tracks.Length, _layoutScale) : null;
+
     /// <summary>"?" marks, the repeated bars and the ad lib bars, planned in Core and drawn by the score view.</summary>
     private void DrawOverlays()
     {
@@ -629,7 +638,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         _loopBoxes = player.Loop is { } l ? ScoreGeometry.RangeBoxes(bounds, l.First, l.Last) : [];
         string? label = player.Loop is { } loop ? App.Strings.Format("Score_LoopLabel", loop.First + 1, loop.Last + 1) : null;
         Notation.SetOverlay(ScoreOverlay.Build(new(heads, _loopBoxes, label, ScoreGeometry.AdlibRegions(bounds, ViewModel.Document!),
-            null, null, ScoreView.IsHighContrast()) { Groups = ScoreGeometry.GroupBrackets(player.Score, bounds, ViewModel.Document!, _tracks) }));
+            null, null, ScoreView.IsHighContrast()) { Groups = ScoreGeometry.GroupBrackets(player.Score, bounds, ViewModel.Document!, _tracks), Attribution = Attribution(player) }));
         UpdateFocus();
     }
 
@@ -671,7 +680,7 @@ public sealed partial class ScoreScreen : Page, IScreenPage
         if (_layout?.Bounds is not { } bounds || ViewModel.Player.Player is not AlphaTabScorePlayer player || player.TickLookup is null) return;
         if (ScoreGeometry.Cursor(player.TickLookup, bounds, _tracks, p.Tick) is { } c)
         {
-            Notation.SetCursor(ScoreOverlay.Cursor(c.Beat, c.Bar, _loopBoxes, ScoreView.IsHighContrast()));
+            Notation.SetCursor(ScoreOverlay.Cursor(c.Beat, c.Bar, _loopBoxes, ScoreView.IsHighContrast(), Attribution(player)));
         }
     }
 
