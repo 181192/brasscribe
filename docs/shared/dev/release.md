@@ -72,6 +72,7 @@ git worktree add --detach .claude/worktrees/release-X.Y.Z origin/main
 cd .claude/worktrees/release-X.Y.Z
 eval "$(scripts/worktree-setup.sh)"        # links data/ (band sounds), models/, Verovio; installs the core
 python3 sounds/tools/band_sounds.py verify # the pinned band pack is in data/sounds/band
+python3 convert/models_pack.py fetch       # the pinned on-device models are in models/converted (§9b)
 ```
 
 Bump the version in its own commit and push it to main **before** building, because Bandroom's
@@ -94,7 +95,9 @@ cd apps/android && ./gradlew assembleRelease assembleDebug -q   # the debug APK 
 ```
 
 This writes `products/brasscribe/build/outputs/apk/release/brasscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
-(one APK per ABI plus a universal one; the x86_64 one is not shipped). Signing is not in Gradle. It is
+(one APK per ABI plus a universal one; the x86_64 one is not shipped). A release build stops when the
+on-device models in `models/converted` are missing or not the pinned ones (`verifyModelAssets`; fetch them as in §1;
+`-Pbrasscribe.allowNoModels` builds one without them, for a try-out only). Signing is not in Gradle. It is
 done by hand with the build tools and the key in `~/.brasscribe/release-keys`
 (`brasscribe-release.jks`, alias `brasscribe`, and `keystore-password.txt`). **Every release must use
 this key**, or it will not install over the previous one. Keep a backup of both files. Never print the
@@ -113,7 +116,8 @@ rm -f "$S/tmp.apk" "$OUT"/*.idsig
 
 Check each APK: `apksigner verify --print-certs` shows the same certificate SHA-256 as the previous
 release's APK, `aapt2 dump badging` shows the new `versionCode`/`versionName`, and `unzip -l` lists
-`brasscribe-band-mobile.sf2`.
+`brasscribe-band-mobile.sf2` beside `assets/models/swift-f0-window.onnx`, `nmp-b1.onnx`, `beat-this-small0.onnx` and
+`NOTICE.md`. `.github/scripts/release-models.py "$OUT"` checks the models of every file (§6).
 
 `assembleRelease` also writes Fretscribe's APKs, to `products/fretscribe/build/outputs/apk/release/`
 (`fretscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`). They are signed the same way with
@@ -223,8 +227,15 @@ tar -czf "$OUT/scribe-core-macos-arm64.tar.gz" -C target/release scribe-core
 ## 6. Checksums and the GitHub release
 
 ```sh
+.github/scripts/release-models.py "$OUT"   # the on-device models in every file; exit 1 when an app lacks its own
 (cd "$OUT" && shasum -a 256 -- * > SHA256SUMS)
 ```
+
+`release-models.py` prints a table: per file, the models inside and whether that is the set its app must carry
+(the rules are in the script, the files' names and sha256 come from `convert/on-device-models.json`). Play for Android
+must carry the three pinned ONNX files byte for byte and their `NOTICE.md`; Fretscribe none. The release workflow
+runs it on the downloaded files before it publishes. Never publish over a failure: a Play without its models sends
+every solo to the computer.
 
 Just before publishing, check that `git rev-parse origin/main` is still the commit you built. If main
 has moved, pass the built commit's **full** 40-character SHA as the target (a short SHA fails):
