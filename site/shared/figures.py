@@ -460,12 +460,13 @@ def counts(card: dict) -> dict:
     return {"right": right, "marked": marked, "rest": 100 - right - marked}
 
 
-def tally(page) -> str:
+def tally(page, first: str = "", link: str = "") -> str:
     """How sure it is, as tally cards: for each situation a big number of a hundred notes, a grid of a hundred cells
     (filled: right; a "?" in the doubt colour: not right, and marked; hollow: not right, no mark) and its legend with
-    the counts as text. The same component for every app; the product's [[sure]] say which measured rates."""
+    the counts as text. The same component for every app; the product's [[sure]] say which measured rates. With
+    first="1" and link="1" (the family home): the app's first card alone, in the app's own paper, leading to its page."""
     say, product = page.say, page.product
-    cards = product.data["sure"]
+    cards = product.data["sure"][:1] if first else product.data["sure"]
     out = []
     for i, card in enumerate(cards, 1):
         w, c, uid = card[page.lang], counts(card), f"sure-{product.id}-{i}"
@@ -477,13 +478,17 @@ def tally(page) -> str:
         key.append(f'<li class="k-x"><b>{c["rest"]}</b> {say("sure.rest")}{"" if "one_in" in c else note}</li>')
         if "one_in" in c:
             key.append(f'<li class="k-m">{say("sure.missed", n=c["one_in"])}{note}</li>')
-        out.append(f"""<article class="tally" aria-labelledby="{uid}-title">
-  <h3 id="{uid}-title">{w["title"]}</h3>
+        app = f'<p class="tally-app">{product.data["name"]}</p>\n  ' if link else ""
+        more = f'\n  <p class="tally-more"><a href="@/#sure">{say("sure.more", app=product.data["name"])}</a></p>' if link else ""
+        out.append(f"""<article class="tally" aria-labelledby="{uid}-title"{f' data-brand="{product.id}"' if link else ""}>
+  {app}<h3 id="{uid}-title">{w["title"]}</h3>
   <p class="where">{w["where"]}</p>
   <p class="big"><span class="big-n">{c["right"]}</span> <span class="big-of">{say("sure.of_first" if i == 1 else "sure.of")}</span></p>
   <div class="hundred" role="img" aria-labelledby="{uid}-key">{cells}</div>
-  <ul class="key" id="{uid}-key">{"".join(key)}</ul>
+  <ul class="key" id="{uid}-key">{"".join(key)}</ul>{more}
 </article>""")
+    if link:
+        return "\n".join(out)
     return '<div class="sure-grid">\n' + "\n".join(out) + "\n</div>"
 
 
