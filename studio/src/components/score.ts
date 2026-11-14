@@ -336,6 +336,8 @@ export class ScoreElement extends HTMLElement {
     });
     api.scoreLoaded.on((score: AT.model.Score) => {
       // Before the first render: notation, tablature or both, as the file has it.
+      // alphaTab 1.9 numbers only the first bar of each system; a player finds a bar by its number.
+      for (const config of [score.stylesheet.scoreConfig, score.stylesheet.tabConfig, score.stylesheet.slashConfig, score.stylesheet.numberedConfig]) config.barNumber = alphaTab.model.BarNumberDisplay.AllBars;
       makeDrawable(score.tracks);
       this.layout = staveLayout(score.tracks);
       api.settings.display.staveProfile = alphaTab.StaveProfile[STAVE_PROFILE[this.layout]];

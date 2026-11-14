@@ -1,7 +1,7 @@
 # Tab spike: alphaTab in a web view
 
 **Decision: draw the tab with alphaTab in a `WKWebView`**, the same engraver as Fretscribe for Android, Play for
-Windows and Studio (alphaTab 1.8.4 everywhere). The Apple build uses alphaTab's browser build: the same layout
+Windows and Studio (alphaTab 1.9.0 everywhere). The Apple build uses alphaTab's browser build: the same layout
 code, so a tab is laid out alike on every client. The web view only draws. The app plays the recording, keeps the
 clock and moves the cursor, and the screen around the page gives VoiceOver its elements.
 
