@@ -25,7 +25,7 @@ h11 = "Kom i gang"
 p2 = "Brasscribe gjør et opptak om til et partitur for brassbandet ditt. Denne veiledningen går gjennom det én gang, fra opptaket til de utskrevne stemmene."
 p3 = "Brasscribe finnes for iPhone, iPad, Mac, Android og Windows. Den ligger ikke i appbutikkene ennå. Android-telefoner, Mac og Windows-PC-er kan <a href=\"#download\">laste den ned</a> (Windows som en tidlig versjon). For iPhone og iPad finnes en <a href=\"#download-ios\">testversjon</a> som den tekniske i bandet legger inn på enheten."
 p4 = "Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og så spør den <a href=\"#instrument\">hva du spiller</a>. Den spør om mikrofonen først når du spiller inn."
-p5 = "<strong>Solo eller fullt band?</strong> I dag skriver Bandroom på datamaskinen alle partiturene, både for et fullt band og for ett enkelt instrument, på samme Wi-Fi som telefonen. Se <a href=\"#computer\">Datamaskinen din</a>."
+p5 = "<strong>Solo eller fullt band?</strong> Ett enkelt instrument skrives ned på selve telefonen, nettbrettet eller Macen. Et fullt band skrives av Bandroom på datamaskinen, på samme Wi-Fi som telefonen, og det samme gjør en solo i Brasscribe for Windows. Se <a href=\"#computer\">Datamaskinen din</a>."
 
 [download]
 h21 = "Last ned"
@@ -38,7 +38,7 @@ p2 = "Brasscribe ligger ikke i App Store. Filen <code>brasscribe-play-ios-unsign
 li4 = "<strong>Hvilke enheter:</strong> en iPhone med iOS 26 eller nyere, eller en iPad med iPadOS 26 eller nyere."
 li5 = "<strong>Signer og installer:</strong> bruk et program på datamaskinen som signerer filen med Apple-kontoen din og legger appen inn på iPhonen eller iPaden. Xcode kan ikke signere denne filen. Med Xcode på en Mac bygger du i stedet appen fra <a href=\"https://github.com/181192/brasscribe#readme\">kildekoden på GitHub</a>."
 li6 = "<strong>Første gang:</strong> enheten ber deg slå på <strong>Utviklermodus</strong> (<strong>Innstillinger › Personvern og sikkerhet</strong>). Gå så til <strong>Innstillinger › Generelt › VPN og enhetsadministrering</strong>, trykk på kontoen din og velg <strong>Stol på</strong>."
-li7 = "<strong>Partiturene kommer fra datamaskinen i starten:</strong> en nyinstallert testversjon får partiturene fra Bandroom på datamaskinen (se <a href=\"#computer\">Datamaskinen din</a>). For å skrive ned en solo på selve iPhonen eller iPaden trenger appen lyttefilene sine, og den vet ikke ennå hvor den skal hente dem: Den tekniske i bandet fyller inn <strong>Nedlastingsadresse</strong> i innstillingene i appen, under <strong>På denne enheten › Detaljer for den tekniske i bandet</strong>."
+li7 = "<strong>En solo på enheten, et band på datamaskinen:</strong> appen skriver ned en solo på selve iPhonen eller iPaden; partituret til et fullt band kommer fra Bandroom på datamaskinen (se <a href=\"#computer\">Datamaskinen din</a>)."
 li8 = "<strong>Sju dager:</strong> en signatur fra en gratis Apple-konto varer i 7 dager. Etterpå åpner ikke appen før du signerer den på nytt. Signer med samme konto og samme program, så blir partiturene og innstillingene liggende."
 li9 = "<strong>Noen få apper:</strong> en gratis Apple-konto kan bare ha noen få slike apper på en enhet om gangen."
 li10 = "<strong>Ikke prøvd på en enhet ennå:</strong> filen bygges og kontrolleres for hver utgivelse, men ingen har installert den på en iPhone eller iPad på denne måten ennå, så tilbakemeldinger er velkomne."
@@ -167,7 +167,7 @@ p2 = "Noter ingen har sjekket, beholder spørsmålstegnet i det du deler, så ba
 
 [computer]
 h21 = "Datamaskinen din"
-p1 = "Bandroom på datamaskinen (Mac eller PC) skriver partituret og sender det til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder."
+p1 = "Bandroom på datamaskinen (Mac eller PC) skriver partituret til et fullt band og sender det til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder."
 span1 = "Brasscribe Studio · Partiturvisning"
 p2 = "På en Mac med M-brikke eller en PC med Windows 11 installerer du <strong>Bandroom</strong> (Brasscribe Bandroom i listen over programmer) fra <a href=\"#download\">nedlastingen</a>. Den kjører stille i bakgrunnen; se etter Brasscribe-merket i menylinjen øverst på skjermen på en Mac, eller i varslingsområdet på oppgavelinjen i Windows."
 li1 = "Første gang laster den ned det Brasscribe trenger, rundt 10 GB, så sørg for rundt 15 GB ledig plass. Internett trengs bare for disse nedlastingene."

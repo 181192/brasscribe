@@ -1,9 +1,9 @@
 title = "Bandroom: lyttingen, for alle Scribe-appene"
-description = "Bandroom er et gratis program til din egen Mac eller PC. Det lytter til opptakene fra telefonen og skriver partituret eller tabben, for alle Scribe-appene, i ditt eget nettverk."
+description = "Bandroom er et gratis program til din egen Mac eller PC. Det lytter til opptakene fra telefonen og skriver hvert bandpartitur og hver tab, for alle Scribe-appene, i ditt eget nettverk."
 
 [hero]
 title = "Bandroom"
-lead = "Én hjelper på datamaskinen lytter for alle appene. Telefonen spør; Bandroom, på din egen Mac eller PC, skriver partituret eller tabben og sender det tilbake."
+lead = "Én hjelper på datamaskinen skriver hvert bandpartitur og hver tab, for alle appene. Telefonen spør; Bandroom, på din egen Mac eller PC, skriver det og sender det tilbake. En solo i Brasscribe skrives på selve telefonen, nettbrettet eller Macen."
 get = "Last ned Bandroom"
 
 [does]

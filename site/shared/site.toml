@@ -16,8 +16,8 @@ releases = "https://github.com/181192/brasscribe/releases/latest"
 # words are the family's. Its page is the family's /bandroom/.
 [bandroom]
 devices = [{ name = "Mac", status = "ready" }, { name = "Windows", status = "early" }]
-en = { does = "Does the listening, for every Scribe app in the house.", needs = "A Mac with an M-series chip, or a PC with Windows 11. Free." }
-nb = { does = "Lytter for alle Scribe-appene i huset.", needs = "Mac med M-brikke, eller PC med Windows 11. Gratis." }
+en = { does = "Writes every band score and every tab, for every Scribe app in the house.", needs = "A Mac with an M-series chip, or a PC with Windows 11. Free." }
+nb = { does = "Skriver hvert bandpartitur og hver tab, for alle Scribe-appene i huset.", needs = "Mac med M-brikke, eller PC med Windows 11. Gratis." }
 
 # Release files every product's download page and table list after its own.
 [[downloads]]
