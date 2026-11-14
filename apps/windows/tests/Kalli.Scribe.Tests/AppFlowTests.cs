@@ -511,6 +511,31 @@ public class AppFlowTests
         Assert.EndsWith(" (you)", main.Export.MyPartLabel);
     }
 
+    /// <summary>The computer took the recording in and then said the band writer is not set up. Trying the same take
+    /// again, once it is, names the recording the computer already holds: nothing is sent twice.</summary>
+    [Fact]
+    public async Task A_take_refused_for_unfinished_setup_is_not_sent_again()
+    {
+        bool ready = false;
+        var engine = Engine("id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n", first: r => !ready && r.Method == HttpMethod.Post && r.RequestUri!.AbsolutePath == "/v1/jobs"
+            ? FakeHandler.Json("""{"detail":"The computer can't write this score yet","code":"band_writer_not_set_up","audio_id":"a1"}""", HttpStatusCode.Conflict)
+            : null);
+        var (main, _) = Build(engine);
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        var band = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
+        int Count(string path) => engine.Requests.Count(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == path);
+
+        await main.Transcription.RunAsync(main.Kind.Source!, band);
+        Assert.Equal(Screen.Error, main.Screen);
+        Assert.Equal((1, 1), (Count("/v1/audio"), Count("/v1/jobs")));
+
+        ready = true;
+        await main.Transcription.RunAsync(main.Kind.Source!, band);
+        Assert.Equal((1, 2), (Count("/v1/audio"), Count("/v1/jobs")));
+        Assert.Contains("\"audio_id\":\"a1\"", engine.Requests.Last(r => r.Request.Method == HttpMethod.Post && r.Request.RequestUri!.AbsolutePath == "/v1/jobs").Body!);
+    }
+
     [Fact]
     public async Task A_solo_take_goes_back_to_the_band_and_a_refused_quartet_says_why_in_the_apps_words()
     {

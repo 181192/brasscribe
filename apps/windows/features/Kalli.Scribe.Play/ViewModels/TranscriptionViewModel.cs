@@ -171,6 +171,13 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             Lineup: options.Lineup, Difficulty: options.Difficulty, Key: options.Key, Transpose: options.Transpose,
             Seat: options.Seat, Reads: options.Reads, Lead: options.Lead), options, audioId);
 
+    /// <summary>The engine's code for a job it did not take because the band writer is not set up on the computer.</summary>
+    private const string BandWriterNotSetUp = "band_writer_not_set_up";
+
+    /// <summary>The last take the computer took in and would not write down yet (<see cref="BandWriterNotSetUp"/>): the
+    /// recording stays there, so trying the same take again names it and sends nothing a second time.</summary>
+    private (string Wav, string AudioId)? _refusedTake;
+
     private async Task RunJobAsync(SourceAudio source, string kindLabel, string profile, Func<string, JobCreate> request,
         ArrangementOptions? options, string? audioId)
     {
@@ -204,13 +211,36 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             }
             DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
 
-            if (audioId is null)
+            // A take the computer refused for unfinished setup is still there: it is named, not sent again.
+            bool refusedBefore = audioId is null && _refusedTake is { } held && held.Wav == source.WavPath;
+            if (refusedBefore) audioId = _refusedTake!.Value.AudioId;
+            async Task<string> SendAsync()
             {
                 await using var file = OpenRecording(source.WavPath);
-                audioId = (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
+                return (await engine.UploadAudioAsync(file, Path.GetFileName(source.WavPath), ct)).AudioId;
             }
+            audioId ??= await SendAsync();
 
-            var job = await engine.CreateJobAsync(request(audioId), ct);
+            Job job;
+            try
+            {
+                try
+                {
+                    job = await engine.CreateJobAsync(request(audioId), ct);
+                }
+                catch (EngineException e) when (refusedBefore && e.Status == System.Net.HttpStatusCode.NotFound)
+                {
+                    // The computer has let go of the refused take since: it is sent again.
+                    audioId = await SendAsync();
+                    job = await engine.CreateJobAsync(request(audioId), ct);
+                }
+            }
+            catch (EngineException e) when (e.Code == BandWriterNotSetUp)
+            {
+                _refusedTake = (source.WavPath, audioId);
+                throw;
+            }
+            if (_refusedTake?.Wav == source.WavPath) _refusedTake = null;
             _jobId = job.Id;
             estimator.Start();
 

@@ -1067,6 +1067,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     private fun estimateDeviceSeconds(audio: PcmAudio): Int = maxOf(1, (audio.seconds / 20).toInt())
 
+    private val refusedTake = RefusedTake()
+
     private suspend fun transcribeWithEngine(s: Source, p: Profile): TranscriptionResult {
         val engine: EngineApi = container.engine() ?: throw NoCompanionException()
         val stages = FixtureEngineApi.stagesOf(p).size
@@ -1084,8 +1086,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val upload = copy ?: s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
             // A product that writes a song down again names the recording the computer already holds: nothing is sent
             // twice, unless the computer no longer has it.
+            // The file as it is now: the same take until it is recorded or picked again.
+            val take = s.file?.let { "${it.path}:${it.length()}:${it.lastModified()}" } ?: s.name
             jobFromRecording(
-                held = { container.product.audioOnComputer(this, engine) },
+                // A take the computer refused for unfinished setup is still there: it is named, not sent again.
+                held = { refusedTake.on(take) ?: container.product.audioOnComputer(this, engine) },
                 canSend = copy != null,
                 send = {
                     withContext(Dispatchers.IO) {
@@ -1095,14 +1100,16 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     }.audioId
                 },
                 resent = { say(R.string.recording_sent_again) },
-            ) { audioId ->
-                transcribe.update { it.copy(fraction = 0.0) }
-                seatFellBack = false
-                engine.createJobForSeat(
-                    // The product adds what its own profiles take (a bass tab's instrument and tuning).
-                    container.product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
-                        title = title, seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
-                ).also { seatFellBack = it.second }.first
+            ) { sent ->
+                refusedTake.noting(take, sent) { audioId ->
+                    transcribe.update { it.copy(fraction = 0.0) }
+                    seatFellBack = false
+                    engine.createJobForSeat(
+                        // The product adds what its own profiles take (a bass tab's instrument and tuning).
+                        container.product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
+                            title = title, seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
+                    ).also { seatFellBack = it.second }.first
+                }
             }
         }
         engineJobId = created.id

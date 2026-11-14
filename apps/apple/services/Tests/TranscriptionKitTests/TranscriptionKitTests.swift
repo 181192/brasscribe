@@ -115,6 +115,10 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var musicXML = Data("<score-partwise/>".utf8)
     /// The bodies of the job uploads, in order (the request's body stream can be read only once).
     nonisolated(unsafe) static var uploads: [String] = []
+    /// The computer's band writer is set up; while it is not, a job that asks for it is refused.
+    nonisolated(unsafe) static var bandWriterSetUp = false
+    /// The bodies of jobs asked for by a recording's id.
+    nonisolated(unsafe) static var jobsByID: [String] = []
     /// Requests that were answered after a delay (a cancelled request is not).
     nonisolated(unsafe) static var answered: [String] = []
     /// The interface version `newer.local` answers with; nil is one above the app's. `older.local` has none, as an
@@ -199,6 +203,12 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return (202, Data(#"{"request_id":"r1","name":"test","platform":"ios","match_code":"4821","created_at":"2026-09-27T10:00:00+00:00","status":"pending"}"#.utf8), "application/json")
             case ("GET", "/v1/pair/requests/r1"):
                 return (200, Data(#"{"status":"approved","token":"tok","device_id":"d1","server_id":"srv-1","server_name":"Brasscribe on Studio"}"#.utf8), "application/json")
+            case ("POST", "/v1/jobs/upload") where Self.uploads.last?.contains("\r\n\r\nneeds the band writer\r\n") == true,
+                 ("POST", "/v1/jobs") where !Self.bandWriterSetUp:
+                return (409, Data(#"{"code":"band_writer_not_set_up","detail":"The computer can't write this score yet","audio_id":"a7"}"#.utf8), "application/json")
+            case ("POST", "/v1/jobs"):
+                Self.jobsByID.append(request.bodyStreamData)
+                return (200, Data(#"{"id":"j1","profile":"solo","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/upload") where Self.uploads.last?.contains("\r\n\r\nslow\r\n") == true:
                 return (200, Data(#"{"id":"j9","profile":"solo","status":"running","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/upload"):
@@ -323,6 +333,28 @@ extension URLRequest {
         #expect(upload.value(forHTTPHeaderField: "Content-Type")?.hasPrefix("multipart/form-data; boundary=") == true)
         #expect(try await svc.artifact(.brailleBRF, jobID: "j1") == Data("#A BRF".utf8))
         #expect(try await svc.artifact(.talkingScore, jobID: "j1") == Data("Bar 1".utf8))
+    }
+
+    /// The computer took the recording in and then said the band writer is not set up. Trying the same take again,
+    /// once it is, asks for the job by the recording the computer already holds: nothing is sent twice.
+    @Test func aTakeRefusedForUnfinishedSetupIsNotSentAgain() async throws {
+        StubEngine.uploads = []; StubEngine.jobsByID = []; StubEngine.bandWriterSetUp = false
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
+        let audio = FileManager.default.temporaryDirectory.appending(path: "refused-\(UUID().uuidString).wav")
+        try Data(repeating: 1, count: 3000).write(to: audio)
+        let req = TranscriptionRequest(audioURL: audio, profile: "solo", title: "needs the band writer",
+                                       fields: [EngineField("transpose", "2")])
+        await #expect(throws: TranscriptionError.self) { for try await _ in svc.transcribe(req) {} }
+        #expect(StubEngine.uploads.count == 1 && StubEngine.jobsByID.isEmpty)
+
+        StubEngine.bandWriterSetUp = true
+        var done: TranscriptionResult?
+        for try await ev in svc.transcribe(req) { if case .finished(let r) = ev { done = r } }
+        #expect(done?.jobID == "j1")
+        #expect(StubEngine.uploads.count == 1)  // not sent a second time
+        let asked = try #require(StubEngine.jobsByID.first)
+        #expect(asked.contains(#""audio_id":"a7""#) && asked.contains(#""transpose":2"#) && asked.contains(#""render_audio":false"#))
     }
 
     /// Stopping a transcription stops the job on the computer too.

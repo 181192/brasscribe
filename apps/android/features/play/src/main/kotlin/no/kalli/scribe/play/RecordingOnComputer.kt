@@ -33,3 +33,25 @@ suspend fun <T> jobFromRecording(
     val sent = send()
     return sent to create(sent)
 }
+
+/**
+ * A take the computer holds and would not write down yet: it answered that something is left to set up there
+ * (`band_writer_not_set_up`). The recording itself arrived and stays on the computer, so when the player tries the
+ * same take again it is named by its id and not sent a second time. One take is remembered, the last one refused,
+ * for as long as the app is open; a take the computer has let go of since is sent again ([jobFromRecording]).
+ */
+class RefusedTake {
+    private var take: Pair<String, String>? = null
+
+    /** The id of [source] on the computer, when it is the take that was refused. */
+    fun on(source: String): String? = take?.takeIf { it.first == source }?.second
+
+    /** [create] for the recording [audioId] of [source]: a refusal for unfinished setup is remembered and thrown on. */
+    suspend fun <T> noting(source: String, audioId: String, create: suspend (String) -> T): T =
+        try {
+            create(audioId).also { if (take?.first == source) take = null }
+        } catch (e: EngineException) {
+            if (e.code == "band_writer_not_set_up") take = source to audioId
+            throw e
+        }
+}
