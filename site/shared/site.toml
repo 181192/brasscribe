@@ -15,16 +15,16 @@ file = "brasscribe-bandroom-macos-arm64.zip"
 group = "bandroom"
 label_en = "Bandroom for Mac"
 label_nb = "Bandroom for Mac"
-en = "Bandroom for a Mac from 2020 or later: <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
-nb = "Bandroom for Mac fra 2020 eller nyere: <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
+en = "Bandroom for a Mac with an M-series chip: <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
+nb = "Bandroom for Mac med M-brikke: <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
 
 [[downloads]]
 file = "brasscribe-bandroom-windows-x64.zip"
 group = "bandroom"
 label_en = "Bandroom for Windows"
 label_nb = "Bandroom for Windows"
-en = "Bandroom for Windows 11 (x64): <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
-nb = "Bandroom for Windows 11 (x64): <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
+en = "Bandroom for Windows 11: <a href=\"@/guide/#computer\">your computer</a> does the heavy work"
+nb = "Bandroom for Windows 11: <a href=\"@/guide/#computer\">datamaskinen</a> gjør det tunge arbeidet"
 
 [[downloads]]
 file = "scribe-core-macos-arm64.tar.gz"

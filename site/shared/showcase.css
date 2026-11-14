@@ -33,7 +33,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .score-ink .doubt, .score-ink .dir, .score-ink .bracketSpan { color: var(--scribe-uncertain); }
 .score-strip .strip-ink > svg, .score-strip .strip-sound > svg { top: 12px; }
 .stage-figure.score-ink { padding: var(--scribe-space-3); }
-.stage-figure.band { max-height: none; max-width: 520px; }
+
 .tab-ink .heard.strings { opacity: 0.35; }
 .tab-ink .heard.bass { opacity: 0.6; }
 .partview { margin-top: var(--scribe-space-6); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); padding: var(--scribe-space-4); }
@@ -82,7 +82,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .stages { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; gap: var(--scribe-space-10); }
 .stage { display: grid; gap: var(--scribe-space-5); grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; }
 .stage[hidden] { display: none; }
-.stage-figure { width: 100%; height: auto; max-width: 600px; max-height: 340px; overflow: hidden; background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); }
+.stage-figure { width: 100%; height: var(--stage-height, auto); max-width: 600px; max-height: 340px; overflow: hidden; background: var(--scribe-surface-raised); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); }
 .stage h3 { margin: 0 0 var(--scribe-space-2); font-size: var(--scribe-type-title-2-size); }
 .stage-count { margin: 0 0 var(--scribe-space-1); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
 .stage-engine { margin: 0; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); }
@@ -176,6 +176,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 @media print {
   .strip-controls, .stages-nav, .stages-foot, .tabdemo-controls, .tabdemo-hint { display: none; }
   /* On paper every step is there, one under the other. */
+  .stages { min-height: 0 !important; }
   .stages .stage[hidden] { display: grid !important; }
 }
 
@@ -205,23 +206,25 @@ main > section > .wrap > h2 { max-width: 20em; }
 /* The two listeners of the "hearing" step: one filled, the other an outline over it. */
 .tab-ink .listener-2 rect { fill: none; stroke: var(--scribe-ink); stroke-width: 1.5; }
 .tab-ink .listener-2 .rang { stroke: var(--scribe-ink); opacity: 0.5; }
-.stage-figure.band { display: grid; gap: 2px; padding: var(--scribe-space-3); }
-.stage-figure.band svg { width: 100%; height: auto; }
+.stage-figure.band { display: grid; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 2px; padding: var(--scribe-space-3); }
+.stage-figure.band svg { height: 100%; width: auto; max-width: 100%; }
 
-/* A measured rate as ten notes on a line: a cross through a wrong one, a question mark over a marked one. */
+/* What the app gets right, as ten notes on a line: the right ones filled in the brand's colour, the others open. */
 .rates { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
 .rates .rate { display: block; }
-.rates .rate p { margin-top: var(--scribe-space-1); }
+.rates .rate p { margin-top: var(--scribe-space-2); font-size: 1.125rem; max-width: 18em; }
 .tens { display: block; width: 100%; max-width: 300px; height: auto; }
 .tens .string { stroke: var(--scribe-line); stroke-width: 1; }
-.tens .mark { font: 700 15px var(--scribe-font-text); text-anchor: middle; fill: var(--scribe-uncertain); }
-.tens .right ellipse { fill: var(--scribe-ink); }
-.tens .wrong ellipse { fill: var(--scribe-surface-raised); stroke: var(--scribe-uncertain); stroke-width: 1.5; }
-.tens .cross { stroke: var(--scribe-uncertain); stroke-width: 1.5; stroke-linecap: round; }
+.tens .right, .twohundred .right { fill: var(--scribe-brand); }
+.tens .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-border-strong); stroke-width: 1.5; }
+.sure-key { display: flex; align-items: center; gap: var(--scribe-space-2); margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
+.sure-key svg { flex: none; }
+.sure-key .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-text-muted); stroke-width: 1.2; }
+.sure-marks { margin: var(--scribe-space-8) 0 0; max-width: 40em; font-size: 1.125rem; }
 @media (forced-colors: active) {
-  .tens .right ellipse, .tens .mark { fill: CanvasText; }
-  .tens .wrong ellipse { fill: Canvas; stroke: CanvasText; }
-  .tens .cross, .tens .string { stroke: CanvasText; }
+  .tens .right, .twohundred .right { fill: CanvasText; }
+  .tens .open, .twohundred .open { fill: Canvas; stroke: CanvasText; }
+  .tens .string { stroke: CanvasText; }
   .strip-hear button[aria-pressed="true"] { background: Highlight; color: HighlightText; }
 }
 
@@ -229,16 +232,10 @@ main > section > .wrap > h2 { max-width: 20em; }
 .part-stack { display: grid; gap: var(--scribe-space-2); width: max-content; }
 .part-stack svg { display: block; }
 
-/* Two hundred notes as dots, the wrong ones without a mark standing out. */
+/* Two hundred notes as dots: the brand's colour for all that are right or marked, the few others left open. */
 .twohundred { display: block; width: 100%; max-width: 300px; height: auto; }
-.twohundred .right { fill: var(--scribe-border-strong); }
-.twohundred .wrong { fill: var(--scribe-uncertain); stroke: var(--scribe-uncertain); stroke-width: 2.5; }
-.twohundred + p { font-size: 1.125rem; max-width: 18em; margin-top: var(--scribe-space-3); }
+.twohundred .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-text-muted); stroke-width: 1.2; }
 .sure-source { margin: var(--scribe-space-8) 0 0; max-width: 40em; color: var(--scribe-text-muted); }
-@media (forced-colors: active) {
-  .twohundred .right { fill: none; stroke: CanvasText; stroke-width: 1; }
-  .twohundred .wrong { fill: CanvasText; stroke: CanvasText; }
-}
 
 /* The app on each device, and the programs on the computer: the same card for each. */
 .variants { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-5); }

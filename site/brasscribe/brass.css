@@ -30,3 +30,7 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
   .hero .strip { margin-top: var(--scribe-space-5); }
 }
 @media (forced-colors: active) { main > section h2::before { display: none; } }
+
+/* Every step's picture stands in a box of the same height, so the steps are as tall as each other. */
+.stages { --stage-height: 300px; }
+@media (min-width: 901px) { .stages { --stage-height: 340px; } }

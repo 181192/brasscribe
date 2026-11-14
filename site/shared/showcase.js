@@ -196,8 +196,20 @@ function stages(list) {
   // The buttons stand over the step, so they stay where they are when a taller or a shorter step comes.
   list.setAttribute("aria-live", "polite");
   list.before(nav, foot);
-  list.classList.add("live");
-  show(current);
+  // The list keeps the height of its tallest step, so what follows it stays where it is.
+  const settle = () => {
+    list.style.minHeight = "";
+    items.forEach((item) => (item.hidden = false));
+    list.classList.remove("live");
+    const tallest = Math.max(...items.map((item) => item.offsetHeight));
+    list.classList.add("live");
+    list.style.minHeight = `${tallest}px`;
+    show(current);
+  };
+  settle();
+  let width = innerWidth;
+  addEventListener("resize", () => width !== innerWidth && ((width = innerWidth), settle()));
+  document.fonts?.ready.then(settle);
 }
 
 // The tab viewer: the same notes in another tuning, as the core's solver placed them, and for the note that

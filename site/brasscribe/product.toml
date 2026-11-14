@@ -43,16 +43,16 @@ file = "brasscribe-play-macos-arm64.zip"
 group = "mac"
 label_en = "Brasscribe for Mac"
 label_nb = "Brasscribe for Mac"
-en = "Brasscribe for a Mac from 2020 or later"
-nb = "Brasscribe for Mac fra 2020 eller nyere"
+en = "Brasscribe for a Mac with an M-series chip"
+nb = "Brasscribe for Mac med M-brikke"
 
 [[downloads]]
 file = "brasscribe-play-windows-x64.zip"
 group = "windows"
 label_en = "Brasscribe for Windows"
 label_nb = "Brasscribe for Windows"
-en = "Brasscribe for Windows 11 (x64), an early version, not tested on a real PC yet"
-nb = "Brasscribe for Windows 11 (x64), en tidlig versjon, ikke testet på en ekte PC ennå"
+en = "Brasscribe for Windows 11, an early version, not tested on a real PC yet"
+nb = "Brasscribe for Windows 11, en tidlig versjon, ikke testet på en ekte PC ennå"
 
 # What each device does by itself and what it needs the computer for: the table on the front page.
 [[platforms]]
@@ -67,8 +67,8 @@ nb = { name = "iPhone og iPad", status = "Testversjon: trenger noen steg med App
 
 [[platforms]]
 id = "mac"
-en = { name = "Mac", status = "A Mac from 2020 or later · macOS 27 or 26", alone = "Opens, plays and prints the scores you have, with the whole band on the screen.", bandroom = "Every new score. Bandroom can run on the same Mac." }
-nb = { name = "Mac", status = "Mac fra 2020 eller nyere · macOS 27 eller 26", alone = "Åpner, spiller og skriver ut partiturene du har, med hele bandet på skjermen.", bandroom = "Alle nye partiturer. Bandroom kan kjøre på samme Mac." }
+en = { name = "Mac", status = "A Mac with an M-series chip · macOS 27 or 26", alone = "Opens, plays and prints the scores you have, with the whole band on the screen.", bandroom = "Every new score. Bandroom can run on the same Mac." }
+nb = { name = "Mac", status = "Mac med M-brikke · macOS 27 eller 26", alone = "Åpner, spiller og skriver ut partiturene du har, med hele bandet på skjermen.", bandroom = "Alle nye partiturer. Bandroom kan kjøre på samme Mac." }
 
 [[platforms]]
 id = "windows"
@@ -77,8 +77,8 @@ nb = { name = "Windows", status = "Tidlig versjon, ikke testet på en ekte PC en
 
 [[platforms]]
 id = "bandroom"
-en = { name = "Bandroom, on your computer", status = "Free · a Mac from 2020 or later, or a PC with Windows 11", alone = "Writes every score, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
-nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac fra 2020 eller nyere, eller PC med Windows 11", alone = "Skriver alle partiturer, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
+en = { name = "Bandroom, on your computer", status = "Free · a Mac with an M-series chip, or a PC with Windows 11", alone = "Writes every score, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
+nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac med M-brikke, eller PC med Windows 11", alone = "Skriver alle partiturer, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
 
 [[platforms]]
 id = "studio"

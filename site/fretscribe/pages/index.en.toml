@@ -107,13 +107,15 @@ setup = "Set up your computer"
 
 [sure]
 title = "How sure <em>is it?</em>"
-lead = "When Fretscribe puts a <b class=\"uncertain\">?</b> over a note, it is usually right to. But it misses many wrong notes."
-doubted = "<b>{name}:</b> about {n} in 10 notes with a ? really were wrong."
-wrong = "<b>{name}:</b> only about {n} in 10 wrong notes got a ?."
-alt_doubted = "Ten notes with a question mark; {n} of them are wrong."
-alt_wrong = "Ten wrong notes; {n} of them have a question mark."
-source = "We measured this on bass lines and guitar parts picked out of full songs played by a computer, where the right notes are known. Your recording can do better or worse."
-end = "So check the ? notes first, then trust your ears for the rest."
+lead = "Play one guitar or bass by itself, and Fretscribe gets most of the notes right. And it shows you where to listen: a <b class=\"uncertain\">?</b> marks the notes it was not sure of."
+right = "<b>{name}:</b> about {n} of 10 notes have the right pitch and timing."
+alt_right = "Ten notes on a line. Filled notes: {n}. They have the right pitch and timing."
+key = "An open note is one it got wrong."
+marks = "A <b class=\"uncertain\">?</b> is worth your time: about {n} of every 10 notes that get one need fixing."
+between = "{low} or {high}"
+numbers = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"]
+end = "A ? finds about one wrong note in {n}. Play it through once and your ears find the rest."
+source = "We measured this on guitarists the app was not tuned on, playing single lines and chords, one guitar by itself. The bass lines are played by a computer and were also used while we built the app, so a real bass can do worse. A guitar picked out of a full song is harder than a guitar by itself."
 how = "How we measured this"
 
 [getit]

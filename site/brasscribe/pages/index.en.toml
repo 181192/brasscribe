@@ -120,11 +120,14 @@ setup = "Set up your computer"
 
 [sure]
 title = "How sure <em>is it?</em>"
-lead = "When one brass instrument plays alone, Brasscribe gets nearly every note right. It puts a <b class=\"uncertain\">?</b> over the notes it was not sure of, but a wrong note can slip through without one. Low instruments are the hardest."
-group = "<b>{name}</b> alone: about 1 wrong note in {n} slips through without a ?."
-alt_group = "Two hundred notes as dots; {k} stand out as wrong notes with no question mark."
-source = "We measured this on slow hymn tunes, one player at a time: the recordings we tuned on. A rehearsal will be worse."
-end = "So check the ? notes first, then read the part through with your ears open, the bass parts most of all. A full band is harder to hear than one instrument, and its score is a draft for a musician to finish."
+lead = "When one brass instrument plays alone, nearly every note Brasscribe writes is right: most of all for cornet and flugelhorn, fewer for the tuba. And it shows you where to listen: a <b class=\"uncertain\">?</b> marks the notes it was not sure of."
+group = "<b>{name}:</b> {share} of 100 notes it writes are right, or have a ? for you to check."
+more = "more than {n}"
+about = "about {n}"
+alt_group = "Two hundred notes as dots, nearly all of them filled in. Open dots: {k}. They are wrong notes with no question mark."
+key = "An open dot is a wrong note with no ?."
+source = "We measured this on slow hymn tunes, one player at a time: the recordings we tuned on. Notes it did not write are not counted. A rehearsal will be worse."
+end = "So check the ? notes first, then read the part through with your ears open: not every wrong note carries a mark, least of all in the bass parts. A full band is harder to hear than one instrument, and its score is a draft for a musician to finish."
 how = "How we measured this"
 
 [getit]
