@@ -43,6 +43,9 @@ object InputRefusal {
     /** A file sent as a page is larger than the engine reads, or a picture of more pixels than it reads (a 413). */
     const val PAGE_TOO_LARGE = "page_too_large"
 
+    /** More files than a job reads (a 413); the phone stops at that many itself, so a caller past it gets this. */
+    const val TOO_MANY_PAGES = "too_many_pages"
+
     /** The computer has no reader of printed music installed (a 503); its profiles then list none that reads pages. */
     const val READER_MISSING = "reader_missing"
 }

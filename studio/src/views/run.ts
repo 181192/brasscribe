@@ -1,6 +1,6 @@
 // One run: live stage graph over SSE and the stage inspector.
 import { api, ApiError, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
-import type { Composition, FileRef, Job, Manifest, ProfileInfo, Reference, StageFiles, ValidationIssue } from "../api/types";
+import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
 import { PianoRoll, type RollLayer } from "../components/pianoroll";
@@ -12,7 +12,7 @@ import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../
 import { maxOf, minOf } from "../lib/extent";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
-import { readFailure, readsPages, type SheetSummary } from "../lib/pages";
+import { PAGE_LIMITS, readFailure, type SheetSummary } from "../lib/pages";
 import { stageTime, waitNote } from "../lib/stagetime";
 import { hasScore } from "../lib/targets";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
@@ -203,14 +203,13 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     if (signal.aborted) return;
     view = fromJob(job);
     graph.update(view);
-    const [m, st, profiles, read] = await Promise.all([
+    const [m, st, read] = await Promise.all([
       api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error),
-      api.profiles().catch(() => [] as ProfileInfo[]),
       job.outputs?.includes("sheet.json") ? api.sheetSummary(id, { signal }).catch(() => null) : null,
     ]);
     if (signal.aborted) return;
     stages = st;
-    pages = readsPages(job, profiles);
+    pages = job.input === "pages";
     sheet = read;
     renderHeader(job, m);
     if (!TERMINAL.has(job.status)) {
@@ -282,7 +281,7 @@ function errorSummary(error: string): HTMLElement {
   const unread = readFailure(error);
   return h("div", { class: "notice notice-error", role: "alert" },
     h("p", { class: "notice-title" }, h("strong", {}, m ? t("run.failedAt", { stage: stageLabel(m[1]) }) : t("run.failedShort"))),
-    h("p", {}, unread ? t(`run.unread.${unread}`) : (m ? m[3] : first).replace(/:?\s*Traceback \(most recent call last\):?\s*$/, "")),
+    h("p", {}, unread ? t(`run.unread.${unread}`, PAGE_LIMITS) : (m ? m[3] : first).replace(/:?\s*Traceback \(most recent call last\):?\s*$/, "")),
     rest.length || unread ? more(t("run.fullError"), h("pre", { class: "json", tabindex: 0 }, error)) : null);
 }
 
@@ -495,7 +494,7 @@ async function pagesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
     }
     const src = URL.createObjectURL(input.picture);
     clear(p, h("p", {}, t("pages.is.picture")),
-      h("img", { class: "page-read", src, alt: t("pages.alt", { title: runTitle(ctx.job) }), onload: () => URL.revokeObjectURL(src) }),
+      h("img", { class: "page-read", src, alt: t("pages.alt", { title: runTitle(ctx.job) }), onload: () => URL.revokeObjectURL(src), onerror: () => URL.revokeObjectURL(src) }),
       file("picture"));
   } catch (e) {
     clear(p, e instanceof ApiError && e.status === 404 ? h("p", {}, t("pages.gone")) : errorNotice(e, { retry: () => void pagesTab(p, ctx) }));

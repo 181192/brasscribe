@@ -2,6 +2,7 @@
 import { ApiError, InterfaceMismatch, MissingEndpoint, TimedOut, Unreachable } from "../api/client";
 import { locale, t } from "../i18n";
 import { icon } from "./icons";
+import { PAGE_LIMITS } from "../lib/pages";
 
 type Child = Node | string | number | null | undefined | false | Child[];
 type Attrs = Record<string, string | number | boolean | null | undefined | EventListener>;
@@ -59,7 +60,7 @@ function withCode(text: string, parts: Record<string, string>): Child[] {
 export function refusalWords(err: unknown): string | null {
   if (!(err instanceof ApiError) || !err.code) return null;
   const key = `refusal.${err.code}`;
-  return t(key) === key ? null : t(key);
+  return t(key) === key ? null : t(key, PAGE_LIMITS);
 }
 
 export interface NoticeOptions {

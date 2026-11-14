@@ -1,8 +1,9 @@
 // Runs: start a pipeline on a recording, pages of printed music, a capture or a dataset item; list and search runs.
 import { api, MissingEndpoint } from "../api/client";
-import type { Job, ProfileInfo, Source } from "../api/types";
+import type { Job, PagesJob, ProfileInfo, Source } from "../api/types";
 import { locale, t } from "../i18n";
-import { looksLikePage, MAX_PAGES, moved, PAGE_ACCEPT, pagesProblem, profilesFor, type Input } from "../lib/pages";
+import { looksLikePage, MAX_PAGES, moved, PAGE_LIMITS, PAGE_ACCEPT, pagesProblem, profilesFor, type Input } from "../lib/pages";
+import { DEFAULT_INSTRUMENT, instrumentName, TAB_FROM_PAGES, TUNINGS, tuningName } from "../lib/fretted";
 import { TARGETS } from "../lib/targets";
 import { announce, clear, errorNotice, filePicker, fmt, h, infoTip, loading, more, pill, refusalWords, table, viewHead } from "../ui/dom";
 
@@ -151,8 +152,26 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
       offered.filter((p) => p.target === target).map((p) => h("option", { value: p.name, selected: p.name === first },
         `${p.name}${p.validated ? ` (${t("runs.validated")})` : ""}`)))).filter((group) => group.childElementCount));
     showDesc();
+    showTab();
   };
-  profile.addEventListener("change", showDesc);
+  // A tab from pages is written for the player's instrument and tuning; another instrument starts in its usual one.
+  const instrument = h("select", { id: "run-instrument" }, Object.keys(TUNINGS).map((i) =>
+    h("option", { value: i, selected: i === DEFAULT_INSTRUMENT }, instrumentName(i))));
+  const tuning = h("select", { id: "run-tuning" });
+  const offerTunings = () => clear(tuning, TUNINGS[instrument.value].map((k) => h("option", { value: k }, tuningName(instrument.value, k))));
+  instrument.addEventListener("change", offerTunings);
+  offerTunings();
+  const tabRow = h("fieldset", { class: "tab-for" }, h("legend", {}, t("runs.tabFor")),
+    h("div", { class: "row" },
+      h("span", { class: "field" }, h("label", { for: "run-instrument" }, t("runs.instrument")), instrument),
+      h("span", { class: "field" }, h("label", { for: "run-tuning" }, t("runs.tuning")), tuning)));
+  const showTab = () => {
+    tabRow.hidden = profile.value !== TAB_FROM_PAGES;
+  };
+  profile.addEventListener("change", () => {
+    showDesc();
+    showTab();
+  });
   const title = h("input", { type: "text", id: "run-title", autocomplete: "off" });
   const audio = h("input", { type: "checkbox", id: "run-audio", checked: true });
   const heavy = h("input", { type: "checkbox", id: "run-heavy", checked: true });
@@ -163,7 +182,7 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
     pagesLabel.textContent = t(pages.length ? "runs.pagesAdd" : "runs.pagesChoose");
     pageList.hidden = !pages.length;
     const act = (i: number, what: "up" | "down" | "remove", disabled = false) =>
-      h("button", { type: "button", class: "ghost", "data-do": what, disabled, "aria-label": t(`runs.page.${what}Name`, { name: pages[i].name }), onclick: () => change(i, what) },
+      h("button", { type: "button", class: "ghost", "data-do": what, disabled, "aria-label": t(`runs.page.${what}Name`, { n: i + 1, name: pages[i].name }), onclick: () => change(i, what) },
         t(`runs.page.${what}`));
     clear(pageList, pages.map((f, i) => h("li", {}, h("div", { class: "row" },
       h("span", { class: "page-name" }, f.name), h("span", { class: "hint" }, fmt.bytes(f.size)),
@@ -209,6 +228,7 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
       h("span", {}, h("label", { for: "run-profile" }, t("runs.profile")), infoTip(t("runs.profile"), t("runs.profileTip"))),
       profile, desc,
       more(t("runs.profileStages"), chain)),
+    tabRow,
     h("div", { class: "field" }, h("label", { for: "run-title" }, t("runs.titleField")), title),
     more(t("runs.options"), h("div", {},
       h("div", {}, h("label", {}, audio, t("runs.renderAudio"))),
@@ -246,8 +266,9 @@ function newRunForm(profiles: ProfileInfo[], sources: Source[] | Error): HTMLEle
       let job: Job;
       if (from === "pages") {
         const problem = pagesProblem(pages);
-        if (problem) throw new Error(t(`runs.pages.${problem}`, { max: MAX_PAGES }));
-        job = await api.createJobFromPages(pages, { profile: profile.value, title: title.value || null, render_audio: audio.checked });
+        if (problem) throw new Error(t(`runs.pages.${problem}`, PAGE_LIMITS));
+        const tab = profile.value === TAB_FROM_PAGES ? { instrument: instrument.value as PagesJob["instrument"], tuning: tuning.value } : {};
+        job = await api.createJobFromPages(pages, { profile: profile.value, title: title.value || null, render_audio: audio.checked, ...tab });
       } else if (from === "file") {
         const f = file.files?.[0];
         if (!f) throw new Error(t("runs.chooseFile"));

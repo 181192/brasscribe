@@ -955,7 +955,7 @@
  },
  "/v1/jobs/old-hundredth-sheet/input": {
   "status": 200,
-  "type": "application/octet-stream",
+  "type": "image/png",
   "picture": "page"
  },
  "/v1/jobs/old-hundredth-sheet/manifest": {

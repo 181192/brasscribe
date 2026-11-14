@@ -149,6 +149,7 @@ class PagesJobTest {
         assertEquals(InputRefusal.NOT_A_PAGE, code("NOT_A_PAGE"))
         assertEquals(InputRefusal.WRONG_INPUT, code("WRONG_INPUT"))
         assertEquals(InputRefusal.PAGE_TOO_LARGE, code("PAGE_TOO_LARGE"))
+        assertEquals(InputRefusal.TOO_MANY_PAGES, code("TOO_MANY_PAGES"))
         assertEquals("MAX_PAGE_BYTES = 50 * 1024 * 1024", Regex("^MAX_PAGE_BYTES = [^#\n]*", RegexOption.MULTILINE).find(text)?.value?.trim())
         assertEquals(50L * 1024 * 1024, EngineApi.MAX_PAGE_BYTES)
         val sheet = File(pages.parentFile, "sheet.py").readText()

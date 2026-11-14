@@ -5,8 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError, assumeEngineInterface } from "../src/api/client";
 import type { Job, ProfileInfo } from "../src/api/types";
 import { messages, setLang } from "../src/i18n";
-import { looksLikePage, MAX_PAGES, MAX_PAGE_BYTES, moved, pageFormat, pagesProblem, profilesFor, readFailure, readsPages } from "../src/lib/pages";
+import { inputKind, looksLikePage, MAX_PAGES, MAX_PAGE_BYTES, moved, pagesProblem, profilesFor, readFailure } from "../src/lib/pages";
 import { errorNotice, refusalWords } from "../src/ui/dom";
+import { instrumentName, TUNINGS, tuningName } from "../src/lib/fretted";
 import { doubtfulBars, readRows } from "../src/views/run";
 import { runsView } from "../src/views/runs";
 
@@ -16,7 +17,6 @@ const answers = JSON.parse(readFileSync(join(here, "..", "e2e", "fixtures", "api
 const profiles = answers["/v1/profiles"].body as ProfileInfo[];
 
 const PNG = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 1, 2, 3);
-const bytes = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0));
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 afterEach(() => {
@@ -60,21 +60,20 @@ describe("pages", () => {
     for (const f of [{ name: "take.wav", type: "audio/wav" }, { name: "concert.mp4", type: "video/mp4" }, { name: "take" }]) expect(looksLikePage(f), f.name).toBe(false);
   });
 
-  it("tells a job's input by its first bytes, as the engine does", () => {
-    expect(pageFormat(PNG)).toBe("image/png");
-    expect(pageFormat(Uint8Array.of(0xff, 0xd8, 0xff, 0xe0))).toBe("image/jpeg");
-    expect(pageFormat(bytes("RIFF\0\0\0\0WEBPVP8 "))).toBe("image/webp");
-    expect(pageFormat(bytes("%PDF-1.7"))).toBe("application/pdf");
-    expect(pageFormat(bytes("PK\x03\x04page-001.png"))).toBe("application/zip");
-    expect(pageFormat(bytes("RIFF\0\0\0\0WAVEfmt "))).toBeNull();
-    expect(pageFormat(new Uint8Array(0))).toBeNull();
+  it("tells a job's input by the media type it is sent with, and types a picture from its own list", () => {
+    expect(inputKind("image/png")).toEqual({ kind: "picture", type: "image/png" });
+    expect(inputKind("IMAGE/JPEG; charset=binary")).toEqual({ kind: "picture", type: "image/jpeg" });
+    expect(inputKind("image/webp")).toEqual({ kind: "picture", type: "image/webp" });
+    expect(inputKind("application/pdf")).toEqual({ kind: "pdf" });
+    expect(inputKind("application/zip")).toEqual({ kind: "archive" });
+    for (const other of ["image/svg+xml", "text/html", "audio/wav", "", null]) expect(inputKind(other), String(other)).toEqual({ kind: "other" });
   });
 
-  it("knows a run that read pages by its profile, and by its first stage once the profile is no longer listed", () => {
+  it("knows a run that read pages by what the job says it read", () => {
     const jobs = answers["/v1/jobs"].body as Job[];
-    expect(jobs.filter((j) => readsPages(j, profiles)).map((j) => j.id).sort()).toEqual(["old-hundredth-sheet", "old-hundredth-unread"]);
-    const withoutReader = profilesFor(profiles, "audio");
-    expect(jobs.filter((j) => readsPages(j, withoutReader)).map((j) => j.id).sort()).toEqual(["old-hundredth-sheet", "old-hundredth-unread"]);
+    expect(jobs.filter((j) => j.input === "pages").map((j) => j.id).sort()).toEqual(["old-hundredth-sheet", "old-hundredth-unread"]);
+    // Every run in the fixtures says what it read, as the engine's jobs do.
+    expect(jobs.every((j) => j.input === "pages" || j.input === "audio")).toBe(true);
   });
 
   it("has words in both languages for every way the engine says pages could not be read", () => {
@@ -92,8 +91,8 @@ describe("pages", () => {
   });
 
   it("has words in both languages for every refusal the engine names", () => {
-    const codes = [...(engine("pages.py") + engine("sheet.py")).matchAll(/^(?:NOT_A_PAGE|WRONG_INPUT|PAGE_TOO_LARGE|READER_MISSING) = "(\w+)"$/gm)].map((m) => m[1]);
-    expect(codes.sort()).toEqual(["not_a_page", "page_too_large", "reader_missing", "wrong_input"]);
+    const codes = [...(engine("pages.py") + engine("sheet.py")).matchAll(/^(?:NOT_A_PAGE|WRONG_INPUT|PAGE_TOO_LARGE|TOO_MANY_PAGES|READER_MISSING) = "(\w+)"$/gm)].map((m) => m[1]);
+    expect(codes.sort()).toEqual(["not_a_page", "page_too_large", "reader_missing", "too_many_pages", "wrong_input"]);
     for (const code of codes) {
       for (const l of ["en", "nb"] as const) expect(messages[l]).toHaveProperty([`refusal.${code}`]);
     }
@@ -107,6 +106,8 @@ describe("pages", () => {
     expect(notice.querySelector("details")?.textContent).toContain("no reader of printed music installed");
     setLang("nb");
     expect(refusalWords(new ApiError(415, "IMG_0001.HEIC is a HEIC or AVIF picture", "not_a_page"))).toMatch(/HEIC-bilde fra en iPhone/);
+    expect(refusalWords(new ApiError(413, "41 files: a job reads 40 pages at most", "too_many_pages"))).toBe(
+      "Det er flere enn 40 sider, og hver side i en PDF teller. Del opp notene, og les dem i flere kjøringer.");
     expect(refusalWords(new ApiError(422, "unknown profile", "something_new"))).toBeNull();
     expect(refusalWords(new ApiError(500, "boom"))).toBeNull();
   });
@@ -148,32 +149,30 @@ describe("the client, for pages", () => {
     expect(((await api.createJobFromPages([], { profile: "nope" }).catch((x) => x)) as ApiError).code).toBeUndefined();
   });
 
-  it("fetches a picture whole to show it, and of a PDF or an archive only enough to know what it is", async () => {
-    /** A body in two pieces, which counts how many were asked for and whether the rest was let go. */
-    const answer = (first: Uint8Array, rest: Uint8Array) => {
+  it("fetches a picture whole to show it, and of a PDF or an archive nothing past the headers", async () => {
+    /** An answer of this media type whose body counts what was read of it and whether it was let go. */
+    const answer = (type: string, bytes: Uint8Array) => {
       const seen = { pulled: 0, cancelled: false };
-      const pieces = [first, rest];
       const body = new ReadableStream<Uint8Array>({
         pull(c) {
-          const piece = pieces[seen.pulled++];
-          if (piece) c.enqueue(piece);
-          else c.close();
+          if (seen.pulled++) c.close();
+          else c.enqueue(bytes);
         },
         cancel() {
           seen.cancelled = true;
         },
       }, { highWaterMark: 0 });
-      vi.stubGlobal("fetch", () => Promise.resolve({ ok: true, status: 200, body } as unknown as Response));
+      vi.stubGlobal("fetch", () => Promise.resolve(new Response(body, { status: 200, headers: { "Content-Type": type } })));
       return seen;
     };
-    answer(PNG.subarray(0, 5), PNG.subarray(5));
+    answer("image/png", PNG);
     const picture = await api.pagesInput("r1");
     expect(picture.kind).toBe("picture");
     if (picture.kind === "picture") expect([picture.picture.type, picture.picture.size]).toEqual(["image/png", PNG.length]);
-    for (const [head, kind] of [[bytes("%PDF-1.7\n1 0 obj"), "pdf"], [bytes("PK\x03\x04page-001.png"), "archive"], [bytes("RIFF\0\0\0\0WAVEfmt "), "other"]] as const) {
-      const seen = answer(head, new Uint8Array(1000));
+    for (const [type, kind] of [["application/pdf", "pdf"], ["application/zip", "archive"], ["image/svg+xml", "other"]] as const) {
+      const seen = answer(type, new Uint8Array(1000));
       expect((await api.pagesInput("r1")).kind).toBe(kind);
-      expect(seen).toEqual({ pulled: 1, cancelled: true });
+      expect(seen).toEqual({ pulled: 0, cancelled: true });
     }
     vi.stubGlobal("fetch", () => Promise.resolve(json({ detail: "input audio no longer exists" }, 404)));
     expect(((await api.pagesInput("r1").catch((x) => x)) as ApiError).status).toBe(404);
@@ -247,6 +246,53 @@ describe("the new-run form", () => {
     expect(profile.value).toBe("sheet-tab");
   });
 
+  it("writes a tab from pages for the instrument and tuning chosen, and sends them only for that profile", async () => {
+    const f = await form(profiles);
+    f.choose("pages");
+    const select = (id: string) => f.el.querySelector<HTMLSelectElement>(id)!;
+    const set = (id: string, value: string) => {
+      select(id).value = value;
+      select(id).dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    const tabFor = f.el.querySelector<HTMLElement>(".tab-for")!;
+    expect(tabFor.hidden).toBe(true);
+    set("#run-profile", "sheet-tab");
+    expect(tabFor.hidden).toBe(false);
+    expect([select("#run-instrument").value, select("#run-tuning").value]).toEqual(["guitar-6", "standard"]);
+    set("#run-tuning", "drop-d");
+    // Another instrument starts in its own usual tuning: the guitar's is not one a ukulele has.
+    set("#run-instrument", "ukulele");
+    expect(Array.from(select("#run-tuning").options).map((o) => o.textContent)).toEqual(["High G", "Low G"]);
+    set("#run-instrument", "mandolin");
+    expect(Array.from(select("#run-tuning").options).map((o) => o.textContent)).toEqual(["G D A E"]);
+    set("#run-instrument", "bass-5");
+    set("#run-tuning", "drop-a");
+    f.pick("#run-pages", "1.png");
+    await f.submit();
+    const body = f.sent[0].init.body as FormData;
+    expect([body.get("profile"), body.get("instrument"), body.get("tuning")]).toEqual(["sheet-tab", "bass-5", "drop-a"]);
+  });
+
+  it("offers every instrument and tuning the engine writes a tab for, its usual tuning first, with words for each", () => {
+    const tab = engine("tab.py") + engine("bass_tab.py");
+    const table = (name: string) => tab.slice(tab.indexOf(`${name}: dict[str, tuple[str, ...]] = {`), tab.indexOf("\n}", tab.indexOf(`${name}: dict`)));
+    const engines: Record<string, string[]> = {};
+    for (const m of (table("INSTRUMENTS") + table("TUNINGS")).matchAll(/"([\w-]+)": \(([^)]*)\)/g)) {
+      engines[m[1]] = [...m[2].matchAll(/"([\w-]+)"/g)].map((x) => x[1]);
+    }
+    expect(Object.keys(engines).sort()).toEqual(Object.keys(TUNINGS).sort());
+    for (const [instrument, tunings] of Object.entries(TUNINGS)) {
+      expect(tunings, instrument).toEqual(engines[instrument]);
+      for (const l of ["en", "nb"] as const) {
+        setLang(l);
+        expect(instrumentName(instrument)).not.toMatch(/^tab\./);
+        for (const k of tunings) expect(tuningName(instrument, k), `${instrument} ${k}`).not.toMatch(/^tab\./);
+      }
+    }
+    setLang("nb");
+    expect([tuningName("bass-4", "bead"), tuningName("ukulele-baritone", "standard"), instrumentName("bass-5")]).toEqual(["HEAD", "D G H E", "5-strengs bass"]);
+  });
+
   it("does not offer pages where the engine lists no profile that reads them, and says where the reader is installed", async () => {
     const f = await form(profilesFor(profiles, "audio"));
     expect(f.el.querySelector("input[name=source-kind][value=pages]")).toBeNull();
@@ -266,19 +312,21 @@ describe("the new-run form", () => {
     expect(f.listedPages()).toEqual(["2.png", "1.png", "3.pdf"]);
     const buttons = () => Array.from(f.el.querySelectorAll<HTMLButtonElement>(".page-list li:first-child button")).map((b) => [b.textContent, b.disabled]);
     expect(buttons()).toEqual([["Move up", true], ["Move down", false], ["Remove", false]]);
-    f.press("Move up: 1.png");
+    f.press("Move up: page 2, 1.png");
     expect(f.listedPages()).toEqual(["1.png", "2.png", "3.pdf"]);
     // Focus stays with the page that moved: at the top it cannot go further up, so on its other button.
-    expect(document.activeElement?.getAttribute("aria-label")).toBe("Move down: 1.png");
-    f.press("Remove: 3.pdf");
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Move down: page 1, 1.png");
+    f.press("Remove: page 3, 3.pdf");
     expect(f.listedPages()).toEqual(["1.png", "2.png"]);
-    expect(document.activeElement?.getAttribute("aria-label")).toBe("Remove: 2.png");
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Remove: page 2, 2.png");
     (f.el.querySelector("#run-title") as HTMLInputElement).value = "Old Hundredth";
     await f.submit();
     expect(f.sent.map((s) => s.url)).toEqual(["/v1/jobs/pages"]);
     const body = f.sent[0].init.body as FormData;
     expect((body.getAll("files") as File[]).map((x) => x.name)).toEqual(["1.png", "2.png"]);
     expect([body.get("profile"), body.get("title"), body.get("render_audio"), body.get("allow_heavy")]).toEqual(["sheet", "Old Hundredth", "true", null]);
+    // A score from pages is not a tab: the engine refuses a tab's options for it.
+    expect([body.get("instrument"), body.get("tuning")]).toEqual([null, null]);
     expect(location.hash).toBe("#/runs/r1");
   });
 
