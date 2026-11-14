@@ -44,6 +44,8 @@ title = "Yours alone"
 text = "Your recording goes from your phone to your own computer and nowhere else."
 
 [sure]
+cards = "How sure each app is, a card for each"
+count = "{n} of {total}"
 title = "Honest about every note."
 lead = "The apps tell you which notes to check. Here is how often they are right."
 more = "How sure {app} is"

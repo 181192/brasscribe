@@ -77,10 +77,11 @@ scripts: showcase.js
     <div class="wrap">
       <h2 id="sure-title" class="pen-heading" data-t="sure.title"></h2>
       <p class="lead" data-t="sure.lead"></p>
-      <div class="sure-grid">
+      <div class="sure-grid" role="region" data-t-aria-label="sure.cards" tabindex="0" data-t-data-count="sure.count">
         {{figure tally product="brasscribe" first="1" link="1"}}
         {{figure tally product="fretscribe" first="1" link="1"}}
       </div>
+      <p class="sure-count await-js" aria-hidden="true"></p>
     </div>
   </section>
 

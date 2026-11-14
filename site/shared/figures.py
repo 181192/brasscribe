@@ -467,7 +467,8 @@ def lineup(page, only: str = "") -> str:
     only="bandroom": Bandroom's alone (its own page)."""
     say, apps = page.say, list(page.site.products.values())
     # The phone shows Fretscribe's tab, the tablet and the Mac Brasscribe's parts: both apps are seen at work.
-    shown = {"phone": page.site.products["fretscribe"], "tablet": page.site.products["brasscribe"], "mac": page.site.products["brasscribe"]}
+    shown = {"phone": page.site.products["fretscribe"], "tablet": page.site.products["brasscribe"], "mac": page.site.products["brasscribe"],
+             "windows": page.site.products["brasscribe"]}
 
     def mark(q) -> str:
         # An app whose mark has a dark form shows it on a dark page.
@@ -486,7 +487,8 @@ def lineup(page, only: str = "") -> str:
 
     items = []
     if not only:
-        for place, frame, size in (("phone", "phone-frame", "120px"), ("tablet", "tablet-frame", "190px"), ("mac", "mac-frame", "(max-width: 700px) 70vw, 380px")):
+        for place, frame, size in (("phone", "phone-frame", "120px"), ("tablet", "tablet-frame", "190px"), ("mac", "mac-frame", "(max-width: 700px) 70vw, 280px"),
+                                   ("windows", "mac-frame", "(max-width: 700px) 70vw, 260px")):
             q = shown[place]
             v = next(x for x in q.data["variants"] if x["id"] == place)
             shot = page.shot(v["shot"], size, "", "lazy", product=q, said=v[page.lang]["alt"])
@@ -579,7 +581,11 @@ def matrix(page) -> str:
     shared = {"id": "bandroom", **page.site.bandroom}
     rows.append(f'<tr class="shared"><th scope="row">{page.site.glyphs["bandroom"]}Bandroom</th><td colspan="{len(columns)}" data-label="{esc(say("variants.shared"))}">'
                 f'<a href="@family/bandroom/"><span class="cell-name">{say("variants.shared")}</span>{tags(page, shared)}</a></td></tr>')
-    return f"""<div class="table-scroll lines-scroll" role="region" aria-labelledby="lines-caption" tabindex="0">
+    # A fold, open: on a phone (showcase.js) it is closed, since the devices stand above it and each app's own page
+    # says the same; without the script it stays open.
+    return f"""<details class="matrix-fold" open>
+<summary>{say("variants.matrix")}</summary>
+<div class="table-scroll lines-scroll" role="region" aria-labelledby="lines-caption" tabindex="0">
   <table class="lines">
     <caption id="lines-caption" class="vh">{say("variants.matrix")}</caption>
     <thead><tr><td></td>{head}</tr></thead>
@@ -587,7 +593,8 @@ def matrix(page) -> str:
       {"\n      ".join(rows)}
     </tbody>
   </table>
-</div>"""
+</div>
+</details>"""
 
 
 def listening(page) -> str:
@@ -670,7 +677,7 @@ def tally(page, first: str = "", link: str = "") -> str:
         return "\n".join(out)
     # On a phone the cards are a row that scrolls by itself, a card at a time; the keyboard can scroll it too.
     # Under the row, which card is in view of how many ("1 of 3"): what a finger on a phone would otherwise not know.
-    count = esc(json.dumps(say("sure.count"), ensure_ascii=False))
+    count = esc(say("sure.count"))
     return (f'<div class="sure-grid" role="region" aria-label="{esc(say("sure.cards"))}" tabindex="0" data-count="{count}">\n' + "\n".join(out)
             + f'\n</div>\n<p class="sure-count await-js" aria-hidden="true">{esc(say("sure.count").format(n=1, total=len(out)))}</p>')
 
