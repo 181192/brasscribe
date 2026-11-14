@@ -452,7 +452,7 @@ def rail(page, product=None, base: str = "#") -> str:
         shared = ' class="shared"' if v["id"] == "bandroom" else ""
         chips.append(f'<li><a href="{base}{v["id"]}"{shared} data-variant="{v["id"]}">{page.site.glyphs[v["id"]]}'
                      f'<span class="rail-name">{say(f"variants.{v["id"]}.name")}</span>{f" <small>{sub}</small>" if sub else ""}</a></li>')
-    return f'<ul class="rail" aria-label="{esc(say("variants.label"))}">' + "".join(chips) + "</ul>"
+    return f'<ul class="rail" aria-label="{esc(say("variants.label"))}" data-mine="{esc(say("variants.mine"))}">' + "".join(chips) + "</ul>"
 
 
 def devices(page) -> str:

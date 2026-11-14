@@ -318,33 +318,50 @@ class Page:
 
     # The download page, from the product's data ----------------------------------------------
     def download_page(self, lang: str) -> str:
-        """The download page: the variant rail at the top, then a part for each place the app runs, under the rail's
-        anchors, each with the release files of its groups; the tech person's files last."""
+        """The download page, in a player's words: the variant rail at the top, then a panel for each place the app
+        runs, under the rail's anchors. A panel has one main button per device, three steps for the first time, and
+        the release files themselves folded away for the band's tech person; no file name is a button. Then, as
+        the fixed second step, Bandroom on the computer; the tech person's tools last."""
         self.lang = lang
         p, shared = self.product, figures()
         self.shared = shared
         groups: dict[str, list[dict]] = {}
         for item in p.downloads(self.site.shared_downloads):
             groups.setdefault(item["group"], []).append(item)
+        say = self.say
 
-        def files(group: str, named: bool) -> str:
-            items = groups[group]
-            links = "".join(
-                f'\n    <li><a class="button {"primary" if i == 0 else "outline"}" href="{self.file(x["file"])}">{x.get("label_" + lang, x["file"])}</a>'
-                f'<span class="muted">{x[lang]}</span></li>' for i, x in enumerate(items))
-            title = f'  <h3>{self.say(f"groups.{group}.title")}</h3>\n' if named else ""  # a place with one device needs no second name
-            return f'{title}  <ul class="download-files">{links}\n  </ul>\n  <p>{self.say(f"groups.{group}.note")}</p>'
+        def tech(names: list[str]) -> str:
+            rows = "".join(f'\n      <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>'
+                           for g in names for x in groups[g])
+            notes = "".join(f'\n    <p>{say(f"groups.{g}.note")}</p>' for g in names)
+            return (f'  <details class="tech"><summary>{say("download.tech")}</summary>\n    <ul class="tech-files">{rows}\n    </ul>{notes}'
+                    f'\n    <p><a href="{self.file("SHA256SUMS")}">{say("download.sums")}</a></p>\n  </details>')
 
-        parts = [f'<h1>{self.say("download.heading")}</h1>\n<p class="lead">{self.say("download.lead")}</p>\n{shared.rail(self)}\n<div class="download-groups">']
+        def device(group: str, primary: bool) -> str:
+            steps = "".join(f"<li>{step}</li>" for step in say(f"groups.{group}.steps"))
+            return (f'  <div class="dl-device">\n    <a class="button {"primary" if primary else "outline"}" href="{self.file(groups[group][0]["file"])}">{say(f"groups.{group}.button")}</a>\n'
+                    f'    <p class="first-title">{say("download.first", device=say(f"groups.{group}.title"))}</p>\n    <ol class="first-steps">{steps}</ol>\n  </div>')
+
+        parts = [f'<h1>{say("download.heading")}</h1>\n<p class="lead">{say("download.lead")}</p>\n{shared.rail(self)}\n<div class="download-groups">']
         for v in shared.places(self):
             vid, w = v["id"], v[lang]
-            body = "\n".join(files(g, len(v["files"]) > 1) for g in v["files"]) if v["files"] else f'  <p><a href="@family/bandroom/">{self.say("variants.studio.download")}</a></p>'
-            parts.append(f'<section id="{vid}" aria-labelledby="{vid}-title">\n  <h2 id="{vid}-title">{self.say(f"variants.{vid}.title", app=p.data["name"])}</h2>\n'
-                         f'  <p class="variant-does">{w["does"]}</p>\n  {shared.tags(self, v)}\n  <p class="variant-needs">{w["needs"]}</p>\n{body}\n</section>')
-        parts.append(f'<section id="tools" aria-labelledby="tools-title">\n  <h2 id="tools-title">{self.say("groups.tools.title")}</h2>\n'
-                     f'  <ul class="download-files">' + "".join(f'\n    <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>' for x in groups["tools"])
-                     + f'\n  </ul>\n  <p>{self.say("groups.tools.note")}</p>\n</section>')
-        parts.append(f'</div>\n<p class="muted">{self.say("download.more")}</p>\n')
+            head = (f'<section id="{vid}" class="download-panel{" shared" if vid == "bandroom" else ""}" aria-labelledby="{vid}-title">\n'
+                    f'  <h2 id="{vid}-title">{say("download.then") if vid == "bandroom" else say(f"variants.{vid}.title", app=p.data["name"])}</h2>\n'
+                    f'  <p class="variant-does">{w["does"]}</p>\n  {shared.tags(self, v)}\n  <p class="variant-needs">{w["needs"]}</p>')
+            if vid == "bandroom":  # the second step, the same for every app: its buttons stay outlined
+                body = ('  <div class="actions">' + "".join(f'<a class="button outline" href="{self.file(x["file"])}">{x.get("label_" + lang)}</a>' for x in groups["bandroom"])
+                        + f'</div>\n  <p class="more-link"><a href="@family/bandroom/">{say("download.bandroom")}</a></p>\n' + tech(["bandroom"]))
+            elif vid == "studio":
+                body = f'  <p class="more-link"><a href="#bandroom">{say("variants.studio.download")}</a></p>'
+            elif vid == "tablet":  # the phone's files: said once, under the phone
+                body = f'  <p>{say("download.tablet")}</p>'
+            else:
+                body = "\n".join(device(g, i == 0) for i, g in enumerate(v["files"])) + "\n" + tech(v["files"])
+            parts.append(f"{head}\n{body}\n</section>")
+        parts.append(f'<section id="tools" aria-labelledby="tools-title">\n  <h2 id="tools-title">{say("groups.tools.title")}</h2>\n'
+                     f'  <ul class="tech-files">' + "".join(f'\n    <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>' for x in groups["tools"])
+                     + f'\n  </ul>\n  <p>{say("groups.tools.note")}</p>\n</section>')
+        parts.append(f'</div>\n<p class="muted">{say("download.more")}</p>\n')
         self.lang = "en"
         return "\n".join(parts)
 

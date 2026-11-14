@@ -77,3 +77,25 @@ addEventListener("hashchange", () => {
 document.addEventListener("scribe:lang", () => roots().forEach(make));
 roots().forEach(make);
 started = true;
+
+// On a download page the rail leads to every panel, all of them shown; the visitor's own device is marked, when the
+// browser says which it is.
+const device = () => {
+  const ua = navigator.userAgent;
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "tablet";
+  if (/Android/.test(ua)) return /Mobile/.test(ua) ? "phone" : "tablet";
+  if (/iPhone/.test(ua)) return "phone";
+  if (/Macintosh/.test(ua)) return "mac";
+  if (/Windows/.test(ua)) return "windows";
+  return null;
+};
+const markMine = () => {
+  const rail = document.querySelector("main.downloads .rail"), mine = device();
+  const chip = mine && rail?.querySelector(`a[data-variant="${mine}"]`);
+  if (!chip) return;
+  chip.classList.add("mine");
+  chip.setAttribute("aria-current", "true");
+  if (!chip.querySelector(".mine-tag")) chip.insertAdjacentHTML("beforeend", `<span class="mine-tag">${rail.dataset.mine}</span>`);
+};
+document.addEventListener("scribe:lang", markMine);
+markMine();
