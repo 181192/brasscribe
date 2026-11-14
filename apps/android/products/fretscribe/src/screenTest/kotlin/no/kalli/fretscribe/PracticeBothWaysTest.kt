@@ -123,7 +123,8 @@ class PracticeBothWaysTest : TabScreenTest() {
             settle()
             rule.onNodeWithTag("fs-tab-tuning").assertIsDisplayed()
             rule.onNodeWithTag("fs-tab-marked").assertIsDisplayed()
-            rule.onNode(androidx.compose.ui.test.isHeading() and androidx.compose.ui.test.hasText("Bass line")).assertExists()
+            // (On its side the title also says the tuning.)
+            rule.onNode(androidx.compose.ui.test.isHeading() and androidx.compose.ui.test.hasText("Bass line", substring = true)).assertExists()
         } finally {
             rule.runOnUiThread { container.assistiveOverride = null; container.touchExplorationOverride = null }
         }

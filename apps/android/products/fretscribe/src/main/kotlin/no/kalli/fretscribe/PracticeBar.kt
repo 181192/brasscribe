@@ -50,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -80,6 +81,15 @@ import no.kalli.scribe.play.ui.PracticeChip
 /** The transport's targets: reachable with an instrument in the hands (design/brands/fretscribe/system.md §1). */
 private val TRANSPORT = 64.dp
 
+/** A phone on its side: the height the player gives up goes to the tab. */
+private const val SHORT_SCREEN_DP = 480
+
+/** Under this width the transport's other buttons are a little narrower, so where the song is has room beside them. */
+private const val NARROW_SCREEN_DP = 400
+
+/** Under this width a phone on its side has the player in one row only with every part of it at its shortest. */
+private const val TIGHT_ROW_DP = 700
+
 /** A control that does nothing where it is looks off as Material draws one: its colour at this opacity. */
 private const val DISABLED_ALPHA = 0.38f
 
@@ -89,12 +99,17 @@ private const val DISABLED_ALPHA = 0.38f
  * It wraps onto as many rows as it needs and never clips. When the recording is not on the phone it says
  * so, and offers to get it from the computer when the computer is there.
  *
+ * The tab is what the screen is for, so the player takes no more height than it must. On a small phone on its side
+ * it is one row: only Play keeps the 64 dp, the word Speed is left out and Repeat bars is one word or its icon (the
+ * bars, when it is on); what is seen is shorter, what is said is the same. With a note open under it ([withNote]),
+ * upright, it leaves out where the song is (the note says its own bar) and the word Speed, and is a row lower.
+ *
  * [place]: the bar (counted from 0) and the beat the recording is at. [follows]: the tab has the beats to
  * follow the recording by.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, place: Pair<Int, Int>?, follows: Boolean, canFetch: Boolean, onFetch: () -> Unit) {
+internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, place: Pair<Int, Int>?, follows: Boolean, canFetch: Boolean, withNote: Boolean = false, onFetch: () -> Unit) {
     val c = ScribeTheme.colors
     val state = practice.recording
     if (follows && state == RecordingState.LOOKING) return
@@ -128,9 +143,40 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
         var choosing by rememberSaveable { mutableStateOf(false) }
         val repeat = practice.repeat
         fun number(bar: Int) = measures.getOrNull(bar)?.number ?: (bar + 1).toString()
+        val screen = LocalConfiguration.current
+        val short = screen.screenHeightDp < SHORT_SCREEN_DP
+        // A small phone on its side: one row only with everything at its shortest.
+        val tight = short && screen.screenWidthDp < TIGHT_ROW_DP
+        val largeText = LocalDensity.current.fontScale >= 1.3f
+        // Play is always 64 dp. The three beside it are too where there is room, and never under 48 dp.
+        val beside = when {
+            tight -> 48.dp
+            !short && screen.screenWidthDp < NARROW_SCREEN_DP -> 56.dp
+            else -> TRANSPORT
+        }
+        // Upright with large text the chip is its icon beside the transport, so the player is two rows, not three.
+        val early = !short && largeText
+        val repeatChip: @Composable () -> Unit = {
+            // The chip's words are its name: what is seen is what is said.
+            val shown = when {
+                repeat == null -> stringResource(R.string.fs_practice_repeat)
+                repeat.first == repeat.last -> stringResource(R.string.fs_practice_repeat_on_one, number(repeat.first))
+                else -> stringResource(R.string.fs_practice_repeat_on, number(repeat.first), number(repeat.last))
+            }
+            // On a small phone on its side the chip is as short as it can be: Repeat (its icon alone with large text), or the bars when it
+            // is on. Its name is the whole of it either way.
+            val brief = when {
+                repeat == null -> if (largeText) "" else stringResource(R.string.fs_practice_repeat_brief)
+                repeat.first == repeat.last -> number(repeat.first)
+                else -> stringResource(R.string.fs_practice_repeat_bars_brief, number(repeat.first), number(repeat.last))
+            }
+            if (tight || early) PracticeChip(brief, repeat != null, { choosing = true }, Modifier.widthIn(min = 48.dp).testTag("fs-practice-repeat"),
+                icon = DesignR.drawable.ic_bc_loop, role = Role.Button, accessibleName = shown)
+            else PracticeChip(shown, repeat != null, { choosing = true }, Modifier.testTag("fs-practice-repeat"), icon = DesignR.drawable.ic_bc_loop, role = Role.Button)
+        }
         FlowRow(
             Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s3, vertical = ScribeSpace.s2),
-            horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
+            horizontalArrangement = Arrangement.spacedBy(if (tight) ScribeSpace.s2 else ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -138,23 +184,24 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                     colors = IconButtonDefaults.filledIconButtonColors(containerColor = c.primary, contentColor = c.onPrimary)) {
                     BcIcon(if (practice.playing) DesignR.drawable.ic_bc_pause else DesignR.drawable.ic_bc_play, stringResource(if (practice.playing) R.string.pause else R.string.play))
                 }
-                IconButton(practice::toStart, Modifier.size(TRANSPORT).testTag("fs-practice-start")) {
+                IconButton(practice::toStart, Modifier.size(beside).testTag("fs-practice-start")) {
                     BcIcon(DesignR.drawable.ic_bc_restart, stringResource(if (repeat != null) R.string.fs_practice_to_repeat_start else R.string.fs_practice_to_start))
                 }
-                IconButton({ practice.step(-1) }, Modifier.size(TRANSPORT).testTag("fs-practice-previous")) { BcIcon(DesignR.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
+                IconButton({ practice.step(-1) }, Modifier.size(beside).testTag("fs-practice-previous")) { BcIcon(DesignR.drawable.ic_bc_previous_bar, stringResource(R.string.action_prev_bar)) }
                 // In the last bar there is no bar on: Next bar says so and looks off, but it stays where it is in the focus
                 // order and keeps the focus (a button that is switched off would lose it). While the recording plays the
                 // bar changes on its own, so the reason is only given once it stops, the way the place is only said then.
                 val noBarOn = place != null && !practice.hasBarOn(place.first)
                 val last = stringResource(if (repeat != null) R.string.fs_practice_last_bar_of_repeat else R.string.fs_practice_last_bar)
                 val still = !practice.playing
-                IconButton({ practice.step(1) }, Modifier.size(TRANSPORT).testTag("fs-practice-next").semantics {
+                IconButton({ practice.step(1) }, Modifier.size(beside).testTag("fs-practice-next").semantics {
                     if (noBarOn) { disabled(); if (still) stateDescription = last }
                 }) {
                     BcIcon(DesignR.drawable.ic_bc_next_bar, stringResource(R.string.action_next_bar),
                         tint = if (noBarOn) LocalContentColor.current.copy(alpha = DISABLED_ALPHA) else Color.Unspecified)
                 }
             }
+            if (early) repeatChip()
             // Where the song is. It changes with every beat while the recording plays, so it is only announced when the
             // player moved it: a bar back or on, or back to the start.
             val measure = place?.let { measures.getOrNull(it.first) }
@@ -173,26 +220,23 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 if (wasPlaying && !practice.playing && said.isNotEmpty()) view.announceForAccessibility(said)
                 wasPlaying = practice.playing
             }
-            Text(where, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = c.text,
+            // (With a note open the place would take a row of its own upright: the note says its bar, and where the song
+            // stops is still said.)
+            if (!withNote || short) Text(where, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = c.text,
                 modifier = Modifier.testTag("fs-practice-place").semantics { if (!quiet) liveRegion = LiveRegionMode.Polite })
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val speed = stringResource(R.string.speed_chip, practice.speed)
-                // The word is for the eye: the value's own name already says "Speed 100 %". With large text it is left out,
-                // as the top bar leaves out the back button's word: the player would take another row for it.
-                if (LocalDensity.current.fontScale < 1.3f) Text(stringResource(R.string.fs_practice_speed), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
+                // The word is for the eye: the value's own name already says "Speed 100 %". With large text, on a narrow
+                // phone, on a small phone on its side and with a note open it is left out, as the top bar leaves out the
+                // back button's word: the player would take another row for it.
+                if (!largeText && !tight && !withNote && screen.screenWidthDp >= NARROW_SCREEN_DP) Text(stringResource(R.string.fs_practice_speed), style = MaterialTheme.typography.bodyLarge, color = c.textMuted,
                     modifier = Modifier.padding(end = ScribeSpace.s1).testTag("fs-practice-speed-label").semantics { hideFromAccessibility() })
                 StepButton("−", stringResource(R.string.fs_practice_slower), "fs-practice-slower", practice.speed > PracticeSpeed.MIN, repeats = true, onClick = practice::slower)
                 Text(stringResource(R.string.speed_value, practice.speed), style = MaterialTheme.typography.bodyLarge, color = c.text, textAlign = TextAlign.Center,
                     modifier = Modifier.widthIn(min = 56.dp).testTag("fs-practice-speed").semantics { contentDescription = speed; liveRegion = LiveRegionMode.Polite })
                 StepButton("+", stringResource(R.string.fs_practice_faster), "fs-practice-faster", practice.speed < PracticeSpeed.MAX, repeats = true, onClick = practice::faster)
             }
-            // The chip's words are its name: what is seen is what is said.
-            val shown = when {
-                repeat == null -> stringResource(R.string.fs_practice_repeat)
-                repeat.first == repeat.last -> stringResource(R.string.fs_practice_repeat_on_one, number(repeat.first))
-                else -> stringResource(R.string.fs_practice_repeat_on, number(repeat.first), number(repeat.last))
-            }
-            PracticeChip(shown, repeat != null, { choosing = true }, Modifier.testTag("fs-practice-repeat"), icon = DesignR.drawable.ic_bc_loop, role = Role.Button)
+            if (!early) repeatChip()
         }
         if (choosing) RepeatDialog(measures, repeat, place?.first ?: 0, { practice.repeat(it); choosing = false }) { choosing = false }
     }
@@ -257,10 +301,18 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
                 Text(stringResource(R.string.fs_practice_repeat_tip), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
-                BarStepper(stringResource(R.string.loop_from), number(from), "from", from > 0, from < last,
-                    { from--; }, { from++; if (to < from) to = from })
-                BarStepper(stringResource(R.string.loop_to), number(to), "to", to > 0, to < last,
-                    { to--; if (from > to) from = to }, { to++ })
+                val fromBar: @Composable (Modifier) -> Unit = { m ->
+                    BarStepper(stringResource(R.string.loop_from), number(from), "from", from > 0, from < last,
+                        { from--; }, { from++; if (to < from) to = from }, m)
+                }
+                val toBar: @Composable (Modifier) -> Unit = { m ->
+                    BarStepper(stringResource(R.string.loop_to), number(to), "to", to > 0, to < last,
+                        { to--; if (from > to) from = to }, { to++ }, m)
+                }
+                // On a phone on its side the two ends share a row, so the button under them is in view without scrolling.
+                if (LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_DP && LocalDensity.current.fontScale < 1.3f)
+                    Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s6)) { fromBar(Modifier.weight(1f)); toBar(Modifier.weight(1f)) }
+                else { fromBar(Modifier.fillMaxWidth()); toBar(Modifier.fillMaxWidth()) }
                 if (measures.firstOrNull()?.pickup == true) Text(stringResource(R.string.fs_practice_repeat_pickup), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                 // The buttons scroll with the rest: with large text on a phone on its side the dialog is taller than the screen.
                 Button({ onSet(RepeatBars(from, to)) }, Modifier.fillMaxWidth().padding(top = ScribeSpace.s2).heightIn(min = 52.dp).testTag("fs-practice-repeat-set"), shape = ScribeButtonShape) {
@@ -279,10 +331,10 @@ private fun RepeatDialog(measures: List<TabMeasure>, repeat: RepeatBars?, bar: I
 
 /** One end of the repeat: its name, a bar earlier, the bar's number (said when it changes), a bar later. */
 @Composable
-private fun BarStepper(label: String, value: String, tag: String, canGoDown: Boolean, canGoUp: Boolean, down: () -> Unit, up: () -> Unit) {
+private fun BarStepper(label: String, value: String, tag: String, canGoDown: Boolean, canGoUp: Boolean, down: () -> Unit, up: () -> Unit, modifier: Modifier = Modifier) {
     val c = ScribeTheme.colors
     val spoken = stringResource(R.string.fs_practice_bar_value, label, value)
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f).clearAndSetSemantics { }, style = MaterialTheme.typography.bodyLarge, color = c.text)
         StepButton("−", stringResource(R.string.fs_practice_bar_earlier, label), "fs-practice-$tag-down", canGoDown, onClick = down)
         Text(value, style = MaterialTheme.typography.titleMedium, color = c.text, textAlign = TextAlign.Center,

@@ -213,6 +213,8 @@
     <string name="fs_tab_reading">Åpner tabben…</string>
     <string name="fs_tab_failed">Denne tabben kan ikke vises. Gå tilbake og åpne den på nytt.</string>
     <string name="fs_tab_chip">%1$s · %2$s</string>
+    <!-- The top bar on a phone on its side, where the chip is a scroll up: "Bass line · Standard · no capo" -->
+    <string name="fs_tab_title_tuning">%1$s · %2$s</string>
     <string name="fs_tab_no_capo">uten capo</string>
     <string name="fs_tab_capo">capo %1$d</string>
     <string name="fs_tab_chip_name">Stemming: %1$s, %2$s</string>
@@ -248,6 +250,7 @@
     <string name="fs_tab_full_screen_left">Forlot fullskjerm</string>
     <string name="fs_tab_note_close">Lukk</string>
     <string name="fs_tab_note_slowly">Spill denne takten sakte</string>
+    <string name="fs_tab_note_slowly_brief">Sakte</string>
     <string name="fs_tab_note_next">Neste ?</string>
     <string name="fs_tab_note_next_name">Neste usikre tone</string>
     <string name="fs_tab_note_last">Siste usikre tone</string>
@@ -276,6 +279,8 @@
     <string name="fs_practice_repeat">Gjenta takter</string>
     <string name="fs_practice_repeat_on">Gjentar %1$s–%2$s</string>
     <string name="fs_practice_repeat_on_one">Gjentar %1$s</string>
+    <string name="fs_practice_repeat_brief">Gjenta</string>
+    <string name="fs_practice_repeat_bars_brief">%1$s–%2$s</string>
     <string name="fs_practice_repeat_tip">Opptaket spiller disse taktene om og om igjen.</string>
     <string name="fs_practice_repeat_pickup">Takt 0 er opptakten.</string>
     <string name="fs_practice_bar_earlier">%1$s: én takt tidligere</string>
