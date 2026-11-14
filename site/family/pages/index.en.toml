@@ -45,9 +45,8 @@ text = "Your recording goes from your phone to your own computer and nowhere els
 
 [sure]
 title = "Honest about every note."
-lead = "The apps tell you which notes to check. Each app's page shows how often they are right."
-brass = "How sure Brasscribe is"
-fret = "How sure Fretscribe is"
+lead = "The apps tell you which notes to check. Here is how often they are right."
+more = "How sure {app} is"
 
 [close]
 title = "Free. Open source. Yours."

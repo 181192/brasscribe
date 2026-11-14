@@ -107,15 +107,11 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .story dt { font-weight: 650; margin-top: var(--scribe-space-5); }
 .story dd { margin: var(--scribe-space-1) 0 0; color: var(--scribe-text-muted); max-width: 30em; }
 
-/* 5. How sure: a door to each app's own answer, in its own paper. */
-.sure-doors { list-style: none; margin: var(--scribe-space-8) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-5); }
-.sure-doors a {
-  display: grid; gap: var(--scribe-space-1); padding: var(--scribe-space-5) var(--scribe-space-6); height: 100%; text-decoration: none;
-  background: var(--scribe-bg); color: var(--scribe-text); font-family: var(--scribe-font-text); font-weight: 600;
-  border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md);
-}
-.sure-doors a:hover { border-color: var(--scribe-text); color: var(--scribe-text); }
-.sure-app { font-family: var(--scribe-font-display); font-weight: var(--site-display-weight, 400); font-size: calc(1.75rem * var(--site-display-scale, 1)); line-height: 1.1; color: var(--scribe-brand-text); }
+/* 5. How sure: each app's first tally card, in its own paper, leading to the app's own answer. */
+#sure .tally { font-family: var(--scribe-font-text); }
+.tally-app { margin: 0 0 var(--scribe-space-2); font-family: var(--scribe-font-display); font-weight: var(--site-display-weight, 400); font-size: calc(1.5rem * var(--site-display-scale, 1)); line-height: 1.1; color: var(--scribe-brand-text); }
+.tally-more { margin: var(--scribe-space-4) 0 0; }
+.tally-more a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
 
 /* 6. Close. */
 .close .doors { margin-top: var(--scribe-space-5); }

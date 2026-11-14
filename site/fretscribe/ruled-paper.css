@@ -33,7 +33,6 @@ main > section h2::before {
 }
 
 /* The big numbers and the steps' marks are set in the tab's own numerals. */
-.sure-end { font-family: var(--scribe-font-display); }
 
 /* The phone screenshots here are Android screens: 9:20, where the shared frame assumes an iPhone. */
 .phone-frame img { aspect-ratio: 600 / 1304; }

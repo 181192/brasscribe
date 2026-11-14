@@ -74,7 +74,7 @@ A page is its structure and its words, kept apart:
   rail, the old addresses), `make_shots.py`,
   `take_tools.py`.
 - `<app>/`: `product.toml` (brand, release files, where it runs, which measured
-  rates to show), `text.<lang>.toml`, `pages/`, `shots.txt` and `shots/`, its brand stylesheet
+  rates its "How sure" cards show), `text.<lang>.toml`, `pages/`, `shots.txt` and `shots/`, its brand stylesheet
   (`brass.css`, `ruled-paper.css`), `take/` and `figures/` (below), and `figures.py` when its
   music is drawn differently from a tab.
 - `family/`: the family home and the Bandroom page, with the same parts.
@@ -108,7 +108,7 @@ page loads. An app's `preload` in `product.toml` names the font files of its hea
 Every app's front page is `shared/product.html`: the same parts in the same order (a hero that
 performs, what you get, see it work, try it, where it runs, how sure it is, get it). An app gives
 it its words (`pages/index.<lang>.toml`), its brand, and its figures under the same names: `hero`,
-`steps`, `viewer`, `rates`, `devices` (the rail and its panels), `gets`, `screens`.
+`steps`, `viewer`, `tally`, `devices` (the rail and its panels), `gets`, `screens`.
 
 ## Figures, recordings and numbers
 
@@ -118,7 +118,12 @@ the engine answered and no number is typed into a page:
 - `{{figure <name> …}}` calls a function in `shared/figures.py`, or in the app's own `figures.py`.
   Every figure is complete without the script, which only adds what moves.
 - `{{data <file> <path/to/value> as="percent"}}` prints a number from a JSON file, such as a gated
-  rate in `eval/baselines.json`; an app's `[[rates]]` name the rates its front page shows.
+  rate in `eval/baselines.json`.
+- **How sure it is** is the same tally for every app: a card per situation (an app's `[[sure]]`
+  in `product.toml` name its measured rates), each with a big number of a hundred notes, a grid of
+  a hundred cells and its legend, the counts computed by the build so they add up to a hundred. A
+  sentence that rests on a number carries its `{{holds}}` rule (below), so the build fails when the
+  numbers move past the words.
 - Each app's figures come from a **take**: a short real recording, written down by the real
   engine. `<app>/take/` holds what the engine answered, `<app>/figures/` what the pages load (the
   recording as a small mp3, its loudness, the engraved parts or the tab's tunings), served as

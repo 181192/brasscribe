@@ -55,10 +55,12 @@ scripts: showcase.js
     <div class="wrap">
       <h2 id="sure-title" data-t="sure.title"></h2>
       <p class="lead" data-t="sure.lead"></p>
-      {{figure rates}}
-      {{figure limit}}
-      <p class="sure-source" data-t="sure.source"></p>
-      {{figure measured}}
+      {{figure tally}}
+      <div class="sure-then">
+        <p><b data-t="sure.so"></b></p>
+        <p class="limit" data-t="sure.limits"></p>
+        {{figure measured}}
+      </div>
     </div>
   </section>
 
