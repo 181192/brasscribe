@@ -346,5 +346,5 @@ Hundredth fixture instead (`ArrangementLevelTests`), held to Windows' level with
 Apple's own level on the CI Mac within 0.5 LU (`appleOldHundredthLUFS` in the test). That second number is a
 guard against a level that moves by accident: change it only in the commit that refits `band.gain_db.apple`,
 after the Windows measurement above, to what the CI run of that commit prints (`LEVELS Old Hundredth
-arrangement`). The full-band phrase and dynamics tests need `data/sounds/phrases` and run in the full local tier
-only.
+arrangement`). The full-band phrase and the dynamics are checked there too: the job writes the test phrases with
+`sounds/phrases.py`.
