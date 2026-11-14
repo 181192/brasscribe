@@ -110,6 +110,7 @@ markMine();
 // The family's pen draws under a heading once, when it first comes into view. When the headline's line is drawn the
 // pen goes on, onto the strips of the sheets under it (showcase.js waits for "scribe:penned").
 const still = matchMedia("(prefers-reduced-motion: reduce)");
+document.documentElement.classList.add("moving");
 const pen = new IntersectionObserver((entries) => {
   for (const e of entries) {
     if (!e.isIntersecting) continue;

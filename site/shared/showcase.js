@@ -2,6 +2,8 @@
 // this adds the moving parts: the strip under the headline, the steps and the viewers.
 
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
+// Here to move what moves (early.js puts a page at rest when no script says so).
+document.documentElement.classList.add("moving");
 const SVG = "http://www.w3.org/2000/svg";
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 const make = (name, attributes = {}, parent) => {
@@ -366,7 +368,7 @@ function strip(el) {
   // from the headline first: when the headline's line is drawn (rail.js says so), the pen's line on each sheet's
   // strip draws, the first sheet's, then the second's, and the strip runs.
   hear.forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.hear === mode)));
-  // (Once a visit: early.js marks the page "played" when a strip of it has already written itself out.)
+  // (Once in half an hour: early.js marks the page "played" when a strip of it has written itself out.)
   const played = document.documentElement.classList.contains("played");
   set(kept.touched || kept.traced ? kept.t : calm.matches || played ? d.dur * 0.4 : 0);
   const sheet = el.closest(".app");
@@ -377,7 +379,7 @@ function strip(el) {
       setTimeout(() => {
         if (playing || t !== 0) return;
         kept.traced = true;
-        try { sessionStorage.setItem(`scribe-played:${location.pathname}`, "1"); } catch {}
+        try { localStorage.setItem(`scribe-played:${location.pathname}`, String(Date.now())); } catch {}
         play(false);
       }, sheet ? 340 : 0);
     };

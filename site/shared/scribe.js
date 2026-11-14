@@ -86,7 +86,11 @@ const write = (words, lang) => {
     button.hidden = false;
   }
   now = lang;
-  root.removeAttribute("data-lang-wanted");
+  // A page that was kept hidden for its words is shown once its faces are in too (or after a moment at the most), so
+  // a headline that changes face as it is seen does not move what is under it.
+  const show = () => root.removeAttribute("data-lang-wanted");
+  if (root.hasAttribute("data-lang-wanted") && document.fonts) Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 300))]).then(show);
+  else show();
   document.dispatchEvent(new CustomEvent("scribe:lang", { detail: { lang, replaced } }));
   // Once now, and once more when the figures that draw themselves have taken their room.
   back(was);
@@ -108,18 +112,45 @@ const named = () => {
   setTimeout(() => Math.abs(scrollY - y) < 400 && at.scrollIntoView({ behavior: "instant" }), 600);
 };
 
+// The Norwegian words come in two: the page's own and its first figure's (nb.json), which the page waits for, and
+// the other figures' (nb-more.json), which are put in when they come, where the reader is kept.
+let more = null;
+const beside = (name) => fetch(new URL(name, location.href.split(/[?#]/)[0])).then((r) => r.json());
+const figures = (slots) => {
+  const replaced = [], was = place();
+  for (const el of document.querySelectorAll("[data-slot]")) {
+    if (slots[el.dataset.slot] === undefined) continue;
+    el.innerHTML = slots[el.dataset.slot];
+    replaced.push(el);
+  }
+  if (!replaced.length) return;
+  document.dispatchEvent(new CustomEvent("scribe:lang", { detail: { lang: "nb", replaced } }));
+  back(was);
+  if (was) requestAnimationFrame(() => back(was));
+};
+
 async function choose(lang, remember) {
   if (remember) try { localStorage.setItem(KEY, lang); } catch {}
   if (lang === now) return write(english ?? read(), lang);
   english ??= read();
   if (lang === "nb") {
     try {
-      norwegian ??= await (await fetch(new URL("nb.json", location.href.split(/[?#]/)[0]))).json();
+      norwegian ??= await beside("nb.json");
     } catch {
       return write(english, "en");  // the words did not arrive: the page stays as it is
     }
   }
   write(lang === "nb" ? norwegian : english, lang);
+  // (The other figures are asked for once the page shows, so they do not hold up what it needs first.)
+  if (lang === "nb" && !norwegian.whole) {
+    more ??= beside("nb-more.json").catch(() => ({ slots: {} }));
+    more.then((rest) => {
+      if (norwegian.whole) return;
+      norwegian.whole = true;
+      Object.assign(norwegian.slots ??= {}, rest.slots);
+      if (now === "nb") figures(rest.slots);
+    });
+  }
 }
 
 document.addEventListener("click", (e) => {

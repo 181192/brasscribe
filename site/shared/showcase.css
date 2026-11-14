@@ -62,7 +62,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
    played this visit, part way through (--t-still); with the script, at its start, where it begins to write
    (--t-start). The build gives each strip both, so nothing jumps when the script arrives. */
 .strip { --t: var(--t-still, 520); margin: var(--scribe-space-10) 0 0; }
-html.js:not(.played) .strip { --t: var(--t-start, var(--t-still, 520)); }
+html.starting .strip { --t: var(--t-start, var(--t-still, 520)); }
 @media (prefers-reduced-motion: reduce) { html.js .strip { --t: var(--t-still, 520); } }
 /* Play, once, when the strip has written itself out without sound. */
 @keyframes nudge { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--scribe-brand) 55%, transparent); } to { box-shadow: 0 0 0 12px transparent; } }
