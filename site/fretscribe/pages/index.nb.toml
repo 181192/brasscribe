@@ -42,7 +42,7 @@ text = "Stemmingen, tonearten og tempoet den hørte, før noe blir skrevet som b
 shot = "note"
 alt = "En tone med spørsmålstegn valgt i tabben, med Spill denne takten sakte og Neste."
 title = "Øv"
-text = "Spill opptaket saktere, gjenta de vanskelige taktene, og sjekk tonene med ?."
+text = "Spill opptaket saktere, gjenta de vanskelige taktene, og sjekk notene med ?."
 
 [steps]
 title = "Fra lyd til tab, <em>steg for steg.</em>"
@@ -115,7 +115,7 @@ how = "Slik ble det målt"
 
 [getit]
 title = "Last ned <em>Fretscribe.</em>"
-lead = "Gratis. Velg enheten din, så spiller du med om noen minutter."
+lead = "Gratis. Velg enheten din og last den ned."
 download = "Last ned"
 guide = "Les veiledningen"
 family = "Alle Scribe-appene"

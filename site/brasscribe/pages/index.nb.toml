@@ -1,5 +1,5 @@
 title = "Brasscribe: partitur til bandet ditt, fra hvilket som helst opptak"
-description = "Ta opp en øvelse eller åpne en fil. Brasscribe skriver ned en stemme til hver musiker i brassbandet, merker tonene den var usikker på, og spiller med mens du øver."
+description = "Ta opp en øvelse eller åpne en fil. Brasscribe skriver ned en stemme til hver musiker i brassbandet, merker notene den var usikker på, og spiller med mens du øver."
 
 [hero]
 title = "Partitur til bandet ditt, fra <em>hvilket som helst opptak.</em>"
@@ -46,10 +46,10 @@ text = "Ett instrument, et brassband, en solist med band, eller pop og rock. Sva
 shot = "review"
 alt = "Sjekk tonene: takt 2 i solokornett, skrevet Fiss, usikker, med Hør denne takten, Endre tone, Hopp over og Behold."
 title = "Sjekk tonene"
-text = "Tonene med ?, én om gangen: hør, behold eller endre."
+text = "Notene med ?, én om gangen: hør, behold eller endre."
 [[screens.items]]
 shot = "part"
-alt = "Solokornettstemmen på iPhone med spørsmålstegn over de usikre tonene og avspilleren under. Demp stemmen min er på."
+alt = "Solokornettstemmen på iPhone med spørsmålstegn over de usikre notene og avspilleren under. Demp stemmen min er på."
 title = "Stemmen din"
 text = "Din egen stemme slik den skrives for instrumentet ditt, med bandet som spiller rundt deg."
 
@@ -76,7 +76,7 @@ alt = "De samme tonene, som nå begynner på et slag, med et stiplet omriss der 
 [[steps.items]]
 title = "Skriver det ned"
 text = "Melodien blir til noter på et notesystem, med navn i riktig toneart og skrevet slik kornetten leser den: {notes} noter, {doubt} av dem med spørsmålstegn."
-alt = "De første taktene av 1. kornett-stemmen i noter, med spørsmålstegn over de to første tonene."
+alt = "De første taktene av 1. kornett-stemmen i noter, med spørsmålstegn over de to første notene."
 [[steps.items]]
 title = "En stemme til hver musiker"
 text = "Tonene fordeles på bandet: her {parts} stemmer, hver i sitt register, med pauser der en musiker ikke har noe å spille."
@@ -84,11 +84,11 @@ alt = "De første taktene av fire stemmer under hverandre: 1. kornett, 2. kornet
 
 [try]
 title = "Hver musiker får <em>sin stemme.</em>"
-lead = "De fire stemmene Brasscribe skrev for opptaket over. Se dem samlet eller velg én, og velg så en tone for å lese hva den er."
+lead = "De fire stemmene Brasscribe skrev for opptaket over. Se dem samlet eller velg én, og velg så en note for å lese hva den er."
 part = "Vis"
 all = "Alle {n} stemmene"
 scroll = "Stemmene. Rull sidelengs for å lese videre."
-pick = "Velg en tone for å lese hva den er. Piltastene går fra tone til tone."
+pick = "Velg en note for å lese hva den er. Piltastene går fra note til note."
 
 [try.words]
 start_all = "{n} stemmer, én til hver musiker. {doubt} noter har spørsmålstegn."
@@ -131,7 +131,7 @@ how = "Slik ble det målt"
 
 [getit]
 title = "Last ned <em>Brasscribe.</em>"
-lead = "Gratis. Velg enheten din, så står den på notestativet om noen minutter."
+lead = "Gratis. Velg enheten din og last den ned."
 download = "Last ned"
 guide = "Les veiledningen"
 family = "Alle Scribe-appene"

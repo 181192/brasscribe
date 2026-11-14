@@ -21,7 +21,7 @@ p1 = "Fretscribe gjør et opptak om til tab for gitar, bass, ukulele eller mando
 p2 = "Du trenger to ting:"
 li1 = "<strong>Fretscribe-appen</strong> på Android 16 eller nyere, iOS eller iPadOS 26 eller nyere, macOS 26 eller nyere, eller Windows 11."
 li2 = "<strong><a href=\"#computer\">Bandroom på en datamaskin</a></strong> på samme Wi-Fi: en Mac med M-brikke, eller en PC med Windows 11. Bandroom skriver hver tab. Uten det åpner appen tabbene du har laget, men kan ikke skrive en ny."
-p3 = "Fretscribe er en tidlig versjon. Den ligger ikke i noen appbutikk, og enheten din advarer deg første gang, så hver enhet trenger noen ekstra steg: se <a href=\"#download\">Last ned</a>."
+p3 = "Fretscribe ligger ikke i appbutikkene ennå, og enheten din advarer deg første gang, så hver enhet trenger noen ekstra steg: se <a href=\"#download\">Last ned</a>."
 p4 = "Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og spør så <a href=\"#instrument\">hva du spiller</a>. Den ber om mikrofonen først når du spiller inn."
 shot1 = "Bandroom på datamaskinen, i Innstillinger: Ikke tilkoblet. Åpne Bandroom på datamaskinen, den heter Brasscribe Bandroom i listen over programmer, og velg Koble til en telefon. Skann koden på datamaskinen, et felt for den sekssifrede koden, Spør på datamaskinen i stedet, og Koble til."
 
@@ -93,8 +93,8 @@ li1 = "<strong>Spill</strong> spiller opptaket ditt og følger tabben, takt og s
 li2 = "<strong>Tempo</strong> spiller opptaket saktere eller raskere."
 li3 = "<strong>Gjenta takter</strong> spiller taktene du velger, om og om igjen."
 li4 = "Knappene øverst gjør tabben større eller mindre, eller fyller skjermen med den."
-p2 = "En tone Fretscribe var usikker på, har et <span class=\"uncertain\"><strong>?</strong></span> over seg. Velg tonen, eller <strong>Sjekk dem</strong>, så sier Fretscribe hvor den er og tilbyr <strong>Spill denne takten sakte</strong>, så du kan høre selv. Et <strong>!</strong> merker en tone som ikke har noen plass på instrumentet ditt slik det er stemt."
-p3 = "Merkene finner noen av de gale tonene, ikke de fleste, så en tone uten merke kan også være feil. Du kan ikke endre en enkelt tone i appen ennå. Feil stemming eller oktav retter du i <a href=\"#check\">Sjekk sangen</a>, og datamaskinen skriver tabben på nytt."
+p2 = "En note Fretscribe var usikker på, har et <span class=\"uncertain\"><strong>?</strong></span> over seg. Velg noten, eller <strong>Sjekk dem</strong>, så sier Fretscribe hvor den er og tilbyr <strong>Spill denne takten sakte</strong>, så du kan høre selv. Et <strong>!</strong> merker en note som ikke har noen plass på instrumentet ditt slik det er stemt."
+p3 = "Merkene finner noen av de gale notene, ikke de fleste, så en note uten merke kan også være feil. Du kan ikke endre en enkelt note i appen ennå. Feil stemming eller oktav retter du i <a href=\"#check\">Sjekk sangen</a>, og datamaskinen skriver tabben på nytt."
 
 [problems]
 h21 = "Hvis noe går galt"

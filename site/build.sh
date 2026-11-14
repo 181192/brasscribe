@@ -13,4 +13,12 @@ pinned=$(cd "$ROOT" && git grep -n -I -E 'releases/tag/|releases/download/|(Bras
 if [ -n "$pinned" ]; then
   echo "error: link to releases/latest (in site/: {{file <name>}} and {{releases}}) instead of naming a version:" >&2; echo "$pinned" >&2; exit 1
 fi
+# One word for each state, the same everywhere: the apps are "not in the app stores yet" ("ligger ikke i appbutikkene
+# ennå"), iPhone and iPad have a "test version", Windows an "early version". The words they replaced are refused.
+retired=$(cd "$ROOT" && git grep -n -I -i -E 'early testing|test build|not in any app store|Hent Bandroom|tidlig testing|testbygg|ikke i noen appbutikk' \
+  -- 'site/*.html' 'site/*.toml' 'site/*.py' 'site/*.js' || true)
+if [ -n "$retired" ]; then
+  echo "error: use the site's one word for the state (not in the app stores yet, test version, early version; Last ned Bandroom):" >&2
+  echo "$retired" >&2; exit 1
+fi
 python3 "$ROOT/site/build.py"

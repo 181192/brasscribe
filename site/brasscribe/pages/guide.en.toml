@@ -25,7 +25,7 @@ h11 = "Get started"
 p2 = "Brasscribe turns a recording into a score for your brass band. This guide walks through it once, from the recording to the printed parts."
 p3 = "Brasscribe runs on iPhone, iPad, Mac, Android and Windows. It is not in the app stores yet. Android phones, Macs and Windows PCs can <a href=\"#download\">download it</a> (Windows as an early version). For iPhone and iPad there is a <a href=\"#download-ios\">test version</a> that the band's tech person puts on the device."
 p4 = "The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href=\"#instrument\">what you play</a>. It asks for the microphone only when you first record."
-p5 = "<strong>Solo or full band?</strong> A full band is always written by Bandroom on your computer, on the same Wi-Fi as the phone. Today a single instrument is written by Bandroom too, on every device; Android writes solos on the phone itself again from the next release. See <a href=\"#computer\">Bandroom on your computer</a>."
+p5 = "<strong>Solo or full band?</strong> Today Bandroom on your computer writes every score, for a full band and for a single instrument, on the same Wi-Fi as the phone. See <a href=\"#computer\">Your computer</a>."
 
 [download]
 h21 = "Download"
@@ -38,7 +38,7 @@ p2 = "Brasscribe is not in the App Store. The file <code>brasscribe-play-ios-uns
 li4 = "<strong>Which devices:</strong> an iPhone with iOS 26 or newer, or an iPad with iPadOS 26 or newer."
 li5 = "<strong>Sign and install:</strong> use a program on a computer that signs the file with your Apple account and puts the app on the iPhone or iPad (a sideloading tool). Xcode cannot sign this file. With Xcode on a Mac you build the app from the <a href=\"https://github.com/181192/brasscribe#readme\">source code on GitHub</a> instead."
 li6 = "<strong>The first time:</strong> the device asks you to turn on <strong>Developer Mode</strong> (<strong>Settings › Privacy &amp; Security</strong>) and to trust your account under <strong>Settings › General › VPN &amp; Device Management</strong>."
-li7 = "<strong>Scores come from the computer at first:</strong> a newly installed test version makes its scores through <a href=\"#computer\">Bandroom on your computer</a>. To write down a solo on the iPhone or iPad itself, the app needs its listening files, and it does not yet know where to get them: the tech person fills in <strong>Download address</strong> in the app's Settings, under <strong>On this device › Details for the band's tech person</strong>."
+li7 = "<strong>Scores come from the computer at first:</strong> a newly installed test version gets its scores from Bandroom on your computer (see <a href=\"#computer\">Your computer</a>). To write down a solo on the iPhone or iPad itself, the app needs its listening files, and it does not yet know where to get them: the tech person fills in <strong>Download address</strong> in the app's Settings, under <strong>On this device › Details for the band's tech person</strong>."
 li8 = "<strong>Seven days:</strong> a signature from a free Apple Account lasts 7 days. After that the app does not open until you sign it again. Sign with the same account and the same tool, and your scores and settings stay."
 li9 = "<strong>A few apps:</strong> a free Apple Account can keep only a few apps like this on a device at a time."
 li10 = "<strong>Not tried on a device yet:</strong> the file is built and checked for every release, but nobody has installed it on an iPhone or iPad this way yet, so reports are welcome."
@@ -167,7 +167,7 @@ p2 = "Notes nobody has checked keep their question mark in what you share, so th
 
 [computer]
 h21 = "Your computer"
-p1 = "For a full band, Bandroom on your computer (a Mac or PC) makes the score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else."
+p1 = "Bandroom on your computer (a Mac or PC) writes the score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else."
 span1 = "Brasscribe Studio · Score viewer"
 p2 = "On a Mac with an M-series chip or a PC with Windows 11, install <strong>Bandroom</strong> (Brasscribe Bandroom in the list of programs) from the <a href=\"#download\">download</a>. It runs quietly in the background; look for the Brasscribe mark in the menu bar at the top of a Mac's screen, or in the notification area of the Windows taskbar."
 li1 = "The first run downloads what Brasscribe needs, about 10 GB, so keep about 15 GB free. The internet is needed only for these downloads."
