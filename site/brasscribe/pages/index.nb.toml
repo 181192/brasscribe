@@ -1,12 +1,12 @@
 title = "Brasscribe: partitur til bandet ditt, fra hvilket som helst opptak"
-description = "Ta opp en øvelse eller åpne en fil. Brasscribe skriver ned en stemme til hver musiker i brassbandet, merker tonene den var usikker på, og spiller med mens du øver."
+description = "Ta opp en øvelse eller åpne en fil. Brasscribe skriver ned en stemme til hver musiker i brassbandet, merker notene den var usikker på, og spiller med mens du øver."
 
 [hero]
 title = "Partitur til bandet ditt, fra <em>hvilket som helst opptak.</em>"
 lead = "Ta opp en øvelse eller åpne en fil, så skriver Brasscribe ned en stemme til hver musiker i bandet."
 get = "Last ned"
 see = "Se hvordan"
-strip_label = "Opptaket av en messingkvartett, som lydbølge til høyre, blir til {part}-stemmen til venstre når det passerer pennen: {notes} toner i {bars} takter, {doubt} av dem med spørsmålstegn."
+strip_label = "Opptaket av en messingkvartett, som lydbølge til høyre, blir til {part}-stemmen til venstre når det passerer pennen: {notes} noter i {bars} takter, {doubt} av dem med spørsmålstegn."
 strip_note = "Et ekte opptak: to trompeter, en baryton og en tuba som spiller åpningen av Bachs <i lang=\"de\">Ich steh an deiner Krippe hier</i>, fra <a href=\"https://doi.org/10.5281/zenodo.20849469\">ChoraleBricks</a> (CC BY 4.0). Brasscribe skrev stemmene, spørsmålstegnene også. Spill gir deg opptaket, eller notene den skrev."
 
 [get]
@@ -17,8 +17,8 @@ lead = "Hele bandets musikk på papir, og en måte å øve den på."
 title = "En stemme til hver musiker"
 text = "Fullt brassband, et lite band eller en kvartett. Hver stemme i sitt register, skrevet for B eller Ess slik musikeren leser den."
 [[get.items]]
-title = "Ærlige spørsmålstegn"
-text = "En tone den var usikker på, får et ?. Du hører takten, beholder tonen eller endrer den, og går videre til neste."
+title = "Et ? der den er usikker"
+text = "En note den var usikker på, får et ?. Du hører takten, beholder noten eller endrer den, og går videre til neste."
 [[get.items]]
 title = "Øv sammen med bandet"
 text = "Partituret spilles av med bandlyder. Demp din egen stemme, senk tempoet, gjenta de vanskelige taktene."
@@ -26,7 +26,7 @@ text = "Partituret spilles av med bandlyder. Demp din egen stemme, senk tempoet,
 title = "Stemmen din på notestativet"
 text = "Din egen stemme fyller skjermen, med bladvending fra en pedal. Skriv den ut, eller del partituret som PDF, MusicXML eller MIDI."
 [[get.items]]
-title = "Lett å lese og å høre"
+title = "Lett å lese, lett å høre"
 text = "Stor tekst, mørk modus, et talende partitur som leser musikken høyt, og punktnoter for dem som bruker det."
 [[get.items]]
 title = "For den tekniske i bandet"
@@ -46,10 +46,10 @@ text = "Ett instrument, et brassband, en solist med band, eller pop og rock. Sva
 shot = "review"
 alt = "Sjekk tonene: takt 2 i solokornett, skrevet Fiss, usikker, med Hør denne takten, Endre tone, Hopp over og Behold."
 title = "Sjekk tonene"
-text = "Tonene med ?, én om gangen: hør, behold eller endre."
+text = "Notene med ?, én om gangen: hør, behold eller endre."
 [[screens.items]]
 shot = "part"
-alt = "Solokornettstemmen på iPhone med spørsmålstegn over de usikre tonene og avspilleren under. Demp stemmen min er på."
+alt = "Solokornettstemmen på iPhone med spørsmålstegn over de usikre notene og avspilleren under. Demp stemmen min er på."
 title = "Stemmen din"
 text = "Din egen stemme slik den skrives for instrumentet ditt, med bandet som spiller rundt deg."
 
@@ -75,8 +75,8 @@ text = "Ingen spiller nøyaktig på slaget. Hver tone flyttes fra der den ble h�
 alt = "De samme tonene, som nå begynner på et slag, med et stiplet omriss der de ble hørt; én øverst har tvilens farge."
 [[steps.items]]
 title = "Skriver det ned"
-text = "Melodien blir til noter på et notesystem, med navn i riktig toneart og skrevet slik kornetten leser den: {notes} toner, {doubt} av dem med spørsmålstegn."
-alt = "De første taktene av 1. kornett-stemmen i noter, med spørsmålstegn over de to første tonene."
+text = "Melodien blir til noter på et notesystem, med navn i riktig toneart og skrevet slik kornetten leser den: {notes} noter, {doubt} av dem med spørsmålstegn."
+alt = "De første taktene av 1. kornett-stemmen i noter, med spørsmålstegn over de to første notene."
 [[steps.items]]
 title = "En stemme til hver musiker"
 text = "Tonene fordeles på bandet: her {parts} stemmer, hver i sitt register, med pauser der en musiker ikke har noe å spille."
@@ -84,18 +84,18 @@ alt = "De første taktene av fire stemmer under hverandre: 1. kornett, 2. kornet
 
 [try]
 title = "Hver musiker får <em>sin stemme.</em>"
-lead = "De fire stemmene Brasscribe skrev for opptaket over. Se dem samlet eller velg én, og velg så en tone for å lese hva den er."
+lead = "De fire stemmene Brasscribe skrev for opptaket over. Se dem samlet eller velg én, og velg så en note for å lese hva den er."
 part = "Vis"
 all = "Alle {n} stemmene"
 scroll = "Stemmene. Rull sidelengs for å lese videre."
-pick = "Velg en tone for å lese hva den er. Piltastene går fra tone til tone."
+pick = "Velg en note for å lese hva den er. Piltastene går fra note til note."
 
 [try.words]
-start_all = "{n} stemmer, én til hver musiker. {doubt} toner har spørsmålstegn."
+start_all = "{n} stemmer, én til hver musiker. {doubt} noter har spørsmålstegn."
 start = "{name}, skrevet for {instrument}. {doubt}"
-none = "Ingen toner har spørsmålstegn."
-some = "{n} toner har spørsmålstegn."
-part_label = "{name}, {instrument}: {notes} toner i {bars} takter."
+none = "Ingen noter har spørsmålstegn."
+some = "{n} noter har spørsmålstegn."
+part_label = "{name}, {instrument}: {notes} noter i {bars} takter."
 said = "{name}, takt {bar}, {beat}: {pitch}, {value}.{tied}{doubt}"
 beat = "slag {beat}"
 beat_half = "midt i slag {beat}"
@@ -108,8 +108,8 @@ value_quarter = "firedelsnote"
 value_eighth = "åttedelsnote"
 value_16th = "sekstendelsnote"
 dotted = "punktert {value}"
-tied = " Bundet til tonen før."
-doubt = " Brasscribe var ikke sikker på denne tonen."
+tied = " Bundet til noten før."
+doubt = " Brasscribe var ikke sikker på denne noten."
 
 [needs]
 title = "Her <em>kjører den.</em>"
@@ -130,8 +130,8 @@ limits = "Et fullt band er vanskeligere å høre enn én musiker. Partituret er 
 how = "Slik ble det målt"
 
 [getit]
-title = "Hent <em>Brasscribe.</em>"
-lead = "Gratis, og i tidlig testing: den ligger ikke i noen appbutikk ennå, så du laster den ned her, for Android, iPhone og iPad, Mac og Windows."
+title = "Last ned <em>Brasscribe.</em>"
+lead = "Gratis. Velg enheten din og last den ned."
 download = "Last ned"
 guide = "Les veiledningen"
-family = "Se Scribe-appene"
+family = "Alle Scribe-appene"

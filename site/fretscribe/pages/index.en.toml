@@ -20,11 +20,8 @@ text = "Guitar, bass, ukulele or mandolin, with the strings you have and the tun
 title = "A look before it writes"
 text = "First it shows the tuning, the key and the tempo it heard. If one of them is off, you put it right before a single fret is written."
 [[get.items]]
-title = "Honest question marks"
-text = "A note it is not sure of gets a ?. Choose it, and it plays that bar slowly so you can hear for yourself."
-[[get.items]]
-title = "Something to practise with"
-text = "Your recording plays along with the tab, slower if you like, and repeats the bars you choose."
+title = "A ? where it is not sure"
+text = "Choose a note with a ? and it plays that bar slowly, so you can hear for yourself. Then play along with the recording, slower if you like, the hard bars again and again."
 
 [[screens.items]]
 shot = "home"
@@ -118,7 +115,7 @@ how = "How this was measured"
 
 [getit]
 title = "Get <em>Fretscribe.</em>"
-lead = "Free, and an early version: there is no store listing yet, so you download it here, for Android, iPhone and iPad, Mac and Windows."
+lead = "Free. Pick your device and download it."
 download = "Download"
 guide = "Read the guide"
-family = "See the Scribe apps"
+family = "All Scribe apps"
