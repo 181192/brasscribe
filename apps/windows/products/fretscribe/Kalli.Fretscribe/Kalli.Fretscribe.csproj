@@ -5,6 +5,8 @@
     The tab is written on the computer, so the app carries no models, no ONNX Runtime and no band sounds.
   -->
   <PropertyGroup>
+    <!-- Fretscribe's version, bumped by scripts/release.sh when it is released. -->
+    <Version>0.15.0</Version>
     <OutputType>WinExe</OutputType>
     <TargetFramework>$(ScribeWindowsTfm)</TargetFramework>
     <TargetPlatformMinVersion>$(ScribeWindowsMinVersion)</TargetPlatformMinVersion>

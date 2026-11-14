@@ -4,7 +4,8 @@ name: android
 # a debug build (Kotlin fallback core, stub audio tier). With `release`: the Rust core is built in
 # (and sfizz, in Brasscribe only), and the release APKs of both apps are signed, each app with its
 # own key (secrets of the `release` environment), and uploaded as dist-android.
-# The `release` environment only admits v* tags, so the signed build runs from a release tag only.
+# The `release` environment only admits the apps' release tags (brasscribe-v*, fretscribe-v*), so the signed build
+# runs from a release tag only.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
 # pull requests and pushes to main get the fast Linux checks in ci.yml instead.
 on:

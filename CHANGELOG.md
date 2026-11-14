@@ -1,6 +1,8 @@
 # Changelog
 
-Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
+Every release of everything together, newest first, up to 0.15.0. Since then each product is released on its own and
+has its own changelog in `changelogs/` (Brasscribe Play, Fretscribe, Bandroom, scribe-core), each begun at the
+product's first release. Generated from the commit history by git-cliff (`cliff.toml`).
 
 ## 0.15.0 (2026-11-14)
 

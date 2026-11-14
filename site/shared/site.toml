@@ -8,9 +8,11 @@ base = "https://scribe.kalli.app/"
 # Where the source is: the footer of every page links to it.
 source = "https://github.com/181192/brasscribe"
 
-# Where release files come from. One line here moves every download link on the site; a product
-# with releases of its own sets `releases` in its product.toml instead.
-releases = "https://github.com/181192/brasscribe/releases/latest"
+# Where release files come from. One line here moves every download link on the site. Each app is released on
+# its own, and each has a release that always holds its newest files (PRODUCT-latest, docs/shared/dev/release.md):
+# a page links to its own product's (`releases/tag/PRODUCT-latest`) and a file to the one of the product it
+# belongs to (`releases/download/PRODUCT-latest/<file>`; site/build.py reads the product from the file's name).
+releases = "https://github.com/181192/brasscribe/releases"
 
 # Bandroom on every app's variant rail, fifth, between Windows and Studio: one helper for every Scribe app, so its
 # words are the family's. Its page is the family's /bandroom/.
