@@ -100,7 +100,7 @@ struct DynamicsLevelTests {
         let buf = try phrase.remapped.render(e, score: score)
         let lufs = LoudnessMeter.integrated(buf)
         print("LEVELS remapped full band phrase \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        #expect(abs(lufs - PlaybackLevels.windowsPhraseLUFS) < PlaybackLevels.phraseToleranceLU, "where Windows plays the phrase")
+        #expect(abs(lufs - PlaybackLevels.windowsPhraseLUFS) < PlaybackLevels.playerToleranceLU, "where Windows plays the phrase")
         #expect(buf.peak <= OutputStageKernel.ceiling)
         // without the hall: the dry room gain keeps the level (band.dry_room_gain_db)
         let dry = try PlaybackEngine(score: score, soundBank: bank, roomIR: nil, offlineFormat: PlaybackEngine.offlineFormat())
@@ -133,18 +133,50 @@ struct DynamicsLevelTests {
     }
 }
 
-/// A whole arrangement played with its dynamics lands where Windows plays it.
-@Suite(.serialized, .tags(.slow), .enabled(if: goldenDir() != nil && bandSoundFont() != nil)) struct ArrangementLevelTests {
-    @Test func goldenArrangementMatchesTheOtherApps() throws {
-        let dir = try #require(goldenDir())
+/// A whole arrangement played with its dynamics lands where Windows plays it, within the tolerance the shared
+/// levels give an app's own player. Old Hundredth is in git, so this runs wherever the band SoundFont is (CI
+/// fetches it); the golden is on the machines that have `data/golden`.
+@Suite(.serialized, .tags(.slow), .enabled(if: bandSoundFont() != nil)) struct ArrangementLevelTests {
+    private func level(of dir: URL, _ name: String, hall: Bool = true) throws -> Double {
         let score = try MusicXMLParser.parse(url: dir.appending(path: "brass-band.musicxml"))
         let composition = try Composition.decode(Data(contentsOf: dir.appending(path: "composition.json")))
+        withTheBand()
         let e = try PlaybackEngine(score: score, tempoMap: composition.tempoMap, soundBank: .locate(bundle: .main), roomIR: nil,
                                    offlineFormat: PlaybackEngine.offlineFormat())
+        e.roomOn = hall
         let buf = try e.renderScore(fromBeat: 0, beats: Double(score.endTick) / Double(Score.ticksPerQuarter))
         let lufs = LoudnessMeter.integrated(buf)
-        print("LEVELS golden arrangement \(lufs) LUFS, peak \(dB(buf.peak)) dBFS")
-        #expect(abs(lufs - PlaybackLevels.bandArrangementLUFS) <= 1)
+        print("LEVELS \(name) arrangement\(hall ? "" : ", hall off") \(lufs) LUFS, peak \(dB(buf.peak)) dBFS, \(ProcessInfo.processInfo.operatingSystemVersionString)")
         #expect(buf.peak <= OutputStageKernel.ceiling)
+        return lufs
+    }
+
+    /// Where Apple itself plays Old Hundredth, on the Mac that runs this for every pull request (macOS 26). The
+    /// line the test prints shows a level on the move before it is far enough to fail.
+    ///
+    /// Another Mac can read differently for the same code and sounds, because the players are the system's own
+    /// (AVAudioUnitSampler, AVAudioEnvironmentNode) and change with the system: macOS 27.0 reads 0.26 LU higher
+    /// with the hall (−15.62) and 1.3 LU higher without it (−14.02 against −15.34). The render format is fixed
+    /// (44.1 kHz stereo, offline), so it is not the device. Hence 0.5 LU and not less.
+    ///
+    /// Moved only on purpose, together with `band.gain_db.apple`, after measuring Windows again
+    /// (docs/shared/dev/release.md §10).
+    static let appleOldHundredthLUFS = -15.88
+    static let appleDriftLU = 0.5
+
+    @Test func oldHundredthMatchesTheOtherAppsAndHoldsItsOwnLevel() throws {
+        let dir = try #require(repoRoot()).appending(path: "apps/fixtures/old-hundredth")
+        let lufs = try level(of: dir, "Old Hundredth")
+        // Against Windows: different synths, so the players' shared tolerance.
+        #expect(abs(lufs - PlaybackLevels.oldHundredthLUFS) <= PlaybackLevels.playerToleranceLU)
+        // Against Apple itself: a change to the gain, the limiter, the velocity curve or the seats shows here.
+        #expect(abs(lufs - Self.appleOldHundredthLUFS) <= Self.appleDriftLU,
+                "Apple plays Old Hundredth at \(lufs) LUFS; it was \(Self.appleOldHundredthLUFS)")
+        _ = try level(of: dir, "Old Hundredth", hall: false)  // printed, for the record: it varies most between systems
+    }
+
+    @Test(.enabled(if: goldenDir() != nil)) func goldenArrangementMatchesTheOtherApps() throws {
+        let lufs = try level(of: try #require(goldenDir()), "golden")
+        #expect(abs(lufs - PlaybackLevels.bandArrangementLUFS) <= PlaybackLevels.playerToleranceLU)
     }
 }

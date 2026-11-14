@@ -25,6 +25,8 @@ private func dB(_ x: Float) -> Double { 20 * log10(Double(max(x, 1e-9))) }
         #expect(band["phrase_lufs"] as? Double == PlaybackLevels.bandPhraseLUFS)
         #expect((band["gain_db"] as? [String: Double])?["apple"] == PlaybackLevels.bandGainDB)
         #expect(band["arrangement_lufs"] as? Double == PlaybackLevels.bandArrangementLUFS)
+        #expect(band["old_hundredth_lufs"] as? Double == PlaybackLevels.oldHundredthLUFS)
+        #expect(band["arrangement_tolerance_lu"] as? Double == PlaybackLevels.playerToleranceLU)
         var trims = try #require(band["apple_seat_trim_db"] as? [String: Any])
         trims["about"] = nil
         #expect(trims as? [String: Double] == PlaybackLevels.appleSeatTrimDB)
