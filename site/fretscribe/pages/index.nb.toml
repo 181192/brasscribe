@@ -106,16 +106,15 @@ setup = "Sett opp Bandroom"
 
 [sure]
 title = "Hvor sikker <em>er den?</em>"
-lead = "Spill én gitar eller bass alene, og Fretscribe treffer de fleste tonene. Og den viser deg hvor du bør høre etter: et <b class=\"uncertain\">?</b> markerer tonene den ikke var sikker på."
-right = "<b>{name}:</b> rundt {n} av 10 toner har riktig tonehøyde til riktig tid."
-alt_right = "Ti toner på en linje. Fylte toner: {n}. De har riktig tonehøyde til riktig tid."
-key = "En åpen tone er en den tok feil av."
-marks = "Et <b class=\"uncertain\">?</b> er verdt tiden din: rundt {n} av 10 toner som får et ?, må rettes."
-between = "{low} eller {high}"
-numbers = ["null", "én", "to", "tre", "fire", "fem", "seks", "sju", "åtte", "ni", "ti"]
-end = "Et ? finner omtrent én av {n} gale toner. Spill gjennom én gang, så finner ørene resten."
-source = "Vi målte dette på gitarister appen ikke er stilt inn etter, som spiller enkelttoner og akkorder, én gitar alene. Basslinjene er spilt av en datamaskin og ble også brukt mens vi laget appen, så en ekte bass kan gå dårligere. En gitar plukket ut av en hel låt er vanskeligere enn en gitar alene."
-how = "Slik målte vi det"
+lead = "<b>Rundt 9 av 10 noter den skriver, er de som ble spilt.</b>{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}} Og når den setter <b class=\"doubt-mark\">?</b> over en, har den nesten alltid grunn til det: 9 av 10 ganger trengte den noten en ekstra lytt.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
+of_first = "av 100 noter den skriver, er riktige"
+of = "av 100 noter"
+right = "riktig note på riktig sted"
+marked = "ikke riktige, og merket med ?"
+rest = "som ørene dine må fange"
+so = "Altså: ta opp gitaren alene når du kan, sjekk notene med ?, og spill sammen med opptaket for å avgjøre resten."
+limits = "«Riktig» betyr riktig tone til riktig tid. Hvilken streng du spiller den på, er et valg: velg et tall i tabben for å flytte det. Målt på opptak der vi vet hva som ble spilt; ditt kan gå bedre eller dårligere.{{holds fretted/guitar-tab/song.onset_p < 0.7}}"
+how = "Slik ble det målt"
 
 [getit]
 title = "Hent <em>Fretscribe.</em>"

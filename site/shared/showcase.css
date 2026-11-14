@@ -48,7 +48,6 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .part-list { columns: 2 12em; margin: 0; padding-left: 2.2em; font-size: var(--scribe-type-callout-size); }
 
 .steps-note { margin: var(--scribe-space-8) 0 0; font-size: var(--scribe-type-callout-size); }
-.sure-end { margin-top: var(--scribe-space-6); max-width: 46em; }
 
 /* The strip under the headline. */
 .strip { --t: 520; margin: var(--scribe-space-10) 0 0; }
@@ -142,14 +141,6 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .tabdemo details { margin-bottom: 0; }
 .tabdemo pre { border: 0; background: none; padding: 0; font-size: 0.8rem; line-height: 1.25; }
 
-/* A measured rate, as so many squares of a hundred. */
-.rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--scribe-space-8) var(--scribe-space-10); margin: var(--scribe-space-8) 0 0; padding: 0; list-style: none; }
-.rates h3 { margin: 0 0 var(--scribe-space-3); }
-.rate { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: var(--scribe-space-4); align-items: center; }
-.rate + .rate { margin-top: var(--scribe-space-5); }
-.rate p { margin: 0; }
-.rate .big { display: block; font-family: var(--fs-font-tab, var(--scribe-font-display)), var(--scribe-font-display); font-weight: 600; font-size: 2.5rem; line-height: 1; color: var(--scribe-text); margin-bottom: var(--scribe-space-1); }
-.rates + p { margin-top: var(--scribe-space-8); max-width: 46em; }
 .dots { width: 118px; height: 118px; }
 .dots .on { fill: var(--scribe-brand); }
 .dots .off { fill: var(--scribe-border); }
@@ -193,7 +184,6 @@ main > section > .wrap > h2 { max-width: 20em; }
 .quiet a { color: var(--scribe-text-muted); }
 .getit .lead { max-width: 34em; }
 .needs-line { margin: var(--scribe-space-6) 0 0; max-width: 46em; color: var(--scribe-text-muted); }
-.sure-end { margin-top: var(--scribe-space-6); max-width: 40em; font-size: 1.125rem; font-weight: 600; }
 
 /* What you hear when the strip plays: the recording, or the notes that were written. */
 .strip-hear { display: inline-flex; border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); overflow: hidden; }
@@ -209,22 +199,7 @@ main > section > .wrap > h2 { max-width: 20em; }
 .stage-figure.band { display: grid; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 2px; padding: var(--scribe-space-3); }
 .stage-figure.band svg { height: 100%; width: auto; max-width: 100%; }
 
-/* What the app gets right, as ten notes on a line: the right ones filled in the brand's colour, the others open. */
-.rates { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
-.rates .rate { display: block; }
-.rates .rate p { margin-top: var(--scribe-space-2); font-size: 1.125rem; max-width: 18em; }
-.tens { display: block; width: 100%; max-width: 300px; height: auto; }
-.tens .string { stroke: var(--scribe-line); stroke-width: 1; }
-.tens .right, .twohundred .right { fill: var(--scribe-brand); }
-.tens .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-border-strong); stroke-width: 1.5; }
-.sure-key { display: flex; align-items: center; gap: var(--scribe-space-2); margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
-.sure-key svg { flex: none; }
-.sure-key .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-text-muted); stroke-width: 1.2; }
-.sure-marks { margin: var(--scribe-space-8) 0 0; max-width: 40em; font-size: 1.125rem; }
 @media (forced-colors: active) {
-  .tens .right, .twohundred .right { fill: CanvasText; }
-  .tens .open, .twohundred .open { fill: Canvas; stroke: CanvasText; }
-  .tens .string { stroke: CanvasText; }
   .strip-hear button[aria-pressed="true"] { background: Highlight; color: HighlightText; }
 }
 
@@ -232,8 +207,41 @@ main > section > .wrap > h2 { max-width: 20em; }
 .part-stack { display: grid; gap: var(--scribe-space-2); width: max-content; }
 .part-stack svg { display: block; }
 
-/* Two hundred notes as dots: the brand's colour for all that are right or marked, the few others left open. */
-.twohundred { display: block; width: 100%; max-width: 300px; height: auto; }
-.twohundred .open { fill: var(--scribe-surface-raised); stroke: var(--scribe-text-muted); stroke-width: 1.2; }
-.sure-source { margin: var(--scribe-space-8) 0 0; max-width: 40em; color: var(--scribe-text-muted); }
 
+/* How sure it is: the same tally for every app. A card per situation: a big number of a hundred notes, a grid of a
+   hundred cells (filled: right; a "?" in the family's one doubt colour: not right, and marked; hollow: not right,
+   no mark) and its legend with the counts as text. Pointing at a legend row lights its cells. */
+.sure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-6); margin-top: var(--scribe-space-8); }
+.tally { background: var(--scribe-surface-raised); color: var(--scribe-text); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); padding: var(--scribe-space-6); }
+.tally h3 { margin: 0 0 2px; font-size: var(--scribe-type-headline-size); }
+.tally .where { color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); margin: 0 0 var(--scribe-space-4); }
+.tally .big { margin: 0; }
+.big-n { display: block; font-family: var(--fs-font-tab, var(--scribe-font-display)), var(--scribe-font-display); font-weight: var(--site-display-weight, 400); font-size: calc(3.5rem * var(--site-display-scale, 1)); line-height: 1; font-variant-numeric: tabular-nums; }
+.big-of { display: block; font-weight: 600; font-size: 0.9375rem; line-height: 1.3; color: var(--scribe-text-muted); margin-top: 6px; }
+.hundred { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin: var(--scribe-space-4) 0; }
+.hundred i { aspect-ratio: 1; border-radius: 50%; background: var(--scribe-text); transition: opacity var(--scribe-duration-fast); }
+.hundred i.q { position: relative; border-radius: 3px; background: var(--family-doubt); }
+.hundred i.q::after { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--scribe-surface-raised); font: 700 9px/1 system-ui, sans-serif; }
+.hundred i.x { background: transparent; box-shadow: inset 0 0 0 1.5px var(--scribe-text-muted); }
+.tally .key { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 0.9375rem; }
+.tally .key li { display: grid; grid-template-columns: 2.4em minmax(0, 1fr); gap: 10px; align-items: baseline; border-radius: var(--scribe-radius-xs); }
+.tally .key b { text-align: right; font-variant-numeric: tabular-nums; }
+.tally .key .k-m { grid-template-columns: minmax(0, 1fr); padding-left: calc(2.4em + 10px); color: var(--scribe-text-muted); }
+.tally:has(.k-r:hover) .hundred i:not(.r), .tally:has(.k-q:hover) .hundred i:not(.q), .tally:has(.k-x:hover) .hundred i:not(.x) { opacity: 0.2; }
+.tally .key li:hover { background: var(--scribe-surface); }
+.doubt-mark { color: var(--family-doubt); }
+.sure-then { margin-top: var(--scribe-space-8); padding-top: var(--scribe-space-6); border-top: 1px solid var(--scribe-border); display: grid; gap: var(--scribe-space-2); max-width: 46em; }
+.sure-then p { margin: 0; }
+.sure-then .limit { color: var(--scribe-text-muted); }
+@media (max-width: 600px) {
+  .tally { padding: var(--scribe-space-4); }
+  .hundred { grid-template-columns: repeat(10, 1fr); gap: 4px; max-width: 220px; }
+  .hundred i.q::after { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .hundred i { transition: none; } }
+@media (forced-colors: active) {
+  .hundred i { forced-color-adjust: none; background: CanvasText; }
+  .hundred i.q { background: Highlight; }
+  .hundred i.q::after { color: HighlightText; }
+  .hundred i.x { background: Canvas; box-shadow: inset 0 0 0 1.5px CanvasText; }
+}

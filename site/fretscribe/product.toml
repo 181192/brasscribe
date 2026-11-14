@@ -86,26 +86,23 @@ nb = { does = "Tabbene dine på stor skjerm; del eller skriv dem ut.", needs = "
 [paths]
 research = "how-it-works"
 
-# The measured rates of "How sure is it?", one instrument alone: of the notes Fretscribe writes, the share that is
-# right; of the notes with a question mark, the share that was wrong; of the wrong notes, the share that had one. Paths into eval/baselines.json. The guitar's
-# are from the players the rules were not set on.
-[[rates]]
-en = "Guitar, one note at a time"
-nb = "Gitar, én tone om gangen"
+# "How sure is it?": a tally card per situation (eval/baselines.json). `right` is the share of the notes written
+# that are right (onset_p); `marked` the share of the wrong ones that carry a "?" (doubt_recall). A card's hundred
+# cells are right, not right and marked, and not right without a mark.
+[[sure]]
+right = "targets/fretted/suites/bass-tab/metrics/song.onset_p"
+marked = "targets/fretted/suites/bass-tab/metrics/song.doubt_recall"
+en = { title = "Bass", where = "picked out of a full song" }
+nb = { title = "Bass", where = "plukket ut av en hel låt" }
+
+[[sure]]
 right = "targets/fretted/suites/guitar-tab/metrics/report.solo.onset_p"
-doubted = "targets/fretted/suites/guitar-tab/metrics/report.solo.doubt_precision"
-caught = "targets/fretted/suites/guitar-tab/metrics/report.solo.doubt_recall"
+marked = "targets/fretted/suites/guitar-tab/metrics/report.solo.doubt_recall"
+en = { title = "Guitar", where = "played alone, a single line" }
+nb = { title = "Gitar", where = "spilt alene, én linje" }
 
-[[rates]]
-en = "Guitar, chords"
-nb = "Gitar, akkorder"
-right = "targets/fretted/suites/guitar-tab/metrics/report.comp.onset_p"
-doubted = "targets/fretted/suites/guitar-tab/metrics/report.comp.doubt_precision"
-caught = "targets/fretted/suites/guitar-tab/metrics/report.comp.doubt_recall"
-
-[[rates]]
-en = "Bass"
-nb = "Bass"
-right = "targets/fretted/suites/bass-tab/metrics/instrument.onset_p"
-doubted = "targets/fretted/suites/bass-tab/metrics/instrument.doubt_precision"
-caught = "targets/fretted/suites/bass-tab/metrics/instrument.doubt_recall"
+[[sure]]
+right = "targets/fretted/suites/guitar-tab/metrics/song.onset_p"
+marked = "targets/fretted/suites/guitar-tab/metrics/song.doubt_recall"
+en = { title = "Guitar", where = "picked out of a full song", note = "a guitar inside a band is the hard case" }
+nb = { title = "Gitar", where = "plukket ut av en hel låt", note = "en gitar midt i et band er det vanskeligste" }

@@ -310,14 +310,6 @@ def tabdemo(page) -> str:
 </div>"""
 
 
-def tens(page, n: int) -> str:
-    """Ten notes on a line, so many of them right: the right ones filled in the brand's colour, the others left open."""
-    notes = "".join(f'<ellipse class="{"right" if i < n else "open"}" cx="{14 + i * 28}" cy="20" rx="7.5" ry="5.5" transform="rotate(-20 {14 + i * 28} 20)"/>'
-                    for i in range(10))
-    return (f'<svg class="tens" viewBox="0 0 280 40" role="img" aria-label="{esc(page.say("sure.alt_right", n=n))}">'
-            f'<path class="string" d="M0 20H280"/>{notes}</svg>')
-
-
 def gets(page) -> str:
     """What the app gives you: a short list, each with a heading."""
     return '<ul class="gets">' + "".join(f"<li><h3>{item['title']}</h3><p>{item['text']}</p></li>" for item in page.say("get.items")) + "</ul>"
@@ -442,36 +434,64 @@ def listening(page) -> str:
 </svg>"""
 
 
-def rates(page) -> str:
-    """What the app gets right, per instrument: of ten notes it writes, how many are right. Under them, what an open
-    note is, and how often a question mark was worth checking. The product's [[rates]] say which measured numbers."""
-    say, groups, marks = page.say, [], []
-    for rate in page.product.data["rates"]:
-        n = round(float(lookup("eval/baselines.json", rate["right"])) * 10)
-        marks.append(round(float(lookup("eval/baselines.json", rate["doubted"])) * 10))
-        groups.append(f'<li><div class="rate">{tens(page, n)}<p>{say("sure.right", n=n, name=rate[page.lang])}</p></div></li>')
-    low, high = min(marks), max(marks)
-    share = str(high) if low == high else say("sure.between", low=low, high=high)
-    key = f'<p class="sure-key"><svg viewBox="0 0 20 14" width="20" height="14" aria-hidden="true"><ellipse class="open" cx="10" cy="7" rx="7.5" ry="5.5" transform="rotate(-20 10 7)"/></svg> {say("sure.key")}</p>'
-    return f'<ul class="rates">{"".join(groups)}</ul>\n{key}\n<p class="sure-marks">{say("sure.marks", n=share)}</p>'
+BRASS_SOLO = "targets/brass/suites/solo-instruments/metrics/"
 
 
-def limit(page) -> str:
-    """The limit, said once: of the wrong notes, how many a question mark finds (one in four, one in five), from the
-    measured share of wrong notes that had a mark, over the product's [[rates]]."""
-    say = page.say
-    ones = sorted({round(1 / float(lookup("eval/baselines.json", rate["caught"]))) for rate in page.product.data["rates"]})
-    words = say("sure.numbers")
-    n = words[ones[0]] if len(ones) == 1 else say("sure.between", low=words[ones[0]], high=words[ones[-1]])
-    return f'<p class="sure-end">{say("sure.end", n=n)}</p>'
+def mean(keys: list[str] | str, base: str = "") -> float:
+    """A measured rate from eval/baselines.json, or the mean of several (a group of instruments)."""
+    keys = [keys] if isinstance(keys, str) else keys
+    return sum(float(lookup("eval/baselines.json", base + key)) for key in keys) / len(keys)
+
+
+def one_in(per_hundred: float) -> int:
+    """'1 in n' for so many in a hundred, n said to one significant figure: 0.43 in 100 is 1 in 200, 9.5 is 1 in 10."""
+    n = 100 / per_hundred
+    return int(float(f"{n:.1g}"))
+
+
+def counts(card: dict) -> dict:
+    """A tally card's hundred cells: right, not right and marked with a "?", and the rest, summing to a hundred.
+    A card with `missed` (Brasscribe) has no marked cells: its "?" is said as how rarely a wrong note has none."""
+    if "missed" in card:
+        right = round(mean(card["right"], BRASS_SOLO) * 100)
+        return {"right": right, "marked": 0, "rest": 100 - right, "one_in": one_in(mean(card["missed"], BRASS_SOLO))}
+    p = mean(card["right"])
+    right, marked = round(p * 100), round((1 - p) * mean(card["marked"]) * 100)
+    return {"right": right, "marked": marked, "rest": 100 - right - marked}
+
+
+def tally(page) -> str:
+    """How sure it is, as tally cards: for each situation a big number of a hundred notes, a grid of a hundred cells
+    (filled: right; a "?" in the doubt colour: not right, and marked; hollow: not right, no mark) and its legend with
+    the counts as text. The same component for every app; the product's [[sure]] say which measured rates."""
+    say, product = page.say, page.product
+    cards = product.data["sure"]
+    out = []
+    for i, card in enumerate(cards, 1):
+        w, c, uid = card[page.lang], counts(card), f"sure-{product.id}-{i}"
+        cells = '<i class="r"></i>' * c["right"] + '<i class="q"></i>' * c["marked"] + '<i class="x"></i>' * c["rest"]
+        note = f': {w["note"]}' if "note" in w else ""
+        key = [f'<li class="k-r"><b>{c["right"]}</b> {say("sure.right")}</li>']
+        if c["marked"]:
+            key.append(f'<li class="k-q"><b>{c["marked"]}</b> {say("sure.marked")}</li>')
+        key.append(f'<li class="k-x"><b>{c["rest"]}</b> {say("sure.rest")}{"" if "one_in" in c else note}</li>')
+        if "one_in" in c:
+            key.append(f'<li class="k-m">{say("sure.missed", n=c["one_in"])}{note}</li>')
+        out.append(f"""<article class="tally" aria-labelledby="{uid}-title">
+  <h3 id="{uid}-title">{w["title"]}</h3>
+  <p class="where">{w["where"]}</p>
+  <p class="big"><span class="big-n">{c["right"]}</span> <span class="big-of">{say("sure.of_first" if i == 1 else "sure.of")}</span></p>
+  <div class="hundred" role="img" aria-labelledby="{uid}-key">{cells}</div>
+  <ul class="key" id="{uid}-key">{"".join(key)}</ul>
+</article>""")
+    return '<div class="sure-grid">\n' + "\n".join(out) + "\n</div>"
 
 
 def measured(page) -> str:
     """One quiet link to the paper that says how the numbers were measured, when the app has one."""
-    said = page.say("sure.how")
     if "research" not in page.product.pages():
         return ""
-    return f'<p class="quiet"><a href="@/how-it-works/">{said}</a></p>'
+    return f'<p><a href="@/how-it-works/">{page.say("sure.how")}</a></p>'
 
 
 # What every app's page calls its figures; a product with its own kind of music answers to the same names.

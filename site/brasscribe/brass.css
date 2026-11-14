@@ -22,7 +22,6 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .matrix .table-scroll, .missed { background: var(--scribe-surface-raised); }
 .matrix .table-scroll { border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); padding: 0 var(--scribe-space-4); }
 .gets li { border-top-color: var(--scribe-brand); }
-.sure-end { font-family: var(--scribe-font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.25; }
 .stages-nav button { font-family: var(--scribe-font-display); font-size: 1.25rem; font-weight: 400; }
 
 @media (max-width: 600px) {
