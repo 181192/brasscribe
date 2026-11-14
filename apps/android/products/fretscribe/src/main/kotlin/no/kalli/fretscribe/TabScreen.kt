@@ -457,10 +457,12 @@ fun TabScreen(vm: PlayViewModel) {
             // The back button has no word here: the title and the buttons need the width.
             // On a phone on its side the line with the tuning is a scroll up from where the tab opens: the top bar says it.
             // A long title gives way, with "…", to the tuning and capo, which are never cut.
-            val barTail = if (noteInOneRow && s != null) stringResource(R.string.fs_tab_title_tuning, "",
-                stringResource(R.string.fs_tab_chip, tuningName(s.tuning), if (s.capo > 0) stringResource(R.string.fs_tab_capo, s.capo) else stringResource(R.string.fs_tab_no_capo)))
+            // A screen reader hears commas where the bar shows "·".
+            val capoWords = if (s != null && s.capo > 0) stringResource(R.string.fs_tab_capo, s.capo) else stringResource(R.string.fs_tab_no_capo)
+            val barTail = if (noteInOneRow && s != null) stringResource(R.string.fs_tab_title_tuning, "", stringResource(R.string.fs_tab_chip, tuningName(s.tuning), capoWords))
             else null
-            if (!inFocus) PlayTopBar(title, vm::back, null, titleIsHeading = true, titleTail = barTail) {
+            val barSpoken = if (barTail != null && s != null) "$title, ${tuningName(s.tuning, spoken = true)}, $capoWords" else null
+            if (!inFocus) PlayTopBar(title, vm::back, null, titleIsHeading = true, titleTail = barTail, titleSpoken = barSpoken) {
                 // Sound, on a phone on its side: the header that has it upright is a scroll up, and the player is one row.
                 if (noteInOneRow && clock != null && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice) { sounds = true }
                 // Share or print, on a phone on its side: the header that has it upright is a scroll up from where the tab opens.

@@ -334,7 +334,9 @@ fun BrandMark(size: Dp = 56.dp, modifier: Modifier = Modifier) {
 @Composable
 fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null, titleIsHeading: Boolean = false,
                /** Words after the title that are never cut: a long title gives way to them, with "…" (the tab's tuning). */
-               titleTail: String? = null, actions: @Composable RowScope.() -> Unit = {}) {
+               titleTail: String? = null,
+               /** What a screen reader says for the title and its tail together, when it should differ from what is shown. */
+               titleSpoken: String? = null, actions: @Composable RowScope.() -> Unit = {}) {
     val c = ScribeTheme.colors
     // With large text the back label would collide with the title and the actions: keep the arrow.
     val backText = backLabel.takeIf { androidx.compose.ui.platform.LocalDensity.current.fontScale < 1.3f }
@@ -342,12 +344,17 @@ fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null,
         // A screen whose content has no title of its own (the tab) takes the top bar's as its heading.
         title = {
             if (title != null && titleTail != null) Row(
-                if (titleIsHeading) Modifier.semantics(mergeDescendants = true) { heading() } else Modifier.semantics(mergeDescendants = true) { },
+                Modifier.semantics(mergeDescendants = true) {
+                    if (titleIsHeading) heading()
+                    if (titleSpoken != null) contentDescription = titleSpoken
+                },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false).testTag("top-bar-title"))
-                Text(titleTail, style = MaterialTheme.typography.titleMedium, maxLines = 1, softWrap = false, modifier = Modifier.testTag("top-bar-title-tail"))
+                // (Never wider than the bar in today's words; should one be, it is cut softly rather than clipped.)
+                Text(titleTail, style = MaterialTheme.typography.titleMedium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("top-bar-title-tail"))
             } else if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = if (titleIsHeading) Modifier.semantics { heading() } else Modifier)
         },
