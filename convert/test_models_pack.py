@@ -195,8 +195,12 @@ class ModelsPack(unittest.TestCase):
                 self.assertFalse(any(p.name == "evil.bin" for p in Path(self.tmp.name).rglob("*")))
 
 
-    def test_installed_files_are_readable_by_everyone(self):
-        self.assertEqual(models_pack.fetch(self.installed, []), 0)
+    def test_an_installed_file_has_the_mode_a_plain_write_gives(self):
+        old = os.umask(0o022)
+        try:
+            self.assertEqual(models_pack.fetch(self.installed, []), 0)
+        finally:
+            os.umask(old)
         self.assertEqual(stat.S_IMODE((self.installed / "tone" / "tone.onnx").stat().st_mode), 0o644)
 
     def test_what_a_killed_install_left_behind_is_cleaned_up(self):

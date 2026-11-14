@@ -130,6 +130,12 @@ def gh_download(pin: dict, patterns: list[str], into: Path) -> None:
                      "(logged in with `gh auth login`, or GH_TOKEN set with contents: read?)")
 
 
+def umask() -> int:
+    mask = os.umask(0)
+    os.umask(mask)
+    return mask
+
+
 def install(name: str, want: dict, data: bytes, converted: Path) -> None:
     """Put one checked file in place. The new file or folder is written beside the target inside its folder and
     then renamed over it, so an interrupted install leaves the old model or the new one, never half of either."""
@@ -141,7 +147,7 @@ def install(name: str, want: dict, data: bytes, converted: Path) -> None:
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(data)
-            os.chmod(tmp, 0o644)  # mkstemp makes it 0600
+            os.chmod(tmp, 0o666 & ~umask())  # mkstemp makes it 0600; give it what a plain write would
             os.replace(tmp, target)
         except BaseException:
             Path(tmp).unlink(missing_ok=True)
