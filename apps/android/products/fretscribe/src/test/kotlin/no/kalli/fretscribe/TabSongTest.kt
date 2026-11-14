@@ -339,10 +339,13 @@ class TabSongTest {
         fun facts(take: String) = SongFacts.of(page(take))
         assertEquals(listOf(6, 4), listOf(facts("guitar-line").strings, facts("ukulele-line").strings))
         assertEquals(listOf("standard", "high-g"), listOf(facts("guitar-line").tuning, facts("ukulele-line").tuning))
-        // The notes to check are the tab's own two numbers for the page: marked "?", and with no place.
-        for (take in listOf("bass-line-marks", "guitar-line")) {
-            val marks = TabMarks.of(TabIndex.parse(page(take)), null)
-            assertEquals(take, listOf(marks.doubtful, marks.noPlace), facts(take).let { listOf(it.doubtful, it.noPlace) })
+        // The notes to check are the numbers the tab and Check the song say with the computer's data: Home reads them from
+        // the saved page, and they agree.
+        for (take in listOf("bass-line-marks", "guitar-line", "ukulele-line")) {
+            val withData = TabMarks.of(TabIndex.parse(page(take)), recorded(take))
+            assertEquals(take, listOf(withData.doubtful, withData.noPlace), facts(take).let { listOf(it.doubtful, it.noPlace) })
+            val rows = SongCheck.rows(recorded(take), withData)
+            assertEquals(take, withData.doubtful, rows.filterIsInstance<SongRow.Doubtful>().singleOrNull()?.count ?: 0)
         }
         assertTrue("the marked bass line has notes to check", facts("bass-line-marks").doubtful > 0)
     }

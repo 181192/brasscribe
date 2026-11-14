@@ -237,7 +237,8 @@ object SongCheck {
         add(SongRow.KeyAndTempo(tab.key.fifths, tab.key.mode == no.kalli.scribe.engine.KeyMode.MINOR, Math.round(tab.tempoBpm).toInt(),
             tab.meter.beats, tab.meter.beatUnit))
         // As the tab marks them: a note with no place is under a "!", and is not also one of the notes marked "?"; a note
-        // the page folds into another is not drawn, and not counted.
+        // the page folds into another is not drawn, and not counted. (A boxed "!" the page has and the data does not is
+        // drawn and counted only where the page alone is read: Home, and the tab without the computer.)
         val doubtful = marks?.doubtful ?: tab.notes.count { it.doubtful && !it.outOfRange && it.position != null }
         if (doubtful > 0) add(SongRow.Doubtful(doubtful))
         val noPlace = marks?.noPlace ?: tab.notes.count { it.outOfRange || it.position == null }
