@@ -208,6 +208,33 @@ def test_a_solo_take_is_written_down_without_the_band_writer(settings, audio, tm
         assert job.params["muscriptor"] is False
         status = client.get("/v1/status").json()
         assert status["setup_needed"] == [] and status["setup_refusals"] == 0  # nothing was refused
+        # The computer says what is not set up now, so an app knows whether making it again would help yet.
+        assert client.get("/v1/health").json()["not_set_up"] == ["band-writer"]
+        # The job says what it was made without, for an app to tell the player and offer to make it again.
+        assert client.get(f"/v1/jobs/{job.id}").json()["without"] == ["band-writer"]
+        # Made again while it is still not set up: without it again. Once it is there, the new job uses it,
+        # although the first one's parameters had left it out.
+        again = client.post(f"/v1/jobs/{job.id}/rerun").json()
+        assert again["without"] == ["band-writer"]
+        monkeypatch.setenv("HF_TOKEN", "hf_test")
+        assert client.get("/v1/health").json()["not_set_up"] == []
+        with_it = client.post(f"/v1/jobs/{job.id}/rerun").json()
+        assert with_it["without"] == []
+        assert "muscriptor" not in jobs.get(with_it["id"]).params
+        # A player who asked for the quick way themselves keeps it when the job is made again.
+        chosen = jobs.submit(audio, "solo", params={"muscriptor": False})
+        assert chosen.without == []
+        assert jobs.get(client.post(f"/v1/jobs/{chosen.id}/rerun").json()["id"]).params["muscriptor"] is False
+
+
+def test_what_a_job_was_made_without_is_kept_with_the_run(settings, audio):
+    """The run's manifest carries it, so another engine process says the same."""
+    from scribe_engine import runner
+
+    manifest = runner.run(settings, audio, "test", without=["muscriptor"])
+    with TestClient(create_app(settings)) as client:
+        assert client.get(f"/v1/jobs/{manifest['run_id']}").json()["without"] == ["band-writer"]
+        assert [j["without"] for j in client.get("/v1/jobs").json() if j["id"] == manifest["run_id"]] == [["band-writer"]]
 
 
 def test_errors(client):

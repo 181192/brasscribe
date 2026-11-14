@@ -24,6 +24,8 @@ data class Health(
     /** The engine's interface version; null from an engine that is older than the number ([InterfaceMatch]). */
     @Serializable(with = InterfaceVersionSerializer::class)
     @SerialName("interface_version") val interfaceVersion: Int? = null,
+    /** What is not set up on the computer right now ("band-writer"); empty when everything is there. */
+    @SerialName("not_set_up") val notSetUp: List<String> = emptyList(),
 )
 
 @Serializable
@@ -227,7 +229,13 @@ data class Job(
     @SerialName("device_name") val deviceName: String? = null,
     /** Files a succeeded job should have had and has not (its PDF, its MIDI), each with why. */
     val missing: List<MissingOutput> = emptyList(),
-)
+    /** What the job was made without because it was not set up on the computer then ("band-writer"): made again
+     *  once it is, the job uses it. */
+    val without: List<String> = emptyList(),
+) {
+    /** A solo written from two listeners, not three, because the computer's band writer was not set up. */
+    val withoutTheBandWriter: Boolean get() = "band-writer" in without
+}
 
 /**
  * A file a succeeded job lacks. [reason] is one of the engine's words (musescore-not-installed,

@@ -29,6 +29,8 @@ data class SavedScore(
     val draft: Boolean = false,
     /** The recording kept beside a draft (its file name in the score's folder), for "Make the full score". */
     val recording: String? = null,
+    /** The computer wrote this before it was fully set up: it can be written down again there. */
+    val beforeSetup: Boolean = false,
 )
 
 /** What a saved score holds beside its details: the MusicXML and, for a transcription, what it came from. */
@@ -62,7 +64,7 @@ class SavedScoreLibrary(private val root: File) {
         id: String?, title: String, profile: String, musicXml: String, compositionJson: String?,
         jobId: String? = null, evidenceJson: String? = null, checked: Set<String> = emptySet(), part: String? = null, noticeSeen: Boolean = false,
         changedOnPhone: Boolean = false, reviewChanges: Map<String, Int> = emptyMap(),
-        draft: Boolean = false, recording: File? = null,
+        draft: Boolean = false, recording: File? = null, beforeSetup: Boolean = false,
     ): SavedScore {
         val key = id ?: UUID.randomUUID().toString()
         val folder = File(root, key).apply { mkdirs() }
@@ -87,18 +89,19 @@ class SavedScoreLibrary(private val root: File) {
             if (noticeSeen) setProperty("notice_seen", "true")
             if (changedOnPhone) setProperty("changed_on_phone", "true")
             if (draft) setProperty("draft", "true")
+            if (beforeSetup) setProperty("before_setup", "true")
             if (reviewChanges.isNotEmpty()) setProperty("review_changes", reviewChanges.toSortedMap().entries.joinToString(",") { "${it.key}=${it.value}" })
         }
         val temporary = File(folder, "score.properties.tmp")
         temporary.outputStream().use { metadata.store(it, null) }
         check(temporary.renameTo(File(folder, "score.properties"))) { "couldn't save score details" }
-        return SavedScore(key, title, profile, updated, jobId, checked, part, noticeSeen, changedOnPhone, reviewChanges, draft, recordingIn(folder)?.name)
+        return SavedScore(key, title, profile, updated, jobId, checked, part, noticeSeen, changedOnPhone, reviewChanges, draft, recordingIn(folder)?.name, beforeSetup)
     }
 
     fun rename(id: String, title: String): SavedScore? {
         val current = get(id) ?: return null
         val content = content(id) ?: return null
-        return save(id, title, current.profile, content.musicXml, content.compositionJson, current.jobId, content.evidenceJson, current.checked, current.part, current.noticeSeen, current.changedOnPhone, current.reviewChanges, current.draft)
+        return save(id, title, current.profile, content.musicXml, content.compositionJson, current.jobId, content.evidenceJson, current.checked, current.part, current.noticeSeen, current.changedOnPhone, current.reviewChanges, current.draft, beforeSetup = current.beforeSetup)
     }
 
     /** The recording kept beside a draft, or null. */
@@ -131,6 +134,7 @@ class SavedScoreLibrary(private val root: File) {
             }?.toMap().orEmpty(),
             draft = metadata.getProperty("draft") == "true",
             recording = recordingIn(folder)?.name,
+            beforeSetup = metadata.getProperty("before_setup") == "true",
         )
     }.getOrNull()
 

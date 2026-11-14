@@ -63,6 +63,24 @@ class SavedScoreLibraryTest {
         }
     }
 
+    /** A score the computer wrote before it was fully set up says so the next time it is opened, and after a rename. */
+    @Test
+    fun aScoreWrittenBeforeSetupKeepsThatThroughSavesAndRenames() {
+        val root = Files.createTempDirectory("brasscribe-library").toFile()
+        try {
+            val library = SavedScoreLibrary(root)
+            val saved = library.save(null, "Solo", "solo", "<x/>", "{}", jobId = "j1", beforeSetup = true)
+            assertEquals(true, library.get(saved.id)!!.beforeSetup)
+            assertEquals(true, library.rename(saved.id, "Solo 2")!!.beforeSetup)
+            assertEquals(true, library.list().single().beforeSetup)
+            // Written down again with everything set up: the flag goes.
+            library.save(saved.id, "Solo 2", "solo", "<x/>", "{}", jobId = "j2")
+            assertEquals(false, library.get(saved.id)!!.beforeSetup)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     @Test
     fun aDraftKeepsItsFlagAndRecordingThroughSavesAndRenames() {
         val root = Files.createTempDirectory("brasscribe-library").toFile()

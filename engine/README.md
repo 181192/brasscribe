@@ -195,7 +195,8 @@ in the local hub cache and without an access key (`HF_TOKEN`, or the file `huggi
 could only fail. The answer carries the `audio_id` of an uploaded recording, which the engine keeps, so the app can
 ask again for the same one. `GET /v1/status` then lists `band-writer` under `setup_needed` until the model is there
 and counts each refusal in `setup_refusals`, which is how Bandroom knows to ask for the key. Tab jobs never need
-it, and a `solo` job is taken without it: it then runs as the apps do on the device (`muscriptor: false`).
+it, and a `solo` job is taken without it: it then runs as the apps do on the device (`muscriptor: false`). The job says so in `without` (`band-writer`), and made again
+(`rerunJob`, or a new job from the same recording) once the band writer is set up, it uses it.
 
 ## Configuration
 

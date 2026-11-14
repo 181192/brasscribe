@@ -12,7 +12,8 @@ namespace Kalli.Scribe.Engine;
 /// (<see cref="InterfaceMatch"/>); from an engine with another version only it, the server id and the name are filled in.
 /// </summary>
 public sealed record Health(string Version, string Device, bool AuthRequired, string Status = "ok",
-    string? ServerId = null, string? ServerName = null, string? Build = null, int? InterfaceVersion = null);
+    string? ServerId = null, string? ServerName = null, string? Build = null, int? InterfaceVersion = null,
+    IReadOnlyList<string>? NotSetUp = null);
 
 public sealed record AudioRef(string AudioId, string Sha256, string Filename, long Bytes);
 
@@ -81,8 +82,10 @@ public sealed record Job(
     string? PreviousRunId = null,
     string? DeviceName = null,
     string? Target = null,
-    IReadOnlyList<MissingOutput>? Missing = null)
+    IReadOnlyList<MissingOutput>? Missing = null,
+    IReadOnlyList<string>? Without = null)
 {
+
     [JsonIgnore]
     public bool IsTerminal => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;
 }

@@ -43,6 +43,10 @@ class Health(BaseModel):
                                        "its stored credential by this id, not by address. An identifier, not proof "
                                        "of identity.")
     server_name: str = Field(description="display name, e.g. 'Brasscribe on studio-mac'")
+    not_set_up: list[str] = Field(default_factory=list, description="what is not set up on the computer right now "
+                                  "(`band-writer`): a job that needs it is refused, and a solo is written without it "
+                                  "(Job.without). Empty when everything is there. An app reads it to know whether "
+                                  "making such a job again would help yet")
 
 
 class PairRequest(BaseModel):
@@ -300,6 +304,10 @@ class Job(BaseModel):
     missing: list[MissingOutput] = Field(default_factory=list, description="files a succeeded job should have had "
                                          "and has not (its PDF, its MIDI), each with why. The rest of the job is "
                                          "whole; asking for one of these files answers 404 with the same message")
+    without: list[str] = Field(default_factory=list, description="what the job was made without because it was not "
+                               "set up on the computer when the job was taken (`band-writer`: a solo line written "
+                               "from two listeners, not three, so a little less sure). Made again (rerunJob) once it "
+                               "is set up, the job uses it")
 
 
 class Artifact(BaseModel):
