@@ -53,12 +53,13 @@ public class SheetMusicTests
         Assert.Equal(PageRefusal.TooLarge, Pages.Check(big));
     }
 
-    /// <summary>Every way the engine says pages were not read, and every code it refuses them with, is one the app knows.</summary>
+    /// <summary>Every way the engine says pages were not read, and every code it refuses them with, is one the app knows.
+    /// (Windows' checkout ends the engine's lines with CRLF.)</summary>
     [Fact]
     public void The_readers_words_codes_and_limits_are_the_engines()
     {
-        string sheet = System.IO.File.ReadAllText(TestPaths.RepoFile("engine/src/scribe_engine/sheet.py")!);
-        string pages = System.IO.File.ReadAllText(TestPaths.RepoFile("engine/src/scribe_engine/pages.py")!);
+        string sheet = System.IO.File.ReadAllText(TestPaths.RepoFile("engine/src/scribe_engine/sheet.py")!).ReplaceLineEndings("\n");
+        string pages = System.IO.File.ReadAllText(TestPaths.RepoFile("engine/src/scribe_engine/pages.py")!).ReplaceLineEndings("\n");
         var said = Regex.Matches(sheet, @"^(?:NO_MUSIC|NOT_READ|ONLY_TAB) = ""([^""]+)""|^ {4}""\w+"": f?""([^""]+)"",$", RegexOptions.Multiline)
             .Select(m => (m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value).Replace("{pages.MAX_PAGES}", Pages.MaxPages.ToString()))
             .ToHashSet();
