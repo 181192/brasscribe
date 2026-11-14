@@ -26,4 +26,4 @@ dark-mode     phone    $A/iphone-part-dark.png         -                        
 ipad-review   tablet   $A/ipad-review-light.png        $A/ipad-review-dark.png        $A/ipad-nb-review-light.png   $A/ipad-nb-review-dark.png
 mac-score     mac      $A/macos-score-light.png        $A/macos-score-dark.png        $A/macos-nb-score-light.png   $A/macos-nb-score-dark.png
 computer      desktop  $S/viewer-light.png             $S/viewer-dark.png             $S/viewer-nb.png              -
-windows-score mac      $W/score-light.png              $W/score-dark.png              $W/score-nb-light.png         -
+windows-score mac      $W/score-light.png              $W/score-dark.png              $W/score-nb-light.png         $W/score-nb-dark.png
