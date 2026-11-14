@@ -46,6 +46,12 @@ import java.io.File
 class FretscribeScreensTest : ScreenCatalogue() {
     override val shots = "fretscribe"
 
+    // The screens site/fretscribe/shots.txt takes from here.
+    override val onSite = setOf(
+        "home", "home-with-a-song", "your-instrument", "what-is-this", "check-the-song", "tab", "tab-note", "practice-repeat",
+        "tab-full-screen", "computer", "check-the-song-guitar", "tab-note-guitar",
+    )
+
     @Before
     fun aBass() {
         yourInstrumentStore(rule.activity).save(YourInstrument(FrettedInstrument.BASS_4))
