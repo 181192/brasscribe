@@ -113,7 +113,8 @@ page loads. An app's `preload` in `product.toml` names the font files of its hea
 
 `shared/tests/languages.mjs` (its first lines say how to run it) changes the language of built pages back and
 forth in a browser and fails when what the scripts add to a page is doubled or lost, or a figure is left in the
-other language. Run it after a change to `shared/scribe.js` or to a script that adds to a page.
+other language, also when the other figures' words (`nb-more.json`) fail once. CI runs it, after the build, on a
+pull request that touches the site.
 
 What moves by itself (a strip writing itself out, the pen lines) moves once in half an hour: after that, and
 without the script or with less motion, a page opens as it stands at rest. A strip is drawn from the
