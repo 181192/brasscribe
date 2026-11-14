@@ -1,5 +1,7 @@
 // The views of the catalogue and the variants each is seen in.
 import { expect, type Page } from "@playwright/test";
+import { fixture } from "./api";
+import { pagePng } from "./page";
 
 export type View = {
   name: string;
@@ -64,6 +66,16 @@ const health = (interfaceVersion?: number) => ({
   ...(interfaceVersion === undefined ? {} : { interface_version: interfaceVersion }),
 });
 
+/** The new-run form with printed music chosen as its source and two pages picked, the way a reader picks them. */
+const pagesChosen = async (p: Page) => {
+  await p.getByRole("radio", { name: /^(Sheet music|Noter):/ }).check();
+  await p.locator("#run-pages").setInputFiles([
+    { name: "old-hundredth-page-1.png", mimeType: "image/png", buffer: pagePng() },
+    { name: "old-hundredth-page-2.png", mimeType: "image/png", buffer: pagePng() },
+  ]);
+  await expect(p.locator(".page-list li")).toHaveCount(2);
+};
+
 export const VIEWS: View[] = [
   { name: "runs", route: "runs", ready: async (p) => { await expect(p.locator(".runs-table tbody tr").first()).toBeVisible(); } },
   { name: "run-score", route: `${run}/score`, ready: scoreRendered("#main bs-score") },
@@ -81,6 +93,29 @@ export const VIEWS: View[] = [
   // Its manifest, as an engine that is installed (not a checkout) writes it: no source revision.
   { name: "run-tab-manifest", route: "runs/guitar-line/manifest", ready: async (p) => { await expect(p.locator("#main [role=tabpanel] .kv").first()).toBeVisible(); } },
   { name: "run-failed", route: "runs/old-hundredth-failed", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
+  // Printed music as the source: the pages in order, each with the buttons that move it or take it out, and the
+  // profiles that read pages.
+  { name: "runs-pages", route: "runs", prepare: pagesChosen },
+  // The pages sent and turned down by the engine (one of them is not a page): the reason in Studio's words.
+  {
+    name: "runs-pages-refused", route: "runs", expectedErrors: [/status of 415/],
+    prepare: async (p) => {
+      await pagesChosen(p);
+      await p.locator("#run-submit").click();
+      await expect(p.locator("#run-error .notice-error")).toBeVisible();
+    },
+  },
+  // A computer without the reader of printed music: no profile reads pages, and the form says where it is installed.
+  {
+    name: "runs-no-reader", route: "runs", engine: { "/v1/profiles": (fixture("/v1/profiles") as { input: string }[]).filter((x) => x.input !== "pages") },
+    ready: async (p) => { await expect(p.locator("#run-no-reader")).toBeVisible(); },
+  },
+  // A run that read a page: the score kept as it was written, with the bar the reader is unsure of.
+  { name: "run-sheet", route: "runs/old-hundredth-sheet/score", ready: scoreRendered("#main bs-score") },
+  // What it read, where a recording's player would be: the picture of the page.
+  { name: "run-sheet-pages", route: "runs/old-hundredth-sheet/pages", ready: async (p) => { await expect(p.locator("#main img.page-read")).toBeVisible(); } },
+  // A page that could not be read: why, in Studio's words.
+  { name: "run-sheet-failed", route: "runs/old-hundredth-unread", ready: async (p) => { await expect(p.locator(".notice-error").first()).toBeVisible(); } },
   // An engine from before this Studio's interface version: which of the two to update (interface.spec.ts checks
   // that nothing but its health is asked for).
   { name: "update-engine", route: "runs", engine: { "/v1/health": health() }, ready: async (p) => { await expect(p.locator("#main .notice-error h1")).toBeVisible(); } },
