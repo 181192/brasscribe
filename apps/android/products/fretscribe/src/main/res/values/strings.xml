@@ -271,6 +271,8 @@
     <string name="fs_tab_place">%1$s string, fret %2$d, %3$s.</string>
     <string name="fs_tab_place_open">%1$s string, open, %2$s.</string>
     <string name="fs_tab_not_sure">Fretscribe isn\'t sure about this one.</string>
+    <!-- Before the words of a note with no place that shares its beat with a note marked "?" -->
+    <string name="fs_tab_also_on_beat">Also on this beat: %1$s</string>
     <string name="fs_tab_no_place">A note here has no place on your instrument. Is the tuning right?</string>
     <string name="fs_tab_no_place_named">%1$s has no place on your instrument here. Is the tuning right?</string>
     <string name="fs_tab_no_place_low">%1$s is lower than your lowest string. Is the tuning right?</string>

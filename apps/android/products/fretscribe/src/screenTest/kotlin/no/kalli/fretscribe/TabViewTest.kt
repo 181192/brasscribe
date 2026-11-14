@@ -596,6 +596,14 @@ class TabViewTest : TabScreenTest() {
         assertEquals("Bar 1, beat 1. 4th string, open, E. Fretscribe isn't sure about this one.", words("pickup")[1])
         assertEquals("Bar 1, beat 4. 3rd string, fret 2, B. Fretscribe isn't sure about this one.", words("six-eight").first())
         assertTrue(words("capo").first(), words("capo").first().startsWith("Bar 1, beat 2. "))
+        // A beat with a note marked "?" and a note with no place: each has its own sentences, the "?" first, and the
+        // other is said to be another note. A beat with only the one says only that.
+        val guitar = TabMarks.of(TabIndex.parse(asset("guitar-line/tab.musicxml")), no.kalli.scribe.model.BrasscribeJson.decodeFromString(no.kalli.scribe.engine.Tab.serializer(), asset("guitar-line/tab.json")))
+            .columns.map { TabWords.describe(rule.activity.resources, it, false) }
+        assertEquals(listOf(
+            "Bar 6, beat 1. G6 is higher than your highest fret. Is the tuning right?",
+            "Bar 7, beat 1. 2nd string, open, B. Fretscribe isn't sure about this one. Also on this beat: D2 is lower than your lowest string. Is the tuning right?",
+        ), guitar)
     }
 
     @Test

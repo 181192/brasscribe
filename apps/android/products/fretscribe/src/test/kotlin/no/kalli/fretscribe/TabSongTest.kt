@@ -147,6 +147,24 @@ class TabSongTest {
         assertEquals(listOf("Tuning", "Capo"), SongCheck.rows(guitar).take(2).map { it::class.simpleName })
     }
 
+    /**
+     * Check the song and the tab say the same numbers: a note the computer is unsure of that has no place on the neck is
+     * under a "!" on the tab, and is counted with the notes that have no place, not also with the notes marked "?".
+     */
+    @Test
+    fun checkTheSongCountsTheMarksAsTheTabShowsThem() {
+        val tab = recorded("guitar-line")
+        // Three notes below the threshold, two of them with no place.
+        assertEquals(3, tab.notes.count { it.doubtful })
+        val rows = SongCheck.rows(tab)
+        assertEquals(SongRow.Doubtful(1), rows.filterIsInstance<SongRow.Doubtful>().single())
+        assertEquals(SongRow.NoPlace(2), rows.filterIsInstance<SongRow.NoPlace>().single())
+        val marks = TabMarks.of(TabIndex.parse(File(fixture!!.resolveSibling("guitar-line"), "tab.musicxml").readText()), tab)
+        assertEquals(listOf(1, 2), listOf(marks.doubtful, marks.noPlace))
+        // The bass line's two "?" both have a place.
+        assertEquals(SongRow.Doubtful(2), SongCheck.rows(recorded("bass-line-marks")).filterIsInstance<SongRow.Doubtful>().single())
+    }
+
     @Test
     fun notesLeftOutAndNotesAddedAreSaidOnlyWhenThereAreSome() {
         val tab = recorded("guitar-line")
