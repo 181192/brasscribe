@@ -414,8 +414,8 @@ import Testing
 }
 
 /// What the engine is started with must be enough by itself: the adapters run through the pixi the app carries, from
-/// the data folder, so no uv is needed. Homebrew's folder is on the PATH last, and only for the programs Bandroom
-/// does not carry (ffmpeg, which some adapters decode with, and a MuseScore installed with Homebrew).
+/// the data folder, so no uv is needed. Homebrew's folder is on the PATH last, and only for a MuseScore installed
+/// with Homebrew (ffmpeg comes with the engine's environment).
 @Suite struct EngineEnvironmentTests {
     @Test func theEngineNeedsNoUvAndRunsTheAppsPixi() throws {
         let root = tempDir()
@@ -430,7 +430,7 @@ import Testing
         // pixi is called by name by the adapter runner: the app's own comes first on the PATH.
         let path = try #require(env["PATH"]).split(separator: ":").map(String.init)
         #expect(path.first == pixi.deletingLastPathComponent().path)
-        // Homebrew's folder is last, for ffmpeg and MuseScore; what Bandroom's own PATH held is not passed on.
+        // Homebrew's folder is last, for MuseScore; what Bandroom's own PATH held is not passed on.
         #expect(path.last == "/opt/homebrew/bin" && !path.contains("/usr/local/bin"))
         #expect(path.dropFirst().dropLast() == ["/usr/bin", "/bin", "/usr/sbin", "/sbin"])
         // Adapters, their environments and pixi's cache are all in the data folder, none inside the app.

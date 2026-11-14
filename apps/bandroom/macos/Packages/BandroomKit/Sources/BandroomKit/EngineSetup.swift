@@ -162,8 +162,8 @@ public struct EngineConfiguration: Equatable, Sendable {
         var env = base.filter { key, _ in
             ["HOME", "USER", "LOGNAME", "TMPDIR", "LANG", "LC_ALL", "SHELL", "__CF_USER_TEXT_ENCODING", "HF_HOME", "HF_HUB_CACHE", "HF_TOKEN"].contains(key)
         }
-        // pixi first: the adapter runner calls it by name. Homebrew's folder stays last, for what Bandroom does not
-        // carry: ffmpeg (beat-this, Mega-53 and audio that is not WAV are decoded with it) and a MuseScore (`mscore`).
+        // pixi first: the adapter runner calls it by name. ffmpeg comes with the engine's environment; Homebrew's
+        // folder stays last only so that a MuseScore installed with Homebrew (`mscore`) is found.
         let pixiDir = pixi?.deletingLastPathComponent().path
         env["PATH"] = ([pixiDir].compactMap { $0 } + Self.systemPath + [Self.homebrewPath]).joined(separator: ":")
         env["SCRIBE_DATA"] = paths.data.path

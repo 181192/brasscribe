@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
+from scribe_music.programs import ffmpeg
 
 from .paths import ADAPTERS
 
@@ -33,7 +34,7 @@ TRANSCRIBERS = {
 
 def _resampled_mix(mix: Path, sr: int, workdir: Path) -> np.ndarray:
     tmp = workdir / "mix_resampled.wav"
-    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(mix), "-ar", str(sr), "-ac", "2", str(tmp)], check=True)
+    subprocess.run([ffmpeg(), "-loglevel", "error", "-y", "-i", str(mix), "-ar", str(sr), "-ac", "2", str(tmp)], check=True)
     y, _ = sf.read(tmp, dtype="float32")
     tmp.unlink()
     return y

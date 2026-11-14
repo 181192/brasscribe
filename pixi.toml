@@ -54,6 +54,12 @@ mido = "==1.3.3"
 mir-eval = "==0.8.2"
 pandas = "==3.0.6"
 
+# ffmpeg decodes what libsndfile cannot read (m4a, mp4, mov, mp3) and resamples for beat-this and Mega-53: the
+# adapter runner and the engine call it by name, so it comes with the engine's environment on every platform
+# instead of from whatever is on the computer's PATH. The LGPL build: it has every decoder these need.
+[feature.engine.dependencies]
+ffmpeg = { version = "*", build = "lgpl*" }
+
 [feature.engine.tasks]
 engine = "scribe"
 serve = "scribe serve"
