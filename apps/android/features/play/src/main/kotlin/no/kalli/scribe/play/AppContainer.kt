@@ -213,7 +213,7 @@ class AppContainer(private val context: Context, val product: Product) {
         set(v) { field = v; cachedEngine = null }
 
     /** Tests only: the fixture computer's jobs stay in the stage they are at until this is false again. */
-    @Volatile var fixtureHeld: Boolean = false
+    @Volatile @set:androidx.annotation.VisibleForTesting var fixtureHeld: Boolean = false
 
     private var cachedEngine: Pair<String, EngineApi>? = null
 

@@ -108,14 +108,16 @@ class KeptRecordingFlowTest : ScreenTest() {
     fun stopKeepsTheRecordingAndAScoreMadeFromItTakesItOutOfTheList() {
         rule.runOnUiThread { vm.importUri(Uri.fromFile(recording("Band practice.wav"))) }
         waitUntil(20_000) { vm.screen.value.last() == Screen.PROFILE }
-        // A computer that takes its time: Stop while it is being made.
+        // A computer that takes its time: Stop while it is being made. (It is held in its first step until then.)
         computer("old-hundredth")
+        container.fixtureHeld = true
         rule.runOnUiThread {
             vm.chooseProfile(Profile.BRASS_BAND); vm.where.value = Where.COMPANION; vm.startTranscription()
         }
         waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.running }
         rule.runOnUiThread { vm.back() }
         waitUntil(10_000) { vm.keptRecordings.value.size == 1 }
+        container.fixtureHeld = false
         val kept = vm.keptRecordings.value.single()
         waitUntil(5_000) { vm.source.value?.file == kept.file }
         // Started again from What is this?, the score is made: the recording leaves Your scores.

@@ -101,6 +101,9 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
     @After
     fun leaveClean() {
         ScreenDevice.reset(rule)
+        // A test that acts while the fixture computer is at work holds it there with `container.fixtureHeld = true` and lets
+        // it go with false: the job then goes on as usual. (A long `fixtureStageSeconds` also keeps it in a step, but on
+        // the test's clock, and only for a test that does not need the job to finish afterwards.)
         container.fixtureHeld = false
         rule.runOnUiThread {
             container.fixtureSource = null
