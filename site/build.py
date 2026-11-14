@@ -333,8 +333,7 @@ class Page:
         def tech(names: list[str]) -> str:
             rows = "".join(f'\n      <li><a href="{self.file(x["file"])}"><code>{x["file"]}</code></a> <span class="muted">{x[lang]}</span></li>'
                            for g in names for x in groups[g])
-            notes = "".join(f'\n    <p>{say(f"groups.{g}.note")}</p>' for g in names)
-            return (f'  <details class="tech"><summary>{say("download.tech")}</summary>\n    <ul class="tech-files">{rows}\n    </ul>{notes}'
+            return (f'  <details class="tech"><summary>{say("download.tech")}</summary>\n    <ul class="tech-files">{rows}\n    </ul>'
                     f'\n    <p><a href="{self.file("SHA256SUMS")}">{say("download.sums")}</a></p>\n  </details>')
 
         def device(group: str, primary: bool) -> str:
@@ -403,6 +402,7 @@ class Page:
             here = "" if q is not p else ' aria-current="page"' if self.link(q.id, "") == "./" else ' aria-current="true"'
             apps.append(f'\n        <li><a href="@{q.id}/"{here}><span class="chip" style="--chip: var(--family-chip-{q.id})"></span>{q.data["name"]}</a></li>')
         home = ' aria-current="page"' if p.family and self.link("family", "") == "./" else ""
+        bandroom = ' aria-current="page"' if p.family and self.name == "bandroom" else ""
         bar = f"""<header class="family-bar{" pen-down" if p.family else ""}">
   <div class="wrap">
     <nav class="line-path" data-t-aria-label="bar.apps">
@@ -410,6 +410,8 @@ class Page:
       <span class="line-sep" aria-hidden="true">/</span>
       <ul class="line-apps">{"".join(apps)}
       </ul>
+      <span class="line-rule" aria-hidden="true"></span>
+      <a class="line-bandroom" href="@family/bandroom/"{bandroom}>Bandroom</a>
     </nav>
     <button type="button" class="lang-switch" data-lang-switch hidden></button>
     <noscript><span class="lang-note" data-t="bar.noscript"></span></noscript>

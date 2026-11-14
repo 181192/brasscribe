@@ -128,31 +128,23 @@ tablet = "Samme app som på telefonen: et Android-nettbrett bruker Android-nedla
 
 [groups.android]
 title = "Android"
-note = "Krever Android 16 eller nyere. Tillat installering fra nettleseren eller filbehandleren, og åpne filen du lastet ned. Den oppdaterer en tidligere versjon, og det du har laget blir liggende. De fleste telefoner og nettbrett bruker den første filen."
 button = "Last ned for Android"
 steps = ["Last den ned på telefonen eller nettbrettet, og åpne filen du lastet ned.", "Telefonen spør om nettleseren får installere apper: tillat det, og installer.", "Neste gang installeres en ny versjon over denne, og det du har laget, blir liggende."]
 
 [groups.ios]
-title = "iPhone og iPad"
-note = "Krever iOS eller iPadOS 26 eller nyere. Ligger ikke i App Store ennå. Dette er en testversjon: den trenger noen steg med din egen Apple-konto før den kan installeres, og <a href=\"@/guide/#download-ios\">veiledningen viser dem</a>."
-button = "Last ned for iPhone og iPad"
+title = "iPhone"
+button = "Last ned for iPhone"
 steps = ["Last den ned på en datamaskin: det er en testversjon, som du signerer med din egen Apple-konto.", "Signer den og legg den på iPhone eller iPad med et sideloading-verktøy: <a href='@/guide/#download-ios'>veiledningen viser hvordan</a>.", "Signaturen fra en gratis Apple-konto varer i 7 dager. Signer på nytt, så blir det du har laget, liggende."]
 
 [groups.mac]
 title = "Mac"
-note = "Krever macOS 26 eller nyere og en Mac med M-brikke. Mac-en advarer deg første gang: pakk ut, flytt appen til Programmer og åpne den én gang, og velg så <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>."
 button = "Last ned for Mac"
 steps = ["Last den ned, pakk den ut, og flytt appen til Programmer.", "Åpne den én gang. Mac-en advarer deg første gang: velg <strong>Åpne likevel</strong> under <strong>Systeminnstillinger › Personvern og sikkerhet</strong>.", "Etter det åpnes den som alle andre apper."]
 
 [groups.windows]
 title = "Windows"
-note = "For Windows 11. Windows advarer deg første gang: pakk ut mappen hvor som helst og start <code>.exe</code>-filen i den. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>."
 button = "Last ned for Windows"
 steps = ["Last den ned, og pakk ut mappen hvor som helst.", "Start appen i mappen. Hvis Windows SmartScreen stopper den, velg <strong>Mer informasjon</strong> og så <strong>Kjør likevel</strong>.", "Etter det starter den som alle andre programmer."]
-
-[groups.bandroom]
-title = "Bandroom, på datamaskinen"
-note = "Bandroom kjører på din egen Mac eller PC og skriver ned notene for appen på telefonen, over ditt eget nettverk. Ett Bandroom virker for alle Scribe-appene. <a href=\"@/guide/#computer\">Slik setter du det opp</a>."
 
 [groups.tools]
 title = "For den tekniske"

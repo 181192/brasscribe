@@ -46,8 +46,8 @@ file = "fretscribe-windows-x64.zip"
 group = "windows"
 label_en = "Fretscribe for Windows"
 label_nb = "Fretscribe for Windows"
-en = "Fretscribe for Windows 11, an early version, not tested on a real PC yet"
-nb = "Fretscribe for Windows 11, en tidlig versjon, ikke testet på en ekte PC ennå"
+en = "Fretscribe for Windows 11, an early version"
+nb = "Fretscribe for Windows 11, en tidlig versjon"
 
 # Where it runs: the app's places on the variant rail, in the rail's order (phone, tablet, mac, windows, then
 # Bandroom from site.toml). Fretscribe has no Studio. Each says what you do there, what it needs, and how ready each
@@ -79,8 +79,8 @@ nb = { does = "Tabbene dine på stor skjerm, med Tempo og Gjenta takter.", needs
 id = "windows"
 files = ["windows"]
 devices = [{ name = "Windows", status = "early" }]
-en = { does = "Your tabs on a big screen; share or print them.", needs = "A PC with Windows 11 (x64)." }
-nb = { does = "Tabbene dine på stor skjerm; del eller skriv dem ut.", needs = "PC med Windows 11 (x64)." }
+en = { does = "Your tabs on a big screen; share or print them.", needs = "A PC with Windows 11." }
+nb = { does = "Tabbene dine på stor skjerm; del eller skriv dem ut.", needs = "PC med Windows 11." }
 
 # The paper is kept under its old file name and served as "how it works", like every product's.
 [paths]

@@ -436,10 +436,11 @@ RAIL = ("phone", "tablet", "mac", "windows", "bandroom", "studio")  # the same o
 
 
 def tags(page, place: dict) -> str:
-    """How ready each device of a place is: a word and a shape, never a colour alone."""
-    say = page.say
+    """How ready each device of a place is: a word and a shape, never a colour alone. The device is named only where
+    a place holds two; where it holds one, the place's own name already says it."""
+    say, two = page.say, len(place["devices"]) > 1
     return (f'<ul class="tags" aria-label="{esc(say("variants.tags"))}">'
-            + "".join(f'<li class="tag {d["status"]}"><span class="tag-device">{d["name"]}</span> {say("variants." + d["status"])}</li>' for d in place["devices"])
+            + "".join(f'<li class="tag {d["status"]}">{f"""<span class="tag-device">{d["name"]}</span> """ if two else ""}{say("variants." + d["status"])}</li>' for d in place["devices"])
             + "</ul>")
 
 
