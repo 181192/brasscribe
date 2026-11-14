@@ -45,6 +45,18 @@
   <data name="AdLibNotice.Text" xml:space="preserve">
     <value>Some bars have no steady beat (ad lib.). Their rhythms are approximate.</value>
   </data>
+  <data name="AddPagesBody.Text" xml:space="preserve">
+    <value>PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add pictures or a PDF</value>
+  </data>
+  <data name="AddPagesTitle.Text" xml:space="preserve">
+    <value>Add pictures or a PDF</value>
+  </data>
   <data name="AppPicker.Header" xml:space="preserve">
     <value>App to record</value>
   </data>
@@ -326,6 +338,51 @@
   </data>
   <data name="Error_Options" xml:space="preserve">
     <value>Brasscribe on your computer couldn't use these choices. Try other choices, or update Brasscribe on your computer.</value>
+  </data>
+  <data name="Error_PagesFailed_Change" xml:space="preserve">
+    <value>Change the pages</value>
+  </data>
+  <data name="Error_PagesFailed_Reason" xml:space="preserve">
+    <value>Something went wrong while Bandroom on your computer was reading the pages.</value>
+  </data>
+  <data name="Error_PagesFailed_Step1" xml:space="preserve">
+    <value>Your pages are still here. You can try again, or change them.</value>
+  </data>
+  <data name="Error_PagesFailed_Title" xml:space="preserve">
+    <value>The notes couldn't be read</value>
+  </data>
+  <data name="Error_PagesUnreadable" xml:space="preserve">
+    <value>One of the pages can't be read on this PC: it was moved, deleted or is open in another app. Add it again.</value>
+  </data>
+  <data name="Error_Pages_DiskFull" xml:space="preserve">
+    <value>Your computer's disk is full. Free some space on it, then send the pages again.</value>
+  </data>
+  <data name="Error_Pages_NoMusic" xml:space="preserve">
+    <value>No notes were found on the page. Bandroom reads printed notes on a staff: use a sharp, straight scan or picture of the whole page. Handwritten music and tab are not read.</value>
+  </data>
+  <data name="Error_Pages_NotAPage" xml:space="preserve">
+    <value>One of the pages is not a picture or a PDF that Bandroom can read.</value>
+  </data>
+  <data name="Error_Pages_NotRead" xml:space="preserve">
+    <value>Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.</value>
+  </data>
+  <data name="Error_Pages_OnlyTab" xml:space="preserve">
+    <value>Only a tab staff was found on the page. Bandroom reads notes on a staff, not tab.</value>
+  </data>
+  <data name="Error_Pages_PageTooLarge" xml:space="preserve">
+    <value>One of the pages is too large for Bandroom to read: a file can be 50 MB at most. Split a large PDF into parts.</value>
+  </data>
+  <data name="Error_Pages_ReaderFilesMissing" xml:space="preserve">
+    <value>Your computer couldn't download the files its reader of printed music needs. Check its internet connection, then send the pages again.</value>
+  </data>
+  <data name="Error_Pages_ReaderMissing" xml:space="preserve">
+    <value>The reader of printed music is not installed on your computer. In Bandroom there, open Settings, find Sheet music from pictures and choose Install the reader. Then try again.</value>
+  </data>
+  <data name="Error_Pages_TooManyPages" xml:space="preserve">
+    <value>There are more than 40 pages in all (every page of a PDF counts). Send fewer at a time.</value>
+  </data>
+  <data name="Error_Pages_WrongInput" xml:space="preserve">
+    <value>Bandroom on your computer can't read sheet music yet. Update Bandroom there, then try again.</value>
   </data>
   <data name="Error_PercussionSolo" xml:space="preserve">
     <value>Brasscribe can't write down percussion from a solo take yet. Record the band: a recording with drums gets a percussion part.</value>
@@ -1020,6 +1077,57 @@
   <data name="Output_YourPartNone" xml:space="preserve">
     <value>You conduct or listen: every part opens.</value>
   </data>
+  <data name="PageList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pages, in the order they are read</value>
+  </data>
+  <data name="PagesHeading.Text" xml:space="preserve">
+    <value>Sheet music from a picture</value>
+  </data>
+  <data name="PagesIntro.Text" xml:space="preserve">
+    <value>Bandroom on your computer reads the printed notes and writes them as a score you can play from. Nothing is arranged: the parts stay as they are on the page.</value>
+  </data>
+  <data name="PagesListHeading.Text" xml:space="preserve">
+    <value>Pages, in the order they are read</value>
+  </data>
+  <data name="PagesNeedsComputer.Text" xml:space="preserve">
+    <value>Reading sheet music needs Bandroom on your computer.</value>
+  </data>
+  <data name="PagesOrderHint.Text" xml:space="preserve">
+    <value>The pages are read in this order. Move a page to change it.</value>
+  </data>
+  <data name="Pages_KindLabel" xml:space="preserve">
+    <value>Sheet music</value>
+  </data>
+  <data name="Pages_LeftOut_Many" xml:space="preserve">
+    <value>{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.</value>
+  </data>
+  <data name="Pages_LeftOut_One" xml:space="preserve">
+    <value>One file is not a PNG, JPEG or WebP picture or a PDF, so it was left out. Save a photo from a phone as JPEG first.</value>
+  </data>
+  <data name="Pages_MoveDown" xml:space="preserve">
+    <value>Move page {0} down</value>
+  </data>
+  <data name="Pages_MoveUp" xml:space="preserve">
+    <value>Move page {0} up</value>
+  </data>
+  <data name="Pages_Moved" xml:space="preserve">
+    <value>Page {0} is now page {1}.</value>
+  </data>
+  <data name="Pages_Page" xml:space="preserve">
+    <value>Page {0}</value>
+  </data>
+  <data name="Pages_Remove" xml:space="preserve">
+    <value>Remove page {0}</value>
+  </data>
+  <data name="Pages_Removed" xml:space="preserve">
+    <value>Page {0} is removed.</value>
+  </data>
+  <data name="Pages_Title" xml:space="preserve">
+    <value>Sheet music from a picture</value>
+  </data>
+  <data name="Pages_TooMany" xml:space="preserve">
+    <value>At most {0} pages can be read at once. The rest were left out.</value>
+  </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Code</value>
   </data>
@@ -1142,6 +1250,12 @@
   </data>
   <data name="ReadBarItem.Text" xml:space="preserve">
     <value>Read the bar</value>
+  </data>
+  <data name="ReadPagesButton.Content" xml:space="preserve">
+    <value>Read the notes</value>
+  </data>
+  <data name="ReadPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Send the pages to your computer, which reads them into a score</value>
   </data>
   <data name="RecordAppBody.Text" xml:space="preserve">
     <value>Only the app you choose, not other sounds</value>
@@ -1533,6 +1647,9 @@
   <data name="Screen_FirstRun" xml:space="preserve">
     <value>Welcome</value>
   </data>
+  <data name="Screen_Pages" xml:space="preserve">
+    <value>Sheet music from a picture</value>
+  </data>
   <data name="Screen_Review" xml:space="preserve">
     <value>Check the notes</value>
   </data>
@@ -1868,6 +1985,18 @@
   </data>
   <data name="Settings_Link_NotFound" xml:space="preserve">
     <value>Couldn't find Brasscribe on {0}. Check that this PC is on the same network as the computer.</value>
+  </data>
+  <data name="SheetMusicBody.Text" xml:space="preserve">
+    <value>A picture or a PDF of the notes</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Pictures or a PDF of printed music, read by your computer into a score</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Open sheet music</value>
+  </data>
+  <data name="SheetMusicTitle.Text" xml:space="preserve">
+    <value>Open sheet music</value>
   </data>
   <data name="Shortcut_Bar" xml:space="preserve">
     <value>Next or previous bar</value>
@@ -2340,6 +2469,12 @@
   <data name="Transcribe_Stage_Notes" xml:space="preserve">
     <value>Writing down the notes</value>
   </data>
+  <data name="Transcribe_Stage_Read" xml:space="preserve">
+    <value>Reading the notes on the pages</value>
+  </data>
+  <data name="Transcribe_Stage_SendPages" xml:space="preserve">
+    <value>Sending the pages to your computer</value>
+  </data>
   <data name="Transcribe_Stage_Separate" xml:space="preserve">
     <value>Separating the instruments</value>
   </data>
@@ -2373,8 +2508,14 @@
   <data name="Transcribe_Step_Notes" xml:space="preserve">
     <value>Writing down the notes</value>
   </data>
+  <data name="Transcribe_Step_Read" xml:space="preserve">
+    <value>Reading the notes</value>
+  </data>
   <data name="Transcribe_Step_Ready" xml:space="preserve">
     <value>Getting the recording ready</value>
+  </data>
+  <data name="Transcribe_Step_SendPages" xml:space="preserve">
+    <value>Sending the pages</value>
   </data>
   <data name="Transcribe_Step_Separate" xml:space="preserve">
     <value>Separating the instruments</value>

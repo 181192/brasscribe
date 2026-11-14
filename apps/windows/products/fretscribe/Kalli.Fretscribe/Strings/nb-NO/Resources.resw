@@ -258,6 +258,51 @@
   <data name="Error_Options" xml:space="preserve">
     <value>Bandroom på datamaskinen kunne ikke bruke disse valgene. Prøv andre valg, eller oppdater Bandroom på datamaskinen.</value>
   </data>
+  <data name="Error_PagesFailed_Change" xml:space="preserve">
+    <value>Endre sidene</value>
+  </data>
+  <data name="Error_PagesFailed_Reason" xml:space="preserve">
+    <value>Noe gikk galt mens Bandroom på datamaskinen leste sidene.</value>
+  </data>
+  <data name="Error_PagesFailed_Step1" xml:space="preserve">
+    <value>Sidene dine ligger her fortsatt. Du kan prøve igjen, eller endre dem.</value>
+  </data>
+  <data name="Error_PagesFailed_Title" xml:space="preserve">
+    <value>Notene kunne ikke leses</value>
+  </data>
+  <data name="Error_PagesUnreadable" xml:space="preserve">
+    <value>En av sidene kan ikke leses på denne PC-en: den er flyttet, slettet eller åpen i en annen app. Legg den til på nytt.</value>
+  </data>
+  <data name="Error_Pages_DiskFull" xml:space="preserve">
+    <value>Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt.</value>
+  </data>
+  <data name="Error_Pages_NoMusic" xml:space="preserve">
+    <value>Fant ingen noter på siden. Bandroom leser trykte noter på notelinjer: bruk en skarp og rett skanning eller et bilde av hele siden. Håndskrevne noter og tab blir ikke lest.</value>
+  </data>
+  <data name="Error_Pages_NotAPage" xml:space="preserve">
+    <value>En av sidene er verken et bilde eller en PDF som Bandroom kan lese.</value>
+  </data>
+  <data name="Error_Pages_NotRead" xml:space="preserve">
+    <value>Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning.</value>
+  </data>
+  <data name="Error_Pages_OnlyTab" xml:space="preserve">
+    <value>Det sto bare tab på siden. Bandroom leser noter på notelinjer, ikke tab.</value>
+  </data>
+  <data name="Error_Pages_PageTooLarge" xml:space="preserve">
+    <value>En av sidene er for stor til at Bandroom kan lese den: en fil kan være høyst 50 MB. Del en stor PDF i flere.</value>
+  </data>
+  <data name="Error_Pages_ReaderFilesMissing" xml:space="preserve">
+    <value>Datamaskinen fikk ikke lastet ned filene noteleseren trenger. Sjekk internettforbindelsen på den, og send sidene på nytt.</value>
+  </data>
+  <data name="Error_Pages_ReaderMissing" xml:space="preserve">
+    <value>Noteleseren er ikke installert på datamaskinen. Åpne Innstillinger i Bandroom der, finn Noter fra bilder og velg Installer noteleseren. Prøv så igjen.</value>
+  </data>
+  <data name="Error_Pages_TooManyPages" xml:space="preserve">
+    <value>Det er mer enn 40 sider til sammen (hver side i en PDF teller). Send færre om gangen.</value>
+  </data>
+  <data name="Error_Pages_WrongInput" xml:space="preserve">
+    <value>Bandroom på datamaskinen kan ikke lese noter ennå. Oppdater Bandroom der, og prøv igjen.</value>
+  </data>
   <data name="Error_RecordingUnreadable_Reason" xml:space="preserve">
     <value>Fretscribe fikk ikke åpnet opptaket på denne PC-en. Det kan være flyttet eller slettet, eller en annen app bruker det.</value>
   </data>
@@ -1446,6 +1491,12 @@
   <data name="Transcribe_Stage_Notes" xml:space="preserve">
     <value>Skriver ned tonene</value>
   </data>
+  <data name="Transcribe_Stage_Read" xml:space="preserve">
+    <value>Leser notene på sidene</value>
+  </data>
+  <data name="Transcribe_Stage_SendPages" xml:space="preserve">
+    <value>Sender sidene til datamaskinen</value>
+  </data>
   <data name="Transcribe_Stage_Separate" xml:space="preserve">
     <value>Plukker ut instrumentet ditt</value>
   </data>
@@ -1479,8 +1530,14 @@
   <data name="Transcribe_Step_Notes" xml:space="preserve">
     <value>Skriver ned tonene</value>
   </data>
+  <data name="Transcribe_Step_Read" xml:space="preserve">
+    <value>Leser notene</value>
+  </data>
   <data name="Transcribe_Step_Ready" xml:space="preserve">
     <value>Gjør opptaket klart</value>
+  </data>
+  <data name="Transcribe_Step_SendPages" xml:space="preserve">
+    <value>Sender sidene</value>
   </data>
   <data name="Transcribe_Step_Separate" xml:space="preserve">
     <value>Plukker ut instrumentet ditt</value>

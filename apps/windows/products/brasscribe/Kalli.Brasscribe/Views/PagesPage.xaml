@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Kalli.Brasscribe.Views.PagesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:views="using:Kalli.Brasscribe.Views"
+    NavigationCacheMode="Required"
+    AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop">
+
+    <!-- Sheet music from a picture: add pictures or PDFs, the pages in the order they are read, and Read the notes. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="820" Padding="40,64,40,32" Spacing="12" HorizontalAlignment="Center">
+            <TextBlock x:Name="Heading" x:Uid="PagesHeading" Style="{StaticResource ScreenHeadingStyle}"
+                       AutomationProperties.HeadingLevel="Level1" IsTabStop="True" />
+            <TextBlock x:Uid="PagesIntro" Style="{StaticResource LeadStyle}" Margin="0,0,0,8" />
+
+            <Button x:Name="AddPagesButton" x:Uid="AddPagesButton" Style="{StaticResource CardButtonStyle}" HorizontalAlignment="Stretch"
+                    Command="{x:Bind ViewModel.AddCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <Border Style="{StaticResource IconWellStyle}">
+                        <FontIcon Glyph="{StaticResource BcIconImportFile}" FontSize="16" />
+                    </Border>
+                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                        <TextBlock x:Uid="AddPagesTitle" Style="{StaticResource HeadlineStyle}" />
+                        <TextBlock x:Uid="AddPagesBody" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </Button>
+
+            <TextBlock x:Uid="PagesListHeading" Style="{StaticResource LabelStyle}" Margin="0,12,0,0"
+                       AutomationProperties.HeadingLevel="Level2" Visibility="{x:Bind ViewModel.HasPages, Mode=OneWay}" />
+            <TextBlock x:Uid="PagesOrderHint" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind ViewModel.ShowsOrderHint, Mode=OneWay}" />
+            <ItemsControl x:Name="PageList" x:Uid="PageList" ItemsSource="{x:Bind ViewModel.Pages}" IsTabStop="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PageItem">
+                        <Border Style="{StaticResource CardStyle}" Padding="16,8" Margin="0,0,0,8">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Glyph="{StaticResource BcIconFile}" FontSize="20" VerticalAlignment="Center"
+                                          Foreground="{ThemeResource ScribeTextMutedBrush}" />
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind Place, Mode=OneWay}" Style="{StaticResource HeadlineStyle}" />
+                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                    <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnMoveUp"
+                                            IsEnabled="{x:Bind vm:Screens.Not(IsFirst), Mode=OneWay}"
+                                            AutomationProperties.Name="{x:Bind MoveUpName, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind MoveUpName, Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE70E;" FontSize="16" />
+                                    </Button>
+                                    <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnMoveDown"
+                                            IsEnabled="{x:Bind vm:Screens.Not(IsLast), Mode=OneWay}"
+                                            AutomationProperties.Name="{x:Bind MoveDownName, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind MoveDownName, Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE70D;" FontSize="16" />
+                                    </Button>
+                                    <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnRemove"
+                                            AutomationProperties.Name="{x:Bind RemoveName, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneWay}">
+                                        <FontIcon Glyph="{StaticResource BcIconDelete}" FontSize="16" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Style="{StaticResource BodyStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                       AutomationProperties.LiveSetting="Polite" Visibility="{x:Bind views:Shown.HasText(ViewModel.StatusText), Mode=OneWay}" />
+
+            <Grid ColumnSpacing="16" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <!-- Why Read the notes waits: the computer is not connected. -->
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
+                            Visibility="{x:Bind views:Shown.Not(ViewModel.ComputerThere), Mode=OneWay}">
+                    <FontIcon Glyph="{StaticResource BcIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
+                    <TextBlock x:Uid="PagesNeedsComputer" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="480" />
+                </StackPanel>
+                <Button x:Name="ReadPagesButton" x:Uid="ReadPagesButton" Grid.Column="1" Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{x:Bind ViewModel.ReadCommand}" AccessKey="R" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -82,6 +82,15 @@ public sealed class WinFileDialogs(Func<nint> hwnd) : IFileDialogs
         return file?.Path;
     }
 
+    public async Task<IReadOnlyList<string>> PickOpenManyAsync(IEnumerable<string> extensions)
+    {
+        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary, ViewMode = PickerViewMode.Thumbnail };
+        foreach (var e in extensions) picker.FileTypeFilter.Add(e);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd());
+        var files = await picker.PickMultipleFilesAsync();
+        return files is null ? [] : files.Select(f => f.Path).ToList();
+    }
+
     public async Task<SaveTarget?> PickSaveAsync(string suggestedName, string extension, string description)
     {
         var picker = new FileSavePicker

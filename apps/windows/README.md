@@ -38,6 +38,14 @@ wait for a test run on a Windows machine. For the same reason no release has a W
 Settings › Appearance (Match system, Light, Dark, and a Windows contrast theme winning over the choice) is
 checked on every pull request by the screen catalogue below.
 
+**Sheet music from a picture** (Brasscribe Play): Open sheet music on Home, or a picture or PDF opened or dropped on
+the window, leads to the pages screen (`Views/PagesPage.xaml`, `PagesViewModel`). The pages are listed in order,
+each moved or removed, and Read the notes sends them to `POST /v1/jobs/pages` (profile `sheet`); the score opens as it
+is written, without the band's questions. PNG, JPEG, WebP and PDF are sent as they are, told by their first bytes
+(`Engine/Pages.cs`); any other picture, a file over 50 MB and pages past 40 are left out on the PC and said. The
+engine's refusals and the fixed words of a read that failed are said in the app's words (`EngineErrors`), and the
+tests hold both lists to the engine's files. Fretscribe for Windows has no pages screen yet.
+
 ## Prerequisites
 
 - .NET 10 SDK (`global.json` pins `10.0.100`, `rollForward: latestFeature`)

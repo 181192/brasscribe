@@ -1,6 +1,6 @@
 namespace Kalli.Scribe.Capture;
 
-public enum MediaKind { Unsupported, Audio, Video, Score }
+public enum MediaKind { Unsupported, Audio, Video, Score, Page }
 
 /// <summary>What the Import button accepts. Links are never downloaded (platform terms).</summary>
 public static class MediaTypes
@@ -15,6 +15,9 @@ public static class MediaTypes
     public static bool NeedsCodec(string path) => NeedCodecExtensions.Contains(Path.GetExtension(path).ToLowerInvariant());
     public static readonly string[] ScoreExtensions = [".musicxml", ".mxl", ".xml"];
 
+    /// <summary>A picture or PDF of printed music: the computer reads it as a page (engine: pages.py).</summary>
+    public static readonly string[] PageExtensions = [".png", ".jpg", ".jpeg", ".webp", ".pdf"];
+
     public static IEnumerable<string> All => AudioExtensions.Concat(VideoExtensions).Concat(ScoreExtensions);
 
     public static MediaKind Classify(string path)
@@ -24,6 +27,7 @@ public static class MediaTypes
         if (AudioExtensions.Contains(ext)) return MediaKind.Audio;
         if (VideoExtensions.Contains(ext)) return MediaKind.Video;
         if (ScoreExtensions.Contains(ext)) return MediaKind.Score;
+        if (PageExtensions.Contains(ext)) return MediaKind.Page;
         return MediaKind.Unsupported;
     }
 

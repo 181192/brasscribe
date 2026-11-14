@@ -53,6 +53,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Button x:Name="RecordMicButton" x:Uid="RecordMicButton" Style="{StaticResource CardButtonStyle}"
                         Command="{x:Bind ViewModel.RecordMicrophoneCommand}" AccessKey="M">
                     <StackPanel Spacing="12">
@@ -109,6 +113,19 @@
                         <StackPanel Spacing="2">
                             <TextBlock x:Uid="RecordAppTitle" Style="{StaticResource HeadlineStyle}" />
                             <TextBlock Style="{StaticResource MutedStyle}" x:Uid="RecordAppBody" />
+                        </StackPanel>
+                    </StackPanel>
+                </Button>
+                <!-- Sheet music from a picture: pictures or a PDF of printed music, read on the computer. -->
+                <Button x:Name="SheetMusicButton" x:Uid="SheetMusicButton" Grid.Row="1" Style="{StaticResource CardButtonStyle}"
+                        Command="{x:Bind Main.OpenPagesCommand}">
+                    <StackPanel Spacing="12">
+                        <Border Style="{StaticResource IconWellStyle}" HorizontalAlignment="Left">
+                            <FontIcon Glyph="{StaticResource BcIconFile}" FontSize="16" />
+                        </Border>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="SheetMusicTitle" Style="{StaticResource HeadlineStyle}" />
+                            <TextBlock x:Uid="SheetMusicBody" Style="{StaticResource MutedStyle}" />
                         </StackPanel>
                     </StackPanel>
                 </Button>
