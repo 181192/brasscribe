@@ -49,7 +49,7 @@ class FretscribeScreensTest : ScreenCatalogue() {
     // The screens site/fretscribe/shots.txt takes from here.
     override val onSite = setOf(
         "home", "home-with-a-song", "your-instrument", "what-is-this", "check-the-song", "tab", "practice-repeat",
-        "tab-full-screen", "computer", "check-the-song-guitar", "tab-guitar",
+        "tab-full-screen", "computer", "tab-guitar",
     )
 
     @Before

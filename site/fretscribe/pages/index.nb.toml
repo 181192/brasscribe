@@ -24,6 +24,11 @@ title = "Et ? der den er usikker"
 text = "Velg en note med ?, så spiller den takten sakte, og du kan høre selv. Spill så sammen med opptaket, saktere hvis du vil, de vanskelige taktene om og om igjen."
 
 [[screens.items]]
+shot = "instrument"
+alt = "Instrumentet ditt: Instrument, bass. Strenger, 4 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre nederst."
+title = "Instrumentet ditt"
+text = "Gitar, bass, ukulele eller mandolin, strengene og stemmingen du spiller i."
+[[screens.items]]
 shot = "home"
 alt = "Hjem i Fretscribe: Åpne et opptak, Spill inn med mikrofonen og Spill inn det som spilles."
 title = "Åpne eller spill inn"
@@ -34,13 +39,8 @@ alt = "Hva er dette? med to valg: Bare instrumentet mitt, og En hel sang, der Fr
 title = "Hva er dette?"
 text = "Bare instrumentet ditt, eller en hel sang der stemmen din plukkes ut."
 [[screens.items]]
-shot = "check"
-alt = "Sjekk sangen: stemmingen den hørte, oktaven, toneart og tempo, 2 toner merket med spørsmålstegn, og Vis tabben."
-title = "Sjekk sangen"
-text = "Stemmingen, tonearten og tempoet den hørte, før noe blir skrevet som bånd."
-[[screens.items]]
-shot = "note"
-alt = "En tone med spørsmålstegn valgt i tabben, med Spill denne takten sakte og Neste."
+shot = "tab-guitar"
+alt = "Tabben til Guitar line i standard, uten capo: akkorder i 3/4 fra takt 1, 1 tone merket med spørsmålstegn og 2 toner uten plass, og spilleren under med Spill, tempo og Gjenta takter."
 title = "Øv"
 text = "Spill opptaket saktere, gjenta de vanskelige taktene, og sjekk notene med ?."
 
