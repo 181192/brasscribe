@@ -1,7 +1,9 @@
 // Drives every chart of a built research page with the keyboard, in a real browser, and fails when
 // a key throws, a row cannot be reached, a view cannot be switched or Escape leaves the readout on.
-// It does so in English, after a change to Norwegian and after the change back, and on a first visit
-// in Norwegian: in each, every figure of the page must be drawn, once, in the language of the page.
+// It does so in English, after a change to Norwegian, after the change back and after a change to Norwegian
+// again, at the width of a phone, and on a first visit in Norwegian, both asked for in the address and from the
+// browser's own language: in each, every figure of the page must be drawn, once, in the language of the page,
+// its view buttons and legend included.
 //
 //   site/build.sh && python3 -m http.server -d site/_site 8000 &
 //   node site/shared/research/tests/keyboard.mjs http://localhost:8000/brasscribe/how-it-works/ [more pages]
@@ -29,6 +31,9 @@ async function drive(page, lang, errors) {
       controls: f.querySelectorAll(".chart-controls").length, canvases: f.querySelectorAll(".chart-canvas svg").length,
       rows: f.querySelectorAll(".chart-row").length, caption: f.querySelector("figcaption b").textContent,
       tableOpen: f.querySelector(".chart-data").open,
+      // What the buttons and the legend say, and what the figure's own data says they are in this language.
+      said: [f.querySelector(".chart-views legend")?.textContent ?? "", ...[...f.querySelectorAll(".chart-views label")].map((l) => l.textContent)],
+      meant: ((d) => d.views.length > 1 ? [d.viewLabel, ...d.views.map((v) => v.l)] : [""])(JSON.parse(f.querySelector('script[type="application/json"]').textContent)),
     })),
   }));
   const fail = (what) => errors.push(`${lang}: ${what}`);
@@ -39,6 +44,7 @@ async function drive(page, lang, errors) {
     if (f.controls !== 1 || f.canvases !== 1) fail(`${f.id} is drawn ${Math.max(f.controls, f.canvases)} times`);
     if (f.tableOpen) fail(`${f.id} shows its data table beside the drawing`);
     if (!f.caption.startsWith(lang === "nb" ? "Figur " : "Figure ")) fail(`${f.id} has the caption '${f.caption}'`);
+    if (f.said.join("|") !== f.meant.join("|")) fail(`${f.id} has the view buttons '${f.said.join(", ")}', not '${f.meant.join(", ")}'`);
   }
   for (const figure of await page.locator("figure[data-chart].is-live").all()) {
     const id = await figure.getAttribute("id");
@@ -75,23 +81,28 @@ async function change(page, lang) {
 
 for (const url of pages) {
   const errors = [];
-  const open = async (lang) => {
-    const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+  // A new reader each time: `lang` in the address, or none, where the browser's own language decides.
+  const open = async (lang, width = 1280, locale = "en-GB") => {
+    const page = await (await browser.newContext({ viewport: { width, height: 900 }, locale })).newPage();
     page.on("pageerror", (e) => errors.push(String(e)));
-    await page.goto(`${url}?lang=${lang}`, { waitUntil: "networkidle" });
+    await page.goto(lang ? `${url}?lang=${lang}` : url, { waitUntil: "networkidle" });
     return page;
   };
-  let page = await open("en");
-  const charts = await drive(page, "en", errors);
-  await change(page, "nb");
-  await drive(page, "nb", errors);
-  await change(page, "en");
-  await drive(page, "en", errors);
-  await page.close();
-  page = await open("nb");  // a first visit in Norwegian
-  await drive(page, "nb", errors);
-  await page.close();
-  console.log(`${url}: ${charts} charts, ${errors.length ? "FAILED" : "keyboard ok in English, Norwegian, English again and on a Norwegian first visit"}`);
+  let charts = 0;
+  for (const width of [1280, 390]) {
+    const page = await open("en", width);
+    charts = await drive(page, "en", errors);
+    for (const lang of ["nb", "en", "nb"]) {
+      await change(page, lang);
+      await drive(page, lang, errors);
+    }
+    await page.close();
+  }
+  for (const page of [await open("nb"), await open("", 1280, "nb-NO")]) {  // a first visit in Norwegian
+    await drive(page, "nb", errors);
+    await page.close();
+  }
+  console.log(`${url}: ${charts} charts, ${errors.length ? "FAILED" : "keyboard ok in both languages, through three changes of language, at 1280 and 390 px, and on a Norwegian first visit"}`);
   errors.slice(0, 12).forEach((e) => console.log("  " + e));
   failed += errors.length;
 }

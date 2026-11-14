@@ -171,8 +171,9 @@ the page follows the baselines. `site/research.py` lists the keys and the macros
   `[measure.<name>]` in the same two word files.
 - **The keyboard is tested in a browser** by `shared/research/tests/keyboard.mjs` (its first lines say how
   to run it): every row of every view of every chart is reached with the arrow keys, and Escape clears
-  the readout, in English, after a change to Norwegian, after the change back and on a first visit in
-  Norwegian; in each, every figure must be drawn once and in the page's language. Run it after a change
+  the readout, at the width of a computer and of a phone, through three changes of language and on a first
+  visit in Norwegian (asked for in the address, and from the browser's language); in each, every figure must
+  be drawn once and in the page's language, its view buttons included. Run it after a change
   to `shared/charts.js`, `shared/scribe.js` or how the build writes a figure. The build itself refuses one known cause of a
   dead keyboard: a part of a chart stored under the name of one of the chart's methods.
 - **A paper keeps to the conventions of its field**, and the build checks what it can: citations are
