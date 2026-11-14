@@ -61,6 +61,42 @@ class Sound:
         return max(self.peaks[a:b], default=0.0)
 
 
+def beat_seconds(beats: list[float], beat: float) -> float:
+    """The second a beat falls on, counted from the first beat the engine found (0), between those beats or past them."""
+    i = max(0, min(math.floor(beat), len(beats) - 2))
+    return beats[i] + (beat - i) * (beats[i + 1] - beats[i])
+
+
+def bar_times(beats: list[float], per_bar: int, first_downbeat: int, end: float) -> list[float]:
+    """Where each bar starts in the recording, from bar 1, and last where the last bar ends (the end of the recording).
+    `first_downbeat` is the engine's: which of its beats is the first beat of a bar. A take that starts with an upbeat
+    has it below 0, and its bar 1 starts on the upbeat."""
+    if not -per_bar < first_downbeat <= 0:
+        raise SystemExit(f"the take's first beat is not in its bar 1 (first downbeat {first_downbeat}, {per_bar} beats a bar)")
+    starts = [max(0, i) for i in range(first_downbeat, len(beats), per_bar)]
+    return [round(beats[i], 3) for i in starts] + [round(end, 3)]
+
+
+def bar_beat(i: int, per_bar: int, first_downbeat: int) -> tuple[int, int]:
+    """The bar and the beat in it (both from 1) of the engine's beat number i."""
+    k = i - first_downbeat
+    return k // per_bar + 1, k % per_bar + 1
+
+
+def beat_grid(beats: list[float], per_bar: int, first_downbeat: int, x, end: float, bottom: float, faint: bool = False) -> str:
+    """The beats up to `end` as upright lines, the first beat of a bar darker, with the bar's number over where it
+    starts (bar 1 over its first beat, an upbeat too)."""
+    out = []
+    for i, b in enumerate(beats):
+        if b > end + 0.01:
+            break
+        bar, beat = bar_beat(i, per_bar, first_downbeat)
+        out.append(f'<path class="beat{" down" if beat == 1 else ""}{" faint" if faint else ""}" d="M{number(x(b))} 26V{number(bottom)}"/>')
+        if (beat == 1 or i == 0) and b < end - 0.1:
+            out.append(f'<text class="bar-no" x="{number(x(b) + 3)}" y="16">{bar}</text>')
+    return "".join(out)
+
+
 class Take:
     """What the engine answered for a tab, as a product keeps it (site/<product>/take), and its recording's loudness."""
 
@@ -72,21 +108,21 @@ class Take:
         composition = json.loads((folder / "composition.json").read_text())
         self.title = self.about["title"]
         self.beats = composition["beat_times"]
+        self.first = composition.get("first_downbeat", 0)
         self.per_bar = self.tab["meter"]["beats"]
         self.notes = self.tab["notes"]
         self.strings = len(self.tab["instrument"]["tuning"]["strings"])
         self.end = self.about["seconds"]
         self.doubt = doubtful((folder / "tab.musicxml").read_text())
         self.lost = [i for i, n in enumerate(self.notes) if n["out_of_range"]]
-        self.bars = [self.beats[i] for i in range(0, len(self.beats), self.per_bar)]
+        self.times = bar_times(self.beats, self.per_bar, self.first, self.end)
+        self.bars = self.times[:-1]
         self.sound = Sound(product.dir / "figures" / "sound.json")
         self.level = self.sound.level
 
     def tick_time(self, tick: float) -> float:
         """The second a tick of the written music falls on, from the beats the engine found."""
-        beat = tick / self.tab["ticks_per_beat"]
-        i = max(0, min(int(beat), len(self.beats) - 2))
-        return self.beats[i] + (beat - i) * (self.beats[i + 1] - self.beats[i])
+        return beat_seconds(self.beats, tick / self.tab["ticks_per_beat"] + self.first)
 
     def facts(self) -> dict:
         own = next((s for s in self.tab["tuning_suggestions"] if s["preset"] == self.tab["preset"]), {})
@@ -135,7 +171,8 @@ def tab_marks(take: Take, xs: list[float], top: float, gap: float, size: float =
     return "".join(out), bottom
 
 
-def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int, label: str, note: str, classes: str = "", style: str = "") -> str:
+def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int, label: str, note: str, classes: str = "", style: str = "",
+                header: str = "") -> str:
     """The strip every app's page opens with: the recording as sound on the right of a pen and as written music on
     the left. Play gives the recording itself; the other button, the notes that were written."""
     say = page.say
@@ -146,6 +183,7 @@ def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int
     <div class="strip-ink">{ink}</div>
     <div class="strip-sound"><svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-hidden="true" focusable="false"><path class="wave" d="{wave}"/></svg></div>
     <div class="strip-pen" aria-hidden="true"></div>
+    <span class="strip-part" aria-hidden="true">{header}</span>
   </div>
   <div class="strip-controls await-js">
     <button type="button" class="button outline" data-strip-play>{say("fig.play")}</button>
@@ -156,7 +194,7 @@ def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int
     <label class="strip-range"><span class="vh">{say("fig.position")}</span><input type="range" min="0" max="{config["dur"]}" step="0.25" value="0"></label>
     <output aria-live="off">{say("fig.bar_beat").format(bar=1, beat=1)}</output>
   </div>
-  <figcaption>{note}</figcaption>
+  <figcaption><details class="strip-about"><summary>{say("fig.about")}</summary><p>{note}</p></details></figcaption>
 </figure>"""
 
 
@@ -171,27 +209,71 @@ def strip(page) -> str:
                    f'<text class="bar-no" x="{number(t * pps - 12)}" y="{top - 34}">{i + 1}</text>' for i, t in enumerate(take.bars))
     wave = wave_path(take.sound, lambda t: t * pps, 0.0, take.end, (top + bottom) / 2, bottom - top + 40)
     facts = take.facts()
-    config = {"dur": round(take.end, 2), "pps": pps, "beats": take.beats, "perBar": take.per_bar, "audio": "@/assets/data/take.mp3",
+    config = {"dur": round(take.end, 2), "pps": pps, "beats": take.beats, "perBar": take.per_bar, "first": take.first, "audio": "@/assets/data/take.mp3",
               "notes": [[round(n["onset_s"], 3), round(n["offset_s"] - n["onset_s"], 3), n["pitch"]] for n in take.notes if not n["out_of_range"]]}
     ink = f'<svg class="tab-ink" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-hidden="true" focusable="false">{bars}{marks}</svg>'
-    return strip_frame(page, config, ink, wave, width, height, page.say("hero.strip_label", **facts), page.say("hero.strip_note", **facts))
+    return strip_frame(page, config, ink, wave, width, height, page.say("hero.strip_label", **facts), page.say("hero.strip_note", **facts),
+                       header=page.say("fig.tuning_name", tuning=facts["tuning"]))
 
 
-def stage_list(page, frames: list[str], facts: dict) -> str:
-    """The steps as a list, each with its picture: the script shows them one at a time."""
-    say, texts = page.say, page.say("steps.items")
+def stage_list(page, frames: list[str], facts: dict, sounds: dict | None = None) -> str:
+    """The steps as a list, each with its picture: the script shows them one at a time. `sounds` gives a step a Play
+    button, by its number: {"from", "to"} plays that stretch of the recording, {"notes"} the notes that were written
+    ([start, length, pitch], in seconds)."""
+    say, texts, sounds = page.say, page.say("steps.items"), sounds or {}
     items = []
     for n, (frame, text) in enumerate(zip(frames, texts), 1):
+        play = (f'\n      <button type="button" class="button outline stage-play await-js" data-stage-play="{n}" aria-live="off">{say("fig.play")}</button>'
+                if n in sounds else "")
         items.append(f"""  <li class="stage">
     <div class="stage-text">
       <p class="stage-count">{say("fig.stage", n=n, total=len(frames))}</p>
       <h3>{text["title"]}</h3>
-      <p>{text["text"].format(**facts)}</p>
+      <p>{text["text"].format(**facts)}</p>{play}
     </div>
     {frame.replace("{alt}", esc(text["alt"].format(**facts)))}
   </li>""")
-    return (f'<ol class="stages" data-stages data-previous="{say("fig.previous")}" data-next="{say("fig.next")}" data-steps="{say("fig.steps")}">\n'
+    sound = (f' data-audio="@/assets/data/take.mp3" data-sound="{esc(json.dumps({"plays": sounds, "play": say("fig.play"), "pause": say("fig.pause"), "failed": say("fig.no_sound")}, separators=(",", ":"), ensure_ascii=False))}"'
+             if sounds else "")
+    return (f'<ol class="stages" data-stages data-previous="{say("fig.previous")}" data-next="{say("fig.next")}" data-steps="{say("fig.steps")}"{sound}>\n'
             + "\n".join(items) + "\n</ol>")
+
+
+NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "G♯", "A", "B♭", "B"]
+
+
+def pitch_axis(low: int, high: int, top: float, row: float) -> str:
+    """Three note names up the left of a piano roll (its lowest, middle and highest natural notes), each at its row."""
+    naturals = [p for p in range(low + 1, high) if "♯" not in NAMES[p % 12] and "♭" not in NAMES[p % 12]]
+    picked = sorted({naturals[0], naturals[len(naturals) // 2], naturals[-1]}) if naturals else []
+    return "".join(f'<text class="axis" x="2" y="{number(top + (high - p) * row + max(6.0, row - 1.5) / 2 + 3.5)}">{NAMES[p % 12]}{p // 12 - 1}</text>'
+                   for p in picked)
+
+
+def roll_key(page, items: list[tuple[str, str]], y: float) -> str:
+    """The key under a piano roll: a mark of each kind and what it is."""
+    out, x = [], 40
+    for kind, key in items:
+        label = page.say(key)
+        out.append(f'<g class="key-{kind}" transform="translate({x} {number(y)})"><rect class="swatch" width="12" height="8" rx="2" y="-7"/>'
+                   f'<text class="key-text" x="17">{esc(label)}</text></g>')
+        x += 30 + 6.2 * len(label)
+    return "".join(out)
+
+
+def moves(heard: list, written: list, x_of, low: int, high: int, top: float, row: float, end: float, count: int = 3) -> str:
+    """Arrows for the notes that moved furthest, from where they were heard to where they are written."""
+    pairs = [(h, w) for h, w in zip(heard, written) if h[0] < end and w[0] < end and low <= h[2] <= high]
+    pairs = sorted(pairs, key=lambda hw: -abs(x_of(hw[1][0]) - x_of(hw[0][0])))[:count]
+    out = []
+    for h, w in pairs:
+        a, b = x_of(h[0]) + 4.5, x_of(w[0]) + 4.5
+        if abs(b - a) < 6:
+            continue
+        y = top + (high - h[2]) * row - 5
+        tip = 4 if b > a else -4
+        out.append(f'<path class="move" d="M{number(a)} {number(y)}H{number(b - tip)}"/><path class="move-head" d="M{number(b)} {number(y)}l{-tip} -3v6z"/>')
+    return "".join(out)
 
 
 def roll(notes: list, x_of, low: int, high: int, top: float, row: float, kind: str, end: float) -> str:
@@ -200,7 +282,7 @@ def roll(notes: list, x_of, low: int, high: int, top: float, row: float, kind: s
     for start, stop, pitch, *more in notes:
         if start >= end or not low <= pitch <= high:
             continue
-        x, y, tall = x_of(start), top + (high - pitch) * row, max(3.0, row - 1.5)
+        x, y, tall = x_of(start), top + (high - pitch) * row, max(6.0, row - 1.5)
         long = max(0.0, x_of(min(stop, end)) - x - 1.5)
         extra = f" {more[0]}" if more and more[0] else ""
         if kind == "ghost":
@@ -214,19 +296,14 @@ def roll(notes: list, x_of, low: int, high: int, top: float, row: float, kind: s
 def stages(page) -> str:
     """The steps from sound to tab, each with what the engine had at that point for the take's first bar or two."""
     take = Take(page.product)
-    width, height, x0 = 360, 230, 16
+    width, height, x0 = 360, 230, 40         # room on the left for the note names of the piano rolls
     two = take.bars[2]                       # the recording and its beat: two bars
     one = take.bars[1]                       # the notes: one bar, so they can be seen on a phone
     wide = lambda end: (lambda t: x0 + t * (width - 2 * x0) / end)
-    svg = lambda body: f'<svg class="stage-figure tab-ink" viewBox="0 0 {width} {height}" role="img" aria-label="{{alt}}">{body}</svg>'
+    svg = lambda body, h=height: f'<svg class="stage-figure tab-ink" viewBox="0 0 {width} {h}" role="img" aria-label="{{alt}}">{body}</svg>'
 
     def grid(end: float, faint: bool = False) -> str:
-        x = wide(end)
-        lines = "".join(f'<path class="beat{" down" if i % take.per_bar == 0 else ""}{" faint" if faint else ""}" d="M{number(x(b))} 26V{height - 14}"/>'
-                        for i, b in enumerate(take.beats) if b <= end + 0.01)
-        numbers = "".join(f'<text class="bar-no" x="{number(x(b) + 3)}" y="16">{i // take.per_bar + 1}</text>'
-                          for i, b in enumerate(take.beats) if i % take.per_bar == 0 and b < end - 0.1)
-        return lines + numbers
+        return beat_grid(take.beats, take.per_bar, take.first, wide(end), end, height - 14, faint)
 
     wave = wave_path(take.sound, wide(two), 0.0, two, 120, 170, 2.0)
     shown = [n for n in take.notes if n["onset_s"] < one - 0.05 and not n["out_of_range"]]
@@ -239,16 +316,32 @@ def stages(page) -> str:
     as_heard = [[n["onset_s"], n["offset_s"], n["pitch"]] for n in shown]
     written = [[take.tick_time(n["start"]), take.tick_time(n["start"] + n["dur"]), n["pitch"], "doubt" if i in take.doubt else ""]
                for i, n in enumerate(take.notes) if n in shown]
-    placed = roll(as_heard, wide(one), low, high, 28, row, "ghost", one) + roll(written, wide(one), low, high, 28, row, "heard", one)
-    only = [i for i, n in enumerate(take.notes) if n["onset_s"] < two - 0.05]
-    marks, bottom = tab_marks(take, [wide(two)(take.tick_time(take.notes[i]["start"])) for i in only], 62, 22, 14, only)
-    bar_lines = "".join(f'<path class="bar" d="M{number(wide(two)(b) - 9)} 62V{bottom}"/>' for b in take.bars if b <= two + 0.01)
+    placed = (roll(as_heard, wide(one), low, high, 28, row, "ghost", one) + roll(written, wide(one), low, high, 28, row, "heard", one)
+              + moves(as_heard, written, wide(one), low, high, 28, row, one))
+    axis = pitch_axis(low, high, 28, row)
+    # The tab: one bar, so no two numbers on a string stand closer than a sixteenth note's room.
+    only = [i for i, n in enumerate(take.notes) if n["onset_s"] < one - 0.05]
+    marks, bottom = tab_marks(take, [wide(one)(take.tick_time(take.notes[i]["start"])) for i in only], 62, 22, 14, only)
+    bar_lines = "".join(f'<path class="bar" d="M{number(wide(one)(b) - 9)} 62V{bottom}"/>' for b in take.bars if b <= one + 0.01)
+    keyed = height + 22
     frames = [svg(f'<path class="wave" d="{wave}"/>'),
               svg(f'<path class="wave faint" d="{wave}"/>{grid(two)}'),
-              svg(f"{grid(one, True)}{heard}"),
-              svg(f"{grid(one)}{placed}"),
+              svg(f'{grid(one, True)}{axis}{heard}{roll_key(page, [("listener-1", "fig.listener_1"), ("listener-2", "fig.listener_2")], keyed - 4)}', keyed),
+              svg(f'{grid(one)}{axis}{placed}{roll_key(page, [("ghost", "fig.heard_here"), ("heard", "fig.written_here")], keyed - 4)}', keyed),
               svg(f"{bar_lines}{marks}")]
-    return stage_list(page, frames, take.facts())
+    # What can be heard: the recording of the two bars, and the notes of the bar that was written as tab.
+    sounds = {1: {"from": 0, "to": round(two, 3)},
+              5: {"notes": [[round(take.tick_time(take.notes[i]["start"]), 3), round(take.notes[i]["offset_s"] - take.notes[i]["onset_s"], 3), take.notes[i]["pitch"]]
+                            for i in only if not take.notes[i]["out_of_range"]]}}
+    return stage_list(page, frames, take.facts(), sounds)
+
+
+def text_frame(page) -> dict:
+    """What the plain-text tab says around its lines (the title, instrument, tuning, capo, tempo and time above, the
+    key to its marks below), so the script can write the same text for the tuning that is chosen."""
+    lines = (page.product.dir / "take" / "tab.txt").read_text().rstrip().splitlines()
+    end = max(i for i, line in enumerate(lines) if line.endswith("||"))
+    return {"head": lines[:lines.index("")], "foot": lines[end + 1:]}
 
 
 def tabdemo(page) -> str:
@@ -281,21 +374,27 @@ def tabdemo(page) -> str:
                    f'<text class="fret" y="5.5">{mark or place[1]}</text></g>')
         if note[3]:
             out.append(f'<text class="mark" x="{x}" y="{top - 16}">?</text>')
-    tunings = "".join(f'<option value="{p}"{" selected" if demo["default"].startswith(p + "/") else ""}>{esc(demo["variants"][p + "/0"]["tuning"])}</option>'
+    # The tunings as one row of buttons, the one shown pressed; with JavaScript off the tab stays in its first.
+    tunings = "".join(f'<button type="button" data-value="{p}" role="radio" aria-checked="{str(demo["default"].startswith(p + "/")).lower()}">{esc(demo["variants"][p + "/0"]["tuning"])}</button>'
                       for p in demo["presets"])
+    # Where each bar starts in the recording, and where the last one ends: "Play this bar" plays that stretch.
+    take = Take(page.product)
+    times = [round(take.tick_time(b * per_bar), 3) for b in range(bars)] + [round(take.end, 3)]
     label = say("fig.tab_label", title=say("take.title"), bars=bars, tuning=variant["tuning"])
     start = (words["summary_lost"] if lost > 1 else words["summary_lost_one"] if lost else words["summary"]).format(tuning=variant["tuning"], lost=lost)
     text_tab = esc((page.product.dir / "take" / "tab.txt").read_text().rstrip())
-    config = {"top": top, "gap": gap, "bottom": bottom, "bars": bars, "title": say("take.title"), "label": say("fig.tab_label"), "words": words}
+    config = {"top": top, "gap": gap, "bottom": bottom, "bars": bars, "title": say("take.title"), "label": say("fig.tab_label"), "words": words,
+              "times": times, "asText": say("fig.as_text"), "play": say("fig.play_bar"), "pause": say("fig.pause"), "failed": say("fig.no_sound"), "text": text_frame(page)}
     # The legend names only the marks this tab can show.
     every = [p for v in demo["variants"].values() for p in v["places"]]
     marks = [("?", "legend_doubt", any(n[3] for n in demo["notes"])), ("!", "legend_lost", any(p[2] for p in every)),
              ("–", "legend_left", any(p[0] is None and not p[2] for p in every))]
     legend = "".join(f"<li><b>{mark}</b> {words[key]}</li>" for mark, key, there in marks if there)
     as_text = say("fig.as_text", tuning=variant["tuning"])
-    return f"""<div class="tabdemo" data-src="@/assets/data/tab-demo.json" data-tabdemo="{esc(json.dumps(config, separators=(",", ":"), ensure_ascii=False))}">
+    return f"""<div class="tabdemo" data-src="@/assets/data/tab-demo.json" data-audio="@/assets/data/take.mp3" data-tabdemo="{esc(json.dumps(config, separators=(",", ":"), ensure_ascii=False))}">
   <div class="tabdemo-controls await-js">
-    <label>{say("fig.tuning")} <select data-tuning>{tunings}</select></label>
+    <span class="seg-label" id="tuning-label-{page.lang}">{say("fig.tuning")}</span>
+    <div class="seg" role="radiogroup" aria-labelledby="tuning-label-{page.lang}" data-tuning>{tunings}</div>
   </div>
   <div class="tabdemo-scroll" role="region" aria-label="{esc(say("fig.tab_scroll"))}" tabindex="0">
     <svg class="tab-ink" width="{width}" height="{bottom + 48}" viewBox="0 0 {width} {bottom + 48}" role="img" aria-label="{esc(label)}">{"".join(out)}</svg>
@@ -303,10 +402,11 @@ def tabdemo(page) -> str:
   <ul class="tabdemo-legend">{legend}</ul>
   <div class="tabdemo-chosen">
     <p class="tabdemo-status" data-status role="status">{start}</p>
+    <button type="button" class="button outline bar-play await-js" data-bar-play disabled>{say("fig.play_bar")}</button>
     <div class="neck" data-neck hidden></div>
   </div>
   <p class="tabdemo-hint await-js">{say("fig.pick")}</p>
-  <details><summary>{as_text}</summary><pre tabindex="0" role="region" aria-label="{esc(as_text)}">{text_tab}</pre></details>
+  <details><summary data-as-text>{as_text}</summary><pre tabindex="0" role="region" aria-label="{esc(as_text)}" data-plain>{text_tab}</pre></details>
 </div>"""
 
 

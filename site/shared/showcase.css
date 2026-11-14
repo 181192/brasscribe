@@ -24,6 +24,13 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .tab-ink .heard.doubt { fill: var(--scribe-uncertain); stroke: var(--scribe-uncertain); }
 .tab-ink .heard rect { stroke: none; }
 .tab-ink .heard .rang { fill: none; stroke-width: 1.2; opacity: 0.55; }
+/* A piano roll's axis, its key and the arrows of the notes that moved. */
+.tab-ink .axis, .tab-ink .key-text { font: 11px var(--scribe-font-text); fill: var(--scribe-text-muted); }
+.tab-ink .key-listener-1 .swatch, .tab-ink .key-heard .swatch { fill: var(--scribe-brand); }
+.tab-ink .key-listener-2 .swatch { fill: none; stroke: var(--scribe-ink); stroke-width: 1.5; }
+.tab-ink .key-ghost .swatch { fill: none; stroke: var(--scribe-border-strong); stroke-dasharray: 2 2; }
+.tab-ink .move { stroke: var(--scribe-ink); stroke-width: 1.2; fill: none; }
+.tab-ink .move-head { fill: var(--scribe-ink); }
 /* Where a note was heard, once it has been moved onto the beat. */
 .tab-ink .ghost { fill: none; stroke: var(--scribe-border-strong); stroke-width: 1; stroke-dasharray: 2 2; }
 
@@ -70,6 +77,18 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .strip-range input { width: 100%; min-height: 44px; accent-color: var(--scribe-brand); }
 .strip-controls output { font-variant-numeric: tabular-nums; color: var(--scribe-text-muted); min-width: 8.5em; }
 .strip figcaption { margin-top: var(--scribe-space-3); font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); max-width: 52em; }
+/* Where the recording comes from, folded: one line until it is asked for. */
+.strip-about { border: 0; background: none; margin: 0; }
+.strip-about > summary { min-height: 44px; padding: 0; font-weight: 600; color: var(--scribe-text); }
+.strip-about[open] > summary { border-bottom: 0; }
+.strip-about > p { margin: 0 0 var(--scribe-space-2) 0 !important; }
+/* The part (or the tuning) is named at the start of the line, as on a real part, wherever the music has run. */
+.strip-part {
+  position: absolute; left: 0; bottom: 8px; z-index: 1; padding: 2px 10px 2px var(--scribe-space-4);
+  font: 600 0.8125rem/1.3 var(--scribe-font-text); font-variant-caps: all-small-caps; letter-spacing: 0.04em;
+  color: var(--scribe-text); background: linear-gradient(90deg, var(--scribe-surface-raised) 80%, transparent);
+}
+.strip-stage { cursor: pointer; }
 @media (min-width: 901px) { .strip-stage { --pen: 38%; } }
 /* Under a headline the strip runs the full width of the page, and closes the hero. */
 .hero:has(.strip) { padding-bottom: 0; }
@@ -112,10 +131,26 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .tabdemo { margin-top: var(--scribe-space-6); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); padding: var(--scribe-space-4); }
 .tabdemo-controls { display: flex; flex-wrap: wrap; gap: var(--scribe-space-3) var(--scribe-space-6); margin-bottom: var(--scribe-space-3); }
 .tabdemo-controls label { display: inline-flex; align-items: center; gap: var(--scribe-space-2); font-weight: 600; }
-.tabdemo-controls select {
-  min-height: 44px; padding: 0 var(--scribe-space-3); font: inherit; color: var(--scribe-text);
-  background: var(--scribe-bg); border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm);
+.tabdemo-controls { align-items: center; }
+.seg-label { font-weight: 600; }
+/* Segmented buttons: one row of choices, the chosen one filled in ink; on a phone the row scrolls sideways. */
+.seg { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm); overflow: hidden; }
+.seg button {
+  min-height: 44px; padding: 0 var(--scribe-space-4); font: inherit; font-weight: 600; cursor: pointer;
+  color: var(--scribe-text); background: var(--scribe-bg); border: 0; border-right: 1px solid var(--scribe-border-strong);
 }
+.seg button:last-child { border-right: 0; }
+.seg button:hover { background: var(--scribe-surface); }
+.seg button[aria-checked="true"] { background: var(--scribe-primary); color: var(--scribe-on-primary); }
+.seg button:focus-visible { outline: 2px solid var(--scribe-focus); outline-offset: -4px; }
+@media (max-width: 600px) {
+  .tabdemo-controls .seg { flex: 1 1 100%; min-width: 0; }
+  .seg { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+  .seg button { flex: none; white-space: nowrap; padding: 0 var(--scribe-space-3); }
+}
+@media (forced-colors: active) { .seg button[aria-checked="true"] { background: Highlight; color: HighlightText; } }
+.bar-play { flex: none; min-height: 44px; }
+.bar-play:disabled { opacity: 0.45; cursor: default; }
 .tabdemo-scroll { overflow-x: auto; padding: var(--scribe-space-2) 0; }
 .tabdemo-scroll svg { max-width: none; display: block; }
 .tabdemo .note { cursor: pointer; }
