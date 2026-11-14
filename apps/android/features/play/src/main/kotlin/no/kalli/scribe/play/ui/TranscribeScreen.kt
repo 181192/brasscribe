@@ -171,19 +171,10 @@ fun TranscribeScreen(vm: PlayViewModel) {
     PlayScaffold(
         // The step title is the live region here; the status line would only repeat it.
         title = source?.name?.substringBeforeLast('.'), onBack = ::leave, backLabel = stringResource(R.string.home), status = null,
-        bottom = {
-            val leave = when {
-                s.draft -> R.string.transcribe_leave_draft
-                onPhone -> R.string.transcribe_leave
-                notifies -> R.string.transcribe_leave_computer
-                else -> R.string.transcribe_leave_computer_quiet
-            }
-            InfoNote(stringResource(leave, s.where),
-                icon = if (onPhone) DesignR.drawable.ic_bc_info else DesignR.drawable.ic_bc_computer)
-            OutlineButton(stringResource(R.string.cancel), { confirmCancel = true }, enabled = s.running)
-        },
+        bottom = { OutlineButton(stringResource(R.string.cancel), { confirmCancel = true }, enabled = s.running) },
     ) {
-        BrandMark(48.dp)
+        // (The mark is for a screen with room: on a short one the step and the percentage come first.)
+        if (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp >= 700) BrandMark(48.dp)
         Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
             SectionLabel(stringResource(R.string.step_of, current + 1, steps.size))
             ScreenTitle(stepText, Modifier.semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite })
@@ -200,9 +191,19 @@ fun TranscribeScreen(vm: PlayViewModel) {
             },
         )
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text(percentText, style = no.kalli.scribe.design.ScribeNumericStyle, color = c.textMuted)
+            Text(percentText, style = no.kalli.scribe.design.ScribeNumericStyle, color = c.textMuted, modifier = Modifier.semantics { testTag = "transcribe-percent" })
             if (eta != null) Text(eta, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
+        // Where the work is done and that the player may leave: right under the progress, before the steps, so it is
+        // in view on a small phone too (for a tab made on the phone it says to keep the app open).
+        val leave = when {
+            s.draft -> R.string.transcribe_leave_draft
+            onPhone -> R.string.transcribe_leave
+            notifies -> R.string.transcribe_leave_computer
+            else -> R.string.transcribe_leave_computer_quiet
+        }
+        InfoNote(stringResource(leave, s.where), Modifier.semantics { testTag = "transcribe-leave" },
+            icon = if (onPhone) DesignR.drawable.ic_bc_info else DesignR.drawable.ic_bc_computer)
         Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
             steps.forEachIndexed { i, step ->
                 StepRow(stringResource(step.text), done = i < current, now = i == current)

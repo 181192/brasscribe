@@ -51,6 +51,12 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -346,13 +352,17 @@ fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null,
             }
         },
         actions = actions,
+        // On its side the bar is as low as its 48 dp buttons.
+        expandedHeight = if (shortScreen()) 48.dp else TopAppBarDefaults.TopAppBarExpandedHeight,
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = c.bg, scrolledContainerColor = c.bg),
     )
 }
 
 /**
  * Every flow screen: a top bar with the back button, a scrolling column at the 16 dp margin, and a
- * bottom slot for the one primary action, pinned above the navigation bar (system.md §2).
+ * bottom slot for the one primary action, docked above the navigation bar (system.md §2). On a short
+ * screen, actions that would take more than [BAND_SHARE] of the height are not docked: they come after
+ * the content and scroll with it.
  *
  * The docked band is laid out after the content, in the body, not as the scaffold's bottom bar: the
  * keyboard's Tab follows the layout, and the screen's content comes before the button that acts on it
@@ -373,35 +383,95 @@ fun PlayScaffold(
         containerColor = ScribeTheme.colors.bg,
         topBar = { PlayTopBar(title, onBack, backLabel, actions = actions) },
     ) { padding ->
-        // Clear of the top bar and the system bars at the sides; the band pads for the navigation bar below.
+        // Clear of the top bar and the system bars at the sides; the navigation bar's height is kept free below the band.
         val direction = LocalLayoutDirection.current
         val around = PaddingValues(top = padding.calculateTopPadding(),
             start = padding.calculateStartPadding(direction), end = padding.calculateEndPadding(direction))
+        // Two parts scroll, one inside the other, and only one of them at a time: the content by itself over docked
+        // actions, or the content and the actions as one where they are not docked. So the actions are composed in
+        // one place whichever it is, and which it is can be decided while they are measured.
+        val outer = rememberScrollState()
+        val inner = rememberScrollState()
         Column(Modifier.fillMaxSize().padding(around).consumeWindowInsets(around)) {
-            val base = Modifier.weight(1f).fillMaxWidth().padding(horizontal = ScreenMargin)
-            Column(
-                modifier = if (scroll) base.verticalScroll(rememberScrollState()) else base,
-                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
-            ) {
-                content()
-                Spacer(Modifier.size(ScribeSpace.s4))
-            }
-            // Docked actions sit on an opaque band with a hairline above it, so the content ends
-            // visibly at the band instead of looking cut off behind the button.
-            Column(Modifier.fillMaxWidth().background(ScribeTheme.colors.bg)) {
-                if (bottom != null) HorizontalDivider(thickness = 1.dp, color = ScribeTheme.colors.border)
-                Column(
-                    Modifier.fillMaxWidth().navigationBarsPadding()
-                        .padding(horizontal = ScreenMargin, vertical = if (bottom != null) ScribeSpace.s3 else ScribeSpace.s0),
-                    verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
-                ) {
-                    StatusLine(status)
-                    bottom?.invoke(this)
+            Layout(
+                modifier = Modifier.weight(1f).fillMaxWidth().then(if (scroll) Modifier.verticalScroll(outer) else Modifier),
+                content = {
+                    Column(
+                        Modifier.layoutId(Part.CONTENT).fillMaxWidth().then(if (scroll) Modifier.verticalScroll(inner) else Modifier).padding(horizontal = ScreenMargin),
+                        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
+                    ) {
+                        content()
+                        Spacer(Modifier.size(ScribeSpace.s4))
+                    }
+                    // Docked actions sit on an opaque band with a hairline above it, so the content ends
+                    // visibly at the band instead of looking cut off behind the button.
+                    if (bottom != null) {
+                        HorizontalDivider(Modifier.layoutId(Part.HAIRLINE), thickness = 1.dp, color = ScribeTheme.colors.border)
+                        Column(
+                            Modifier.layoutId(Part.ACTIONS).fillMaxWidth().background(ScribeTheme.colors.bg).padding(horizontal = ScreenMargin, vertical = ScribeSpace.s3),
+                            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3), content = bottom,
+                        )
+                    }
+                    Box(Modifier.layoutId(Part.STATUS).fillMaxWidth().padding(horizontal = ScreenMargin)) {
+                        StatusLine(status, Modifier.padding(top = if (bottom != null) ScribeSpace.s3 else ScribeSpace.s0))
+                    }
+                },
+            ) { parts, constraints ->
+                // The height the content and the actions share: under the top bar and above the navigation bar. (Where
+                // the screen scrolls, the scrolling around this layout hands it on as the least height.)
+                val view = constraints.minHeight
+                val across = Constraints.fixedWidth(constraints.maxWidth)
+                fun part(which: Part) = parts.firstOrNull { it.layoutId == which }?.measure(across)
+                val hairline = part(Part.HAIRLINE)
+                val actions = part(Part.ACTIONS)
+                val status = part(Part.STATUS)
+                val band = (hairline?.height ?: 0) + (actions?.height ?: 0)
+                val message = status?.height ?: 0
+                // The actions are measured first and the choice is made here, in the one pass: nothing moves after the
+                // first frame. A message is not part of the measure, so one that comes and goes undocks nothing.
+                val docked = !scroll || band <= view * BAND_SHARE
+                val page = parts.first { it.layoutId == Part.CONTENT }.measure(
+                    // Docked actions leave the content the rest of the height, and it scrolls there by itself; actions
+                    // that are not docked come after the whole of it, and the two scroll as one.
+                    // (Its own scrolling takes no endless height, so it is offered more than any page is long.)
+                    if (docked) Constraints.fixed(constraints.maxWidth, (view - band - message).coerceAtLeast(0))
+                    else Constraints.fitPrioritizingWidth(constraints.maxWidth, constraints.maxWidth, 0, PAGE_AT_MOST),
+                )
+                val gap = ScribeSpace.s3.roundToPx()
+                layout(constraints.maxWidth, if (docked) view else maxOf(view, page.height + band)) {
+                    page.place(0, 0)
+                    if (docked) {
+                        hairline?.place(0, view - band - message)
+                        status?.place(0, view - band - message + (hairline?.height ?: 0))
+                        actions?.place(0, view - actions.height)
+                    } else {
+                        hairline?.place(0, page.height)
+                        actions?.place(0, page.height + (hairline?.height ?: 0))
+                        // A message is docked all the same: it stays at the foot of what is in view while the rest scrolls.
+                        status?.place(0, outer.value + view - message - gap)
+                    }
                 }
             }
+            // Docked or not, nothing is drawn under the navigation bar.
+            Spacer(Modifier.fillMaxWidth().windowInsetsBottomHeight(WindowInsets.navigationBars))
         }
     }
 }
+
+/** More pixels than a flow screen's content is high. */
+private const val PAGE_AT_MOST = 200_000
+
+private enum class Part { CONTENT, HAIRLINE, ACTIONS, STATUS }
+
+/**
+ * The most of the height under the top bar and above the navigation bar that docked actions may take: a third. Taller
+ * ones scroll with the content. (One button stays docked on a phone on its side; a button with a line over it does not.)
+ */
+private const val BAND_SHARE = 1 / 3f
+
+/** A phone on its side: so little height that every bar gives some of its own to the content. */
+@Composable
+fun shortScreen(): Boolean = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp < 480
 
 /** The uncertainty mark as text glyphs: "?" and a boxed "?" (visual-design-tokens.md §2), in the note colour. */
 @Composable

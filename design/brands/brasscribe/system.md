@@ -49,6 +49,7 @@ Everything else is the platform's own controls, so each app feels native and fam
 | Tablet | 600–1023 | Sidebar (library, or the review list) plus content; the player floats as a card | 24 | In the content, bottom right |
 | Desktop | ≥ 1024 | Sidebar 280 plus content. Reading content is at most 720 wide; the score is full width. The player is docked at the bottom. | 24–40 | Bottom right of the content, after Cancel |
 
+- **Short screens** (a phone on its side, a small phone with large text): the docked actions take at most a third of the height between the top bar and the navigation bar. Taller ones stop being docked: they come after the content and scroll with it. One button stays docked on a phone on its side. Which of the two a screen gets is decided before it is first shown, and a status message never changes it: the message is docked either way. On a phone on its side the top bar is 48 pt high. Progress, a score or a note being checked is never left a slit between two bars.
 - **Reading column:** at most 720 px (`size.content-max`).
 - **Score view:** always full width. It reflows to one part and one staff, scrolling sideways, above 200% zoom.
 - **Text size:** at 200% text size, the player bar collapses to Play plus a "Transport" menu button, and the chips wrap or move into the menu.

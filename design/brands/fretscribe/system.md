@@ -27,6 +27,10 @@ As Brasscribe (phone < 600, tablet 600–1023, desktop ≥ 1024), with one chang
 is landscape-first on phone.** In portrait it shows one system of two bars with the fixed cursor;
 landscape shows two to three systems. Neither ever shows tab smaller than `tab.line-space-min-phone-mm`.
 
+Short screens are as Brasscribe's (its §2): docked actions that would take more than a third of the height
+come after the content and scroll with it. On a phone on its side that is the button of What is this? and of
+Check the song with the line over it; a lone button stays docked.
+
 ## 3. Tab view
 
 - **Staves:** tab with rhythm under it by default. Layers from the View menu: notation above (linked,

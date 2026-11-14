@@ -15,8 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.setContent
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.SideEffect
 import androidx.activity.viewModels
@@ -32,7 +30,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        edgeToEdge()
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             // Settings › Display › Appearance: read before the first frame, so there is no flash.
@@ -55,10 +53,30 @@ class MainActivity : ComponentActivity() {
         val theme = Triple(dark, pink, highContrast)
         if (windowTheme == theme) return
         windowTheme = theme
-        val scrim = android.graphics.Color.TRANSPARENT
-        val bars = if (dark) SystemBarStyle.dark(scrim) else SystemBarStyle.light(scrim, scrim)
-        enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+        androidx.core.view.WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
         window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(getColor(vm.container.product.windowColors.pick(dark, pink, highContrast))))
+    }
+
+    /**
+     * The app draws behind the status and navigation bars, and the bars have no ground of their own: the page is seen
+     * through them. Set on the window itself, once: androidx's enableEdgeToEdge keeps the style of its first call and
+     * puts it back at every turn of the phone, the system's own scrim behind the navigation bar with it.
+     */
+    private fun edgeToEdge() {
+        // (The window reads its theme when its decor is made, and would take the theme's word after ours: made first.)
+        window.decorView
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS }
+        @Suppress("DEPRECATION")
+        run {
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        }
+        window.isStatusBarContrastEnforced = false
+        window.isNavigationBarContrastEnforced = false
     }
 
     private var networkCallback: ConnectivityManager.NetworkCallback? = null

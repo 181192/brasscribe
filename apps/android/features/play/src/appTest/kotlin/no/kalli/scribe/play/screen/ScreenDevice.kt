@@ -109,6 +109,12 @@ object ScreenDevice {
         qualifiers(rule, "+" + language + region?.let { "-r$it" }.orEmpty(), restart = true)
     }
 
+    /** A phone whose screen is [width] × [height] dp, upright or on its side by which is larger. False where the device keeps its own size. */
+    fun size(rule: AppRule, width: Int, height: Int): Boolean {
+        qualifiers(rule, "+w${width}dp-h${height}dp-" + (if (width > height) "land" else "port"), restart = true)
+        return true
+    }
+
     /** The phone's text size: 2f is 200 %. */
     fun textSize(rule: AppRule, scale: Float) {
         if (RuntimeEnvironment.getFontScale() == scale) return
