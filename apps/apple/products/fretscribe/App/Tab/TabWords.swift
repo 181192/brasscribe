@@ -174,6 +174,21 @@ enum TabWords {
         }
     }
 
+    /// What is heard, as Sound names it.
+    static func sound(_ sound: PracticeSound) -> String {
+        switch sound {
+        case .recording: return String(localized: "The recording")
+        case .tab: return String(localized: "The tab's notes")
+        case .both: return String(localized: "Both")
+        }
+    }
+
+    /// The name of the Sound button: what is heard, and the count-in and the metronome when they are on.
+    static func soundButton(_ hears: PracticeSound, countIn: Bool, metronome: Bool) -> String {
+        ([String(localized: "Sound: \(sound(hears))")] + (countIn ? [String(localized: "Count-in")] : [])
+            + (metronome ? [String(localized: "Metronome")] : [])).joined(separator: ", ")
+    }
+
     /// The recording can be asked for again: it is not here, or the last try did not get through.
     static func offersFetch(_ state: RecordingState) -> Bool { state == .notHere || state == .noAnswer || state == .noRoom }
 

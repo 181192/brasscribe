@@ -119,7 +119,7 @@
       "licence": "Apache-2.0",
       "texts": ["Apache-2.0"],
       "notice": ["Copyright (c) 2004-2006 Sonic Network Inc."],
-      "apps": ["brasscribe-android", "fretscribe-android", "bandroom-mac", "bandroom-windows"]
+      "apps": ["brasscribe-android", "fretscribe-android", "fretscribe-apple", "bandroom-mac", "bandroom-windows"]
     },
     {
       "id": "alphaskia",

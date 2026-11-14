@@ -189,6 +189,23 @@ public struct PracticeRecordings: Sendable {
     }
 }
 
+/// What is heard in practice. The raw value is what is kept on the device.
+public enum PracticeSound: String, CaseIterable, Sendable {
+    /// The recording the tab was written from.
+    case recording
+    /// The tab's own notes, played on the instrument's sound.
+    case tab
+    /// The recording with the tab's notes over it.
+    case both
+}
+
+/// What the tab's own sound is made from: the page's notes, and the General MIDI program of the instrument.
+public struct TabSoundSource: Sendable {
+    public var index: TabIndex
+    public var program: UInt8
+    public init(index: TabIndex, program: UInt8) { self.index = index; self.program = program }
+}
+
 /// Where a song was left in practice: the second of the recording, the speed in per cent, and the bars repeated.
 public struct PracticePlace: Equatable, Sendable {
     public var at: Double
@@ -254,6 +271,9 @@ public struct PracticePlaces: Sendable {
 public final class PracticeModel: RecordingPlayerListener {
     /// Makes the player of a recording's file, telling `listener` what it does.
     public typealias MakePlayer = @MainActor (_ file: URL, _ listener: any RecordingPlayerListener) -> any RecordingPlayer
+    /// Makes the tab's own sound for a score on a program, telling `listener` what it does; nil when it cannot be made.
+    /// Makes the tab's own sound; it may take a moment (an instrument is read), and nil when it cannot be made.
+    public typealias MakeTabPlayer = @MainActor (_ score: TabSoundScore, _ program: UInt8, _ listener: any RecordingPlayerListener) async -> (any TabSoundPlaying)?
     /// Copies `job`'s recording from the computer into the file `into`.
     public typealias Fetch = @Sendable (_ job: String, _ into: URL) async throws -> Void
 
@@ -268,7 +288,21 @@ public final class PracticeModel: RecordingPlayerListener {
     /// The files are read and written one at a time, in order: an older place never lands after a newer one,
     /// and a prune never runs beside a write.
     @ObservationIgnored private let disk = DispatchQueue(label: "no.kalli.scribe.tab.practice")
+    @ObservationIgnored private let makeTabPlayer: MakeTabPlayer
+    /// Readies the device's sound for playing (an iPhone's audio session): before anything plays.
+    @ObservationIgnored private let readyToPlay: @MainActor () -> Void
+    /// The tab's sound being made.
+    @ObservationIgnored private var voicing: Task<Void, Never>?
+    /// Where the sound, the count-in and the metronome are kept: the same for every song.
+    @ObservationIgnored private let choices: UserDefaults
     @ObservationIgnored private var player: (any RecordingPlayer)?
+    /// The tab's own sound, when the tab can be followed.
+    @ObservationIgnored private var tabPlayer: (any TabSoundPlaying)?
+    /// What `tabPlayer` plays: another page, other beats or another instrument make a new one.
+    @ObservationIgnored private var tabOf: TabSoundScore?
+    @ObservationIgnored private var tabProgram: UInt8?
+    @ObservationIgnored private lazy var tabListener = TabListener(self)
+    @ObservationIgnored private var following: Task<Void, Never>?
     @ObservationIgnored private var clock: TabClock?
     @ObservationIgnored private var song: String?
     @ObservationIgnored private var job: String?
@@ -294,17 +328,69 @@ public final class PracticeModel: RecordingPlayerListener {
     public private(set) var at: Double = 0
     /// Counts the times the player moved the song: a bar back or on, to the start, into a repeat. The page then shows where it went.
     public private(set) var jumps = 0
+    /// What the player chose to hear. Without the recording on the device the tab's own sound is heard, whatever was chosen (`hears`).
+    public private(set) var sound: PracticeSound
+    /// A bar is counted in before the song plays.
+    public private(set) var countIn: Bool
+    /// The beats tick while the song plays.
+    public private(set) var metronome: Bool
+    /// The tab's own sound can be played: the tab follows the recording's beats, and its sound was made.
+    public private(set) var tabSound = false
+    /// The tab follows the recording's beats, and its sound could not be made on this device.
+    public private(set) var tabSoundFailed = false
+    /// The tab's sound is being made (its instrument read): it can be played in a moment.
+    public private(set) var tabSoundLoading = false
+    /// A bar is being counted in: the song has not started to move.
+    public private(set) var counting = false
 
-    /// `recordings` and `places` are the folders the recordings and the places are kept in.
-    public init(recordings: URL, places: URL, makePlayer: @escaping MakePlayer = { AVRecordingPlayer(file: $0, listener: $1) }) {
+    static let soundKey = "practice.sound"
+    static let countInKey = "practice.countIn"
+    static let metronomeKey = "practice.metronome"
+    /// How far apart the tab's sound and the recording may be heard, in seconds, before the tab's sound is moved: more
+    /// than what the two outputs can be apart by themselves (a device's own delay, a wireless speaker's), so only a
+    /// move of the recording is followed by a move.
+    private static let apart = 0.35
+    /// Heard apart by less, the tab's sound runs faster or slower by this much of its speed for each second apart, and
+    /// by no more than `most`.
+    private static let pull = 1.0
+    private static let most = 0.05
+
+    /// `recordings` and `places` are the folders the recordings and the places are kept in; `choices` keeps what is heard.
+    public init(recordings: URL, places: URL, choices: UserDefaults = .standard,
+                makePlayer: @escaping MakePlayer = { AVRecordingPlayer(file: $0, listener: $1) },
+                makeTabPlayer: @escaping MakeTabPlayer = EngineTabSoundPlayer.make,
+                readyToPlay: @escaping @MainActor () -> Void = {}) {
         store = PracticeRecordings(dir: recordings)
         self.places = PracticePlaces(dir: places)
         self.makePlayer = makePlayer
+        self.makeTabPlayer = makeTabPlayer
+        self.readyToPlay = readyToPlay
+        self.choices = choices
+        sound = choices.string(forKey: Self.soundKey).flatMap(PracticeSound.init) ?? .recording
+        countIn = choices.bool(forKey: Self.countInKey)
+        metronome = choices.bool(forKey: Self.metronomeKey)
     }
+
+    /// There is something to play: the recording, or the tab's own sound.
+    public var canPlay: Bool { recording == .here || tabSound }
+
+    /// What is heard: the choice, as far as there is a recording and a tab sound to play it with.
+    public var hears: PracticeSound {
+        if !tabSound { return .recording }
+        if recording != .here { return .tab }
+        return sound
+    }
+
+    /// The player the song's place is read from: the recording when it is heard, else the tab's sound.
+    private var lead: (any RecordingPlayer)? { hears == .tab ? tabPlayer : player }
+    private var tabLeads: Bool { hears == .tab && tabPlayer != nil }
+
+    /// The tab's sound plays along with the recording: its notes are heard, or its beats.
+    private var along: Bool { tabPlayer != nil && !tabLeads && player != nil && (hears == .both || metronome) }
 
     /// The second of the recording the song is at.
     public func now() -> Double {
-        if playing, let player { return player.position }
+        if playing, !counting, let lead { return lead.position }
         return at
     }
 
@@ -316,7 +402,7 @@ public final class PracticeModel: RecordingPlayerListener {
     /// The song on screen: `song` names it, `job` is its job on the computer (the recording is kept and fetched
     /// by it), `clock` follows the recording in its tab, and `inHand` is the recording's file when the app was
     /// given it. `songs`: the jobs of Your songs, when the list is known; the recordings of the others go.
-    public func open(song: String, job: String?, clock: TabClock?, inHand: URL?, songs: Set<String>? = nil) {
+    public func open(song: String, job: String?, clock: TabClock?, inHand: URL?, songs: Set<String>? = nil, tab: TabSoundSource? = nil) {
         self.clock = clock
         if song != self.song {
             remember()
@@ -329,6 +415,7 @@ public final class PracticeModel: RecordingPlayerListener {
         }
         self.job = job
         repeating = repeating.flatMap { fits($0) ? $0 : nil }
+        voice(tab, clock)
         if player != nil || fetching != nil { stretch(); return }
         let file = inHand.flatMap { PracticeRecordings.size($0) > 0 ? $0 : nil }
         looking += 1
@@ -371,17 +458,170 @@ public final class PracticeModel: RecordingPlayerListener {
     }
 
     private func load(_ file: URL) {
+        // The tab's own sound was playing in the recording's place: the song goes on in the sound chosen.
+        let was = playing
+        if was { halt() }
         let p = makePlayer(file, self)
         p.speed = Float(speed) / 100
         if at > 0 { p.seek(to: at) }
         player = p
         stretch()
         recording = .here
+        if was { start(counted: false) }
     }
 
-    /// Gives the player the seconds of the bars to repeat.
+    /// Makes the tab's own sound for the page and beats on screen; the one of another page or other beats goes.
+    private func voice(_ tab: TabSoundSource?, _ clock: TabClock?) {
+        let score = tab.flatMap { t in clock.map { TabSoundScore.of(t.index, clock: $0) } }
+        if score == tabOf && tab?.program == tabProgram && (tabPlayer != nil || voicing != nil || score == nil) { return }
+        if playing { halt() }
+        voicing?.cancel()
+        voicing = nil
+        tabPlayer?.release()
+        tabPlayer = nil
+        tabOf = score
+        tabProgram = tab?.program
+        tabSound = false
+        tabSoundFailed = false
+        tabSoundLoading = false
+        guard let score, let tab, !score.notes.isEmpty else { return }
+        tabSoundLoading = true
+        let program = tab.program
+        voicing = Task {
+            let made = await makeTabPlayer(score, program, tabListener)
+            // Another page, other beats or another song came meanwhile: this one is not needed.
+            guard !Task.isCancelled, score == tabOf, program == tabProgram else { made?.release(); return }
+            voicing = nil
+            tabSoundLoading = false
+            guard let p = made else { tabSoundFailed = true; return }
+            p.speed = Float(speed) / 100
+            p.seek(to: now())
+            tabPlayer = p
+            tabSound = true
+            stretch()
+            // The recording was played while the sound was made: the tab's sound joins it when it is to be heard beside it.
+            if playing && !counting && along { join() }
+        }
+    }
+
+    /// Gives the players the seconds of the bars to repeat.
     private func stretch() {
-        player?.repeatSpan = repeating.flatMap { r in clock?.span(r) }
+        let span = repeating.flatMap { r in clock?.span(r) }
+        player?.repeatSpan = span
+        tabPlayer?.repeatSpan = span
+    }
+
+    /// Hears the recording, the tab's own sound, or both. While the song plays it goes on in the new sound.
+    public func hear(_ sound: PracticeSound) {
+        if sound == self.sound { return }
+        let was = playing
+        if was { halt() }
+        self.sound = sound
+        choices.set(sound.rawValue, forKey: Self.soundKey)
+        // The player that was not heard till now is where it was left: both go to where the song is.
+        player?.seek(to: at)
+        tabPlayer?.seek(to: at)
+        if was { start(counted: false) }
+    }
+
+    /// A bar is counted in before the song plays, or not.
+    public func countIn(_ on: Bool) {
+        countIn = on
+        choices.set(on, forKey: Self.countInKey)
+    }
+
+    /// The beats tick while the song plays, or not.
+    public func metronome(_ on: Bool) {
+        metronome = on
+        choices.set(on, forKey: Self.metronomeKey)
+        guard let tab = tabPlayer else { return }
+        tab.metronome = on
+        // Beside the recording the tab's sound runs only while something of it is heard.
+        if playing && !counting && !tabLeads {
+            if along && !tab.asked { join() } else if !along && tab.asked { tab.pause() }
+        }
+    }
+
+    /// Stops what sounds, with the song where it is.
+    private func halt() {
+        let now = now()
+        following?.cancel()
+        following = nil
+        counting = false
+        tabPlayer?.pause()
+        player?.pause()
+        at = now
+        playing = false
+    }
+
+    /// Plays from where the song is: after a bar counted in when that is chosen (`counted`), in the sound chosen.
+    private func start(counted: Bool? = nil) {
+        guard let lead else { return }
+        readyToPlay()
+        let tab = tabPlayer
+        tab?.notes = hears != .recording
+        tab?.metronome = metronome
+        tab?.trim = 1
+        if counted ?? countIn, let tab, let clock {
+            // A bar as it is counted where the song is: a bar of six-eight is two beats.
+            let bar = clock.placeAt(at).bar
+            let (beats, ticks) = TabSoundScore.counted(clock.measure(bar))
+            tab.seek(to: at)
+            tab.countIn(beats: beats, beatSeconds: clock.secondsAt(bar, tick: ticks) - clock.secondsAt(bar))
+            counting = true
+            playing = true
+            tab.play()
+            keepFollowing()
+        } else {
+            lead.play()
+            if along { join() }
+        }
+    }
+
+    /// The tab's sound joins the recording where it is.
+    private func join() {
+        guard let tab = tabPlayer, let recording = player else { return }
+        tab.trim = 1
+        tab.seek(to: recording.position)
+        tab.play()
+        keepFollowing()
+    }
+
+    private func keepFollowing() {
+        following?.cancel()
+        following = Task { [weak self] in
+            while !Task.isCancelled {
+                // The end of a count is looked for closely, so the recording starts on the beat.
+                try? await Task.sleep(for: .milliseconds(self?.counting == true ? 4 : 100))
+                guard !Task.isCancelled, let self, self.follow() else { return }
+            }
+        }
+    }
+
+    /// Looked at while the tab's sound plays beside the recording, or counts a bar in for it. The recording starts when
+    /// the bar has been counted. Then the tab's sound is kept where the recording is: it stops when the recording does;
+    /// heard a little apart, it runs a little faster or slower until the two are together again, so no ringing note is
+    /// cut; and only heard far apart (the recording was moved) is it moved. False when there is nothing more to look at.
+    @discardableResult
+    func follow() -> Bool {
+        guard let tab = tabPlayer else { return false }
+        if counting {
+            if !tab.asked { counting = false; playing = false; return false }
+            if tab.countingIn { return true }
+            counting = false
+            if tabLeads { playingChanged(true); return false }
+            if !along { tab.pause() }
+            player?.play()
+        }
+        guard let recording = player, !tabLeads, along else { return false }
+        if !recording.playing { if tab.asked { tab.pause() }; return false }
+        if !tab.asked { tab.trim = 1; tab.seek(to: recording.position); tab.play() }
+        else {
+            let ahead = tab.position - recording.position
+            if abs(ahead) > Self.apart { tab.trim = 1; tab.seek(to: recording.position) }
+            else { tab.trim = min(max(1 - ahead * Self.pull, 1 - Self.most), 1 + Self.most) }
+        }
+        return true
     }
 
     /// Copies the recording from the computer, which holds what it was sent.
@@ -415,8 +655,8 @@ public final class PracticeModel: RecordingPlayerListener {
     }
 
     public func toggle() {
-        guard let p = player else { return }
-        if playing || p.playing { p.pause(); return }
+        guard let p = lead else { return }
+        if playing || p.playing { halt(); remember(); return }
         // Asked to play while the system holds the sound back: asked again, from the start of the asking.
         if p.asked { p.pause() }
         // From the end, or from outside the bars being repeated, it starts over.
@@ -424,20 +664,25 @@ public final class PracticeModel: RecordingPlayerListener {
         let end = clock?.end
         if let span, at < span.lowerBound - Self.edge || at >= span.upperBound - Self.edge { seek(span.lowerBound) }
         else if let end, at >= end - Self.edge { seek(0) }
-        p.play()
+        start()
     }
 
     public func pause() {
-        player?.pause()
+        if playing || lead?.asked == true { halt(); remember() }
     }
 
     private func seek(_ seconds: Double) {
         changes += 1
         let to = max(seconds, 0)
+        // A bar being counted in is given up: the song plays on from where it is moved to.
+        let counted = counting
+        if counted { halt() }
         player?.seek(to: to)
+        tabPlayer?.seek(to: to)
         at = to
         jumps += 1
         remember()
+        if counted { start(counted: false) }
     }
 
     /// To the line of `bar`, kept inside the bars being repeated.
@@ -471,6 +716,7 @@ public final class PracticeModel: RecordingPlayerListener {
         changes += 1
         speed = percent
         player?.speed = Float(percent) / 100
+        tabPlayer?.speed = Float(percent) / 100
         remember()
     }
 
@@ -519,11 +765,21 @@ public final class PracticeModel: RecordingPlayerListener {
     }
 
     private func release() {
-        if let p = player {
-            if playing { at = p.position }
-            p.release()
-        }
+        at = now()
+        following?.cancel()
+        following = nil
+        player?.release()
         player = nil
+        voicing?.cancel()
+        voicing = nil
+        tabPlayer?.release()
+        tabPlayer = nil
+        tabOf = nil
+        tabProgram = nil
+        tabSound = false
+        tabSoundFailed = false
+        tabSoundLoading = false
+        counting = false
         playing = false
     }
 
@@ -537,26 +793,79 @@ public final class PracticeModel: RecordingPlayerListener {
         disk.async { places.save(job, place) }
     }
 
+    // What the recording tells is the song's while the recording is what is heard.
     public func recordingPlaying(_ playing: Bool) {
-        if !playing, let player { at = player.position }
-        self.playing = playing
-        if !playing { remember() }
+        if !tabLeads && !counting { playingChanged(playing) }
     }
 
     public func recordingEnded() {
-        if let player { at = player.position }
-        playing = false
+        if !tabLeads { endedNow() }
     }
 
     public func recordingFailed() {
-        release()
+        let now = now()
+        following?.cancel()
+        following = nil
+        tabPlayer?.pause()
+        player?.release()
+        player = nil
+        counting = false
+        playing = false
+        at = now
         recording = .unplayable
+    }
+
+    private func playingChanged(_ playing: Bool) {
+        if !playing, let lead { at = lead.position }
+        self.playing = playing
+        if playing && along { keepFollowing() }
+        if !playing {
+            if !tabLeads { tabPlayer?.pause() }
+            remember()
+        }
+    }
+
+    private func endedNow() {
+        if let lead { at = lead.position }
+        if !tabLeads { tabPlayer?.pause() }
+        playing = false
+    }
+
+    // What the tab's sound tells is the song's while the tab's sound is what the song's place is read from.
+    fileprivate func tabPlaying(_ playing: Bool) {
+        if tabLeads && !counting { playingChanged(playing) }
+    }
+
+    fileprivate func tabEnded() {
+        if tabLeads { endedNow() }
+    }
+
+    fileprivate func tabFailed() {
+        let led = tabLeads
+        following?.cancel()
+        following = nil
+        tabPlayer?.release()
+        tabPlayer = nil
+        tabSound = false
+        tabSoundFailed = true
+        if led { counting = false; playing = false }
     }
 
     /// Waits for what was started to be done: the look for the recording, a fetch, and the writes of the places.
     func settled() async {
+        await voicing?.value
         await lookup?.value
         await lastFetch?.value
         await onDisk {}
     }
+}
+
+/// What the tab's own sound tells the model, apart from what the recording tells it.
+@MainActor
+private final class TabListener: RecordingPlayerListener {
+    private weak var model: PracticeModel?
+    init(_ model: PracticeModel) { self.model = model }
+    func recordingPlaying(_ playing: Bool) { model?.tabPlaying(playing) }
+    func recordingEnded() { model?.tabEnded() }
+    func recordingFailed() { model?.tabFailed() }
 }

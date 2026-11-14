@@ -81,7 +81,7 @@ import WebKit
         let host = Window(NavigationStack { TabScreen(song: song) }.environment(model).playHost(model))
         defer { host.close() }
         let nodes = try await Self.tree(host.hosting) { $0.contains { $0.label == "Play" } && $0.contains { $0.label.hasPrefix("Bar 15,") } }
-        for name in ["Play", "Back to the start", "Previous bar", "Next bar", "Slower", "Faster", "Repeat bars"] {
+        for name in ["Play", "Back to the start", "Previous bar", "Next bar", "Slower", "Faster", "Repeat bars", "Sound: The recording"] {
             #expect(nodes.contains { $0.label == name }, "\(name) in \(nodes.map(\.description).joined(separator: "\n"))")
         }
         #expect(nodes.contains { $0.words.hasPrefix("Speed 100") })
@@ -116,7 +116,9 @@ import WebKit
             "Bar 15, beat 1. 4th string, open, E. Fretscribe isn't sure about this one.",
         ])
         #expect(nodes.contains { $0.role == "AXButton" && $0.label == "Tuning: Standard, no capo" })
-        #expect(nodes.contains { $0.words.hasPrefix("The recording is not on this device.") })
+        // The song has no recording on this device: the tab's own notes play, and Sound says so.
+        #expect(nodes.contains { $0.label == "Play" })
+        #expect(nodes.contains { $0.role == "AXButton" && $0.label == "Sound: The tab's notes" })
         for mark in nodes where mark.role == "AXButton" && mark.label.hasPrefix("Bar ") {
             #expect(mark.frame.width >= 44 && mark.frame.height >= 44, "\(mark)")
         }
