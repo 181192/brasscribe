@@ -98,7 +98,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
 
     override val screens = listOf(
         Entry("first-run") { rule.runOnUiThread { container.firstRunDone = false; vm.navigate(Screen.FIRST_RUN) } },
-        Entry("what-do-you-play") {
+        Entry("what-do-you-play", primaryInView = "seat-continue") {
             rule.runOnUiThread { container.updateSeat(SeatChoice.NotSet); container.firstRunDone = false; vm.finishFirstRun() }
             waitForTag("seat-continue", 5_000)
         },

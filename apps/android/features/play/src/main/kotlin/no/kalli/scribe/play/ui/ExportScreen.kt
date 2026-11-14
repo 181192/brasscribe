@@ -151,10 +151,11 @@ fun ExportScreen(vm: PlayViewModel) {
             val share = stringResource(R.string.export_share)
             val save = stringResource(R.string.export_save)
             val shareAction = { make { context.startActivity(exporter.shareIntent(it)) } }
+            val icons = androidx.compose.ui.platform.LocalDensity.current.fontScale < 1.3f
             val shareAndSave = @Composable { m: Modifier ->
-                if (print) SecondaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_export)
-                else PrimaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_export)
-                OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, m, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_folder)
+                if (print) SecondaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_export.takeIf { icons })
+                else PrimaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_export.takeIf { icons })
+                OutlineButton(save, { make { pendingSave = it; saveTree.launch(null) } }, m.semantics { testTag = "save" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_folder.takeIf { icons })
             }
             // On its side the phone has little height: the buttons in one row, so the list keeps the room.
             if (sideways) Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
@@ -162,7 +163,9 @@ fun ExportScreen(vm: PlayViewModel) {
                 shareAndSave(Modifier.weight(1f))
             } else {
                 if (print) printButton(Modifier)
-                Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) { shareAndSave(Modifier.weight(1f)) }
+                // Share and Save share a row where each has its words on one line (with large text they leave out their
+                // icons for that), and are one over the other where they still have not: never a word per line.
+                SideBySideIfTheyFit { shareAndSave(Modifier) }
             }
         },
         // (Not among the buttons: they stay where they are while the pages are laid out.)
