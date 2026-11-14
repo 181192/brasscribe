@@ -24,8 +24,8 @@ title = "Et ? der den er usikker"
 text = "Velg en note med ?, så spiller den takten sakte, og du kan høre selv. Spill så sammen med opptaket, saktere hvis du vil, de vanskelige taktene om og om igjen."
 
 [[screens.items]]
-shot = "instrument"
-alt = "Instrumentet ditt: Instrument, bass. Strenger, 4 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre nederst."
+shot = "instrument-guitar"
+alt = "Instrumentet ditt: Instrument, gitar. Strenger, 6 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre nederst."
 title = "Instrumentet ditt"
 text = "Gitar, bass, ukulele eller mandolin, strengene og stemmingen du spiller i."
 [[screens.items]]
@@ -34,8 +34,8 @@ alt = "Hjem i Fretscribe: Åpne et opptak, Spill inn med mikrofonen og Spill inn
 title = "Åpne eller spill inn"
 text = "Åpne et opptak du har, spill inn med mikrofonen, eller ta opp det en annen app på telefonen spiller."
 [[screens.items]]
-shot = "what-is-this"
-alt = "Hva er dette? med to valg: Bare instrumentet mitt, og En hel sang, der Fretscribe plukker ut bassen."
+shot = "what-is-this-guitar"
+alt = "Hva er dette? for Guitar line.wav, med to valg: Bare instrumentet mitt, og En hel sang, der Fretscribe plukker ut gitaren."
 title = "Hva er dette?"
 text = "Bare instrumentet ditt, eller en hel sang der stemmen din plukkes ut."
 [[screens.items]]

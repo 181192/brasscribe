@@ -24,8 +24,8 @@ title = "A ? where it is not sure"
 text = "Choose a note with a ? and it plays that bar slowly, so you can hear for yourself. Then play along with the recording, slower if you like, the hard bars again and again."
 
 [[screens.items]]
-shot = "instrument"
-alt = "Your instrument: Instrument, Bass. Strings, 4 strings. Usual tuning, Standard. Which hand is on the neck? Left hand on the neck, most players. You read, Tab. Save at the bottom."
+shot = "instrument-guitar"
+alt = "Your instrument: Instrument, Guitar. Strings, 6 strings. Usual tuning, Standard. Which hand is on the neck? Left hand on the neck, most players. You read, Tab. Save at the bottom."
 title = "Your instrument"
 text = "Guitar, bass, ukulele or mandolin, its strings, and the tuning you play in."
 [[screens.items]]
@@ -34,8 +34,8 @@ alt = "Home in Fretscribe: Open a recording, Record with the microphone and Reco
 title = "Open or record"
 text = "Open a recording you have, play into the microphone, or record what another app on the phone is playing."
 [[screens.items]]
-shot = "what-is-this"
-alt = "What is this? with two choices: Just my instrument, and A full song, where Fretscribe picks out the bass."
+shot = "what-is-this-guitar"
+alt = "What is this? for Guitar line.wav, with two choices: Just my instrument, and A full song, where Fretscribe picks out the guitar."
 title = "What is this?"
 text = "Just your instrument, or a full song where your part is picked out."
 [[screens.items]]
