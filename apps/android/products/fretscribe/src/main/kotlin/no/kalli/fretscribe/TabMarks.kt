@@ -111,6 +111,14 @@ class TabMarks(val columns: List<TabColumn>, val doubtful: Int, val noPlace: Int
          * Without [tab] (a saved song when the computer is away) the page itself is read: the confidence it
          * carries on its doubtful notes, and its boxed words.
          */
+        /**
+         * The marks of a saved page [musicXml] as the tab shows them, the same on every screen: a page the player has
+         * fixed is read as it is shown (`TabEdits.shown`: a note left out is gone, a kept one has no "?"), by its own
+         * marks and not the computer's data, which still says what it said before the fixes.
+         */
+        fun ofPage(musicXml: String, tab: Tab?): TabMarks =
+            if (TabEdits.changed(musicXml)) of(TabIndex.parse(TabEdits.shown(musicXml)), null) else of(TabIndex.parse(musicXml), tab)
+
         fun of(index: TabIndex, tab: Tab?, threshold: Double = TabTokens.UNCERTAIN_THRESHOLD): TabMarks {
             val staff = index.markStaff
             val found = LinkedHashMap<Triple<Int, Int, Int>, MutableList<MarkedNote>>()
@@ -184,6 +192,22 @@ object TabWords {
             2 -> "${natural}ississ"
             -2 -> when (step) { "E" -> "Essess"; "A" -> "Assass"; "B" -> "Bess"; else -> "${step}essess" }
             else -> natural
+        }
+    }
+
+    /** "Bar 3, beat 2." for a place on the page; in the pickup, "The pickup bar, beat 2." */
+    fun barBeat(res: Resources, piece: TabPiece): String =
+        if (piece.pickup) res.getString(R.string.fs_tab_pickup_beat, piece.beat) else res.getString(R.string.fs_tab_bar_beat, piece.barNumber, piece.beat)
+
+    /** "3rd string, fret 7, D-flat." for a written note; its name alone on a notation staff. */
+    fun place(res: Resources, piece: TabPiece, bokmal: Boolean): String {
+        val name = pitch(piece.step, piece.alter, bokmal)
+        val string = piece.string
+        val fret = piece.fret
+        return when {
+            string == null || fret == null -> "$name."
+            fret == 0 -> res.getString(R.string.fs_tab_place_open, ordinal(res, string), name)
+            else -> res.getString(R.string.fs_tab_place, ordinal(res, string), fret, name)
         }
     }
 

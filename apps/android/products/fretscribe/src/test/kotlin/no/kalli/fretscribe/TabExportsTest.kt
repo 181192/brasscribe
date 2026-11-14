@@ -205,6 +205,12 @@ class TabExportsTest {
         assertFalse(exports.pdfFromComputer("job", setOf("tab.pdf"), connected = false))
         assertFalse(exports.pdfFromComputer("job", all, connected = true))
         assertFalse(exports.pdfFromComputer(null, setOf("tab.pdf"), connected = true))
+        // With notes fixed on the phone, what the computer wrote does not have the fixes: the phone's files do.
+        assertFalse(exports.pdfFromComputer("job", setOf("tab.pdf"), connected = true, fixed = true))
+        for (format in listOf(TabShareFormat.TEXT, TabShareFormat.INSTRUCTIONS)) {
+            assertEquals(TabShareMissing.FIXED, exports.missing(format, "job", all, connected = true, Lang.EN, fixed = true))
+        }
+        assertNull(exports.missing(TabShareFormat.MUSICXML, "job", all, connected = true, Lang.EN, fixed = true))
     }
 
     @Test

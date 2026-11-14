@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -96,7 +98,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                 val id = jobId ?: throw NoCompanionException()
                 val tab = engine.tab(id)
                 val page = result?.musicXml
-                Heard.Ready(tab, engine.job(id).stages.map { it.name }, page?.let { runCatching { TabMarks.of(TabIndex.parse(it), tab) }.getOrNull() })
+                Heard.Ready(tab, engine.job(id).stages.map { it.name }, page?.let { runCatching { TabMarks.ofPage(it, tab) }.getOrNull() })
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -118,6 +120,10 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
     val headingFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { headingFocus.requestFocus() } }
 
+    // Writing the song again makes a new tab: the notes fixed on the phone are lost, so it is asked first.
+    var confirming by remember { mutableStateOf<Pair<Change, Heard.Ready>?>(null) }
+    val fixes = remember(result?.musicXml) { result?.musicXml?.let(TabEdits::fixed) ?: 0 }
+
     fun writeAgain(change: Change, made: Heard.Ready) {
         val options = change.options(SongCheck.optionsOf(made.tab, made.stages))
         SongAnswers.set(source, SongAnswer(options.recording, again = options))
@@ -126,6 +132,18 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
         // Writing down the notes takes this screen's place, and it comes back when they are written.
         vm.back()
         vm.startTranscription()
+    }
+
+    confirming?.let { (change, made) ->
+        AlertDialog(
+            onDismissRequest = { confirming = null },
+            title = { Text(stringResource(R.string.fs_check_again_title), Modifier.semantics { heading() }) },
+            text = { Text(pluralStringResource(R.plurals.fs_check_again_lost, fixes, fixes)) },
+            // Cancel is the safe one, and the first: it keeps the fixes.
+            dismissButton = { PlainButton(stringResource(R.string.fs_check_again_write), { confirming = null; writeAgain(change, made) }, Modifier.testTag("fs-check-again-write")) },
+            confirmButton = { PlainButton(stringResource(R.string.cancel), { confirming = null }, Modifier.testTag("fs-check-again-cancel")) },
+            modifier = Modifier.testTag("fs-check-again"),
+        )
     }
 
     PlayScaffold(
@@ -149,7 +167,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
                 RowGroup {
                     rows.forEachIndexed { i, row ->
                         if (i > 0) RowDivider()
-                        SongRowView(row, changes[i]?.takeIf { canChange }) { writeAgain(it, h) }
+                        SongRowView(row, changes[i]?.takeIf { canChange }) { if (fixes > 0) confirming = it to h else writeAgain(it, h) }
                     }
                 }
                 // Only said when it is so: the result offers a change, and the computer is there to make it. Under the

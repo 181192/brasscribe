@@ -24,8 +24,8 @@ class TabSoundScore(val notes: List<SoundNote>, val beats: List<SoundBeat>, val 
                 val last = pieces.maxBy { clock.secondsAt(it.bar, it.onset + it.length) }
                 val start = clock.secondsAt(first.bar, first.onset)
                 val end = clock.secondsAt(last.bar, last.onset + last.length)
-                // A grace note is written without a length: it sounds for a moment.
-                SoundNote(start, maxOf(end, start + GRACE_SECONDS), first.pitch)
+                // A grace note is written without a length: it sounds for a moment. So does a ghost note, which is struck muted.
+                SoundNote(start, if (first.ghost) start + GRACE_SECONDS else maxOf(end, start + GRACE_SECONDS), first.pitch)
             }.sortedBy { it.start }
             val beats = ArrayList<SoundBeat>()
             for (bar in 0 until clock.bars) {

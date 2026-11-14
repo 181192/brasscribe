@@ -53,13 +53,16 @@ private fun words(format: TabShareFormat): Pair<Int, Int> = when (format) {
 }
 
 /**
+ * [musicXml] is the page as it is shown, with the player's fixes ([fixed]: there are some, which the computer's own
+ * files do not have).
+ *
  * Share or print for a tab (design/brands/fretscribe/flows.md §11): Print as the one primary, and under it what the
  * tab can be shared as, one row each: a tap makes the file and opens the system's share sheet with it (which also
  * saves to Files). The phone makes the PDF, the Guitar Pro file, the MusicXML and the MIDI itself; the tab as text
  * and the playing instructions come from the computer, and their rows say so when it is not there.
  */
 @Composable
-internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, job: String?, outputs: Set<String>, close: () -> Unit) {
+internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, job: String?, outputs: Set<String>, fixed: Boolean, close: () -> Unit) {
     val c = ScribeTheme.colors
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -87,7 +90,7 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
         said = null
         scope.launch {
             try {
-                then(exports.build(format, title, musicXml, job, outputs, engine, engine != null, lang, legend, suffix))
+                then(exports.build(format, title, musicXml, job, outputs, engine, engine != null, lang, legend, suffix, fixed))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -103,7 +106,7 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag("fs-share")) {
             Text(stringResource(R.string.export_title), style = MaterialTheme.typography.titleLarge, color = c.text,
                 modifier = Modifier.padding(horizontal = ScribeSpace.s4).semantics { heading() })
-            val fromComputer = exports.pdfFromComputer(job, outputs, engine != null)
+            val fromComputer = exports.pdfFromComputer(job, outputs, engine != null, fixed)
             println("CONTENT engine=${engine != null} from=$fromComputer")
             Text(stringResource(if (fromComputer) R.string.fs_share_pdf_computer else R.string.fs_share_pdf_phone),
                 style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
@@ -129,7 +132,7 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
                 modifier = Modifier.padding(start = ScribeSpace.s4, end = ScribeSpace.s4, top = ScribeSpace.s3).semantics { heading() })
             TabShareFormat.entries.forEach { format ->
                 val (name, purpose) = words(format)
-                val missing = exports.missing(format, job, outputs, engine != null, lang)
+                val missing = exports.missing(format, job, outputs, engine != null, lang, fixed)
                 ListRow(
                     stringResource(name),
                     { make(format, print = false) { context.startActivity(exports.shareIntent(it, format)) } },
@@ -139,6 +142,7 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
                         TabShareMissing.NEEDS_COMPUTER -> R.string.fs_share_needs_computer
                         TabShareMissing.NOT_FROM_COMPUTER -> R.string.fs_share_not_from_computer
                         TabShareMissing.NOT_MADE -> R.string.fs_share_not_made
+                        TabShareMissing.FIXED -> R.string.fs_share_fixed
                     }),
                     icon = DesignR.drawable.ic_bc_export, chevron = false, enabled = missing == null && making == null,
                 )

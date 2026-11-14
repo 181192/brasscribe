@@ -550,6 +550,49 @@ class TabViewTest : TabScreenTest() {
     private fun asset(path: String): String = checkNotNull(ScreenDevice.fixture(path)) { path }.decodeToString()
 
     /**
+     * A tap finds a fret number within 24 dp of its middle, to each side, where its neighbours and the bar lines leave
+     * that room; else the nearer beat takes the rest. On a 360 dp phone, the tab at its own size, on the densest pages
+     * the fixtures have: the smallest target is said (and is not under 12 dp).
+     */
+    @Test
+    fun aFretNumbersTargetIsAsWideAsItsNeighboursAllow() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        val reach = with(rule.density) { FixNote.REACH.toPx() }
+        val dp = rule.density.density
+        val smallest = LinkedHashMap<String, Float>()
+        for (page in listOf("guitar-line", "bass-line-marks", "tab-probes/chords", "tab-probes/triplets", "tab-probes/six-eight", "tab-probes/moved-to-the-grid")) {
+            val xml = asset("$page/tab.musicxml")
+            val index = TabIndex.parse(xml)
+            val view = alone(xml, TabLayout.TAB, index, TabMarks.of(index, null))
+            val e = view.engraving.value!!
+            var least = Float.MAX_VALUE
+            for (bar in e.bars) {
+                val targets = e.targets(bar, reach)
+                bar.stops.forEachIndexed { i, stop ->
+                    val case = "$page, bar ${bar.bar}, beat $i"
+                    val t = targets[i]
+                    val centre = stop.left + stop.width / 2
+                    // Every beat is found at its own middle, and its target is never wider than 48 dp (or its column).
+                    assertEquals(case, bar.bar to stop.tick, e.beatAt(centre, (bar.top + bar.bottom) / 2, reach))
+                    val width = minOf(t.endInclusive, bar.right) - maxOf(t.start, bar.left)
+                    assertTrue("$case: ${width / dp} dp", width <= maxOf(2 * reach, stop.width) + 1f)
+                    // With room on both sides (the neighbours and the bar lines 24 dp or more away), the full 48 dp.
+                    val half = maxOf(reach, stop.width / 2)
+                    val room = listOfNotNull(bar.stops.getOrNull(i - 1), bar.stops.getOrNull(i + 1)).all { kotlin.math.abs(it.left + it.width / 2 - centre) >= 2 * half } &&
+                        centre - bar.left >= half && bar.right - centre >= half
+                    if (room) assertEquals(case, 2 * half, width, 1f)
+                    least = minOf(least, width / dp)
+                }
+            }
+            smallest[page] = least
+            rule.runOnUiThread { view.release() }
+        }
+        android.util.Log.i("TabViewTest", "smallest fret-number targets at 360 dp: $smallest")
+        println("smallest fret-number targets at 360 dp: $smallest")
+        smallest.forEach { (page, least) -> assertTrue("$page: the smallest target is $least dp", least >= 12f) }
+    }
+
+    /**
      * A beat with a note marked "?" and a note with no place is drawn with both: the boxed "!" and, beside it, the "?" in
      * the doubt colour, so the "?" the tab counts is one the player can find. A "!" alone has no "?" beside it.
      */

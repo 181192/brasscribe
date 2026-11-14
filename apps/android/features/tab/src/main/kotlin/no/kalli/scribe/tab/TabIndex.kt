@@ -38,6 +38,8 @@ data class TabPiece(
     val pickup: Boolean = false,
     /** How long this piece is written, in [TabIndex.TICKS]; 0 for a grace note. */
     val length: Int = 0,
+    /** A ghost note: struck with the string muted, its head written as an x. */
+    val ghost: Boolean = false,
 )
 
 /** One written measure: its printed number, how long it is and how its beats are counted. */
@@ -269,6 +271,7 @@ class TabIndex(
                                 confidence = el.instruction("fretted-confidence")?.toDoubleOrNull(),
                                 beat = beatAt(ticks(onset)), pickup = pickup,
                                 length = if (grace) 0 else ticks(el.int("duration") ?: 0),
+                                ghost = el.text("notehead") == "x",
                             )
                         }
                     }
