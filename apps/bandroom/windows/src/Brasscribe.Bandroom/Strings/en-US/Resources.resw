@@ -47,6 +47,9 @@
   <data name="Update_Refused_Why_Running" xml:space="preserve">
     <value>The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.</value>
   </data>
+  <data name="Update_Refused_Why_RunningOlder" xml:space="preserve">
+    <value>The previous version was put back and is running, but phones can't use it: this copy of Bandroom came with a setup tool that is too old for the update.</value>
+  </data>
   <data name="Update_Refused_Why_Starting" xml:space="preserve">
     <value>The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.</value>
   </data>
@@ -55,6 +58,9 @@
   </data>
   <data name="Update_Failed_Why_Running" xml:space="preserve">
     <value>The update didn't finish. The previous version was put back and is running.</value>
+  </data>
+  <data name="Update_Failed_Why_RunningOlder" xml:space="preserve">
+    <value>The update didn't finish. The previous version was put back and is running, but phones can't use it until the update succeeds.</value>
   </data>
   <data name="Update_Failed_Why_Starting" xml:space="preserve">
     <value>The update didn't finish. The previous version was put back and is starting.</value>
@@ -609,7 +615,7 @@
     <value>Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this PC.</value>
   </data>
   <data name="Notify_BandWriter" xml:space="preserve">
-    <value>A phone asked for a full-band score. Open Bandroom on this PC to finish setting up: it asks for your Hugging Face access key in Settings.</value>
+    <value>A phone asked for a full-band score. Open Bandroom on this PC to finish setting up: it asks for your Hugging Face access key in Settings, and then downloads about 15 GB.</value>
   </data>
   <data name="Lan_Title" xml:space="preserve">
     <value>Phones can't find this computer</value>

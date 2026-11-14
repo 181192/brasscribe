@@ -444,7 +444,8 @@ public sealed class InterfaceVersionTests : IDisposable
         var problems = ctl.Build().Inputs.Problems;
         // Not "this copy can't update it": Try again runs the update, and it may well go through.
         Assert.Equal([ProblemKind.UpdateFailed, ProblemKind.UpdateEngine], problems.Select(p => p.Kind));
-        Assert.Equal("The update didn't finish. The previous version was put back and is running.", problems[0].Why);
+        // It runs, but it is the older one: no phone is let in, and the words say so.
+        Assert.Equal("The update didn't finish. The previous version was put back and is running, but phones can't use it until the update succeeds.", problems[0].Why);
         Assert.Null(ctl.Api);
 
         // The update tried again and done, and the engine is still older: now this copy can't.
@@ -462,6 +463,10 @@ public sealed class InterfaceVersionTests : IDisposable
         "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
     [InlineData("nb", PutBackEngine.NotRunning, "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført.",
         "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
+    [InlineData("en", PutBackEngine.RunningOlder, "The update didn't finish. The previous version was put back and is running, but phones can't use it until the update succeeds.",
+        "The previous version was put back and is running, but phones can't use it: this copy of Bandroom came with a setup tool that is too old for the update.")]
+    [InlineData("nb", PutBackEngine.RunningOlder, "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører, men telefonene kan ikke bruke den før oppdateringen er fullført.",
+        "Den forrige versjonen er satt tilbake og kjører, men telefonene kan ikke bruke den: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.")]
     [InlineData("en", PutBackEngine.Starting, "The update didn't finish. The previous version was put back and is starting.",
         "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.")]
     [InlineData("nb", PutBackEngine.Starting, "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter.",

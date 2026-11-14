@@ -91,12 +91,14 @@ enum Strings {
         case .updateFailed:
             switch engine {
             case .running: String(localized: "The update didn't finish. The previous version was put back and is running.")
+            case .runningOlder: String(localized: "The update didn't finish. The previous version was put back and is running, but phones can't use it until the update succeeds.")
             case .starting: String(localized: "The update didn't finish. The previous version was put back and is starting.")
             case .notRunning: String(localized: "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.")
             }
         case .updateRefused:
             switch engine {
             case .running: String(localized: "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.")
+            case .runningOlder: String(localized: "The previous version was put back and is running, but phones can't use it: this copy of Bandroom came with a setup tool that is too old for the update.")
             case .starting: String(localized: "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.")
             case .notRunning: String(localized: "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.")
             }

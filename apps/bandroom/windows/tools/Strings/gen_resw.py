@@ -26,12 +26,16 @@ ROWS = [
     # (+) whether the previous engine runs is said, since it may not: this app can no longer start it, or it gave up
     ("Update_Refused_Why_Running", "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.",
      "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
+    ("Update_Refused_Why_RunningOlder", "The previous version was put back and is running, but phones can't use it: this copy of Bandroom came with a setup tool that is too old for the update.",
+     "Den forrige versjonen er satt tilbake og kjører, men telefonene kan ikke bruke den: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
     ("Update_Refused_Why_Starting", "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.",
      "Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
     ("Update_Refused_Why_NotRunning", "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.",
      "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."),
     ("Update_Failed_Why_Running", "The update didn't finish. The previous version was put back and is running.",
      "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører."),
+    ("Update_Failed_Why_RunningOlder", "The update didn't finish. The previous version was put back and is running, but phones can't use it until the update succeeds.",
+     "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører, men telefonene kan ikke bruke den før oppdateringen er fullført."),
     ("Update_Failed_Why_Starting", "The update didn't finish. The previous version was put back and is starting.",
      "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter."),
     ("Update_Failed_Why_NotRunning", "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.",
@@ -227,8 +231,8 @@ ROWS = [
     ("Notify_Ready", "Brasscribe is ready. Phones and tablets can make full-band scores now.", "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."),
     ("Notify_Ready_Tabs", "Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this PC.",
      "Brasscribe er klar for tabber og enkeltstemmer. Et partitur for fullt band trenger ett steg til på denne PC-en."),  # (+) without the band writer
-    ("Notify_BandWriter", "A phone asked for a full-band score. Open Bandroom on this PC to finish setting up: it asks for your Hugging Face access key in Settings.",
-     "En telefon ba om et partitur for fullt band. Åpne Bandroom på denne PC-en for å gjøre ferdig oppsettet: den ber om tilgangsnøkkelen din fra Hugging Face i Innstillinger."),  # (+)
+    ("Notify_BandWriter", "A phone asked for a full-band score. Open Bandroom on this PC to finish setting up: it asks for your Hugging Face access key in Settings, and then downloads about 15 GB.",
+     "En telefon ba om et partitur for fullt band. Åpne Bandroom på denne PC-en for å gjøre ferdig oppsettet: den ber om tilgangsnøkkelen din fra Hugging Face i Innstillinger og laster så ned omtrent 15 GB."),  # (+)
     # 10.5 Needs attention and errors
     ("Lan_Title", "Phones can't find this computer", "Telefoner finner ikke denne datamaskinen"),
     ("Lan_Win_Why", "Windows Firewall is blocking Brasscribe on this network.", "Windows-brannmuren stopper Brasscribe på dette nettverket."),

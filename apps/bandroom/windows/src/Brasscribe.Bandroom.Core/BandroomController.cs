@@ -312,7 +312,7 @@ public sealed class BandroomController
         {
             var running = _sup.State switch
             {
-                EngineState.Running => PutBackEngine.Running,
+                EngineState.Running => Interface == InterfaceAnswer.Same ? PutBackEngine.Running : PutBackEngine.RunningOlder,
                 EngineState.Starting => PutBackEngine.Starting,
                 _ => PutBackEngine.NotRunning,
             };

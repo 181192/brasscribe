@@ -104,11 +104,15 @@ public enum DisplayState: Equatable, Sendable {
 /// What the engine that was put back after a failed update is doing, for the words of that problem: it may run,
 /// be on its way up (just started again, or waiting to be), or not run at all.
 public enum PutBackEngine: Equatable, Sendable {
-    case running, starting, notRunning
+    case running
+    /// It runs, with an interface version older than this Bandroom's: phones are not let in.
+    case runningOlder
+    case starting, notRunning
 
-    public init(phase: SupervisorPhase) {
+    /// `older`: the running engine's interface version is behind this Bandroom's.
+    public init(phase: SupervisorPhase, older: Bool = false) {
         switch phase {
-        case .running: self = .running
+        case .running: self = older ? .runningOlder : .running
         case .starting, .waitingToRetry, .stopping(then: .restart): self = .starting
         case .idle, .stopped, .failed, .stopping: self = .notRunning
         }
