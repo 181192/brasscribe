@@ -1,4 +1,5 @@
 import AppKit
+import BandroomKit
 import ScreenCatalogue
 import SwiftUI
 import Testing
@@ -86,6 +87,20 @@ import Testing
         matching.updateFailure = "pixi install stopped"
         #expect(matching.mismatchProblem == nil && matching.pairingBlocker == nil)
         #expect(matching.problems.contains(.updateFailed))
+    }
+
+    /// After a failed update the previous engine may run and still be of no use to a phone: it is older than this
+    /// Bandroom. The problem's words say so, once: the Pair window's own line about phones is left out then.
+    @Test func anOlderEngineAfterAFailedUpdateIsSaidOnce() {
+        let older = Strings.problemWhy(.updateFailed, engine: .runningOlder)
+        #expect(older != Strings.problemWhy(.updateFailed, engine: .running))
+        #expect(older.contains("phones can't use it") || older.contains("telefonene kan ikke bruke den"), "\(older)")
+        #expect(Strings.pairingWaits(for: .updateFailed, engine: .runningOlder) == nil)
+        #expect(Strings.pairingWaits(for: .updateFailed, engine: .starting) != nil)
+        #expect(Strings.pairingWaits(for: .updateFailed, engine: .notRunning) != nil)
+        #expect(Strings.pairingWaits(for: .lowDisk(freeGB: 2), engine: .running) == nil)
+        #expect(PutBackEngine(phase: .running, older: true) == .runningOlder && PutBackEngine(phase: .running) == .running)
+        #expect(PutBackEngine(phase: .starting, older: true) == .starting)
     }
 
     /// The hooks still do what the catalogue needs, and the run is in the language it says.

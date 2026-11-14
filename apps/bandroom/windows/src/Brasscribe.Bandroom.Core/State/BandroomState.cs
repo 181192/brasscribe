@@ -158,17 +158,19 @@ public static class StateRules
     }
 }
 
-/// <summary>The Needs-attention problems Bandroom can detect itself.</summary>
 /// <summary>What the engine that was put back after a failed update is doing, for the words of that problem. The
 /// names end the string keys (Update_Failed_Why_Running, …).</summary>
 public enum PutBackEngine
 {
     Running,
+    /// <summary>It runs, with an interface version older than this Bandroom's: phones are not let in.</summary>
+    RunningOlder,
     /// <summary>Just started again, or waiting to be.</summary>
     Starting,
     NotRunning,
 }
 
+/// <summary>The Needs-attention problems Bandroom can detect itself.</summary>
 public static class Problems
 {
     public static Problem NoFreePort(IStrings s) =>

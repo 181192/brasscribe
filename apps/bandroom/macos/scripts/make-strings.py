@@ -264,6 +264,8 @@ NB = {
     "The key may have been deleted or have expired.": "Nøkkelen kan være slettet eller utløpt.",
     "The previous version was put back and is running: this copy of Bandroom came with a setup tool that is too old for the update.":
         "Den forrige versjonen er satt tilbake og kjører: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
+    "The previous version was put back and is running, but phones can't use it: this copy of Bandroom came with a setup tool that is too old for the update.":
+        "Den forrige versjonen er satt tilbake og kjører, men telefonene kan ikke bruke den: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
     "The previous version was put back and is starting: this copy of Bandroom came with a setup tool that is too old for the update.":
         "Den forrige versjonen er satt tilbake og starter: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen.",
     "The previous version was put back, but it isn't running: this copy of Bandroom came with a setup tool that is too old for the update.":
@@ -324,6 +326,8 @@ NB = {
         "Denne utgaven av Bandroom er nyere enn Brasscribe som den kjører. Brasscribe kommer fra en utviklerkopi: oppdater kopien, og start så Brasscribe på nytt.",
     "The update didn't finish. The previous version was put back and is running.":
         "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører.",
+    "The update didn't finish. The previous version was put back and is running, but phones can't use it until the update succeeds.":
+        "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og kjører, men telefonene kan ikke bruke den før oppdateringen er fullført.",
     "The update didn't finish. The previous version was put back and is starting.":
         "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake og starter.",
     "The update didn't finish. The previous version was put back, but it isn't running: phones can't send recordings until the update succeeds.":

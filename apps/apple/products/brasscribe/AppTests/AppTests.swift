@@ -34,6 +34,13 @@ func fixtureDir() -> URL? {
     #expect(free.first?.lowerBound == 0)
 }
 
+/// Waits until the score is engraved to `width`: as long as it takes on a slow machine, no longer where it is quick.
+@MainActor private func engraved(_ m: PracticeModel, to width: CGFloat) async throws {
+    let end = Date().addingTimeInterval(30)
+    while m.viewWidth != width, Date() < end { try await Task.sleep(for: .milliseconds(20)) }
+    #expect(m.viewWidth == width)
+}
+
 /// The score is engraved to the width of its page area that is visible: after any change that stays, small ones
 /// too (a panel beside it that grows by a few points), and once for a window that is being dragged.
 @Test(.enabled(if: fixtureDir() != nil)) @MainActor func theScoreIsEngravedToTheWidthItsPageAreaSettlesAt() async throws {
@@ -50,14 +57,12 @@ func fixtureDir() -> URL? {
     // 37 pt wider, less than the 40 pt a change once had to be: still engraved to.
     m.pageAreaChanged(to: 716)
     #expect(m.viewWidth == 663)  // not before it has stayed
-    try await Task.sleep(for: PracticeModel.widthSettles * 3)
-    #expect(m.viewWidth == 700)
+    try await engraved(m, to: 700)
 
     // A drag: many widths in a row, engraved once, to the last.
     for w in stride(from: 716.0, through: 900.0, by: 23.0) { m.pageAreaChanged(to: w) }
     m.pageAreaChanged(to: 900)
-    try await Task.sleep(for: PracticeModel.widthSettles * 3)
-    #expect(m.viewWidth == 884)
+    try await engraved(m, to: 884)
 
     // Back to the width it has before the moment is over: nothing to engrave.
     m.pageAreaChanged(to: 1000)
