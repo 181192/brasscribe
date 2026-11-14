@@ -349,6 +349,22 @@
     <string name="fs_practice_metronome_tip">A click on every beat.</string>
     <string name="fs_practice_sound_done">Done</string>
     <string name="fs_sound_failed">This phone couldn\'t make the sound for the tab\'s notes, the count-in and the metronome.</string>
+
+    <!-- Tuning and capo, from the tab -->
+    <string name="fs_tuning_title">Tuning and capo</string>
+    <string name="fs_tuning_capo">Capo</string>
+    <string name="fs_tuning_capo_none">None</string>
+    <string name="fs_tuning_capo_at">Fret %1$d</string>
+    <string name="fs_tuning_capo_lower">Capo one fret lower</string>
+    <string name="fs_tuning_capo_higher">Capo one fret higher</string>
+    <string name="fs_tuning_keep_sound">Keep the sound</string>
+    <string name="fs_tuning_keep_sound_tip">The same notes, at new frets counted from the capo.</string>
+    <string name="fs_tuning_keep_shapes">Keep the shapes</string>
+    <string name="fs_tuning_keep_shapes_tip">The same frets and strings. The song sounds higher or lower.</string>
+    <string name="fs_tuning_write">Write the tab again</string>
+    <string name="fs_tuning_writing">Writing the tab again…</string>
+    <string name="fs_tuning_failed">The tab couldn\'t be written that way. Try another tuning or capo.</string>
+    <string name="fs_tuning_on_phone">Written on this phone, from the notes of the tab. The octave and what was recorded are changed in Check the song, with your computer.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
 </resources>

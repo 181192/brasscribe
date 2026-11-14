@@ -1605,6 +1605,18 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         return (arranged?.first ?: updatedComposition) to xml
     }
 
+    /**
+     * The score on screen is [musicXml] now: a product's own change to it (a note of a tab moved to another string),
+     * shown and saved with the song.
+     */
+    fun changeScore(musicXml: String) {
+        val current = result.value ?: return
+        if (musicXml == current.musicXml) return
+        val updated = current.copy(musicXml = musicXml, changedOnPhone = true)
+        result.value = updated
+        saveCurrentScore(updated)
+    }
+
     /** A note is being changed: the score is arranged again in the background, and Save waits for it. */
     val changingNote = MutableStateFlow(false)
 
