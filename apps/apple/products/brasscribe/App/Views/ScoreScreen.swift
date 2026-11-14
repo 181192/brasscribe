@@ -817,7 +817,9 @@ struct PlayerBar: View {
     // MARK: practice, phone
 
     /// Two rows that fit a phone at the default text size: Speed and Repeat, then Mute my part and
-    /// Practice (count-in, metronome, the recording). At large text sizes they stack.
+    /// Practice (count-in, metronome, the recording). Where they do not fit two to a row (larger text, longer
+    /// words), the practice controls are one menu, as at the accessibility sizes: four chips one over the other
+    /// took the score's room and left the last of them under the screen.
     @ViewBuilder private var chipsPhone: some View {
         ViewThatFits(in: .horizontal) {
             VStack(spacing: Space.s2) {
@@ -825,7 +827,7 @@ struct PlayerBar: View {
                 HStack(spacing: Space.s2) { if model.myPart != nil { muteMyPart }; practiceMenu.fixedSize(horizontal: model.myPart != nil, vertical: false) }
             }
             .lineLimit(1)
-            VStack(alignment: .leading, spacing: Space.s2) { speedChip; repeatChip; if model.myPart != nil { muteMyPart }; practiceMenu }
+            practiceMenuAll
         }
     }
 
@@ -892,7 +894,18 @@ struct PlayerBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("practiceMenu")
+        // What the chips say on their own: the speed (adjustable, ±5 %, as the speed chip is) and the bars repeated.
+        .accessibilityValue(Text(practiceValue))
+        .accessibilityAdjustableAction { d in model.changeSpeed(by: d == .increment ? 5 : -5) }
         .sheet(isPresented: $editRepeat) { RepeatSheet(model: model).appAppearance() }
+    }
+
+    private var practiceValue: String {
+        var parts = [String(localized: "Speed \(percentText(model.speedPercent))")]
+        if model.looping {
+            parts.append(String(localized: "Repeating bars \(min(model.loopFrom, model.loopTo) + 1) to \(max(model.loopFrom, model.loopTo) + 1)"))
+        }
+        return parts.joined(separator: ". ")
     }
 
     /// The practice switches used less often, in one menu.

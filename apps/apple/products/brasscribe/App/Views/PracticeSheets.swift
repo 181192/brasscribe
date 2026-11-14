@@ -309,14 +309,22 @@ struct ExportView: View {
                             .buttonStyle(.primaryWide).disabled(busy)
                             .accessibilityIdentifier("printExport")
                     }
-                    HStack(spacing: Space.s3) {
-                        Button { Task { await share() } } label: { Label("Share…", systemImage: BrasscribeIcon.export.systemName) }
-                            .buttonStyle(canPrint ? SecondaryButtonStyle(fullWidth: true) : SecondaryButtonStyle(fullWidth: true))
-                            .disabled(fileCount == 0 || busy)
-                        Button { Task { await save() } } label: { Label("Save to Files", systemImage: BrasscribeIcon.folder.systemName) }
-                            .buttonStyle(SecondaryButtonStyle(fullWidth: true))
-                            .disabled(fileCount == 0 || busy)
-                            .accessibilityIdentifier("saveExport")
+                    // Share and Save share a row where each has its words on one line: in two halves where both fit
+                    // so (an iPad), else Share as wide as its words and Save the rest (a phone, where in halves the
+                    // longer would not fit where the two together do); one over the other where they have not
+                    // (larger text, longer words in another language).
+                    let shareButton = Button { Task { await share() } } label: { Label("Share…", systemImage: BrasscribeIcon.export.systemName) }
+                        .buttonStyle(SecondaryButtonStyle(fullWidth: true))
+                        .disabled(fileCount == 0 || busy)
+                        .accessibilityIdentifier("shareExport")
+                    let saveButton = Button { Task { await save() } } label: { Label("Save to Files", systemImage: BrasscribeIcon.folder.systemName) }
+                        .buttonStyle(SecondaryButtonStyle(fullWidth: true))
+                        .disabled(fileCount == 0 || busy)
+                        .accessibilityIdentifier("saveExport")
+                    ViewThatFits(in: .horizontal) {
+                        EqualWidths(spacing: Space.s3) { shareButton; saveButton }.lineLimit(1)
+                        HStack(spacing: Space.s3) { shareButton.fixedSize(horizontal: true, vertical: false); saveButton }.lineLimit(1)
+                        VStack(spacing: Space.s3) { shareButton; saveButton }
                     }
                     count
                 }

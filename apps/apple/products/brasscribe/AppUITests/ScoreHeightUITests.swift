@@ -2,7 +2,7 @@ import XCTest
 
 #if os(iOS)
 /// On a phone the music keeps the screen: the score gets at least 55 % of the height inside the safe
-/// area and at least two systems, at the default text size and at AX3, and no control sits over it.
+/// area and at least two systems, at the default text size, at XXL (also in bokmål) and at AX3, and no control sits over it.
 final class ScoreHeightUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -12,12 +12,17 @@ final class ScoreHeightUITests: XCTestCase {
 
     func testScoreKeepsItsShareAtTheDefaultSize() throws { try check(textSize: nil) }
 
+    func testScoreKeepsItsShareAtXXL() throws { try check(textSize: "UICTContentSizeCategoryXXL") }
+
+    func testScoreKeepsItsShareAtXXLInBokmal() throws { try check(textSize: "UICTContentSizeCategoryXXL", nb: true) }
+
     func testScoreKeepsItsShareAtAX3() throws { try check(textSize: "UICTContentSizeCategoryAccessibilityXXXL") }
 
-    private func check(textSize: String?) throws {
+    private func check(textSize: String?, nb: Bool = false) throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset", "-open-fixture-score", "-skip-first-run", "-seat", "1st-baritone"]
         if let textSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize] }
+        if nb { app.launchArguments += ["-AppleLanguages", "(nb)", "-AppleLocale", "nb_NO"] }
         app.launchEnvironment["SCRIBE_FIXTURES"] = fixtureDir()
         app.launchEnvironment["SCRIBE_COMPANION"] = "http://127.0.0.1:1"
         app.launch()

@@ -354,6 +354,7 @@ NB = {
     "Repeat %lld–%lld": "Gjenta %lld–%lld",
     "Repeat bars": "Gjenta takt",
     "Repeat bars %lld to %lld…": "Gjenta takt %lld til %lld …",
+    "Repeating bars %lld to %lld": "Gjentar takt %lld til %lld",
     "Repeat from bar": "Gjenta fra takt",
     "Repeat this bar": "Gjenta denne takten",
     "Repeat to bar": "Gjenta til takt",

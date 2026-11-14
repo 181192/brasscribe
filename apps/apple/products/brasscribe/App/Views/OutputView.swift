@@ -90,10 +90,6 @@ struct OutputView: View {
             .padding(.vertical, Space.s3)
             .frame(maxWidth: wide ? 880 : .infinity)
             .frame(maxWidth: .infinity)
-            // An opaque band down to the screen edge, with a hairline, so the choices scroll under it
-            // rather than showing through; the inset keeps the last row (and a focused one) above it.
-            .background(Color.Scribe.bg.ignoresSafeArea(edges: .bottom))
-            .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
         }
         .navigationTitle(Text(piece.title))
         #if os(iOS)
