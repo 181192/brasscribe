@@ -359,9 +359,17 @@ extension View {
     }
 
     /// iPhone and iPad: the page's actions in a band at the bottom of the screen. On the Mac the page
-    /// puts them after its content instead (`PageActions.followContent`).
+    /// puts them after its content instead (`PageActions.followContent`). The band is opaque, with a hairline
+    /// over it: a page longer than the screen (large text) ends at the band, and is not read through its buttons.
     @ViewBuilder func bottomActions<A: View>(@ViewBuilder _ actions: () -> A) -> some View {
-        if PageActions.followContent { self } else { safeAreaInset(edge: .bottom) { actions() } }
+        if PageActions.followContent { self } else {
+            safeAreaInset(edge: .bottom, spacing: 0) {
+                actions()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.Scribe.bg.ignoresSafeArea(edges: .bottom))
+                    .overlay(alignment: .top) { Divider().overlay(Color.Scribe.border) }
+            }
+        }
     }
 
     /// A larger system control on the Mac, where a slider is 16 pt high at the regular size; iPhone and iPad draw
@@ -409,3 +417,26 @@ extension View {
 
 /// Percent in the user's locale: "75%" in English, "75 %" in Norwegian.
 func percentText(_ value: Double) -> String { (value / 100).formatted(.percent.precision(.fractionLength(0))) }
+
+/// Views side by side in equal widths. Its ideal width is what the widest needs, times their number, so in a
+/// `ViewThatFits` it is chosen only where each has that width.
+struct EqualWidths: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard !subviews.isEmpty else { return .zero }
+        let gaps = spacing * CGFloat(subviews.count - 1)
+        let width = proposal.width ?? (subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0) * CGFloat(subviews.count) + gaps
+        let each = (width - gaps) / CGFloat(subviews.count)
+        let height = subviews.map { $0.sizeThatFits(ProposedViewSize(width: each, height: nil)).height }.max() ?? 0
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let each = (bounds.width - spacing * CGFloat(subviews.count - 1)) / CGFloat(subviews.count)
+        for (i, v) in subviews.enumerated() {
+            v.place(at: CGPoint(x: bounds.minX + CGFloat(i) * (each + spacing), y: bounds.midY), anchor: .leading,
+                    proposal: ProposedViewSize(width: each, height: bounds.height))
+        }
+    }
+}

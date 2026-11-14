@@ -388,19 +388,27 @@ struct ReviewView: View {
             .accessibilityIdentifier("openScore")
     }
 
-    /// Side by side; at the accessibility text sizes on a phone, where the labels would break
-    /// mid-word, one above the other at full width, Keep first.
+    /// Side by side where each label has its words on one line; on a phone where they have not (larger
+    /// text, longer words in another language), one above the other at full width, Keep first.
     @ViewBuilder private var actionButtons: some View {
-        if typeSize.isAccessibilitySize, !wide {
+        if wide {
+            actionRow
+        } else if typeSize.isAccessibilitySize {
             VStack(spacing: Space.s2) { keepButton; skipButton }
         } else {
-            actionRow
+            // (Skip is as wide as its words and Keep has the rest: in two halves Keep's words would not fit
+            // where the two together do.)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: Space.s3) { skipButton.fixedSize(horizontal: true, vertical: false); keepButton }.lineLimit(1)
+                VStack(spacing: Space.s2) { keepButton; skipButton }
+            }
         }
     }
 
     private var skipButton: some View {
         Button { skip() } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
             .buttonStyle(SecondaryButtonStyle(fullWidth: true, minHeight: 48))
+            .accessibilityIdentifier("skipNote")
     }
 
     private var keepButton: some View {
@@ -424,6 +432,7 @@ struct ReviewView: View {
             }
             Button { skip() } label: { Label("Skip", systemImage: BrasscribeIcon.skip.systemName) }
                 .buttonStyle(SecondaryButtonStyle(fullWidth: !wide, minHeight: 48))
+                .accessibilityIdentifier("skipNote")
             Button { keep() } label: { Label("Keep, go to next", systemImage: BrasscribeIcon.markChecked.systemName) }
                 .buttonStyle(PrimaryButtonStyle(fullWidth: !wide))
                 .keyboardShortcut("k", modifiers: [])

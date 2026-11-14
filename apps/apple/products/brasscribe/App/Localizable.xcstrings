@@ -3863,6 +3863,16 @@
         }
       }
     },
+    "Repeating bars %lld to %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjentar takt %lld til %lld"
+          }
+        }
+      }
+    },
     "Rotation locked": {
       "localizations": {
         "nb": {
