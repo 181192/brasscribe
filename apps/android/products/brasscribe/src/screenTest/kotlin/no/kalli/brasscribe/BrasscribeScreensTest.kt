@@ -99,6 +99,10 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         waitForTag("performance", 5_000)
     }
 
+    /** The player's Practice: its word, or on a small phone with larger text its icon, which has the word as its name. */
+    private fun practice() = rule.onNode(androidx.compose.ui.test.hasClickAction() and
+        (androidx.compose.ui.test.hasText(text(R.string.practice)) or androidx.compose.ui.test.hasContentDescription(text(R.string.practice))))
+
     override val screens = listOf(
         Entry("first-run") { rule.runOnUiThread { container.firstRunDone = false; vm.navigate(Screen.FIRST_RUN) } },
         Entry("what-do-you-play", primaryInView = "seat-continue") {
@@ -131,9 +135,9 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         // The score of a recording: it says where the part shown comes from (a score opened from a file does not).
         Entry("score-of-a-recording") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }; rest() },
         // What the score opens from its player and its menu: the practice controls, the bars to repeat, and the part read aloud.
-        Entry("practice") { theScore(); rule.onNodeWithText(text(R.string.practice)).performClick(); rest() },
+        Entry("practice") { theScore(); practice().performClick(); rest() },
         Entry("repeat-bars") {
-            theScore(); rule.onNodeWithText(text(R.string.practice)).performClick(); rest()
+            theScore(); practice().performClick(); rest()
             rule.onNodeWithText(text(R.string.loop)).performScrollTo().performClick(); waitUntil(5_000) { rule.onAllNodesWithText(text(R.string.loop_set)).fetchSemanticsNodes().isNotEmpty() }; rest()
         },
         Entry("read-aloud", ownOrder = "the part's bars are a list of their own, longer than the screen, which the keyboard goes through line by line as it scrolls") {

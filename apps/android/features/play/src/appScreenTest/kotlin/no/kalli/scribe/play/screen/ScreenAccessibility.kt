@@ -35,7 +35,7 @@ object ScreenAccessibility {
         },
         Known("a text field with a short value (a bar's number): its outline has more of the picture than the one or two digits in it, so the framework takes the outline's colour for the text's; the digits are in the text colour") { r ->
             r.sourceCheckClass == TextContrastCheck::class.java && r.element?.className?.toString() == "android.widget.EditText" &&
-                (r.element?.text?.toString()?.length ?: Int.MAX_VALUE) <= 4
+                r.element?.text?.toString().orEmpty().let { it.length in 1..2 && it.all(Char::isDigit) }
         },
     )
 
