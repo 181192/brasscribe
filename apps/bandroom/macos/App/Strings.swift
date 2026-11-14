@@ -108,11 +108,13 @@ enum Strings {
         }
     }
 
-    /// In the Pair window, for a failed update that keeps the engine behind: its own words are about the update, and
-    /// say nothing of phones. Nil for a problem whose words already say why nothing can be paired.
-    static func pairingWaits(for p: Problem) -> String? {
+    /// In the Pair window, for a failed update that keeps the engine behind, when its own words are about the update
+    /// and say nothing of phones. Nil when they already say why nothing can be paired: for any other problem, and
+    /// for a put-back engine that runs but is older (`problemWhy` then says that phones can't use it).
+    static func pairingWaits(for p: Problem, engine: PutBackEngine) -> String? {
         switch p {
-        case .updateFailed, .updateRefused: String(localized: "No phone can be paired until the update succeeds.")
+        case .updateFailed, .updateRefused:
+            engine == .runningOlder ? nil : String(localized: "No phone can be paired until the update succeeds.")
         default: nil
         }
     }
