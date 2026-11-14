@@ -9,23 +9,28 @@ h2 { font-size: clamp(1.75rem, 3.4vw, 2.25rem); }
 section + section { border-top: 0; }
 main > section:nth-of-type(even) { background: var(--scribe-surface); }
 
-/* The pen line: drawn under the last words of the headline and under every heading of a section, ending in its dot.
-   Always ink, always horizontal; it is never a brand's colour. */
-.pen-words { background: linear-gradient(currentColor, currentColor) 0 92% / 100% var(--family-pen-width) no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding-bottom: 0.08em; }
+/* The pen line: one stroke under the headline's last line, from its left edge to where the writing ends, and its
+   dot there; under every heading of a section, a short stroke. Always ink, always horizontal, never a brand's colour,
+   and never under the words themselves, so it does not read as a link. The headline's stroke stands where the end of
+   the words would be (an absolute box keeps that place) and reaches left to the headline's edge, which clips it. */
+.line-hero h1 { position: relative; overflow-x: clip; }
 .pen-words::after {
-  content: ""; display: inline-block; width: var(--family-pen-dot); height: var(--family-pen-dot); border-radius: 50%;
-  background: currentColor; margin-left: 2px; vertical-align: -0.16em;
+  content: ""; position: absolute; width: 100vw; height: var(--family-pen-dot);
+  margin: calc(1lh + 0.06em) 0 0 calc(var(--family-pen-dot) + 2px - 100vw);
+  background: radial-gradient(circle at calc(100% - var(--family-pen-dot) / 2) 50%, currentColor calc(var(--family-pen-dot) / 2 - 0.5px), transparent calc(var(--family-pen-dot) / 2)),
+    linear-gradient(currentColor, currentColor) 0 50% / calc(100% - var(--family-pen-dot) + 1px) var(--family-pen-width) no-repeat;
+  pointer-events: none;
 }
 .pen-heading::after {
   content: ""; display: block; width: 72px; height: var(--family-pen-dot); margin-top: var(--scribe-space-3);
   background: radial-gradient(circle at calc(100% - var(--family-pen-dot) / 2) 50%, currentColor calc(var(--family-pen-dot) / 2 - 0.5px), transparent calc(var(--family-pen-dot) / 2)),
     linear-gradient(currentColor, currentColor) 0 50% / calc(100% - var(--family-pen-dot) + 1px) var(--family-pen-width) no-repeat;
 }
-@media (forced-colors: active) { .pen-words { text-decoration: underline; background: none; } }
+@media (forced-colors: active) { .pen-words::after, .pen-heading::after { forced-color-adjust: none; color: CanvasText; } }
 
 /* 1. The line: what it is, in five words, and a door to each app. */
 .line-hero { padding: var(--scribe-space-12) 0 var(--scribe-space-10); }
-.line-hero h1 { max-width: 13em; margin-bottom: var(--scribe-space-5); }
+.line-hero h1 { max-width: 13em; margin-bottom: calc(var(--scribe-space-5) + 0.3em); }
 .line-hero .lead { max-width: 34em; }
 .doors { list-style: none; margin: var(--scribe-space-6) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--scribe-space-3); }
 .door { gap: 10px; background: var(--scribe-surface-raised); }
@@ -146,11 +151,11 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 /* The pen draws its line once, left to right, when a heading first comes into view (the script marks it drawn).
    Without the script, or with less motion, the line is simply there. */
 .pen-heading::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
-.pen-words { transition: background-size var(--scribe-duration-slow) ease-out; }
+.pen-words::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
 html.js .pen-heading:not(.drawn)::after { clip-path: inset(0 100% 0 0); }
-html.js .line-hero:not(.drawn) .pen-words { background-size: 0 var(--family-pen-width); }
+html.js .line-hero:not(.drawn) .pen-words::after { clip-path: inset(0 100% 0 0); }
 @media (prefers-reduced-motion: reduce) {
-  .pen-heading::after, .pen-words { transition: none; }
+  .pen-heading::after, .pen-words::after { transition: none; }
   html.js .pen-heading:not(.drawn)::after { clip-path: none; }
-  html.js .line-hero:not(.drawn) .pen-words { background-size: 100% var(--family-pen-width); }
+  html.js .line-hero:not(.drawn) .pen-words::after { clip-path: none; }
 }
