@@ -13,6 +13,7 @@ import Testing
         let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
         try fm.createDirectory(at: paths.workspace, withIntermediateDirectories: true)
         fm.createFile(atPath: paths.workspace.appending(path: "pixi.toml").path, contents: Data())
+        fm.createFile(atPath: paths.workspace.appending(path: "pixi.lock").path, contents: Data("version: 6\n".utf8))
         if engine {
             let bin = paths.workspace.appending(path: ".pixi/envs/default/bin")
             try fm.createDirectory(at: bin, withIntermediateDirectories: true)

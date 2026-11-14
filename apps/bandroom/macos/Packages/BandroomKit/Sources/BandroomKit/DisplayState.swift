@@ -7,6 +7,9 @@ public enum Problem: Equatable, Sendable {
     /// environment) aren't installed yet.
     case missingDownload([ModelComponent])
     case noFreePort
+    /// Some of the models' environments could not be installed (`ModelEnvironments`): the engine runs, and what
+    /// needs them waits. With what their installs said, when they said. The fix installs them again.
+    case modelsNotInstalled(InstallTrouble?)
     /// The app was updated but its engine couldn't be. The previous one is back, and runs when this app can still
     /// start it (`EngineSource.startsAfterUpdate`); when it can't, or it was started and gave up, nothing runs, and
     /// when its interface version is not this Bandroom's, phones can't use it. The words say which. The fix tries

@@ -28,16 +28,20 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   the box under them (`LicenceStep.swift`).
 - **The models' environments.** The engine runs each model (the adapters in `ml/adapters`) through the pixi the
   app carries (`SCRIBE_ADAPTER_RUNNER=pixi`), from the workspace copy in the data folder, each in the pixi
-  environment of its name there (`…/envs/.pixi/envs/<adapter>`). Setup installs them after the engine's own, one
-  `pixi install` each (`EngineSource.adapterEnvironments`), so no job has to; a failure names the environment and
-  the log. Nothing is written into the app and nothing is lost with an app update. Bandroom needs no `uv`.
-  Homebrew's folder is last on the engine's `PATH`, for what the app does not carry: `ffmpeg` (beat-this, Mega-53
-  and audio that is not WAV are decoded with it) and a MuseScore installed with Homebrew. An engine installed by a
-  Bandroom that ran the adapters another way (earlier builds, with `uv`, inside the app) gets the environments
-  at its first update; nothing is carried over, and the old folders went with the old app. An adapter's environment
-  that an update cannot install (no connection, say) does not undo the update: the engine runs, a job that needs
-  that model installs it, and the next launch tries again. During first-run setup the same failure stops setup,
-  with its own words for no connection and a full disk, and Try again.
+  environment of its name there (`…/envs/.pixi/envs/<adapter>`). Nothing is written into the app and nothing is
+  lost with an app update. Setup and updates install only the engine's own environment (`Bootstrapper`), so the
+  engine starts as soon as that is there; the models' follow behind it, one `pixi install` each
+  (`ModelEnvironments`, `EngineSource.adapterEnvironments`), with their progress in the panel, so no job has to
+  install one. Each that runs to its end gets a marker beside the environments (`…/envs/.bandroom-setup/env-<name>`)
+  holding the SHA-256 of the `pixi.lock` it was installed from, as on Windows: one that stopped part-way, or was
+  installed for another lockfile, is installed again at the next launch. One that fails does not hold up the
+  others: the panel (and the setup window) names it, with its own words for no connection and a full disk, and
+  Try again. Every environment installs from wheels and conda packages, so a Mac needs neither Apple's developer
+  tools nor `git` (`pixi.toml` says how for the separator and beat-this). Bandroom needs no `uv`. Homebrew's
+  folder is last on the engine's `PATH`, for what the app does not carry: `ffmpeg` (beat-this, Mega-53 and audio
+  that is not WAV are decoded with it) and a MuseScore installed with Homebrew. An engine installed by a Bandroom
+  that ran the adapters another way (earlier builds, with `uv`, inside the app) has no markers, so its update
+  installs every environment; nothing is carried over, and the old folders went with the old app.
 - **Sheet music from pictures.** The engine's `sheet` and `sheet-tab` profiles need a reader of printed music,
   [homr](https://github.com/liebharc/homr) (AGPL-3.0), which is in no build of the app and which first-run setup
   never fetches. Settings › Sheet music from pictures says what it is, its licence, where it comes from and how much
@@ -48,8 +52,8 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   looks for the reader at each request, so phones are offered the two profiles as soon as it is there, without a
   restart; Settings shows it as not installed, installing, installed, or why it stopped, with Try again. The
   environment is the pixi environment `homr` of the workspace in the data folder (`…/envs/.pixi/envs/homr`, where
-  the engine looks for it), so an app update leaves it in place, and an update whose lockfile changed brings it up
-  to date with the others. Removing Brasscribe from this Mac deletes the weights with the other downloads and the
+  the engine looks for it), with its marker beside the others, so an app update leaves it in place, and one whose
+  lockfile changed brings it up to date with the others. Removing Brasscribe from this Mac deletes the weights with the other downloads and the
   environment with the workspace.
 - **Engine.** It starts `scribe serve --lan` on the first free port of 8765–8775, restarts it if it
   stops, and shows its state in the menu bar. The band sounds Studio plays are bundled

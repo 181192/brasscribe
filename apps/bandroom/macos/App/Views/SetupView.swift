@@ -248,6 +248,13 @@ struct SetupView: View {
                 toolsProblem(why)
             }
             if case .failed(let e) = d.phase { downloadProblem(e) }
+            // A model's environment that failed behind the engine's: the rest of setup goes on, and it can be tried again.
+            if case .failed(_, let trouble) = app.modelEnvironments.phase {
+                ProblemCard(title: Strings.problemTitle(.modelsNotInstalled(trouble)),
+                            why: Strings.problemWhy(.modelsNotInstalled(trouble), engine: .notRunning),
+                            symbol: trouble == .network ? "wifi.exclamationmark" : "exclamationmark.triangle.fill", tint: Color.Scribe.warning)
+                Button { app.installModelEnvironments() } label: { Text("Try again") }.buttonStyle(.brOutline)
+            }
             if items.contains(where: { $0 != .bandWriter }) {
                 Text("The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.")
                     .brFont(.caption).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
@@ -412,7 +419,10 @@ struct SetupView: View {
         let bundled = Bundle.main.resourceURL?.appending(path: "workspace")
         Task {
             await app.bootstrapper.run(configuration: config, bundledWorkspace: bundled)
-            if app.bootstrapper.phase == .done { app.downloadMissing() }
+            if app.bootstrapper.phase == .done {
+                app.downloadMissing()
+                app.installModelEnvironments()
+            }
         }
     }
 

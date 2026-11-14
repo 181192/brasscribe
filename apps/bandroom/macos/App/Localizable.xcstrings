@@ -941,16 +941,6 @@
         }
       }
     },
-    "Downloading the listening tools. The first time takes a while.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lytteverktøyene lastes ned. Første gang tar det litt tid."
-          }
-        }
-      }
-    },
     "Downloading what Brasscribe needs": {
       "localizations": {
         "nb": {
@@ -1107,6 +1097,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Begynner å bli fullt"
+          }
+        }
+      }
+    },
+    "Getting the listening tools ready: %lld of %lld": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henter lytteverktøy: %lld av %lld"
           }
         }
       }
@@ -2111,6 +2111,16 @@
         }
       }
     },
+    "Some listening tools are missing": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noen lytteverktøy mangler"
+          }
+        }
+      }
+    },
     "Space is running low": {
       "localizations": {
         "nb": {
@@ -2297,6 +2307,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Disken er full, så noteleseren ble ikke installert. Frigjør plass, og prøv igjen."
+          }
+        }
+      }
+    },
+    "The disk is full. Free some space, then try again. The rest of Brasscribe works.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disken er full. Frigjør plass, og prøv igjen. Resten av Brasscribe virker."
           }
         }
       }
@@ -2517,6 +2537,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oppdateringen ble ikke fullført. Den forrige versjonen er satt tilbake, men den kjører ikke: telefonene kan ikke sende opptak før oppdateringen er fullført."
+          }
+        }
+      }
+    },
+    "They couldn't be downloaded. Check the internet connection, then try again. The rest of Brasscribe works.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De kunne ikke lastes ned. Sjekk internettforbindelsen, og prøv igjen. Resten av Brasscribe virker."
+          }
+        }
+      }
+    },
+    "They couldn't be set up. Try again; the log has the details. The rest of Brasscribe works.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De kunne ikke settes opp. Prøv igjen. Detaljene står i loggen. Resten av Brasscribe virker."
           }
         }
       }
@@ -2817,6 +2857,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "partitur for fullt band trenger ett steg til"
+          }
+        }
+      }
+    },
+    "some listening tools are missing": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "noen lytteverktøy mangler"
           }
         }
       }

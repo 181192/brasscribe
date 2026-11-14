@@ -63,6 +63,8 @@ NB = {
         "Brasscribe er ikke ferdig satt opp ennå. Noteleseren kan installeres når det er gjort.",
     "The reader wasn't installed. Check the internet connection and try again; the log has the details.":
         "Noteleseren ble ikke installert. Sjekk internettforbindelsen, og prøv igjen. Detaljene står i loggen.",
+    "The disk is full. Free some space, then try again. The rest of Brasscribe works.":
+        "Disken er full. Frigjør plass, og prøv igjen. Resten av Brasscribe virker.",
     "The disk is full, so the listening tools weren't set up. Free some space, then try again.":
         "Disken er full, så lytteverktøyene ble ikke satt opp. Frigjør plass, og prøv igjen.",
     "The disk is full, so the reader wasn't installed. Free some space, then try again.":
@@ -143,8 +145,6 @@ NB = {
     "Done": "Ferdig",
     "Download": "Last ned",
     "Downloading": "Laster ned",
-    "Downloading the listening tools. The first time takes a while.":
-        "Lytteverktøyene lastes ned. Første gang tar det litt tid.",
     "Downloading what Brasscribe needs": "Laster ned det Brasscribe trenger",
     "Engine from a checkout (folder with pixi.toml)": "Motor fra en utsjekk (mappe med pixi.toml)",
     "Enter the key again": "Skriv inn nøkkelen på nytt",
@@ -160,6 +160,7 @@ NB = {
     "Get an access key on Hugging Face": "Hent en tilgangsnøkkel hos Hugging Face",
     "Get the latest Bandroom": "Last ned den nyeste Bandroom",
     "Getting full": "Begynner å bli fullt",
+    "Getting the listening tools ready: %lld of %lld": "Henter lytteverktøy: %lld av %lld",
     "Getting the recording ready": "Gjør opptaket klart",
     "Got it": "OK",
     "Hugging Face access": "Tilgang til Hugging Face",
@@ -260,6 +261,7 @@ NB = {
         "Du er logget inn, men lisensen er ikke godtatt ennå. Velg **Agree** på MuScriptor-siden.",
     "Skip for now": "Hopp over nå",
     "Soloist separator": "Solistskiller",
+    "Some listening tools are missing": "Noen lytteverktøy mangler",
     "Space is running low": "Lite ledig plass",
     "Standard": "Standard",
     "Start Brasscribe": "Start Brasscribe",
@@ -298,6 +300,10 @@ NB = {
     "The separators have no stated licence, so Brasscribe doesn't pass them on: this Mac downloads them from where their makers publish them.":
         "Skillerne har ingen oppgitt lisens, så Brasscribe deler dem ikke videre. Macen laster dem ned der de som laget dem, publiserer dem.",
     "The soloist separator isn't downloaded yet.": "Solistskilleren er ikke lastet ned ennå.",
+    "They couldn't be downloaded. Check the internet connection, then try again. The rest of Brasscribe works.":
+        "De kunne ikke lastes ned. Sjekk internettforbindelsen, og prøv igjen. Resten av Brasscribe virker.",
+    "They couldn't be set up. Try again; the log has the details. The rest of Brasscribe works.":
+        "De kunne ikke settes opp. Prøv igjen. Detaljene står i loggen. Resten av Brasscribe virker.",
     "Third-party licences": "Tredjepartslisenser",
     "This copy of Bandroom came with a setup tool that is too old for this version of Brasscribe. The latest Bandroom has one that works.":
         "Denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for denne versjonen av Brasscribe. Den nyeste Bandroom har et som virker.",
@@ -327,6 +333,7 @@ NB = {
     "You can close this window. Brasscribe keeps downloading and tells you when it's ready.":
         "Du kan lukke dette vinduet. Brasscribe fortsetter å laste ned og sier fra når alt er klart.",
     "full-band scores need one more step": "partitur for fullt band trenger ett steg til",
+    "some listening tools are missing": "noen lytteverktøy mangler",
     "space is running low": "lite ledig plass",
     "the band writer": "bandskriveren",
     "the instrument separator": "instrumentskilleren",

@@ -29,7 +29,8 @@ public enum SheetReader {
         case nil: nil
         }
     }
-    /// Written into the environment once an install here ran to its end, so it goes when the environment goes.
+    /// In a checkout, written into the environment once an install here ran to its end, so it goes when the
+    /// environment goes.
     static let marker = ".scribe-reader-installed"
 }
 
@@ -50,9 +51,25 @@ extension EngineSource {
     }
 
     /// The reader is on this Mac: its environment is there and an install here ran to its end (the environment, then
-    /// the weights).
+    /// the weights). An installed engine keeps that as the reader's environment marker beside the others, so it
+    /// outlasts pixi making the environment afresh, and a lockfile it was not installed for has it brought up to date
+    /// with the rest; a checkout keeps it inside the environment.
     public var isReaderInstalled: Bool {
-        FileManager.default.fileExists(atPath: readerEnvironment.appending(path: SheetReader.marker).path)
+        let fm = FileManager.default
+        return switch self {
+        case .checkout: fm.fileExists(atPath: readerEnvironment.appending(path: SheetReader.marker).path)
+        case .installed:
+            fm.fileExists(atPath: setupMarkers.appending(path: "env-\(SheetReader.adapter)").path)
+                && fm.fileExists(atPath: readerEnvironment.path)
+        }
+    }
+
+    /// Records that an install of the reader here ran to its end.
+    func markReaderInstalled() throws {
+        switch self {
+        case .checkout: try Data().write(to: readerEnvironment.appending(path: SheetReader.marker))
+        case .installed: try markInstalled(SheetReader.adapter)
+        }
     }
 }
 
@@ -172,7 +189,7 @@ public final class SheetReaderInstaller {
             return
         }
         do {
-            try Data().write(to: configuration.source.readerEnvironment.appending(path: SheetReader.marker))
+            try configuration.source.markReaderInstalled()
         } catch {
             log?("reader: its environment is not where the engine looks for it: \(error)")
             phase = .failed(.stopped(String(describing: error)))

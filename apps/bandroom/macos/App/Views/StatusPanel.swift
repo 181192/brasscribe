@@ -96,17 +96,18 @@ struct StatusPanel: View {
             if let job = app.monitor.job { NowCard(job: job) }
         case .running:
             Text("Ready. Phones and tablets can send recordings.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
+            // the models' environments, installed behind the engine: several GB the first time
+            if case .installing(let step) = app.modelEnvironments.phase {
+                Text("Getting the listening tools ready: \(step.index) of \(step.count)")
+                    .brFont(.callout).foregroundStyle(Color.Scribe.textMuted)
+            }
         case .stopped:
             Text("Phones can't send recordings until you start it.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
         case .updating:
             VStack(alignment: .leading, spacing: 6) {
                 Text("Updating Brasscribe…").brFont(.bodyStrong)
                 BrassProgress(fraction: Double(app.updater.percent) / 100)
-                // the models' environments come after the engine's, and the first time they are several GB
-                Text(app.updater.step.map { $0.environment != app.supervisor.configuration.environmentName } ?? false
-                     ? String(localized: "Downloading the listening tools. The first time takes a while.")
-                     : String(localized: "Back in about a minute. Phones reconnect by themselves."))
-                    .brFont(.body).foregroundStyle(Color.Scribe.textMuted)
+                Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
             }
         case .starting:
             EmptyView()

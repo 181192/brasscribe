@@ -15,6 +15,9 @@ import Testing
         case panelReady = "panel-ready"
         case panelRequest = "panel-request"
         case panelSettingUp = "panel-setting-up"
+        /// The models' environments behind a running engine: being installed, and one that could not be.
+        case panelModelsInstalling = "panel-models-installing"
+        case panelModelsFailed = "panel-models-failed"
         /// The engine's interface version is behind Bandroom's, or ahead of it: the panel says which to update.
         case panelUpdateEngine = "panel-update-engine"
         case panelUpdateBandroom = "panel-update-bandroom"
@@ -31,6 +34,8 @@ import Testing
         /// The listening tools stopped installing: no connection, or a full disk, each in its own words.
         case setupToolsOffline = "setup-tools-offline"
         case setupToolsDiskFull = "setup-tools-disk-full"
+        /// A model's environment failed behind the engine's during setup: its card and Try again.
+        case setupModelsFailed = "setup-models-failed"
         case setupReady = "setup-ready"
         case settings
         /// Settings while the reader of printed music is fetched, once it is there, and after an install that stopped.
@@ -152,6 +157,14 @@ import Testing
                 }
                 return app
             }()
+        case .panelModelsInstalling, .panelModelsFailed:
+            await {
+                let app = await Catalogue.model(busy: false)
+                app.modelEnvironments.show(screen == .panelModelsInstalling
+                    ? .installing(.init(environment: "beat-this", index: 3, count: 7))
+                    : .failed(["separator"], trouble: .network))
+                return app
+            }()
         case .panelUpdateEngine, .pairUpdate: await Catalogue.model(busy: false, interface: "older")
         case .pairUpdateFailed:
             await {
@@ -161,7 +174,8 @@ import Testing
             }()
         case .panelUpdateBandroom: await Catalogue.model(busy: false, interface: "newer")
         case .panelUpdateCheckout: await Catalogue.model(busy: false, interface: "older-checkout")
-        case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady, .setupToolsOffline, .setupToolsDiskFull:
+        case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady, .setupToolsOffline, .setupToolsDiskFull,
+             .setupModelsFailed:
             await {
                 let app = await Catalogue.model(busy: false)
                 // The first run, before the engine is installed (the demo starts as if it were).
@@ -169,6 +183,7 @@ import Testing
                 let stopped = "pixi install -e beat-this stopped with exit code 1; see setup.log"
                 if screen == .setupToolsOffline { app.bootstrapper.showFailed(stopped, trouble: .network) }
                 if screen == .setupToolsDiskFull { app.bootstrapper.showFailed(stopped, trouble: .diskFull) }
+                if screen == .setupModelsFailed { app.modelEnvironments.show(.failed(["separator"], trouble: nil)) }
                 return app
             }()
         }
@@ -176,7 +191,8 @@ import Testing
 
     private func view(for screen: Screen, app: AppModel) -> AnyView {
         switch screen {
-        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout:
+        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout,
+             .panelModelsInstalling, .panelModelsFailed:
             app.panelPage = .status
             return AnyView(StatusPanel().background(Color.Scribe.bg))
         case .phones:
@@ -185,7 +201,7 @@ import Testing
         case .pair, .pairUpdate, .pairUpdateFailed: return AnyView(PairWindow())
         case .setupCheck: return AnyView(SetupView(step: 0))
         case .setupLicence: return AnyView(SetupView(step: 1))
-        case .setupDownload, .setupToolsOffline, .setupToolsDiskFull: return AnyView(SetupView(step: 2))
+        case .setupDownload, .setupToolsOffline, .setupToolsDiskFull, .setupModelsFailed: return AnyView(SetupView(step: 2))
         case .setupReady: return AnyView(SetupView(step: 3))
         case .settings, .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed: return AnyView(SettingsView())
         }
@@ -194,9 +210,10 @@ import Testing
     /// The window's width: the panel's 360 pt, the others at their smallest.
     private func width(of screen: Screen) -> CGFloat {
         switch screen {
-        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout, .phones: 360
+        case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout, .phones,
+             .panelModelsInstalling, .panelModelsFailed: 360
         case .pair, .pairUpdate, .pairUpdateFailed: 720
-        case .setupCheck, .setupLicence, .setupDownload, .setupReady, .setupToolsOffline, .setupToolsDiskFull: 760
+        case .setupCheck, .setupLicence, .setupDownload, .setupReady, .setupToolsOffline, .setupToolsDiskFull, .setupModelsFailed: 760
         case .settings, .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed: 480
         }
     }

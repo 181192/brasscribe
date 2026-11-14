@@ -1,4 +1,5 @@
 import Darwin
+import CryptoKit
 import Foundation
 
 /// Where the engine comes from.
@@ -47,7 +48,7 @@ public enum EngineSource: Equatable, Sendable {
         FileManager.default.fileExists(atPath: environment("default").appending(path: "bin/\(Self.command)").path)
     }
 
-    /// The adapters' environments setup installs after the engine's, in order: for an installed engine every
+    /// The models' environments Bandroom installs behind the engine, in order: for an installed engine every
     /// adapter's, then the reader of printed music's where it was installed here (kept up to date, never installed
     /// unasked). A checkout runs its adapters in their own projects, as a developer set them up: none.
     public var adapterEnvironmentsToInstall: [String] {
@@ -55,10 +56,40 @@ public enum EngineSource: Equatable, Sendable {
         return Self.adapterEnvironments + (isReaderInstalled ? [SheetReader.adapter] : [])
     }
 
-    /// Whether each of those is there. An engine installed by a Bandroom that ran the adapters another way has none
-    /// of them, and gets them at its first update.
-    public var areAdapterEnvironmentsReady: Bool {
-        adapterEnvironmentsToInstall.allSatisfy { FileManager.default.fileExists(atPath: environment($0).path) }
+    /// Those of them not installed for this workspace's lockfile: never installed, stopped part-way (pixi makes the
+    /// folder first, so a folder says nothing), or installed for another lockfile.
+    public var pendingModelEnvironments: [String] {
+        let hash = lockHash
+        return adapterEnvironmentsToInstall.filter { hash == nil || marker($0) != hash }
+    }
+
+    // MARK: what was installed, and for which lockfile
+
+    /// One file per environment, `env-<name>`, holding the SHA-256 of the pixi.lock it was installed from; written
+    /// only once `pixi install` of it ran to its end. Beside the environments, outside what an update replaces.
+    var setupMarkers: URL { workspace.appending(path: ".bandroom-setup", directoryHint: .isDirectory) }
+
+    /// The SHA-256 of the workspace's pixi.lock, nil when there is none.
+    public var lockHash: String? {
+        guard let data = try? Data(contentsOf: workspace.appending(path: "pixi.lock")) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    func marker(_ environment: String) -> String? {
+        (try? String(contentsOf: setupMarkers.appending(path: "env-\(environment)"), encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Whether `environment` was installed to its end for this workspace's lockfile.
+    public func isInstalled(_ environment: String) -> Bool {
+        lockHash.map { marker(environment) == $0 } ?? false
+    }
+
+    /// Records that `pixi install` of `environment` ran to its end for this workspace's lockfile.
+    public func markInstalled(_ environment: String) throws {
+        guard let hash = lockHash else { return }
+        try FileManager.default.createDirectory(at: setupMarkers, withIntermediateDirectories: true)
+        try Data(hash.utf8).write(to: setupMarkers.appending(path: "env-\(environment)"), options: .atomic)
     }
 
     /// Whether the engine may be started once the workspace was checked against the app's. After a failed update the
