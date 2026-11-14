@@ -185,6 +185,12 @@
     <string name="export_braille_desc">BRF-fil til leselist eller punktskriver</string>
     <string name="export_braille_unavailable">Lages av Bandroom på datamaskinen.</string>
     <string name="export_needs_engine">Trenger Bandroom på datamaskinen.</string>
+    <string name="export_missing">Ikke laget.</string>
+    <string name="export_pdf_phone_missing">Satt opp på denne telefonen.</string>
+    <string name="export_missing_not_installed">MuseScore er ikke installert på datamaskinen din. Installer MuseScore 4 der, og send opptaket dit på nytt.</string>
+    <string name="export_missing_not_starting">MuseScore kom ikke i gang på datamaskinen din. Åpne det der én gang, og send så opptaket dit på nytt.</string>
+    <string name="export_missing_failed">MuseScore på datamaskinen din skrev ikke alle filene. Send opptaket dit på nytt.</string>
+    <string name="export_missing_unknown">Datamaskinen din laget ikke alle filene. Send opptaket dit på nytt.</string>
     <string name="export_print">Skriv ut</string>
     <string name="export_share">Del …</string>
     <string name="export_save">Lagre i Filer</string>

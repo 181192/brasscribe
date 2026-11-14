@@ -39,12 +39,27 @@ class Exporter(private val context: Context, private val core: CoreBridge, priva
 
     fun available(r: TranscriptionResult, format: ExportFormat, midiFromScore: Boolean): Boolean = when (format) {
         ExportFormat.MUSICXML, ExportFormat.TALKING_SCORE -> true
-        ExportFormat.MIDI -> midiFromScore || r.jobId != null
+        // The score's own, or the computer's where it made one.
+        ExportFormat.MIDI -> midiFromScore || (r.jobId != null && missing(r, format) == null)
         // The computer's PDF, or the phone's own when there is none to use.
         ExportFormat.PDF -> pdfFromComputer(r) || phonePdf
         ExportFormat.AUDIO -> r.jobId != null && "brass-band.mp3" in r.engineOutputs && !r.changedOnPhone
         // Braille music comes from the engine (music21's translator; the core does not write BRF).
         ExportFormat.BRAILLE -> r.jobId != null && (r.engineOutputs.isEmpty() || r.engineOutputs.any { it.endsWith(".brf") }) && !r.changedOnPhone
+    }
+
+    /**
+     * The file of [format] that the computer's job should have had and has not, with why: the score's own (not a
+     * part's), by its ending. Null when the job has it, or never makes one.
+     */
+    fun missing(r: TranscriptionResult, format: ExportFormat): no.kalli.scribe.engine.MissingOutput? {
+        val ending = when (format) {
+            ExportFormat.PDF -> ".pdf"
+            ExportFormat.MIDI -> ".mid"
+            ExportFormat.AUDIO -> ".mp3"
+            else -> return null
+        }
+        return r.engineMissing.firstOrNull { '/' !in it.name && it.name.endsWith(ending) }
     }
 
     /**

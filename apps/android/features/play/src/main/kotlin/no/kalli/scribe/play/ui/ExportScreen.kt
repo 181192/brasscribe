@@ -189,6 +189,9 @@ fun ExportScreen(vm: PlayViewModel) {
             }
         }
         SectionLabel(stringResource(R.string.export_formats))
+        // Why the computer did not make some files, and what to do there: once, above the rows that say which.
+        val reasons = order.mapNotNull { exporter.missing(r, it)?.reason }.map(::missingWords).distinct()
+        if (reasons.isNotEmpty()) InfoNote(reasons.map { stringResource(it) }.joinToString(" "), Modifier.semantics { testTag = "export-missing" })
         RowGroup {
             order.forEachIndexed { i, f ->
                 if (i > 0) RowDivider()
@@ -196,10 +199,15 @@ fun ExportScreen(vm: PlayViewModel) {
                 val (label, desc) = LABELS.getValue(f)
                 val on = f.name in chosen && ok
                 val wholeOnly = manyParts && what != ExportScope.CONDUCTOR && ok && !exporter.perPart(r, f)
+                val lacks = exporter.missing(r, f)
                 ListRow(
                     stringResource(label),
                     onClick = null,
                     subtitle = when {
+                        // A file the computer should have made and has not (the note above says why): the PDF is then the
+                        // phone's own where the app lays one out.
+                        lacks != null && !r.changedOnPhone && f == ExportFormat.PDF && ok -> stringResource(R.string.export_pdf_phone_missing)
+                        lacks != null && !ok -> stringResource(R.string.export_missing)
                         // Which PDF it is, the computer's or the phone's, and why (in an app that lays out its own).
                         f == ExportFormat.PDF && ok && vm.container.product.phonePdf && !wholeOnly -> stringResource(when {
                             exporter.pdfFromComputer(r) -> R.string.export_pdf_computer
@@ -227,4 +235,16 @@ fun ExportScreen(vm: PlayViewModel) {
         )
         InfoNote(stringResource(R.string.export_marks_note), boxed = false)
     }
+}
+
+/**
+ * The app's words for why the computer did not make a file: the engine's reason, in the player's language, with what
+ * to do. A reason a newer engine adds names no cause, only that the computer did not make it.
+ */
+@androidx.annotation.StringRes
+fun missingWords(reason: String): Int = when (reason) {
+    "musescore-not-installed" -> R.string.export_missing_not_installed
+    "musescore-not-starting" -> R.string.export_missing_not_starting
+    "musescore-failed" -> R.string.export_missing_failed
+    else -> R.string.export_missing_unknown
 }

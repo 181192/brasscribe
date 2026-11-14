@@ -144,6 +144,8 @@ data class TranscriptionResult(
     val onDevice: Boolean,
     val jobId: String? = null,
     val engineOutputs: Set<String> = emptySet(),
+    /** The files the computer's job should have had and has not (its PDF, its MIDI, its recording of the band), each with why. */
+    val engineMissing: List<no.kalli.scribe.engine.MissingOutput> = emptyList(),
     /** The uploaded audio on the engine, for re-arranging with other options. */
     val audioId: String? = null,
     /** The Composition as the core wrote it (humanization reads it). */
@@ -1059,7 +1061,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val final = engine.job(job.id)
         if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
         return r.copy(composition = engine.composition(job.id), musicXml = engine.musicXml(job.id), jobId = job.id,
-            engineOutputs = final.outputs.toSet(), compositionJson = null, appliedTranspose = opts.keyShift,
+            engineOutputs = final.outputs.toSet(), engineMissing = final.missing, compositionJson = null, appliedTranspose = opts.keyShift,
             evidence = runCatching { engine.evidence(job.id) }.getOrNull())
     }
 
@@ -1124,7 +1126,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
         return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audioId,
-            engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() },
+            engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() }, engineMissing = final.missing,
             evidence = runCatching { engine.evidence(created.id) }.getOrNull())
     }
 
@@ -1364,7 +1366,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 val job = engine.job(jobId)
                 val r = TranscriptionResult(engine.composition(jobId), engine.musicXml(jobId),
                     Profile.of(job.profile) ?: Profile.BRASS_BAND, onDevice = false, jobId = jobId, audioId = job.audioId,
-                    engineOutputs = job.outputs.toSet(), evidence = runCatching { engine.evidence(jobId) }.getOrNull())
+                    engineOutputs = job.outputs.toSet(), engineMissing = job.missing, evidence = runCatching { engine.evidence(jobId) }.getOrNull())
                 source.value = Source(entry.title, SourceKind.SCORE, 0.0)
                 currentSavedScoreId = null
                 myPartOverride.value = null

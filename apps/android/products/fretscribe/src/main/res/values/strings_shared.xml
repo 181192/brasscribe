@@ -189,6 +189,12 @@
     <string name="export_braille_desc">BRF file for a braille display or embosser</string>
     <string name="export_braille_unavailable">Made by Bandroom on your computer.</string>
     <string name="export_needs_engine">Needs Bandroom on your computer.</string>
+    <string name="export_missing">Not made.</string>
+    <string name="export_pdf_phone_missing">Laid out on this phone.</string>
+    <string name="export_missing_not_installed">MuseScore is not installed on your computer. Install MuseScore 4 there and send the recording to it again.</string>
+    <string name="export_missing_not_starting">MuseScore did not get going on your computer. Open it there once, then send the recording to it again.</string>
+    <string name="export_missing_failed">MuseScore on your computer did not write some of the files. Send the recording to it again.</string>
+    <string name="export_missing_unknown">Your computer did not make some of the files. Send the recording to it again.</string>
     <string name="export_print">Print</string>
     <string name="export_share">Share…</string>
     <string name="export_save">Save to Files</string>
