@@ -120,6 +120,8 @@ line = "Free. Not in the app stores yet, so the first install takes three extra 
 setup = "Set up Bandroom"
 
 [sure]
+cards = "How sure it is, a card for each kind of player"
+count = "{n} of {total}"
 title = "How sure <em>is it?</em>"
 lead = "Give it one brass instrument and, for most, <b>at least 9 notes in 10 land in the part on the right note, at the right time</b>, a cornet nearer 19 in 20.{{holds brass/solo-instruments/trumpet.seat_recall >= 0.925}}{{holds brass/solo-instruments/flugelhorn.seat_recall >= 0.925}}{{holds brass/solo-instruments/baritone.seat_recall >= 0.9}}{{holds brass/solo-instruments/trombone.seat_recall >= 0.9}} Where it had to guess, it says so with a <b class=\"doubt-mark\">?</b>."
 of_first = "of 100 notes played are written right"

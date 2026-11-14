@@ -680,6 +680,38 @@ async function partview(el) {
   if (chosen !== undefined && notes[chosen]) choose(chosen, false);
 }
 
+// The "How sure" cards: on a phone a row that scrolls, with "1 of 3" under it following the card in view; only
+// there is the row a place of its own for the keyboard (on a wider screen the cards all stand in view).
+const narrow = matchMedia("(max-width: 600px)");
+function sureRow(row) {
+  const count = row.nextElementSibling?.classList.contains("sure-count") ? row.nextElementSibling : null;
+  const cards = [...row.children], words = JSON.parse(row.dataset.count);
+  const fit = () => {
+    if (narrow.matches) {
+      row.setAttribute("role", "region");
+      row.tabIndex = 0;
+    } else {
+      row.removeAttribute("role");
+      row.removeAttribute("tabindex");
+    }
+  };
+  const show = () => {
+    if (!count) return;
+    const left = row.getBoundingClientRect().left;
+    let at = 0, near = Infinity;
+    cards.forEach((card, i) => {
+      const far = Math.abs(card.getBoundingClientRect().left - left - parseFloat(getComputedStyle(row).paddingLeft));
+      if (far < near) [at, near] = [i, far];
+    });
+    count.textContent = fill(words, { n: at + 1, total: cards.length });
+  };
+  narrow.addEventListener("change", fit);
+  row.addEventListener("scroll", show, { passive: true });
+  fit();
+  show();
+  count?.classList.remove("await-js");
+}
+
 // Everything in a part of the page that can be played with. The whole page at first; after the language changes,
 // the parts whose words were swapped, which are new elements.
 const within = (root, selector) => [...(root.matches?.(selector) ? [root] : []), ...root.querySelectorAll(selector)];
@@ -694,6 +726,7 @@ function enhance(root) {
     near.observe(el);
   });
   within(root, "[data-strip]").forEach(strip);
+  within(root, ".sure-grid[data-count]").forEach(sureRow);
   within(root, "[data-stages]").forEach(stages);
   lazily("[data-tabdemo]", tabdemo);
   lazily("[data-partview]", partview);
