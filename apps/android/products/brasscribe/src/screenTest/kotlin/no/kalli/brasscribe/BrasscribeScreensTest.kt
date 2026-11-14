@@ -146,7 +146,7 @@ class BrasscribeScreensTest : ScreenCatalogue() {
             waitUntil(5_000) { rule.onAllNodesWithTag("score-view").fetchSemanticsNodes().isEmpty() }; rest()
         },
         // A note being changed, from Check the notes.
-        Entry("change-note") {
+        Entry("change-note", primaryInView = "change-note-save") {
             checkTheNotes(); rest()
             // (The note's card is in a list: on a phone on its side it is under the first screen until the list is moved to it.)
             rule.onNodeWithTag("review-list").performScrollToNode(androidx.compose.ui.test.hasText(text(R.string.change_note)))

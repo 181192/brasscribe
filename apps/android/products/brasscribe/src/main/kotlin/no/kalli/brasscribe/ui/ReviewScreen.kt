@@ -664,10 +664,12 @@ private fun ChangeNoteSheet(
 ) {
     var shift by remember(written) { mutableIntStateOf(0) }
     val c = ScribeTheme.colors
-    // Fully open, and scrollable, so Save is reachable at large text sizes.
+    // Fully open. What the note is and the ways to change it scroll; Save and Cancel are docked under them, so Save is in
+    // view on a phone on its side and at large text sizes (side by side where the screen is short).
     PlaySheet(dismiss, c.bg) {
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = ScribeSpace.s6),
+            Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin)
+                .padding(bottom = ScribeSpace.s4),
             verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
         ) {
             ScreenTitle(stringResource(R.string.change_note_title))
@@ -697,8 +699,22 @@ private fun ChangeNoteSheet(
             }
             // Hear the bar with this pitch before saving: rendered on the phone, nothing is written yet.
             ListenButton(previewing, { preview(shift) }, stopPreview, listenText = stringResource(R.string.change_note_preview), tag = "preview-note")
-            PrimaryButton(stringResource(R.string.save), { save(shift) }, enabled = shift != 0)
-            PlainButton(stringResource(R.string.cancel), dismiss, Modifier.fillMaxWidth())
+        }
+        androidx.compose.material3.HorizontalDivider(thickness = 1.dp, color = c.border)
+        val saveButton = @Composable { m: Modifier -> PrimaryButton(stringResource(R.string.save), { save(shift) }, m.tagged("change-note-save"), enabled = shift != 0) }
+        val cancelButton = @Composable { m: Modifier -> PlainButton(stringResource(R.string.cancel), dismiss, m.fillMaxWidth()) }
+        if (shortScreen()) Row(
+            Modifier.fillMaxWidth().padding(horizontal = ScreenMargin, vertical = ScribeSpace.s2),
+            horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            cancelButton(Modifier.weight(1f))
+            saveButton(Modifier.weight(1f))
+        } else Column(
+            Modifier.fillMaxWidth().padding(horizontal = ScreenMargin).padding(top = ScribeSpace.s3, bottom = ScribeSpace.s4),
+            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
+        ) {
+            saveButton(Modifier)
+            cancelButton(Modifier)
         }
     }
 }

@@ -27,6 +27,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -85,7 +86,9 @@ class ReviewChangeNoteTest : ScreenTest() {
     private fun changeUp() {
         rule.onNodeWithText("Change note…").performScrollTo().performClick()
         rule.onNodeWithText("Up a semitone").performClick()
-        rule.onNodeWithText("Save").performScrollTo().performClick()
+        // (Save is docked under what scrolls: in view as it is.)
+        rule.onNodeWithTag("change-note-save", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithText("Save").performClick()
         changeLanded()
     }
 
