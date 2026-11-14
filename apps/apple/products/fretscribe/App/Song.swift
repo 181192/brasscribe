@@ -13,8 +13,10 @@ struct TabSong: Identifiable, Hashable, Codable {
     var jobID: String?
     /// The preset it was written for ("bass-4-standard").
     var preset: String?
-    /// Notes marked "?".
+    /// Notes marked "?", as the tab draws them.
     var toCheck: Int
+    /// Notes under a "!": they have no place on the instrument.
+    var noPlace: Int
     /// The recording it was made from, when the app was given it (a new recording, an opened file).
     var recording: URL?
 
@@ -46,8 +48,10 @@ struct TabSong: Identifiable, Hashable, Codable {
     /// A new song from a finished job: its MusicXML, and its tab data when there is one.
     static func create(title: String, jobID: String?, musicXML: Data, tab: Data?, recording: URL?) throws -> TabSong {
         let data = tab.flatMap { try? JSONDecoder().decode(TabData.self, from: $0) }
+        // The tab's own two numbers: what it marks "?" and what it puts under a "!".
+        let marks = SongMarks.of(musicXML: musicXML, tab: data)
         var song = TabSong(id: UUID(), title: title, created: Date(), jobID: jobID, preset: data?.preset,
-                           toCheck: data.map(SongMarks.doubtfulCount) ?? 0, recording: nil)
+                           toCheck: marks.doubtful, noPlace: marks.noPlace, recording: nil)
         try FileManager.default.createDirectory(at: song.folder, withIntermediateDirectories: true)
         try musicXML.write(to: song.musicXMLURL)
         if let tab { try tab.write(to: song.tabURL) }
@@ -69,5 +73,12 @@ enum SongMarks {
     /// A note below this confidence is marked "?" (the core's doubt threshold).
     static let doubt = 0.4
 
-    static func doubtfulCount(_ tab: TabData) -> Int { tab.notes.filter { $0.confidence < doubt }.count }
+    /// The marks as the tab draws them: a note under a "!" is not also a "?", and a note the page folds into another
+    /// is neither. Every screen that counts them counts these.
+    static func of(musicXML: Data, tab: TabData?) -> TabMarks {
+        TabMarks.of(TabIndex.parse(musicXML: musicXML), tab: tab)
+    }
+
+    /// A saved song's marks: the tab's own, as its sheet draws them.
+    static func of(_ song: TabSong) -> TabMarks? { TabSheet.read(song)?.marks }
 }

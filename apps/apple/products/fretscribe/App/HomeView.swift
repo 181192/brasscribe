@@ -191,7 +191,9 @@ enum SongWords {
         let when = entry.date.formatted(.relative(presentation: .named, unitsStyle: .wide))
         var parts: [String] = [String(localized: "Tab"), when.prefix(1).uppercased() + when.dropFirst()]
         if case .computer = entry.location { parts.append(String(localized: "On your computer")) }
-        if entry.toCheck > 0 { parts.append(String(localized: "\(entry.toCheck) notes to check")) }
+        // The tab's own two numbers.
+        if entry.toCheck > 0 { parts.append(TabWords.marked(entry.toCheck)) }
+        if entry.noPlace > 0 { parts.append(TabWords.noPlaceLine(entry.noPlace)) }
         return parts.joined(separator: " · ")
     }
 }

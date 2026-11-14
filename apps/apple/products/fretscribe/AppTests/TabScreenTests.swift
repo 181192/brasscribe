@@ -60,6 +60,46 @@ private func sheet(_ dir: String, withData: Bool = true) throws -> TabSheet {
         #expect(Set(why) == [.tooHigh, .tooLow])
     }
 
+    /// Home, Check the song and the tab say the same two numbers: the guitar line's data has three notes below the
+    /// threshold, two of them with no place, and the tab draws one "?" and two "!".
+    @Test func everyScreenCountsTheNotesAsTheTabDrawsThem() throws {
+        let page = try fixture("guitar-line/tab.musicxml")
+        let data = try JSONDecoder().decode(TabData.self, from: try fixture("guitar-line/tab.json"))
+        #expect(data.notes.filter { $0.confidence < SongMarks.doubt }.count == 3)
+        let marks = SongMarks.of(musicXML: page, tab: data)
+        let s = try sheet("guitar-line")
+        #expect(marks.doubtful == s.marks.doubtful && marks.noPlace == s.marks.noPlace)
+        #expect(marks.doubtful == 1)
+        #expect(marks.noPlace == 2)
+        // Home's line says the same two numbers, in the singular for one.
+        func line(_ doubtful: Int, _ noPlace: Int) -> String {
+            SongWords.subtitle(SongEntry(id: "g", title: "Guitar riff", date: Date(), location: .computer(jobID: "j"), toCheck: doubtful,
+                                         noPlace: noPlace, preset: data.preset))
+        }
+        let one = line(marks.doubtful, marks.noPlace)
+        #expect(one.contains(TabWords.marked(1)) && one.contains(TabWords.noPlaceLine(2)))
+        #expect(TabWords.marked(1) == String(localized: "\(1) note marked ?"))
+        #expect(TabWords.marked(2) == String(localized: "\(2) notes marked ?"))
+        #expect(TabWords.noPlaceLine(1) == String(localized: "\(1) note with no place"))
+        #expect(line(2, 1).contains(TabWords.marked(2)) && line(2, 1).contains(TabWords.noPlaceLine(1)))
+        #expect(!line(0, 0).contains("?"))
+    }
+
+    /// The singular and plural of the counts say "note" and "notes", in English and in bokmål.
+    @Test func theCountsHaveASingular() throws {
+        let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appending(path: "../App/Localizable.xcstrings").standardizedFileURL)) as? [String: Any]
+        let strings = try #require(catalog?["strings"] as? [String: Any])
+        func nb(_ key: String) -> String? {
+            (((strings[key] as? [String: Any])?["localizations"] as? [String: Any])?["nb"] as? [String: Any])
+                .flatMap { ($0["stringUnit"] as? [String: Any])?["value"] as? String }
+        }
+        #expect(nb("%lld note marked ?") == "%lld tone merket ?")
+        #expect(nb("%lld note with no place") == "%lld tone uten plass")
+        #expect(nb("%lld note with no place on your instrument. Is the tuning right?") == "%lld tone uten plass på instrumentet ditt. Er stemmingen riktig?")
+        #expect(nb("%lld notes with no place on your instrument. Is the tuning right?") == "%lld toner uten plass på instrumentet ditt. Er stemmingen riktig?")
+    }
+
     @Test func aCleanTabHasNoMarks() throws {
         let s = try sheet("bass-line")
         #expect(s.marks.columns.isEmpty)

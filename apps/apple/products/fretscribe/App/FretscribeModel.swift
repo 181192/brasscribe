@@ -50,6 +50,7 @@ struct SongEntry: Identifiable, Hashable {
     var date: Date
     var location: Location
     var toCheck: Int
+    var noPlace: Int = 0
     var preset: String?
 }
 
@@ -166,7 +167,7 @@ final class FretscribeModel: PlayHost {
     private func rebuild() {
         let downloaded = Set(local.compactMap(\.jobID))
         var rows = local.map { s in
-            SongEntry(id: s.id.uuidString, title: s.title, date: s.created, location: .local(s), toCheck: s.toCheck, preset: s.preset)
+            SongEntry(id: s.id.uuidString, title: s.title, date: s.created, location: .local(s), toCheck: s.toCheck, noPlace: s.noPlace, preset: s.preset)
         }
         for j in computerJobs where j.status == "succeeded" && !downloaded.contains(j.id) && j.outputs.contains("tab.musicxml") {
             let date = Date(timeIntervalSince1970: j.created ?? 0)
