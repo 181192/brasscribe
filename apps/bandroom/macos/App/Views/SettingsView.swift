@@ -2,7 +2,7 @@ import BandroomKit
 import SwiftUI
 
 /// Settings (design/shared/server-app.md §4): Start when I log in · Where downloads are kept · Hugging Face access ·
-/// Appearance (design/brands/brasscribe/system.md §10) · Text size · About.
+/// Sheet music from pictures (the reader that is fetched only when asked for here) · Appearance (design/brands/brasscribe/system.md §10) · Text size · About.
 struct SettingsView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.colorSchemeContrast) private var contrast
@@ -48,6 +48,40 @@ struct SettingsView: View {
             } else {
                 Section("Hugging Face access") {
                     Button("Sign in again…") { app.openWindow("setup") }
+                }
+            }
+            Section("Sheet music from pictures") {
+                // What it is, its licence and where it comes from, before the button that fetches it.
+                Text("Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence.")
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Brasscribe doesn't pass it on: this Mac downloads it from PyPI and from homr's releases on GitHub (about \(Strings.gigabytes(SheetReader.downloadBytes)) GB) and runs it as a separate program.")
+                    .font(.caption).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
+                switch app.readerState {
+                case .notInstalled:
+                    if !app.canInstallReader {
+                        Text("Brasscribe is still being set up. The reader can be installed once that is done.")
+                            .font(.caption).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
+                    }
+                case .installing:
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small).accessibilityHidden(true)
+                        Text("Installing the reader… This takes a few minutes.").fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                case .installed:
+                    Text("The reader is installed. Phones can send pictures of sheet music now.")
+                        .fixedSize(horizontal: false, vertical: true)
+                case .failed(let why):
+                    Text(Strings.readerFailure(why)).fixedSize(horizontal: false, vertical: true)
+                }
+                HStack {
+                    Button("Read about homr and its licence") { NSWorkspace.shared.open(SheetReader.page) }
+                    Spacer()
+                    switch app.readerState {
+                    case .notInstalled: Button("Install the reader") { app.installReader() }.disabled(!app.canInstallReader)
+                    case .failed: Button("Try again") { app.installReader() }.disabled(!app.canInstallReader)
+                    case .installing, .installed: EmptyView()
+                    }
                 }
             }
             Section("Appearance") {

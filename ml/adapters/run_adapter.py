@@ -251,11 +251,20 @@ HOMR_WEIGHTS = {
         (37_824_782, "3875da31b68c8f4a8a0c875760a6476bf96a7b5bc25d3c020a05610c709dcf64", "transformer"),
 }
 REFUSAL = "scribe-refusal: "  # a line of stderr that names why the pages are refused (the engine's sheet.py reads it)
+HOMR_FETCH_TIMEOUT_S = 60.0  # without a byte from homr's release before a fetch of its weights is given up
+
+
+def _fetch(url: str, part: Path) -> None:
+    """The file at `url` into `part`. A connection that sends nothing for HOMR_FETCH_TIMEOUT_S ends the fetch."""
+    with urllib.request.urlopen(url, timeout=HOMR_FETCH_TIMEOUT_S) as response, open(part, "wb") as out:
+        shutil.copyfileobj(response, out, 1 << 20)
 
 
 def homr_setup() -> None:
     """homr's weights, checked and in place. Idempotent: fetches only an archive that is missing or of the wrong
-    size, and unpacks only a file homr does not have whole."""
+    size, and unpacks only a file homr does not have whole. A fetch that fails (no network, or one that stalls)
+    is named as such, so that it is not taken for a page that could not be read."""
+    import http.client
     import zipfile
 
     models = MODELS / "homr"
@@ -270,7 +279,12 @@ def homr_setup() -> None:
         archive = models / name
         if not (archive.is_file() and archive.stat().st_size == size):
             with atomic(archive) as part:
-                urllib.request.urlretrieve(f"{HOMR_RELEASE}/{name}", part)
+                try:
+                    _fetch(f"{HOMR_RELEASE}/{name}", part)
+                except (OSError, http.client.HTTPException) as e:  # URLError and a timeout are OSErrors
+                    print(f"{name} could not be fetched: {e}", file=sys.stderr)
+                    print(f"{REFUSAL}weights_missing", file=sys.stderr)
+                    raise SystemExit(4) from None
                 got = _sha256(part)
                 if got != sha256:
                     raise SystemExit(f"{name}: SHA-256 {got}, expected {sha256}; not kept")

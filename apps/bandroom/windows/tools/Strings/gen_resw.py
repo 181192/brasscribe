@@ -116,6 +116,21 @@ ROWS = [
     ("Settings_Hf_Saved", "The key is saved in Credential Manager.", "Nøkkelen er lagret i Legitimasjonsbehandling."),  # (+)
     ("Settings_Hf_FromEnvironment", "Brasscribe uses the HF_TOKEN key set on this PC.", "Brasscribe bruker HF_TOKEN-nøkkelen som er satt på denne PC-en."),  # (+)
     ("Settings_Save", "Save", "Lagre"),  # (+)
+    # (+) the reader of printed music: fetched only when asked for here, its licence and source shown first
+    ("Settings_Reader", "Sheet music from pictures", "Noter fra bilder"),
+    ("Settings_Reader_Body", "Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence.",
+     "Telefonene kan sende et bilde eller en PDF av trykte noter og få et partitur eller en tab tilbake. Til det trengs en noteleser, homr, som ikke er en del av Brasscribe: den er fri programvare under lisensen AGPL-3.0."),
+    ("Settings_Reader_Source", "Brasscribe doesn't pass it on: this PC downloads it from PyPI and from homr's releases on GitHub (about {0} GB) and runs it as a separate program.",
+     "Brasscribe deler den ikke videre. PC-en laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent {0} GB) og kjører den som et eget program."),
+    ("Settings_Reader_Read", "Read about homr and its licence", "Les om homr og lisensen"),
+    ("Settings_Reader_Install", "Install the reader", "Installer noteleseren"),
+    ("Settings_Reader_Installing", "Installing the reader… This takes a few minutes.", "Installerer noteleseren … Det tar noen minutter."),
+    ("Settings_Reader_Installed", "The reader is installed. Phones can send pictures of sheet music now.", "Noteleseren er installert. Telefonene kan sende bilder av noter nå."),
+    ("Settings_Reader_Wait", "Brasscribe is still being set up. The reader can be installed once that is done.", "Brasscribe gjøres fortsatt klar. Noteleseren kan installeres når det er ferdig."),
+    ("Settings_Reader_Failed", "The reader wasn't installed. Try again; the log has the details.", "Noteleseren ble ikke installert. Prøv igjen. Detaljene står i loggen."),
+    ("Settings_Reader_Failed_Network", "The reader's files couldn't be downloaded. Check the internet connection, then try again.",
+     "Filene til noteleseren ble ikke lastet ned. Sjekk internettforbindelsen, og prøv igjen."),
+    ("Settings_Reader_Failed_Space", "Not enough space: the reader needs about {0} GB, and {1} GB is free.", "Ikke nok plass: noteleseren trenger omtrent {0} GB, og {1} GB er ledig."),
     ("Settings_About", "Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which sends usage data to Microsoft through Windows’ diagnostic data, never a recording.",
      "Brasscribe Bandroom er et ikke-kommersielt prosjekt. På denne PC-en lytter den med Microsofts ONNX Runtime, som sender bruksdata til Microsoft gjennom Windows’ diagnostikkdata, aldri et opptak."),  # (+)
     ("Settings_Licences", "Third-party licences", "Tredjepartslisenser"),  # (+) opens the licences file that ships with the app
@@ -226,6 +241,7 @@ ROWS = [
     ("Setup_Item_BandWriter", "Band writer (MuScriptor)", "Bandskriver (MuScriptor)"),
     ("Setup_Item_Separator", "Instrument separator", "Instrumentskiller"),
     ("Setup_Item_BeatFinder", "Beat finder", "Taktfinner"),
+    ("Setup_Item_SheetReader", "Reader of sheet music (homr)", "Noteleser (homr)"),  # (+) kept up to date where it was installed
     ("Setup_Failed", "The download stopped. Check the internet connection, then try again.", "Nedlastingen stoppet. Sjekk internettforbindelsen, og prøv igjen."),  # (+)
     ("Setup_4_Where", "It runs quietly in the corner of the taskbar. If you don't see it, choose ^ (Show hidden icons).", "Den kjører i det stille i hjørnet av oppgavelinjen. Ser du den ikke, velger du ^ (Vis skjulte ikoner)."),
     ("Notify_Ready", "Brasscribe is ready. Phones and tablets can make full-band scores now.", "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."),

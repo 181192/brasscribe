@@ -41,11 +41,54 @@ public static class EnvironmentPlan
     /// <summary>What the setup window calls each environment (copy deck setup.3.items).</summary>
     public static string ItemKey(string environment) => environment.Replace("-cuda", "", StringComparison.Ordinal) switch
     {
+        SheetReader.Environment => "Setup_Item_SheetReader",
         "muscriptor" => "Setup_Item_BandWriter",
         "separator" or "mega53" => "Setup_Item_Separator",
         "beat-this" => "Setup_Item_BeatFinder",
         _ => "Setup_Item_Listening",
     };
+}
+
+/// <summary>
+/// The reader of printed music (homr, AGPL-3.0): what turns a picture or a PDF of sheet music into notes for the
+/// engine's <c>sheet</c> and <c>sheet-tab</c> profiles. It is no part of setup and no part of the app: this computer
+/// fetches it, from where its makers publish it, only when the person asks for it in Settings. The engine offers
+/// the two profiles where its environment is (<c>environment_installed</c> in the engine's adapters.py), looked for
+/// again at every request, so nothing restarts when it arrives.
+/// </summary>
+public static class SheetReader
+{
+    /// <summary>Its pixi environment, and the folder of its weights under the models folder.</summary>
+    public const string Environment = "homr";
+    public const string Licence = "AGPL-3.0";
+    /// <summary>Its makers' page: what it is, its source and its licence.</summary>
+    public static readonly Uri Page = new("https://github.com/liebharc/homr");
+    /// <summary>What is fetched, about: the environment from PyPI and conda-forge, and the weights from homr's release.</summary>
+    public const long DownloadBytes = 475_000_000 + 139_000_000;
+    /// <summary>The free space an install asks for: the download, pixi's cache of it, and room to spare.</summary>
+    public const long NeededFreeBytes = 2_000_000_000;
+    /// <summary>The line the adapter runner ends on when the weights could not be fetched (run_adapter.py, REFUSAL).</summary>
+    public const string WeightsNotFetched = "scribe-refusal: weights_missing";
+}
+
+/// <summary>Why the reader was not installed.</summary>
+public enum SheetReaderFailure
+{
+    /// <summary>There is no engine workspace to install it into yet.</summary>
+    NotSetUp,
+    /// <summary>pixi could not install its environment.</summary>
+    Environment,
+    /// <summary>Its weights could not be fetched: no network, or one that stalled.</summary>
+    Network,
+    /// <summary>The weights step stopped on something else (a checksum that does not match, the disk).</summary>
+    Weights,
+}
+
+public sealed class SheetReaderException(SheetReaderFailure failure, int exitCode = 0)
+    : Exception(string.Create(CultureInfo.InvariantCulture, $"the reader of printed music was not installed: {failure} (exit code {exitCode})"))
+{
+    public SheetReaderFailure Failure { get; } = failure;
+    public int ExitCode { get; } = exitCode;
 }
 
 /// <summary>
@@ -183,7 +226,71 @@ public sealed class Bootstrapper
         var steps = new List<string>();
         if (!WorkspaceCurrent) steps.Add("workspace");
         steps.AddRange(EnvironmentPlan.Environments(cuda).Where(e => !MarkerMatches("env-" + e, hash)));
+        // The reader only where it was asked for, and then kept up with the lockfile like the others.
+        if (File.Exists(Marker(ReaderMarker)) && !MarkerMatches(ReaderMarker, hash)) steps.Add(SheetReader.Environment);
         return steps;
+    }
+
+    private const string ReaderMarker = "env-" + SheetReader.Environment;
+
+    /// <summary>
+    /// The reader of printed music is on this computer: its environment is where the engine looks for it, and an
+    /// install here ran to its end (the environment, then the weights).
+    /// </summary>
+    public bool ReaderInstalled => File.Exists(Marker(ReaderMarker)) && Directory.Exists(_paths.ReaderEnvironment);
+
+    /// <summary>
+    /// The reader's weights, fetched and checked by the adapter runner itself (<c>run_adapter.py --setup homr</c>, with
+    /// the engine's Python): the archives, their sizes and their SHA-256s are pinned there and nowhere else. The
+    /// runner gets what the engine gives it: the models folder, pixi as its runner, and pixi on the PATH.
+    /// </summary>
+    public ProcessSpec ReaderWeightsSpec(string? path = null)
+    {
+        path ??= Environment.GetEnvironmentVariable("PATH") ?? "";
+        return new ProcessSpec(
+            _pixiExe,
+            ["run", "--manifest-path", _paths.Manifest, "--frozen", "-e", "default",
+             "python", Path.Combine(_paths.Adapters, "run_adapter.py"), "--setup", SheetReader.Environment],
+            _paths.Workspace,
+            new Dictionary<string, string>
+            {
+                ["SCRIBE_MODELS"] = _paths.Models,
+                ["SCRIBE_ADAPTER_RUNNER"] = "pixi",
+                ["PIXI_CACHE_DIR"] = _paths.PixiCache,
+                ["PYTHONUTF8"] = "1",
+                ["PATH"] = Path.GetDirectoryName(_pixiExe) is { Length: > 0 } dir ? dir + Path.PathSeparator + path : path,
+            });
+    }
+
+    /// <summary>
+    /// Installs the reader, when the person asked for it: <c>pixi install --frozen -e homr</c> in the installed
+    /// workspace, then its weights. Both steps pick up where a stopped run left off (pixi keeps what it downloaded,
+    /// the runner the archives it has whole), so trying again is cheap. Throws <see cref="SheetReaderException"/>.
+    /// </summary>
+    public async Task InstallReaderAsync(CancellationToken ct)
+    {
+        if (!HasInstalledEngine) throw new SheetReaderException(SheetReaderFailure.NotSetUp);
+        string hash = InstalledLockHash;
+        var install = InstallSpec(SheetReader.Environment);
+        _log.Write($"bandroom: installing the reader of printed music: {install.FileName} {string.Join(' ', install.Arguments)}");
+        int code = await RunAsync(install, _ => { }, ct).ConfigureAwait(false);
+        if (code != 0) throw new SheetReaderException(SheetReaderFailure.Environment, code);
+        var weights = ReaderWeightsSpec();
+        _log.Write($"bandroom: fetching the reader's weights: {weights.FileName} {string.Join(' ', weights.Arguments)}");
+        bool notFetched = false;
+        code = await RunAsync(weights, line => notFetched |= line.Trim() == SheetReader.WeightsNotFetched, ct).ConfigureAwait(false);
+        if (code != 0) throw new SheetReaderException(notFetched ? SheetReaderFailure.Network : SheetReaderFailure.Weights, code);
+        WriteMarker(ReaderMarker, hash);
+        _log.Write("bandroom: the reader of printed music is installed");
+    }
+
+    private async Task<int> RunAsync(ProcessSpec spec, Action<string> line, CancellationToken ct)
+    {
+        using var p = _launcher.Start(spec, l => { _log.Write(l); line(l); });
+        using var reg = ct.Register(p.Kill);
+        int code = await p.WaitForExitAsync().ConfigureAwait(false);
+        ct.ThrowIfCancellationRequested();
+        return code;
     }
 
     /// <summary>

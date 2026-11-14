@@ -36,6 +36,17 @@ final class AppModel {
     var setupOpensAtKey = false
     /// The three model downloads (docs/brasscribe/plan/apps-plan.md §7), from their makers' own release URLs.
     let downloader: ModelDownloader
+    /// The reader of printed music (`SheetReader`): fetched only when it is asked for in Settings.
+    let reader = SheetReaderInstaller()
+    /// Its environment is on this Mac, as of the last look.
+    private(set) var readerInstalled = false
+    /// The screen catalogue's states of the Settings section; nil shows this Mac's own.
+    var readerStateShown: SheetReaderState?
+    var readerState: SheetReaderState { readerStateShown ?? .resolve(phase: reader.phase, installed: readerInstalled) }
+    /// There is an engine to install the reader with, and neither setup nor an update is replacing it.
+    var canInstallReader: Bool {
+        demo || (supervisor.configuration.source.isEnvironmentReady && setupComplete && !updater.isUpdating)
+    }
     /// Window requests wait here until SwiftUI's openWindow is available (a reopen event can come first).
     let opener = WindowOpener()
     private(set) var host: HostSnapshot?
@@ -163,6 +174,7 @@ final class AppModel {
         let log = logger
         supervisor.log = { log.write($0) }
         downloader.log = { log.write($0) }
+        reader.log = { log.write($0) }
         downloader.onFinished = { [weak self] in self?.downloadsFinished() }
         supervisor.onHealthy = { [weak self] client in self?.engineAnswered(client) }
         supervisor.onFailure = { [weak self] why in self?.notifyFailure(why) }
@@ -242,6 +254,7 @@ final class AppModel {
         monitor.stop()
         bootstrapper.cancel()
         updater.cancel()
+        reader.cancel()
         supervisor.shutdown()
         releaseSleep()
     }
@@ -284,6 +297,7 @@ final class AppModel {
         let from = WorkspaceStamp.read(in: workspace)?.short ?? "no stamp"
         logger.write("engine workspace \(from) is not this app's (\(stamp?.short ?? "?")): updating\(lockChanged ? ", lockfile changed" : "")")
         await stopEngine()
+        reader.cancel()  // it runs with the engine that is about to be replaced
         let ok = await updater.update(configuration: supervisor.configuration, bundledWorkspace: bundled, lockChanged: lockChanged)
         if ok {
             updateFailure = nil
@@ -368,6 +382,7 @@ final class AppModel {
                 // The demo's computer is always the same one, so its screenshots don't change with this Mac's load.
                 let snap = if let demoHost { demoHost } else { await Task.detached { sampler.sample() }.value }
                 let models = await Task.detached { ModelCheck.check(models: AppModel.modelsDir(paths, defaults: defaults)) }.value
+                self?.lookForReader()
                 self?.host = snap
                 self?.models = (self?.demo ?? false) ? .init(missing: []) : models
                 self?.announceIfChanged()
@@ -632,6 +647,7 @@ final class AppModel {
         monitor.stop()
         bootstrapper.cancel()
         updater.cancel()
+        reader.cancel()
         supervisor.shutdown()
         releaseSleep()
         try? SMAppService.mainApp.unregister()
@@ -650,6 +666,23 @@ final class AppModel {
                 if error != nil { NSWorkspace.shared.activateFileViewerSelecting([app]) }
                 DispatchQueue.main.async { NSApp.terminate(nil) }
             }
+        }
+    }
+
+    // MARK: the reader of printed music
+
+    private func lookForReader() {
+        readerInstalled = !demo && supervisor.configuration.source.isReaderInstalled
+    }
+
+    /// Install the reader, or try again (Settings › Sheet music from pictures). The engine keeps running: it looks
+    /// for the reader at each request, so phones are offered the two profiles as soon as it is there.
+    func installReader() {
+        guard !demo, canInstallReader, !reader.isInstalling else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            await self.reader.install(configuration: self.supervisor.configuration, base: self.environment)
+            self.lookForReader()
         }
     }
 

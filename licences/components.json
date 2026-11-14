@@ -658,7 +658,7 @@
       "licence": "BSD-3-Clause",
       "texts": ["BSD-3-Clause"],
       "notice": ["Copyright (c) 2023, prefix.dev GmbH. All rights reserved."],
-      "note": "The unmodified program, which sets up Brasscribe's tools on this computer. What it installs there (Python and its packages, from conda-forge and PyPI) comes with its own licence files, in the tools' folder.",
+      "note": "The unmodified program, which sets up Brasscribe's tools on this computer. What it installs there (Python and its packages, from conda-forge and PyPI) comes with its own licence files, in the tools' folder. The reader of sheet music from pictures, homr (AGPL-3.0, https://github.com/liebharc/homr), is not among them and is no part of this app: this computer fetches it from PyPI and from homr's releases on GitHub only when you ask for it in Settings, with its licence in its own folder, and Brasscribe runs it as a separate program.",
       "apps": ["@bandroom"]
     },
     {

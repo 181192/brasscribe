@@ -34,6 +34,11 @@ list, or when a text is missing or unused. CI runs it on every change.
   each: the files name where they are instead of repeating them.
 - What Bandroom installs on the user's computer with pixi (Python and its packages) is not shipped in the app; the
   packages bring their licence files with them.
+- The reader of sheet music from pictures (homr, AGPL-3.0) has no component of its own, because no app ships it:
+  Bandroom fetches it on the user's computer, from PyPI and from homr's release on GitHub, only when the user asks
+  for it in Settings, where its licence and its source are shown first. It must stay that way: a component for it
+  here would mean an app carries it, and then that app would have to take the AGPL. Bandroom's file says where it
+  comes from in pixi's note, and `THIRD_PARTY_NOTICES.md` has the whole of it.
 
 [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md) says the same in prose, with what is downloaded and what only
 development uses.

@@ -123,9 +123,12 @@ distributed through an app store without the app taking the AGPL.
 Nothing of homr is redistributed by Brasscribe. Where its environment is installed, the package (475 MB with
 what it depends on) comes from PyPI onto the user's computer, and its weights (139 MB) from homr's own release
 on GitHub, fetched by the adapter runner and checked against pinned SHA-256s. No installation gets it unasked:
-the engine offers the two profiles only where the environment is there. Bandroom does not install it yet, so in
-Bandroom the profiles do not show until it does, with a notice of what is being installed and under which
-licence.
+the engine offers the two profiles only where the environment is there. Bandroom installs it when the user asks
+for it, in Settings under Sheet music from pictures: the section says what homr is, that it is AGPL-3.0, where it
+comes from and how much it is before its button fetches anything, and Bandroom then runs the adapter runner's own
+setup (`run_adapter.py --setup homr`), so the weights and their checksums are named in one place. It is in no
+installer and no release of Bandroom, and first-run setup never fetches it; until it is installed the profiles do
+not show on the phones.
 
 ## Doubt
 

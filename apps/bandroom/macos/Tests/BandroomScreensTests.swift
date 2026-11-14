@@ -30,6 +30,10 @@ import Testing
         case setupDownload = "setup-download"
         case setupReady = "setup-ready"
         case settings
+        /// Settings while the reader of printed music is fetched, once it is there, and after a fetch that failed.
+        case settingsReaderInstalling = "settings-reader-installing"
+        case settingsReaderInstalled = "settings-reader-installed"
+        case settingsReaderFailed = "settings-reader-failed"
     }
 
     /// Findings that are known and not yet fixed, each with its issue: the screen, the kind, and words the finding names.
@@ -103,6 +107,21 @@ import Testing
         #expect(PutBackEngine(phase: .starting, older: true) == .starting)
     }
 
+    /// The reader of printed music is offered, not installed: Settings shows what this Mac has, and an install
+    /// asked for there takes over while it runs and when it stops.
+    @Test func settingsShowsTheReadersState() async {
+        let app = await Catalogue.model(busy: false)
+        #expect(app.readerState == .notInstalled && app.canInstallReader)
+        app.installReader()  // the demo installs nothing
+        #expect(app.readerState == .notInstalled && !app.reader.isInstalling)
+        #expect(SheetReaderState.resolve(phase: .installing, installed: false) == .installing)
+        #expect(SheetReaderState.resolve(phase: .done, installed: true) == .installed)
+        let network = Strings.readerFailure(.network)
+        #expect(network.contains("internet") && network != Strings.readerFailure(.stopped("exit code 1")))
+        let space = Strings.readerFailure(.notEnoughSpace(neededBytes: 2_000_000_000, freeBytes: 1_200_000_000))
+        #expect(space.contains(Strings.gigabytes(1_200_000_000)) && space.contains(Strings.gigabytes(2_000_000_000)), "\(space)")
+    }
+
     /// The hooks still do what the catalogue needs, and the run is in the language it says.
     @Test func hooksStillWork() async {
         if let wrong = Guards.language(Catalogue.language, localized: String(localized: "Pair a phone"), english: "Pair a phone") {
@@ -119,6 +138,16 @@ import Testing
         case .panelBusy, .phones: await Catalogue.model(busy: true)
         case .panelRequest: await Catalogue.model(busy: true, request: true)
         case .panelReady, .pair, .settings: await Catalogue.model(busy: false)
+        case .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed:
+            await {
+                let app = await Catalogue.model(busy: false)
+                app.readerStateShown = switch screen {
+                case .settingsReaderInstalling: .installing
+                case .settingsReaderInstalled: .installed
+                default: .failed(.network)
+                }
+                return app
+            }()
         case .panelUpdateEngine, .pairUpdate: await Catalogue.model(busy: false, interface: "older")
         case .pairUpdateFailed:
             await {
@@ -151,7 +180,7 @@ import Testing
         case .setupLicence: return AnyView(SetupView(step: 1))
         case .setupDownload: return AnyView(SetupView(step: 2))
         case .setupReady: return AnyView(SetupView(step: 3))
-        case .settings: return AnyView(SettingsView())
+        case .settings, .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed: return AnyView(SettingsView())
         }
     }
 
@@ -161,7 +190,7 @@ import Testing
         case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout, .phones: 360
         case .pair, .pairUpdate, .pairUpdateFailed: 720
         case .setupCheck, .setupLicence, .setupDownload, .setupReady: 760
-        case .settings: 480
+        case .settings, .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed: 480
         }
     }
 
