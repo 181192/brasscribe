@@ -63,6 +63,10 @@ PROBES = {
         n(A1, 0, Q), n(B1, Q, Q, DOUBT), n(D2, 2 * Q, Q), n(E2, 3 * Q, Q),
         n(G2, 4 * Q, 2 * Q, DOUBT), n(D2, 6 * Q, 2 * Q),
     ]),
+    "folded": ("a doubtful note sounding with the same note, which the page writes once", (4, 4), 0, [
+        n(A1, 0, Q), n(A1, 0, Q, DOUBT), n(E2, Q, Q), n(G1, 2 * Q, Q, DOUBT), n(E1, 3 * Q, Q),
+        n(D2, 4 * Q, 2 * Q), n(D2, 4 * Q, 2 * Q, DOUBT), n(E1, 6 * Q, 2 * Q),
+    ]),
     "six-eight": ("six-eight time, a doubtful note on the fourth eighth", (6, 8), 0, [
         n(E1, 0, 12), n(G1, 12, 12), n(A1, 24, 12), n(B1, 36, 12, DOUBT), n(A1, 48, 12), n(G1, 60, 12),
         n(E1, 72, 36), n(B1, 108, 36, DOUBT),

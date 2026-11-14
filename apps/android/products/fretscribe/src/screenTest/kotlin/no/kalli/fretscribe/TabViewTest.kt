@@ -635,6 +635,7 @@ class TabViewTest : TabScreenTest() {
         val probes = linkedMapOf(
             "chords" to Triple(2, 3, 0), "tie-over-the-bar" to Triple(1, 1, 0), "moved-to-the-grid" to Triple(3, 3, 0), "pickup" to Triple(3, 3, 0),
             "triplets" to Triple(2, 2, 0), "no-place-in-a-chord" to Triple(3, 1, 2), "capo" to Triple(2, 2, 0), "six-eight" to Triple(2, 2, 0),
+            "folded" to Triple(1, 1, 0),
         )
         val layouts = listOf("tab" to TabLayout.TAB, "tab-and-notation" to TabLayout.TAB_AND_NOTATION, "notation" to TabLayout.NOTATION)
         val said = ArrayList<String>()
@@ -650,7 +651,8 @@ class TabViewTest : TabScreenTest() {
                 rule.runOnUiThread { drawn = view.placed.sumOf { it.doubtful.size } }
                 said += "$what: ${marks.columns.size} columns, ${marks.doubtful} ?, ${marks.noPlace} !, ${marks.unplaced} without a column, ${view.unmatched} without a beat, $drawn tinted"
                 assertEquals("$what: columns, notes marked ?, notes with no place", want, Triple(marks.columns.size, marks.doubtful, marks.noPlace))
-                assertEquals("$what: marked notes the page has no column for", 0, marks.unplaced)
+                // The folded probe's doubled notes are written once: the doubtful one of each pair has no column of its own.
+                assertEquals("$what: marked notes the page has no column for", if (name == "folded" && tab != null) 2 else 0, marks.unplaced)
                 assertEquals("$what: marked notes alphaTab has no beat for", 0, view.unmatched)
                 assertEquals("$what: every column has its mark", marks.columns.size, view.engraving.value!!.boxes.size)
                 assertEquals("$what: every note marked ? is tinted", marks.doubtful, drawn)

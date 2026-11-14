@@ -410,6 +410,25 @@ class TabSongTest {
         }
     }
 
+    /**
+     * The folded probe (apps/fixtures/tab-probes/folded): two doubtful notes sound with the same note and the page writes
+     * each pair once. The tab draws one "?", for the note that has a column of its own: Check the song and Home say 1, not
+     * the data's 3.
+     */
+    @Test
+    fun aFoldedNoteIsCountedOnNoScreen() {
+        val folder = fixture?.resolveSibling("tab-probes")?.resolve("folded")
+        assumeTrue("apps/fixtures/tab-probes/folded is not in this checkout", folder?.isDirectory == true)
+        val page = File(folder, "tab.musicxml").readText()
+        val tab = BrasscribeJson.decodeFromString(Tab.serializer(), File(folder, "tab.json").readText())
+        assertEquals(3, tab.notes.count { it.doubtful })
+        val marks = TabMarks.of(TabIndex.parse(page), tab)
+        assertEquals("two doubtful notes have no column", 2, marks.unplaced)
+        assertEquals(1, marks.doubtful)
+        assertEquals(SongRow.Doubtful(1), SongCheck.rows(tab, marks).filterIsInstance<SongRow.Doubtful>().single())
+        assertEquals(1, SongFacts.of(page).doubtful)
+    }
+
     /** A note the page folds into another is not drawn on the tab: Check the song does not count it either. */
     @Test
     fun checkTheSongCountsNoNoteTheTabDoesNotDraw() {
