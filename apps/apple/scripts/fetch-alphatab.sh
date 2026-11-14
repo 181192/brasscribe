@@ -4,8 +4,8 @@
 #   scripts/fetch-alphatab.sh [destination]   default: features/tab/Sources/TabKit/Resources/page/alphatab
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION=1.8.4
-SHA256=70b2c77abc9698a055d90a11d77308b6b41247936476e969d85770e3d4db4602
+VERSION=1.9.0
+SHA256=e9e9b795f9803fda6cf00c0e6c8cb412c6e1033fb7979fc1bc40c1e1ecccaf35
 DEST="${1:-features/tab/Sources/TabKit/Resources/page/alphatab}"
 if [ -f "$DEST/VERSION" ] && [ "$(cat "$DEST/VERSION")" = "$VERSION" ]; then exit 0; fi
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT

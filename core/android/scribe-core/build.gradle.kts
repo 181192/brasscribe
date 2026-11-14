@@ -2,7 +2,7 @@
 // bindings (src/main/kotlin, from core/scripts/bindings.sh) and the native
 // libraries per ABI (src/main/jniLibs, from core/scripts/build-all.sh).
 plugins {
-    id("com.android.library") version "9.5.0"
+    id("com.android.library") version "9.5.1"
 }
 
 android {

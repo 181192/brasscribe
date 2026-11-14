@@ -679,6 +679,22 @@ class TabViewTest : TabScreenTest() {
         shotOf("tab-long-song-end")
     }
 
+    @Test
+    fun theEngravedPageIsAsTallAsItsMusic() {
+        // alphaTab 1.9.0's Android view lays the page out one system short (the surface takes the top of the last
+        // system as the page's height), which cuts the last system off. This fails on such a version.
+        computer("bass-line-marks")
+        val tab = showTheTab()
+        rule.runOnUiThread {
+            val density = rule.activity.resources.displayMetrics.density
+            val systems = tab.view.api.boundsLookup!!.staffSystems
+            val last = systems[systems.length.toInt() - 1].visualBounds
+            val music = Math.ceil((last.y + last.h) * density).toInt()
+            val page = tab.view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface).height
+            assertTrue("the page ($page px) reaches the end of the music ($music px)", page >= music)
+        }
+    }
+
     /** The ink of the first numeral 0 of [tab]'s first bar, as a box in pixels, with the size its font was set at. */
     private fun firstZero(tab: TabView): Pair<Rect, Float> {
         waitUntil(30_000) { tab.engraving.value != null }
