@@ -121,6 +121,7 @@ const figures = (slots) => {
   for (const el of document.querySelectorAll("[data-slot]")) {
     if (slots[el.dataset.slot] === undefined) continue;
     el.innerHTML = slots[el.dataset.slot];
+    el.removeAttribute("lang");
     replaced.push(el);
   }
   if (!replaced.length) return;
@@ -131,8 +132,10 @@ const figures = (slots) => {
 
 async function choose(lang, remember) {
   if (remember) try { localStorage.setItem(KEY, lang); } catch {}
-  if (lang === now) return write(english ?? read(), lang);
+  // The page's English is read once, before the scripts have added to it (a stepper's buttons, a rail's tabs):
+  // written back later, the scripts add to it again, and once only.
   english ??= read();
+  if (lang === now) return write(english, lang);
   if (lang === "nb") {
     try {
       norwegian ??= await beside("nb.json");
@@ -141,15 +144,22 @@ async function choose(lang, remember) {
     }
   }
   write(lang === "nb" ? norwegian : english, lang);
-  // (The other figures are asked for once the page shows, so they do not hold up what it needs first.)
+  // The figures still in English while the rest of their words come say so (lang="en"), to a screen reader and to
+  // a search in the page; the language they get is taken off them again when their words are in.
+  for (const el of document.querySelectorAll("[data-slot]")) {
+    if (lang === "nb" && norwegian.slots?.[el.dataset.slot] === undefined && !norwegian.whole) el.lang = "en";
+    else el.removeAttribute("lang");
+  }
+  // (The other figures are asked for once the page shows, so they do not hold up what it needs first. If they do not
+  // come, they are asked for again the next time Norwegian is chosen.)
   if (lang === "nb" && !norwegian.whole) {
-    more ??= beside("nb-more.json").catch(() => ({ slots: {} }));
+    more ??= beside("nb-more.json");
     more.then((rest) => {
       if (norwegian.whole) return;
       norwegian.whole = true;
       Object.assign(norwegian.slots ??= {}, rest.slots);
       if (now === "nb") figures(rest.slots);
-    });
+    }, () => { more = null; });
   }
 }
 
