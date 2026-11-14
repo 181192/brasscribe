@@ -202,8 +202,8 @@
     <!-- Sangene dine -->
     <string name="fs_song_tab">Tab</string>
     <plurals name="fs_song_to_check">
-        <item quantity="one">%1$d tone å sjekke</item>
-        <item quantity="other">%1$d toner å sjekke</item>
+        <item quantity="one">%1$d tone merket ?</item>
+        <item quantity="other">%1$d toner merket ?</item>
     </plurals>
     <string name="check_notes">Sjekk sangen</string>
     <string name="other_product_row">Bandpartitur · åpnes i Brasscribe</string>
@@ -242,7 +242,7 @@
     <string name="fs_tab_place_open">%1$s streng, åpen, %2$s.</string>
     <string name="fs_tab_not_sure">Fretscribe er ikke sikker på denne.</string>
     <!-- Before the words of a note with no place that shares its beat with a note marked "?" -->
-    <string name="fs_tab_also_on_beat">På samme slag: %1$s</string>
+    <string name="fs_tab_also_on_beat">Også på dette slaget: %1$s</string>
     <string name="fs_tab_no_place">En tone her har ingen plass på instrumentet ditt. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_named">%1$s har ingen plass på instrumentet ditt her. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_low">%1$s er lavere enn den laveste strengen din. Er stemmingen riktig?</string>

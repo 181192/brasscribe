@@ -60,7 +60,8 @@ import no.kalli.scribe.play.ui.ScreenTitle
 private sealed interface Heard {
     data object Reading : Heard
     /** [stages]: the stages of the job that made it (a full song was separated first). */
-    data class Ready(val tab: Tab, val stages: List<String>) : Heard
+    /** [marks]: the tab's marks of the same page, so the rows count what the tab draws. */
+    data class Ready(val tab: Tab, val stages: List<String>, val marks: TabMarks? = null) : Heard
     data class Missing(val why: Int) : Heard
 }
 
@@ -93,7 +94,9 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
             val engine = vm.container.engine() ?: throw NoCompanionException()
             withContext(Dispatchers.IO) {
                 val id = jobId ?: throw NoCompanionException()
-                Heard.Ready(engine.tab(id), engine.job(id).stages.map { it.name })
+                val tab = engine.tab(id)
+                val page = result?.musicXml
+                Heard.Ready(tab, engine.job(id).stages.map { it.name }, page?.let { runCatching { TabMarks.of(TabIndex.parse(it), tab) }.getOrNull() })
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -137,7 +140,7 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
             is Heard.Missing -> InfoNote(stringResource(R.string.fs_check_missing, stringResource(h.why)), Modifier.testTag("fs-check-missing"))
             is Heard.Ready -> {
                 Lead(stringResource(R.string.fs_check_lead))
-                val rows = remember(h.tab) { SongCheck.rows(h.tab) }
+                val rows = remember(h.tab, h.marks) { SongCheck.rows(h.tab, h.marks) }
                 val changes = rows.map { changeFor(it) }
                 // Above the rows, so it is seen: why the buttons are not there.
                 if (changes.any { it != null } && !canChange && !asking)
@@ -301,13 +304,15 @@ fun songRowSubtitle(entry: ScoreEntry): String? {
     val library = (LocalContext.current.applicationContext as PlayApplication).container.scoreLibrary
     // Read off the main thread, and again when the song is saved again.
     val facts by produceState<SongFacts?>(null, saved.id, saved.updated) {
-        value = withContext(Dispatchers.IO) { library.content(saved.id)?.let { SongFacts.of(it.musicXml, it.compositionJson) } }
+        value = withContext(Dispatchers.IO) { library.content(saved.id)?.let { SongFacts.of(it.musicXml) } }
     }
     val f = facts ?: return listOf(stringResource(R.string.fs_song_tab), date).joinToString(" · ")
     return listOfNotNull(
         f.kind?.let { kindName(it) } ?: stringResource(R.string.fs_song_tab),
         f.tuning?.let { tuningName(it, kind = f.kind) },
-        f.toCheck.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_song_to_check, it, it) },
+        // The tab's own two numbers: marked "?", and with no place.
+        f.doubtful.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_song_to_check, it, it) },
+        f.noPlace.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.fs_tab_no_place_count, it, it) },
         date,
     ).joinToString(" · ")
 }
