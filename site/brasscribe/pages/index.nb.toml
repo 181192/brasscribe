@@ -113,7 +113,7 @@ doubt = " Brasscribe var ikke sikker på denne noten."
 
 [needs]
 title = "Her <em>kjører den.</em>"
-lead = "Appen er på telefonen, nettbrettet eller datamaskinen. <strong>Bandroom</strong>, på din egen Mac eller PC, lytter."
+lead = "Brasscribe skriver en solo på selve telefonen, nettbrettet eller Macen. Til partituret for et band trenger den <strong>Bandroom</strong>, på din egen Mac eller PC."
 line = "Gratis. Ikke i appbutikkene ennå, så første installasjon tar tre ekstra trykk: <a href=\"@/download/\">nedlastingssiden</a> viser dem."
 setup = "Sett opp Bandroom"
 

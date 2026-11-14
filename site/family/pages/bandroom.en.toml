@@ -1,9 +1,9 @@
-title = "Bandroom: the listening, for every Scribe app"
-description = "Bandroom is a free program for your own Mac or PC. It listens to the recordings from your phone and writes the score or the tab, for every Scribe app, inside your own network."
+title = "Bandroom: every band score and tab, for every Scribe app"
+description = "Bandroom is a free program for your own Mac or PC. It listens to the recordings from your phone and writes every band score and every tab, for every Scribe app, inside your own network."
 
 [hero]
 title = "Bandroom"
-lead = "One helper on your computer does the listening for every app. Your phone asks; Bandroom, on your own Mac or PC, writes the score or the tab and sends it back."
+lead = "One helper on your computer writes every band score and every tab, for every app. Your phone asks; Bandroom, on your own Mac or PC, writes it and sends it back. A solo in Brasscribe is written on the phone, tablet or Mac itself."
 get = "Get Bandroom"
 
 [does]

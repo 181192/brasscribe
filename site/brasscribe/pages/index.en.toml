@@ -113,7 +113,7 @@ doubt = " Brasscribe was not sure of this note."
 
 [needs]
 title = "Where it <em>runs.</em>"
-lead = "The app is on your phone, tablet or computer. <strong>Bandroom</strong>, on your own Mac or PC, does the listening."
+lead = "Brasscribe writes a solo on your phone, tablet or Mac itself. For a band's score it needs <strong>Bandroom</strong>, on your own Mac or PC."
 line = "Free. Not in the app stores yet, so the first install takes three extra taps: the <a href=\"@/download/\">download page</a> shows them."
 setup = "Set up Bandroom"
 

@@ -97,7 +97,7 @@ names = ["C", "Ciss", "D", "Ess", "E", "F", "Fiss", "G", "Giss", "A", "B", "H"]
 
 [needs]
 title = "Her <em>kjører den.</em>"
-lead = "Appen er på telefonen, nettbrettet eller datamaskinen. <strong>Bandroom</strong>, på din egen Mac eller PC, lytter."
+lead = "Appen er på telefonen, nettbrettet eller datamaskinen. <strong>Bandroom</strong>, på din egen Mac eller PC, skriver tabben."
 line = "Gratis. Ikke i appbutikkene ennå, så første installasjon tar tre ekstra trykk: <a href=\"@/download/\">nedlastingssiden</a> viser dem."
 setup = "Sett opp Bandroom"
 

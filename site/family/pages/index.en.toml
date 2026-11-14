@@ -33,11 +33,11 @@ get = "Get Bandroom"
 
 [bandroom.computer]
 title = "Bandroom, on your computer"
-text = "Does the listening and the writing, for every Scribe app and every phone you connect."
+text = "Writes every band score and every tab, for every Scribe app and every phone you connect."
 
 [bandroom.phone]
 title = "The app, on your phone"
-text = "Records, shows the score or the tab, and plays along with you. Connect it once."
+text = "Records, writes down a solo in Brasscribe by itself, shows the score or the tab, and plays along with you. Connect it once."
 
 [bandroom.private]
 title = "Yours alone"

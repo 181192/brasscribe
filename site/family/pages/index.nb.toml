@@ -33,11 +33,11 @@ get = "Last ned Bandroom"
 
 [bandroom.computer]
 title = "Bandroom, på datamaskinen"
-text = "Lytter og skriver, for alle Scribe-appene og alle telefonene du kobler til."
+text = "Skriver hvert bandpartitur og hver tab, for alle Scribe-appene og alle telefonene du kobler til."
 
 [bandroom.phone]
 title = "Appen, på telefonen"
-text = "Spiller inn, viser partituret eller tabben, og spiller sammen med deg. Koble til én gang."
+text = "Spiller inn, skriver selv ned en solo i Brasscribe, viser partituret eller tabben, og spiller sammen med deg. Koble til én gang."
 
 [bandroom.private]
 title = "Bare ditt"

@@ -58,31 +58,31 @@ id = "phone"
 files = ["android", "ios"]
 devices = [{ name = "Android", status = "ready" }, { name = "iPhone", status = "test" }]
 shot = "part"
-en = { does = "Record, check the ? notes, practise.", needs = "Android 17 or 16, or an iPhone with iOS 27 or 26.", alt = "The Solo Cornet part on a phone, with question marks over the notes to check and the player below." }
-nb = { does = "Ta opp, sjekk notene med ?, øv.", needs = "Android 17 eller 16, eller iPhone med iOS 27 eller 26.", alt = "Solokornett-stemmen på en telefon, med spørsmålstegn over notene du bør sjekke og spilleren under." }
+en = { does = "Record a solo and it is written right on the phone; check the ? notes, practise.", needs = "Android 17 or 16, or an iPhone with iOS 27 or 26.", alt = "The Solo Cornet part on a phone, with question marks over the notes to check and the player below." }
+nb = { does = "Ta opp en solo, så skrives den rett på telefonen; sjekk notene med ?, øv.", needs = "Android 17 eller 16, eller iPhone med iOS 27 eller 26.", alt = "Solokornett-stemmen på en telefon, med spørsmålstegn over notene du bør sjekke og spilleren under." }
 
 [[variants]]
 id = "tablet"
 files = ["android", "ios"]
 devices = [{ name = "iPad", status = "test" }, { name = "Android", status = "ready" }]
 shot = "ipad-review"
-en = { does = "Your part on the stand, page turns from a pedal.", needs = "iPadOS 27 or 26, or an Android tablet with Android 17 or 16.", alt = "Check the notes on an iPad: the score with one note marked, and Listen, Change and Keep beside it." }
-nb = { does = "Stemmen din på notestativet, bla med pedal.", needs = "iPadOS 27 eller 26, eller et Android-nettbrett med Android 17 eller 16.", alt = "Sjekk notene på en iPad: partituret med én note merket, og Lytt, Endre og Behold ved siden av." }
+en = { does = "A solo written on the tablet itself; your part on the stand, page turns from a pedal.", needs = "iPadOS 27 or 26, or an Android tablet with Android 17 or 16.", alt = "Check the notes on an iPad: the score with one note marked, and Listen, Change and Keep beside it." }
+nb = { does = "En solo skrevet på selve nettbrettet; stemmen din på notestativet, bla med pedal.", needs = "iPadOS 27 eller 26, eller et Android-nettbrett med Android 17 eller 16.", alt = "Sjekk notene på en iPad: partituret med én note merket, og Lytt, Endre og Behold ved siden av." }
 
 [[variants]]
 id = "mac"
 files = ["mac"]
 devices = [{ name = "Mac", status = "ready" }]
 shot = "mac-score"
-en = { does = "The whole score on a big screen; print the parts.", needs = "A Mac with an M-series chip, with macOS 27 or 26.", alt = "The full score on a Mac, every part under each other, with the player at the bottom." }
-nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene.", needs = "Mac med M-brikke, med macOS 27 eller 26.", alt = "Hele partituret på en Mac, alle stemmene under hverandre, med spilleren nederst." }
+en = { does = "A solo written on the Mac itself; the whole score on a big screen, print the parts.", needs = "A Mac with an M-series chip, with macOS 27 or 26.", alt = "The full score on a Mac, every part under each other, with the player at the bottom." }
+nb = { does = "En solo skrevet på selve Macen; hele partituret på stor skjerm, skriv ut stemmene.", needs = "Mac med M-brikke, med macOS 27 eller 26.", alt = "Hele partituret på en Mac, alle stemmene under hverandre, med spilleren nederst." }
 
 [[variants]]
 id = "windows"
 files = ["windows"]
 devices = [{ name = "Windows", status = "early" }]
-en = { does = "The whole score on a big screen; print the parts.", needs = "A PC with Windows 11." }
-nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene.", needs = "PC med Windows 11." }
+en = { does = "The whole score on a big screen; print the parts. Every score, a solo too, comes from Bandroom.", needs = "A PC with Windows 11." }
+nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene. Alle partiturer, også en solo, kommer fra Bandroom.", needs = "PC med Windows 11." }
 
 [[variants]]
 id = "studio"
