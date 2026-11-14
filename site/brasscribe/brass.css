@@ -34,3 +34,6 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 /* Every step's picture stands in a box of the same height, so the steps are as tall as each other. */
 .stages { --stage-height: 300px; }
 @media (min-width: 901px) { .stages { --stage-height: 340px; } }
+/* Brasscribe's display face is drawn small for its size: names set side by side with another app's are scaled up
+   to stand at the same optical size. */
+:root { --site-display-scale: 1.2; }

@@ -7,6 +7,7 @@
   - Inside the apps, say "Brasscribe": "Brasscribe wasn't sure about these notes".
   - Use the product name only where the products appear together: store listings, About, the docs, installers, and the app lists (Applications, Start, Login Items).
   - Inside Bandroom, the header names the computer, as phones see it: "Brasscribe on Kari's MacBook" / "Brasscribe på Karis MacBook".
+- On the public site the musician app is **Brasscribe**, without "Play", so both apps of the Scribe line carry one kind of name: "Brasscribe for iPhone", like "Fretscribe for Mac". The helper is **Bandroom**, the line's, not Brasscribe's, since every Scribe app uses it. File names stay as released.
 - The names are the same in Norwegian. They are not translated or inflected ("Brasscribes partitur" is wrong; write "partituret fra Brasscribe").
 
 ## Mark

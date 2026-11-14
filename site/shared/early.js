@@ -1,6 +1,7 @@
 /* Put in every page's head by the build. It runs before anything is drawn: when the page is going to be
    read in Norwegian, <html> says so at once and the words stay hidden until scribe.js has put them in. */
 (function () {
+  document.documentElement.classList.add("js");  /* what a script will work can take its place at once */
   var want = null;
   try { want = localStorage.getItem("scribe-lang"); } catch (e) {}
   var asked = /[?&]lang=(en|nb)\b/.exec(location.search);

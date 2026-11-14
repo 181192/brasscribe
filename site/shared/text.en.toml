@@ -3,9 +3,13 @@
 
 [bar]
 skip = "Skip to content"
-path = "You are here"
+apps = "Scribe apps"
+home = "Scribe, all apps"
 all = "Scribe"
 noscript = "In English: the Norwegian version needs JavaScript."
+
+[footer]
+source = "Source"
 
 [nav]
 label = "This app's pages"
@@ -36,13 +40,72 @@ tab_label = "Tab of {title}, {bars} bars, in {tuning}."
 tab_scroll = "The tab. Scroll sideways to read on."
 pick = "Choose a number in the tab to see where else that note can be played. The arrow keys move from note to note."
 as_text = "The same tab as plain text ({tuning})"
-alone = "By itself"
-does = "What it does"
-with_bandroom = "With Bandroom"
-get = "Download for {name}"
 hear_recording = "The recording"
 hear_written = "The written notes"
 hear = "What you hear"
+
+
+# Where an app runs: the six places, the same in every app and in this order (the variant rail). The glyphs are the
+# family's (design/tooling/icons.json, "variants"). A Bandroom chip is dashed: it belongs to the line, not the app.
+[variants]
+label = "Where it runs"
+choose = "Choose where you will use it"
+tags = "Status"
+ready = "Ready"
+test = "Test version"
+early = "Early version"
+shared = "Shared by every Scribe app"
+none = "Not for this app"
+matrix = "Where each Scribe app runs, and how ready it is"
+
+[variants.phone]
+name = "Phone"
+sub = "Android, iPhone"
+title = "{app} for Android and iPhone"
+download = "Download for your phone"
+
+[variants.tablet]
+name = "Tablet"
+sub = "iPad, Android"
+title = "{app} for iPad and Android tablets"
+download = "Download for your tablet"
+
+[variants.mac]
+name = "Mac"
+sub = ""
+title = "{app} for Mac"
+download = "Download for Mac"
+
+[variants.windows]
+name = "Windows"
+sub = "early"
+title = "{app} for Windows"
+download = "Download for Windows"
+
+[variants.bandroom]
+name = "Bandroom"
+sub = "for every Scribe app"
+title = "Bandroom, on your computer"
+download = "Get Bandroom"
+
+[variants.studio]
+name = "Studio"
+sub = "in a browser"
+title = "{app} Studio"
+download = "Get Bandroom, with Studio"
+
+
+# The picture of where a recording goes (the family home, the Bandroom page).
+[listening]
+label = "Where your recording goes: from the app on your phone to Bandroom on your computer, and the score or tab comes back, all inside your own network. Nothing goes to the internet."
+network = "Your own network"
+internet = "The internet: nothing is sent"
+phone = "The app on your phone"
+phone_does = "records, shows, plays along"
+up = "recording"
+down = "score or tab"
+computer = "Bandroom on your computer"
+computer_does = "listens and writes it down"
 
 [groups.android]
 title = "Android"

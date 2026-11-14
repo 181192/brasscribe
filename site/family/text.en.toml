@@ -1,5 +1,4 @@
-# Words every page of the family home uses. The same keys are in text.nb.toml.
+# Words every page of the family uses. The same keys are in text.nb.toml.
 
 [footer]
-line = "Brasscribe and Fretscribe are free and open source."
-note = "<a href=\"https://github.com/181192/brasscribe\">Source</a>"
+note = "Free and open source. Your recordings stay on your own devices."

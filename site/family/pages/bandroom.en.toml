@@ -1,0 +1,28 @@
+title = "Bandroom: the listening, for every Scribe app"
+description = "Bandroom is a free program for your own Mac or PC. It listens to the recordings from your phone and writes the score or the tab, for every Scribe app, inside your own network."
+
+[hero]
+title = "Bandroom"
+lead = "One helper on your computer does the listening for every app. Your phone asks; Bandroom, on your own Mac or PC, writes the score or the tab and sends it back."
+get = "Get Bandroom"
+
+[does]
+title = "What it does."
+listens = "<strong>Listens and writes.</strong> Every band score and every tab is written here, for every Scribe app and every phone or tablet you connect."
+home = "<strong>Stays at home.</strong> Your recording goes from your phone to your own computer and nowhere else."
+quiet = "<strong>Runs quietly.</strong> It sits in the menu bar of a Mac, or the notification area of Windows, and starts when you need it."
+studio = "<strong>Studio comes with it.</strong> For the band's tech person: choose <strong>Open Studio</strong> in its menu to see every step of how a score came to be."
+
+[get]
+title = "Get it."
+lead = "Free, for a Mac with an M-series chip or a PC with Windows 11. In the list of programs it is called Brasscribe Bandroom: it is the same program for every app."
+mac = "Download for Mac"
+windows = "Download for Windows (early version)"
+warn = "Your computer will warn you the first time, as it does for every program from outside the app stores. The guides show how to get past it."
+
+[first]
+title = "The first start."
+download = "It downloads what it needs to listen, about 10 GB, so keep about 15 GB free. The internet is needed only for this."
+key = "For Brasscribe's band scores, it asks for an access key from a free Hugging Face account, where the listening model comes from."
+pair = "Choose <strong>Pair a phone</strong>, then <strong>Connect</strong> in the app on your phone. You do this once for each phone."
+guides = "Step by step, with pictures: <a href=\"@brasscribe/guide/#computer\">Brasscribe's guide</a> and <a href=\"@fretscribe/guide/#computer\">Fretscribe's guide</a>."

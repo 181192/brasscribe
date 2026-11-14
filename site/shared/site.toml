@@ -5,9 +5,19 @@
 # (site/README.md), not a file here.
 base = "https://scribe.kalli.app/"
 
+# Where the source is: the footer of every page links to it.
+source = "https://github.com/181192/brasscribe"
+
 # Where release files come from. One line here moves every download link on the site; a product
 # with releases of its own sets `releases` in its product.toml instead.
 releases = "https://github.com/181192/brasscribe/releases/latest"
+
+# Bandroom on every app's variant rail, fifth, between Windows and Studio: one helper for every Scribe app, so its
+# words are the family's. Its page is the family's /bandroom/.
+[bandroom]
+devices = [{ name = "Mac", status = "ready" }, { name = "Windows", status = "early" }]
+en = { does = "Does the listening, for every Scribe app in the house.", needs = "A Mac with an M-series chip, or a PC with Windows 11. Free." }
+nb = { does = "Lytter for alle Scribe-appene i huset.", needs = "Mac med M-brikke, eller PC med Windows 11. Gratis." }
 
 # Release files every product's download page and table list after its own.
 [[downloads]]

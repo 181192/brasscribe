@@ -59,5 +59,14 @@
     "disk":            {"en": "Free space",           "nb": "Ledig plass",           "apple": "internaldrive",           "material": "hard_drive",          "windows": {"glyph": "EDA2", "name": "HardDrive"}},
     "running":         {"en": "Running",              "nb": "Kjører",                "apple": "checkmark.circle",        "material": "check_circle",        "windows": {"glyph": "E930", "name": "Completed"}},
     "attention":       {"en": "Needs attention",      "nb": "Må sjekkes",            "apple": "exclamationmark.triangle","material": "warning",             "windows": {"glyph": "E7BA", "name": "Warning"}}
+  },
+  "$variants": "The family's own glyphs: one per variant of an app (where it runs), the same in every app, on the site's variant rail and its matrix. Outline, 1.5 px stroke in a 20 px box, currentColor. SVG body only; design/tooling/family.py writes each as design/brands/scribe/dist/web/variants/<name>.svg. Bandroom's is the room where the listening happens, with the family's pen line inside.",
+  "variants": {
+    "phone":    {"en": "Phone",    "nb": "Telefon",   "svg": "<rect x=\"6\" y=\"2\" width=\"8\" height=\"16\" rx=\"2\"/><path d=\"M9 15h2\"/>"},
+    "tablet":   {"en": "Tablet",   "nb": "Nettbrett", "svg": "<rect x=\"3\" y=\"3\" width=\"14\" height=\"14\" rx=\"2\"/><path d=\"M9 14.5h2\"/>"},
+    "mac":      {"en": "Mac",      "nb": "Mac",       "svg": "<rect x=\"4\" y=\"4\" width=\"12\" height=\"9\" rx=\"1.5\"/><path d=\"M2 16h16\"/>"},
+    "windows":  {"en": "Windows",  "nb": "Windows",   "svg": "<rect x=\"3\" y=\"4\" width=\"14\" height=\"12\" rx=\"1.5\"/><path d=\"M3 8h14\"/>"},
+    "bandroom": {"en": "Bandroom", "nb": "Bandroom",  "svg": "<path d=\"M3 9l7-6 7 6v8H3z\"/><path d=\"M6 13h5\"/><circle cx=\"13\" cy=\"13\" r=\"1.4\" fill=\"currentColor\" stroke=\"none\"/>"},
+    "studio":   {"en": "Studio",   "nb": "Studio",    "svg": "<rect x=\"2\" y=\"4\" width=\"16\" height=\"12\" rx=\"1.5\"/><path d=\"M5 8h10M5 10.5h10M5 13h10\"/>"}
   }
 }

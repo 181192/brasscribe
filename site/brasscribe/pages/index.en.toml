@@ -112,11 +112,10 @@ tied = " Tied to the note before."
 doubt = " Brasscribe was not sure of this note."
 
 [needs]
-title = "Brasscribe on <em>your devices.</em>"
-lead = "The app for your phone, tablet, Mac or PC, and Bandroom for your computer. Today Brasscribe writes its scores on the computer, not on the phone: each device below says what it does by itself."
-unsigned = "<strong>Your device will warn you the first time.</strong> The apps are not in any app store yet; the <a href=\"@/download/\">download page</a> shows how to get past the warning."
-private = "<strong>Your recording never leaves your own network.</strong> It goes from your phone to your own computer and nowhere else. The first time Bandroom starts it needs the internet, to download what it needs to listen (about 10 GB). For a full band it also needs a free account where the listening model is downloaded; the <a href=\"@/guide/#computer\">guide</a> shows how."
-setup = "Set up your computer"
+title = "Where it <em>runs.</em>"
+lead = "The app is on your phone, tablet or computer. <strong>Bandroom</strong>, on your own Mac or PC, does the listening."
+line = "Free. Not in the app stores yet, so the first install takes three extra taps: the <a href=\"@/download/\">download page</a> shows them."
+setup = "Set up Bandroom"
 
 [sure]
 title = "How sure <em>is it?</em>"

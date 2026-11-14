@@ -2,126 +2,93 @@
 styles: showcase.css
 scripts: showcase.js
 -->
-  <section class="family-hero">
+  <section id="line" class="line-hero" aria-labelledby="line-title">
     <div class="wrap">
-      <h1>
-        <span class="voice" data-brand="brasscribe" data-t="hero.brass"></span>
-        <span class="voice" data-brand="fretscribe" data-t="hero.fret"></span>
-      </h1>
-      <p class="lead" data-t="hero.lead"></p>
+      <h1 id="line-title" data-t="line.title"></h1>
+      <p class="lead" data-t="line.lead"></p>
+      <ul class="doors">
+        <li><a class="button outline door" href="#brasscribe"><span class="chip" style="--chip: var(--family-chip-brasscribe)"></span><span data-t="doors.brass"></span></a></li>
+        <li><a class="button outline door" href="#fretscribe"><span class="chip" style="--chip: var(--family-chip-fretscribe)"></span><span data-t="doors.fret"></span></a></li>
+      </ul>
     </div>
   </section>
 
-  <section id="apps" class="apps" aria-labelledby="apps-title">
-    <div class="wrap">
-      <h2 id="apps-title" data-t="apps.label"></h2>
-    </div>
+  <section id="apps" class="apps" data-t-aria-label="apps.label">
     <div class="wrap app-grid">
-      <article class="app" data-brand="brasscribe" aria-labelledby="app-brasscribe">
-        <h3 id="app-brasscribe" data-t="apps.brass.title"></h3>
+      <article class="app" id="brasscribe" data-brand="brasscribe" aria-labelledby="app-brasscribe">
+        <p class="app-for" data-t="apps.brass.for"></p>
+        <h2 id="app-brasscribe">Brasscribe</h2>
         {{figure hero product="brasscribe"}}
         <div class="app-text">
           <p data-t="apps.brass.text"></p>
-          <p class="app-devices"><a href="@brasscribe/#devices" data-t="apps.devices"></a></p>
           <div class="actions">
             <a class="button primary" href="@brasscribe/" data-t="apps.brass.see"></a>
-            <a class="button outline" href="@brasscribe/download/" data-t="apps.download"></a>
+            <a class="text-link" href="@brasscribe/download/" data-t="apps.download"></a>
           </div>
         </div>
       </article>
-      <article class="app" data-brand="fretscribe" aria-labelledby="app-fretscribe">
-        <h3 id="app-fretscribe" data-t="apps.fret.title"></h3>
+      <article class="app" id="fretscribe" data-brand="fretscribe" aria-labelledby="app-fretscribe">
+        <p class="app-for" data-t="apps.fret.for"></p>
+        <h2 id="app-fretscribe">Fretscribe</h2>
         {{figure hero product="fretscribe"}}
         <div class="app-text">
           <p data-t="apps.fret.text"></p>
-          <p class="app-devices"><a href="@fretscribe/#devices" data-t="apps.devices"></a></p>
           <div class="actions">
             <a class="button primary" href="@fretscribe/" data-t="apps.fret.see"></a>
-            <a class="button outline" href="@fretscribe/download/" data-t="apps.download"></a>
+            <a class="text-link" href="@fretscribe/download/" data-t="apps.download"></a>
           </div>
         </div>
       </article>
     </div>
   </section>
 
-  <section id="which" aria-labelledby="which-title">
+  <section id="runs" aria-labelledby="runs-title">
     <div class="wrap">
-      <h2 id="which-title" data-t="which.title"></h2>
-      <ul class="which">
-        <li data-brand="brasscribe">
-          <a href="@brasscribe/">
-            <span class="which-words">
-              <span class="which-if" data-t="which.brass.if"></span>
-              <span class="which-then" data-t="which.brass.then"></span>
-              <span class="which-get" data-t="which.brass.get"></span>
-            </span>
-            <span class="phone-frame">
-              {{shot part product="brasscribe" sizes="150px" alt="which.brass.shot" load="lazy"}}
-            </span>
-          </a>
-        </li>
-        <li data-brand="fretscribe">
-          <a href="@fretscribe/">
-            <span class="which-words">
-              <span class="which-if" data-t="which.fret.if"></span>
-              <span class="which-then" data-t="which.fret.then"></span>
-              <span class="which-get" data-t="which.fret.get"></span>
-            </span>
-            <span class="phone-frame">
-              {{shot tab product="fretscribe" sizes="150px" alt="which.fret.shot" load="lazy"}}
-            </span>
-          </a>
-        </li>
-      </ul>
-      <p class="which-both" data-t="which.both"></p>
-    </div>
-  </section>
-
-  <section id="together" aria-labelledby="together-title">
-    <div class="wrap together">
-      <div>
-        <h2 id="together-title" data-t="together.title"></h2>
-        <p data-t="together.lead"></p>
-        <dl class="story">
-          <dt data-t="together.computer.title"></dt>
-          <dd data-t="together.computer.text"></dd>
-          <dt data-t="together.phone.title"></dt>
-          <dd data-t="together.phone.text"></dd>
-          <dt data-t="together.private.title"></dt>
-          <dd data-t="together.private.text"></dd>
-        </dl>
-      </div>
-      <figure>
-        <svg class="diagram diagram-home" viewBox="0 0 320 356" role="img" data-t-aria-label="together.diagram" xmlns="http://www.w3.org/2000/svg">
-          <rect class="net" x="6" y="64" width="308" height="286" rx="14"/>
-          <text class="lbl" x="22" y="90" data-t="together.d.network"></text>
-          <rect class="box" x="24" y="8" width="272" height="40" rx="8"/>
-          <text class="t" x="160" y="33" text-anchor="middle" data-t="together.d.internet"></text>
-          <rect class="box model" x="60" y="108" width="200" height="72" rx="10"/>
-          <text class="t" x="160" y="139" text-anchor="middle" data-t="together.d.phone"></text>
-          <text class="s" x="160" y="160" text-anchor="middle" data-t="together.d.phone_does"></text>
-          <path class="arrow" d="M124 184 V252"/><path class="head" d="M124 260 l-5 -10 h10 z"/>
-          <path class="arrow" d="M196 260 V192"/><path class="head" d="M196 184 l-5 10 h10 z"/>
-          <text class="s" x="114" y="226" text-anchor="end" data-t="together.d.up"></text>
-          <text class="s" x="206" y="226" data-t="together.d.down"></text>
-          <rect class="box model" x="40" y="264" width="240" height="72" rx="10"/>
-          <text class="t" x="160" y="295" text-anchor="middle" data-t="together.d.computer"></text>
-          <text class="s" x="160" y="316" text-anchor="middle" data-t="together.d.computer_does"></text>
-        </svg>
-      </figure>
+      <h2 id="runs-title" class="pen-heading" data-t="runs.title"></h2>
+      <p class="lead" data-t="runs.lead"></p>
+      {{figure matrix}}
     </div>
   </section>
 
   <section id="bandroom" aria-labelledby="bandroom-title">
-    <div class="wrap">
-      <div class="reading">
-        <h2 id="bandroom-title" data-t="bandroom.title"></h2>
-        <p data-t="bandroom.text"></p>
+    <div class="wrap together">
+      <div>
+        <h2 id="bandroom-title" class="pen-heading" data-t="bandroom.title"></h2>
+        <dl class="story">
+          <dt data-t="bandroom.computer.title"></dt>
+          <dd data-t="bandroom.computer.text"></dd>
+          <dt data-t="bandroom.phone.title"></dt>
+          <dd data-t="bandroom.phone.text"></dd>
+          <dt data-t="bandroom.private.title"></dt>
+          <dd data-t="bandroom.private.text"></dd>
+        </dl>
         <div class="actions">
-          <a class="button outline" href="{{file brasscribe-bandroom-macos-arm64.zip}}" data-t="bandroom.mac"></a>
-          <a class="button outline" href="{{file brasscribe-bandroom-windows-x64.zip}}" data-t="bandroom.windows"></a>
+          <a class="button outline" href="@family/bandroom/" data-t="bandroom.get"></a>
         </div>
-        <p class="muted after-actions" data-t="bandroom.setup"></p>
       </div>
+      <figure>
+        {{figure listening}}
+      </figure>
+    </div>
+  </section>
+
+  <section id="sure" aria-labelledby="sure-title">
+    <div class="wrap">
+      <h2 id="sure-title" class="pen-heading" data-t="sure.title"></h2>
+      <p class="lead" data-t="sure.lead"></p>
+      <ul class="sure-doors">
+        <li data-brand="brasscribe"><a href="@brasscribe/#sure"><span class="sure-app">Brasscribe</span><span data-t="sure.brass"></span></a></li>
+        <li data-brand="fretscribe"><a href="@fretscribe/#sure"><span class="sure-app">Fretscribe</span><span data-t="sure.fret"></span></a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="close" class="close" aria-labelledby="close-title">
+    <div class="wrap">
+      <h2 id="close-title" class="pen-heading" data-t="close.title"></h2>
+      <ul class="doors">
+        <li><a class="button outline door" href="@brasscribe/"><span class="chip" style="--chip: var(--family-chip-brasscribe)"></span><span data-t="doors.brass"></span></a></li>
+        <li><a class="button outline door" href="@fretscribe/"><span class="chip" style="--chip: var(--family-chip-fretscribe)"></span><span data-t="doors.fret"></span></a></li>
+      </ul>
     </div>
   </section>

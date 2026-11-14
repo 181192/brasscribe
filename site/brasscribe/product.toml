@@ -8,11 +8,6 @@ og_image = "@/assets/shots/mac-score-en-light.png"
 marks = ["brand/logo/mark-brass.svg", "brand/logo/mark.svg"]
 preload = ["InstrumentSerif-Regular.ttf", "InstrumentSerif-Italic.ttf"]  # the faces of the headline
 
-[logo]
-light = "brand/logo/lockup-play.svg"
-dark = "brand/logo/lockup-play-on-dark.svg"
-width = 180
-height = 32
 
 [[downloads]]
 file = "brasscribe-play-android-arm64-v8a.apk"
@@ -54,37 +49,48 @@ label_nb = "Brasscribe for Windows"
 en = "Brasscribe for Windows 11, an early version, not tested on a real PC yet"
 nb = "Brasscribe for Windows 11, en tidlig versjon, ikke testet på en ekte PC ennå"
 
-# What each device does by itself and what it needs the computer for: the table on the front page.
-[[platforms]]
-id = "android"
-en = { name = "Android", status = "Android 17 or 16", alone = "Opens, plays and prints the scores you have. From the next release it writes one instrument by itself again.", bandroom = "Every new score today: a full band, and one instrument too." }
-nb = { name = "Android", status = "Android 17 eller 16", alone = "Åpner, spiller og skriver ut partiturene du har. Fra neste utgivelse skriver den ett instrument selv igjen.", bandroom = "Alle nye partiturer i dag: fullt band, og ett instrument også." }
+# Where it runs: the app's places on the variant rail, in the rail's order (phone, tablet, mac, windows, then
+# Bandroom from site.toml, then studio). Each says what you do there, what it needs, and how ready each device is
+# (ready, test or early: the words are under [variants] in shared/text.<lang>.toml). `files` are the download page's
+# groups for it; `shot` a screenshot of that place, when there is one.
+[[variants]]
+id = "phone"
+files = ["android", "ios"]
+devices = [{ name = "Android", status = "ready" }, { name = "iPhone", status = "test" }]
+shot = "part"
+en = { does = "Record, check the ? notes, practise.", needs = "Android 17 or 16, or an iPhone with iOS 27 or 26.", alt = "The Solo Cornet part on a phone, with question marks over the notes to check and the player below." }
+nb = { does = "Ta opp, sjekk notene med ?, øv.", needs = "Android 17 eller 16, eller iPhone med iOS 27 eller 26.", alt = "Solokornett-stemmen på en telefon, med spørsmålstegn over notene du bør sjekke og spilleren under." }
 
-[[platforms]]
-id = "ios"
-en = { name = "iPhone and iPad", status = "Test version: needs a few steps with your Apple account · iOS, iPadOS 27 or 26", alone = "Opens, plays and prints the scores you have.", bandroom = "Every new score: a full band, and one instrument too." }
-nb = { name = "iPhone og iPad", status = "Testversjon: trenger noen steg med Apple-kontoen din · iOS, iPadOS 27 eller 26", alone = "Åpner, spiller og skriver ut partiturene du har.", bandroom = "Alle nye partiturer: fullt band, og ett instrument også." }
+[[variants]]
+id = "tablet"
+files = ["android", "ios"]
+devices = [{ name = "iPad", status = "test" }, { name = "Android", status = "ready" }]
+shot = "ipad-review"
+en = { does = "Your part on the stand, page turns from a pedal.", needs = "iPadOS 27 or 26, or an Android tablet with Android 17 or 16.", alt = "Check the notes on an iPad: the score with one note marked, and Listen, Change and Keep beside it." }
+nb = { does = "Stemmen din på notestativet, bla med pedal.", needs = "iPadOS 27 eller 26, eller et Android-nettbrett med Android 17 eller 16.", alt = "Sjekk notene på en iPad: partituret med én note merket, og Lytt, Endre og Behold ved siden av." }
 
-[[platforms]]
+[[variants]]
 id = "mac"
-en = { name = "Mac", status = "A Mac with an M-series chip · macOS 27 or 26", alone = "Opens, plays and prints the scores you have, with the whole band on the screen.", bandroom = "Every new score. Bandroom can run on the same Mac." }
-nb = { name = "Mac", status = "Mac med M-brikke · macOS 27 eller 26", alone = "Åpner, spiller og skriver ut partiturene du har, med hele bandet på skjermen.", bandroom = "Alle nye partiturer. Bandroom kan kjøre på samme Mac." }
+files = ["mac"]
+devices = [{ name = "Mac", status = "ready" }]
+shot = "mac-score"
+en = { does = "The whole score on a big screen; print the parts.", needs = "A Mac with an M-series chip, with macOS 27 or 26.", alt = "The full score on a Mac, every part under each other, with the player at the bottom." }
+nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene.", needs = "Mac med M-brikke, med macOS 27 eller 26.", alt = "Hele partituret på en Mac, alle stemmene under hverandre, med spilleren nederst." }
 
-[[platforms]]
+[[variants]]
 id = "windows"
-en = { name = "Windows", status = "Early version, not tested on a real PC yet · Windows 11", alone = "Opens, plays and prints the scores you have.", bandroom = "Every new score. Bandroom can run on the same PC." }
-nb = { name = "Windows", status = "Tidlig versjon, ikke testet på en ekte PC ennå · Windows 11", alone = "Åpner, spiller og skriver ut partiturene du har.", bandroom = "Alle nye partiturer. Bandroom kan kjøre på samme PC." }
+files = ["windows"]
+devices = [{ name = "Windows", status = "early" }]
+en = { does = "The whole score on a big screen; print the parts.", needs = "A PC with Windows 11 (x64)." }
+nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene.", needs = "PC med Windows 11 (x64)." }
 
-[[platforms]]
-id = "bandroom"
-en = { name = "Bandroom, on your computer", status = "Free · a Mac with an M-series chip, or a PC with Windows 11", alone = "Writes every score, for the app on any of your devices, over your own Wi-Fi. One Bandroom serves every Scribe app." }
-nb = { name = "Bandroom, på datamaskinen", status = "Gratis · Mac med M-brikke, eller PC med Windows 11", alone = "Skriver alle partiturer, for appen på alle enhetene dine, over ditt eget Wi-Fi. Ett Bandroom betjener alle Scribe-appene." }
-
-[[platforms]]
+[[variants]]
 id = "studio"
-link = "@/guide/#computer"
-en = { name = "Studio, in a browser", status = "For the band's tech person · on the computer with Bandroom", alone = "Shows every step of how a score came to be.", get = "Set up your computer" }
-nb = { name = "Studio, i en nettleser", status = "For bandets teknisk ansvarlige · på datamaskinen med Bandroom", alone = "Viser hvert steg i hvordan et partitur ble til.", get = "Sett opp datamaskinen" }
+files = []
+devices = [{ name = "Studio", status = "ready" }]
+shot = "computer"
+en = { does = "For the band's tech person: every step of how a score came to be.", needs = "Comes with Bandroom: choose <strong>Open Studio</strong> in its menu, and it opens in your browser.", alt = "Studio in a browser: the score viewer, with the parts and how each was made." }
+nb = { does = "For den tekniske i bandet: hvert steg i hvordan partituret ble til.", needs = "Følger med Bandroom: velg <strong>Åpne Studio</strong> i menyen, så åpnes det i nettleseren.", alt = "Studio i nettleseren: partiturvisningen, med stemmene og hvordan hver ble laget." }
 
 # The paper is kept under its old file name and served as "how it works", like every product's.
 [paths]

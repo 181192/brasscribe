@@ -4,8 +4,7 @@
 brand = "Fretscribe, oversikt"
 
 [footer]
-line = "Fretscribe, en tidlig versjon"
-note = "Tab tegnet med alphaTab (MPL-2.0). Skrift: Atkinson Hyperlegible Next (OFL). <a href=\"https://github.com/181192/brasscribe\">Kildekode</a>"
+note = "Tab tegnet med alphaTab (MPL-2.0). Skrift: Atkinson Hyperlegible Next (OFL)."
 
 [take]
 title = "Kanon-progresjon"
