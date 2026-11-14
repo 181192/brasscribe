@@ -54,7 +54,7 @@ for Mac, iPhone and iPad when the band SoundFont is missing. It is not committed
 
 | Model | Licence | Where |
 |---|---|---|
-| [SwiftF0](https://github.com/lars76/swift-f0) (ONNX) | MIT | Play for Android and Windows |
+| [SwiftF0](https://github.com/lars76/swift-f0) (ONNX) | MIT | Play for Android |
 | [Basic Pitch](https://github.com/spotify/basic-pitch) (ONNX, changed from the published model: the batch fixed to 1 and the convolutions' padding written out; its `NOTICE` ships with the app) | Apache-2.0 | Play for Android |
 | [Beat This!](https://github.com/CPJKU/beat_this) small (ONNX) | MIT (code and published weights) | Play for Android |
 

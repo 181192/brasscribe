@@ -42,6 +42,8 @@ android {
         ignoreAssetsPattern = "!sonivox.sf3:!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
         // The band SoundFont is copied out once; stored uncompressed it can be sized and streamed.
         noCompress += "sf2"
+        // The models are stored as they are: ONNX weights barely compress, and stored they open without unpacking.
+        noCompress += "onnx"
     }
 
     buildTypes {
@@ -153,7 +155,8 @@ val verifyModelAssets = tasks.register<VerifyModelAssets>("verifyModelAssets") {
     pin.set(File(repoRoot, "convert/on-device-models.json"))
     converted.set(modelsDir)
     models.set(onDeviceModels.values.toList())
-    allowMissing.set(providers.gradleProperty("brasscribe.allowNoModels").isPresent)
+    allowMissing.set(providers.gradleProperty("brasscribe.allowNoModels").map { it != "false" }.orElse(false))
+    onCi.set(providers.environmentVariable("CI").isPresent)
 }
 
 androidComponents {

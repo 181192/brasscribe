@@ -16,7 +16,8 @@ import org.gradle.api.tasks.TaskAction
  * Fails a release build when an on-device model it bundles is missing from models/converted or is not the file the
  * pin (convert/on-device-models.json) names, by size and sha256. Without the models the app quietly sends every solo
  * to the computer, so a release must not be built without them; `python3 convert/models_pack.py fetch` gets them.
- * `allowMissing` (-Pbrasscribe.allowNoModels) lets a local try-out build without them. Debug builds are not checked.
+ * `allowMissing` (-Pbrasscribe.allowNoModels, any value but `false`) lets a local try-out build without them; it is
+ * refused on CI. Debug builds are not checked.
  * The task has no outputs, so it runs on every release build: hashing the files is quick.
  */
 abstract class VerifyModelAssets : DefaultTask() {
@@ -35,8 +36,13 @@ abstract class VerifyModelAssets : DefaultTask() {
     @get:Input
     abstract val allowMissing: Property<Boolean>
 
+    /** On CI (the CI variable is set) the escape is refused: a release built there is one that gets published. */
+    @get:Input
+    abstract val onCi: Property<Boolean>
+
     @TaskAction
     fun verify() {
+        check(!(allowMissing.get() && onCi.get())) { "-Pbrasscribe.allowNoModels is for a local try-out; CI builds releases with the models" }
         @Suppress("UNCHECKED_CAST")
         val files = (JsonSlurper().parse(pin.get().asFile) as Map<String, Any>)["files"] as Map<String, Map<String, Any>>
         val wrong = models.get().mapNotNull { name ->

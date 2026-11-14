@@ -14,7 +14,6 @@ Contents
 - University of Iowa Musical Instrument Samples (band sounds) (Free for any use)
 - MuseScore MS Basic SoundFont (band sounds) (MIT)
 - Instrument Serif font (OFL-1.1)
-- SwiftF0 (model) (MIT)
 - ONNX Runtime (MIT)
 - DirectML (with ONNX Runtime) (Microsoft software licence terms)
 - Windows App SDK (Microsoft software licence terms)
@@ -202,14 +201,6 @@ https://github.com/Instrument/instrument-serif
 Licence: OFL-1.1
 
 Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif)
-
-========================================
-
-SwiftF0 (model)
-https://github.com/lars76/swift-f0
-Licence: MIT
-
-Copyright (c) 2025-2026 Lars Nieradzik
 
 ========================================
 

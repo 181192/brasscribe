@@ -195,5 +195,19 @@ class ModelsPack(unittest.TestCase):
                 self.assertFalse(any(p.name == "evil.bin" for p in Path(self.tmp.name).rglob("*")))
 
 
+    def test_installed_files_are_readable_by_everyone(self):
+        self.assertEqual(models_pack.fetch(self.installed, []), 0)
+        self.assertEqual(stat.S_IMODE((self.installed / "tone" / "tone.onnx").stat().st_mode), 0o644)
+
+    def test_what_a_killed_install_left_behind_is_cleaned_up(self):
+        self.assertEqual(models_pack.fetch(self.installed, []), 0)
+        tone = self.installed / "tone"
+        (tone / ".tone.onnx.abc123").write_bytes(b"half")
+        (tone / ".tone-fp32.mlpackage.def456" / "tone-fp32.mlpackage").mkdir(parents=True)
+        (tone / "other.bin").write_bytes(b"not ours")
+        self.assertEqual(models_pack.fetch(self.installed, []), 0)
+        self.assertEqual(sorted(p.name for p in tone.iterdir()), ["other.bin", "tone-fp32.mlpackage", "tone.onnx"])
+
+
 if __name__ == "__main__":
     unittest.main()

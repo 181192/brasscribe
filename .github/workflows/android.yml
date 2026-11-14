@@ -139,7 +139,8 @@ jobs:
             "-Pfretscribe.versionName=$FRETSCRIBE_VERSION_NAME" "-Pfretscribe.versionCode=$FRETSCRIBE_VERSION_CODE"
           # Every Brasscribe APK carries the three pinned models and their NOTICE.md, byte for byte, and no Fretscribe
           # APK carries a model (the table goes to the step summary).
-          ../../.github/scripts/release-models.py products/*/build/outputs/apk/release/*-release-unsigned.apk
+          ../../.github/scripts/release-models.py --require 'brasscribe-arm64-v8a-*.apk' --require 'brasscribe-universal-*.apk' \
+            products/*/build/outputs/apk/release/*-release-unsigned.apk
           mkdir -p "$RUNNER_TEMP/unsigned"
           for a in arm64-v8a universal; do
             apk="products/brasscribe/build/outputs/apk/release/brasscribe-$a-release-unsigned.apk"
