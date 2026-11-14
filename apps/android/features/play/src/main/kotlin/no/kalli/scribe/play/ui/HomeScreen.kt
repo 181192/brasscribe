@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -250,13 +251,13 @@ fun HomeScreen(vm: PlayViewModel) {
                 // (With a library the rows leave out their chevrons, so their words keep to one line on a small phone.)
                 RowGroup {
                     ListRow(stringResource(R.string.home_record_mic), recorder.startMicrophone, icon = DesignR.drawable.ic_bc_record_mic,
-                        subtitle = stringResource(R.string.home_record_mic_desc).takeIf { !library }, enabled = !busy, chevron = !library)
+                        subtitle = stringResource(R.string.home_record_mic_desc).takeIf { !library }, enabled = !busy, chevronOnlyOnOneLine = library)
                     RowDivider()
                     ListRow(stringResource(R.string.home_record_device), recorder.askDevice, icon = DesignR.drawable.ic_bc_record_device,
-                        subtitle = stringResource(R.string.home_record_device_desc).takeIf { !library }, enabled = !busy, chevron = !library)
+                        subtitle = stringResource(R.string.home_record_device_desc).takeIf { !library }, enabled = !busy, chevronOnlyOnOneLine = library)
                     RowDivider()
                     ListRow(stringResource(R.string.home_open_score), openSheetMusic, Modifier.testTag("home-open"), icon = DesignR.drawable.ic_bc_file,
-                        subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy, chevron = !library)
+                        subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy, chevronOnlyOnOneLine = library)
                 }
             }
             if (!library) InfoNote(stringResource(R.string.home_links_tip), boxed = false)
@@ -489,17 +490,29 @@ private fun OpenSheet(pickScore: (() -> Unit)?, pages: PagePicker, onDismiss: ()
  */
 @Composable
 private fun OtherWaysIn(recorder: Recorder, openSheetMusic: () -> Unit, busy: Boolean, modifier: Modifier) {
-    WayIn(DesignR.drawable.ic_bc_record_mic, stringResource(R.string.home_record_mic), { if (!busy) recorder.startMicrophone() }, modifier.testTag("home-record-mic"))
-    WayIn(DesignR.drawable.ic_bc_record_device, stringResource(R.string.home_record_device), { if (!busy) recorder.askDevice() }, modifier.testTag("home-record-device"))
-    WayIn(DesignR.drawable.ic_bc_file, stringResource(R.string.home_open_score), { if (!busy) openSheetMusic() }, modifier.testTag("home-open"))
+    WayIn(DesignR.drawable.ic_bc_record_mic, stringResource(R.string.home_record_mic), { if (!busy) recorder.startMicrophone() }, modifier, "home-record-mic")
+    WayIn(DesignR.drawable.ic_bc_record_device, stringResource(R.string.home_record_device), { if (!busy) recorder.askDevice() }, modifier, "home-record-device")
+    WayIn(DesignR.drawable.ic_bc_file, stringResource(R.string.home_open_score), { if (!busy) openSheetMusic() }, modifier, "home-open")
 }
 
-/** A way in by its icon alone, named in full for a screen reader: in a row of them where Home has little height. */
+/**
+ * A way in by its icon alone, in a row of them where Home has little height: named in full for a screen reader, and
+ * its words shown on a long press (a tooltip), so the icons can be told apart by touch as well.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun WayIn(@androidx.annotation.DrawableRes icon: Int, name: String, onClick: () -> Unit, modifier: Modifier) {
-    androidx.compose.material3.OutlinedButton(onClick, modifier.heightIn(min = 48.dp).semantics { contentDescription = name }, shape = no.kalli.scribe.design.ScribeButtonShape,
-        border = androidx.compose.foundation.BorderStroke(1.dp, ScribeTheme.colors.borderStrong),
-        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = ScribeTheme.colors.text)) {
-        BcIcon(icon, null)
+private fun WayIn(@androidx.annotation.DrawableRes icon: Int, name: String, onClick: () -> Unit, modifier: Modifier, tag: String) {
+    androidx.compose.material3.TooltipBox(
+        positionProvider = androidx.compose.material3.TooltipDefaults.rememberPlainTooltipPositionProvider(),
+        tooltip = { PlainTooltip { Text(name) } },
+        state = androidx.compose.material3.rememberTooltipState(),
+        modifier = modifier,
+    ) {
+        androidx.compose.material3.OutlinedButton(onClick, Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag(tag).semantics { contentDescription = name },
+            shape = no.kalli.scribe.design.ScribeButtonShape,
+            border = androidx.compose.foundation.BorderStroke(1.dp, ScribeTheme.colors.borderStrong),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = ScribeTheme.colors.text)) {
+            BcIcon(icon, null)
+        }
     }
 }

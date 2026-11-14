@@ -4,6 +4,8 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.kalli.scribe.play.screen.ScreenDevice
 import no.kalli.scribe.play.screen.ScreenTest
@@ -91,9 +93,45 @@ class HomeLibraryRoomTest : ScreenTest() {
         language("nb-NO")
         aScore()
         shot("home-with-a-score-narrow")
-        val name = rule.onNode(hasText("Old Hundredth", substring = true)).fetchSemanticsNode()
-        assertTrue("the first score is in view", name.boundsInWindow.height > 0f)
+        // The list's heading and the first score's name are whole on the first screen.
+        val name = rule.onAllNodes(hasText("Old Hundredth"), useUnmergedTree = true).fetchSemanticsNodes().first()
+        assertEquals("the first score's name is in view, whole", name.size.height.toFloat(), name.boundsInWindow.height, 1f)
+        val heading = rule.onNode(hasText(text(no.kalli.scribe.play.R.string.home_your_scores).uppercase()), useUnmergedTree = true).fetchSemanticsNode()
+        assertEquals("Your scores is in view, whole", heading.size.height.toFloat(), heading.boundsInWindow.height, 1f)
         assertNoTextIsClipped()
+    }
+
+    private fun chevrons() = rule.onAllNodesWithTag("row-chevron", useUnmergedTree = true).fetchSemanticsNodes().size
+
+    /** With a library the ways in keep their chevrons where their words keep to one line beside them, and only there. */
+    @Test
+    fun theWaysInKeepTheirChevronsWhereTheWordsFit() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 412, 915))
+        aScore()
+        assertEquals("a chevron on each of the three ways in on a common phone", 3, chevrons())
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        textSize(1.3f)
+        language("nb-NO")
+        rule.runOnUiThread { vm.home() }
+        rest()
+        // "Spill inn med mikrofonen" and "Spill inn det som spilles" keep to one line only without it there; the short
+        // "Åpne noter" keeps its chevron.
+        val kept = rule.onAllNodesWithTag("row-chevron", useUnmergedTree = true).fetchSemanticsNodes().map { it.boundsInWindow.center.y }
+        val open = rule.onNodeWithTag("home-open").fetchSemanticsNode().boundsInWindow
+        assertEquals("one chevron, on the short row ($kept)", 1, kept.size)
+        assertTrue("the chevron kept is the short row's", kept.single() in open.top..open.bottom)
+        firstScoreIsWhole()
+    }
+
+    /** On its side the ways in by their icons show their words on a long press. */
+    @Test
+    fun onItsSideAnIconsWordsAreShownOnALongPress() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        aScore()
+        rule.onNodeWithTag("home-record-mic").performTouchInput { longClick() }
+        rest()
+        assertTrue("the tooltip says Record with the microphone",
+            rule.onAllNodesWithText(text(R.string.home_record_mic)).fetchSemanticsNodes().isNotEmpty())
     }
 
     /** At the largest text Home with a library has nothing cut; the list is a scroll away. */
