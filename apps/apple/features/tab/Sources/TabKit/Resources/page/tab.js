@@ -20,10 +20,11 @@
   let placed = []; // [{mark: index into marks, beat, doubtful: [Note]}]
   const MARK_SPACE = ' '; // the blank text of a marked beat: alphaTab keeps a band above the staff for it
   const MARK_LINE_SPACES = 1.4; // a mark's height in tab line spaces
-  // The height of the blank text that keeps the band for a mark. A little more than the mark: alphaTab 1.9 rests its own
-  // "alphaTab.net" mark above that text, and with the text as tall as the mark alone the two overlap (the browser test
-  // in studio/browser/apple-tab-page.spec.ts fails then).
-  const MARK_TEXT_SPACES = 1.6;
+  // The height of the blank text that keeps the band for a mark. More than the mark: alphaTab 1.9 rests its own
+  // "alphaTab.net" mark above that text, and how tall alphaTab takes a line of text to be depends on the font it finds,
+  // so with the text as tall as the mark alone (or a little over) the two can overlap (the browser test in
+  // studio/browser/apple-tab-page.spec.ts fails then, on some machines' fonts only).
+  const MARK_TEXT_SPACES = 2.0;
 
   window.onerror = (msg, src, line) => post({ kind: 'error', message: String(msg) + ' (' + src + ':' + line + ')' });
 

@@ -56,7 +56,7 @@ for (const scale of [1, 1.5]) test(`nothing of the tab page's or the app's is dr
   const r = rendered as unknown as Rendered;
   // The app's marks (its "?" and boxed "!" go where the page says).
   expect(r.marks.length, "the marks at the end of the first system are placed").toBeGreaterThan(0);
-  for (const m of r.marks) expect(meets({ left: m.x - m.w / 2, top: m.top, right: m.x + m.w / 2, bottom: m.bottom }, mark!), `a mark at x ${Math.round(m.x)}`).toBe(false);
+  for (const m of r.marks) expect(meets({ left: m.x - m.w / 2, top: m.top, right: m.x + m.w / 2, bottom: m.bottom }, mark!), `a mark at x ${Math.round(m.x)} (${Math.round(m.top)} to ${Math.round(m.bottom)}) against alphaTab's at ${Math.round(mark!.left)} to ${Math.round(mark!.right)}, ${Math.round(mark!.top)} to ${Math.round(mark!.bottom)}`).toBe(false);
   // The cursor and the beat wash, in each bar of the first system.
   const first = r.lines[0];
   for (let bar = first.first; bar <= first.last; bar++) {
