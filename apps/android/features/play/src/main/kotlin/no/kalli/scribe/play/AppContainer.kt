@@ -212,6 +212,9 @@ class AppContainer(private val context: Context, val product: Product) {
     var fixtureStageSeconds: Double = 0.7
         set(v) { field = v; cachedEngine = null }
 
+    /** Tests only: the fixture computer's jobs stay in the stage they are at until this is false again. */
+    @Volatile var fixtureHeld: Boolean = false
+
     private var cachedEngine: Pair<String, EngineApi>? = null
 
     /**
@@ -226,7 +229,7 @@ class AppContainer(private val context: Context, val product: Product) {
         val key = if (usingFixture) "fixture" else "${settings.url}|${network?.networkHandle}"
         val api = cachedEngine?.takeIf { it.first == key }?.second ?: run {
             dropEngine()
-            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = fixtureStageSeconds)
+            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = fixtureStageSeconds, held = { fixtureHeld })
             else KtorEngineApi(settings.url, httpEngine(network))
             cachedEngine = key to created
             created

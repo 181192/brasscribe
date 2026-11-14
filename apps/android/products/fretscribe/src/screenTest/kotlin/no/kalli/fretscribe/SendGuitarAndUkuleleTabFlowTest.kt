@@ -161,11 +161,14 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
             song.performClick()
             song.assertIsSelected()
             alone.assertIsNotSelected()
+            // (The computer stays in its first step while the screen is read: the test does not race it.)
+            container.fixtureHeld = true
             rule.onNodeWithTag("fs-what-continue").assertIsEnabled().performClick()
 
             // A song is separated first: the step names the player's instrument, never the bass.
             waitUntil(20_000) { shown().contains(w[2]) }
             assertFalse(shown(), Regex("\\bbass", RegexOption.IGNORE_CASE).containsMatchIn(shown()))
+            container.fixtureHeld = false
 
             // Check the song: the tuning that fits, the capo, and what was left out and added, each one element.
             waitForTag("fs-show-tab")
