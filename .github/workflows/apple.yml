@@ -157,8 +157,8 @@ jobs:
       - name: Test (packages, macOS app)
         run: make package-test test-mac-app
 
-      # The iPhone simulator app and both its test bundles are built, and not run but for the large-text tests below
-      # (job play-iphone runs them all at night): the Mac build does not compile the sources and branches that are only for iOS, and a test that
+      # The iPhone simulator app and both its test bundles are built, and not run (job play-iphone runs them at
+      # night): the Mac build does not compile the sources and branches that are only for iOS, and a test that
       # no longer compiles for iOS would otherwise first show at night.
       # The iPhone is the newest "iPhone NN Pro" on the newest iOS runtime, by id (scripts/newest-iphone.sh).
       - name: Build the iPhone simulator app and its tests
@@ -177,13 +177,6 @@ jobs:
           dest=$(../../scripts/newest-iphone.sh)
           xcrun simctl bootstatus "${dest##*id=}" -b
           xcodebuild -scheme TabKit -destination "$dest" -derivedDataPath ../../build/DerivedData-tab test -quiet
-
-      # Larger text on a phone (LargeTextUITests): on the newest iPhone, and on an iPhone SE, the shortest screen,
-      # made for the run and deleted after it. A layout that fits the one can cover a button on the other.
-      - name: Test larger text on the newest iPhone and on an iPhone SE
-        run: |
-          dest=$(scripts/newest-iphone.sh)
-          make test-iphone-large-text IPHONE_DEST="$dest" TEST_ARGS="-retry-tests-on-failure -test-iterations 2"
 
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
@@ -256,6 +249,13 @@ jobs:
         run: |
           dest=$(scripts/newest-iphone.sh)
           make test-iphone IPHONE_DEST="$dest" TEST_ARGS="-retry-tests-on-failure -test-iterations 2"
+
+      # The layout tests (LargeTextUITests, ScoreHeightUITests) once more on an iPhone SE, the shortest screen, made
+      # for the run and deleted after it: a layout that fits the newest iPhone can still cover a button or the music
+      # on the SE. With the build of the step before.
+      - name: Test the layout on an iPhone SE
+        if: ${{ !cancelled() }}
+        run: make test-iphone-small TEST_ARGS="-retry-tests-on-failure -test-iterations 2"
 
       - uses: actions/upload-artifact@v7
         if: failure()
