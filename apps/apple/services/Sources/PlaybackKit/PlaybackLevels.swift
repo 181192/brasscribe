@@ -16,9 +16,10 @@ public enum PlaybackLevels {
     public static let phraseToleranceLU = 1.1
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.
     public static let bandArrangementLUFS = -14.50
-    /// Make-up gain on the band before the limiter: fitted so the golden and Old Hundredth land where Windows plays
-    /// them (the largest deviation, the golden's, 1 LU).
-    public static let bandGainDB = 29.55
+    /// Make-up gain on the band before the limiter: fitted so the golden lands within 1 LU of where Windows plays it
+    /// and the phrase within `phraseToleranceLU` of Windows' (they pull opposite ways: the golden 0.96 over, the
+    /// phrase 1.06 under).
+    public static let bandGainDB = 29.40
     /// Added to the make-up gain when "Concert hall sound" is off: the hall's share of the band's
     /// loudness, measured on the golden arrangement and Old Hundredth (band.dry_room_gain_db).
     public static let dryRoomGainDB = 6.3

@@ -540,6 +540,8 @@ Apple's golden-to-phrase ratio is not alphaSynth's. With the hall off, Apple's g
 | Full-band phrase | −12.78 / −14.47 (Windows −12.80) | −13.83 / −14.22 |
 | `band.gain_db.apple`, `dry_room_gain_db` | 30.6, 5.0 | 29.55, 6.3 |
 
+**Refit, 2026-11-14.** The golden was promoted again after this fit (Windows plays it at −14.50), and Apple played it at −13.39 with 29.55 dB: 1.11 LU over, where its check allows 1. The check needs `data/golden` and the band SoundFont, so it runs in the full local tier and not in CI, and nothing showed it. Apple's golden and its phrase pull the gain opposite ways (the paragraph above): the golden asks for less, the phrase, 0.91 LU under Windows' with 1.1 allowed, for more. 29.40 dB puts the golden at −13.54 (0.96 over) and the phrase at −13.86 (1.06 under), the gain at which both hold with the same margin.
+
 | Shared | before | after |
 |---|---|---|
 | `band.arrangement_lufs` (golden, Windows) | −10.99 | −14.44 |
