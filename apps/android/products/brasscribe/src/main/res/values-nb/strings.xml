@@ -529,6 +529,8 @@
     <string name="key_minor">%1$s-moll</string>
     <string name="key_shifted">%1$s fra opptaket</string>
     <string name="view_menu">Visning</string>
+    <string name="about_this_score">Om partituret</string>
+    <string name="about_part">Stemme: %1$s</string>
     <string name="export_what">Hva</string>
     <string name="export_scope_my_part">%1$s (deg)</string>
     <string name="export_scope_every_part">Alle stemmer</string>

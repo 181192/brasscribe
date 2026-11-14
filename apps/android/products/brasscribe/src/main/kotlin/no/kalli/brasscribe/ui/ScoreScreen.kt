@@ -161,9 +161,11 @@ fun ScoreScreen(vm: PlayViewModel) {
         val ct = vm.container
         ScoreController(context, reducedMotion, ct.core, ct.bandSoundMap, compositionJson = { r.compositionJsonFor(ct.core) })
     }
-    // The title block as the first engraving should have it (upright, not on the stand): no second render right after.
+    // The title block as the first engraving should have it (upright on a tablet, not on the stand): no second render
+    // right after. On a phone the top bar names the score, and the score starts at its first system.
     val startsUpright = androidx.compose.ui.platform.LocalConfiguration.current.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    remember(controller) { controller.setTitleShown(startsUpright && vm.standFromLibrary.value == null); true }
+    val titleRoom = androidx.compose.ui.platform.LocalConfiguration.current.let { minOf(it.screenWidthDp, it.screenHeightDp) >= 600 }
+    remember(controller) { controller.setTitleShown(startsUpright && titleRoom && vm.standFromLibrary.value == null); true }
     val st by controller.state.collectAsState()
     var textView by rememberSaveable { mutableStateOf(false) }
     var sheet by remember { mutableStateOf<Sheet?>(null) }
@@ -415,9 +417,10 @@ fun ScoreScreen(vm: PlayViewModel) {
     val density = androidx.compose.ui.platform.LocalDensity.current.density
     val columnDp = if (ms.width <= 0f) 0f else ms.width / density
     val standBars = if (columnDp <= 0f) shape.barsPerSystem else MusicStandRules.barsFitting(shape.barsPerSystem, columnDp, st.zoom / 100f)
-    // The title block upright on the score; on the stand and on its side the music has the room.
+    // The title block upright on a tablet's score; on a phone (whose top bar names the score), on the stand and on its
+    // side the music has the room.
     val landscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    LaunchedEffect(ms.open, landscape) { controller.setTitleShown(!ms.open && !landscape) }
+    LaunchedEffect(ms.open, landscape, titleRoom) { controller.setTitleShown(!ms.open && !landscape && titleRoom) }
     LaunchedEffect(ms.open, st.loaded, standBars) {
         if (ms.open && st.loaded) controller.setStandLayout(standBars)
     }
@@ -813,7 +816,17 @@ fun ScoreScreen(vm: PlayViewModel) {
                 }
                 InfoNote(stringResource(R.string.written_tip))
             }
-            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier), st.realisticLoading) { on -> controller.setRealistic(on) } }
+            SoundChoice(st.realistic, st.soundPackParts, st.humanized, st.bandSoundFont || (st.loaded && !st.basicTier), st.realisticLoading) { on -> controller.setRealistic(on) }
+            // What the engraved title block says, which a phone's score does not engrave: the title in full, who wrote and
+            // arranged it, and its rights; and the part shown. Read as one by a screen reader.
+            if (st.credits.isNotEmpty()) {
+                SubHeading(stringResource(R.string.about_this_score))
+                Column(Modifier.semantics(mergeDescendants = true) { testTag = "score-credits" }, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
+                    st.credits.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+                    Text(stringResource(R.string.about_part, shownText), style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+                }
+            }
+        }
         null -> Unit
     }
 }

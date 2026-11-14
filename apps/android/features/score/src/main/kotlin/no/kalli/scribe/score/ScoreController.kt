@@ -37,6 +37,9 @@ data class ScoreUiState(
     val loaded: Boolean = false,
     val error: String? = null,
     val title: String = "",
+    /** What the engraved title block says (title, subtitle, composer, arranger, words, rights), one line each, with
+     *  ordinary spaces (alphaTab keeps the page's no-break spaces, which would not let a long title wrap). */
+    val credits: List<String> = emptyList(),
     val parts: List<String> = emptyList(),
     val shown: Set<Int> = emptySet(),
     val muted: Set<Int> = emptySet(),
@@ -347,6 +350,7 @@ class ScoreController(
             gains = p.gains
             _state.value = _state.value.copy(
                 loaded = true, error = null, title = s.title, parts = p.names, shown = p.shown,
+                credits = listOf(s.title, s.subTitle, s.artist, s.music, s.words, s.copyright).map { it.replace('\u00a0', ' ').trim() }.filter { it.isNotEmpty() }.distinct(),
                 totalBars = s.masterBars.length.toInt(), channels = p.channels.toList(), basicTier = !p.band,
                 bandSoundsExpected = if (p.band) "" else "assets/${BandSoundFontFile.ASSET}; ${context.getExternalFilesDir(null)?.resolve("sounds")}",
             )

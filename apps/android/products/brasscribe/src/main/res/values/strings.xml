@@ -546,6 +546,8 @@
     <string name="key_minor">%1$s minor</string>
     <string name="key_shifted">%1$s from the recording</string>
     <string name="view_menu">View</string>
+    <string name="about_this_score">About this score</string>
+    <string name="about_part">Part: %1$s</string>
     <string name="export_what">What</string>
     <string name="export_scope_my_part">%1$s (you)</string>
     <string name="export_scope_every_part">Every part</string>
