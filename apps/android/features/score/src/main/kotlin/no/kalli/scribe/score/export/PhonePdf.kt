@@ -31,8 +31,9 @@ import java.io.OutputStream
  * It runs off the main thread and never touches the score view's alphaTab.
  *
  * [legend] goes under a page with a doubtful note: what its "?" means (design/brands/brasscribe/system.md, the uncertainty legend).
+ * [tune] sets what a product's pages need of alphaTab beyond that (a tab's rhythm stems, the words it leaves out).
  */
-class PhonePdf(context: Context, private val legend: String) {
+class PhonePdf(context: Context, private val legend: String, private val tune: Settings.() -> Unit = {}) {
     private val musicFont: Typeface = Typeface.createFromAsset(context.assets, "Bravura.otf")
 
     /** One engraved system (or the title block): its drawing, and its size in alphaTab's units. */
@@ -54,6 +55,7 @@ class PhonePdf(context: Context, private val legend: String) {
             mainGlyphColor = ink; secondaryGlyphColor = ink; scoreInfoColor = ink
             staffLineColor = lines; barSeparatorColor = ink; barNumberColor = lines
         }
+        tune()
     }
 
     /** Reads [musicXml] once, for every part and the full score. */

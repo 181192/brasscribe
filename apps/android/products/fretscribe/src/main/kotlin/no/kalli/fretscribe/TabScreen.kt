@@ -348,6 +348,8 @@ fun TabScreen(vm: PlayViewModel) {
     var sounds by rememberSaveable { mutableStateOf(false) }
     val fetches = r.jobId != null && remember(practice.recording) { vm.container.engine() != null }
     if (sounds) SoundDialog(practice, fetches, { vm.container.engine()?.let(practice::fetch) }, fromPages = r.profile.readsPages) { sounds = false }
+    var sharing by rememberSaveable { mutableStateOf(false) }
+    if (sharing) TabShareSheet(vm, title, r.musicXml, r.jobId, r.engineOutputs) { sharing = false }
     // One scroll moves the header (when it is not pinned), the marks and alphaTab's page.
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
@@ -460,6 +462,10 @@ fun TabScreen(vm: PlayViewModel) {
             if (!inFocus) PlayTopBar(barTitle, vm::back, null, titleIsHeading = true) {
                 // Sound, on a phone on its side: the header that has it upright is a scroll up, and the player is one row.
                 if (noteInOneRow && clock != null && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice) { sounds = true }
+                // Share or print, on a phone on its side: the header that has it upright is a scroll up from where the tab opens.
+                if (noteInOneRow && s != null && s.index.bars > 0) IconButton({ sharing = true }, Modifier.size(48.dp).testTag("fs-tab-share")) {
+                    BcIcon(DesignR.drawable.ic_bc_export, stringResource(R.string.export_title))
+                }
                 if (s != null && s.index.bars > 0) IconButton({ focus = focus.enter() }, Modifier.size(48.dp).testTag("fs-tab-full-screen")) {
                     BcIcon(R.drawable.ic_fs_fullscreen, stringResource(R.string.fs_tab_full_screen))
                 }
@@ -583,6 +589,10 @@ fun TabScreen(vm: PlayViewModel) {
                     // Sound: here on an upright phone, where this row has the room for it; else it is the player's last button.
                     // (Also when the tab's sound could not be made: Sound says so.)
                     if (soundInHeader && clock != null && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice) { sounds = true }
+                    // Share or print: the tab as a PDF, for Guitar Pro, as MusicXML, MIDI or text. (On a phone on its side the top bar has it.)
+                    if (s.index.bars > 0 && !noteInOneRow) IconButton({ sharing = true }, Modifier.size(48.dp).testTag("fs-tab-share")) {
+                        BcIcon(DesignR.drawable.ic_bc_export, stringResource(R.string.export_title))
+                    }
                     if (s.marks.doubtful > 0) Row(
                         // To the first "?" on the page, with its note open (Check the song only counts them).
                         Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-marked")

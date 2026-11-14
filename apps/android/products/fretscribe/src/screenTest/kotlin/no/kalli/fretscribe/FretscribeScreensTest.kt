@@ -21,6 +21,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.kalli.scribe.engine.FrettedInstrument
@@ -177,6 +178,11 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("tab-note-guitar") {
             aGuitar(); theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000)
             rule.onNodeWithTag("fs-tab-note-next").performClick(); rest()
+        },
+        // (By its action, not a touch: with large text the header it is in is a scroll up from where the page opens.)
+        Entry("tab-share") {
+            theTab(); rule.onNodeWithTag("fs-tab-share").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+            waitForTag("fs-share-print", 5_000); rest()
         },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-sound") { theTab(); rule.onNodeWithTag("fs-practice-sound").performClick(); waitForTag("fs-sound-done", 5_000); rest() },

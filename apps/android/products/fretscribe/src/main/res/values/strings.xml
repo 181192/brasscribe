@@ -349,6 +349,32 @@
     <string name="fs_practice_metronome_tip">A click on every beat.</string>
     <string name="fs_practice_sound_done">Done</string>
     <string name="fs_sound_failed">This phone couldn\'t make the sound for the tab\'s notes, the count-in and the metronome.</string>
+
+    <!-- Share or print, for a tab -->
+    <string name="fs_share_print">Print</string>
+    <string name="fs_share_as">Share as</string>
+    <string name="fs_share_pdf">PDF</string>
+    <string name="fs_share_pdf_for">To print, or to read on another screen</string>
+    <string name="fs_share_pdf_computer">The PDF comes from Bandroom on your computer.</string>
+    <string name="fs_share_pdf_phone">The PDF is laid out on this phone.</string>
+    <string name="fs_share_gp">Guitar Pro</string>
+    <string name="fs_share_gp_for">To go on working in Guitar Pro 7 or later</string>
+    <string name="fs_share_musicxml">MusicXML</string>
+    <string name="fs_share_musicxml_for">Keeps the strings and frets, for MuseScore and other notation apps</string>
+    <string name="fs_share_midi">MIDI</string>
+    <string name="fs_share_midi_for">The notes alone, for other music apps</string>
+    <string name="fs_share_text">Text tab</string>
+    <string name="fs_share_text_for">The tab in letters and dashes, to paste anywhere</string>
+    <string name="fs_share_instructions">Playing instructions</string>
+    <string name="fs_share_instructions_for">What to play, in words, for a screen reader or a braille display</string>
+    <string name="fs_share_instructions_suffix">playing instructions</string>
+    <string name="fs_share_needs_computer">Your computer writes this. Connect to it first.</string>
+    <string name="fs_share_not_from_computer">Only for a song your computer wrote down.</string>
+    <string name="fs_share_not_made">Your computer did not write this for the song.</string>
+    <string name="fs_share_making">Making the %1$s…</string>
+    <string name="fs_share_making_print">Getting the pages ready…</string>
+    <string name="fs_share_failed">That didn\'t work. Try again.</string>
+    <string name="fs_share_marks_note">\? marks a note Fretscribe is not sure of. ! marks a note with no place on the instrument.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
     <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->

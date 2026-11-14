@@ -54,7 +54,7 @@ synthesizer alone on its small SoundFont (`TabSynth`, `TabSoundPlayer`), so they
 | Provenance and saved repeats | device, beside the saved song |
 | `Profile.BASS_TAB`, `Tab` models, `getTab` | `engine-client` |
 | Guitar instruments in the engine | engine, when guitar comes |
-| Text tab and playing instructions in Share or print | device: the core writes both (`fretted_tab_text_json`, `fretted_playing_instructions_json`), and a job on the computer has them as `tab.txt`, `tab-instructions.en.txt` and `tab-instructions.nb.txt` |
+| Text tab and playing instructions in Share or print away from the computer (Share or print fetches the computer's) | device: the core writes both (`fretted_tab_text_json`, `fretted_playing_instructions_json`), and a job on the computer has them as `tab.txt`, `tab-instructions.en.txt` and `tab-instructions.nb.txt` |
 | The core command line in Bandroom (the Docker image has it) | packaging (blocks the paired-computer flow with Bandroom) |
 | The recording of a job the computer made from a file outside its own audio folders (`scribe run <file>`): `GET /v1/jobs/{id}/input` gives a paired phone only what is in its uploads, captures and datasets | engine |
 | Fretscribe's own About text and credits (it shows Brasscribe's) | app |
@@ -75,7 +75,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 | f2 | Done in a first form: Practice. The recording as the sound with a cursor that follows it, 5% speed steps with the pitch kept, repeat by bar, a 64 dp transport, and the recording fetched from the computer for a song opened without it. Sound: the recording, the tab's notes or both, with a count-in and a metronome; a song without its recording plays the tab's notes. Still to come: the speed trainer and 1% steps, saved repeats, hiding the controls while it plays, Lock the tab, and the line that scrolls past a fixed cursor | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |
 | g | Fix a note: fretboard strip, pitch stepper, pins, provenance, undo | low |
-| h | Share or print | low |
+| h | Done in a first form: Share or print from the tab. Print, and share as PDF (the computer's, or laid out on the phone), Guitar Pro (.gp, alphaTab's exporter), MusicXML, MIDI, and from the computer the text tab and the playing instructions. Still to come: the Chart, Show ? marks, Audio | low |
 | i | Pedals and keys, Lock the tab | low |
 | j | Screen-reader model for the tab | none |
 
