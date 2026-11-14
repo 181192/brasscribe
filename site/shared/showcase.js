@@ -687,7 +687,9 @@ async function partview(el) {
   };
   // After a change of language it stands as it stood: the same part, the same note.
   const chosen = kept.chosen;
+  // On a phone it opens on the first part alone, not all of them under each other (one tap shows them all).
   if (kept.part) select.value = kept.part;
+  else if (narrow.matches) select.value = score.parts[0].id;
   show();
   if (chosen !== undefined && notes[chosen]) choose(chosen, false);
 }
@@ -697,7 +699,7 @@ async function partview(el) {
 const narrow = matchMedia("(max-width: 600px)");
 function sureRow(row) {
   const count = row.nextElementSibling?.classList.contains("sure-count") ? row.nextElementSibling : null;
-  const cards = [...row.children], words = JSON.parse(row.dataset.count);
+  const cards = [...row.children];
   const fit = () => {
     if (narrow.matches) {
       row.setAttribute("role", "region");
@@ -715,10 +717,14 @@ function sureRow(row) {
       const far = Math.abs(card.getBoundingClientRect().left - left - parseFloat(getComputedStyle(row).paddingLeft));
       if (far < near) [at, near] = [i, far];
     });
-    count.textContent = fill(words, { n: at + 1, total: cards.length });
+    // (At the end of the row the last card is the one in view, though it cannot reach the row's start.)
+    if (row.scrollLeft + row.clientWidth >= row.scrollWidth - 2) at = cards.length - 1;
+    count.textContent = fill(row.dataset.count, { n: at + 1, total: cards.length });
   };
   narrow.addEventListener("change", fit);
   row.addEventListener("scroll", show, { passive: true });
+  // (A page's own words may give the counter: they change with the language where they stand.)
+  document.addEventListener("scribe:lang", show);
   fit();
   show();
   count?.classList.remove("await-js");
@@ -739,6 +745,10 @@ function enhance(root) {
   });
   within(root, "[data-strip]").forEach(strip);
   within(root, ".sure-grid[data-count]").forEach(sureRow);
+  // The table of where every app runs is folded on a phone, until the reader opens it.
+  within(root, ".matrix-fold").forEach((fold) => {
+    if (narrow.matches) fold.open = false;
+  });
   within(root, "[data-stages]").forEach(stages);
   lazily("[data-tabdemo]", tabdemo);
   lazily("[data-partview]", partview);

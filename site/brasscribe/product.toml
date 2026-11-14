@@ -81,8 +81,9 @@ nb = { does = "En solo skrevet på selve Macen; hele partituret på stor skjerm,
 id = "windows"
 files = ["windows"]
 devices = [{ name = "Windows", status = "early" }]
-en = { does = "The whole score on a big screen; print the parts. Every score, a solo too, comes from Bandroom.", needs = "A PC with Windows 11." }
-nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene. Alle partiturer, også en solo, kommer fra Bandroom.", needs = "PC med Windows 11." }
+shot = "windows-score"
+en = { does = "The whole score on a big screen; print the parts. Every score, a solo too, comes from Bandroom.", needs = "A PC with Windows 11.", alt = "The full score in Brasscribe for Windows: every part under each other, with a ? over a note it is not sure of." }
+nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene. Alle partiturer, også en solo, kommer fra Bandroom.", needs = "PC med Windows 11.", alt = "Hele partituret i Brasscribe for Windows: alle stemmene under hverandre, med et ? over en note den er usikker på." }
 
 [[variants]]
 id = "studio"

@@ -243,6 +243,13 @@ main > section > .wrap > h2 { max-width: 20em; }
 .gets h3 { margin: 0 0 var(--scribe-space-1); font-size: var(--scribe-type-headline-size); }
 .gets p { margin: 0; color: var(--scribe-text-muted); }
 .gets li { padding-top: var(--scribe-space-3); border-top: 2px solid var(--scribe-brand); }
+/* On a phone each one is a paragraph that starts with its title, not a title over a paragraph. */
+@media (max-width: 600px) {
+  .gets { gap: var(--scribe-space-4); }
+  .gets h3, .gets p { display: inline; }
+  .gets h3 { font-size: inherit; margin: 0; }
+  .gets h3::after { content: " · " / ""; color: var(--scribe-text-muted); }
+}
 .quiet { margin: var(--scribe-space-4) 0 0; font-size: var(--scribe-type-callout-size); }
 .quiet a { color: var(--scribe-text-muted); }
 .getit .lead { max-width: 34em; }

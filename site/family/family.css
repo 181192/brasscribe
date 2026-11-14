@@ -55,12 +55,14 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .app .strip { margin: 0; }
 /* Each place an app runs, as itself: a phone, a tablet on its stand, a Mac's window, Bandroom in the menu bar.
    Standing on one line at the bottom, as on a desk; on a phone the row scrolls by itself, a device at a time. */
-.lineup { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 var(--scribe-space-10); display: grid; grid-template-columns: max-content max-content minmax(0, 380px) minmax(200px, 260px); gap: var(--scribe-space-8); align-items: end; justify-content: space-between; }
+.lineup { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 var(--scribe-space-10); display: grid; grid-template-columns: max-content max-content minmax(0, 280px) minmax(0, 260px) minmax(180px, 220px); gap: var(--scribe-space-6); align-items: end; justify-content: space-between; }
 .lineup li { display: grid; gap: var(--scribe-space-2); justify-items: start; }
 .lineup-device { display: grid; justify-items: center; align-items: end; width: 100%; }
 .lineup .phone-frame { width: 120px; }
 .lineup .tablet-frame { width: 190px; }
 .lineup .mac-frame { width: 100%; }
+/* A Windows 11 window: square to the screen, its corners a little rounded, its edge a hairline. */
+.lineup-windows .mac-frame img { border: 1px solid var(--scribe-border-strong); border-radius: 8px; box-shadow: var(--scribe-elevation-2); }
 /* The tablet stands on a music stand: the ledge it rests on, a thin pole, and the stand's feet. */
 .lineup .stand { display: block; width: 3px; height: 34px; background: var(--scribe-border-strong); position: relative; }
 .lineup .stand::before { content: ""; position: absolute; left: 50%; top: 0; width: 214px; height: 7px; margin-left: -107px; border-radius: 2px; background: var(--scribe-border-strong); }
@@ -85,7 +87,11 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
   .lineup:not(.alone) { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: max-content; width: max-content; }
   .lineup:not(.alone) li { scroll-snap-align: start; }
   .lineup-mac .mac-frame { width: 280px; }
+  .lineup-windows .mac-frame { width: 260px; }
   .lineup-bandroom .lineup-device { width: 240px; }
+  /* Bandroom's caption wraps under its picture, so it is read in one view. */
+  .lineup-bandroom { width: 240px; }
+  .lineup-bandroom .lineup-name { white-space: normal; flex-wrap: wrap; }
 }
 /* On a phone the devices are two thirds of their size, so the row does not make the section much longer. */
 @media (max-width: 600px) {
@@ -95,9 +101,13 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
   .lineup .stand::before { width: 143px; margin-left: -71px; }
   .lineup .stand::after { width: 40px; margin-left: -20px; }
   .lineup-mac .mac-frame { width: 187px; }
-  .lineup-bandroom .lineup-device { width: 180px; }
+  .lineup-windows .mac-frame { width: 173px; }
+  .lineup-bandroom .lineup-device, .lineup-bandroom { width: 200px; }
 }
 @media (forced-colors: active) { .menubar-mine { forced-color-adjust: none; background: CanvasText; color: Canvas; } .lineup .stand, .lineup .stand::after { background: CanvasText; } }
+
+/* Where every app runs, as a table: a fold, its title the table's own, open unless a phone closed it. */
+.matrix-fold > summary { font-weight: 600; margin-bottom: var(--scribe-space-3); }
 
 /* The pen comes down onto each sheet's strip before the strip runs: its line draws from the top (the script marks
    the strip inked). Without the script, or with less motion, the line is simply there. */

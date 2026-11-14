@@ -71,7 +71,7 @@ settles when an app starts:
 | Run | Appearance choices | Screenshot names |
 |---|---|---|
 | English | Light and Dark; Pink light and Pink dark on First run, Home, the score, Check the notes, Share or print and Settings | `home--light`, `home--pink-dark` |
-| Bokmål (`nb-NO`) | Light | `home--nb-light` |
+| Bokmål (`nb-NO`) | Light and Dark | `home--nb-light`, `home--nb-dark` |
 | A contrast theme on in Windows | Match system, and also Pink dark, which must look the same (the contrast theme wins); one screenshot is kept | `home--contrast` |
 | Text size 200 % (Settings › Accessibility › Text size) | Light | `home--text200-light` |
 

@@ -44,6 +44,8 @@ title = "Bare ditt"
 text = "Opptaket går fra telefonen til din egen datamaskin, og ingen andre steder."
 
 [sure]
+cards = "Hvor sikker hver app er, et kort for hver"
+count = "{n} av {total}"
 title = "Ærlig om hver note."
 lead = "Appene sier fra om hvilke noter du bør sjekke. Her ser du hvor ofte de treffer."
 more = "Hvor sikker {app} er"

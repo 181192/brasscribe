@@ -8,6 +8,10 @@
 # To swap a shot, change its paths here, run the script, and update the alt text on the pages.
 A=apps/apple/docs/screenshots
 S=studio/docs/screenshots/themes
+# Windows: Play for Windows's screen catalogue (CI's screens-play-windows artifact), the score's part of the window,
+# its top left 620 × 545 px: the catalogue's machine has no band sounds, and the notice that says so under the score
+# is left out; so is the parts column, where the bokmål build breaks "Solokornett" in two.
+W=apps/windows/docs/screenshots/brasscribe
 home          phone    $A/iphone-home-full-light.png   $A/iphone-home-full-dark.png   $A/iphone-nb-home-full-light.png $A/iphone-nb-home-full-dark.png
 what-is-this  phone    $A/iphone-source-light.png      $A/iphone-source-dark.png      $A/iphone-nb-source-light.png $A/iphone-nb-source-dark.png
 making        phone    $A/iphone-transcribing-light.png $A/iphone-transcribing-dark.png $A/iphone-nb-transcribing-light.png $A/iphone-nb-transcribing-dark.png
@@ -22,3 +26,4 @@ dark-mode     phone    $A/iphone-part-dark.png         -                        
 ipad-review   tablet   $A/ipad-review-light.png        $A/ipad-review-dark.png        $A/ipad-nb-review-light.png   $A/ipad-nb-review-dark.png
 mac-score     mac      $A/macos-score-light.png        $A/macos-score-dark.png        $A/macos-nb-score-light.png   $A/macos-nb-score-dark.png
 computer      desktop  $S/viewer-light.png             $S/viewer-dark.png             $S/viewer-nb.png              -
+windows-score mac      $W/score-light.png              $W/score-dark.png              $W/score-nb-light.png         $W/score-nb-dark.png
