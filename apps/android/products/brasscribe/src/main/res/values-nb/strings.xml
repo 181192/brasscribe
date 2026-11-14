@@ -677,7 +677,7 @@
     <string name="seat_reads_bass">F-nøkkel, klingende</string>
     <string name="seat_reads_treble_bflat_spoken">G-nøkkel i B</string>
     <string name="seat_reads_treble_eflat_spoken">G-nøkkel i Ess</string>
-    <string name="seat_continue_hint">Velg instrumentet ditt, eller «Jeg dirigerer eller lytter».</string>
+    <string name="seat_continue_hint">Velg instrumentet ditt.</string>
     <string name="seat_part_hint">Velg hvilken stemme du spiller.</string>
     <string name="seat_none">Jeg dirigerer eller lytter</string>
     <string name="seat_skip">Ikke nå</string>

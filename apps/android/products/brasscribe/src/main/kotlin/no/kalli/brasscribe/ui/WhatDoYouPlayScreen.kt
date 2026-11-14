@@ -37,6 +37,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -137,16 +139,9 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         reads = offered.firstOrNull()?.reads?.firstOrNull()
     }
 
-    // Continue alone is docked, so the instruments keep the screen and the button is in view on a short one too.
-    // "I conduct or listen" is the last of the choices, and the reason Continue waits, which names it, comes after it.
-    val Hint = @Composable {
-        if (seat == null) Text(
-            stringResource(if (instrument == null) R.string.seat_continue_hint else R.string.seat_part_hint),
-            style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
-            modifier = Modifier.fillMaxWidth().testTag("seat-hint"),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-    }
+    // Continue is docked with one line over it while it waits, saying why, so the instruments keep the screen and both
+    // are in view on a short one too. "I conduct or listen" is the first of the choices, on the first screen.
+    val chosen = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
     PlayScaffold(
         title = null,
         onBack = if (mode == SeatPickerMode.FIRST_RUN) null else ({ vm.back() }),
@@ -154,29 +149,56 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         status = status,
         actions = { if (mode == SeatPickerMode.FIRST_RUN) PlainButton(stringResource(R.string.seat_skip), vm::skipSeat, Modifier.testTag("seat-skip")) },
         bottom = {
-            PrimaryButton(stringResource(R.string.continue_label), {
-                seat?.let { s -> vm.chooseSeat(SeatChoice.Player(s.id, reads?.takeIf { s.reads.size > 1 })) }
-            }, enabled = seat != null, modifier = Modifier.testTag("seat-continue"))
+            val why = @Composable { m: Modifier, align: androidx.compose.ui.text.style.TextAlign ->
+                if (seat == null) Text(
+                    stringResource(if (instrument == null) R.string.seat_continue_hint else R.string.seat_part_hint),
+                    style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = m.testTag("seat-hint"), textAlign = align,
+                )
+            }
+            val go = @Composable { m: Modifier ->
+                PrimaryButton(stringResource(R.string.continue_label), {
+                    seat?.let { s -> vm.chooseSeat(SeatChoice.Player(s.id, reads?.takeIf { s.reads.size > 1 })) }
+                }, enabled = seat != null, modifier = m.testTag("seat-continue"))
+            }
+            // On a short screen (a phone on its side) the reason stands beside Continue, so the band stays one button
+            // high and docked.
+            if (shortScreen() && seat == null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+                why(Modifier.weight(1f), androidx.compose.ui.text.style.TextAlign.End)
+                go(Modifier.weight(1f))
+            } else {
+                why(Modifier.fillMaxWidth(), androidx.compose.ui.text.style.TextAlign.Center)
+                go(Modifier)
+            }
         },
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
-            ScreenTitle(stringResource(if (mode == SeatPickerMode.WHO_PLAYED) R.string.who_played else R.string.seat_title))
-            if (mode != SeatPickerMode.WHO_PLAYED) Lead(stringResource(R.string.seat_body))
+        val title = @Composable { m: Modifier -> ScreenTitle(stringResource(if (mode == SeatPickerMode.WHO_PLAYED) R.string.who_played else R.string.seat_title), m) }
+        val conductor = @Composable { m: Modifier -> OutlineButton(stringResource(R.string.seat_none), { vm.chooseSeat(SeatChoice.Conductor) }, m.testTag("seat-none")) }
+        // On a short screen (a phone on its side) the lead steps aside and "I conduct or listen" stands beside the title,
+        // so the instruments start on the first screen.
+        if (shortScreen()) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+            title(Modifier.weight(1f))
+            conductor(Modifier.weight(1f))
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
+                title(Modifier)
+                if (mode != SeatPickerMode.WHO_PLAYED) Lead(stringResource(R.string.seat_body))
+            }
+            conductor(Modifier)
         }
         val groupLabel = stringResource(R.string.seat_instrument)
         Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
             Text(groupLabel, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.semantics { heading() })
             val tiles = TILES.filter { t -> seats.any { it.instrument == t.id } }
-            Column(Modifier.selectableGroup().semantics { contentDescription = groupLabel },
-                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
-                tiles.chunked(if (large) 1 else 2).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
-                        row.forEach { t -> Tile(t, t.id == instrument, Modifier.weight(1f)) { pickInstrument(t.id) } }
-                        if (row.size == 1 && !large) Spacer(Modifier.weight(1f))
-                    }
+            // Every tile as high as the highest, so the rows are even whether a tile has a second line or not.
+            EvenGrid(if (large) 1 else 2, Modifier.selectableGroup().semantics { contentDescription = groupLabel }) {
+                tiles.forEach { t ->
+                    val on = t.id == instrument
+                    Tile(t, on, if (on) Modifier.bringIntoViewRequester(chosen) else Modifier) { pickInstrument(t.id) }
                 }
             }
+            // The instrument chosen before (Settings, Who played this?) is in view when the screen opens.
+            LaunchedEffect(Unit) { if (instrument != null) chosen.bringIntoView() }
         }
         if (parts.size > 1) Choices(
             stringResource(R.string.seat_which_part), parts.map { it.id to PartNames.display(it.name) }, seatId, large, "seat-part",
@@ -186,8 +208,23 @@ fun WhatDoYouPlayScreen(vm: PlayViewModel) {
         if (offered.size > 1 && readsSeat != null) Choices(
             stringResource(R.string.seat_reads), offered.map { it to stringResource(readsLabel(it, readsSeat)) }, reads, large, "seat-reads",
         ) { reads = it }
-        OutlineButton(stringResource(R.string.seat_none), { vm.chooseSeat(SeatChoice.Conductor) }, Modifier.testTag("seat-none"))
-        Hint()
+    }
+}
+
+/** Cells in [columns] columns, every one as high as the highest, read and reached row by row. */
+@Composable
+private fun EvenGrid(columns: Int, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val gap = ScribeSpace.s2
+    androidx.compose.ui.layout.Layout(content, modifier) { measurables, constraints ->
+        val gapPx = gap.roundToPx()
+        val width = constraints.maxWidth
+        val cell = (width - gapPx * (columns - 1)) / columns
+        val height = measurables.maxOfOrNull { it.maxIntrinsicHeight(cell) } ?: 0
+        val placeables = measurables.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(cell, height)) }
+        val rows = (placeables.size + columns - 1) / columns
+        layout(width, (rows * height + (rows - 1).coerceAtLeast(0) * gapPx)) {
+            placeables.forEachIndexed { i, p -> p.placeRelative((i % columns) * (cell + gapPx), (i / columns) * (height + gapPx)) }
+        }
     }
 }
 

@@ -695,7 +695,7 @@
     <string name="seat_reads_bass">Bass clef, as it sounds</string>
     <string name="seat_reads_treble_bflat_spoken">Treble clef in B flat</string>
     <string name="seat_reads_treble_eflat_spoken">Treble clef in E flat</string>
-    <string name="seat_continue_hint">Choose your instrument, or “I conduct or listen”.</string>
+    <string name="seat_continue_hint">Choose your instrument.</string>
     <string name="seat_part_hint">Choose which part you play.</string>
     <string name="seat_none">I conduct or listen</string>
     <string name="seat_skip">Not now</string>
