@@ -123,7 +123,7 @@ internal sealed class SettingsWindow : Window
         {
             readerStatus.Text = reader.Status;
             readerStatus.Visibility = reader.Status.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-            readerBusy.Visibility = reader.IsInstalling ? Visibility.Visible : Visibility.Collapsed;
+            readerBusy.Visibility = reader.ShowsProgress ? Visibility.Visible : Visibility.Collapsed;
             readerInstall.Content = reader.Button;
             readerInstall.Visibility = reader.ShowsButton ? Visibility.Visible : Visibility.Collapsed;
             readerInstall.IsEnabled = reader.CanInstall;

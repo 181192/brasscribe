@@ -116,7 +116,7 @@ ROWS = [
     ("Settings_Hf_Saved", "The key is saved in Credential Manager.", "Nøkkelen er lagret i Legitimasjonsbehandling."),  # (+)
     ("Settings_Hf_FromEnvironment", "Brasscribe uses the HF_TOKEN key set on this PC.", "Brasscribe bruker HF_TOKEN-nøkkelen som er satt på denne PC-en."),  # (+)
     ("Settings_Save", "Save", "Lagre"),  # (+)
-    # (+) the reader of printed music: fetched only when asked for here, its licence and source shown first
+    # settings.reader.*: the reader of printed music, fetched only when asked for here, its licence and source shown first
     ("Settings_Reader", "Sheet music from pictures", "Noter fra bilder"),
     ("Settings_Reader_Body", "Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence.",
      "Telefonene kan sende et bilde eller en PDF av trykte noter og få et partitur eller en tab tilbake. Til det trengs en noteleser, homr, som ikke er en del av Brasscribe: den er fri programvare under lisensen AGPL-3.0."),

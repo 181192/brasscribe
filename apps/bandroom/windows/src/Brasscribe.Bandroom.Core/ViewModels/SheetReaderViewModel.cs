@@ -57,7 +57,7 @@ public sealed partial class SheetReaderViewModel : ObservableObject
     public string ReadMore => _s["Settings_Reader_Read"];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Status), nameof(Button), nameof(ShowsButton), nameof(CanInstall), nameof(IsInstalling))]
+    [NotifyPropertyChangedFor(nameof(Status), nameof(Button), nameof(ShowsButton), nameof(CanInstall), nameof(IsInstalling), nameof(ShowsProgress))]
     private SheetReaderState _state;
 
     [ObservableProperty]
@@ -77,6 +77,33 @@ public sealed partial class SheetReaderViewModel : ObservableObject
     public bool ShowsButton => State is SheetReaderState.NotInstalled or SheetReaderState.Failed;
     public bool CanInstall => ShowsButton && _host.CanInstall;
     public bool IsInstalling => State == SheetReaderState.Installing;
+
+    /// <summary>The card shows sample content (<see cref="ShowSample"/>), not an install of this computer's.</summary>
+    public bool IsSample { get; private set; }
+
+    /// <summary>The progress bar runs while this computer installs; a sample of that state is drawn without it, so its picture keeps still.</summary>
+    public bool ShowsProgress => IsInstalling && !IsSample;
+
+    /// <summary>The states the screen catalogue asks for with <c>--state</c>, by name; null for any other.</summary>
+    public static SheetReaderState? SampleState(string? name) => name switch
+    {
+        "reader-installing" => SheetReaderState.Installing,
+        "reader-installed" => SheetReaderState.Installed,
+        "reader-failed" => SheetReaderState.Failed,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Sample content, for the screen catalogue: the card as it is while the reader installs, once it is there, or
+    /// after a fetch that failed on the network. Nothing is installed.
+    /// </summary>
+    public void ShowSample(SheetReaderState state)
+    {
+        IsSample = true;
+        Failure = state == SheetReaderState.Failed ? _s["Settings_Reader_Failed_Network"] : "";
+        State = state;
+        OnPropertyChanged(nameof(ShowsProgress));
+    }
 
     /// <summary>Looks again (Settings was opened; setup finished): an install under way is left as it is.</summary>
     public void Refresh()

@@ -76,8 +76,9 @@ REFUSALS = {
 NOT_READ = "the pages could not be read"
 # What the API answers 503 with for a job of these profiles on a computer without the recogniser.
 READER_MISSING = "reader_missing"
-READER_MISSING_DETAIL = ("this computer has no reader of printed music installed: install the homr environment "
-                         "(`uv sync --frozen --project ml/adapters/homr` on an Apple silicon Mac, `pixi install -e homr` "
+READER_MISSING_DETAIL = ("this computer has no reader of printed music installed: install it in Bandroom on that computer, "
+                         "under Settings, Sheet music from pictures (an engine run from a checkout: "
+                         "`uv sync --frozen --project ml/adapters/homr` on an Apple silicon Mac, `pixi install -e homr` "
                          "elsewhere)")
 ONLY_TAB = "no staff of notes was found on the page: a tab staff is not read"
 

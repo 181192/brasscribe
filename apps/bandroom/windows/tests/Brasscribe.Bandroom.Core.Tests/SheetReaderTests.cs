@@ -240,6 +240,73 @@ public sealed class SheetReaderTests : IDisposable
         Assert.Equal("Installer noteleseren", nb.Button);
     }
 
+    /// <summary>
+    /// The copy deck (design/shared/server-app.md §10, settings.reader.*) and the two apps say the same: the deck's
+    /// rows are this app's strings, and the Mac's (its bokmål is in make-strings.py, keyed by the English).
+    /// </summary>
+    [Fact]
+    public void The_copy_deck_and_both_apps_have_the_same_words()
+    {
+        var deck = File.ReadLines(Path.Combine(TestPaths.RepoRoot, "design", "shared", "server-app.md"))
+            .Where(l => l.StartsWith("| settings.reader", StringComparison.Ordinal))
+            .Select(l => l.Trim('|').Split(" | ").Select(c => c.Trim()).ToArray())
+            .ToDictionary(c => c[0], c => (En: c[1], Nb: c[2]));
+        string mac = File.ReadAllText(Path.Combine(TestPaths.RepoRoot, "apps", "bandroom", "macos", "scripts", "make-strings.py"));
+        var keys = Strings.En.All.Keys.Where(k => k.StartsWith("Settings_Reader", StringComparison.Ordinal)).ToList();
+        Assert.Equal(11, keys.Count);
+        Assert.Equal(keys.Count + 1, deck.Count); // the source line is there once per platform
+        foreach (var key in keys)
+        {
+            string name = key.ToLowerInvariant().Replace('_', '.');
+            var win = deck[deck.ContainsKey(name) ? name : name + ".win"];
+            static string Placeholders(string s) => s.Replace("{n}", "{0}").Replace("{m}", "{1}");
+            Assert.Equal(Strings.En[key], Placeholders(win.En));
+            Assert.Equal(Strings.Nb[key], Placeholders(win.Nb));
+
+            var forMac = deck[deck.ContainsKey(name) ? name : name + ".mac"];
+            static string Swift(string s) => s.Replace("{n}", "%@").Replace("{m}", "%@");
+            Assert.Contains($"\"{Swift(forMac.En)}\":", mac);
+            Assert.Contains($"\"{Swift(forMac.Nb)}\"", mac);
+        }
+    }
+
+    [Fact]
+    public void The_catalogues_sample_states_show_the_card_without_installing_anything()
+    {
+        var host = new Host();
+        var vm = new SheetReaderViewModel(Strings.En, host);
+        Assert.Null(SheetReaderViewModel.SampleState("running"));
+        Assert.Null(SheetReaderViewModel.SampleState(null));
+
+        vm.ShowSample(SheetReaderViewModel.SampleState("reader-installing")!.Value);
+        Assert.True(vm.IsInstalling && vm.IsSample);
+        Assert.False(vm.ShowsProgress); // a bar that moves would never give a picture that keeps still
+        Assert.Equal("Installing the reader… This takes a few minutes.", vm.Status);
+        vm.Refresh();
+        Assert.Equal(SheetReaderState.Installing, vm.State);
+
+        vm.ShowSample(SheetReaderViewModel.SampleState("reader-failed")!.Value);
+        Assert.Equal("The reader's files couldn't be downloaded. Check the internet connection, then try again.", vm.Status);
+        Assert.Equal("Try again", vm.Button);
+        vm.Refresh();
+        Assert.Equal(SheetReaderState.Failed, vm.State);
+
+        host.Installed = true; // as the app's sample host says once that state is asked for
+        vm.ShowSample(SheetReaderViewModel.SampleState("reader-installed")!.Value);
+        vm.Refresh();
+        Assert.Equal(SheetReaderState.Installed, vm.State);
+        Assert.False(vm.ShowsButton);
+        Assert.Equal(0, host.Installs);
+
+        // The catalogue asks for exactly the states the app knows.
+        string views = File.ReadAllText(Path.Combine(TestPaths.RepoRoot, "apps", "windows", "tools", "ScreenCheck", "BandroomCatalogue.cs"));
+        foreach (var state in (string[])["reader-installing", "reader-installed", "reader-failed"])
+        {
+            Assert.Contains($"settings:{state}", views);
+            Assert.NotNull(SheetReaderViewModel.SampleState(state));
+        }
+    }
+
     [Fact]
     public async Task Installing_shows_progress_then_installed_and_says_so()
     {
@@ -253,7 +320,7 @@ public sealed class SheetReaderTests : IDisposable
 
         var run = vm.InstallAsync();
         Assert.Equal(SheetReaderState.Installing, vm.State);
-        Assert.True(vm.IsInstalling);
+        Assert.True(vm.IsInstalling && vm.ShowsProgress);
         Assert.False(vm.ShowsButton);
         Assert.Equal("Installing the reader… This takes a few minutes.", vm.Status);
         Assert.Contains(nameof(SheetReaderViewModel.Status), changed);

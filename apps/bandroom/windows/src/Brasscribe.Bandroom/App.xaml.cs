@@ -22,7 +22,8 @@ namespace Brasscribe.Bandroom;
 /// Command line: --background (the sign-in start), --demo (sample content, no engine), --show
 /// flyout|devices|confirm-stop|window|pair|allow|settings (one view with sample content, for screenshots and
 /// the accessibility scan), --state running|busy|attention|update|update-bandroom|update-behind|update-dev|stopped|
-/// error|setup|starting, --theme light|dark (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
+/// error|setup|starting (with --show settings: reader-installing|reader-installed|reader-failed, the reader of
+/// printed music's card), --theme light|dark (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
 /// </summary>
 public partial class App : Application, IBandroomActions, IPanelHost, ISettingsHost, ISheetReaderHost, IAnnouncer
 {
@@ -460,6 +461,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
                     OnPairRequest(_demoEngine.AddRequest());
                     break;
                 case "settings":
+                    // --state reader-installing|reader-installed|reader-failed: the reader's card in that state.
+                    if (SheetReaderViewModel.SampleState(Option("--state")) is { } reader)
+                    {
+                        _demoReaderInstalled = reader == SheetReaderState.Installed;
+                        _reader.ShowSample(reader);
+                    }
                     OpenSettings();
                     break;
             }

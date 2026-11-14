@@ -465,6 +465,10 @@ def test_without_the_recogniser_the_profiles_are_not_offered_and_a_job_is_refuse
     assert not {"sheet", "sheet-tab"} & {p["name"] for p in client.get("/v1/profiles").json()}
     r = client.post("/v1/jobs/pages", files=[("files", ("page.png", PNG, "image/png"))])
     assert (r.status_code, r.json()["code"]) == (503, "reader_missing")
+    # What to do about it, for the person with Bandroom first, then for an engine run from a checkout.
+    detail = r.json()["detail"]
+    assert "Bandroom" in detail and "Settings, Sheet music from pictures" in detail
+    assert detail.index("Bandroom") < detail.index("uv sync") < detail.index("pixi install -e homr")
     assert not list(settings.uploads_dir.iterdir())
 
 

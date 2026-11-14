@@ -46,7 +46,8 @@ on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).
 
 Command line: `--background` (the sign-in start: no window), `--demo` / `--show flyout|devices|confirm-stop|window|pair|allow`
 (sample content, no engine), `--state running|busy|attention|update|update-bandroom|update-behind|update-dev|stopped|error|setup|starting`
-(the four `update` states: an engine with another interface version, one per fix), `--theme light|dark`, `--lang en|nb`.
+(the four `update` states: an engine with another interface version, one per fix; with `--show settings`,
+`reader-installing|reader-installed|reader-failed` for the card of the reader of printed music), `--theme light|dark`, `--lang en|nb`.
 
 ## How it runs
 
