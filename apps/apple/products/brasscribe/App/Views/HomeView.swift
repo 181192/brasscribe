@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 struct HomeView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.horizontalSizeClass) private var hsize
+    @Environment(\.verticalSizeClass) private var vsize
     @State private var dropTargeted = false
 
     private var wide: Bool {
@@ -15,16 +16,32 @@ struct HomeView: View {
         #endif
     }
 
+    /// A phone with scores on it. Home with nothing made yet says what the app is for; once there are scores, they are
+    /// what a player comes back for, so the headline, the lead and the line under the ways in step aside and the list
+    /// starts on the first screen, also with larger text.
+    private var phoneLibrary: Bool { !wide && !app.scores.isEmpty }
+
+    /// A phone on its side with scores on it: the ways in are one row, the microphone by its icon, named in full.
+    private var onItsSide: Bool {
+        #if os(iOS)
+        phoneLibrary && vsize == .compact
+        #else
+        false
+        #endif
+    }
+
     var body: some View {
         @Bindable var app = app
         ScrollView {
-            VStack(alignment: .leading, spacing: Space.s6) {
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    DisplayTitle(text: String(localized: "Turn a recording into"), emphasis: String(localized: "a score."), size: wide ? 48 : 40)
-                    Text("Play it, record it, or open a file. Brasscribe writes the parts for your band.")
-                        .font(Font.Scribe.body)
-                        .foregroundStyle(Color.Scribe.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: onItsSide ? Space.s4 : Space.s6) {
+                if !phoneLibrary {
+                    VStack(alignment: .leading, spacing: Space.s3) {
+                        DisplayTitle(text: String(localized: "Turn a recording into"), emphasis: String(localized: "a score."), size: wide ? 48 : 40)
+                        Text("Play it, record it, or open a file. Brasscribe writes the parts for your band.")
+                            .font(Font.Scribe.body)
+                            .foregroundStyle(Color.Scribe.textMuted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 ConnectionStatusRow()
                     .padding(.horizontal, Space.s4)
@@ -33,8 +50,10 @@ struct HomeView: View {
                     .background(Color.Scribe.surface, in: RoundedRectangle(cornerRadius: Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Radius.md).strokeBorder(Color.Scribe.border))
                 if wide { wideWaysIn } else { phoneWaysIn }
-                HelperLine(systemImage: BrasscribeIcon.info.systemName,
-                           text: String(localized: "Links to streaming sites can't be downloaded. Play the music and record it instead."))
+                if !phoneLibrary {
+                    HelperLine(systemImage: BrasscribeIcon.info.systemName,
+                               text: String(localized: "Links to streaming sites can't be downloaded. Play the music and record it instead."))
+                }
                 scores
             }
             .padding(.horizontal, wide ? Space.s10 : Space.s5)
@@ -81,15 +100,35 @@ struct HomeView: View {
         .accessibilityIdentifier("import")
     }
 
-    private var phoneWaysIn: some View {
-        VStack(spacing: Space.s4) {
-            openButton.buttonStyle(.primaryWide)
-            VStack(spacing: 0) {
-                WayInRow(icon: BrasscribeIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
-                         subtitle: String(localized: "Play your part in the room")) { app.showRecorder = true }
-                    .accessibilityIdentifier("record")
+    @ViewBuilder private var phoneWaysIn: some View {
+        if onItsSide {
+            HStack(spacing: Space.s2) {
+                openButton.buttonStyle(.primaryWide)
+                Button { app.showRecorder = true } label: {
+                    Image(systemName: BrasscribeIcon.recordMic.systemName)
+                        .font(Font.Scribe.headline)
+                        .foregroundStyle(Color.Scribe.text)
+                        .frame(width: 72)
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .card(padding: 0)
+                .accessibilityLabel(Text("Record with the microphone"))
+                .accessibilityIdentifier("record")
             }
-            .card(padding: 0)
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+            VStack(spacing: Space.s4) {
+                openButton.buttonStyle(.primaryWide)
+                VStack(spacing: 0) {
+                    // With scores on the phone what the microphone is for is known by then: the row is its name alone.
+                    WayInRow(icon: BrasscribeIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
+                             subtitle: phoneLibrary ? nil : String(localized: "Play your part in the room")) { app.showRecorder = true }
+                        .accessibilityIdentifier("record")
+                }
+                .card(padding: 0)
+            }
         }
     }
 
