@@ -181,6 +181,39 @@ class PagesTest {
     }
 
     @Test
+    fun aRowsPictureIsReadSmallAndNeverWhole() {
+        // How much a picture is sampled down while it is read: its longest side comes out at the row's size or a little over.
+        assertEquals(1, PageThumbnails.sampleSize(240, 320, 192))
+        assertEquals(1, PageThumbnails.sampleSize(383, 200, 192))
+        assertEquals(2, PageThumbnails.sampleSize(384, 200, 192))
+        assertEquals(8, PageThumbnails.sampleSize(3000, 2000, 192))
+        assertEquals(16, PageThumbnails.sampleSize(4000, 6000, 192))
+        assertEquals(1, PageThumbnails.sampleSize(1, 1, 192))
+        for ((w, h) in listOf(3000 to 2000, 4000 to 6000, 1000 to 1000, 200 to 9000)) {
+            val sample = PageThumbnails.sampleSize(w, h, 192)
+            assertTrue("$w x $h by $sample", maxOf(w, h) / sample in 192 until 384)
+        }
+
+        // A page as large as one is sent: the picture kept for its row is a few hundred pixels, not the page.
+        val thumbnails = PageThumbnails()
+        val page = take("Photo.jpg", picture(Pages.MAX_SIDE, 2000, Bitmap.CompressFormat.JPEG))
+        val small = thumbnails.of(page)
+        val bitmap = checkNotNull(small.picture)
+        assertTrue("${bitmap.width} x ${bitmap.height}", maxOf(bitmap.width, bitmap.height) in PageThumbnails.SIDE until 2 * PageThumbnails.SIDE)
+        assertTrue("it is still the page, the same way up", bitmap.width > bitmap.height)
+        assertTrue("held in ${bitmap.byteCount} bytes", bitmap.byteCount < 600_000)
+        // Made once for a page.
+        assertTrue(thumbnails.of(page) === small)
+        // What cannot be read has no picture, and is no error: its row shows an icon.
+        dir.mkdirs()
+        val broken = Page(File(dir, "broken.png").apply { writeBytes(ByteArray(40) { 7 }) }, "Broken.png")
+        assertNull(thumbnails.of(broken).picture)
+        val pdf = Page(File(dir, "empty.pdf").apply { writeBytes("%PDF-1.7\n".toByteArray()) }, "Empty.pdf")
+        assertNull(thumbnails.of(pdf).picture)
+        assertNull(thumbnails.of(Page(File(dir, "gone.png"), "Gone.png")).picture)
+    }
+
+    @Test
     fun aPhotoFromTheCameraBecomesThePage() {
         dir.mkdirs()
         val photo = File(dir, "photo-1.jpg").apply { writeBytes(picture(64, 48, Bitmap.CompressFormat.JPEG)) }
@@ -204,6 +237,11 @@ class PagesTest {
         assertEquals(R.string.error_too_many_pages, ErrorWords.of(failed("there are more than 40 pages")))
         assertEquals(Problem.PAGES_FAILED, PlayViewModel.pagesProblem(failed("a page is too large to read")))
         assertEquals(R.string.error_page_too_large, ErrorWords.of(failed("a page is too large to read")))
+        // What went wrong on the computer itself, which the player can put right there.
+        assertEquals(Problem.PAGES_FAILED, PlayViewModel.pagesProblem(failed("the reader's files could not be fetched: check the network and try again")))
+        assertEquals(R.string.error_reader_files_not_fetched, ErrorWords.of(failed("the reader's files could not be fetched: check the network and try again")))
+        assertEquals(Problem.PAGES_FAILED, PlayViewModel.pagesProblem(failed("the computer's disk is full: free some space on it and try again")))
+        assertEquals(R.string.error_computer_disk_full, ErrorWords.of(failed("the computer's disk is full: free some space on it and try again")))
         // The general failure, and anything a newer engine may say.
         for (said in listOf("the pages could not be read", "something else", "no notes were found on the page, perhaps")) {
             assertEquals(said, Problem.PAGES_FAILED, PlayViewModel.pagesProblem(failed(said)))
@@ -221,10 +259,12 @@ class PagesTest {
         // The words the engine fails such a job with are the ones looked for.
         val sheet = File(checkNotNull(System.getProperty("scribe.repo")) { "scribe.repo is not set by the build" }, "engine/src/scribe_engine/sheet.py")
         val engine = sheet.readText()
-        for (said in listOf(ErrorWords.NO_NOTES_ON_PAGE, ErrorWords.ONLY_TAB_ON_PAGE, ErrorWords.PAGE_TOO_LARGE, ErrorWords.PAGES_NOT_READ)) {
+        for (said in listOf(ErrorWords.NO_NOTES_ON_PAGE, ErrorWords.ONLY_TAB_ON_PAGE, ErrorWords.PAGE_TOO_LARGE, ErrorWords.PAGES_NOT_READ, ErrorWords.READER_FILES_NOT_FETCHED)) {
             assertTrue("$sheet says \"$said\"", engine.contains("\"$said\""))
         }
         assertTrue(engine.contains("f\"there are more than {pages.MAX_PAGES} pages\""))
+        // The full disk has its words in the engine once it tells it apart ("no_space"): from then on they are these.
+        if (engine.contains("\"no_space\"")) assertTrue("$sheet says \"${ErrorWords.COMPUTER_DISK_FULL}\"", engine.contains("\"${ErrorWords.COMPUTER_DISK_FULL}\""))
     }
 
     /**

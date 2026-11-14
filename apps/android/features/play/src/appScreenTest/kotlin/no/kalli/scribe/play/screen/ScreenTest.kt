@@ -350,7 +350,8 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
         seenInRound.clear()
         noteActionable()
         val reached = mutableListOf<SemanticsNode>()
-        repeat(120) {
+        // (More stops than the longest screen has: forty pages in hand, each with its three buttons.)
+        repeat(200) {
             key(KeyEvent.KEYCODE_TAB)
             noteActionable()
             val now = rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)).fetchSemanticsNodes().lastOrNull() ?: return@repeat

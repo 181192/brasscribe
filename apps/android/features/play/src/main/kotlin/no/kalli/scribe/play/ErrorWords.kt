@@ -44,6 +44,8 @@ object ErrorWords {
     const val ONLY_TAB_ON_PAGE = "no staff of notes was found on the page: a tab staff is not read"
     const val PAGE_TOO_LARGE = "a page is too large to read"
     const val PAGES_NOT_READ = "the pages could not be read"
+    const val READER_FILES_NOT_FETCHED = "the reader's files could not be fetched: check the network and try again"
+    const val COMPUTER_DISK_FULL = "the computer's disk is full: free some space on it and try again"
     private val TOO_MANY_PAGES = Regex("""there are more than \d+ pages$""")
 
     /** The app's words for why a job read no pages, from the engine's own at the end of [error]; null for any other failure. */
@@ -52,6 +54,8 @@ object ErrorWords {
         when {
             said.endsWith(ONLY_TAB_ON_PAGE) -> R.string.error_only_tab_on_page
             said.endsWith(PAGE_TOO_LARGE) -> R.string.error_page_too_large
+            said.endsWith(READER_FILES_NOT_FETCHED) -> R.string.error_reader_files_not_fetched
+            said.endsWith(COMPUTER_DISK_FULL) -> R.string.error_computer_disk_full
             TOO_MANY_PAGES.containsMatchIn(said) -> R.string.error_too_many_pages
             else -> null
         }

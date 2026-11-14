@@ -802,13 +802,17 @@
     <string name="pages_title">Sheet music from a picture</string>
     <string name="pages_choose">Choose pictures or a PDF</string>
     <string name="pages_choose_more">Add pictures or a PDF</string>
-    <string name="pages_choose_desc">Several pages are read in the order you choose them</string>
+    <string name="pages_choose_desc">Several pages become one piece, in the order you set</string>
     <string name="pages_photo">Take a photo of a page</string>
     <string name="pages_photo_more">Take a photo of the next page</string>
     <string name="pages_photo_desc">Straight on, in good light, with the whole page in the picture</string>
     <string name="pages_page">Page %1$d</string>
     <string name="pages_remove">Remove page %1$d</string>
     <string name="pages_removed">Page %1$d is removed.</string>
+    <string name="pages_move_up">Move page %1$d up</string>
+    <string name="pages_move_down">Move page %1$d down</string>
+    <string name="pages_moved">Page %1$d is now page %2$d.</string>
+    <string name="pages_order_hint">The pages are read in this order. Move a page to change it.</string>
     <string name="pages_read">Read the notes</string>
     <string name="pages_add_first">Add a page first.</string>
     <string name="pages_needs_computer">Reading sheet music needs Bandroom on your computer.</string>
@@ -836,6 +840,8 @@
     <string name="error_page_too_large">One of the pages is too large for Bandroom to read: a file can be 50 MB at most. Split a large PDF into parts.</string>
     <string name="error_too_many_pages">There are more than 40 pages in all (every page of a PDF counts). Send fewer at a time.</string>
     <string name="error_only_tab_on_page">Only a tab staff was found on the page. Bandroom reads notes on a staff, not tab.</string>
+    <string name="error_reader_files_not_fetched">Your computer couldn\'t download the files its reader of printed music needs. Check its internet connection, then send the pages again.</string>
+    <string name="error_computer_disk_full">Your computer\'s disk is full. Free some space on it, then send the pages again.</string>
     <string name="error_pages_gone">Your computer no longer has these pages, so they can\'t be read again. Send them again from Open sheet music, on Home.</string>
     <string name="error_not_a_page">One of the pages is not a picture or a PDF that Bandroom can read.</string>
     <string name="error_too_large_for_computer">This is more than Bandroom on your computer takes at once. Try fewer pages, or a shorter recording.</string>

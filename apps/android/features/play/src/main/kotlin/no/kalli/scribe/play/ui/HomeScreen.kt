@@ -463,7 +463,7 @@ fun phoneMinutes(): Int = (no.kalli.scribe.audio.AudioDecoder.maxSamplesInMemory
  */
 @Composable
 private fun OpenSheet(pickScore: (() -> Unit)?, pages: PagePicker, onDismiss: () -> Unit) {
-    PlaySheet(onDismiss, ScribeTheme.colors.surfaceRaised, dragHandle = false) {
+    PlaySheet(onDismiss, ScribeTheme.colors.surfaceRaised) {
         Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = ScribeSpace.s6).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
             SubHeading(stringResource(R.string.open_title))

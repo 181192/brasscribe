@@ -44,6 +44,10 @@ class FixtureEngineApi(
      */
     private val held: () -> Boolean = { false },
 ) : EngineApi {
+    /** The names of the pages of the last job made from pages, in the order they came: what a test of the order looks at. */
+    @Volatile var pagesSent: List<String> = emptyList()
+        private set
+
     private val uploads = ConcurrentHashMap<String, AudioRef>()
     private val jobs = ConcurrentHashMap<String, Job>()
     private val cancelled = ConcurrentHashMap.newKeySet<String>()
@@ -131,6 +135,7 @@ class FixtureEngineApi(
         if (pages.isEmpty() || pages.size > EngineApi.MAX_PAGES) throw EngineException(422, "1 to ${EngineApi.MAX_PAGES} pages, not ${pages.size}")
         val total = pages.sumOf { it.size }
         var before = 0L
+        pagesSent = pages.map { it.filename }
         val sent = pages.map { page ->
             if (!page.open().use(::startsAsAPage)) throw EngineException(415, "${page.filename} is not a picture or a PDF", InputRefusal.NOT_A_PAGE)
             if (page.size > EngineApi.MAX_PAGE_BYTES) throw EngineException(413, "${page.filename} is larger than a page can be", InputRefusal.PAGE_TOO_LARGE)

@@ -447,13 +447,17 @@
     <string name="pages_title">Noter fra et bilde</string>
     <string name="pages_choose">Velg bilder eller en PDF</string>
     <string name="pages_choose_more">Legg til bilder eller en PDF</string>
-    <string name="pages_choose_desc">Flere sider leses i den rekkefølgen du velger dem</string>
+    <string name="pages_choose_desc">Flere sider blir ett stykke, i den rekkefølgen du setter</string>
     <string name="pages_photo">Ta bilde av en side</string>
     <string name="pages_photo_more">Ta bilde av neste side</string>
     <string name="pages_photo_desc">Rett ovenfra, i godt lys, med hele siden i bildet</string>
     <string name="pages_page">Side %1$d</string>
     <string name="pages_remove">Fjern side %1$d</string>
     <string name="pages_removed">Side %1$d er fjernet.</string>
+    <string name="pages_move_up">Flytt side %1$d opp</string>
+    <string name="pages_move_down">Flytt side %1$d ned</string>
+    <string name="pages_moved">Side %1$d er nå side %2$d.</string>
+    <string name="pages_order_hint">Sidene leses i denne rekkefølgen. Flytt en side for å endre den.</string>
     <string name="pages_read">Les notene</string>
     <string name="pages_add_first">Legg til en side først.</string>
     <string name="pages_needs_computer">Bandroom på datamaskinen må til for å lese noter.</string>
@@ -481,6 +485,8 @@
     <string name="error_page_too_large">En av sidene er for stor til at Bandroom kan lese den: en fil kan være høyst 50 MB. Del en stor PDF i flere.</string>
     <string name="error_too_many_pages">Det er mer enn 40 sider til sammen (hver side i en PDF teller). Send færre om gangen.</string>
     <string name="error_only_tab_on_page">Det sto bare tab på siden. Bandroom leser noter på notelinjer, ikke tab.</string>
+    <string name="error_reader_files_not_fetched">Datamaskinen fikk ikke lastet ned filene noteleseren trenger. Sjekk internettforbindelsen på den, og send sidene på nytt.</string>
+    <string name="error_computer_disk_full">Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt.</string>
     <string name="error_pages_gone">Datamaskinen har ikke lenger disse sidene, så de kan ikke leses på nytt. Send dem på nytt fra Åpne noter, på Hjem.</string>
     <string name="error_not_a_page">En av sidene er verken et bilde eller en PDF som Bandroom kan lese.</string>
     <string name="error_too_large_for_computer">Dette er mer enn Bandroom på datamaskinen tar imot på én gang. Prøv med færre sider, eller et kortere opptak.</string>
