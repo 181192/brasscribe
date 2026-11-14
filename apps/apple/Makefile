@@ -65,9 +65,11 @@ build: project
 	$(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' build
 	$(XCB) -scheme BrasscribePlay-iOS -destination 'platform=iOS Simulator,name=$(IPAD)' build
 
+# --no-parallel: the playback tests each run an audio engine, and side by side they crash (SIGTRAP) or disturb
+# each other's sound (a note measured 11 dB down in CI once the band SoundFont was there to play).
 package-test: alphatab
-	cd services && swift test
-	cd features/score && swift test
+	cd services && swift test --no-parallel
+	cd features/score && swift test --no-parallel
 	cd features/tab && swift test
 	cd testing/ScreenCatalogue && swift test
 	cd ../../capture && swift test
