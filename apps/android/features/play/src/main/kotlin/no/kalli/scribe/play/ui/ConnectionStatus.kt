@@ -126,7 +126,8 @@ fun ConnectionStatusRow(
         modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = c.surface,
         border = androidx.compose.foundation.BorderStroke(1.dp, c.border),
     ) {
-        val inner = Modifier.padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3).heightIn(min = 44.dp)
+        // (Brief, it is one line beside its button: no more height than the button needs.)
+        val inner = Modifier.padding(horizontal = ScribeSpace.s4, vertical = if (short) ScribeSpace.s1 else ScribeSpace.s3).heightIn(min = 44.dp)
         if (action == null) words(inner.fillMaxWidth())
         else ActionBeside(inner.fillMaxWidth(), stack = largeText() && !short, onALine = short, gap = ScribeSpace.s3, words = { words(Modifier) }, action = button)
     }
