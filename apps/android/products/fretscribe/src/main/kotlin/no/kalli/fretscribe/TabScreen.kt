@@ -148,28 +148,37 @@ import kotlin.math.roundToInt
  * With the player's fixes ([TabEdits]) the page is the song's file as it is shown; [raw] is the file itself, with what
  * was fixed kept beside it, and [written] what the file says of its notes, the ones left out among them.
  */
-class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val marks: TabMarks, val raw: String = musicXml, val written: TabIndex = index) {
+class TabSheet(val musicXml: String, val index: TabIndex, data: Tab?, val marks: TabMarks, val raw: String = musicXml, val written: TabIndex = index) {
+    /** The page was written again on this phone, for another tuning or capo ([TabRewrite]): it says its own tuning, capo and marks. */
+    val own: Boolean = TabRewrite.rewritten(musicXml)
+
+    /** What the computer said of the song. Of a page written again on the phone only the beats still hold: its notes are counted anew. */
+    val tab: Tab? = if (own) data?.copy(notes = emptyList()) else data
+
     /** The notes left out, each as its first written piece on the staff the marks stand on. */
     val leftOut: List<TabPiece> get() = TabEdits.leftOut(raw).mapNotNull { n -> written.of(n).firstOrNull { it.staff == written.markStaff && it.first } ?: written.of(n).firstOrNull() }
 
-    val layout: TabLayout? get() = tab?.layout?.takeIf { it.id != null } ?: when {
+    val layout: TabLayout? get() = tab?.layout?.takeIf { it.id != null && !own } ?: when {
         index.tabStaff == null -> TabLayout.NOTATION
         index.staves > 1 -> TabLayout.TAB_AND_NOTATION
         else -> TabLayout.TAB
     }
 
     /** The tuning's id ("drop-d") when it is one the app has words for; else the name the page or the data gives. */
-    val tuning: String get() = tab?.preset?.let(SongCheck::tuningOf)
-        ?: SongFacts.OPEN_STRINGS.entries.firstOrNull { it.value == SongFacts.openStrings(musicXml) }?.key?.let(SongCheck::tuningOf)
-        ?: tab?.instrument?.tuning?.name ?: index.tuningName ?: FrettedInstrument.STANDARD_TUNING
+    val tuning: String get() = tab?.takeIf { !own }?.preset?.let(SongCheck::tuningOf)
+        ?: TabRewrite.written(musicXml, index)?.second
+        ?: tab?.takeIf { !own }?.instrument?.tuning?.name ?: index.tuningName ?: FrettedInstrument.STANDARD_TUNING
 
-    val capo: Int get() = tab?.instrument?.capo ?: index.capo
+    val capo: Int get() = tab?.takeIf { !own }?.instrument?.capo ?: index.capo
+
+    /** The instrument the tab is written for: as the data names it, else by the page's strings; null for one the app does not know. */
+    val kind: FrettedInstrument? get() = tab?.takeIf { !own }?.preset?.let(SongCheck::kindOf) ?: TabRewrite.written(musicXml, index)?.first
 
     /** The strings of the instrument, as the data or the page's staff tuning has them; four when neither says. */
-    val strings: Int get() = tab?.instrument?.tuning?.strings?.size?.takeIf { it > 0 } ?: SongFacts.openStrings(musicXml).size.takeIf { it > 0 } ?: 4
+    val strings: Int get() = tab?.takeIf { !own }?.instrument?.tuning?.strings?.size?.takeIf { it > 0 } ?: SongFacts.openStrings(musicXml).size.takeIf { it > 0 } ?: 4
 
     /** Quarter notes a minute. */
-    val tempo: Int? get() = tab?.tempoBpm?.let { Math.round(it).toInt() } ?: index.tempo
+    val tempo: Int? get() = tab?.takeIf { !own }?.tempoBpm?.let { Math.round(it).toInt() } ?: index.tempo
 
     companion object {
         /**
@@ -189,7 +198,8 @@ class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val mar
             return withContext(Dispatchers.Default) {
                 if (!TabEdits.changed(musicXml)) {
                     val index = TabIndex.parse(musicXml)
-                    return@withContext TabSheet(musicXml, index, data, TabMarks.of(index, data))
+                    // (A page written again on the phone has its own marks: the computer's are for the notes as it counted them.)
+                    return@withContext TabSheet(musicXml, index, data, TabMarks.of(index, data.takeIf { !TabRewrite.rewritten(musicXml) }))
                 }
                 // A song the player has fixed: the marks are the page's own (a note that was kept or moved has none),
                 // not what the computer said of the notes before.
@@ -292,6 +302,7 @@ fun TabScreen(vm: PlayViewModel) {
     }
 
     val title = source?.name?.substringBeforeLast('.').orEmpty()
+    var tuningShown by rememberSaveable { mutableStateOf(false) }
     val s = sheet
     // The columns with a note Fretscribe is not sure of, in reading order: where "Check them" and Next ? go.
     val doubts = remember(s) { s?.marks?.columns?.indices?.filter { i -> s.marks.columns[i].notes.any { it.kind == MarkKind.DOUBT } }.orEmpty() }
@@ -360,6 +371,7 @@ fun TabScreen(vm: PlayViewModel) {
         }
     }
     var playerHeight by remember { mutableIntStateOf(0) }
+    if (tuningShown) s?.let { TuningSheet(it, title, vm::changeScore, ::checkTheSong) { tuningShown = false } }
     // Sound (what is heard, the count-in, the metronome) is asked for from the header or from the player.
     var sounds by rememberSaveable { mutableStateOf(false) }
     val fetches = r.jobId != null && remember(practice.recording) { vm.container.engine() != null }
@@ -611,7 +623,8 @@ fun TabScreen(vm: PlayViewModel) {
                     Box(
                         Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-tuning")
                             .background(c.surfaceRaised, ScribeButtonShape).border(1.dp, c.borderStrong, ScribeButtonShape)
-                            .clickable(role = Role.Button, onClick = ::checkTheSong)
+                            // Tuning and capo, written again on this phone; for a tab or a build that cannot be, Check the song.
+                            .clickable(role = Role.Button) { if (s.kind != null && TabRewrite.available) tuningShown = true else checkTheSong() }
                             .padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s2)
                             .semantics { contentDescription = chipName },
                         contentAlignment = Alignment.CenterStart,

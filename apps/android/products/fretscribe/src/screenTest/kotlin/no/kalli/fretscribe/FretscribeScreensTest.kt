@@ -188,6 +188,14 @@ class FretscribeScreensTest : ScreenCatalogue() {
             theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000)
             rule.onNodeWithTag("fs-tab-note-fix").performClick(); waitForTag("fs-fix-done", 5_000); rest()
         },
+        Entry("tab-tuning") {
+            theTab(); rule.onNodeWithTag("fs-tab-tuning").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); waitForTag("fs-tuning-write", 5_000); rest()
+        },
+        // A guitar takes a capo: moved, the sheet asks what is kept.
+        Entry("tab-tuning-capo") {
+            aGuitar(); theTab(); rule.onNodeWithTag("fs-tab-tuning").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); waitForTag("fs-tuning-capo-up", 5_000)
+            rule.onNodeWithTag("fs-tuning-capo-up").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick); rest()
+        },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-sound") { theTab(); rule.onNodeWithTag("fs-practice-sound").performClick(); waitForTag("fs-sound-done", 5_000); rest() },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },

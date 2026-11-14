@@ -114,10 +114,13 @@ class TabMarks(val columns: List<TabColumn>, val doubtful: Int, val noPlace: Int
         /**
          * The marks of a saved page [musicXml] as the tab shows them, the same on every screen: a page the player has
          * fixed is read as it is shown (`TabEdits.shown`: a note left out is gone, a kept one has no "?"), by its own
-         * marks and not the computer's data, which still says what it said before the fixes.
+         * marks and not the computer's data, which still says what it said before the fixes; so is a page written again on the
+         * phone ([TabRewrite]).
          */
         fun ofPage(musicXml: String, tab: Tab?): TabMarks =
-            if (TabEdits.changed(musicXml)) of(TabIndex.parse(TabEdits.shown(musicXml)), null) else of(TabIndex.parse(musicXml), tab)
+            if (TabEdits.changed(musicXml)) of(TabIndex.parse(TabEdits.shown(musicXml)), null)
+            // (A page written again on the phone for another tuning or capo has its own marks too.)
+            else of(TabIndex.parse(musicXml), tab.takeIf { !TabRewrite.rewritten(musicXml) })
 
         fun of(index: TabIndex, tab: Tab?, threshold: Double = TabTokens.UNCERTAIN_THRESHOLD): TabMarks {
             val staff = index.markStaff
