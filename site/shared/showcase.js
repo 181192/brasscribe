@@ -687,7 +687,9 @@ async function partview(el) {
   };
   // After a change of language it stands as it stood: the same part, the same note.
   const chosen = kept.chosen;
+  // On a phone it opens on the first part alone, not all of them under each other (one tap shows them all).
   if (kept.part) select.value = kept.part;
+  else if (narrow.matches) select.value = score.parts[0].id;
   show();
   if (chosen !== undefined && notes[chosen]) choose(chosen, false);
 }

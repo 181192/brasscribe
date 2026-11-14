@@ -90,7 +90,7 @@ function System-State([string[]] $what) {
 }
 
 # Every run of the catalogue. False when one could not run. Pink on the screens with most of its colours; bokmål in
-# Light; under a contrast theme Match system and Pink dark, which must look the same (the contrast theme wins).
+# Light and Dark (the public site shows a bokmål page in either); under a contrast theme Match system and Pink dark, which must look the same (the contrast theme wins).
 function Invoke-Catalogue($exe, $shots, $score) {
     if (Test-Path $shots) { Remove-Item -Recurse -Force $shots }
     New-Item -ItemType Directory -Force -Path $shots | Out-Null
@@ -100,7 +100,7 @@ function Invoke-Catalogue($exe, $shots, $score) {
     System-State @("--animations", "off", "--keep", $script:animationsKeep)
     try {
         $ok = Invoke-Run $exe $shots "en" $(if ($app.Pink) { "light,dark,pink-light,pink-dark" } else { "light,dark" }) $score
-        $ok = (Invoke-Run $exe $shots "nb" "light" $score) -and $ok
+        $ok = (Invoke-Run $exe $shots "nb" "light,dark" $score) -and $ok
         System-State @("--contrast", "on")
         try { $ok = (Invoke-Run $exe $shots "contrast" $(if ($app.Pink) { "system,pink-dark" } else { "system,dark" }) $score) -and $ok }
         finally { System-State @("--contrast", "off") }

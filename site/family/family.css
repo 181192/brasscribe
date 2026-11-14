@@ -89,6 +89,9 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
   .lineup-mac .mac-frame { width: 280px; }
   .lineup-windows .mac-frame { width: 260px; }
   .lineup-bandroom .lineup-device { width: 240px; }
+  /* Bandroom's caption wraps under its picture, so it is read in one view. */
+  .lineup-bandroom { width: 240px; }
+  .lineup-bandroom .lineup-name { white-space: normal; flex-wrap: wrap; }
 }
 /* On a phone the devices are two thirds of their size, so the row does not make the section much longer. */
 @media (max-width: 600px) {
@@ -99,7 +102,7 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
   .lineup .stand::after { width: 40px; margin-left: -20px; }
   .lineup-mac .mac-frame { width: 187px; }
   .lineup-windows .mac-frame { width: 173px; }
-  .lineup-bandroom .lineup-device { width: 180px; }
+  .lineup-bandroom .lineup-device, .lineup-bandroom { width: 200px; }
 }
 @media (forced-colors: active) { .menubar-mine { forced-color-adjust: none; background: CanvasText; color: Canvas; } .lineup .stand, .lineup .stand::after { background: CanvasText; } }
 

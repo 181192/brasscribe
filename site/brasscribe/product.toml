@@ -82,8 +82,8 @@ id = "windows"
 files = ["windows"]
 devices = [{ name = "Windows", status = "early" }]
 shot = "windows-score"
-en = { does = "The whole score on a big screen; print the parts. Every score, a solo too, comes from Bandroom.", needs = "A PC with Windows 11.", alt = "The full score in Brasscribe for Windows: every part under each other, a ? over a note it is not sure of, and the parts with Mute and Only this beside it." }
-nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene. Alle partiturer, også en solo, kommer fra Bandroom.", needs = "PC med Windows 11.", alt = "Hele partituret i Brasscribe for Windows: alle stemmene under hverandre, et ? over en note den er usikker på, og stemmene med Demp og Bare denne ved siden av." }
+en = { does = "The whole score on a big screen; print the parts. Every score, a solo too, comes from Bandroom.", needs = "A PC with Windows 11.", alt = "The full score in Brasscribe for Windows: every part under each other, with a ? over a note it is not sure of." }
+nb = { does = "Hele partituret på stor skjerm; skriv ut stemmene. Alle partiturer, også en solo, kommer fra Bandroom.", needs = "PC med Windows 11.", alt = "Hele partituret i Brasscribe for Windows: alle stemmene under hverandre, med et ? over en note den er usikker på." }
 
 [[variants]]
 id = "studio"
