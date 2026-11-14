@@ -25,7 +25,7 @@ h11 = "Kom i gang"
 p2 = "Brasscribe gjør et opptak om til et partitur for brassbandet ditt. Denne veiledningen går gjennom det én gang, fra opptaket til de utskrevne stemmene."
 p3 = "Brasscribe finnes for iPhone, iPad, Mac, Android og Windows. Den ligger ikke i appbutikkene ennå. Android-telefoner, Mac og Windows-PC-er kan <a href=\"#download\">laste den ned</a> (Windows som en tidlig versjon). For iPhone og iPad finnes en <a href=\"#download-ios\">testversjon</a> som den tekniske i bandet legger inn på enheten."
 p4 = "Første gang du åpner appen, viser den tre punkter og <strong>Kom i gang</strong>, og så spør den <a href=\"#instrument\">hva du spiller</a>. Den spør om mikrofonen først når du spiller inn."
-p5 = "<strong>Solo eller fullt band?</strong> Ett enkelt instrument skrives ned på selve telefonen, nettbrettet eller Macen. Et fullt band skrives av Bandroom på datamaskinen, på samme Wi-Fi som telefonen, og det samme gjør en solo i Brasscribe for Windows. Se <a href=\"#computer\">Datamaskinen din</a>."
+p5 = "<strong>Solo eller fullt band?</strong> Ett enkelt instrument skrives ned på selve telefonen, nettbrettet eller Macen. Et fullt band skrives av Bandroom på datamaskinen, på samme Wi-Fi som telefonen (uten datamaskinen får et band bare et utkast på enheten), og det samme gjør en solo i Brasscribe for Windows. Se <a href=\"#computer\">Datamaskinen din</a>."
 
 [download]
 h21 = "Last ned"
@@ -167,7 +167,7 @@ p2 = "Noter ingen har sjekket, beholder spørsmålstegnet i det du deler, så ba
 
 [computer]
 h21 = "Datamaskinen din"
-p1 = "Bandroom på datamaskinen (Mac eller PC) skriver partituret til et fullt band og sender det til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder."
+p1 = "Bandroom på datamaskinen (Mac eller PC) skriver partituret til et fullt band og sender det til telefonen over Wi-Fi. Opptaket går fra telefonen til din egen datamaskin og ingen andre steder. Solo på enheten er kjørt i simulatorer og i CI, men ikke prøvd på en ekte telefon eller et nettbrett ennå."
 span1 = "Brasscribe Studio · Partiturvisning"
 p2 = "På en Mac med M-brikke eller en PC med Windows 11 installerer du <strong>Bandroom</strong> (Brasscribe Bandroom i listen over programmer) fra <a href=\"#download\">nedlastingen</a>. Den kjører stille i bakgrunnen; se etter Brasscribe-merket i menylinjen øverst på skjermen på en Mac, eller i varslingsområdet på oppgavelinjen i Windows."
 li1 = "Første gang laster den ned det Brasscribe trenger, rundt 10 GB, så sørg for rundt 15 GB ledig plass. Internett trengs bare for disse nedlastingene."

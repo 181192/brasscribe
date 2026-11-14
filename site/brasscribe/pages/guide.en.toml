@@ -25,7 +25,7 @@ h11 = "Get started"
 p2 = "Brasscribe turns a recording into a score for your brass band. This guide walks through it once, from the recording to the printed parts."
 p3 = "Brasscribe runs on iPhone, iPad, Mac, Android and Windows. It is not in the app stores yet. Android phones, Macs and Windows PCs can <a href=\"#download\">download it</a> (Windows as an early version). For iPhone and iPad there is a <a href=\"#download-ios\">test version</a> that the band's tech person puts on the device."
 p4 = "The first time you open the app, it shows three points and <strong>Get started</strong>, then asks <a href=\"#instrument\">what you play</a>. It asks for the microphone only when you first record."
-p5 = "<strong>Solo or full band?</strong> A single instrument is written down on your phone, tablet or Mac itself. A full band is written by Bandroom on your computer, on the same Wi-Fi as the phone, and so is a solo in Brasscribe for Windows. See <a href=\"#computer\">Your computer</a>."
+p5 = "<strong>Solo or full band?</strong> A single instrument is written down on your phone, tablet or Mac itself. A full band is written by Bandroom on your computer, on the same Wi-Fi as the phone (without the computer a band gets only a draft on the device), and so is a solo in Brasscribe for Windows. See <a href=\"#computer\">Your computer</a>."
 
 [download]
 h21 = "Download"
@@ -167,7 +167,7 @@ p2 = "Notes nobody has checked keep their question mark in what you share, so th
 
 [computer]
 h21 = "Your computer"
-p1 = "Bandroom on your computer (a Mac or PC) writes a full band's score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else."
+p1 = "Bandroom on your computer (a Mac or PC) writes a full band's score and sends it to your phone over Wi-Fi. The recording goes from your phone to your own computer and nowhere else. The on-device solo has run in simulators and in CI; it has not been tried on a real phone or tablet yet."
 span1 = "Brasscribe Studio · Score viewer"
 p2 = "On a Mac with an M-series chip or a PC with Windows 11, install <strong>Bandroom</strong> (Brasscribe Bandroom in the list of programs) from the <a href=\"#download\">download</a>. It runs quietly in the background; look for the Brasscribe mark in the menu bar at the top of a Mac's screen, or in the notification area of the Windows taskbar."
 li1 = "The first run downloads what Brasscribe needs, about 10 GB, so keep about 15 GB free. The internet is needed only for these downloads."
