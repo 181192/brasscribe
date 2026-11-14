@@ -184,6 +184,10 @@ class FretscribeScreensTest : ScreenCatalogue() {
             theTab(); rule.onNodeWithTag("fs-tab-share").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
             waitForTag("fs-share-print", 5_000); rest()
         },
+        Entry("fix-a-note") {
+            theTab(); rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick(); waitForTag("fs-tab-note", 5_000)
+            rule.onNodeWithTag("fs-tab-note-fix").performClick(); waitForTag("fs-fix-done", 5_000); rest()
+        },
         Entry("practice-repeat") { theTab(); rule.onNodeWithTag("fs-practice-repeat").performClick(); waitForTag("fs-practice-repeat-set", 5_000); rest() },
         Entry("practice-sound") { theTab(); rule.onNodeWithTag("fs-practice-sound").performClick(); waitForTag("fs-sound-done", 5_000); rest() },
         Entry("practice-not-on-this-phone") { aSongWithoutItsRecording() },

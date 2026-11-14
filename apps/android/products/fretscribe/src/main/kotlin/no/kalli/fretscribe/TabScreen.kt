@@ -143,8 +143,15 @@ import no.kalli.scribe.play.ui.PlainButton
 import no.kalli.scribe.play.ui.PlayTopBar
 import kotlin.math.roundToInt
 
-/** A tab ready to show: the page, what the page says about its own notes, the data when the computer gave it, and the marks. */
-class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val marks: TabMarks) {
+/**
+ * A tab ready to show: the page, what the page says about its own notes, the data when the computer gave it, and the marks.
+ * With the player's fixes ([TabEdits]) the page is the song's file as it is shown; [raw] is the file itself, with what
+ * was fixed kept beside it, and [written] what the file says of its notes, the ones left out among them.
+ */
+class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val marks: TabMarks, val raw: String = musicXml, val written: TabIndex = index) {
+    /** The notes left out, each as its first written piece on the staff the marks stand on. */
+    val leftOut: List<TabPiece> get() = TabEdits.leftOut(raw).mapNotNull { n -> written.of(n).firstOrNull { it.staff == written.markStaff && it.first } ?: written.of(n).firstOrNull() }
+
     val layout: TabLayout? get() = tab?.layout?.takeIf { it.id != null } ?: when {
         index.tabStaff == null -> TabLayout.NOTATION
         index.staves > 1 -> TabLayout.TAB_AND_NOTATION
@@ -180,8 +187,15 @@ class TabSheet(val musicXml: String, val index: TabIndex, val tab: Tab?, val mar
                 null
             }
             return withContext(Dispatchers.Default) {
-                val index = TabIndex.parse(musicXml)
-                TabSheet(musicXml, index, data, TabMarks.of(index, data))
+                if (!TabEdits.changed(musicXml)) {
+                    val index = TabIndex.parse(musicXml)
+                    return@withContext TabSheet(musicXml, index, data, TabMarks.of(index, data))
+                }
+                // A song the player has fixed: the marks are the page's own (a note that was kept or moved has none),
+                // not what the computer said of the notes before.
+                val shown = TabEdits.shown(musicXml)
+                val index = TabIndex.parse(shown)
+                TabSheet(shown, index, data, TabMarks.of(index, null), raw = musicXml, written = TabIndex.parse(musicXml))
             }
         }
     }
@@ -245,9 +259,11 @@ fun TabScreen(vm: PlayViewModel) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val r = result ?: return
+    // The computer is asked for the song's data once: a fix to a note is a new page of the same song.
+    val asked = remember(r.jobId) { arrayOfNulls<Tab>(1) }
     val sheet by produceState<TabSheet?>(null, r.musicXml, r.jobId) {
         // (A computer that was not asked because one of the two needs an update is said so; the page keeps its own marks.)
-        value = TabSheet.read(r.musicXml, failed = { vm.saidRefused(it) }) { r.jobId?.let { id -> vm.container.engine()?.tab(id) } }
+        value = TabSheet.read(r.musicXml, failed = { vm.saidRefused(it) }) { asked[0] ?: r.jobId?.let { id -> vm.container.engine()?.tab(id) }?.also { asked[0] = it } }
     }
     // The size and the bar being read are kept for the song: through a turn of the phone, a visit to Check the song, and the app being stopped.
     val song = r.jobId ?: r.musicXml.hashCode().toString()
@@ -349,7 +365,16 @@ fun TabScreen(vm: PlayViewModel) {
     val fetches = r.jobId != null && remember(practice.recording) { vm.container.engine() != null }
     if (sounds) SoundDialog(practice, fetches, { vm.container.engine()?.let(practice::fetch) }, fromPages = r.profile.readsPages) { sounds = false }
     var sharing by rememberSaveable { mutableStateOf(false) }
-    if (sharing) TabShareSheet(vm, title, r.musicXml, r.jobId, r.engineOutputs) { sharing = false }
+    // What leaves the app is the tab as it is shown: with the player's fixes, a note left out gone.
+    if (sharing) TabShareSheet(vm, title, TabEdits.shown(r.musicXml), r.jobId, r.engineOutputs, TabEdits.changed(r.musicXml)) { sharing = false }
+    // Fix a note: the beat that was tapped (its bar and where in the bar it starts), and the list of the notes left out.
+    var fixing by rememberSaveable(song, stateSaver = listSaver<Pair<Int, Int>?, Int>(save = { it?.let { p -> listOf(p.first, p.second) } ?: emptyList() },
+        restore = { it.takeIf { l -> l.size == 2 }?.let { l -> l[0] to l[1] } })) { mutableStateOf(null) }
+    var leftOutShown by rememberSaveable(song) { mutableStateOf(false) }
+    // A fix is a new page: the note of a mark that was open may be another mark's now, so it closes.
+    fun fix(musicXml: String) { told = null; vm.changeScore(musicXml) }
+    fixing?.let { (bar, onset) -> s?.let { FixNoteSheet(it, bar, onset, ::fix) { fixing = null } } }
+    if (leftOutShown) s?.let { LeftOutDialog(it, ::fix) { leftOutShown = false } }
     // One scroll moves the header (when it is not pinned), the marks and alphaTab's page.
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
@@ -361,7 +386,7 @@ fun TabScreen(vm: PlayViewModel) {
     val column = at?.let { s?.marks?.columns?.getOrNull(it) }
     if (at != null && column != null) Column(Modifier.fillMaxWidth().background(c.bg).navigationBarsPadding()) {
         HorizontalDivider(thickness = 1.dp, color = c.border)
-        // Until a note can be fixed here: listen to its bar slowly, and go on to the next "?". Next ? stays at the last
+        // What can be done about the note: fix it, listen to its bar slowly, and go on to the next "?". Next ? stays at the last
         // one, off and saying so, so the keyboard's focus is not lost (as the player's Next bar does).
         val next = doubts.firstOrNull { it > at }
         val showNext = next != null || doubts.size > 1
@@ -387,6 +412,12 @@ fun TabScreen(vm: PlayViewModel) {
                 border = if (noteInOneRow) null else androidx.compose.foundation.BorderStroke(1.dp, c.borderStrong)) {
                 Text(stringResource(R.string.fs_tab_note_next), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
             }
+        }
+        // A note of the tab under this mark can be fixed (one with no place is not on the tab): a small button beside
+        // Close, so the note takes no more of the tab's room.
+        val fixThis: @Composable () -> Unit = {
+            if (s != null && FixNote.at(s.index, column.bar, column.onset).isNotEmpty())
+                IconButton({ fixing = column.bar to column.onset }, Modifier.size(48.dp).testTag("fs-tab-note-fix")) { BcIcon(R.drawable.ic_fs_edit, stringResource(R.string.fs_fix_this)) }
         }
         val close: @Composable () -> Unit = {
             IconButton({ told = null }, Modifier.size(48.dp).testTag("fs-tab-note-close")) { BcIcon(DesignR.drawable.ic_bc_close, stringResource(R.string.fs_tab_note_close)) }
@@ -414,6 +445,7 @@ fun TabScreen(vm: PlayViewModel) {
                     }
                 }
                 if (showNext) nextButton()
+                fixThis()
                 close()
             }
         } else {
@@ -422,6 +454,7 @@ fun TabScreen(vm: PlayViewModel) {
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
             ) {
                 note(Modifier.weight(1f))
+                fixThis()
                 close()
             }
             FlowRow(
@@ -606,6 +639,15 @@ fun TabScreen(vm: PlayViewModel) {
                             style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                         BcIcon(DesignR.drawable.ic_bc_open, null, tint = c.textMuted)
                     }
+                    // The notes the player left out are not on the page: here they are counted, and can be put back.
+                    val out = remember(s) { s.leftOut.size }
+                    if (out > 0) Row(
+                        Modifier.sizeIn(minHeight = 48.dp).testTag("fs-tab-left-out").clickable(role = Role.Button) { leftOutShown = true },
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
+                    ) {
+                        Text(pluralStringResource(R.plurals.fs_fix_left_out, out, out), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+                        BcIcon(DesignR.drawable.ic_bc_open, null, tint = c.textMuted)
+                    }
                     if (s.marks.noPlace > 0) Text(pluralStringResource(R.plurals.fs_tab_no_place_count, s.marks.noPlace, s.marks.noPlace),
                         style = MaterialTheme.typography.bodyMedium, color = c.textMuted, modifier = Modifier.testTag("fs-tab-no-place").padding(vertical = ScribeSpace.s1))
                 }
@@ -670,6 +712,15 @@ fun TabScreen(vm: PlayViewModel) {
                 // room) is put back at it, not where the song was.
                 s.marks.columns.getOrNull(column)?.bar?.let { reading = it; TabPlaces.keep(song, it) }
                 reveal = null
+            }
+
+            // Fix a note opens over the lower half of the screen: the line of the note being fixed is brought to the top of
+            // the tab's room, with the room a mark above it needs, so the note is seen while it is fixed.
+            LaunchedEffect(fixing?.first, e, inset) {
+                val bar = fixing?.first ?: return@LaunchedEffect
+                val line = e?.lineOf(bar) ?: return@LaunchedEffect
+                val to = (inset + line.top - with(density) { 48.dp.roundToPx() }).coerceIn(0, scroll.maxValue)
+                if (reducedMotion) scroll.scrollTo(to) else scroll.animateScrollTo(to)
             }
 
             // The repeat's band and brackets, and the cursor at the beat the recording is at. The cursor moves from beat to
@@ -778,7 +829,16 @@ fun TabScreen(vm: PlayViewModel) {
                     // It takes the drags, the keyboard's focus and the screen reader. No stretch at the ends: the page under it would not stretch with it.
                     Column(Modifier.fillMaxSize().testTag("fs-tab-scroll").verticalScroll(scroll, overscrollEffect = null)) {
                         if (!pinned && !inFocus) header()
-                        Box(Modifier.fillMaxWidth().height(with(density) { (e?.height ?: 0).toDp() })) {
+                        // A tap on a fret number (any beat of the page) opens Fix a note for it: 24 dp to each side and above and below,
+                        // a 48 dp target where the neighbours leave the room (TabEngraving.targets). Not in full screen, where a tap
+                        // shows and hides the controls.
+                        val reach = with(density) { FixNote.REACH.toPx() }
+                        Box(Modifier.fillMaxWidth().height(with(density) { (e?.height ?: 0).toDp() }).testTag("fs-tab-page")
+                            .pointerInput(e, s, inFocus) {
+                                if (!inFocus && e != null) detectTapGestures { at ->
+                                    e.beatAt(at.x, at.y, reach)?.takeIf { (bar, onset) -> FixNote.at(s.index, bar, onset).isNotEmpty() }?.let { fixing = it }
+                                }
+                            }) {
                             // Each mark is an element of its own, in reading order: 48 dp, from the mark down over its numerals.
                             val target = with(density) { 48.dp.toPx() }
                             e?.boxes?.forEach { box ->

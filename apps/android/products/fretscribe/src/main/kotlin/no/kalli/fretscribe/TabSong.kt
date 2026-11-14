@@ -311,7 +311,7 @@ data class SongFacts(val strings: Int?, val tuning: String?, val doubtful: Int, 
             val open = openStrings(musicXml)
             val preset = OPEN_STRINGS.entries.firstOrNull { it.value == open }?.key
             // The marks as the tab draws them from the page itself.
-            val marks = runCatching { TabMarks.of(TabIndex.parse(musicXml), null) }.getOrNull()
+            val marks = runCatching { TabMarks.ofPage(musicXml, null) }.getOrNull()
             return SongFacts(open.size.takeIf { it > 0 }, preset?.let(SongCheck::tuningOf), marks?.doubtful ?: 0, preset?.let(SongCheck::kindOf), marks?.noPlace ?: 0)
         }
     }

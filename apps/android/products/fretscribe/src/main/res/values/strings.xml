@@ -184,6 +184,12 @@
     <string name="fs_check_lead">This is what Fretscribe heard. If something here is wrong, the frets are wrong too.</string>
     <string name="fs_check_reading">Reading what Fretscribe heard…</string>
     <string name="fs_check_missing">What Fretscribe heard can\'t be shown right now. %1$s</string>
+    <string name="fs_check_again_title">Write the tab again?</string>
+    <string name="fs_check_again_write">Write it again</string>
+    <plurals name="fs_check_again_lost">
+        <item quantity="one">Writing it again makes a new tab. The note you fixed goes back to how Fretscribe wrote it.</item>
+        <item quantity="other">Writing it again makes a new tab. The %1$d notes you fixed go back to how Fretscribe wrote them.</item>
+    </plurals>
     <string name="fs_check_later">You can change this later.</string>
     <string name="fs_show_tab">Show the tab</string>
     <string name="fs_check_connect">To change these, connect your computer.</string>
@@ -370,11 +376,31 @@
     <string name="fs_share_instructions_suffix">playing instructions</string>
     <string name="fs_share_needs_computer">Your computer writes this. Connect to it first.</string>
     <string name="fs_share_not_from_computer">Only for a song your computer wrote down.</string>
+    <string name="fs_share_fixed">Your computer wrote this before you fixed notes. The other files have your fixes.</string>
     <string name="fs_share_not_made">Your computer did not write this for the song.</string>
     <string name="fs_share_making">Making the %1$s…</string>
     <string name="fs_share_making_print">Getting the pages ready…</string>
     <string name="fs_share_failed">That didn\'t work. Try again.</string>
     <string name="fs_share_marks_note">\? marks a note Fretscribe is not sure of. ! marks a note with no place on the instrument.</string>
+
+    <!-- Fix a note -->
+    <string name="fs_fix_title">Fix a note</string>
+    <string name="fs_fix_this">Fix this note</string>
+    <string name="fs_fix_where">Where to play it</string>
+    <string name="fs_fix_place">%1$s string, fret %2$d</string>
+    <string name="fs_fix_place_open">%1$s string, open</string>
+    <string name="fs_fix_one_place">This note can only be played here.</string>
+    <string name="fs_fix_was">Fretscribe wrote it on the %1$s.</string>
+    <string name="fs_fix_ghost">Ghost note</string>
+    <string name="fs_fix_ghost_tip">Struck with the string muted: an x on the tab.</string>
+    <string name="fs_fix_keep">It\'s right as it is</string>
+    <string name="fs_fix_leave_out">Leave it out</string>
+    <string name="fs_fix_revert">Back to Fretscribe\'s version</string>
+    <string name="fs_fix_put_back">Put back</string>
+    <plurals name="fs_fix_left_out">
+        <item quantity="one">%1$d note left out</item>
+        <item quantity="other">%1$d notes left out</item>
+    </plurals>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
     <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->
