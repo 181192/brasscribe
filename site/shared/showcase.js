@@ -354,15 +354,35 @@ function strip(el) {
   // When the language changes, the strip is drawn again: this one must fall silent.
   document.addEventListener("scribe:lang", () => !el.isConnected && stop());
 
-  // Once, when it comes into view, it writes itself out without sound. Not when motion is unwanted.
+  // Once, when at least half of it is in view, it writes itself out without sound, and not again: not when it comes
+  // back into view, nor after a change of language. Not when motion is unwanted. On the family home the pen comes down
+  // from the headline first: when the headline's line is drawn (rail.js says so), the pen's line on each sheet's
+  // strip draws, the first sheet's, then the second's, and the strip runs.
   hear.forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.hear === mode)));
-  set(kept.touched ? kept.t : calm.matches ? d.dur * 0.4 : 0);
-  if (!calm.matches && !kept.touched) {
+  set(kept.touched || kept.traced ? kept.t : calm.matches ? d.dur * 0.4 : 0);
+  const sheet = el.closest(".app");
+  if (calm.matches || kept.touched || kept.traced) el.classList.add("inked");
+  else {
+    const run = () => {
+      el.classList.add("inked");
+      setTimeout(() => {
+        if (playing || t !== 0) return;
+        kept.traced = true;
+        play(false);
+      }, sheet ? 340 : 0);
+    };
     const seen = new IntersectionObserver((entries) => {
       if (!entries[0].isIntersecting) return;
       seen.disconnect();
-      if (!playing && t === 0) play(false);
-    }, { threshold: 0.6 });
+      if (!sheet) return run();
+      const after = () => setTimeout(run, 160 * Math.max(0, [...document.querySelectorAll(".app .strip")].indexOf(el)));
+      if (document.documentElement.hasAttribute("data-penned")) return after();
+      // (The headline may be out of view, a page opened further down: the strip does not wait long for it.)
+      let gone = false;
+      const once = () => !gone && ((gone = true), after());
+      document.addEventListener("scribe:penned", once, { once: true });
+      setTimeout(once, 900);
+    }, { threshold: 0.5 });
     seen.observe(stage);
   }
 }

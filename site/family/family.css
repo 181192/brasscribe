@@ -53,6 +53,14 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .app:hover::before, .app:focus-within::before { width: 100%; }
 @media (prefers-reduced-motion: reduce) { .app::before { transition: none; } }
 .app .strip { margin: 0; }
+/* The pen comes down onto each sheet's strip before the strip runs: its line draws from the top (the script marks
+   the strip inked). Without the script, or with less motion, the line is simply there. */
+.app .strip-pen { clip-path: inset(-8px); transition: clip-path var(--scribe-duration-slow) ease-out; }
+html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100% + 8px) -8px); }
+@media (prefers-reduced-motion: reduce) {
+  .app .strip-pen { transition: none; }
+  html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px); }
+}
 /* Both sheets' strips stand at one height, so their controls line up side by side; the music sits in the middle. */
 .app .strip-stage { height: 220px; }
 .app .strip-ink > svg, .app .strip-sound > svg { top: 50%; margin-top: calc(var(--strip-height) / -2); }
