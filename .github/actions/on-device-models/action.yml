@@ -1,0 +1,30 @@
+name: on-device models
+description: >
+  Fetch the pinned on-device models (convert/on-device-models.json: a release of this repository) into
+  models/converted, verify them against the pin and cache them per pack. Fails when they cannot be
+  had, so no build ships without the models.
+inputs:
+  files:
+    description: Space-separated file names from convert/on-device-models.json (default all)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    # Keyed on the pin itself: a new pack (version or hashes) is a new cache entry.
+    - uses: actions/cache@v6
+      with:
+        path: models/converted
+        key: on-device-models-${{ hashFiles('convert/on-device-models.json') }}-${{ inputs.files }}
+
+    # gh reads GH_TOKEN; the job's token needs contents: read to read the pinned models release.
+    - name: Fetch and verify the on-device models
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        FILES: ${{ inputs.files }}
+      run: |
+        py=python3; command -v python3 >/dev/null 2>&1 && python3 -c "" 2>/dev/null || py=python
+        # shellcheck disable=SC2086
+        "$py" convert/models_pack.py fetch $FILES

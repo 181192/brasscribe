@@ -10,6 +10,11 @@ This lives in `convert/`, not `models/convert/`: `models/` is ignored (repo `.gi
 Converted models are written to `models/converted/<model>/` in the main checkout and are
 never committed; only the small JSON reports under `convert/reports/` are.
 
+The models the apps bundle travel as a pack: a pre-release of this repository pinned in
+`on-device-models.json`, made, fetched and checked by `models_pack.py`
+([release.md §9b](../docs/shared/dev/release.md)). A build without `models/converted` gets them with
+`python3 convert/models_pack.py fetch`.
+
 ## Layout
 
 | Path | What it does |

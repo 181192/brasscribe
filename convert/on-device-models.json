@@ -1,0 +1,42 @@
+{
+ "about": "The on-device models the phone and Mac apps bundle: assets of the GitHub release `version` in `repo`, fetched and checked by convert/models_pack.py. `into` is each file's folder under models/converted.",
+ "version": "models-2026.11.13",
+ "repo": "181192/brasscribe",
+ "files": {
+  "swift-f0-window-fp32.mlpackage.zip": {
+   "into": "swift-f0",
+   "sha256": "d5d957785a7ba1e90a6f45ce3b8af653836f78aabed96db960f53174d15dd305",
+   "size": 1890676
+  },
+  "nmp-b1-fp32.mlpackage.zip": {
+   "into": "basic-pitch",
+   "sha256": "a268148ecd4b6193050fa4d71c4478af6f808ffae8b2f04ea5bf4b3fd0ec0d24",
+   "size": 270192
+  },
+  "beat-this-small0-fp16.mlpackage.zip": {
+   "into": "beat-this",
+   "sha256": "eddc1e3f2d5f7c35d22ff46e542911128c345b6d653b977f33747ad8e366820e",
+   "size": 4644878
+  },
+  "beat-this-small0-fp32.mlpackage.zip": {
+   "into": "beat-this",
+   "sha256": "236ef78deddae59b4528f512947ebec8debf3eee03a9b00c5fbb8dfbb2155dcf",
+   "size": 9015620
+  },
+  "swift-f0-window.onnx": {
+   "into": "swift-f0",
+   "sha256": "f863f922960db241eb5803c3e16ada96f5f511bf69f3416ebbcd10b93e2fa516",
+   "size": 1097346
+  },
+  "nmp-b1.onnx": {
+   "into": "basic-pitch",
+   "sha256": "445dfeaac0501c904b2d28cbb4f207d7bc98654377ef7f73675a1d37ce6fe810",
+   "size": 258854
+  },
+  "beat-this-small0.onnx": {
+   "into": "beat-this",
+   "sha256": "8f99130bf77e0015796f4922ed75ebf5176fd93e765b450042b619daf1a0d199",
+   "size": 9405355
+  }
+ }
+}

@@ -282,6 +282,23 @@ pinned in `sounds/band-sounds.json` ([sounds/README.md](../../../sounds/README.m
 The current pack is the `version` in `sounds/band-sounds.json`. An app release bundles whatever pack is
 pinned on the commit it is built from.
 
+## 9b. The on-device models: a separate pre-release
+
+The models Play runs on the device (SwiftF0, Basic Pitch, Beat This small: Core ML packages for Mac,
+iPhone and iPad, ONNX for Android) are not in git either. They are a pre-release of their own, pinned
+in `convert/on-device-models.json`; a build that bundles them fetches them first
+(`.github/actions/on-device-models` in CI, `python3 convert/models_pack.py fetch` by hand):
+
+1. Convert the models into `models/converted` and pass their parity gates ([convert/README.md](../../../convert/README.md)).
+2. `python3 convert/models_pack.py pack --version models-YYYY.MM.DD` writes the pack's files,
+   `SHA256SUMS` and `NOTICE.md` (each model's source and licence, from
+   `convert/on-device-models-NOTICE.md`: keep it true) into `models/pack` and rewrites the pin.
+   A Core ML package is a folder, so it is packed as a `.zip` that depends only on the folder's files.
+3. `gh release create models-YYYY.MM.DD --prerelease models/pack/*`. A `models-*` tag starts no
+   workflow (only `v*` tags do).
+4. Commit the pin. A checkout runs `python3 convert/models_pack.py fetch` to get the pack, and
+   `verify` to check `models/converted` against the pin.
+
 ## 10. Goldens are promoted at merge, never before
 
 `data/` (goldens, runs, band sounds) is one directory, linked into every worktree by
