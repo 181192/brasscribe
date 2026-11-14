@@ -28,6 +28,9 @@ import Testing
         case setupCheck = "setup-check"
         case setupLicence = "setup-licence"
         case setupDownload = "setup-download"
+        /// The listening tools stopped installing: no connection, or a full disk, each in its own words.
+        case setupToolsOffline = "setup-tools-offline"
+        case setupToolsDiskFull = "setup-tools-disk-full"
         case setupReady = "setup-ready"
         case settings
         /// Settings while the reader of printed music is fetched, once it is there, and after an install that stopped.
@@ -158,11 +161,14 @@ import Testing
             }()
         case .panelUpdateBandroom: await Catalogue.model(busy: false, interface: "newer")
         case .panelUpdateCheckout: await Catalogue.model(busy: false, interface: "older-checkout")
-        case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady:
+        case .panelSettingUp, .setupCheck, .setupLicence, .setupDownload, .setupReady, .setupToolsOffline, .setupToolsDiskFull:
             await {
                 let app = await Catalogue.model(busy: false)
                 // The first run, before the engine is installed (the demo starts as if it were).
                 app.setupComplete = false
+                let stopped = "pixi install -e beat-this stopped with exit code 1; see setup.log"
+                if screen == .setupToolsOffline { app.bootstrapper.showFailed(stopped, trouble: .network) }
+                if screen == .setupToolsDiskFull { app.bootstrapper.showFailed(stopped, trouble: .diskFull) }
                 return app
             }()
         }
@@ -179,7 +185,7 @@ import Testing
         case .pair, .pairUpdate, .pairUpdateFailed: return AnyView(PairWindow())
         case .setupCheck: return AnyView(SetupView(step: 0))
         case .setupLicence: return AnyView(SetupView(step: 1))
-        case .setupDownload: return AnyView(SetupView(step: 2))
+        case .setupDownload, .setupToolsOffline, .setupToolsDiskFull: return AnyView(SetupView(step: 2))
         case .setupReady: return AnyView(SetupView(step: 3))
         case .settings, .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed: return AnyView(SettingsView())
         }
@@ -190,7 +196,7 @@ import Testing
         switch screen {
         case .panelBusy, .panelReady, .panelRequest, .panelSettingUp, .panelUpdateEngine, .panelUpdateBandroom, .panelUpdateCheckout, .phones: 360
         case .pair, .pairUpdate, .pairUpdateFailed: 720
-        case .setupCheck, .setupLicence, .setupDownload, .setupReady: 760
+        case .setupCheck, .setupLicence, .setupDownload, .setupReady, .setupToolsOffline, .setupToolsDiskFull: 760
         case .settings, .settingsReaderInstalling, .settingsReaderInstalled, .settingsReaderFailed: 480
         }
     }

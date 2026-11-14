@@ -37,6 +37,8 @@ import Testing
         let ws = root.appending(path: "data/envs", directoryHint: .isDirectory)
         try WorkspaceSwap.install(from: bundle, into: ws).commit()
         try write("#!/bin/sh\n", ws.appending(path: ".pixi/envs/default/bin/scribe"))
+        // every adapter's environment too, as setup leaves them
+        for name in EngineSource.adapterEnvironments { try fm.createDirectory(at: ws.appending(path: ".pixi/envs/\(name)"), withIntermediateDirectories: true) }
         try write("keep me", ws.appending(path: "notes.txt"))
         try write("{\"devices\": []}", root.appending(path: "data/companion/devices.json"))
         try write("weights", root.appending(path: "data/models/mega53/model.ckpt"))
@@ -245,7 +247,7 @@ import Testing
     @MainActor
     private func configuration(_ root: URL, workspace: URL) -> EngineConfiguration {
         let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
-        return EngineConfiguration(source: .installed(workspace: workspace, adapters: nil), pixi: URL(fileURLWithPath: "/usr/bin/true"),
+        return EngineConfiguration(source: .installed(workspace: workspace), pixi: URL(fileURLWithPath: "/usr/bin/true"),
                                    paths: paths, computerName: "Band room", adminToken: "t")
     }
 
@@ -277,7 +279,9 @@ import Testing
         launcher.exitStatus = 0
         let ok = await boot.update(configuration: configuration(root, workspace: ws), bundledWorkspace: v2, lockChanged: true)
         #expect(ok)
-        #expect(launcher.launched.map(\.arguments.first) == ["install"])
+        // the engine's environment first, then each adapter's: no job has to install one
+        #expect(launcher.launched.allSatisfy { $0.arguments.first == "install" })
+        #expect(launcher.launched.map(\.arguments.last) == ["default"] + EngineSource.adapterEnvironments)
         #expect(launcher.launched.first?.arguments.contains(ws.appending(path: "pixi.toml").path) == true)
         #expect(read(ws.appending(path: "pixi.lock")) == "version: 6\n# numpy 2.6\n")
         #expect(WorkspaceCheck.compare(bundled: v2, installed: ws) == .upToDate)
@@ -336,8 +340,136 @@ import Testing
         let boot = Bootstrapper(launcher: launcher)
         await boot.run(configuration: configuration(root, workspace: ws), bundledWorkspace: v2)
         #expect(boot.phase == .done)
-        #expect(launcher.launched.map(\.arguments.first) == ["install"])
+        #expect(launcher.launched.allSatisfy { $0.arguments.first == "install" })
+        #expect(launcher.launched.map(\.arguments.last) == ["default"] + EngineSource.adapterEnvironments)
         #expect(read(ws.appending(path: "pixi.lock")) == "version: 6\n# numpy 2.6\n")
+    }
+
+    /// An engine installed by a Bandroom that ran the adapters another way (earlier builds ran them with uv, in folders
+    /// inside the app) has only its own environment. The first update installs the adapters' as well, although the
+    /// lockfile is the same: nothing is carried over from where they were, and no job has to install one.
+    @MainActor @Test func anEngineWithoutTheAdaptersEnvironmentsGetsThemAtItsUpdate() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        for name in EngineSource.adapterEnvironments { try fm.removeItem(at: ws.appending(path: ".pixi/envs/\(name)")) }
+        let v2 = try bundle(in: root, name: "v2", studio: "fixed studio")
+        let launcher = FakeLauncher()
+        launcher.exitStatus = 0
+        let boot = Bootstrapper(launcher: launcher)
+        let ok = await boot.update(configuration: configuration(root, workspace: ws), bundledWorkspace: v2, lockChanged: false)
+        #expect(ok)
+        // the engine's own environment is what this lockfile asks for already
+        #expect(launcher.launched.map(\.arguments.last) == EngineSource.adapterEnvironments)
+    }
+
+    /// An adapter's environment that cannot be installed stops setup and says which one, with the log to read.
+    @MainActor @Test func anAdaptersEnvironmentThatFailsIsNamed() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        let launcher = FakeLauncher()
+        launcher.exitStatus = 0
+        launcher.exitStatusFor = { $0.arguments.last == "beat-this" ? 256 : nil }
+        let boot = Bootstrapper(launcher: launcher)
+        await boot.run(configuration: configuration(root, workspace: ws), bundledWorkspace: try bundle(in: root, name: "v2", studio: "fixed studio"))
+        guard case .failed(let why) = boot.phase else { Issue.record("not failed: \(boot.phase)"); return }
+        #expect(why.contains("pixi install -e beat-this") && why.contains("setup.log"))
+        // it stopped there: the ones after it were not tried
+        #expect(launcher.launched.map(\.arguments.last) == ["default", "swift-f0", "basic-pitch", "beat-this"])
+        #expect(boot.step == nil && boot.percent == 0)
+    }
+
+    /// The reader of printed music is kept up to date where it was installed, and never installed unasked.
+    @MainActor @Test func theReaderIsInstalledAgainOnlyWhereItWas() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        let config = configuration(root, workspace: ws)
+        #expect(config.source.adapterEnvironmentsToInstall == EngineSource.adapterEnvironments)
+        try write("", config.source.readerEnvironment.appending(path: ".scribe-reader-installed"))
+        #expect(config.source.adapterEnvironmentsToInstall == EngineSource.adapterEnvironments + ["homr"])
+        // A checkout runs its adapters in their own projects: its setup installs the engine's environment only.
+        let checkout = EngineSource.checkout(ws)
+        #expect(checkout.adapterEnvironmentsToInstall.isEmpty && checkout.areAdapterEnvironmentsReady)
+        let launcher = FakeLauncher()
+        launcher.exitStatus = 0
+        let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
+        let dev = EngineConfiguration(source: checkout, pixi: URL(fileURLWithPath: "/usr/bin/true"), paths: paths,
+                                      computerName: "Band room", adminToken: "t")
+        await Bootstrapper(launcher: launcher).run(configuration: dev, bundledWorkspace: nil)
+        #expect(launcher.launched.map(\.arguments.last) == ["default"])
+    }
+
+    /// Setup that stops because there is no connection, or no room on the disk, says so (from what pixi wrote),
+    /// so the person is told what to do about it; anything else is told by its log.
+    @MainActor @Test func setupSaysWhenTheConnectionOrTheDiskStoppedIt() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        let config = configuration(root, workspace: ws)
+        let log = config.paths.logs.appending(path: "setup.log")
+        for (said, trouble) in [("Error: failed to download\n  ├─▶ error sending request for url (https://conda.anaconda.org/)\n  ╰─▶ dns error: failed to lookup address information",
+                                 InstallTrouble.network),
+                                ("Error: failed to link\n  ╰─▶ No space left on device (os error 28)", .diskFull),
+                                ("Error: the lockfile is not up to date", nil)] as [(String, InstallTrouble?)] {
+            try write("--- an earlier run\nerror sending request\n--- now pixi install\n\(said)\n", log)
+            let launcher = FakeLauncher()
+            launcher.exitStatus = 1
+            let boot = Bootstrapper(launcher: launcher)
+            await boot.run(configuration: config, bundledWorkspace: try bundle(in: root, name: "v2", studio: "fixed studio"))
+            guard case .failed = boot.phase else { Issue.record("not failed: \(boot.phase)"); continue }
+            #expect(boot.trouble == trouble, "\(said)")
+        }
+    }
+
+    /// An adapter's environment that cannot be installed during an update does not undo it: the engine's is in
+    /// place and runs, the failure is said, and the next launch installs what is missing, and only that.
+    @MainActor @Test func anAdapterThatFailsInAnUpdateLeavesTheUpdateInPlace() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        for name in EngineSource.adapterEnvironments { try fm.removeItem(at: ws.appending(path: ".pixi/envs/\(name)")) }
+        let v2 = try bundle(in: root, name: "v2", studio: "fixed studio")
+        let config = configuration(root, workspace: ws)
+        let launcher = FakeLauncher()
+        launcher.exitStatus = 0
+        launcher.exitStatusFor = { $0.arguments.last == "separator" ? 1 : nil }
+        let boot = Bootstrapper(launcher: launcher)
+        let ok = await boot.update(configuration: config, bundledWorkspace: v2, lockChanged: false)
+        #expect(ok && boot.phase == .done)
+        #expect(WorkspaceCheck.compare(bundled: v2, installed: ws) == .upToDate)
+        #expect(boot.adapterProblem?.contains("pixi install -e separator") == true)
+        // the engine's own environment was there and the lockfile is the same: only the adapters' were installed
+        #expect(launcher.launched.map(\.arguments.last) == ["swift-f0", "basic-pitch", "beat-this", "separator"])
+
+        // The next launch: the ones pixi made are there, the rest are installed.
+        for name in ["swift-f0", "basic-pitch", "beat-this"] { try fm.createDirectory(at: ws.appending(path: ".pixi/envs/\(name)"), withIntermediateDirectories: true) }
+        launcher.exitStatusFor = nil
+        launcher.launched.removeAll()
+        #expect(await boot.installAdapters(configuration: config))
+        #expect(launcher.launched.map(\.arguments.last) == ["separator", "muscriptor", "mega53", "panns"])
+        #expect(boot.adapterProblem == nil && boot.phase == .done)
+        // With all of them there, nothing runs.
+        for name in EngineSource.adapterEnvironments { try fm.createDirectory(at: ws.appending(path: ".pixi/envs/\(name)"), withIntermediateDirectories: true) }
+        launcher.launched.removeAll()
+        #expect(await !boot.installAdapters(configuration: config))
+        #expect(launcher.launched.isEmpty)
+    }
+
+    /// The adapters setup installs are the environments pixi.toml has for them on this Mac: every one but the
+    /// engine's, the reader's (installed only when asked for) and the CUDA ones. The owner's comparison script
+    /// and the engine's runner name them the same way.
+    @Test(.enabled(if: enginesWireIsRead)) func theAdaptersAreThePixiEnvironments() throws {
+        let root = try #require(repository())
+        let toml = try String(contentsOf: root.appending(path: "pixi.toml"), encoding: .utf8)
+        let section = try #require(toml.split(separator: "[environments]", maxSplits: 1).last)
+        let names = section.split(whereSeparator: \.isNewline).prefix { !$0.hasPrefix("[") }
+            .compactMap { $0.firstMatch(of: /^([a-z0-9-]+)\s*=/)?.output.1 }.map(String.init)
+        #expect(!names.isEmpty)
+        let expected = names.filter { $0 != "default" && $0 != SheetReader.adapter && !$0.hasSuffix("-cuda") }
+        #expect(Set(EngineSource.adapterEnvironments) == Set(expected))
+        #expect(names.contains(SheetReader.adapter))
     }
 
     @MainActor @Test func quittingStopsAnInstallUnderWay() async throws {
@@ -393,7 +525,7 @@ import Testing
         let root = fm.temporaryDirectory.appending(path: "bandroom-start-\(UUID().uuidString)")
         defer { try? fm.removeItem(at: root) }
         let ws = try installed(from: bundle(in: root, name: "v1", studio: "old studio"), root: root)
-        let source = EngineSource.installed(workspace: ws, adapters: nil)
+        let source = EngineSource.installed(workspace: ws)
         #expect(source.startsAfterUpdate(failed: false))
         #expect(source.startsAfterUpdate(failed: true))  // the environment has `scribe`: the previous engine runs meanwhile
 

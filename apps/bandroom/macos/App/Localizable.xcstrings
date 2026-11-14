@@ -941,6 +941,16 @@
         }
       }
     },
+    "Downloading the listening tools. The first time takes a while.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lytteverktøyene lastes ned. Første gang tar det litt tid."
+          }
+        }
+      }
+    },
     "Downloading what Brasscribe needs": {
       "localizations": {
         "nb": {
@@ -2267,6 +2277,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bandskriveren, MuScriptor, er gratis til ikke-kommersiell bruk (CC BY-NC 4.0). Hver person godtar lisensen med sin egen Hugging Face-konto."
+          }
+        }
+      }
+    },
+    "The disk is full, so the listening tools weren't set up. Free some space, then try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disken er full, så lytteverktøyene ble ikke satt opp. Frigjør plass, og prøv igjen."
           }
         }
       }

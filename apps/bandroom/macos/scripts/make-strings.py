@@ -63,6 +63,8 @@ NB = {
         "Brasscribe er ikke ferdig satt opp ennå. Noteleseren kan installeres når det er gjort.",
     "The reader wasn't installed. Check the internet connection and try again; the log has the details.":
         "Noteleseren ble ikke installert. Sjekk internettforbindelsen, og prøv igjen. Detaljene står i loggen.",
+    "The disk is full, so the listening tools weren't set up. Free some space, then try again.":
+        "Disken er full, så lytteverktøyene ble ikke satt opp. Frigjør plass, og prøv igjen.",
     "The disk is full, so the reader wasn't installed. Free some space, then try again.":
         "Disken er full, så noteleseren ble ikke installert. Frigjør plass, og prøv igjen.",
     "The reader's files couldn't be downloaded. Check the internet connection, then try again.":
@@ -141,6 +143,8 @@ NB = {
     "Done": "Ferdig",
     "Download": "Last ned",
     "Downloading": "Laster ned",
+    "Downloading the listening tools. The first time takes a while.":
+        "Lytteverktøyene lastes ned. Første gang tar det litt tid.",
     "Downloading what Brasscribe needs": "Laster ned det Brasscribe trenger",
     "Engine from a checkout (folder with pixi.toml)": "Motor fra en utsjekk (mappe med pixi.toml)",
     "Enter the key again": "Skriv inn nøkkelen på nytt",

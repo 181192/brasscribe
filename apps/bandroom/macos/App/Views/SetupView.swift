@@ -245,8 +245,7 @@ struct SetupView: View {
                 ProblemCard(title: Strings.problemTitle(.pixiTooOld(refusal)), why: Strings.problemWhy(.pixiTooOld(refusal), engine: .notRunning),
                             symbol: "exclamationmark.triangle.fill", tint: Color.Scribe.warning)
             } else if case .failed(let why) = boot {
-                ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill",
-                            tint: Color.Scribe.warning)
+                toolsProblem(why)
             }
             if case .failed(let e) = d.phase { downloadProblem(e) }
             if items.contains(where: { $0 != .bandWriter }) {
@@ -343,6 +342,25 @@ struct SetupView: View {
         if let v = d.verifying { return String(localized: "Checking the download · \(Int(v * 100))%") }
         if let m = d.minutesLeft { return String(localized: "\(amount) · about \(m) min left") }
         return amount
+    }
+
+    /// Why the listening tools (the engine's and the models' environments) weren't set up, in words when the install
+    /// said: no connection, or a full disk; otherwise what stopped, with the log to read.
+    @ViewBuilder private func toolsProblem(_ why: String) -> some View {
+        let warn = Color.Scribe.warning
+        switch app.bootstrapper.trouble {
+        case .network:
+            ProblemCard(title: String(localized: "The download stopped"),
+                        why: String(localized: "Check the internet connection, then try again. It continues where it stopped."),
+                        symbol: "wifi.exclamationmark", tint: warn)
+        case .diskFull:
+            ProblemCard(title: String(localized: "Not enough space"),
+                        why: String(localized: "The disk is full, so the listening tools weren't set up. Free some space, then try again."),
+                        symbol: "internaldrive", tint: warn)
+            Button { app.openStorageSettings() } label: { Text("Free up space…") }.buttonStyle(.brOutline)
+        case nil:
+            ProblemCard(title: String(localized: "The download stopped"), why: why, symbol: "exclamationmark.triangle.fill", tint: warn)
+        }
     }
 
     /// Each reason in its own words, with the one thing that fixes it.

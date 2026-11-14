@@ -282,7 +282,7 @@ final class AppModel {
     /// Compares the installed workspace's stamp with the app's and replaces it when they differ. Stops the engine
     /// first; `pixi install` runs again only when the lockfile changed.
     func updateWorkspaceIfNeeded() async {
-        guard case .installed(let workspace, _) = supervisor.configuration.source else { return }
+        guard case .installed(let workspace) = supervisor.configuration.source else { return }
         // an app without a workspace of its own has nothing to update the installed one to
         guard let bundled = bundledWorkspace else { workspaceIsThisApps = true; return }
         let (check, stamp) = await Task.detached {
@@ -291,7 +291,13 @@ final class AppModel {
         bundledStamp = stamp
         workspaceIsThisApps = check == .upToDate
         guard case .update(let lockChanged) = check else {
-            if check == .upToDate { updateFailure = nil }
+            if check == .upToDate {
+                updateFailure = nil
+                // what an earlier update could not install (no connection then, say), before the engine starts
+                if setupComplete, await updater.installAdapters(configuration: supervisor.configuration) {
+                    logAdapterProblem()
+                }
+            }
             return
         }
         let from = WorkspaceStamp.read(in: workspace)?.short ?? "no stamp"
@@ -303,11 +309,18 @@ final class AppModel {
             updateFailure = nil
             workspaceIsThisApps = true
             logger.write("engine workspace updated to \(stamp?.short ?? "?")")
+            logAdapterProblem()
         } else {
             let why = if case .failed(let e) = updater.phase { e } else { "unknown" }
             updateFailure = why
             logger.write("engine update failed, the previous workspace is back: \(why)")
         }
+    }
+
+    /// An adapter's environment the update could not install: the engine runs without it, a job that needs it
+    /// installs it, and the next launch tries again.
+    private func logAdapterProblem() {
+        if let why = updater.adapterProblem { logger.write("an adapter's environment was not installed: \(why)") }
     }
 
     /// Try again after a failed update.
@@ -420,7 +433,7 @@ final class AppModel {
     var mismatchProblem: Problem? {
         guard let behind = interfaceMismatch else { return nil }
         // the demo's engine is an installed one that an update could replace, or one from a checkout
-        let source: EngineSource = demo ? (demoCheckout ? .checkout(paths.data) : .installed(workspace: paths.workspace, adapters: nil))
+        let source: EngineSource = demo ? (demoCheckout ? .checkout(paths.data) : .installed(workspace: paths.workspace))
             : supervisor.configuration.source
         return .interfaceMismatch(behind, fix: MismatchFix.of(behind: behind, source: source, engineIsThisApps: !demo && workspaceIsThisApps,
                                                               updateTried: engineUpdateTried))

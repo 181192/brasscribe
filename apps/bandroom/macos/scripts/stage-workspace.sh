@@ -8,7 +8,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../../.." && pwd)"
 DEST="$1"
-# From an empty folder every time. A Bandroom that was run keeps the adapters' environments inside this folder
+# From an empty folder every time. A checkout that ran its adapters has their environments beside them
 # (ml/adapters/<name>/.venv; the reader of printed music's is AGPL-3.0), and rsync leaves a folder it excludes
 # where it already is: the app built next would carry it, and the stamp below would hash it.
 case "$DEST" in

@@ -20,49 +20,37 @@ public enum SheetReader {
     static let weightsNotFetched = "scribe-refusal: weights_missing"
     /// The line it ends on when the disk filled up while the weights were written.
     static let diskFull = "scribe-refusal: no_space"
-    /// What an installer (uv, pixi) says when it cannot reach where the packages are: the words of the HTTP and
-    /// socket layers under it, which stay the same from one version to the next where its own wording does not.
-    static let noConnection = ["error sending request", "dns error", "failed to lookup address", "tcp connect error",
-                               "connection refused", "network is unreachable", "no route to host", "operation timed out"]
-    /// What it, or the system under it, says when the disk is full.
-    static let noSpace = ["no space left on device", "os error 28"]
-
-    /// Why a failed install failed, if what it wrote says: the last line that names a full disk or no connection
-    /// (the runner's own names for the two, else the installer's words). Nil when it says neither.
+    /// Why a failed install failed, if what it wrote says: the runner's own names for a full disk and for weights
+    /// it could not fetch, else the installer's words (`InstallTrouble`). Nil when it says neither.
     static func reason(in output: String) -> SheetReaderFailure? {
-        var why: SheetReaderFailure?
-        for line in output.split(whereSeparator: \.isNewline) {
-            let said = line.trimmingCharacters(in: .whitespaces).lowercased()
-            if said == diskFull || noSpace.contains(where: said.contains) {
-                why = .diskFull
-            } else if said == weightsNotFetched || noConnection.contains(where: said.contains) {
-                why = .network
-            }
+        switch InstallTrouble.find(in: output, refusals: [diskFull: .diskFull, weightsNotFetched: .network]) {
+        case .network: .network
+        case .diskFull: .diskFull
+        case nil: nil
         }
-        return why
     }
     /// Written into the environment once an install here ran to its end, so it goes when the environment goes.
     static let marker = ".scribe-reader-installed"
 }
 
 extension EngineSource {
-    /// The adapters the engine runs: a checkout's own, the ones the app carries, else the installed workspace's
-    /// (the engine's default when it is given none).
+    /// The adapters the engine runs: the workspace's own, a checkout's or the installed copy in the data folder.
     public var adaptersFolder: URL {
+        workspace.appending(path: "ml/adapters", directoryHint: .isDirectory)
+    }
+
+    /// The reader's environment, where the engine looks for it (`environment_installed` in its adapters.py): the
+    /// pixi environment of its name in an installed workspace, which an app update leaves in place; in a checkout,
+    /// where the adapters run in their own projects, the `.venv` beside the adapter.
+    public var readerEnvironment: URL {
         switch self {
-        case .checkout(let url): url.appending(path: "ml/adapters", directoryHint: .isDirectory)
-        case .installed(let workspace, let adapters): adapters ?? workspace.appending(path: "ml/adapters", directoryHint: .isDirectory)
+        case .checkout: adaptersFolder.appending(path: "\(SheetReader.adapter)/.venv", directoryHint: .isDirectory)
+        case .installed: environment(SheetReader.adapter)
         }
     }
 
-    /// The reader's environment, where the engine looks for it: on a Mac the adapters run in their own projects,
-    /// each with its environment in `.venv` beside it.
-    public var readerEnvironment: URL {
-        adaptersFolder.appending(path: "\(SheetReader.adapter)/.venv", directoryHint: .isDirectory)
-    }
-
     /// The reader is on this Mac: its environment is there and an install here ran to its end (the environment, then
-    /// the weights). An app update brings new adapters without it, and it is offered again.
+    /// the weights).
     public var isReaderInstalled: Bool {
         FileManager.default.fileExists(atPath: readerEnvironment.appending(path: SheetReader.marker).path)
     }

@@ -102,7 +102,11 @@ struct StatusPanel: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Updating Brasscribe…").brFont(.bodyStrong)
                 BrassProgress(fraction: Double(app.updater.percent) / 100)
-                Text("Back in about a minute. Phones reconnect by themselves.").brFont(.body).foregroundStyle(Color.Scribe.textMuted)
+                // the models' environments come after the engine's, and the first time they are several GB
+                Text(app.updater.step.map { $0.environment != app.supervisor.configuration.environmentName } ?? false
+                     ? String(localized: "Downloading the listening tools. The first time takes a while.")
+                     : String(localized: "Back in about a minute. Phones reconnect by themselves."))
+                    .brFont(.body).foregroundStyle(Color.Scribe.textMuted)
             }
         case .starting:
             EmptyView()

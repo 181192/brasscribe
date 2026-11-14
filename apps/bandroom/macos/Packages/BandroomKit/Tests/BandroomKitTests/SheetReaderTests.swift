@@ -6,8 +6,8 @@ import Testing
 /// by setup, never from the app, and by the adapter runner itself, which alone pins its weights.
 @MainActor
 @Suite struct SheetReaderTests {
-    /// An installed engine in a folder of its own: the workspace with its engine command, and the app's adapters.
-    private func installed(adapters: Bool = true, engine: Bool = true) throws -> (config: EngineConfiguration, root: URL) {
+    /// An installed engine in a folder of its own: the workspace with its engine command.
+    private func installed(engine: Bool = true) throws -> (config: EngineConfiguration, root: URL) {
         let fm = FileManager.default
         let root = tempDir()
         let paths = BandroomPaths(data: root.appending(path: "data"), logs: root.appending(path: "logs"))
@@ -18,15 +18,13 @@ import Testing
             try fm.createDirectory(at: bin, withIntermediateDirectories: true)
             fm.createFile(atPath: bin.appending(path: EngineSource.command).path, contents: Data())
         }
-        let app = root.appending(path: "Bandroom.app/Contents/Resources/workspace/ml/adapters", directoryHint: .isDirectory)
-        if adapters { try fm.createDirectory(at: app.appending(path: SheetReader.adapter), withIntermediateDirectories: true) }
-        let config = EngineConfiguration(source: .installed(workspace: paths.workspace, adapters: adapters ? app : nil),
+        let config = EngineConfiguration(source: .installed(workspace: paths.workspace),
                                          pixi: URL(fileURLWithPath: "/app/bin/pixi"), paths: paths, computerName: "Kari's MacBook",
                                          adminToken: "secret")
         return (config, root)
     }
 
-    /// The runner, as far as the test goes: it makes the adapter's environment, as `uv run` does.
+    /// The runner, as far as the test goes: it makes the adapter's environment, as `pixi run` does.
     private func runnerMakesTheEnvironment(_ config: EngineConfiguration) throws {
         try FileManager.default.createDirectory(at: config.source.readerEnvironment, withIntermediateDirectories: true)
     }
@@ -49,16 +47,18 @@ import Testing
     @Test func theEnvironmentIsWhereTheEngineLooksForIt() throws {
         let (config, root) = try installed()
         defer { try? FileManager.default.removeItem(at: root) }
-        // The engine is given the app's adapters, and on a Mac looks for <adapters>/<name>/.venv.
-        #expect(config.environment(base: base)["SCRIBE_ADAPTERS"] == config.source.adaptersFolder.path)
-        #expect(config.source.readerEnvironment.path == config.source.adaptersFolder.appending(path: "homr/.venv").path)
-        // Without adapters of the app's, the engine uses the installed workspace's; a checkout its own.
-        let (plain, other) = try installed(adapters: false)
-        defer { try? FileManager.default.removeItem(at: other) }
-        #expect(plain.environment(base: base)["SCRIBE_ADAPTERS"] == nil)
-        #expect(plain.source.adaptersFolder.path == plain.paths.workspace.appending(path: "ml/adapters").path)
+        // The engine runs the adapters of the data folder's workspace through pixi, and looks for the reader in the
+        // pixi environment of its name there: in the data folder, where an app update leaves it.
+        let env = config.environment(base: base)
+        #expect(env["SCRIBE_ADAPTERS"] == config.paths.workspace.appending(path: "ml/adapters").path)
+        #expect(env["SCRIBE_ADAPTER_RUNNER"] == "pixi")
+        #expect(config.source.readerEnvironment.path == config.paths.workspace.appending(path: ".pixi/envs/homr").path)
+        #expect(!config.source.readerEnvironment.path.contains(".app/"))
+        // A checkout runs its own adapters in their own projects, as a developer does.
         let checkout = EngineSource.checkout(URL(fileURLWithPath: "/src/brasscribe", isDirectory: true))
         #expect(checkout.readerEnvironment.path == "/src/brasscribe/ml/adapters/homr/.venv")
+        let dev = EngineConfiguration(source: checkout, pixi: nil, paths: config.paths, computerName: "Mac", adminToken: "t")
+        #expect(dev.environment(base: base)["SCRIBE_ADAPTER_RUNNER"] == nil)
     }
 
     @Test(.enabled(if: enginesWireIsRead)) func theEngineAndTheRunnerHaveWhatTheInstallAsksFor() throws {
