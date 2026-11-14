@@ -55,6 +55,8 @@ jobs:
       python: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.python == 'true' && steps.version.outputs.only != 'true') }}
       core: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.core == 'true' && steps.version.outputs.only != 'true') }}
       studio: ${{ github.event_name != 'pull_request' || (steps.filter.outputs.studio == 'true' && steps.version.outputs.only != 'true') }}
+      # Only for a pull request that touches the site: main's pushes leave the site out (pages.yml builds it there).
+      site: ${{ github.event_name == 'pull_request' && steps.filter.outputs.site == 'true' && steps.version.outputs.only != 'true' }}
       android: ${{ github.event_name != 'pull_request' || ((steps.filter.outputs.android == 'true' || steps.filter.outputs.android_brasscribe == 'true' || steps.filter.outputs.android_fretscribe == 'true') && steps.version.outputs.only != 'true') }}
       # What both Android apps are built from changed (or this is not a pull request): every module is checked.
       android_shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.android == 'true' }}
@@ -87,6 +89,7 @@ jobs:
             workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
             python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'licences/**', 'scripts/licences.py', 'sounds/**', 'design/**', 'convert/*models*', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
+            site: ['site/**', 'eval/baselines.json', 'convert/reports/**', 'design/brands/*/dist/**', 'design/brands/*/brand/**', '.github/workflows/ci.yml']
             studio: ['studio/**', 'docs/shared/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/scribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
             android: ['apps/android/*', 'apps/android/buildSrc/**', 'apps/android/gradle/**', 'apps/android/scripts/**', 'apps/android/services/**', 'apps/android/features/**', 'apps/android/design/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/shared/accessibility/talking-score-vectors.json', 'licences/dist/**']
             android_brasscribe: ['apps/android/products/brasscribe/**']
@@ -276,6 +279,48 @@ jobs:
 
       - name: Bandroom for Windows core logic
         run: dotnet test apps/bandroom/windows/tests/Brasscribe.Bandroom.Core.Tests
+
+  # The public site: it builds (site/build.sh fails on a broken link, a missing word, a number past its rule), and in
+  # a browser the language changes back and forth on its main pages without anything the scripts add being doubled
+  # or lost, and a figure whose Norwegian words did not come is asked for again (site/shared/tests/languages.mjs).
+  # Playwright is Studio's.
+  site:
+    name: site (Ubuntu 24.04)
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build
+        run: bash site/build.sh
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('studio/package-lock.json') }}
+
+      - name: Playwright and its Chromium
+        working-directory: studio
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: The language, back and forth
+        run: |
+          python3 -m http.server -d site/_site 8000 >/dev/null 2>&1 &
+          for _ in $(seq 20); do curl -sf http://localhost:8000/ >/dev/null && break; sleep 0.5; done
+          node site/shared/tests/languages.mjs http://localhost:8000/ http://localhost:8000/brasscribe/ http://localhost:8000/fretscribe/ \
+            http://localhost:8000/brasscribe/how-it-works/ http://localhost:8000/brasscribe/download/ http://localhost:8000/bandroom/
 
   # Studio's unit tests, then its browser tests and its screen catalogue on the built bundle, with the API
   # answered from committed fixtures (no engine): every view in light, dark, high contrast, bokmål, 200 % and
@@ -630,13 +675,13 @@ jobs:
   # One check that is always reported, whichever jobs ran: the one to make required.
   result:
     name: CI result
-    needs: [changes, workflows, licences, linux, core, studio, android, android-screens, windows, apple]
+    needs: [changes, workflows, licences, linux, core, site, studio, android, android-screens, windows, apple]
     if: always()
     runs-on: ubuntu-24.04
     steps:
       - env:
           CHANGES: ${{ needs.changes.result }}
-          RESULTS: ${{ needs.workflows.result }} ${{ needs.licences.result }} ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.studio.result }} ${{ needs.android.result }} ${{ needs.android-screens.result }} ${{ needs.windows.result }} ${{ needs.apple.result }}
+          RESULTS: ${{ needs.workflows.result }} ${{ needs.licences.result }} ${{ needs.linux.result }} ${{ needs.core.result }} ${{ needs.site.result }} ${{ needs.studio.result }} ${{ needs.android.result }} ${{ needs.android-screens.result }} ${{ needs.windows.result }} ${{ needs.apple.result }}
         run: |
           echo "changes: $CHANGES, jobs: $RESULTS"
           [ "$CHANGES" = success ] || exit 1
