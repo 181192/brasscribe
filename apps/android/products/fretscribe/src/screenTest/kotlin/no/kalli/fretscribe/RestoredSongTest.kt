@@ -164,10 +164,13 @@ class RestoredSongTest : ScreenTest() {
     @Test
     fun endedWhileTheNotesWereWrittenDownWhatIsThisComesBackWithTheRecording() {
         val take = open(toTheSong = false)
+        // (The computer is held in its first step, so the notes are still being written down when it is ended.)
+        container.fixtureHeld = true
         rule.onNodeWithTag("fs-what-continue").performClick()
         waitUntil(10_000) { first.screen.value.last() == Screen.TRANSCRIBE }
         val stack = first.screen.value
         rule.runOnUiThread { first.cancelTranscription() }
+        container.fixtureHeld = false
         // Stopped, the take is kept in Your songs (a moment's work on the phone) before the process ends.
         waitUntil(5_000) { first.keptRecordings.value.size == 1 && first.source.value?.file == first.keptRecordings.value.single().file }
         val vm = afterTheProcessEnded(stack)

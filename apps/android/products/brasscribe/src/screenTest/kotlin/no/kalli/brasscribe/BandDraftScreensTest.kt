@@ -96,11 +96,13 @@ class BandDraftScreensTest : ScreenTest() {
             rule.runOnUiThread { vm.home(); vm.openSavedScore(saved) }
             waitUntil(10_000) { draftIsOnScreen() }
 
-            // Cancel while the computer is making it.
+            // Cancel while the computer is making it (held in its first step until then).
             container.fixtureSource = oldHundredth()
+            container.fixtureHeld = true
             rule.runOnUiThread { vm.makeFullScore() }
             waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
             rule.runOnUiThread { vm.cancelTranscription(); vm.back() }
+            container.fixtureHeld = false
             waitUntil(10_000) { draftIsOnScreen() }
             waitUntil(30_000) { rule.onAllNodesWithTag("draft-notice").fetchSemanticsNodes().isNotEmpty() || shows(R.string.draft_notice_short) }
 
@@ -184,12 +186,15 @@ class BandDraftScreensTest : ScreenTest() {
             waitUntil(5_000) { shows(R.string.draft_make_on_computer) }
             assertTrue(shows(R.string.draft_too_long_body) && shows(R.string.draft_too_long_kept))
             shot("too-long-computer-there")
+            // (The computer is held in its first step: the score is still being made when the test looks.)
+            container.fixtureHeld = true
             rule.onNodeWithText(text(R.string.draft_make_on_computer)).performClick()
             waitUntil(5_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
             assertEquals(Where.COMPANION, vm.where.value)
             assertEquals("Band practice.wav", vm.source.value?.name)
         } finally {
             rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
+            container.fixtureHeld = false
             container.fixtureSource = null
         }
     }
