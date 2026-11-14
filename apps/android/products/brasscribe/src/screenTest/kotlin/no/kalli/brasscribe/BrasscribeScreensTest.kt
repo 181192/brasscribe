@@ -125,6 +125,8 @@ class BrasscribeScreensTest : ScreenCatalogue() {
             waitForTag("stand-score", 20_000)
             rest()
         },
+        // The score of a recording: it says where the part shown comes from (a score opened from a file does not).
+        Entry("score-of-a-recording") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }; rest() },
         Entry("share-or-print", primaryInView = "print") { checkTheNotes(); go(Screen.SCORE); waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }; go(Screen.EXPORT); rest() },
         Entry("settings") { go(Screen.SETTINGS) },
         Entry("computer") { go(Screen.SETTINGS, Screen.COMPANION) },
