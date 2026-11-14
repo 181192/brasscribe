@@ -142,15 +142,15 @@ jobs:
         with:
           files: brasscribe-band-16bit.sf2 brasscribe-band-mobile.sf2
 
-      # The test phrases the level tests play are written by a script, not kept in git (sounds/phrases.py: it
-      # needs only mido, at the version sounds/uv.lock pins).
+      # The test phrases the level tests play are written by a script, not kept in git (sounds/phrases.py). It
+      # needs only mido, installed with what mido itself needs at the versions and file hashes sounds/uv.lock
+      # pins: pip refuses any other file.
       - name: Write the band's test phrases
         working-directory: .
         run: |
-          mido=$(awk '/^name = "mido"$/ { getline; gsub(/[^0-9.]/, ""); print; exit }' sounds/uv.lock)
-          [ -n "$mido" ] || { echo "sounds/uv.lock no longer names mido's version" >&2; exit 1; }
           python3 -m venv "$RUNNER_TEMP/phrases"
-          "$RUNNER_TEMP/phrases/bin/pip" install --quiet "mido==$mido"
+          .github/scripts/lock-requirements.py sounds/uv.lock mido packaging > "$RUNNER_TEMP/phrases/requirements.txt"
+          "$RUNNER_TEMP/phrases/bin/pip" install --quiet --require-hashes -r "$RUNNER_TEMP/phrases/requirements.txt"
           "$RUNNER_TEMP/phrases/bin/python" sounds/phrases.py -o data/sounds/phrases
 
       # Tests that need data/golden (SCRIBE_FIXTURES) skip themselves when it is absent.

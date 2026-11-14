@@ -123,7 +123,8 @@ struct DynamicsLevelTests {
             got[m] = lufs
             print(String(format: "DYNAMICS %@ velocity %d: alphaSynth %.2f, sampler uncorrected %.2f (%+.2f), corrected %.2f (%+.2f) LUFS",
                          m, v, want, raw, raw - want, lufs, lufs - want))
-            #expect(abs(lufs - want) < 1.5, "\(m)")
+            // the system is named: its own sampler is what plays, and it differs between versions of macOS
+            #expect(abs(lufs - want) < 1.5, "\(m), on \(ProcessInfo.processInfo.operatingSystemVersionString)")
         }
         let f = try #require(got["f"]), fRef = try #require(reference["\(Dynamics.velocity(mark: "f"))"])
         for m in ["pp", "mf", "ff"] {
