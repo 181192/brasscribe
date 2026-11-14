@@ -780,6 +780,21 @@ def _solo_beat_model(data: Path, mode: str) -> dict[str, float]:
     return out
 
 
+def _sheet_image(data: Path, mode: str) -> dict[str, float]:
+    """Printed music read from rendered pages (sheet_image_bench). Cached: the recogniser's readings kept in
+    eval/fixtures (no pictures, no model). Live: the pages are engraved again with MuseScore and read again with
+    the adapter, in the data folder."""
+    from . import sheet_image_bench as B
+
+    if mode != "live":
+        return B.evaluate(data, root=B.FIXTURES)[0]
+    if not shutil.which("mscore"):
+        raise SkipSuite("the pages are engraved by MuseScore: mscore is not on PATH")
+    for entry in B.build(data):
+        B.prepare(entry, again=True)
+    return B.evaluate(data)[0]
+
+
 # -------------------------------------------------------------------- registry
 
 _CHORALE_KEYS = ["onset_f1", "onoff_f1", "octave_err_rate", "onset100_f1"]
@@ -851,6 +866,9 @@ SUITES: dict[str, Suite] = {s.name: s for s in [
           "outputs)", _small_tab("mandolin"), ("eval/small-tab",)),
     Suite("guitar-rendered-tab", "fretted", "the tab profile with a guitar on rendered open chords, picked and strummed, and a melody: two "
           "groups the rules were chosen with and two held out (cached model outputs)", _small_tab("guitar-rendered"), ("eval/small-tab",)),
+    Suite("sheet-image", "brass", "printed music read from a picture: engraved pages as a screenshot and as a phone's photo, "
+          "the notes read against the notes written (the recogniser's readings in eval/fixtures; live mode reads again)",
+          _sheet_image, (), ci=True),
     Suite("meter-tab", "fretted", "the bar the tab profiles write for one instrument alone in 2/4, 3/4, 6/8, 12/8 and 5/4: rendered passages, "
           "the beats in a bar as tracked and as written (cached model outputs)", _meter_tab, ("eval/meter-tab",)),
     Suite("musescore-roundtrip", "brass", "a fresh Mikkel arrangement re-exported by MuseScore keeps every part's pitches",

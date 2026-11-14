@@ -84,6 +84,11 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         raise FileNotFoundError(audio)
     if out is not None:
         check_out_dir(out, settings)
+    if profile in profiles.PROFILES:
+        try:
+            profiles.check_input(profile, audio)
+        except ValueError as e:
+            raise RunRefused(str(e)) from e
     pipeline = profiles.build(profile, audio, title, params)
     run_id = run_id or new_run_id(profile)
     run_dir = settings.runs_dir / run_id

@@ -54,6 +54,7 @@ class Adapter:
     licence: str | None = None  # weights licence as recorded in docs/brasscribe/plan/apps-plan.md §7
     dir: str | None = None  # adapter directory when it differs from the name
     entry: str = "run.sh"  # script with the <input> <output> contract
+    timeout_s: float | None = None  # its own time limit, when the one for its weight does not fit
 
 
 ADAPTERS: dict[str, Adapter] = {
@@ -70,6 +71,15 @@ ADAPTERS: dict[str, Adapter] = {
         Adapter("muscriptor", heavy=True, accelerator="torch", hub_models=("MuScriptor/muscriptor-medium",),
                 env=(("MUSCRIPTOR_MODEL", "medium"),), licence="CC BY-NC 4.0"),
         Adapter("basic-pitch", heavy=False, accelerator="coreml-or-onnx", licence="Apache-2.0"),
+        # Printed music to MusicXML, AGPL, run as a program of its own (THIRD_PARTY_NOTICES.md). Its weights are
+        # fetched and checked by the runner (run_adapter.py, HOMR_WEIGHTS) and kept in the models folder, so a run's
+        # manifest names them. A page takes seconds: fifteen minutes cover forty pages on a slow computer, and
+        # end a page that is made to take for ever.
+        Adapter("homr", heavy=False, accelerator="cpu", licence="AGPL-3.0", timeout_s=900.0,
+                scripts=("pyproject.toml", "uv.lock", "run.sh", "prepare.py"),
+                model_files=("homr/segnet_308-3296ccd40960f90ca6ab9c035cca945675d30a0f.zip",
+                             "homr/encoder_pytorch_model_509-2293bba14bfea47d9d28411339362af15fce4c31.zip",
+                             "homr/decoder_pytorch_model_509-2293bba14bfea47d9d28411339362af15fce4c31.zip")),
         Adapter("swift-f0", heavy=False, accelerator="cpu", scripts=("pyproject.toml", "uv.lock", "run.sh", "transcribe.py"),
                 licence="MIT"),
         Adapter("swift-f0-contour", heavy=False, accelerator="cpu", dir="swift-f0", entry="contour.sh",
@@ -101,6 +111,23 @@ def waits_for_setup(name: str) -> bool:
     if a is None or not a.hub_models or hub_token_present():
         return False
     return any(not hub_ref(repo).exists() for repo in a.hub_models)
+
+
+def uses_uv() -> bool:
+    """The adapters run in their uv projects (as run_adapter.py decides): the default on Apple silicon Macs."""
+    default = "uv" if sys.platform == "darwin" and platform.machine() == "arm64" else "pixi"
+    return (os.environ.get("SCRIBE_ADAPTER_RUNNER") or default) == "uv"
+
+
+def environment_installed(adapters_dir: Path, name: str) -> bool:
+    """The adapter's environment is on this computer: its uv project's .venv, or the pixi environment of its
+    name beside the repository's pixi.toml. Running an adapter installs a missing environment, which is right
+    for a model the engine is set up with and wrong for one that is large and optional: such an adapter is
+    asked for here first."""
+    adapters_dir = Path(adapters_dir).resolve()
+    if uses_uv():
+        return (adapters_dir / name / ".venv").is_dir()
+    return (adapters_dir.parents[1] / ".pixi" / "envs" / name).is_dir()
 
 
 def host_device() -> str:
@@ -225,7 +252,8 @@ class AdapterRegistry:
     poll = 0.2  # seconds between checks for a cancelled job or an exceeded time limit while an adapter runs
 
     def time_limit(self, name: str) -> float:
-        return self.timeout_s or (HEAVY_TIMEOUT_S if self.get(name).heavy else LIGHT_TIMEOUT_S)
+        a = self.get(name)
+        return self.timeout_s or a.timeout_s or (HEAVY_TIMEOUT_S if a.heavy else LIGHT_TIMEOUT_S)
 
     @contextmanager
     def gpu_mutex(self, poll: float | None = None, on_blocked: Callable[[], None] | None = None,

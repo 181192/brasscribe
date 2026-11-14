@@ -167,6 +167,9 @@ class ProfileInfo(BaseModel):
     description: str
     validated: bool = Field(description="checked end to end against a golden output")
     stages: list[str]
+    input: Literal["audio", "pages"] = Field("audio", description="what a job of the profile reads: a recording, or "
+                                                                  "pages of printed music (pictures or a PDF, "
+                                                                  "createJobFromPages)")
 
 
 class AudioRef(BaseModel):

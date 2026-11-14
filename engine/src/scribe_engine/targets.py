@@ -46,6 +46,7 @@ BRASS = Target(
         "brass-band": "{name} — brass band (draft)",
         "pop-rock": "{name} — brass band (draft)",
         "orchestra-with-soloist": "{name} — solo cornet & brass band (draft)",
+        "sheet": "{name} — from the page (draft)",
     },
 )
 
@@ -55,6 +56,7 @@ FRETTED = Target(
     titles={
         "tab": "{name} — tab (draft)",
         "bass-tab": "{name} — bass tab (draft)",
+        "sheet-tab": "{name} — tab from the page (draft)",
     },
 )
 
