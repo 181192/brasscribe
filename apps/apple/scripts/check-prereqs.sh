@@ -22,3 +22,5 @@ cp -R "$ICONS" "$HERE/products/brasscribe/App/Icon.xcassets/AppIcon.appiconset"
 printf '{\n  "info": { "author": "xcode", "version": 1 }\n}\n' > "$HERE/products/brasscribe/App/Icon.xcassets/Contents.json"
 # Band sounds for the app bundle (products/brasscribe/Sounds, not committed).
 "$HERE/scripts/stage-band-sounds.sh"
+# On-device models for the app bundle (products/brasscribe/Models, not committed).
+"$HERE/scripts/stage-models.sh"

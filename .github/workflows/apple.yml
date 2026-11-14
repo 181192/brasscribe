@@ -126,6 +126,11 @@ jobs:
       - name: Build ScribeFFI.xcframework
         run: scripts/build-core.sh
 
+      # The on-device models (the pack pinned in convert/on-device-models.json), so the apps under test
+      # carry them as a release does and the tests of the models in the app run instead of skipping.
+      - name: On-device models
+        uses: ./.github/actions/on-device-models
+
       # Fixture-dependent tests (SCRIBE_FIXTURES / data/golden) skip themselves when absent.
       - name: Test (packages, macOS app)
         run: make package-test test-mac-app
@@ -211,6 +216,11 @@ jobs:
 
       - name: Build ScribeFFI.xcframework
         run: scripts/build-core.sh
+
+      # The on-device models (the pack pinned in convert/on-device-models.json), so the apps under test
+      # carry them as a release does and the tests of the models in the app run instead of skipping.
+      - name: On-device models
+        uses: ./.github/actions/on-device-models
 
       # The iPhone is the newest "iPhone NN Pro" on the newest iOS runtime, by id (scripts/newest-iphone.sh).
       - name: Test (iPhone simulator app, unit and UI tests)
@@ -570,6 +580,15 @@ jobs:
         if: ${{ inputs.release }}
         uses: ./.github/actions/band-sounds
 
+      # The on-device models are not in git either: the pinned pack (convert/on-device-models.json) is
+      # fetched from this repository's release, compiled and bundled. A release without them would send
+      # every solo to the computer, so the build stops here instead.
+      - name: On-device models
+        if: ${{ inputs.release }}
+        uses: ./.github/actions/on-device-models
+        with:
+          files: swift-f0-window-fp32.mlpackage.zip nmp-b1-fp32.mlpackage.zip beat-this-small0-fp32.mlpackage.zip
+
       # Zipped with ditto here: artifact uploads drop the framework symlinks inside the .app.
       # There is no signing identity, so the app is re-signed ad hoc without the hardened runtime,
       # inside out (Verovio first, then the app, keeping its entitlements): under the hardened runtime
@@ -585,6 +604,10 @@ jobs:
           stage="$RUNNER_TEMP/stage-play"; P="$stage/Brasscribe Play.app"
           mkdir -p "$stage" && ditto "$app" "$P"
           [ -s "$P/Contents/Resources/Sounds/brasscribe-band-16bit.sf2" ] || { echo "the app has no band SoundFont" >&2; exit 1; }
+          for m in swift-f0-window-fp32 nmp-b1-fp32 beat-this-small0-fp32; do
+            [ -s "$P/Contents/Resources/Models/$m.mlmodelc/weights/weight.bin" ] || { echo "the app has no on-device model $m" >&2; exit 1; }
+          done
+          [ -s "$P/Contents/Resources/Models/NOTICE.md" ] || { echo "the on-device models are in the app without their NOTICE.md" >&2; exit 1; }
           codesign -d --entitlements - --xml "$P" > "$RUNNER_TEMP/play.entitlements"
           for f in "$P"/Contents/Frameworks/* "$P"/Contents/PlugIns/*; do
             [ -e "$f" ] && codesign --force --sign - "$f"
@@ -646,7 +669,7 @@ jobs:
   # for devices with signing off and packed unsigned: a tester signs it with their own Apple account,
   # using a sideloading tool, to put it on their device (Xcode does not sign an existing IPA; with Xcode
   # one builds from the source). The app asks for no entitlements, so a free account can sign it. scripts/make-ipa.sh builds it and checks the file (iPhone and iPad, arm64 for
-  # devices and not the simulator, nothing signed left inside, the band sounds).
+  # devices and not the simulator, nothing signed left inside, the band sounds, the on-device models).
   ios:
     name: release build for iPhone and iPad (unsigned)
     if: ${{ inputs.release && !inputs.skip_play }}
@@ -700,6 +723,12 @@ jobs:
         uses: ./.github/actions/band-sounds
         with:
           files: brasscribe-band-mobile.sf2
+
+      # Fetched before the project is generated, which compiles them into the app.
+      - name: On-device models
+        uses: ./.github/actions/on-device-models
+        with:
+          files: swift-f0-window-fp32.mlpackage.zip nmp-b1-fp32.mlpackage.zip beat-this-small0-fp32.mlpackage.zip
 
       - name: Unsigned IPA of Play for iPhone and iPad
         run: scripts/make-ipa.sh "$RUNNER_TEMP/out/brasscribe-play-ios-unsigned.ipa"

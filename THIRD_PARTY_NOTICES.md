@@ -57,6 +57,12 @@ for Mac, iPhone and iPad when the band SoundFont is missing. It is not committed
 | [SwiftF0](https://github.com/lars76/swift-f0) (ONNX) | MIT | Play for Android |
 | [Basic Pitch](https://github.com/spotify/basic-pitch) (ONNX, changed from the published model: the batch fixed to 1 and the convolutions' padding written out; its `NOTICE` ships with the app) | Apache-2.0 | Play for Android |
 | [Beat This!](https://github.com/CPJKU/beat_this) small (ONNX) | MIT (code and published weights) | Play for Android |
+| SwiftF0, Basic Pitch and Beat This! small, converted to Core ML (`convert/`) | MIT, Apache-2.0, MIT | Play for Mac, iPhone and iPad |
+
+The converted files are not in git: they are the pack pinned in `convert/on-device-models.json`, a
+pre-release of this repository (`convert/models_pack.py`). Their sources, what the conversion changed and
+the licence texts, with Basic Pitch's own notice, are in `convert/on-device-models-NOTICE.md`, which is
+`NOTICE.md` in the pack and in the `Models` folder of Play for Mac, iPhone and iPad.
 
 Fretscribe for Android bundles no model: its tabs are written by Bandroom on the computer.
 

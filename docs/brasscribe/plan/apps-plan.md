@@ -249,7 +249,7 @@ MIDI plus General MIDI sounds is not enough, and **no free library has cornet, t
 | Windows | **Offline.** Via the local engine now; ONNX Runtime + DirectML as conversions land | Offline |
 | iOS/iPadOS, Android | **Offline for simple sources** (one instrument, microphone): SwiftF0 (135 kB), Basic Pitch, Beat This! small (8 MB). Full band via the companion on your own computer (LAN), then on-device where memory allows (iPad/high-end phones, after measurement) | Offline |
 
-No cloud is required anywhere. Models download once, on demand: Apple hosted asset packs, Play asset/AI packs, or a direct download on desktop.
+No cloud is required anywhere. The phone and tablet apps carry their models (a few megabytes); the computer's engine downloads its own once.
 
 ---
 

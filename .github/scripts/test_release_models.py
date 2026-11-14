@@ -31,7 +31,7 @@ def apk(extra: dict | None = None, drop: str = "") -> dict:
     return files | (extra or {})
 
 
-def apple(folder: str, compiled=("swift-f0-window-fp32", "nmp-b1-fp32", "beat-this-small0-fp16")) -> dict:
+def apple(folder: str, compiled=("swift-f0-window-fp32", "nmp-b1-fp32", "beat-this-small0-fp32")) -> dict:
     files = {f"{folder}NOTICE.md": NOTICE}
     for c in compiled:
         files[f"{folder}{c}.mlmodelc/weights/weight.bin"] = b"w" * 100
@@ -45,7 +45,7 @@ class ReleaseModels(unittest.TestCase):
         self.dir = Path(self.tmp.name) / "dist"
         self.dir.mkdir()
         files = {n: {"into": "x", "sha256": hashlib.sha256(d).hexdigest(), "size": len(d)} for n, d in ONNX.items()}
-        files |= {n: {"into": "x", "sha256": "0" * 64, "size": 1} for n in (*release_models.APPLE, "beat-this-small0-fp32.mlpackage.zip")}
+        files |= {n: {"into": "x", "sha256": "0" * 64, "size": 1} for n in (*release_models.APPLE, "beat-this-small0-fp16.mlpackage.zip")}
         self.pin = Path(self.tmp.name) / "pin.json"
         self.pin.write_text(json.dumps({"version": "models-test", "repo": "nobody/nothing", "files": files}))
         self.notice = Path(self.tmp.name) / "NOTICE.md"
@@ -85,7 +85,7 @@ class ReleaseModels(unittest.TestCase):
         rows = [line for line in out.splitlines() if line.startswith("| `")]
         self.assertEqual(len(rows), 11)  # every file, SHA256SUMS too
         self.assertIn("beat-this-small0.onnx (sha256", out)
-        self.assertIn("beat-this-small0-fp16.mlmodelc (0.0 MB weights)", out)
+        self.assertIn("beat-this-small0-fp32.mlmodelc (0.0 MB weights)", out)
         self.assertIn("| `brasscribe-play-windows-x64.zip` | Play for Windows | none | ok |", out)
         self.assertIn("| `SHA256SUMS` | | | not a zip archive, not checked |", out)
         self.assertIn("| `brasscribe-bandroom-macos-arm64.zip` | | none | no rule |", out)
@@ -130,18 +130,20 @@ class ReleaseModels(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("not a zip archive", out)
 
-    def test_apple_rows_report_without_failing_until_enforced(self):
-        ipa = self.write("brasscribe-play-ios-unsigned.ipa", apple(APPLE_DIR, compiled=("swift-f0-window-fp32", "beat-this-small0-fp32")))
+    def test_an_apple_app_with_the_wrong_models_fails_and_a_rule_not_enforced_only_reports(self):
+        ipa = self.write("brasscribe-play-ios-unsigned.ipa", apple(APPLE_DIR, compiled=("swift-f0-window-fp32", "beat-this-small0-fp16")))
         code, out, err = self.run_on(ipa)
-        self.assertEqual(code, 0)
-        self.assertIn("not enforced yet", out)
+        self.assertEqual(code, 1)
         self.assertIn("no Payload/BrasscribePlay.app/Models/nmp-b1-fp32.mlmodelc/weights/weight.bin", err)
-        self.assertIn("beat-this-small0-fp32.mlmodelc should not be there", err)
-        enforced = tuple(r if r.pattern != "brasscribe-play-ios*.ipa" else release_models.Rule(**{**r.__dict__, "enforced": True})
-                         for r in release_models.RULES)
-        real, release_models.RULES = release_models.RULES, enforced
+        self.assertIn("no Payload/BrasscribePlay.app/Models/beat-this-small0-fp32.mlmodelc/weights/weight.bin", err)
+        self.assertIn("beat-this-small0-fp16.mlmodelc should not be there", err)
+        relaxed = tuple(r if r.pattern != "brasscribe-play-ios*.ipa" else release_models.Rule(**{**r.__dict__, "enforced": False})
+                        for r in release_models.RULES)
+        real, release_models.RULES = release_models.RULES, relaxed
         try:
-            self.assertEqual(self.run_on(ipa)[0], 1)
+            code, out, _ = self.run_on(ipa)
+            self.assertEqual(code, 0)
+            self.assertIn("not enforced yet", out)
         finally:
             release_models.RULES = real
 
@@ -176,7 +178,14 @@ class ReleaseModels(unittest.TestCase):
     def test_a_report_only_file_that_is_not_a_zip_still_gets_a_row(self):
         path = self.dir / "brasscribe-play-ios-unsigned.ipa"
         path.write_bytes(b"not a zip")
-        code, out, _ = self.run_on(path)
+        self.assertEqual(self.run_on(path)[0], 1)  # enforced, as every rule is now
+        relaxed = tuple(r if r.pattern != "brasscribe-play-ios*.ipa" else release_models.Rule(**{**r.__dict__, "enforced": False})
+                        for r in release_models.RULES)
+        real, release_models.RULES = release_models.RULES, relaxed
+        try:
+            code, out, _ = self.run_on(path)
+        finally:
+            release_models.RULES = real
         self.assertEqual(code, 0)
         self.assertIn("| `brasscribe-play-ios-unsigned.ipa` | Play for iPhone and iPad | | not a zip archive, not checked |", out)
 

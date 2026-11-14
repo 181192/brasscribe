@@ -1,15 +1,11 @@
-import OnDeviceKit
 import SwiftUI
 import TranscriptionKit
 
 /// Settings, grouped: your computer (connection and pairing), on this device, keyboard, and about.
-/// Technical details (the address, the listening files' address) sit behind a disclosure.
+/// Technical details (the address) sit behind a disclosure.
 struct SettingsView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
-    @State private var status: String?
-    @State private var busy = false
-    @State private var modelTick = 0
     @AppStorage("singleKeyShortcuts") private var singleKeys = true
     @AppStorage(AppearanceSetting.key) private var appearance = AppearanceSetting.system.rawValue
     @AppStorage(PinkUnlock.key) private var pinkUnlocked = false
@@ -47,21 +43,20 @@ struct SettingsView: View {
 
                 Section {
                     Toggle(isOn: $app.soloOnDevice) { Text("Write down solos on this device") }
+                        .disabled(!app.modelsReady)
+                        .accessibilityIdentifier("settingSoloOnDevice")
                     Toggle(isOn: $app.bandDraftOnDevice) { Text("Make band drafts on this device") }
+                        .disabled(!app.modelsReady)
                         .accessibilityIdentifier("settingBandDraft")
-                    LabeledContent { Text(modelStatus).foregroundStyle(Color.Scribe.textMuted) } label: { Text("Listening files") }
-                    Button("Download the listening files") { Task { await downloadModels() } }
-                        .disabled(busy || ModelStore.shared.missing.isEmpty)
-                    Button("Remove the listening files", role: .destructive) { ModelStore.shared.removeAll(); modelTick += 1 }
-                    if let status { Text(status).font(Font.Scribe.callout) }
-                    DisclosureGroup {
-                        TextField(text: $app.modelDownloadURL) { Text("Download address") }
-                            .textContentType(.URL)
-                            .autocorrectionDisabled()
-                    } label: { Text("Details for the band's tech person") }
                 } header: { Text("On this device") } footer: {
-                    Text("\(Text("One instrument on its own can be written down here, with nothing sent anywhere. The listening files (about 6 MB) are downloaded once.")) \(Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score."))")
-                        .foregroundStyle(Color.Scribe.textMuted)
+                    if app.modelsReady {
+                        Text("\(Text("One instrument on its own can be written down here, with nothing sent anywhere and nothing to download.")) \(Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score."))")
+                            .foregroundStyle(Color.Scribe.textMuted)
+                    } else {
+                        Text("This build of the app can't write music down by itself, so your computer makes every score. Install the app again from its download page.")
+                            .foregroundStyle(Color.Scribe.textMuted)
+                            .accessibilityIdentifier("listeningFilesMissing")
+                    }
                 }
 
                 Section {
@@ -163,21 +158,6 @@ struct SettingsView: View {
         // the form's own height, up to 90 % of the screen; past that it scrolls
         .sheetSize(minWidth: 520, idealWidth: 600, maxWidth: 680, minHeight: 360)
         #endif
-    }
-
-    var modelStatus: String {
-        _ = modelTick
-        let missing = ModelStore.shared.missing
-        if missing.isEmpty { return String(localized: "Ready") }
-        let mb = missing.reduce(0) { $0 + $1.sizeMB }
-        return String(localized: "\(Int(mb.rounded())) MB to download")
-    }
-
-    func downloadModels() async {
-        busy = true; defer { busy = false; modelTick += 1 }
-        ModelStore.shared.remoteBase = URL(string: app.modelDownloadURL)
-        do { try await ModelStore.shared.prepareAll(); status = String(localized: "The listening files are ready.") }
-        catch { status = String(localized: "The listening files couldn't be downloaded. Check the connection and try again.") }
     }
 }
 

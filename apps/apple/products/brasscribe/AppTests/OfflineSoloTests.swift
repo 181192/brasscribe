@@ -8,10 +8,16 @@ import TranscriptionKit
 /// The on-device reference clip's directory under data/runs/apple.
 let onDeviceRefName = "entertainer-ref"
 
+/// data/runs/apple/<clip> (not in git), found by walking up from this file: scripts/make-ondevice-reference.sh
+/// writes it.
 func onDeviceRef() -> URL? {
-    guard let d = fixtureDir() else { return nil }
-    let r = d.deletingLastPathComponent().deletingLastPathComponent().appending(path: "runs/apple/\(onDeviceRefName)")
-    return FileManager.default.fileExists(atPath: r.appending(path: "solo/brass-band.musicxml").path) ? r : nil
+    var dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+    for _ in 0..<8 {
+        let r = dir.appending(path: "data/runs/apple/\(onDeviceRefName)")
+        if FileManager.default.fileExists(atPath: r.appending(path: "solo/brass-band.musicxml").path) { return r }
+        dir = dir.deletingLastPathComponent()
+    }
+    return nil
 }
 
 /// The converted Core ML models: `SCRIBE_MODELS`, else models/converted found by walking up from this file.

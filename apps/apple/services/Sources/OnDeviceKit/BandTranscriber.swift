@@ -49,7 +49,7 @@ public struct BandTranscriber: Sendable {
     }
 }
 
-/// How long a recording the device can write down as a band draft with the memory it has free.
+/// How long a recording the device can write down, as a band draft or a solo, with the memory it has free.
 ///
 /// Per second of audio the draft holds the decoded mono samples (up to 48 kHz float), the 22.05 kHz
 /// copy the models read, Basic Pitch's note and onset frames (86 frames of 88 floats each, kept as

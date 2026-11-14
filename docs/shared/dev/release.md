@@ -234,7 +234,8 @@ tar -czf "$OUT/scribe-core-macos-arm64.tar.gz" -C target/release scribe-core
 `release-models.py` prints a table with a row for every file: the models inside and whether that is the set its app
 must carry (the rules are in the script, the files' names and sha256 come from `convert/on-device-models.json`). Play
 for Android must carry the three pinned ONNX files byte for byte and `NOTICE.md` (`convert/on-device-models-NOTICE.md`,
-byte for byte); Fretscribe and Play for Windows none. An APK or IPA that no rule names fails, and so does a missing
+byte for byte); Play for Mac, iPhone and iPad the three Core ML models, compiled, and the same `NOTICE.md`;
+Fretscribe and Play for Windows none. An APK or IPA that no rule names fails, and so does a missing
 file named with `--require`. The release workflow
 runs it on the downloaded files before it publishes. Never publish over a failure: a Play without its models sends
 every solo to the computer.
@@ -300,12 +301,14 @@ pinned on the commit it is built from.
 The models Play runs on the device (SwiftF0, Basic Pitch, Beat This small: Core ML packages for Mac,
 iPhone and iPad, ONNX for Android) are not in git either. They are a pre-release of their own, pinned
 in `convert/on-device-models.json`; a build that bundles them fetches them first
-(`.github/actions/on-device-models` in CI, `python3 convert/models_pack.py fetch` by hand):
+(`.github/actions/on-device-models` in CI, `python3 convert/models_pack.py fetch` by hand), and the
+release builds of Play for Mac, iPhone and iPad stop without them:
 
 1. Convert the models into `models/converted` and pass their parity gates ([convert/README.md](../../../convert/README.md)).
 2. `python3 convert/models_pack.py pack --version models-YYYY.MM.DD` writes the pack's files,
    `SHA256SUMS` and `NOTICE.md` (each model's source and licence, from
    `convert/on-device-models-NOTICE.md`: keep it true) into `models/pack` and rewrites the pin.
+   The pack's `NOTICE.md` is not pinned: the apps bundle the repository's file, not the release's copy.
    A Core ML package is a folder, so it is packed as a `.zip` that depends only on the folder's files.
 3. `gh release create models-YYYY.MM.DD --prerelease models/pack/*`. A `models-*` tag starts no
    workflow (only `v*` tags do).

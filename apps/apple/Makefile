@@ -3,6 +3,7 @@
 #   make alphatab    fetch alphaTab into the tab feature (features/tab), checked against its checksum
 #   make soundfont   download the baseline SF2 into data/soundfonts
 #   make bandsound   stage the band SoundFont + mapping into Sounds/ (bundled; also run by make project)
+#   make models      compile the on-device models into Models/ (bundled; also run by make project)
 #   make project     generate products/brasscribe/BrasscribePlay.xcodeproj with XcodeGen
 #   make build       build macOS, iOS Simulator and iPad Simulator
 #   make test        package tests, macOS app unit tests (no UI), app unit + UI tests on an iOS simulator
@@ -38,7 +39,7 @@ XCB := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
-.PHONY: verovio alphatab project-fretscribe build-for-testing-fretscribe-mac test-fretscribe-mac build-for-testing-fretscribe-ios ipa-fretscribe soundfont bandsound project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
+.PHONY: verovio alphatab project-fretscribe build-for-testing-fretscribe-mac test-fretscribe-mac build-for-testing-fretscribe-ios ipa-fretscribe soundfont bandsound models project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
 
 verovio:
@@ -52,6 +53,9 @@ soundfont:
 
 bandsound:
 	./scripts/stage-band-sounds.sh
+
+models:
+	./scripts/stage-models.sh
 
 project:
 	cd products/brasscribe && xcodegen generate
