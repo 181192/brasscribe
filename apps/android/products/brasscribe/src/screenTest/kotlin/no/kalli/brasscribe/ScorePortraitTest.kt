@@ -64,14 +64,18 @@ class ScorePortraitTest : ScreenTest() {
         val composition = container.core.decodeComposition(json)
         val small = composition.arrangedFor(Lineup.MINIMAL, "faithful")
         val xml = container.core.arrangeMusicXmlWith(composition, ArrangeOptions(lineup = "minimal"))!!
+        val before = vm.scoreController
         rule.runOnUiThread {
             vm.home()
             vm.setSource(Source("Old Hundredth", SourceKind.SCORE, 0.0))
             vm.result.value = TranscriptionResult(small, xml, Profile.BRASS_BAND, onDevice = true, compositionJson = container.core.encodeComposition(small))
             vm.navigate(Screen.SCORE)
         }
-        waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
+        // Engraved and painted: a render that has ended has not always drawn its parts yet, and what stands over the
+        // score (the part's line, the notices) settles in the frames after it, which can size the score again.
+        waitForEngravedScore(before)
         settle()
+        waitForEngravedScore()
     }
 
     /**
@@ -143,8 +147,13 @@ class ScorePortraitTest : ScreenTest() {
         val score = rule.onNodeWithTag("score-view").getBoundsInRoot()
         val share = (score.bottom - score.top).value * density / available
         assertTrue("$label: the score has ${"%.0f".format(share * 100)} % of $available px", share >= 0.55f)
-        val ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())
-        assertTrue("$label: no notation on screen (ink ${"%.4f".format(ink)})", ink >= 0.005)
+        // The notation is on the screen: alphaTab paints its parts on its own thread, a moment after the engraving.
+        var ink = 0.0
+        try {
+            waitUntil(10_000) { ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap()); ink >= 0.005 }
+        } catch (e: AssertionError) {
+            throw AssertionError("$label: no notation on screen (ink ${"%.4f".format(ink)})", e)
+        }
         // Rule 7: every control shows whole, or not at all. None is cut by its container or runs under the score.
         val scoreBox = rule.onNodeWithTag("score-view").fetchSemanticsNode().boundsInRoot
         val controls = rule.onAllNodes(hasClickAction() and !hasAnyAncestor(hasTestTag("score-view"))).fetchSemanticsNodes()
