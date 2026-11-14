@@ -348,8 +348,10 @@ class Executor:
             res.error = f"{type(e).__name__}: {e}"
             with self._emit_lock:
                 results[stage.name] = res
-            self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed",
-                       "error": res.error, "trace": traceback.format_exc(limit=5)})
+            # A stage that failed in words of its own (StageFailed) has said what is wrong: the trace is for a
+            # stage that broke, and it holds the engine's paths.
+            self.emit({"type": "stage", "stage": stage.name, "kind": stage.kind, "status": "failed", "error": res.error,
+                       "trace": None if isinstance(e, StageFailed) else traceback.format_exc(limit=5)})
             if self.cancel.is_set():  # stopped because the job was cancelled, not because the stage broke
                 raise Cancelled("cancelled") from e
             raise StageFailed(stage.name, res.error) from e

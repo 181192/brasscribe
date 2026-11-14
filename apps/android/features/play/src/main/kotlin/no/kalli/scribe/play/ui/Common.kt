@@ -64,6 +64,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -171,7 +172,7 @@ fun BcIcon(@DrawableRes id: Int, contentDescription: String?, modifier: Modifier
 @Composable
 private fun ButtonContent(text: String, @DrawableRes icon: Int?) {
     if (icon != null) {
-        BcIcon(icon, null)
+        BcIcon(icon, null, Modifier.testTag("button-icon"))
         Spacer(Modifier.size(ScribeSpace.s2))
     }
     Text(text, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)

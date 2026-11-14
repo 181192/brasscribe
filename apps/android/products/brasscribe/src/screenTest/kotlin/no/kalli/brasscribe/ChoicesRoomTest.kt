@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.kalli.scribe.engine.Profile
@@ -55,12 +56,76 @@ class ChoicesRoomTest : ScreenTest() {
         rest()
         shot("what-do-you-play-small")
         whole("seat-continue")
-        // Continue alone is docked: the band is a button high, and the rest of the screen is the choices'.
+        // Continue is docked with the one line that says why it waits: the rest of the screen is the choices'.
+        whole("seat-hint")
+        assertEquals("the reason Continue waits is one line", 1, textLines("seat-hint"))
         val screen = rule.activity.window.decorView.height / density
-        val under = screen - node("seat-continue").boundsInWindow.top / density
-        assertTrue("only Continue is docked ($under dp from its top to the bottom edge)", under <= 100f)
-        // "I conduct or listen" is among the choices, not in the band.
-        assertTrue("I conduct or listen is a choice", rule.onAllNodesWithTag("seat-none").fetchSemanticsNodes().isNotEmpty())
+        val under = screen - node("seat-hint").boundsInWindow.top / density
+        assertTrue("only the reason and Continue are docked ($under dp from the reason to the bottom edge)", under <= 130f)
+        // "I conduct or listen" is the first choice, on the first screen.
+        whole("seat-none")
+        assertTrue("I conduct or listen is above the band", node("seat-none").boundsInWindow.bottom <= node("seat-hint").boundsInWindow.top)
+    }
+
+    private fun firstRun() {
+        rule.runOnUiThread { container.updateSeat(SeatChoice.NotSet); container.firstRunDone = false; vm.finishFirstRun() }
+        waitForTag("seat-continue", 5_000)
+        rest()
+    }
+
+    /** The lines of the text [tag] (a text, not a button). */
+    private fun textLines(tag: String): Int {
+        val layouts = mutableListOf<TextLayoutResult>()
+        node(tag).config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+        return layouts.single().lineCount
+    }
+
+    @Test
+    fun onItsSideTheChoicesStartOnTheFirstScreen() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        language("nb-NO")
+        firstRun()
+        shot("what-do-you-play-small-landscape")
+        // The lead steps aside: I conduct or listen and the first instruments are in view without scrolling.
+        whole("seat-none")
+        whole("instrument-bb-cornet")
+        whole("seat-continue")
+        assertTrue("an instrument is above the band", node("instrument-bb-cornet").boundsInWindow.bottom <= node("seat-hint").boundsInWindow.top)
+    }
+
+    @Test
+    fun everyInstrumentIsAsHighAsTheOthers() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        firstRun()
+        val heights = rule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher("an instrument") {
+            it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.TestTag) { null }?.startsWith("instrument-") == true
+        }, useUnmergedTree = true).fetchSemanticsNodes().map { it.size.height }
+        assertTrue("instruments: $heights", heights.size > 4)
+        assertEquals("every row is as high as the others: $heights", 1, heights.toSet().size)
+    }
+
+    @Test
+    fun aChosenInstrumentFurtherDownStaysInView() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        textSize(1.3f)
+        firstRun()
+        // Picked: it stays where it was tapped, in view.
+        rule.onNodeWithTag("instrument-bb-bass").performScrollTo().performClick()
+        rest()
+        whole("instrument-bb-bass")
+        // Opened again from Settings with it chosen: it is in view, not at the bottom of the list out of sight.
+        val seat = container.seats.first { it.instrument == "bb-bass" }
+        rule.runOnUiThread { vm.skipSeat() }
+        waitUntil(5_000) { rule.onAllNodesWithTag("seat-continue").fetchSemanticsNodes().isEmpty() }
+        rule.runOnUiThread {
+            container.updateSeat(SeatChoice.Player(seat.id, null))
+            vm.openSeatPicker(no.kalli.scribe.play.SeatPickerMode.SETTINGS)
+        }
+        waitForTag("seat-continue", 5_000)
+        rest()
+        assertTrue("it is Settings' picker, opened anew", rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isEmpty())
+        shot("what-do-you-play-reopened")
+        whole("instrument-bb-bass")
     }
 
     private fun shareOrPrint() {
@@ -92,8 +157,56 @@ class ChoicesRoomTest : ScreenTest() {
         for (tag in listOf("print", "share", "save")) {
             whole(tag)
             assertEquals("$tag has its words on one line", 1, lines(tag))
+            assertEquals("$tag is like the others: no icon at this size", 0, icons(tag))
         }
+        chosenInView()
         assertNoTextIsClipped()
+    }
+
+    /** The icons in the button [tag]. */
+    private fun icons(tag: String): Int = rule.onAllNodes(androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.hasTestTag(tag)) and
+        androidx.compose.ui.test.hasTestTag("button-icon"), useUnmergedTree = true).fetchSemanticsNodes().size
+
+    /** What the buttons make (the chosen formats and the number of files) is on the first screen, whole, under the title. */
+    private fun chosenInView() {
+        whole("export-chosen")
+        val chosen = rule.onNodeWithTag("export-chosen").fetchSemanticsNode()
+        val words = chosen.config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
+        // The formats and the number of files, and nothing more: what the marks mean is said under the formats.
+        assertEquals("PDF · " + rule.activity.resources.getQuantityString(no.kalli.scribe.play.R.plurals.export_count, 1, 1), words)
+        // A screen reader is told where it goes.
+        assertEquals(text(no.kalli.scribe.play.R.string.export_go_to_formats), chosen.config[SemanticsActions.OnClick].label)
+        // It goes to the formats.
+        rule.onNodeWithTag("export-chosen").performClick()
+        rest()
+        whole("export-format-PDF")
+    }
+
+    @Test
+    fun onANarrowPhoneWithDefaultTextTheThreeAreAlikeAndDocked() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 320, 568))
+        language("nb-NO")
+        shareOrPrint()
+        shot("share-or-print-narrow-100")
+        // Share and Save are one row under Print.
+        assertTrue("Save is beside Share", node("save").boundsInWindow.left >= node("share").boundsInWindow.right)
+        for (tag in listOf("print", "share", "save")) {
+            whole(tag)
+            assertEquals("$tag has its words on one line", 1, lines(tag))
+            assertEquals("$tag is like the others: no icon on a narrow phone", 0, icons(tag))
+        }
+        chosenInView()
+        assertNoTextIsClipped()
+    }
+
+    @Test
+    fun onItsSideWhatTheButtonsMakeIsInViewWithThem() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        language("nb-NO")
+        shareOrPrint()
+        shot("share-or-print-small-landscape")
+        for (tag in listOf("print", "share", "save")) whole(tag)
+        chosenInView()
     }
 
     @Test
@@ -107,5 +220,6 @@ class ChoicesRoomTest : ScreenTest() {
             whole(tag)
             assertEquals("$tag has its words on one line", 1, lines(tag))
         }
+        chosenInView()
     }
 }

@@ -39,6 +39,9 @@ built by `python -m scribe_eval.ci_data --out ci-data`:
   samples (University of Iowa MIS, VSCO 2 CE; dry and with an OpenAIR church response), with their exact
   reference, oracle beats, and our SwiftF0, Basic Pitch and Beat This! small0 outputs (`fast_notes.py`;
   docs/brasscribe/plan/fast-notes.md).
+- `eval/fixtures/sheet-image/`: for the pieces of `sheet_image_bench.py` (Old Hundredth and invented ones), the
+  MusicXML each was engraved from, what homr read from its pages as a screenshot and as a simulated photo, and
+  the MuseScore that engraved them (`engraver.txt`).
 
 | Suite | CI | Local only because |
 |---|---|---|
@@ -47,6 +50,7 @@ built by `python -m scribe_eval.ci_data --out ci-data`:
 | consensus-chorales, consensus-chorales-retuned | yes | |
 | solo-instruments, seat-voices | yes | |
 | fast-notes | yes | |
+| sheet-image | yes, on frozen readings | Printed music from a picture: nine pieces written in `sheet_image_bench.py` (Old Hundredth and invented ones), engraved by MuseScore as a screenshot and as a simulated phone photo. **CI does not run the recogniser**: it scores homr's readings kept in `eval/fixtures/sheet-image` (MusicXML, no pictures), so it gates the scoring and the doubt rule, not homr. A change under `ml/adapters/homr` (homr's version, its weights, Pillow, the page preparation) or to how the pages are made passes CI unseen: run `scribe bench sheet-image --mode live` for it (it engraves the pages and reads them again; MuseScore and the homr environment are needed), and when the numbers move, `python -m scribe_eval.sheet_image_bench freeze` and `--update-baselines` in the same change. `build`, `prepare --recogniser <adapter>`, `report` and `freeze` do the steps one at a time |
 | quartet-audio | yes | |
 | arrange | chorales part | URMP part: URMP licence not checked for redistribution |
 | durations | chorales part | URMP part: as above |

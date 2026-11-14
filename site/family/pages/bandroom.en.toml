@@ -11,11 +11,11 @@ title = "What it does."
 listens = "<strong>Listens and writes.</strong> Every band score and every tab is written here, for every Scribe app and every phone or tablet you connect."
 home = "<strong>Stays at home.</strong> Your recording goes from your phone to your own computer and nowhere else."
 quiet = "<strong>Runs quietly.</strong> It sits in the menu bar of a Mac, or the notification area of Windows, and starts when you need it."
-studio = "<strong>Studio comes with it.</strong> For the band's tech person: choose <strong>Open Studio</strong> in its menu to see every step of how a score came to be."
+studio = "<strong>Studio comes with it.</strong> For the tech person, in a band or on your own: choose <strong>Open Studio</strong> in its menu to see every step of how a score came to be."
 
 [get]
 title = "Get it."
-lead = "Free, for a Mac with an M-series chip or a PC with Windows 11. In the list of programs it is called Brasscribe Bandroom: it is the same program for every app."
+lead = "Free, for a Mac from late 2020 or newer or a PC with Windows 11. In the list of programs it is called Brasscribe Bandroom: it is the same program for every app."
 mac = "Download for Mac"
 windows = "Download for Windows (early version)"
 warn = "Your computer will warn you the first time, as it does for every program from outside the app stores. The guides show how to get past it."

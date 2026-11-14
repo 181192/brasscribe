@@ -125,6 +125,7 @@ computer_does = "listens and writes it down"
 first = "The first time on {device}"
 tech = "For the band's tech person"
 sums = "Checksums of every file"
+files = "The files"
 then = "Then: Bandroom on your computer"
 bandroom = "All about Bandroom"
 tablet = "The same app as on a phone: an Android tablet takes the Android download, an iPad the iPhone one, both under <a href='#phone'>Phone</a>."
@@ -152,3 +153,8 @@ steps = ["Download it and unzip the folder anywhere.", "Start the app inside. If
 [groups.tools]
 title = "For the tech person"
 note = "The command-line tool behind the apps, and the checksums of every file in the release."
+
+# Each place an app runs, shown as itself (the family home, the Bandroom page).
+[lineup]
+label = "Where the apps run, each as it looks there"
+where = "In the menu bar on a Mac, in the notification area on Windows"

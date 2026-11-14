@@ -14,7 +14,12 @@ function set(root, id, focus) {
     const on = chip.dataset.variant === id;
     chip.setAttribute("aria-selected", String(on));
     chip.tabIndex = on ? 0 : -1;
-    if (on && focus) chip.focus();
+    if (on && focus) chip.focus({ preventScroll: true });
+    // On a phone the rail is a row that scrolls: the chosen place is brought into it (the row moves, not the page).
+    if (on) {
+      const row = chip.closest(".rail").getBoundingClientRect(), box = chip.getBoundingClientRect();
+      if (box.left < row.left || box.right > row.right) chip.closest(".rail").scrollLeft += box.left - row.left - 24;
+    }
   }
   for (const panel of panels) {
     panel.classList.toggle("chosen", panel.dataset.variant === id);
@@ -96,6 +101,9 @@ const markMine = () => {
   chip.classList.add("mine");
   // The tag is part of the link's words, so a screen reader says it too.
   if (!chip.querySelector(".mine-tag")) chip.insertAdjacentHTML("beforeend", ` <span class="mine-tag">${rail.dataset.mine}</span>`);
+  // In a narrow window the rail is a row that scrolls: the visitor's own place is brought into it.
+  const row = rail.getBoundingClientRect(), box = chip.getBoundingClientRect();
+  if (box.left < row.left || box.right > row.right) rail.scrollLeft += box.left - row.left - 24;
   // A panel with two downloads (Android and iPhone) fills the visitor's; the other stays outlined.
   const own = document.querySelector(`main.downloads .dl-device[data-group="${group}"] .button`);
   const filled = own?.closest("section").querySelector(".button.primary");
@@ -110,6 +118,7 @@ markMine();
 // The family's pen draws under a heading once, when it first comes into view. When the headline's line is drawn the
 // pen goes on, onto the strips of the sheets under it (showcase.js waits for "scribe:penned").
 const still = matchMedia("(prefers-reduced-motion: reduce)");
+document.documentElement.classList.add("moving");
 const pen = new IntersectionObserver((entries) => {
   for (const e of entries) {
     if (!e.isIntersecting) continue;
@@ -123,6 +132,12 @@ const pen = new IntersectionObserver((entries) => {
     }
   }
 }, { threshold: 0.6 });
-const drawPens = () => document.querySelectorAll(".pen-heading:not(.drawn), .line-hero:not(.drawn)").forEach((el) => pen.observe(el));
+// Once a visit: on a page that has played (early.js), the lines stand drawn from the start.
+const drawPens = () => document.querySelectorAll(".pen-heading:not(.drawn), .line-hero:not(.drawn)").forEach((el) => {
+  if (document.documentElement.classList.contains("played")) {
+    el.classList.add("drawn");
+    document.documentElement.setAttribute("data-penned", "");
+  } else pen.observe(el);
+});
 document.addEventListener("scribe:lang", drawPens);
 drawPens();

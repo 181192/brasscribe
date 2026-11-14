@@ -51,6 +51,23 @@ import Testing
         #expect(Uninstaller(paths: paths, home: home).downloadsSize() == nil)
     }
 
+    /// The reader of printed music's weights are in the models folder, so they go, or are kept, with the downloads.
+    /// (Its environment is among the app's own adapters, and leaves with the app.)
+    @Test func theSheetReadersWeightsAreAmongTheDownloads() throws {
+        let (home, paths) = try makeHome()
+        defer { try? FileManager.default.removeItem(at: home) }
+        let fm = FileManager.default
+        let weights = paths.models.appending(path: SheetReader.adapter, directoryHint: .isDirectory)
+        try fm.createDirectory(at: weights, withIntermediateDirectories: true)
+        try Data(repeating: 3, count: 16384).write(to: weights.appending(path: "weights.zip"))
+        let u = Uninstaller(paths: paths, home: home)
+        #expect(try #require(u.downloadsSize()) >= 4096 + 16384)
+        try u.remove(keepDownloads: true)
+        #expect(fm.fileExists(atPath: weights.appending(path: "weights.zip").path), "kept with the downloads")
+        try u.remove(keepDownloads: false)
+        #expect(!fm.fileExists(atPath: paths.data.path))
+    }
+
     @Test func refusesTheHomeFolderAndItsParents() throws {
         let home = URL(fileURLWithPath: "/Users/someone", isDirectory: true)
         for data in ["/Users/someone", "/Users", "/", "/Applications/Brasscribe"] {

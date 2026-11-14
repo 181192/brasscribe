@@ -38,8 +38,8 @@ file = "fretscribe-macos-arm64.zip"
 group = "mac"
 label_en = "Fretscribe for Mac"
 label_nb = "Fretscribe for Mac"
-en = "Fretscribe for a Mac with an M-series chip"
-nb = "Fretscribe for Mac med M-brikke"
+en = "Fretscribe for a Mac with an M-series chip (Apple silicon)"
+nb = "Fretscribe for Mac med M-brikke (Apple silicon)"
 
 [[downloads]]
 file = "fretscribe-windows-x64.zip"
@@ -72,8 +72,8 @@ nb = { does = "Tabben over hele skjermen, med opptaket å spille sammen med.", n
 id = "mac"
 files = ["mac"]
 devices = [{ name = "Mac", status = "ready" }]
-en = { does = "Your tabs on a big screen, with Speed and Repeat bars.", needs = "A Mac with an M-series chip, with macOS 27 or 26." }
-nb = { does = "Tabbene dine på stor skjerm, med Tempo og Gjenta takter.", needs = "Mac med M-brikke, med macOS 27 eller 26." }
+en = { does = "Your tabs on a big screen, with Speed and Repeat bars.", needs = "A Mac from late 2020 or newer, with macOS 27 or 26." }
+nb = { does = "Tabbene dine på stor skjerm, med Tempo og Gjenta takter.", needs = "Mac fra slutten av 2020 eller nyere, med macOS 27 eller 26." }
 
 [[variants]]
 id = "windows"

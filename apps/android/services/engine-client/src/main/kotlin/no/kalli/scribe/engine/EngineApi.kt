@@ -126,6 +126,8 @@ interface EngineApi {
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
             "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "getConformanceRun",
             "runConformance",
+            // Printed music from pictures: not sent from the phone yet.
+            "createJobFromPages",
             // Only the computer itself may call these (Brasscribe Bandroom).
             "listDevices", "revokeDevice", "getPairing", "openPairing", "closePairing", "listPairingRequests",
             "decidePairingRequest", "getStatus",

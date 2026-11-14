@@ -26,6 +26,7 @@ import hmac
 import json
 import os
 import secrets
+import shutil
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -37,13 +38,13 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, 
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import __version__, bass_tab, build_info, history, inspection, profiles, runner, tab, targets, wire
+from . import __version__, bass_tab, build_info, history, inspection, pages, profiles, runner, sheet, tab, targets, wire
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
-from .adapters import host_device
+from .adapters import host_device, waits_for_setup
 from .config import Settings
 from .guard import BodyLimit, RequestGuard
-from .jobs import TERMINAL, Job, JobManager, NeedsSetup
+from .jobs import TERMINAL, Job, JobManager, NeedsSetup, asked_afresh
 from .names import is_audio, valid_id, valid_relpath
 from .uploads import UploadRoute, UploadSink
 
@@ -211,7 +212,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
                      device_name=job.device_name, target=getattr(target_of(job), "id", None),
-                     stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job))
+                     stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job),
+                     without=[SETUP_NAMES.get(a, a) for a in job.without])
 
     def missing_of(job: Job) -> list[m.MissingOutput]:
         """What the job lacks, without a file that is there after all."""
@@ -255,7 +257,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def health(request: Request) -> m.Health:
         return m.Health(version=__version__, interface_version=wire.INTERFACE_VERSION, build=build_info.build(), device=host_device(),
                         auth_required=not is_trusted(request), server_id=app.state.identity.server_id,
-                        server_name=app.state.server_name)
+                        server_name=app.state.server_name,
+                        not_set_up=[told for adapter, told in SETUP_NAMES.items() if waits_for_setup(adapter)])
 
     @app.post("/v1/pair", response_model=m.PairResponse, operation_id="pairDevice", tags=["session"],
               responses={403: {"description": "wrong pairing code, or pairing is closed"},
@@ -399,9 +402,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def list_profiles() -> list[m.ProfileInfo]:
         out = []
         for p in profiles.PROFILES.values():
+            if p.input == "pages" and not sheet.reader_installed(settings.adapters_dir):
+                continue  # not offered on a computer without the recogniser
             pipe = p.build("-", {})
             out.append(m.ProfileInfo(name=p.name, target=p.target.id, pipeline=p.pipeline, description=p.description,
-                                     validated=p.validated, stages=[s.name for s in pipe.stages]))
+                                     validated=p.validated, stages=[s.name for s in pipe.stages], input=p.input))
         return out
 
     # ------------------------------------------------------------ audio + jobs
@@ -446,15 +451,15 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                     stored = d["path"]
                 except (OSError, ValueError, KeyError, TypeError):
                     continue
-                if isinstance(stored, str) and valid_id(stored) and is_audio(stored):
+                if isinstance(stored, str) and valid_id(stored) and (is_audio(stored) or pages.is_pages(stored)):
                     return settings.uploads_dir / stored, d
         raise HTTPException(404, f"no audio {audio_id}")
 
     def input_allowed(p: Path, anywhere: bool = False) -> bool:
-        """Jobs read audio (or video) from the engine's own audio folders: uploads, captures and eval sets.
-        `anywhere`: an existing run's input may lie elsewhere (`scribe run <file>`), for the owner."""
+        """Jobs read audio (or video), or pages of printed music, from the engine's own folders: uploads, captures
+        and eval sets. `anywhere`: an existing run's input may lie elsewhere (`scribe run <file>`), for the owner."""
         roots = (settings.uploads_dir, settings.data_dir / "captures", settings.datasets_dir)
-        return is_audio(p) and (anywhere or any(inspection.inside(r, p) for r in roots)) and p.is_file()
+        return (is_audio(p) or pages.is_pages(p)) and (anywhere or any(inspection.inside(r, p) for r in roots)) and p.is_file()
 
     def is_device(request: Request) -> bool:
         return getattr(request.state, "device", None) is not None
@@ -505,9 +510,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return p, p.name
 
     @app.post("/v1/jobs", response_model=m.Job, status_code=202, operation_id="createJob", tags=["jobs"],
-              dependencies=[Depends(auth)], responses={409: {"description": "not taken: the job needs a model that is not set up on the computer "
-                                                "(`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` "
-                                                "names the recording when the engine kept it, to ask again with"}})
+              dependencies=[Depends(auth)],
+              responses={409: {"description": "not taken: the job needs a model that is not set up on the computer "
+                                              "(`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` "
+                                              "names the recording when the engine kept it, to ask again with"},
+                         415: {"description": "the input is not the kind the profile reads (listProfiles: input): "
+                                              "{code: wrong_input, detail}"}})
     def create_job(body: m.JobCreate, request: Request) -> m.Job:
         if body.profile not in profiles.PROFILES:
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
@@ -519,6 +527,12 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             params["muscriptor"] = False
         params.update(tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
                                 recording=body.recording, octave=body.octave, layout=body.layout, chords=body.chords))
+        try:
+            profiles.check_input(body.profile, path)
+        except pages.WrongInput:
+            return JSONResponse({"code": pages.WRONG_INPUT, "detail": pages.WRONG_INPUT_DETAIL}, status_code=415)
+        if sheet.is_sheet(body.profile) and not sheet.reader_installed(settings.adapters_dir):
+            return JSONResponse({"code": sheet.READER_MISSING, "detail": sheet.READER_MISSING_DETAIL}, status_code=503)
         try:
             profiles.job_options(body.profile, params)
         except ValueError as e:
@@ -547,7 +561,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
                                      "(uploads, captures, eval)")
         try:
-            job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
+            job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title,
+                              params=asked_afresh(old.profile, old.params, old.without),
                               allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
                               device_name=old.device_name)
         except NeedsSetup as e:
@@ -577,6 +592,88 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                                       lineup=lineup, difficulty=difficulty, key=key, transpose=transpose, seat=seat,
                                       reads=reads, lead=lead, instrument=instrument, tuning=tuning, capo=capo,
                                       style=style, recording=recording, octave=octave, layout=layout, chords=chords), request)
+
+    def store_pages(files: list[UploadFile]) -> m.AudioRef | tuple[int, str, str]:
+        """Uploaded pages as one input in the uploads folder: the file itself for one page, an archive of them in
+        the order given for several (pages.py). When a file is not a picture or a PDF, or is too large to read
+        (pages.too_large: its bytes, or the pixels its header says it has), nothing is kept, and what is returned
+        is the refusal: the status, its code, and the words that say which file and why."""
+        up = settings.uploads_dir
+        if not 1 <= len(files) <= pages.MAX_PAGES:
+            raise HTTPException(422, f"give 1 to {pages.MAX_PAGES} pages")
+        kept: list[tuple[Path, str]] = []
+        try:
+            for file in files:
+                if isinstance(file.file, UploadSink):  # already in the uploads folder
+                    tmp = file.file.keep()[0]
+                else:
+                    tmp = up / f".upload-{secrets.token_hex(8)}"
+                    with tmp.open("wb") as f:
+                        shutil.copyfileobj(file.file, f)
+                kept.append((tmp, ""))
+                with tmp.open("rb") as f:
+                    head = f.read(16)
+                suffix = pages.kind(head)
+                if suffix is None:
+                    return 415, pages.NOT_A_PAGE, (f"{Path(file.filename or 'the file').name} is {pages.seems(head)}: "
+                                                   "a page is a PNG, JPEG or WebP picture, or a PDF")
+                why = pages.too_large(tmp, suffix)
+                if why:
+                    return 413, pages.PAGE_TOO_LARGE, f"{Path(file.filename or 'the file').name} {why}"
+                kept[-1] = (tmp, suffix)
+            if len(kept) == 1:
+                whole, suffix = kept[0]
+            else:
+                whole, suffix = up / f".upload-{secrets.token_hex(8)}", pages.ARCHIVE
+                pages.pack(kept, whole)
+                kept.append((whole, suffix))
+            h = hashlib.sha256()
+            with whole.open("rb") as f:
+                while chunk := f.read(1 << 20):
+                    h.update(chunk)
+            digest, size = h.hexdigest(), whole.stat().st_size
+            audio_id = digest[:16]
+            dst = up / f"{audio_id}{suffix}"
+            if not dst.exists():
+                os.replace(whole, dst)
+        finally:
+            for tmp, _ in kept:
+                tmp.unlink(missing_ok=True)
+        first = Path(files[0].filename or "page").name
+        name = first if len(files) == 1 else f"{Path(first).stem} ({len(files)} pages)"
+        (up / f"{audio_id}.meta.json").write_text(json.dumps({"audio_id": audio_id, "sha256": digest, "filename": name,
+                                                         "bytes": size, "path": dst.name, "pages": len(files)}))
+        return m.AudioRef(audio_id=audio_id, sha256=digest, filename=name, bytes=size)
+
+    @app.post("/v1/jobs/pages", response_model=m.Job, status_code=202, operation_id="createJobFromPages",
+              tags=["jobs"], dependencies=[Depends(auth)],
+              responses={415: {"description": "a file is not a picture or a PDF ({code: not_a_page, detail}), or the "
+                                              "profile does not read pages ({code: wrong_input, detail})"},
+                         413: {"description": "a page is too large to read: {code: page_too_large, detail}"},
+                         503: {"description": "this computer has no reader of printed music installed: "
+                                              "{code: reader_missing, detail}"}})
+    def create_job_from_pages(request: Request, files: list[UploadFile] = File(..., description="the pages in order: "
+                                                                               "pictures (PNG, JPEG, WebP) or PDFs"),
+                              profile: str = Form("sheet"), title: str | None = Form(None, max_length=200),
+                              render_audio: bool = Form(True), instrument: m.FrettedInstrument | None = Form(None),
+                              tuning: str | None = Form(None), capo: int | None = Form(None, ge=0, le=12),
+                              style: m.FingeringStyle | None = Form(None), octave: m.Octave | None = Form(None),
+                              layout: m.TabLayout | None = Form(None)) -> m.Job:
+        """Upload printed music (a screenshot, a photo of a page, a PDF; several pages in order make one score) and
+        start a job of a profile that reads pages (listProfiles: input = pages) in one request."""
+        if profile not in profiles.PROFILES:
+            raise HTTPException(422, f"unknown profile {profile}; choose from {', '.join(profiles.PROFILES)}")
+        if profiles.PROFILES[profile].input != "pages":  # before anything is kept
+            return JSONResponse({"code": pages.WRONG_INPUT, "detail": pages.WRONG_INPUT_DETAIL}, status_code=415)
+        if not sheet.reader_installed(settings.adapters_dir):
+            return JSONResponse({"code": sheet.READER_MISSING, "detail": sheet.READER_MISSING_DETAIL}, status_code=503)
+        ref = store_pages(files)
+        if isinstance(ref, tuple):  # the code first, as a refused option's (createJob)
+            status, code, detail = ref
+            return JSONResponse({"code": code, "detail": detail}, status_code=status)
+        return create_job(m.JobCreate(audio_id=ref.audio_id, profile=profile, title=title, render_audio=render_audio,
+                                      instrument=instrument, tuning=tuning, capo=capo, style=style, octave=octave,
+                                      layout=layout), request)
 
     @app.get("/v1/jobs", response_model=list[m.Job], operation_id="listJobs", tags=["jobs"], dependencies=[Depends(auth)])
     def list_jobs() -> list[m.Job]:

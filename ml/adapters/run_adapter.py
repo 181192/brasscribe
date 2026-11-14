@@ -13,6 +13,7 @@ Outputs appear whole or not at all: each is written next to its destination and 
 
 Adapters and their output:
   basic-pitch       <input.wav> <output.mid>     (BASIC_PITCH_SERIALIZATION; ONNX outside macOS)
+  homr              <page or folder of pages> <output.musicxml>   (printed music: PNG, JPEG, WebP or PDF)
   beat-this         <input.wav> <output.beats>     (BEAT_THIS_MODEL, default final0)
   mega53            <input audio> <output dir>   (<stem>.flac for all 53 stems)
   muscriptor        <input.wav> <output.mid>     (MUSCRIPTOR_MODEL, MUSCRIPTOR_INSTRUMENTS)
@@ -236,13 +237,107 @@ def swift_f0_contour(src: Path, dst: Path) -> None:
                 quiet_stderr=False)
 
 
-ADAPTERS = {"basic-pitch": basic_pitch, "beat-this": beat_this, "mega53": mega53, "muscriptor": muscriptor,
+PAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".pdf"}
+HOMR_RELEASE = "https://github.com/liebharc/homr/releases/download/onnx_checkpoints"
+# homr's weights for the CPU, as its makers publish them: archive -> (bytes, SHA-256, the folder of the homr
+# package its one .onnx file belongs in). homr would fetch them itself on first use, unverified, into its own
+# package; they are fetched here instead, checked, kept under the models folder, and put where homr looks.
+HOMR_WEIGHTS = {
+    "segnet_308-3296ccd40960f90ca6ab9c035cca945675d30a0f.zip":
+        (53_214_519, "1d4277354a8397a6830ef1279232e6d989c2d254b7451525e53ff3d3754b1f70", "segmentation"),
+    "encoder_pytorch_model_509-2293bba14bfea47d9d28411339362af15fce4c31.zip":
+        (48_281_161, "d1c89a93a83a85a7a6980da624b60eb58c18ad453e7d72714b87d1265ea17d5b", "transformer"),
+    "decoder_pytorch_model_509-2293bba14bfea47d9d28411339362af15fce4c31.zip":
+        (37_824_782, "3875da31b68c8f4a8a0c875760a6476bf96a7b5bc25d3c020a05610c709dcf64", "transformer"),
+}
+REFUSAL = "scribe-refusal: "  # a line of stderr that names why the pages are refused (the engine's sheet.py reads it)
+HOMR_FETCH_TIMEOUT_S = 60.0  # without a byte from homr's release before a fetch of its weights is given up
+
+
+def _fetch(url: str, part: Path) -> None:
+    """The file at `url` into `part`. A connection that sends nothing for HOMR_FETCH_TIMEOUT_S ends the fetch."""
+    with urllib.request.urlopen(url, timeout=HOMR_FETCH_TIMEOUT_S) as response, open(part, "wb") as out:
+        shutil.copyfileobj(response, out, 1 << 20)
+
+
+def homr_setup() -> None:
+    """homr's weights, checked and in place. Idempotent: fetches only an archive that is missing or of the wrong
+    size, and unpacks only a file homr does not have whole. A fetch that fails (no network, or one that stalls)
+    is named as such, so that it is not taken for a page that could not be read."""
+    import http.client
+    import zipfile
+
+    models = MODELS / "homr"
+    models.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.run(env_cmd("homr", ["python", "-c", "import homr, os; print(os.path.dirname(homr.__file__))"]),
+                          capture_output=True, text=True, errors="replace")
+    if proc.returncode != 0:
+        sys.stderr.write(proc.stderr[-STDERR_TAIL:])
+        raise SystemExit("homr's environment could not be started")
+    package = Path(proc.stdout.strip().splitlines()[-1])
+    for name, (size, sha256, folder) in HOMR_WEIGHTS.items():
+        archive = models / name
+        if not (archive.is_file() and archive.stat().st_size == size):
+            with atomic(archive) as part:
+                try:
+                    _fetch(f"{HOMR_RELEASE}/{name}", part)
+                except (OSError, http.client.HTTPException) as e:  # URLError and a timeout are OSErrors
+                    print(f"{name} could not be fetched: {e}", file=sys.stderr)
+                    print(f"{REFUSAL}weights_missing", file=sys.stderr)
+                    raise SystemExit(4) from None
+                got = _sha256(part)
+                if got != sha256:
+                    raise SystemExit(f"{name}: SHA-256 {got}, expected {sha256}; not kept")
+        with zipfile.ZipFile(archive) as z:
+            for member in z.infolist():
+                target = package / folder / Path(member.filename).name
+                if member.filename.endswith(".onnx") and not (target.is_file() and target.stat().st_size == member.file_size):
+                    with atomic(target) as part, z.open(member) as src, open(part, "wb") as out:
+                        shutil.copyfileobj(src, out, 1 << 20)
+
+
+def homr(src: Path, dst: Path) -> None:
+    """Printed music read to MusicXML. src is one page (a picture, or a PDF with any number of pages) or a folder
+    of them; a folder's pages are read in the order of their names and joined into one score.
+
+    The pages are made ready first (homr/prepare.py: copies of the pictures, a PDF's pages rendered within the
+    engine's limits), in a folder beside the output, which goes with the run when it is stopped. homr reads them
+    on the CPU with the weights checked here, on every computer the same, and does not look for a title (that
+    needs an OCR model it would fetch on its own)."""
+    pages = sorted(p for p in src.iterdir() if p.suffix.lower() in PAGE_SUFFIXES) if src.is_dir() else [src]
+    if not pages:
+        raise SystemExit(f"no page to read in {src.name}")
+    homr_setup()
+    with tempfile.TemporaryDirectory(dir=dst.parent, prefix=".pages-") as tmp:
+        ready = subprocess.run(env_cmd("homr", ["python", str(HERE / "homr" / "prepare.py"), tmp, *map(str, pages)]),
+                               stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True, errors="replace")
+        if ready.returncode != 0:
+            sys.stderr.write(ready.stderr[-STDERR_TAIL:])
+            raise SystemExit(ready.returncode)
+        copies = sorted(Path(tmp).glob("page-*"))
+        try:
+            run("homr", ["homr", "--gpu", "no", "--no-title", *map(str, copies)])
+        except subprocess.CalledProcessError:
+            copies = []
+        read = copies[0].with_suffix(".musicxml") if copies else None
+        if read is None or not read.exists():
+            # homr ends on an error of its own for a page it finds no staff on: its words are above, for the log.
+            print(f"{REFUSAL}no_music", file=sys.stderr)
+            raise SystemExit(3)
+        with atomic(dst) as part:
+            shutil.move(str(read), part)
+
+
+ADAPTERS = {"basic-pitch": basic_pitch, "homr": homr, "beat-this": beat_this, "mega53": mega53, "muscriptor": muscriptor,
             "separator": separator, "swift-f0": swift_f0, "swift-f0-contour": swift_f0_contour}
 
 
 def main(argv: list[str]) -> int:
     if argv == ["--setup", "mega53"]:  # ml/adapters/mega53/setup.sh
         mega53_setup()
+        return 0
+    if argv == ["--setup", "homr"]:  # the weights before the first job: run_adapter.py --setup homr
+        homr_setup()
         return 0
     if len(argv) != 3 or argv[0] not in ADAPTERS:
         print(f"usage: run_adapter.py {{{','.join(ADAPTERS)}}} <input> <output>", file=sys.stderr)

@@ -471,6 +471,16 @@
         }
       }
     },
+    "Brasscribe doesn't pass it on: this Mac downloads it from PyPI and from homr's releases on GitHub (about %@ GB) and runs it as a separate program.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe deler den ikke videre. Macen laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent %@ GB) og kjører den som et eget program."
+          }
+        }
+      }
+    },
     "Brasscribe is ready": {
       "localizations": {
         "nb": {
@@ -497,6 +507,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."
+          }
+        }
+      }
+    },
+    "Brasscribe is still being set up. The reader can be installed once that is done.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe gjøres fortsatt klar. Noteleseren kan installeres når det er ferdig."
           }
         }
       }
@@ -1151,6 +1171,26 @@
         }
       }
     },
+    "Install the reader": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installer noteleseren"
+          }
+        }
+      }
+    },
+    "Installing the reader… This takes a few minutes.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installerer noteleseren … Det tar noen minutter."
+          }
+        }
+      }
+    },
     "Instrument separator": {
       "localizations": {
         "nb": {
@@ -1451,6 +1491,16 @@
         }
       }
     },
+    "Not enough space: the reader needs about %@ GB, and %@ GB is free.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nok plass: noteleseren trenger omtrent %@ GB, og %@ GB er ledig."
+          }
+        }
+      }
+    },
     "Now": {
       "localizations": {
         "nb": {
@@ -1631,6 +1681,16 @@
         }
       }
     },
+    "Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telefonene kan sende et bilde eller en PDF av trykte noter og få et partitur eller en tab tilbake. Til det trengs en noteleser, homr, som ikke er en del av Brasscribe: den er fri programvare under lisensen AGPL-3.0."
+          }
+        }
+      }
+    },
     "Phones can't make full-band scores here after this. Scores on your phones stay.": {
       "localizations": {
         "nb": {
@@ -1707,6 +1767,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Avslutt Brasscribe Bandroom"
+          }
+        }
+      }
+    },
+    "Read about homr and its licence": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les om homr og lisensen"
           }
         }
       }
@@ -1957,6 +2027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Innstillinger …"
+          }
+        }
+      }
+    },
+    "Sheet music from pictures": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noter fra bilder"
           }
         }
       }
@@ -2317,6 +2397,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Den forrige versjonen er satt tilbake, men den kjører ikke: denne utgaven av Bandroom kom med et oppsettverktøy som er for gammelt for oppdateringen."
+          }
+        }
+      }
+    },
+    "The reader is installed. Phones can send pictures of sheet music now.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noteleseren er installert. Telefonene kan sende bilder av noter nå."
+          }
+        }
+      }
+    },
+    "The reader wasn't installed. Try again; the log has the details.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noteleseren ble ikke installert. Prøv igjen. Detaljene står i loggen."
+          }
+        }
+      }
+    },
+    "The reader's files couldn't be downloaded. Check the internet connection, then try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filene til noteleseren ble ikke lastet ned. Sjekk internettforbindelsen, og prøv igjen."
           }
         }
       }

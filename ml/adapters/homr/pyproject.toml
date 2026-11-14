@@ -1,0 +1,13 @@
+[project]
+name = "scribe-homr"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "homr[cpu]==0.7.1",
+]
+
+[tool.uv]
+# homr caps Pillow below 13, and every Pillow below 13 has open advisories (its image decoders read files a
+# player uploads). 13 keeps the calls homr makes; the benchmark's pages read the same with it.
+override-dependencies = ["pillow>=13"]
+environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'"]

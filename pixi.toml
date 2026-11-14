@@ -194,6 +194,14 @@ c-compiler = "*"
 librosa = ">=1.0.0"
 panns-inference = ">=0.1.1"
 
+# Printed music to MusicXML (the sheet profiles). AGPL-3.0: it runs as a program of its own.
+[feature.homr.pypi-dependencies]
+homr = { version = "==0.7.1", extras = ["cpu"] }
+
+# homr caps Pillow below 13; see ml/adapters/homr/pyproject.toml for why 13 is used all the same.
+[feature.homr.pypi-options.dependency-overrides]
+pillow = ">=13"
+
 # ---------------------------------------------------------------------------
 # Environments. `default` is the engine; adapters get their own solve groups so
 # their pins never leak into the engine.
@@ -202,6 +210,7 @@ panns-inference = ">=0.1.1"
 default = { features = ["host", "py312", "engine", "test"], solve-group = "engine" }
 swift-f0 = { features = ["host", "py312", "swift-f0"], no-default-feature = true }
 basic-pitch = { features = ["host", "py310", "basic-pitch"], no-default-feature = true }
+homr = { features = ["host", "py312", "homr"], no-default-feature = true }
 muscriptor = { features = ["host", "py312", "torch", "muscriptor"], no-default-feature = true }
 muscriptor-cuda = { features = ["py312", "torch", "cuda", "muscriptor"], no-default-feature = true }
 beat-this = { features = ["host", "py312", "torch", "beat-this"], no-default-feature = true }

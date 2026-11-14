@@ -169,6 +169,7 @@
     <!-- Share or print -->
     <string name="export_title">Share or print</string>
     <string name="export_formats">Formats</string>
+    <string name="export_go_to_formats">Go to the formats</string>
     <string name="export_pdf">PDF</string>
     <string name="export_pdf_desc">For printing and the music stand</string>
     <!-- Share or print, under PDF: which PDF it is. -->
@@ -189,12 +190,18 @@
     <string name="export_braille_desc">BRF file for a braille display or embosser</string>
     <string name="export_braille_unavailable">Made by Bandroom on your computer.</string>
     <string name="export_needs_engine">Needs Bandroom on your computer.</string>
+    <string name="export_missing">Not made.</string>
+    <string name="export_pdf_phone_missing">Laid out on this phone.</string>
+    <string name="export_missing_not_installed">MuseScore is not installed on your computer. Install MuseScore 4 there and send the recording to it again.</string>
+    <string name="export_missing_not_starting">MuseScore did not get going on your computer. Open it there once, then send the recording to it again.</string>
+    <string name="export_missing_failed">MuseScore on your computer did not write some of the files. Send the recording to it again.</string>
+    <string name="export_missing_unknown">Your computer did not make some of the files. Send the recording to it again.</string>
     <string name="export_print">Print</string>
     <string name="export_share">Share…</string>
     <string name="export_save">Save to Files</string>
     <plurals name="export_count">
-        <item quantity="one">%d file · uncertain notes keep their “?” marks</item>
-        <item quantity="other">%d files · uncertain notes keep their “?” marks</item>
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
     </plurals>
     <string name="exported">Ready: %1$s</string>
     <string name="exported_files">Saved %1$d files</string>

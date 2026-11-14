@@ -26,6 +26,18 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   (`BandWriterSetup`): a phone sent a recording that needs it and the engine said so, or the user chose
   Set up full-band scores. Setup then shows the model's terms, and Continue waits for the user to tick
   the box under them (`LicenceStep.swift`).
+- **Sheet music from pictures.** The engine's `sheet` and `sheet-tab` profiles need a reader of printed music,
+  [homr](https://github.com/liebharc/homr) (AGPL-3.0), which is in no build of the app and which first-run setup
+  never fetches. Settings › Sheet music from pictures says what it is, its licence, where it comes from and how much
+  it is (about 0.6 GB), and its button installs it on this Mac (`SheetReader.swift`): Bandroom runs the adapter
+  runner's own setup with the engine's Python and environment (`run_adapter.py --setup homr`), which makes the
+  adapter's environment from PyPI and fetches the weights from homr's release on GitHub into the models folder's
+  `homr`. The archives, their sizes and their SHA-256s are pinned in the runner and nowhere in Bandroom. The engine
+  looks for the reader at each request, so phones are offered the two profiles as soon as it is there, without a
+  restart; Settings shows it as not installed, installing, installed, or why it stopped, with Try again. The
+  environment is among the app's own adapters (`…/ml/adapters/homr/.venv`, where the engine looks for it), so an
+  app update brings adapters without it and Settings offers it again; the weights stay. Removing Brasscribe from
+  this Mac deletes the weights with the other downloads, and the environment leaves with the app.
 - **Engine.** It starts `scribe serve --lan` on the first free port of 8765–8775, restarts it if it
   stops, and shows its state in the menu bar. The band sounds Studio plays are bundled
   (`scripts/stage-band-sounds.sh`).
@@ -77,7 +89,8 @@ so it runs on a Mac in use and on CI's macOS runner.
   the temporary folder and a settings store of their own; `AppModel` stops the run if any of the three is missing, so
   a test can never stop an installed Bandroom's engine or change its settings.
 - **Screens and variants.** Each `Screen` (the panel busy, ready, with a phone asking, setting up; the phones list;
-  Pair a phone; the four setup steps; Settings) in light, dark, increased contrast (light and dark) and Bandroom's
+  Pair a phone; the four setup steps; Settings, also while the reader of printed music installs, once it is there
+  and after a fetch that failed) in light, dark, increased contrast (light and dark) and Bandroom's
   largest text size, and in bokmål (`xcodebuild -testLanguage nb`) in light and the largest text size. A screenshot
   of each, at 2 pixels a point, and its accessibility tree beside it (`<name>.ax.txt`).
 - **When a picture counts.** By the Mac catalogues' shared rule

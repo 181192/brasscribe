@@ -53,10 +53,56 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .app:hover::before, .app:focus-within::before { width: 100%; }
 @media (prefers-reduced-motion: reduce) { .app::before { transition: none; } }
 .app .strip { margin: 0; }
+/* Each place an app runs, as itself: a phone, a tablet on its stand, a Mac's window, Bandroom in the menu bar.
+   Standing on one line at the bottom, as on a desk; on a phone the row scrolls by itself, a device at a time. */
+.lineup { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 var(--scribe-space-10); display: grid; grid-template-columns: max-content max-content minmax(0, 380px) minmax(200px, 260px); gap: var(--scribe-space-8); align-items: end; justify-content: space-between; }
+.lineup li { display: grid; gap: var(--scribe-space-2); justify-items: start; }
+.lineup-device { display: grid; justify-items: center; align-items: end; width: 100%; }
+.lineup .phone-frame { width: 120px; }
+.lineup .tablet-frame { width: 190px; }
+.lineup .mac-frame { width: 100%; }
+/* The tablet stands on a music stand: the ledge it rests on, a thin pole, and the stand's feet. */
+.lineup .stand { display: block; width: 3px; height: 34px; background: var(--scribe-border-strong); position: relative; }
+.lineup .stand::before { content: ""; position: absolute; left: 50%; top: 0; width: 214px; height: 7px; margin-left: -107px; border-radius: 2px; background: var(--scribe-border-strong); }
+.lineup .stand::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 60px; height: 14px; margin-left: -30px;
+  border: solid var(--scribe-border-strong); border-width: 3px 0 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+.lineup-name { margin: var(--scribe-space-2) 0 0; white-space: nowrap; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.lineup-name small { font-weight: 400; color: var(--scribe-text-muted); }
+.lineup-apps { margin: 0; display: flex; gap: 6px; align-items: center; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
+.lineup-mark { display: block; border-radius: 5px; }
+/* Bandroom is drawn: a menu bar with its mark among the others, and its panel under it, dashed as Bandroom always is. */
+.menubar { width: 100%; border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised); overflow: hidden; box-shadow: var(--scribe-elevation-1); }
+.menubar-bar { height: 28px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 0 12px; background: color-mix(in srgb, var(--scribe-text) 7%, var(--scribe-surface-raised)); }
+.menubar-bar i { width: 14px; height: 10px; border-radius: 2px; background: var(--scribe-text-muted); opacity: 0.35; }
+.menubar-mine { display: grid; place-items: center; width: 26px; height: 22px; border-radius: 5px; color: var(--scribe-bg); background: var(--scribe-text); }
+.menubar-mine svg { width: 16px; height: 16px; }
+.menubar-panel { margin: 8px 12px 14px auto; width: 72%; display: flex; gap: 8px; align-items: center; padding: 10px 12px; border: 1.5px dashed var(--scribe-border-strong); border-radius: var(--scribe-radius-sm); font-weight: 600; }
+.lineup.alone { grid-template-columns: minmax(0, 320px); margin-top: var(--scribe-space-6); }
+.lineup-scroll:focus-visible { outline: 2px solid var(--scribe-focus); outline-offset: 4px; }
+@media (max-width: 900px) {
+  .lineup-scroll { overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--scribe-space-6); overscroll-behavior-x: contain; scrollbar-width: thin;
+    margin: 0 calc(-1 * var(--scribe-space-6)); padding: 0 var(--scribe-space-6) var(--scribe-space-3); }
+  .lineup:not(.alone) { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: max-content; width: max-content; }
+  .lineup:not(.alone) li { scroll-snap-align: start; }
+  .lineup-mac .mac-frame { width: 280px; }
+  .lineup-bandroom .lineup-device { width: 240px; }
+}
+/* On a phone the devices are two thirds of their size, so the row does not make the section much longer. */
+@media (max-width: 600px) {
+  .lineup .phone-frame { width: 80px; }
+  .lineup .tablet-frame { width: 127px; }
+  .lineup .stand { height: 22px; }
+  .lineup .stand::before { width: 143px; margin-left: -71px; }
+  .lineup .stand::after { width: 40px; margin-left: -20px; }
+  .lineup-mac .mac-frame { width: 187px; }
+  .lineup-bandroom .lineup-device { width: 180px; }
+}
+@media (forced-colors: active) { .menubar-mine { forced-color-adjust: none; background: CanvasText; color: Canvas; } .lineup .stand, .lineup .stand::after { background: CanvasText; } }
+
 /* The pen comes down onto each sheet's strip before the strip runs: its line draws from the top (the script marks
    the strip inked). Without the script, or with less motion, the line is simply there. */
 .app .strip-pen { clip-path: inset(-8px); transition: clip-path var(--scribe-duration-slow) ease-out; }
-html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100% + 8px) -8px); }
+html.starting .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100% + 8px) -8px); }
 @media (prefers-reduced-motion: reduce) {
   .app .strip-pen { transition: none; }
   html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px); }
@@ -160,8 +206,8 @@ html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100
    Without the script, or with less motion, the line is simply there. */
 .pen-heading::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
 .pen-words::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
-html.js .pen-heading:not(.drawn)::after { clip-path: inset(0 100% 0 0); }
-html.js .line-hero:not(.drawn) .pen-words::after { clip-path: inset(0 100% 0 0); }
+html.starting .pen-heading:not(.drawn)::after { clip-path: inset(0 100% 0 0); }
+html.starting .line-hero:not(.drawn) .pen-words::after { clip-path: inset(0 100% 0 0); }
 @media (prefers-reduced-motion: reduce) {
   .pen-heading::after, .pen-words::after { transition: none; }
   html.js .pen-heading:not(.drawn)::after { clip-path: none; }

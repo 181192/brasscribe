@@ -78,12 +78,17 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         out: Path | None = None, reuse: Path | None = None, allow_heavy: bool = True, cold: set[str] | None = None,
         run_id: str | None = None, emit: Callable[[dict], None] | None = None,
         cancel: threading.Event | None = None, previous_run_id: str | None = None, audio_id: str | None = None,
-        device_name: str | None = None) -> dict:
+        device_name: str | None = None, without: list[str] | None = None) -> dict:
     audio = Path(audio).resolve()
     if not audio.exists():
         raise FileNotFoundError(audio)
     if out is not None:
         check_out_dir(out, settings)
+    if profile in profiles.PROFILES:
+        try:
+            profiles.check_input(profile, audio)
+        except ValueError as e:
+            raise RunRefused(str(e)) from e
     pipeline = profiles.build(profile, audio, title, params)
     run_id = run_id or new_run_id(profile)
     run_dir = settings.runs_dir / run_id
@@ -115,6 +120,8 @@ def run(settings: Settings, audio: Path, profile: str, *, title: str | None = No
         manifest["audio_id"] = audio_id
     if device_name:
         manifest["device_name"] = device_name
+    if without:  # adapters left out because they were not set up (jobs.WITHOUT_THE_BAND_WRITER)
+        manifest["without"] = list(without)
     (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))
     on_event({"type": "job", "status": "running", "profile": profile, "stages": [s.name for s in pipeline.stages]})
     ex = Executor(cache, adapters, on_event, reuse_dir=reuse, allow_heavy=allow_heavy, cold=cold, cancel=cancel,

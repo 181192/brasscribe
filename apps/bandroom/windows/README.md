@@ -46,7 +46,8 @@ on Windows; CI builds it: `.github/workflows/windows.yml`, job `bandroom`).
 
 Command line: `--background` (the sign-in start: no window), `--demo` / `--show flyout|devices|confirm-stop|window|pair|allow`
 (sample content, no engine), `--state running|busy|attention|update|update-bandroom|update-behind|update-dev|stopped|error|setup|starting`
-(the four `update` states: an engine with another interface version, one per fix), `--theme light|dark`, `--lang en|nb`.
+(the four `update` states: an engine with another interface version, one per fix; with `--show settings`,
+`reader-installing|reader-installed|reader-failed` for the card of the reader of printed music), `--theme light|dark`, `--lang en|nb`.
 
 ## How it runs
 
@@ -76,6 +77,18 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   newer they are the `-cuda` builds and the engine gets `SCRIBE_CUDA=1`; otherwise the CPU builds.
   A marker per environment holds the lockfile hash, so a stopped setup resumes and an update reinstalls only
   when `pixi.lock` changed.
+- **Sheet music from pictures.** The engine's `sheet` and `sheet-tab` profiles need a reader of printed music,
+  [homr](https://github.com/liebharc/homr) (AGPL-3.0), which is in no build or installer of the app and which first
+  run never installs (`EnvironmentPlan` does not name it). The Settings card says what it is, its licence, where it
+  comes from and how much it is (about 0.6 GB), and its button installs it on this PC
+  (`Bootstrapper.InstallReaderAsync`): `pixi install --frozen -e homr` in `envs`, then the adapter runner's own
+  setup with the engine's Python (`run_adapter.py --setup homr`), which fetches the weights from homr's release on
+  GitHub into `models\homr`. The archives, their sizes and their SHA-256s are pinned in the runner and nowhere in
+  Bandroom. A marker like the other environments' is written once both steps are done, so after an app update with
+  a new `pixi.lock` an installed reader is reinstalled with the rest, and one never asked for is not. The engine
+  looks for the environment at each request, so phones are offered the two profiles as soon as it is there, without
+  a restart; the card shows it as not installed, installing, installed, or why it stopped, with Try again. It lives
+  in the data folder with the other environments and models, and goes when they go.
 - **The engine** is `pixi run --manifest-path <envs>\pixi.toml --frozen -e default scribe serve --lan
   --port N` on the first free port from 8765, in a job object (Stop, Restart and Bandroom exiting end the
   whole tree). It is Running once `/v1/health` answers, and is asked again every 30 s: four unanswered in a row

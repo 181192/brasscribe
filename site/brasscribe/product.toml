@@ -38,8 +38,8 @@ file = "brasscribe-play-macos-arm64.zip"
 group = "mac"
 label_en = "Brasscribe for Mac"
 label_nb = "Brasscribe for Mac"
-en = "Brasscribe for a Mac with an M-series chip"
-nb = "Brasscribe for Mac med M-brikke"
+en = "Brasscribe for a Mac with an M-series chip (Apple silicon)"
+nb = "Brasscribe for Mac med M-brikke (Apple silicon)"
 
 [[downloads]]
 file = "brasscribe-play-windows-x64.zip"
@@ -74,8 +74,8 @@ id = "mac"
 files = ["mac"]
 devices = [{ name = "Mac", status = "ready" }]
 shot = "mac-score"
-en = { does = "A solo written on the Mac itself; the whole score on a big screen, print the parts.", needs = "A Mac with an M-series chip, with macOS 27 or 26.", alt = "The full score on a Mac, every part under each other, with the player at the bottom." }
-nb = { does = "En solo skrevet på selve Macen; hele partituret på stor skjerm, skriv ut stemmene.", needs = "Mac med M-brikke, med macOS 27 eller 26.", alt = "Hele partituret på en Mac, alle stemmene under hverandre, med spilleren nederst." }
+en = { does = "A solo written on the Mac itself; the whole score on a big screen, print the parts.", needs = "A Mac from late 2020 or newer, with macOS 27 or 26.", alt = "The full score on a Mac, every part under each other, with the player at the bottom." }
+nb = { does = "En solo skrevet på selve Macen; hele partituret på stor skjerm, skriv ut stemmene.", needs = "Mac fra slutten av 2020 eller nyere, med macOS 27 eller 26.", alt = "Hele partituret på en Mac, alle stemmene under hverandre, med spilleren nederst." }
 
 [[variants]]
 id = "windows"
@@ -103,17 +103,17 @@ research = "how-it-works"
 [[sure]]
 right = ["trumpet.seat_recall", "flugelhorn.seat_recall"]
 missed = ["trumpet.q_missed/value", "flugelhorn.q_missed/value"]
-en = { title = "Cornet and flugelhorn", where = "one player, hymn tunes" }
-nb = { title = "Kornett og flygelhorn", where = "én musiker, salmer" }
+en = { seats = "Cornets · Flugelhorn", where = "measured on a trumpet and a flugelhorn; one player, hymn tunes" }
+nb = { seats = "Kornetter · Flygelhorn", where = "målt på trompet og flygelhorn; én musiker, salmer" }
 
 [[sure]]
 right = ["horn.seat_recall", "baritone.seat_recall", "trombone.seat_recall"]
 missed = ["horn.q_missed/value", "baritone.q_missed/value", "trombone.q_missed/value"]
-en = { title = "Horn, baritone and trombone", where = "one player, hymn tunes" }
-nb = { title = "Horn, baryton og trombone", where = "én musiker, salmer" }
+en = { seats = "Tenor horns · Baritones · Trombones", where = "measured on a French horn, a German baritone and a trombone; one player, hymn tunes" }
+nb = { seats = "Althorn · Barytoner · Tromboner", where = "målt på valthorn, tysk baryton og trombone; én musiker, salmer" }
 
 [[sure]]
 right = ["tuba.seat_recall"]
 missed = ["tuba.q_missed/value"]
-en = { title = "Tuba", where = "one player, hymn tunes", note = "read the bass part with your ears open" }
-nb = { title = "Tuba", where = "én musiker, salmer", note = "les basstemmen med ørene åpne" }
+en = { seats = "E♭ and B♭ basses", where = "measured on a tuba; one player, hymn tunes", note = "read the bass part with your ears open" }
+nb = { seats = "Ess- og B-basser", where = "målt på tuba; én musiker, salmer", note = "les basstemmen med ørene åpne" }

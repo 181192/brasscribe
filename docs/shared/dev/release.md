@@ -199,6 +199,7 @@ ditto "$S/dd-band/Build/Products/Release/Brasscribe Bandroom.app" "$B"
 mkdir -p "$B/Contents/Resources/bin"
 cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
 scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"   # stops unless it and .pixi-version (what CI bundles) meet requires-pixi in pixi.toml
+scripts/check-no-reader-bundled.sh "$B"   # stops if the app holds an adapter's environment: homr (AGPL-3.0) must never be in a build
 codesign -d --entitlements - --xml "$B" > "$S/band.entitlements"
 "$B/Contents/Resources/bin/scribe-core" version    # staged by the build
 codesign --force --sign - "$B/Contents/Resources/bin/pixi"
@@ -327,3 +328,24 @@ the golden output:
 - at merge, and only then, moves the old golden to `data/golden-backups/before-<change>/`, renames the
   sibling to `mikkel-arranged-band`, and reverts the paths in the same commit
   (`chore: promote the … golden`).
+
+**The band's level follows a promotion.** A new golden is a new arrangement to the players, and the level the
+apps are held to (`band.arrangement_lufs` in `sounds/playback-levels.json`) is the golden as Windows plays it. In
+the commit that promotes a golden:
+
+- measure it on Windows, on a machine with `data/`: `Golden_arrangement_plays_at_the_recording_target`
+  (`apps/windows/tests/Kalli.Scribe.Tests/PlaybackLevelTests.cs`) prints `LEVELS windows golden arrangement … LUFS`;
+  write that number to `band.arrangement_lufs`, run `sounds/playback_levels.py --vectors`, and set
+  `PlaybackLevels.bandArrangementLUFS` on Apple to it;
+- run Apple's playback tests with the golden and the band SoundFont present
+  (`cd apps/apple/services && swift test --no-parallel --filter LevelTests`): `LEVELS golden arrangement` must be
+  within `band.arrangement_tolerance_lu` of the new number. When it is more than 1 LU off, refit Apple's band gain
+  (`band.gain_db.apple`) in the same commit, as docs/shared/research/12-band-sound.md §14 did.
+
+CI cannot do this for the golden, which is not in git. On every Apple pull request it plays the public Old
+Hundredth fixture instead (`ArrangementLevelTests`), held to Windows' level within the same tolerance and to
+Apple's own level on the CI Mac within 0.5 LU (`appleOldHundredthLUFS` in the test). That second number is a
+guard against a level that moves by accident: change it only in the commit that refits `band.gain_db.apple`,
+after the Windows measurement above, to what the CI run of that commit prints (`LEVELS Old Hundredth
+arrangement`). The full-band phrase and the dynamics are checked there too: the job writes the test phrases with
+`sounds/phrases.py`.

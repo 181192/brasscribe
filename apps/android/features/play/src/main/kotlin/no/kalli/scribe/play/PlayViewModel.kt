@@ -144,6 +144,8 @@ data class TranscriptionResult(
     val onDevice: Boolean,
     val jobId: String? = null,
     val engineOutputs: Set<String> = emptySet(),
+    /** The files the computer's job should have had and has not (its PDF, its MIDI, its recording of the band), each with why. */
+    val engineMissing: List<no.kalli.scribe.engine.MissingOutput> = emptyList(),
     /** The uploaded audio on the engine, for re-arranging with other options. */
     val audioId: String? = null,
     /** The Composition as the core wrote it (humanization reads it). */
@@ -156,6 +158,9 @@ data class TranscriptionResult(
     val changedOnPhone: Boolean = false,
     /** A quick band draft made on the phone: the computer can make the full score from its recording. */
     val draft: Boolean = false,
+    /** The computer wrote this before it was fully set up (a solo from two listeners, not three): it can be written
+     *  down again from the same recording once it is. */
+    val beforeSetup: Boolean = false,
 )
 
 /** What the core wants beside the MusicXML: null is fine, and is all an opened score can give. */
@@ -203,6 +208,47 @@ enum class SeatPickerMode { FIRST_RUN, SETTINGS, WHO_PLAYED }
 
 /** A take with no harmony to arrange (a solo, or anything transcribed on the phone): no quartet for it. */
 val TranscriptionResult.isSoloTake: Boolean get() = profile == Profile.SOLO
+
+/** A score the computer wrote before it was fully set up: it is the computer's job, so the computer can be asked
+ *  whether it still has the recording to write it down again from. */
+val TranscriptionResult.canBeWrittenAgain: Boolean get() = beforeSetup && !onDevice && (audioId != null || jobId != null)
+
+/** What can be done now about a score the computer wrote before it was fully set up ([writeAgainNow]). */
+enum class WriteAgain {
+    /** The computer is set up and has the recording: writing it down again gives the better score. */
+    OFFER,
+    /** The computer is still not set up: writing again would give the same score. */
+    NOT_SET_UP,
+    /** The computer no longer has the recording: there is nothing to write down again from. */
+    RECORDING_GONE,
+}
+
+/**
+ * Asks the computer what can be done about [r] now, and for the id it keeps the recording under: the one the app
+ * knows, else the one of the job the score came from (a score opened again from the phone's own copy has only its
+ * job). When the computer cannot be asked, the offer stands with what the app knows: the new job tells.
+ */
+suspend fun writeAgainNow(r: TranscriptionResult, engine: no.kalli.scribe.engine.EngineApi?): Pair<WriteAgain, String?> {
+    engine ?: return WriteAgain.OFFER to r.audioId
+    val recording = r.audioId ?: try {
+        r.jobId?.let { engine.job(it).audioId }
+    } catch (e: no.kalli.scribe.engine.EngineException) {
+        if (e.status == 404) return WriteAgain.RECORDING_GONE to null
+        null
+    } catch (e: java.io.IOException) {
+        null
+    }
+    val setUp = try { engine.health().notSetUp.isEmpty() } catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; true }
+    return when {
+        recording == null && r.audioId == null && r.jobId != null && !reachable(engine) -> WriteAgain.OFFER to null
+        recording == null -> WriteAgain.RECORDING_GONE to null
+        !setUp -> WriteAgain.NOT_SET_UP to recording
+        else -> WriteAgain.OFFER to recording
+    }
+}
+
+private suspend fun reachable(engine: no.kalli.scribe.engine.EngineApi): Boolean =
+    try { engine.health(); true } catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e; false }
 
 /** The full band can be written for this take: it has layers (see [fullBandMade]); by profile before the composition is known. */
 val TranscriptionResult.fullBandMade: Boolean
@@ -982,10 +1028,35 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
      * Applies the Output options: on-device results are re-arranged by the core; engine results
      * become a new engine job with the options (the engine's cache makes it quick).
      */
-    fun applyOutput(then: () -> Unit) {
+    /**
+     * Writes down again, on the computer and from the recording it holds, a score it wrote before it was fully set
+     * up ([TranscriptionResult.beforeSetup]): a new job with the same options, which uses what is set up now.
+     */
+    /** What can be done now about the score on screen that the computer wrote before it was fully set up. */
+    suspend fun writeAgainNow(): WriteAgain? {
+        val r = result.value?.takeIf { it.canBeWrittenAgain } ?: return null
+        return withContext(Dispatchers.IO) { writeAgainNow(r, container.engine()) }.first
+    }
+
+    /**
+     * Writes down again, on the computer and from the recording it holds, a score it wrote before it was fully set
+     * up ([TranscriptionResult.beforeSetup]): a new job with the same options, which uses what is set up now. The
+     * computer may still not be set up: then the new score is the same kind, and [then] is told so.
+     */
+    fun writeDownAgain(then: (stillBeforeSetup: Boolean) -> Unit) {
+        val r = result.value?.takeIf { it.canBeWrittenAgain } ?: return
+        viewModelScope.launch {
+            val (what, recording) = withContext(Dispatchers.IO) { writeAgainNow(r, container.engine()) }
+            if (what != WriteAgain.OFFER || recording == null) return@launch
+            if (result.value === r) result.value = r.copy(audioId = recording)
+            applyOutput(again = true) { then(result.value?.beforeSetup == true) }
+        }
+    }
+
+    fun applyOutput(again: Boolean = false, then: () -> Unit) {
         val r = result.value ?: return
         val opts = output.value
-        if (opts == lastApplied) { then(); return }
+        if (opts == lastApplied && !again) { then(); return }
         busy.value = true
         viewModelScope.launch {
             try {
@@ -1059,11 +1130,13 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val final = engine.job(job.id)
         if (final.status != JobStatus.SUCCEEDED) throw EngineJobFailedException(final.error ?: final.status.name.lowercase())
         return r.copy(composition = engine.composition(job.id), musicXml = engine.musicXml(job.id), jobId = job.id,
-            engineOutputs = final.outputs.toSet(), compositionJson = null, appliedTranspose = opts.keyShift,
+            engineOutputs = final.outputs.toSet(), engineMissing = final.missing, beforeSetup = final.withoutTheBandWriter, compositionJson = null, appliedTranspose = opts.keyShift,
             evidence = runCatching { engine.evidence(job.id) }.getOrNull())
     }
 
     private fun estimateDeviceSeconds(audio: PcmAudio): Int = maxOf(1, (audio.seconds / 20).toInt())
+
+    private val refusedTake = RefusedTake()
 
     private suspend fun transcribeWithEngine(s: Source, p: Profile): TranscriptionResult {
         val engine: EngineApi = container.engine() ?: throw NoCompanionException()
@@ -1082,8 +1155,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val upload = copy ?: s.file?.let { UploadSource.of(it) } ?: UploadSource.of(s.name, ByteArray(0))
             // A product that writes a song down again names the recording the computer already holds: nothing is sent
             // twice, unless the computer no longer has it.
+            // The file as it is now: the same take until it is recorded or picked again.
+            val take = s.file?.let { "${it.path}:${it.length()}:${it.lastModified()}" } ?: s.name
             jobFromRecording(
-                held = { container.product.audioOnComputer(this, engine) },
+                // A take the computer refused for unfinished setup is still there: it is named, not sent again.
+                held = { refusedTake.on(take) ?: container.product.audioOnComputer(this, engine) },
                 canSend = copy != null,
                 send = {
                     withContext(Dispatchers.IO) {
@@ -1093,14 +1169,16 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     }.audioId
                 },
                 resent = { say(R.string.recording_sent_again) },
-            ) { audioId ->
-                transcribe.update { it.copy(fraction = 0.0) }
-                seatFellBack = false
-                engine.createJobForSeat(
-                    // The product adds what its own profiles take (a bass tab's instrument and tuning).
-                    container.product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
-                        title = title, seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
-                ).also { seatFellBack = it.second }.first
+            ) { sent ->
+                refusedTake.noting(take, sent) { audioId ->
+                    transcribe.update { it.copy(fraction = 0.0) }
+                    seatFellBack = false
+                    engine.createJobForSeat(
+                        // The product adds what its own profiles take (a bass tab's instrument and tuning).
+                        container.product.job(this, JobCreate(audioId, p.id, renderAudio = true, allowHeavy = container.settings.allowHeavy,
+                            title = title, seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
+                    ).also { seatFellBack = it.second }.first
+                }
             }
         }
         engineJobId = created.id
@@ -1124,7 +1202,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val composition = engine.composition(created.id)
         val xml = engine.musicXml(created.id)
         return TranscriptionResult(composition, xml, p, onDevice = false, jobId = created.id, audioId = audioId,
-            engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() },
+            engineOutputs = final.outputs.toSet().ifEmpty { FixtureEngineApi.OUTPUTS.toSet() }, engineMissing = final.missing, beforeSetup = final.withoutTheBandWriter,
             evidence = runCatching { engine.evidence(created.id) }.getOrNull())
     }
 
@@ -1279,7 +1357,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     scoreLibrary.save(id, scoreTitle, r.profile.id, r.musicXml, r.compositionJsonFor(container.core),
                         jobId = r.jobId, evidenceJson = r.evidence?.let { no.kalli.scribe.model.BrasscribeJson.encodeToString(no.kalli.scribe.engine.Evidence.serializer(), it) },
                         checked = checkedNow, part = part, noticeSeen = noticeSeen, changedOnPhone = r.changedOnPhone, reviewChanges = changes,
-                        draft = r.draft, recording = recording)
+                        draft = r.draft, recording = recording, beforeSetup = r.beforeSetup)
                 }.onFailure { android.util.Log.w(TAG, "score not saved", it) }
                 scoreLibrary.list()
             }
@@ -1364,7 +1442,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 val job = engine.job(jobId)
                 val r = TranscriptionResult(engine.composition(jobId), engine.musicXml(jobId),
                     Profile.of(job.profile) ?: Profile.BRASS_BAND, onDevice = false, jobId = jobId, audioId = job.audioId,
-                    engineOutputs = job.outputs.toSet(), evidence = runCatching { engine.evidence(jobId) }.getOrNull())
+                    engineOutputs = job.outputs.toSet(), engineMissing = job.missing, beforeSetup = job.withoutTheBandWriter, evidence = runCatching { engine.evidence(jobId) }.getOrNull())
                 source.value = Source(entry.title, SourceKind.SCORE, 0.0)
                 currentSavedScoreId = null
                 myPartOverride.value = null
@@ -1462,6 +1540,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             },
             changedOnPhone = saved.changedOnPhone,
             draft = saved.draft,
+            beforeSetup = saved.beforeSetup,
         )
         checked.value = saved.checked.mapNotNull { key ->
             key.substringAfterLast(':').toIntOrNull()?.let { key.substringBeforeLast(':') to it }
@@ -1479,7 +1558,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                     val composition = content.compositionJson?.let { container.core.decodeComposition(it).copy(title = cleaned) }
                     val compositionJson = composition?.let(container.core::encodeComposition)
                     val xml = MusicXmlTitleEditor.replaceTitle(content.musicXml, cleaned)
-                    scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, content.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges, saved.draft)
+                    scoreLibrary.save(id, cleaned, saved.profile, xml, compositionJson, saved.jobId, content.evidenceJson, saved.checked, saved.part, saved.noticeSeen, saved.changedOnPhone, saved.reviewChanges, saved.draft, beforeSetup = saved.beforeSetup)
                     Triple(saved.jobId, composition to compositionJson, xml)
                 }.onFailure { android.util.Log.w(TAG, "score not renamed", it) }.getOrNull()
             }

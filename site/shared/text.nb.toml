@@ -125,6 +125,7 @@ computer_does = "lytter og skriver det ned"
 first = "Første gang på {device}"
 tech = "For den tekniske i bandet"
 sums = "Sjekksummer for alle filene"
+files = "Filene"
 then = "Deretter: Bandroom på datamaskinen"
 bandroom = "Alt om Bandroom"
 tablet = "Samme app som på telefonen: et Android-nettbrett bruker Android-nedlastingen, en iPad den for iPhone, begge under <a href='#phone'>Telefon</a>."
@@ -152,3 +153,8 @@ steps = ["Last den ned, og pakk ut mappen hvor som helst.", "Start appen i mappe
 [groups.tools]
 title = "For den tekniske"
 note = "Kommandolinjeverktøyet bak appene, og sjekksummene for alle filene i utgivelsen."
+
+# Each place an app runs, shown as itself (the family home, the Bandroom page).
+[lineup]
+label = "Hvor appene kjører, hver slik den ser ut der"
+where = "I menylinjen på en Mac, i varslingsområdet på Windows"

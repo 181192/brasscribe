@@ -179,6 +179,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/jobs/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Job From Pages
+         * @description Upload printed music (a screenshot, a photo of a page, a PDF; several pages in order make one score) and
+         *     start a job of a profile that reads pages (listProfiles: input = pages) in one request.
+         */
+        post: operations["createJobFromPages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/jobs/upload": {
         parameters: {
             query?: never;
@@ -1046,6 +1067,38 @@ export interface components {
                 [key: string]: components["schemas"]["TargetVerdict"];
             };
         };
+        /** Body_createJobFromPages */
+        Body_createJobFromPages: {
+            /** Capo */
+            capo?: number | null;
+            /**
+             * Files
+             * @description the pages in order: pictures (PNG, JPEG, WebP) or PDFs
+             */
+            files: string[];
+            /** Instrument */
+            instrument?: ("bass-4" | "bass-5" | "bass-6" | "guitar-6" | "guitar-7" | "guitar-8" | "ukulele" | "ukulele-baritone" | "mandolin") | null;
+            /** Layout */
+            layout?: ("tab" | "tab-and-notation" | "notation") | null;
+            /** Octave */
+            octave?: ("auto" | "0" | "-12" | "+12") | null;
+            /**
+             * Profile
+             * @default sheet
+             */
+            profile: string;
+            /**
+             * Render Audio
+             * @default true
+             */
+            render_audio: boolean;
+            /** Style */
+            style?: ("as-played" | "open-position" | "lead") | null;
+            /** Title */
+            title?: string | null;
+            /** Tuning */
+            tuning?: string | null;
+        };
         /** Body_createJobFromUpload */
         Body_createJobFromUpload: {
             /** Capo */
@@ -1404,6 +1457,11 @@ export interface components {
              */
             interface_version: number;
             /**
+             * Not Set Up
+             * @description what is not set up on the computer right now (`band-writer`): a job that needs it is refused, and a solo is written without it (Job.without). Empty when everything is there. An app reads it to know whether making such a job again would help yet
+             */
+            not_set_up?: string[];
+            /**
              * Server Id
              * @description stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
              */
@@ -1475,6 +1533,11 @@ export interface components {
             target: ("brass" | "fretted") | null;
             /** Title */
             title?: string | null;
+            /**
+             * Without
+             * @description what the job was made without because it was not set up on the computer when the job was taken (`band-writer`: a solo line written from two listeners, not three, so a little less sure). Made again (rerunJob) once it is set up, the job uses it
+             */
+            without?: string[];
         };
         /**
          * JobCreate
@@ -1922,6 +1985,13 @@ export interface components {
         ProfileInfo: {
             /** Description */
             description: string;
+            /**
+             * Input
+             * @description what a job of the profile reads: a recording, or pages of printed music (pictures or a PDF, createJobFromPages)
+             * @default audio
+             * @enum {string}
+             */
+            input: "audio" | "pages";
             /** Name */
             name: string;
             /** Pipeline */
@@ -2987,6 +3057,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description the input is not the kind the profile reads (listProfiles: input): {code: wrong_input, detail} */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2995,6 +3072,62 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    createJobFromPages: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_createJobFromPages"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            /** @description a page is too large to read: {code: page_too_large, detail} */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description a file is not a picture or a PDF ({code: not_a_page, detail}), or the profile does not read pages ({code: wrong_input, detail}) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description this computer has no reader of printed music installed: {code: reader_missing, detail} */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

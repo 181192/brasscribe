@@ -148,7 +148,7 @@ class FixtureEngineApi(
                 seconds = stageSeconds, fraction = fraction, device = "cpu"))
             jobs[jobId] = job(jobId).copy(progress = fraction)
         }
-        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = outputsOf(jobId))
+        jobs[jobId] = job(jobId).copy(status = JobStatus.SUCCEEDED, finished = now(), progress = 1.0, outputs = outputsOf(jobId), missing = missing())
         send(JobEvent(id, "job", run = jobId, time = now(), status = "succeeded"))
     }
 
@@ -188,6 +188,10 @@ class FixtureEngineApi(
         }).filter { source.read(it) != null }
     }
 
+    /** The files a job of this computer lacks, when the fixture says so (missing.json, as a job carries them). */
+    private fun missing(): List<MissingOutput> = source.read(MISSING_FILE)
+        ?.let { no.kalli.scribe.model.BrasscribeJson.decodeFromString(kotlinx.serialization.builtins.ListSerializer(MissingOutput.serializer()), String(it)) }.orEmpty()
+
     private val tabOutputs: List<String> by lazy { TAB_OUTPUTS.filter { source.read(it) != null } }
 
     override suspend fun artifact(jobId: String, name: String): ByteArray = file(name)
@@ -215,6 +219,8 @@ class FixtureEngineApi(
     companion object {
         /** How often a held job looks whether it may go on. */
         private const val HELD_POLL_MS = 20L
+        /** A fixture's list of the files its jobs lack. */
+        const val MISSING_FILE = "missing.json"
         const val SERVER_ID = "fixture"
         const val SERVER_NAME = "Brasscribe (test fixture)"
         /** A fixture file that is the recording the job was made from. */

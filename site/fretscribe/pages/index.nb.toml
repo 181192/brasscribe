@@ -24,23 +24,23 @@ title = "Et ? der den er usikker"
 text = "Velg en note med ?, så spiller den takten sakte, og du kan høre selv. Spill så sammen med opptaket, saktere hvis du vil, de vanskelige taktene om og om igjen."
 
 [[screens.items]]
+shot = "instrument-guitar"
+alt = "Instrumentet ditt: Instrument, gitar. Strenger, 6 strenger. Vanlig stemming, standard. Hvilken hånd er på halsen? Venstre hånd på halsen, de fleste. Du leser, tab. Lagre nederst."
+title = "Instrumentet ditt"
+text = "Gitar, bass, ukulele eller mandolin, strengene og stemmingen du spiller i."
+[[screens.items]]
 shot = "home"
 alt = "Hjem i Fretscribe: Åpne et opptak, Spill inn med mikrofonen og Spill inn det som spilles."
 title = "Åpne eller spill inn"
 text = "Åpne et opptak du har, spill inn med mikrofonen, eller ta opp det en annen app på telefonen spiller."
 [[screens.items]]
-shot = "what-is-this"
-alt = "Hva er dette? med to valg: Bare instrumentet mitt, og En hel sang, der Fretscribe plukker ut bassen."
+shot = "what-is-this-guitar"
+alt = "Hva er dette? for Guitar line.wav, med to valg: Bare instrumentet mitt, og En hel sang, der Fretscribe plukker ut gitaren."
 title = "Hva er dette?"
 text = "Bare instrumentet ditt, eller en hel sang der stemmen din plukkes ut."
 [[screens.items]]
-shot = "check"
-alt = "Sjekk sangen: stemmingen den hørte, oktaven, toneart og tempo, 2 toner merket med spørsmålstegn, og Vis tabben."
-title = "Sjekk sangen"
-text = "Stemmingen, tonearten og tempoet den hørte, før noe blir skrevet som bånd."
-[[screens.items]]
-shot = "note"
-alt = "En tone med spørsmålstegn valgt i tabben, med Spill denne takten sakte og Neste."
+shot = "tab-guitar"
+alt = "Tabben til Guitar line i standard, uten capo: akkorder i 3/4 fra takt 1, 1 tone merket med spørsmålstegn og 2 toner uten plass, og spilleren under med Spill, tempo og Gjenta takter."
 title = "Øv"
 text = "Spill opptaket saktere, gjenta de vanskelige taktene, og sjekk notene med ?."
 
@@ -102,8 +102,10 @@ line = "Gratis. Ikke i appbutikkene ennå, så første installasjon tar tre ekst
 setup = "Sett opp Bandroom"
 
 [sure]
+cards = "Hvor sikker den er, et kort for hver type musiker"
+count = "{n} av {total}"
 title = "Hvor sikker <em>er den?</em>"
-lead = "<b>Rundt 9 av 10 noter den skriver, er de som ble spilt.</b>{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}} Og når den setter <b class=\"doubt-mark\">?</b> over en, har den nesten alltid grunn til det: 9 av 10 ganger trengte den noten en ekstra lytt.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
+lead = "<b>Rundt 9 av 10 noter den skriver, er de som ble spilt</b> for en bass, også plukket ut av en låt, eller en gitar alene; rundt 5 av 10 for en gitar midt i et fullt band.{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}}{{holds fretted/guitar-tab/song.onset_p >= 0.45}}{{holds fretted/guitar-tab/song.onset_p < 0.6}} Og når den setter <b class=\"doubt-mark\">?</b> over en, har den nesten alltid grunn til det: 9 av 10 ganger trengte den noten en ekstra lytt.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
 of_first = "av 100 noter den skriver, er riktige"
 of = "av 100 noter"
 right = "riktig note på riktig sted"

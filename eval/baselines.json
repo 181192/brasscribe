@@ -944,6 +944,45 @@
             "choralebricks.final0.bar_position_acc": 0.281,
             "choralebricks.final0.meter_match": 0.6
           }
+        },
+        "sheet-image": {
+          "source": "measured by this suite (scribe bench sheet-image) on nine pieces written in sheet_image_bench.py (Old Hundredth and invented ones) and engraved by MuseScore, each as a screenshot and as a simulated phone photo, read by homr; the readings are kept in eval/fixtures/sheet-image, and CI scores those: it does not run homr. docs/shared/research/19-sheet-music-from-pictures.md has the comparison with the other recognisers and what the set does not show. Engraved pages, one engraver: weak evidence for real photographs",
+          "metrics": {
+            "screenshot.pitch_f1": 0.997,
+            "screenshot.note_f1": 0.997,
+            "screenshot.bars_ok": 0.994,
+            "screenshot.bars_found": 1.0,
+            "screenshot.doubt_found": 0.5,
+            "screenshot.doubt_false": {
+              "value": 1.0,
+              "tolerance": 0,
+              "higher_is_better": false
+            },
+            "screenshot.pages_failed": {
+              "value": 0.0,
+              "tolerance": 0,
+              "higher_is_better": false
+            },
+            "photo.pitch_f1": 0.986,
+            "photo.note_f1": 0.925,
+            "photo.bars_ok": 0.782,
+            "photo.bars_found": 0.994,
+            "photo.doubt_found": 0.833,
+            "photo.doubt_false": {
+              "value": 10.0,
+              "tolerance": 0,
+              "higher_is_better": false
+            },
+            "photo.pages_failed": {
+              "value": 0.0,
+              "tolerance": 0,
+              "higher_is_better": false
+            },
+            "pieces": {
+              "value": 9,
+              "tolerance": 0
+            }
+          }
         }
       }
     },

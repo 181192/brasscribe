@@ -11,6 +11,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -133,6 +139,10 @@ fun ExportScreen(vm: PlayViewModel) {
     PlayScaffold(
         title = null, onBack = vm::back, backLabel = stringResource(R.string.back), status = status,
         bottom = {
+            // With large text or on a narrow phone the three leave out their icons, all alike, so Share and Save keep to one
+            // row with their words on one line, and the band stays docked.
+            val icons = androidx.compose.ui.platform.LocalDensity.current.fontScale < 1.3f &&
+                androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 360
             val printButton = @Composable { m: Modifier -> PrimaryButton(stringResource(R.string.export_print), {
                 // Every part: one print job, the players' PDFs one after another.
                 make { files ->
@@ -147,11 +157,10 @@ fun ExportScreen(vm: PlayViewModel) {
                         }
                     }
                 }
-            }, icon = DesignR.drawable.ic_bc_print, modifier = m.semantics { testTag = "print" }, enabled = !making) }
+            }, icon = DesignR.drawable.ic_bc_print.takeIf { icons }, modifier = m.semantics { testTag = "print" }, enabled = !making) }
             val share = stringResource(R.string.export_share)
             val save = stringResource(R.string.export_save)
             val shareAction = { make { context.startActivity(exporter.shareIntent(it)) } }
-            val icons = androidx.compose.ui.platform.LocalDensity.current.fontScale < 1.3f
             val shareAndSave = @Composable { m: Modifier ->
                 if (print) SecondaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_export.takeIf { icons })
                 else PrimaryButton(share, { shareAction() }, m.semantics { testTag = "share" }, enabled = formats.isNotEmpty() && !making, icon = DesignR.drawable.ic_bc_export.takeIf { icons })
@@ -179,6 +188,20 @@ fun ExportScreen(vm: PlayViewModel) {
         },
     ) {
         ScreenTitle(stringResource(R.string.export_title))
+        // What the buttons make (the formats chosen and how many files), under the title: on a small phone the formats
+        // are under the first screen. It goes to them, and says so to a screen reader.
+        val formatsHere = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+        Row(
+            Modifier.heightIn(min = 48.dp)
+                .clickable(onClickLabel = stringResource(R.string.export_go_to_formats), role = Role.Button) { scope.launch { formatsHere.bringIntoView() } }
+                .semantics { testTag = "export-chosen" },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
+        ) {
+            Text((formats.map { stringResource(LABELS.getValue(it).first) } + pluralStringResource(R.plurals.export_count, fileCount, fileCount)).joinToString(" · "),
+                style = MaterialTheme.typography.labelLarge, color = c.text)
+            BcIcon(DesignR.drawable.ic_bc_choose, null, Modifier.size(20.dp))
+        }
         if (manyParts) {
             SectionLabel(stringResource(R.string.export_what))
             ChoiceGroup(if (myName != null) 3 else 2) {
@@ -189,6 +212,9 @@ fun ExportScreen(vm: PlayViewModel) {
             }
         }
         SectionLabel(stringResource(R.string.export_formats))
+        // Why the computer did not make some files, and what to do there: once, above the rows that say which.
+        val reasons = order.mapNotNull { exporter.missing(r, it)?.reason }.map(::missingWords).distinct()
+        if (reasons.isNotEmpty()) InfoNote(reasons.map { stringResource(it) }.joinToString(" "), Modifier.semantics { testTag = "export-missing" })
         RowGroup {
             order.forEachIndexed { i, f ->
                 if (i > 0) RowDivider()
@@ -196,10 +222,15 @@ fun ExportScreen(vm: PlayViewModel) {
                 val (label, desc) = LABELS.getValue(f)
                 val on = f.name in chosen && ok
                 val wholeOnly = manyParts && what != ExportScope.CONDUCTOR && ok && !exporter.perPart(r, f)
+                val lacks = exporter.missing(r, f)
                 ListRow(
                     stringResource(label),
                     onClick = null,
                     subtitle = when {
+                        // A file the computer should have made and has not (the note above says why): the PDF is then the
+                        // phone's own where the app lays one out.
+                        lacks != null && !r.changedOnPhone && f == ExportFormat.PDF && ok -> stringResource(R.string.export_pdf_phone_missing)
+                        lacks != null && !ok -> stringResource(R.string.export_missing)
                         // Which PDF it is, the computer's or the phone's, and why (in an app that lays out its own).
                         f == ExportFormat.PDF && ok && vm.container.product.phonePdf && !wholeOnly -> stringResource(when {
                             exporter.pdfFromComputer(r) -> R.string.export_pdf_computer
@@ -213,18 +244,26 @@ fun ExportScreen(vm: PlayViewModel) {
                     },
                     enabled = ok,
                     chevron = false,
-                    modifier = Modifier.toggleable(on, enabled = ok, role = Role.Checkbox) { v -> chosen = if (v) chosen + f.name else chosen - f.name },
+                    modifier = Modifier.toggleable(on, enabled = ok, role = Role.Checkbox) { v -> chosen = if (v) chosen + f.name else chosen - f.name }
+                        .semantics { testTag = "export-format-${f.name}" }.then(if (i == 0) Modifier.bringIntoViewRequester(formatsHere) else Modifier),
                     trailing = {
                         Checkbox(on, null, enabled = ok, colors = CheckboxDefaults.colors(checkedColor = c.primary, checkmarkColor = c.onPrimary, uncheckedColor = c.borderStrong))
                     },
                 )
             }
         }
-        // How many files the choices above make: under them, and not in the band with the buttons, which then stay docked on a short screen.
-        Text(
-            pluralStringResource(R.plurals.export_count, fileCount, fileCount),
-            style = MaterialTheme.typography.bodySmall, color = c.textMuted,
-        )
         InfoNote(stringResource(R.string.export_marks_note), boxed = false)
     }
+}
+
+/**
+ * The app's words for why the computer did not make a file: the engine's reason, in the player's language, with what
+ * to do. A reason a newer engine adds names no cause, only that the computer did not make it.
+ */
+@androidx.annotation.StringRes
+fun missingWords(reason: String): Int = when (reason) {
+    "musescore-not-installed" -> R.string.export_missing_not_installed
+    "musescore-not-starting" -> R.string.export_missing_not_starting
+    "musescore-failed" -> R.string.export_missing_failed
+    else -> R.string.export_missing_unknown
 }

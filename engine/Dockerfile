@@ -58,7 +58,7 @@ CMD ["pixi", "run", "scribe", "serve", "--lan", "--no-advertise"]
 
 # Engine plus every adapter on CPU PyTorch.
 FROM base AS cpu
-ARG ENVS="default swift-f0 basic-pitch muscriptor beat-this mega53 separator"
+ARG ENVS="default swift-f0 basic-pitch homr muscriptor beat-this mega53 separator"
 RUN for e in ${ENVS}; do pixi install --frozen -e "$e" || exit 1; done \
  && pixi clean cache --yes
 # After the environments, so a change to the core does not install them again.
@@ -67,7 +67,7 @@ ENV SCRIBE_CORE_CLI=/usr/local/bin/scribe-core
 
 # Engine plus CUDA 12 builds of the torch adapters (needs the NVIDIA container runtime to use the GPU).
 FROM base AS cuda
-ARG ENVS="default swift-f0 basic-pitch muscriptor-cuda beat-this-cuda mega53-cuda separator-cuda"
+ARG ENVS="default swift-f0 basic-pitch homr muscriptor-cuda beat-this-cuda mega53-cuda separator-cuda"
 # No GPU is visible while building; declare the driver's CUDA version so the CUDA environments install.
 RUN for e in ${ENVS}; do CONDA_OVERRIDE_CUDA=12.8 pixi install --frozen -e "$e" || exit 1; done \
  && pixi clean cache --yes

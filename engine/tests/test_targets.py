@@ -21,7 +21,7 @@ def test_every_profile_is_one_targets_and_every_one_of_a_targets_is_built():
     assert len(set(PROFILE_IDS)) == len(PROFILE_IDS)
     assert {p: profiles.PROFILES[p].target.id for p in PROFILE_IDS} == {
         "solo": "brass", "brass-band": "brass", "pop-rock": "brass", "orchestra-with-soloist": "brass",
-        "tab": "fretted", "bass-tab": "fretted"}
+        "sheet": "brass", "tab": "fretted", "bass-tab": "fretted", "sheet-tab": "fretted"}
     assert set(typing.get_args(schemas.ProfileInfo.model_fields["target"].annotation)) == set(targets.TARGETS)
     with pytest.raises(KeyError):
         targets.of("no-such-profile")

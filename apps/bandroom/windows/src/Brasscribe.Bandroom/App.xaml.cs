@@ -22,9 +22,10 @@ namespace Brasscribe.Bandroom;
 /// Command line: --background (the sign-in start), --demo (sample content, no engine), --show
 /// flyout|devices|confirm-stop|window|pair|allow|settings (one view with sample content, for screenshots and
 /// the accessibility scan), --state running|busy|attention|update|update-bandroom|update-behind|update-dev|stopped|
-/// error|setup|starting, --theme light|dark (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
+/// error|setup|starting (with --show settings: reader-installing|reader-installed|reader-failed, the reader of
+/// printed music's card), --theme light|dark (for this run only; Settings › Appearance is the user's choice), --lang en|nb.
 /// </summary>
-public partial class App : Application, IBandroomActions, IPanelHost, ISettingsHost, IAnnouncer
+public partial class App : Application, IBandroomActions, IPanelHost, ISettingsHost, ISheetReaderHost, IAnnouncer
 {
     private readonly string[] _args = Environment.GetCommandLineArgs();
     private readonly IStrings _s;
@@ -54,6 +55,10 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private bool _cuda;
     private ModelDownloader? _downloads;
     private BandWriterSetup? _bandWriter;
+    /// <summary>The reader of printed music's card in Settings: one for the app, so an install outlives the window.</summary>
+    private SheetReaderViewModel _reader = null!;
+    /// <summary>Sample-content runs: the reader counts as installed once its button was pressed.</summary>
+    private bool _demoReaderInstalled;
     /// <summary>Setup and updates: one at a time.</summary>
     private readonly SingleFlight _setup = new();
     private string _hub = "";
@@ -119,6 +124,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             if (e.PropertyName == nameof(FlyoutViewModel.View) && _vm.View == FlyoutView.Devices && _controller is not null)
                 _ = _controller.RefreshDevicesAsync();
         };
+        _reader = new SheetReaderViewModel(_s, this, this);
 
         try
         {
@@ -455,6 +461,12 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
                     OnPairRequest(_demoEngine.AddRequest());
                     break;
                 case "settings":
+                    // --state reader-installing|reader-installed|reader-failed: the reader's card in that state.
+                    if (SheetReaderViewModel.SampleState(Option("--state")) is { } reader)
+                    {
+                        _demoReaderInstalled = reader == SheetReaderState.Installed;
+                        _reader.ShowSample(reader);
+                    }
                     OpenSettings();
                     break;
             }
@@ -715,7 +727,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _flyout?.HideFlyout();
         if (_settingsWindow is null)
         {
-            _settingsWindow = new SettingsWindow(_appearance, this, this, _s, _themes);
+            _reader.Refresh();
+            _settingsWindow = new SettingsWindow(_appearance, this, this, _reader, _s, _themes);
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         }
         _settingsWindow.Activate();
@@ -775,6 +788,28 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     }
 
     public void OpenModelPage() => _ = Windows.System.Launcher.LaunchUriAsync(ModelComponent.BandWriter.Page());
+
+    public void OpenReaderPage() => _ = Windows.System.Launcher.LaunchUriAsync(SheetReader.Page);
+
+    // ----- ISheetReaderHost -----
+
+    /// <summary>Sample-content runs have no engine: the card's button is there and installs nothing.</summary>
+    bool ISheetReaderHost.CanInstall => _demo || (_bootstrap is { HasInstalledEngine: true } && !_setup.IsRunning);
+
+    bool ISheetReaderHost.Installed => _demo ? _demoReaderInstalled : _bootstrap is { ReaderInstalled: true };
+
+    long ISheetReaderHost.FreeBytes => _demo ? long.MaxValue : new WindowsMetrics().FreeBytes(_paths.DataDir);
+
+    /// <summary>
+    /// Through the same gate as setup and updates, so pixi never installs two things at once. The engine keeps
+    /// running: it looks for the reader at each request, so the two profiles are offered as soon as it is there.
+    /// </summary>
+    Task ISheetReaderHost.InstallAsync()
+    {
+        if (_demo) { _demoReaderInstalled = true; return Task.CompletedTask; }
+        if (_bootstrap is not { } bootstrap) throw new SheetReaderException(SheetReaderFailure.NotSetUp);
+        return _setup.RunAsync(() => Task.Run(() => bootstrap.InstallReaderAsync(_quit.Token)));
+    }
 
     /// <summary>Restarts a running engine now if nothing is being made, else once the score is done.</summary>
     private void RestartWhenIdle()

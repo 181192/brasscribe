@@ -131,7 +131,29 @@ jobs:
       - name: On-device models
         uses: ./.github/actions/on-device-models
 
-      # Fixture-dependent tests (SCRIBE_FIXTURES / data/golden) skip themselves when absent.
+      # The band SoundFonts are not in git. With the pinned pack's two files (the Mac's 16-bit one and the
+      # phone's, which the output-stage tests play too; cached per pack) the playback package's tests that play
+      # the band run here, through the real player and output stage against the shared
+      # levels: the Old Hundredth fixture, the band's presets, and (with the phrases below) the full-band phrase
+      # and the dynamics. Without it they skip themselves, and a level that has moved shows only on a machine
+      # that has the sounds.
+      - name: Fetch the band SoundFonts for the level tests
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-16bit.sf2 brasscribe-band-mobile.sf2
+
+      # The test phrases the level tests play are written by a script, not kept in git (sounds/phrases.py). It
+      # needs only mido, installed with what mido itself needs at the versions and file hashes sounds/uv.lock
+      # pins: pip refuses any other file.
+      - name: Write the band's test phrases
+        working-directory: .
+        run: |
+          python3 -m venv "$RUNNER_TEMP/phrases"
+          .github/scripts/lock-requirements.py sounds/uv.lock mido packaging > "$RUNNER_TEMP/phrases/requirements.txt"
+          "$RUNNER_TEMP/phrases/bin/pip" install --quiet --require-hashes -r "$RUNNER_TEMP/phrases/requirements.txt"
+          "$RUNNER_TEMP/phrases/bin/python" sounds/phrases.py -o data/sounds/phrases
+
+      # Tests that need data/golden (SCRIBE_FIXTURES) skip themselves when it is absent.
       - name: Test (packages, macOS app)
         run: make package-test test-mac-app
 
@@ -447,10 +469,11 @@ jobs:
 
       - run: brew install xcodegen
 
-      - name: Unit tests (requires-pixi reader, BandroomKit, the catalogue's checks)
+      - name: Unit tests (requires-pixi reader, the guard against a bundled reader, BandroomKit, the catalogue's checks)
         if: ${{ !inputs.noise_bandroom }}
         run: |
           scripts/test-pixi-spec.sh
+          scripts/test-no-reader-bundled.sh
           scripts/test-kit.sh
           (cd ../../apple/testing/ScreenCatalogue && swift test)
 
@@ -649,6 +672,8 @@ jobs:
           mkdir -p "$B/Contents/Resources/bin"
           cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
           scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"
+          # homr (the reader of printed music, AGPL-3.0) and every other adapter environment stay out of the download.
+          scripts/check-no-reader-bundled.sh "$B"
           "$B/Contents/Resources/bin/scribe-core" version || { echo "Bandroom has no core command line" >&2; exit 1; }
           codesign -d --entitlements - --xml "$B" > "$RUNNER_TEMP/band.entitlements"
           codesign --force --sign - "$B/Contents/Resources/bin/pixi"

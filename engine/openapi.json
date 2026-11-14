@@ -193,6 +193,141 @@
         "title": "BenchRun",
         "type": "object"
       },
+      "Body_createJobFromPages": {
+        "properties": {
+          "capo": {
+            "anyOf": [
+              {
+                "maximum": 12.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capo"
+          },
+          "files": {
+            "description": "the pages in order: pictures (PNG, JPEG, WebP) or PDFs",
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "enum": [
+                  "bass-4",
+                  "bass-5",
+                  "bass-6",
+                  "guitar-6",
+                  "guitar-7",
+                  "guitar-8",
+                  "ukulele",
+                  "ukulele-baritone",
+                  "mandolin"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrument"
+          },
+          "layout": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tab",
+                  "tab-and-notation",
+                  "notation"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Layout"
+          },
+          "octave": {
+            "anyOf": [
+              {
+                "enum": [
+                  "auto",
+                  "0",
+                  "-12",
+                  "+12"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Octave"
+          },
+          "profile": {
+            "default": "sheet",
+            "title": "Profile",
+            "type": "string"
+          },
+          "render_audio": {
+            "default": true,
+            "title": "Render Audio",
+            "type": "boolean"
+          },
+          "style": {
+            "anyOf": [
+              {
+                "enum": [
+                  "as-played",
+                  "open-position",
+                  "lead"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "tuning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tuning"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_createJobFromPages",
+        "type": "object"
+      },
       "Body_createJobFromUpload": {
         "properties": {
           "capo": {
@@ -1116,6 +1251,14 @@
             "title": "Interface Version",
             "type": "integer"
           },
+          "not_set_up": {
+            "description": "what is not set up on the computer right now (`band-writer`): a job that needs it is refused, and a solo is written without it (Job.without). Empty when everything is there. An app reads it to know whether making such a job again would help yet",
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Set Up",
+            "type": "array"
+          },
           "server_id": {
             "description": "stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.",
             "title": "Server Id",
@@ -1304,6 +1447,14 @@
               }
             ],
             "title": "Title"
+          },
+          "without": {
+            "description": "what the job was made without because it was not set up on the computer when the job was taken (`band-writer`: a solo line written from two listeners, not three, so a little less sure). Made again (rerunJob) once it is set up, the job uses it",
+            "items": {
+              "type": "string"
+            },
+            "title": "Without",
+            "type": "array"
           }
         },
         "required": [
@@ -2336,6 +2487,16 @@
         "properties": {
           "description": {
             "title": "Description",
+            "type": "string"
+          },
+          "input": {
+            "default": "audio",
+            "description": "what a job of the profile reads: a recording, or pages of printed music (pictures or a PDF, createJobFromPages)",
+            "enum": [
+              "audio",
+              "pages"
+            ],
+            "title": "Input",
             "type": "string"
           },
           "name": {
@@ -4318,6 +4479,9 @@
           "409": {
             "description": "not taken: the job needs a model that is not set up on the computer (`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` names the recording when the engine kept it, to ask again with"
           },
+          "415": {
+            "description": "the input is not the kind the profile reads (listProfiles: input): {code: wrong_input, detail}"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -4330,6 +4494,75 @@
           }
         },
         "summary": "Create Job",
+        "tags": [
+          "jobs"
+        ]
+      }
+    },
+    "/v1/jobs/pages": {
+      "post": {
+        "description": "Upload printed music (a screenshot, a photo of a page, a PDF; several pages in order make one score) and\nstart a job of a profile that reads pages (listProfiles: input = pages) in one request.",
+        "operationId": "createJobFromPages",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_createJobFromPages"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Job"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "description": "a page is too large to read: {code: page_too_large, detail}"
+          },
+          "415": {
+            "description": "a file is not a picture or a PDF ({code: not_a_page, detail}), or the profile does not read pages ({code: wrong_input, detail})"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "description": "this computer has no reader of printed music installed: {code: reader_missing, detail}"
+          }
+        },
+        "summary": "Create Job From Pages",
         "tags": [
           "jobs"
         ]
