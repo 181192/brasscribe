@@ -97,7 +97,7 @@ cd apps/android && ./gradlew assembleRelease assembleDebug -q   # the debug APK 
 This writes `products/brasscribe/build/outputs/apk/release/brasscribe-{arm64-v8a,universal,x86_64}-release-unsigned.apk`
 (one APK per ABI plus a universal one; the x86_64 one is not shipped). A release build stops when the
 on-device models in `models/converted` are missing or not the pinned ones (`verifyModelAssets`; fetch them as in §1;
-`-Pbrasscribe.allowNoModels` builds one without them, for a try-out only). Signing is not in Gradle. It is
+`-Pbrasscribe.allowNoModels` builds one without them, for a try-out only; refused when `CI` is set). Signing is not in Gradle. It is
 done by hand with the build tools and the key in `~/.brasscribe/release-keys`
 (`brasscribe-release.jks`, alias `brasscribe`, and `keystore-password.txt`). **Every release must use
 this key**, or it will not install over the previous one. Keep a backup of both files. Never print the
@@ -227,13 +227,15 @@ tar -czf "$OUT/scribe-core-macos-arm64.tar.gz" -C target/release scribe-core
 ## 6. Checksums and the GitHub release
 
 ```sh
-.github/scripts/release-models.py "$OUT"   # the on-device models in every file; exit 1 when an app lacks its own
+.github/scripts/release-models.py --require 'brasscribe-play-android-*.apk' "$OUT"   # exit 1 when an app lacks its models
 (cd "$OUT" && shasum -a 256 -- * > SHA256SUMS)
 ```
 
-`release-models.py` prints a table: per file, the models inside and whether that is the set its app must carry
-(the rules are in the script, the files' names and sha256 come from `convert/on-device-models.json`). Play for Android
-must carry the three pinned ONNX files byte for byte and their `NOTICE.md`; Fretscribe none. The release workflow
+`release-models.py` prints a table with a row for every file: the models inside and whether that is the set its app
+must carry (the rules are in the script, the files' names and sha256 come from `convert/on-device-models.json`). Play
+for Android must carry the three pinned ONNX files byte for byte and `NOTICE.md` (`convert/on-device-models-NOTICE.md`,
+byte for byte); Fretscribe and Play for Windows none. An APK or IPA that no rule names fails, and so does a missing
+file named with `--require`. The release workflow
 runs it on the downloaded files before it publishes. Never publish over a failure: a Play without its models sends
 every solo to the computer.
 

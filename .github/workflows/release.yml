@@ -110,7 +110,7 @@ jobs:
       # Which on-device models each file carries; stops the release when an app lacks the ones it needs
       # (.github/scripts/release-models.py says which those are).
       - name: On-device models in the release files
-        run: .github/scripts/release-models.py dist
+        run: .github/scripts/release-models.py --require 'brasscribe-play-android-arm64-v8a.apk' --require 'brasscribe-play-android-universal.apk' dist
 
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS

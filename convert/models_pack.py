@@ -129,6 +129,12 @@ def gh_download(pin: dict, patterns: list[str], into: Path) -> None:
                      "(logged in with `gh auth login`, or GH_TOKEN set with contents: read?)")
 
 
+def umask() -> int:
+    mask = os.umask(0)
+    os.umask(mask)
+    return mask
+
+
 def install(name: str, want: dict, data: bytes, converted: Path) -> None:
     """Put one checked file in place. The new file or folder is written beside the target inside its folder and
     then renamed over it, so an interrupted install leaves the old model or the new one, never half of either."""
@@ -140,6 +146,7 @@ def install(name: str, want: dict, data: bytes, converted: Path) -> None:
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(data)
+            os.chmod(tmp, 0o666 & ~umask())  # mkstemp makes it 0600; give it what a plain write would
             os.replace(tmp, target)
         except BaseException:
             Path(tmp).unlink(missing_ok=True)
@@ -167,9 +174,21 @@ def install(name: str, want: dict, data: bytes, converted: Path) -> None:
     print(f"installed {target}")
 
 
+def leftovers(converted: Path, want: dict[str, dict]) -> None:
+    """Remove what an install that was killed left beside its target (the `.<name>.*` staging files and folders)."""
+    for n, v in want.items():
+        into = converted / v["into"]
+        for p in into.glob(f".{n.removesuffix(ZIP)}.*") if into.is_dir() else ():
+            if p.is_dir() and not p.is_symlink():
+                shutil.rmtree(p, ignore_errors=True)
+            else:
+                p.unlink(missing_ok=True)
+
+
 def fetch(converted: Path, names: list[str]) -> int:
     pin = load_pin()
     want = selected(pin, names)
+    leftovers(converted, want)
     todo = [n for n, v in want.items() if not matches(packed(n, v, converted), v)]
     for n in want:
         if n not in todo:

@@ -428,7 +428,7 @@
       "licence": "MIT",
       "texts": ["MIT"],
       "notice": ["Copyright (c) 2025-2026 Lars Nieradzik"],
-      "apps": ["brasscribe-android", "brasscribe-windows"]
+      "apps": ["brasscribe-android"]
     },
     {
       "id": "basic-pitch",

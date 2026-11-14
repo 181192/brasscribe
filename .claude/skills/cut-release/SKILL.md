@@ -24,7 +24,7 @@ steps are scripted in `scripts/release.sh`. Read both before starting.
    The run's summary has the table of on-device models per file (step "On-device models in the release files" of
    the `github` job, `.github/scripts/release-models.py`): Play for Android must show the three models and
    `NOTICE.md` as ok. The step fails the release before publishing when an app lacks its models; fix the build,
-   never skip it. For files built by hand, run `.github/scripts/release-models.py <folder>` before publishing.
+   never skip it. For files built by hand, run `.github/scripts/release-models.py --require 'brasscribe-play-android-*.apk' <folder>` before publishing.
 7. If the workflow did not start from the tag, start it: `gh workflow run release.yml --ref vX.Y.Z`.
 
 Never move or delete a published tag, and never publish from a local build unless the doc's

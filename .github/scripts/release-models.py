@@ -3,12 +3,15 @@
 
     .github/scripts/release-models.py dist/                      # every file in a folder
     .github/scripts/release-models.py path/to/app.apk other.ipa  # or the files themselves
+    .github/scripts/release-models.py --require 'brasscribe-play-android-*.apk' dist/   # and that one is there
 
-Prints a Markdown table: per file, the models found in it and whether that is what the app must carry (also into
-$GITHUB_STEP_SUMMARY when set). Exit 1 when an enforced rule fails. The expected files and their sha256 and size
+Prints a Markdown table with a row for every file: the models found in it and whether that is what the app must
+carry (also into $GITHUB_STEP_SUMMARY when set). Exit 1 when an enforced rule fails, when an APK or IPA has no rule
+(a file this script does not know cannot be vouched for), or when no file matches a --require pattern. The expected files and their sha256 and size
 come from the pin, convert/on-device-models.json; RULES below says which pinned files go into which artifact and
 where. ONNX files are bundled as they are, so their bytes are checked against the pin; Core ML packages are
-compiled into .mlmodelc folders by the build, so only that the compiled weights are there and not empty.
+compiled into .mlmodelc folders by the build, so only that the compiled weights are there and not empty. NOTICE.md
+must be convert/on-device-models-NOTICE.md, byte for byte.
 Standard library only; an APK, an IPA and the Mac zip are all zip files.
 """
 
@@ -25,6 +28,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 PIN = Path(__file__).resolve().parents[2] / "convert" / "on-device-models.json"
+NOTICE = PIN.with_name("on-device-models-NOTICE.md")
+UNKNOWN_FAILS = (".apk", ".ipa")  # an app package with no rule fails
 MODEL_SUFFIXES = (".onnx", ".mlmodelc", ".mlpackage", ".tflite")
 
 
@@ -38,7 +43,6 @@ class Rule:
     notice: bool = False  # `folder`/NOTICE.md (convert/on-device-models-NOTICE.md) must be there
     none: str = ""  # no model of this suffix anywhere ("" = no such rule)
     enforced: bool = True  # False: report only (the build does not bundle them yet)
-    check: bool = True  # False: list what is there, no rule
 
 
 ANDROID = ("swift-f0-window.onnx", "nmp-b1.onnx", "beat-this-small0.onnx")
@@ -55,9 +59,13 @@ RULES = (
          coreml=APPLE, notice=True, enforced=False),
     Rule("fretscribe-ios*.ipa", "Fretscribe for iPhone and iPad", none=".mlmodelc", enforced=False),
     Rule("fretscribe-macos*.zip", "Fretscribe for Mac", none=".mlmodelc", enforced=False),
-    # Windows takes SwiftF0 from models/converted when it is there (Kalli.Brasscribe.csproj); not a rule yet.
-    Rule("brasscribe-play-windows*.zip", "Play for Windows", check=False),
+    # Play for Windows listens on the computer's engine only: no model in its download.
+    Rule("brasscribe-play-windows*.zip", "Play for Windows", none=".onnx"),
 )
+
+
+def row(*cells: str) -> str:
+    return "|" + "|".join(f" {c} " if c else " " for c in cells) + "|"
 
 
 def rule_for(name: str) -> Rule | None:
@@ -80,7 +88,7 @@ def models_in(names: list[str]) -> list[str]:
     return found
 
 
-def check(path: Path, rule: Rule, pin: dict) -> tuple[list[str], list[str]]:
+def check(path: Path, rule: Rule, pin: dict, notice_text: bytes) -> tuple[list[str], list[str]]:
     """(what is there, what is wrong) for one artifact."""
     with zipfile.ZipFile(path) as z:
         infos = {i.filename: i for i in z.infolist()}
@@ -110,10 +118,12 @@ def check(path: Path, rule: Rule, pin: dict) -> tuple[list[str], list[str]]:
             wrong += [f"{m} should not be there" for m in found if m not in expected]
         if rule.notice:
             notice = rule.folder + "NOTICE.md"
-            if notice in infos and infos[notice].file_size > 0:
-                shown.append("NOTICE.md")
-            else:
+            if notice not in infos:
                 wrong.append(f"no {notice}")
+            elif z.read(notice) != notice_text:
+                wrong.append(f"{notice} is not convert/{NOTICE.name}")
+            else:
+                shown.append("NOTICE.md")
         if rule.none:
             wrong += [f"{m} should not be there" for m in found if m.endswith(rule.none)]
         if not (rule.onnx or rule.coreml):
@@ -125,39 +135,56 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("paths", nargs="+", type=Path, help="artifacts, or folders of them")
     ap.add_argument("--pin", type=Path, default=PIN, help="the pin (default: convert/on-device-models.json)")
+    ap.add_argument("--notice", type=Path, default=NOTICE, help="the models' notice (default: convert/on-device-models-NOTICE.md)")
+    ap.add_argument("--require", action="append", default=[], metavar="GLOB",
+                    help="fail unless a file's name matches GLOB (repeatable), e.g. 'brasscribe-play-android-*.apk'")
     a = ap.parse_args(argv)
     pin = json.loads(a.pin.read_text())
+    notice_text = a.notice.read_bytes()
     unpinned = sorted({n for r in RULES for n in r.onnx + r.coreml} - set(pin["files"]))
     if unpinned:
         raise SystemExit(f"RULES names files that {a.pin.name} does not pin: {', '.join(unpinned)}")
 
     files = sorted(p for x in a.paths for p in (sorted(x.iterdir()) if x.is_dir() else [x]) if p.is_file())
-    rows, failed = ["| file | app | models inside | result |", "|---|---|---|---|"], False
+    rows, problems = ["| file | app | models inside | result |", "|---|---|---|---|"], []
     for f in files:
         rule = rule_for(f.name)
+        app = rule.app if rule else ""
+        enforced = rule is not None and rule.enforced
+        if rule is None and f.suffix in UNKNOWN_FAILS:
+            rows.append(row(f"`{f.name}`", "", "", "**wrong**: no rule for this app package"))
+            problems.append(f"{f.name}: no rule says which models it must carry (RULES in {Path(__file__).name})")
+            continue
         if not zipfile.is_zipfile(f):
-            if rule is not None and rule.check and rule.enforced:
-                rows.append(f"| `{f.name}` | {rule.app} | | **wrong**: not a zip archive |")
-                print(f"{f.name}: not a zip archive", file=sys.stderr)
-                failed = True
+            if enforced:
+                rows.append(row(f"`{f.name}`", app, "", "**wrong**: not a zip archive"))
+                problems.append(f"{f.name}: not a zip archive")
+            else:
+                rows.append(row(f"`{f.name}`", app, "", "not a zip archive, not checked"))
             continue
         if rule is None:
             with zipfile.ZipFile(f) as z:
                 found = models_in(z.namelist())
-            rows.append(f"| `{f.name}` | | {', '.join(found) or 'none'} | no rule |")
+            rows.append(row(f"`{f.name}`", "", ", ".join(found) or "none", "no rule"))
             continue
-        shown, wrong = check(f, rule, pin)
-        if not rule.check:
-            result = "listed only"
-        elif not wrong:
+        shown, wrong = check(f, rule, pin, notice_text)
+        if not wrong:
             result = "ok"
         elif rule.enforced:
-            result, failed = "**wrong**: " + "; ".join(wrong), True
+            result = "**wrong**: " + "; ".join(wrong)
+            problems += [f"{f.name}: {w}" for w in wrong]
         else:
             result = "not enforced yet: " + "; ".join(wrong)
-        rows.append(f"| `{f.name}` | {rule.app} | {', '.join(shown) or 'none'} | {result} |")
-        for w in wrong if rule.check else ():
-            print(f"{f.name}: {w}{'' if rule.enforced else ' (not enforced yet)'}", file=sys.stderr)
+            for w in wrong:
+                print(f"{f.name}: {w} (not enforced yet)", file=sys.stderr)
+        rows.append(row(f"`{f.name}`", rule.app, ", ".join(shown) or "none", result))
+    for glob in a.require:
+        if not any(fnmatch.fnmatchcase(f.name, glob) for f in files):
+            rows.append(row(f"`{glob}`", getattr(rule_for(glob.replace("*", "x")), "app", ""), "", "**wrong**: no such file"))
+            problems.append(f"no file matches {glob}, which is required")
+    for problem in problems:
+        print(problem, file=sys.stderr)
+    failed = bool(problems)
     table = "\n".join(rows) + "\n"
     print(table, end="")
     if os.environ.get("GITHUB_STEP_SUMMARY"):
