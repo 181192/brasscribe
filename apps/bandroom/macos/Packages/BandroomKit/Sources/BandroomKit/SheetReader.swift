@@ -18,6 +18,29 @@ public enum SheetReader {
     public static let neededFreeBytes: Int64 = 2_000_000_000
     /// The line the adapter runner ends on when the weights could not be fetched (run_adapter.py, REFUSAL).
     static let weightsNotFetched = "scribe-refusal: weights_missing"
+    /// The line it ends on when the disk filled up while the weights were written.
+    static let diskFull = "scribe-refusal: no_space"
+    /// What an installer (uv, pixi) says when it cannot reach where the packages are: the words of the HTTP and
+    /// socket layers under it, which stay the same from one version to the next where its own wording does not.
+    static let noConnection = ["error sending request", "dns error", "failed to lookup address", "tcp connect error",
+                               "connection refused", "network is unreachable", "no route to host", "operation timed out"]
+    /// What it, or the system under it, says when the disk is full.
+    static let noSpace = ["no space left on device", "os error 28"]
+
+    /// Why a failed install failed, if what it wrote says: the last line that names a full disk or no connection
+    /// (the runner's own names for the two, else the installer's words). Nil when it says neither.
+    static func reason(in output: String) -> SheetReaderFailure? {
+        var why: SheetReaderFailure?
+        for line in output.split(whereSeparator: \.isNewline) {
+            let said = line.trimmingCharacters(in: .whitespaces).lowercased()
+            if said == diskFull || noSpace.contains(where: said.contains) {
+                why = .diskFull
+            } else if said == weightsNotFetched || noConnection.contains(where: said.contains) {
+                why = .network
+            }
+        }
+        return why
+    }
     /// Written into the environment once an install here ran to its end, so it goes when the environment goes.
     static let marker = ".scribe-reader-installed"
 }
@@ -65,8 +88,10 @@ public enum SheetReaderFailure: Error, Equatable, Sendable {
     /// There is no engine to install it with yet.
     case notSetUp
     case notEnoughSpace(neededBytes: Int64, freeBytes: Int64)
-    /// Its weights could not be fetched: no network, or one that stalled.
+    /// The environment or the weights could not be fetched: no network, or one that stalled.
     case network
+    /// The disk filled up during the install.
+    case diskFull
     /// The install stopped on something else; the details are in the setup log.
     case stopped(String)
 }
@@ -153,10 +178,9 @@ public final class SheetReaderInstaller {
         pid = nil
         guard !cancelled else { phase = .idle; return }
         guard status == 0 else {
-            let said = LatestRun.text(log: plan.log)
-            let network = said.split(whereSeparator: \.isNewline).contains { $0.trimmingCharacters(in: .whitespaces) == SheetReader.weightsNotFetched }
-            log?("reader: the install stopped with \(ExitStatus.describe(status))\(network ? ": its weights could not be fetched" : ""); see \(plan.log.path)")
-            phase = .failed(network ? .network : .stopped("\(ExitStatus.describe(status)); see \(plan.log.path)"))
+            let why = SheetReader.reason(in: LatestRun.text(log: plan.log))
+            log?("reader: the install stopped with \(ExitStatus.describe(status))\(why.map { " (\($0))" } ?? ""); see \(plan.log.path)")
+            phase = .failed(why ?? .stopped("\(ExitStatus.describe(status)); see \(plan.log.path)"))
             return
         }
         do {

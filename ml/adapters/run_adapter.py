@@ -260,10 +260,24 @@ def _fetch(url: str, part: Path) -> None:
         shutil.copyfileobj(response, out, 1 << 20)
 
 
+def _disk_full(e: BaseException) -> bool:
+    """`e` is the disk refusing a write for want of room (or of quota): not the network's doing, whatever was being fetched."""
+    import errno
+
+    return isinstance(e, OSError) and e.errno in (errno.ENOSPC, errno.EDQUOT)
+
+
+def _no_space(what: str, e: BaseException) -> SystemExit:
+    print(f"{what} could not be written: {e}", file=sys.stderr)
+    print(f"{REFUSAL}no_space", file=sys.stderr)
+    return SystemExit(5)
+
+
 def homr_setup() -> None:
     """homr's weights, checked and in place. Idempotent: fetches only an archive that is missing or of the wrong
     size, and unpacks only a file homr does not have whole. A fetch that fails (no network, or one that stalls)
-    is named as such, so that it is not taken for a page that could not be read."""
+    is named as such, so that it is not taken for a page that could not be read; so is a disk that is full, which
+    is neither the page's doing nor the network's."""
     import http.client
     import zipfile
 
@@ -282,6 +296,8 @@ def homr_setup() -> None:
                 try:
                     _fetch(f"{HOMR_RELEASE}/{name}", part)
                 except (OSError, http.client.HTTPException) as e:  # URLError and a timeout are OSErrors
+                    if _disk_full(e):  # the write of what arrived, not the fetch
+                        raise _no_space(name, e) from None
                     print(f"{name} could not be fetched: {e}", file=sys.stderr)
                     print(f"{REFUSAL}weights_missing", file=sys.stderr)
                     raise SystemExit(4) from None
@@ -292,8 +308,13 @@ def homr_setup() -> None:
             for member in z.infolist():
                 target = package / folder / Path(member.filename).name
                 if member.filename.endswith(".onnx") and not (target.is_file() and target.stat().st_size == member.file_size):
-                    with atomic(target) as part, z.open(member) as src, open(part, "wb") as out:
-                        shutil.copyfileobj(src, out, 1 << 20)
+                    try:
+                        with atomic(target) as part, z.open(member) as src, open(part, "wb") as out:
+                            shutil.copyfileobj(src, out, 1 << 20)
+                    except OSError as e:
+                        if _disk_full(e):
+                            raise _no_space(target.name, e) from None
+                        raise
 
 
 def homr(src: Path, dst: Path) -> None:

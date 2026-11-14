@@ -69,6 +69,7 @@ import Testing
         #expect(runner.contains("argv == [\"--setup\", \"homr\"]"))
         #expect(runner.contains("REFUSAL = \"scribe-refusal: \"") && runner.contains("{REFUSAL}weights_missing"))
         #expect(SheetReader.weightsNotFetched == "scribe-refusal: weights_missing")
+        #expect(runner.contains("{REFUSAL}no_space") && SheetReader.diskFull == "scribe-refusal: no_space")
         #expect(FileManager.default.fileExists(atPath: root.appending(path: "ml/adapters/homr/pyproject.toml").path))
         // The weights are pinned in the runner alone: nothing in Bandroom names an archive of them.
         let pinned = runner.matches(of: /"((?:segnet|encoder|decoder)[\w-]+\.zip)"/).map { String($0.output.1) }
@@ -120,7 +121,7 @@ import Testing
         let log = try config.readerInstallPlan(base: base).log
         try FileManager.default.createDirectory(at: log.deletingLastPathComponent(), withIntermediateDirectories: true)
         // An earlier run that failed on the network, then this one, which fails on something else.
-        try Data("--- then pixi run\nscribe-refusal: weights_missing\n\n--- now pixi run\nerror: no space left on device\n".utf8).write(to: log)
+        try Data("--- then pixi run\nscribe-refusal: weights_missing\n\n--- now pixi run\nerror: the lockfile is not up to date\n".utf8).write(to: log)
         launcher.exitStatus = 4 << 8
         await reader.install(configuration: config, base: base)
         guard case .failed(.stopped(let why)) = reader.phase else { Issue.record("\(reader.phase)"); return }
@@ -132,12 +133,25 @@ import Testing
         #expect(reader.phase == .failed(.network))
         #expect(SheetReaderState.resolve(phase: reader.phase, installed: false) == .failed(.network))
 
+        // The disk filling up is its own case, at either step; so is no connection at the environment step, where
+        // only the installer's own words say so. What says neither is not guessed at.
+        for (said, why) in [("scribe-refusal: no_space", SheetReaderFailure.diskFull),
+                            ("error: failed to write: No space left on device (os error 28)", .diskFull),
+                            ("  × error sending request for url (https://pypi.org/simple/homr/)", .network),
+                            ("  ╰─▶ dns error: failed to lookup address information", .network)] {
+            try Data("\n--- now pixi run\nResolving the environment\n\(said)\n  help: see the documentation\n".utf8).write(to: log)
+            await reader.install(configuration: config, base: base)
+            #expect(reader.phase == .failed(why), "\(said)")
+        }
+        #expect(SheetReader.reason(in: "error: the lockfile is not up to date") == nil)
+        #expect(SheetReader.reason(in: "scribe-refusal: weights_missing\nscribe-refusal: no_space") == .diskFull)
+
         // Try again: the same run once more, and this time it gets there.
         try runnerMakesTheEnvironment(config)
         launcher.exitStatus = 0
         await reader.install(configuration: config, base: base)
         #expect(reader.phase == .done && config.source.isReaderInstalled)
-        #expect(launcher.launched.count == 3)
+        #expect(launcher.launched.count == 7)
     }
 
     @Test func tooLittleSpaceOrNoEngineStartsNothing() async throws {

@@ -405,6 +405,7 @@ def test_a_page_too_large_to_read_is_refused_before_anything_opens_it(client, se
 @pytest.mark.parametrize("refusal, words", [("no_music", "no notes were found on the page"), ("too_many_pages", "there are more than 40 pages"),
                                             ("page_too_large", "a page is too large to read"),
                                             ("weights_missing", "the reader's files could not be fetched: check the network and try again"),
+                                            ("no_space", "the computer's disk is full: free some space on it and try again"),
                                             ("something_else", "the pages could not be read")])
 def test_a_page_that_cannot_be_read_fails_in_fixed_words_without_the_computers_paths(client, monkeypatch, refusal, words):
     monkeypatch.setenv("FAKE_REFUSAL", refusal)
@@ -458,6 +459,19 @@ def test_weights_that_cannot_be_fetched_are_named_and_not_taken_for_an_unreadabl
         runner.homr_setup()
     assert capsys.readouterr().err.splitlines()[-1] == "scribe-refusal: weights_missing"
     assert 0 < runner.HOMR_FETCH_TIMEOUT_S <= 120
+
+    # A disk that fills up while what arrived is written is not the network's doing: it has a name of its own.
+    import errno
+
+    monkeypatch.setattr(runner, "_fetch", lambda url, part: (_ for _ in ()).throw(OSError(errno.ENOSPC, "No space left on device")))
+    with pytest.raises(SystemExit) as stopped:
+        runner.homr_setup()
+    assert stopped.value.code not in (0, None)
+    said = capsys.readouterr().err.splitlines()
+    assert said[-1] == "scribe-refusal: no_space" and "weights_missing" not in "\n".join(said)
+    assert said[-1].removeprefix(runner.REFUSAL) in sheet.REFUSALS
+    assert "network" not in sheet.REFUSALS["no_space"] and "page" not in sheet.REFUSALS["no_space"]
+    assert not list((tmp_path / "models" / "homr").iterdir())
 
 
 def test_without_the_recogniser_the_profiles_are_not_offered_and_a_job_is_refused(client, settings, monkeypatch):

@@ -300,7 +300,7 @@
     <value>Telefonene kan sende et bilde eller en PDF av trykte noter og få et partitur eller en tab tilbake. Til det trengs en noteleser, homr, som ikke er en del av Brasscribe: den er fri programvare under lisensen AGPL-3.0.</value>
   </data>
   <data name="Settings_Reader_Source" xml:space="preserve">
-    <value>Brasscribe deler den ikke videre. PC-en laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent {0} GB) og kjører den som et eget program.</value>
+    <value>Den følger ikke med Brasscribe: PC-en laster den ned rett fra dem som har laget den (PyPI og GitHub, omtrent {0} GB), og Brasscribe kjører den som et eget program.</value>
   </data>
   <data name="Settings_Reader_Read" xml:space="preserve">
     <value>Les om homr og lisensen</value>
@@ -315,10 +315,13 @@
     <value>Noteleseren er installert. Telefonene kan sende bilder av noter nå.</value>
   </data>
   <data name="Settings_Reader_Wait" xml:space="preserve">
-    <value>Brasscribe gjøres fortsatt klar. Noteleseren kan installeres når det er ferdig.</value>
+    <value>Brasscribe er ikke ferdig satt opp ennå. Noteleseren kan installeres når det er gjort.</value>
   </data>
   <data name="Settings_Reader_Failed" xml:space="preserve">
-    <value>Noteleseren ble ikke installert. Prøv igjen. Detaljene står i loggen.</value>
+    <value>Noteleseren ble ikke installert. Sjekk internettforbindelsen, og prøv igjen. Detaljene står i loggen.</value>
+  </data>
+  <data name="Settings_Reader_Failed_Full" xml:space="preserve">
+    <value>Disken er full, så noteleseren ble ikke installert. Frigjør plass, og prøv igjen.</value>
   </data>
   <data name="Settings_Reader_Failed_Network" xml:space="preserve">
     <value>Filene til noteleseren ble ikke lastet ned. Sjekk internettforbindelsen, og prøv igjen.</value>

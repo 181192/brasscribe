@@ -124,7 +124,8 @@ serves the HTTP API that Studio and the Play apps use. Bandroom (Mac and Windows
   - A page that cannot be read fails the job in fixed words: `no notes were found on the page`, `there are more
     than 40 pages`, `a page is too large to read`, or `the pages could not be read`. A job whose weights could
     not be fetched (no network, or a fetch that sends nothing for a minute) says that instead, and nothing about
-    the page: `the reader's files could not be fetched: check the network and try again`. What homr itself said
+    the page: `the reader's files could not be fetched: check the network and try again`. A disk that fills up while
+    they are written is neither: `the computer's disk is full: free some space on it and try again`. What homr itself said
     is in the job's log with the computer's paths cut out.
   - A photo is turned the way its EXIF orientation says before it is read (a march photographed sideways with
     the tag read as well as upright). A page that lies on its side with no such tag is not read: no notes are

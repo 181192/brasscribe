@@ -619,12 +619,13 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
 
     /// <summary>
     /// The environments first if they aren't all installed; else only the model downloads still missing. While setup
-    /// or an update runs, asking again joins it.
+    /// or an update runs, asking again joins it; while the reader of printed music installs, it waits for that to
+    /// end and then runs, since joining that run would finish nothing of setup.
     /// </summary>
     public void FinishSetup()
     {
         if (_bootstrap is not { } bootstrap || _controller is null) return;
-        _ = _setup.RunAsync(() => FinishSetupAsync(bootstrap));
+        _ = _setup.RunAfterAsync(ReaderRun, () => FinishSetupAsync(bootstrap));
     }
 
     private async Task FinishSetupAsync(Bootstrapper bootstrap)
@@ -804,11 +805,14 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     /// Through the same gate as setup and updates, so pixi never installs two things at once. The engine keeps
     /// running: it looks for the reader at each request, so the two profiles are offered as soon as it is there.
     /// </summary>
+    /// <summary>The reader's install, among the runs of the setup gate: Finish setting up waits for it instead of joining it.</summary>
+    private const string ReaderRun = "reader";
+
     Task ISheetReaderHost.InstallAsync()
     {
         if (_demo) { _demoReaderInstalled = true; return Task.CompletedTask; }
         if (_bootstrap is not { } bootstrap) throw new SheetReaderException(SheetReaderFailure.NotSetUp);
-        return _setup.RunAsync(() => Task.Run(() => bootstrap.InstallReaderAsync(_quit.Token)));
+        return _setup.RunAsync(() => Task.Run(() => bootstrap.InstallReaderAsync(_quit.Token)), ReaderRun);
     }
 
     /// <summary>Restarts a running engine now if nothing is being made, else once the score is done.</summary>

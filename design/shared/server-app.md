@@ -521,14 +521,15 @@ The Norwegian is written, not translated (brand.md voice rule 8). `{host}` is th
 | settings.hf.change | Sign in again… | Logg inn på nytt … |
 | settings.reader | Sheet music from pictures | Noter fra bilder |
 | settings.reader.body | Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence. | Telefonene kan sende et bilde eller en PDF av trykte noter og få et partitur eller en tab tilbake. Til det trengs en noteleser, homr, som ikke er en del av Brasscribe: den er fri programvare under lisensen AGPL-3.0. |
-| settings.reader.source.mac | Brasscribe doesn't pass it on: this Mac downloads it from PyPI and from homr's releases on GitHub (about {n} GB) and runs it as a separate program. | Brasscribe deler den ikke videre. Macen laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent {n} GB) og kjører den som et eget program. |
-| settings.reader.source.win | Brasscribe doesn't pass it on: this PC downloads it from PyPI and from homr's releases on GitHub (about {n} GB) and runs it as a separate program. | Brasscribe deler den ikke videre. PC-en laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent {n} GB) og kjører den som et eget program. |
+| settings.reader.source.mac | It doesn't come with Brasscribe: this Mac downloads it straight from its makers (PyPI and GitHub, about {n} GB), and Brasscribe runs it as a separate program. | Den følger ikke med Brasscribe: Macen laster den ned rett fra dem som har laget den (PyPI og GitHub, omtrent {n} GB), og Brasscribe kjører den som et eget program. |
+| settings.reader.source.win | It doesn't come with Brasscribe: this PC downloads it straight from its makers (PyPI and GitHub, about {n} GB), and Brasscribe runs it as a separate program. | Den følger ikke med Brasscribe: PC-en laster den ned rett fra dem som har laget den (PyPI og GitHub, omtrent {n} GB), og Brasscribe kjører den som et eget program. |
 | settings.reader.read | Read about homr and its licence | Les om homr og lisensen |
 | settings.reader.install | Install the reader | Installer noteleseren |
 | settings.reader.installing | Installing the reader… This takes a few minutes. | Installerer noteleseren … Det tar noen minutter. |
 | settings.reader.installed | The reader is installed. Phones can send pictures of sheet music now. | Noteleseren er installert. Telefonene kan sende bilder av noter nå. |
-| settings.reader.wait | Brasscribe is still being set up. The reader can be installed once that is done. | Brasscribe gjøres fortsatt klar. Noteleseren kan installeres når det er ferdig. |
-| settings.reader.failed | The reader wasn't installed. Try again; the log has the details. | Noteleseren ble ikke installert. Prøv igjen. Detaljene står i loggen. |
+| settings.reader.wait | Brasscribe is still being set up. The reader can be installed once that is done. | Brasscribe er ikke ferdig satt opp ennå. Noteleseren kan installeres når det er gjort. |
+| settings.reader.failed | The reader wasn't installed. Check the internet connection and try again; the log has the details. · [Show logs] | Noteleseren ble ikke installert. Sjekk internettforbindelsen, og prøv igjen. Detaljene står i loggen. · [Vis logger] |
+| settings.reader.failed.full | The disk is full, so the reader wasn't installed. Free some space, then try again. | Disken er full, så noteleseren ble ikke installert. Frigjør plass, og prøv igjen. |
 | settings.reader.failed.network | The reader's files couldn't be downloaded. Check the internet connection, then try again. | Filene til noteleseren ble ikke lastet ned. Sjekk internettforbindelsen, og prøv igjen. |
 | settings.reader.failed.space | Not enough space: the reader needs about {n} GB, and {m} GB is free. | Ikke nok plass: noteleseren trenger omtrent {n} GB, og {m} GB er ledig. |
 | settings.updates | Updates | Oppdateringer |

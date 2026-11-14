@@ -69,6 +69,35 @@ public static class SheetReader
     public const long NeededFreeBytes = 2_000_000_000;
     /// <summary>The line the adapter runner ends on when the weights could not be fetched (run_adapter.py, REFUSAL).</summary>
     public const string WeightsNotFetched = "scribe-refusal: weights_missing";
+    /// <summary>The line it ends on when the disk filled up while the weights were written.</summary>
+    public const string DiskFull = "scribe-refusal: no_space";
+
+    /// <summary>
+    /// What an installer (pixi, uv) says when it cannot reach where the packages are: the words of the HTTP and
+    /// socket layers under it, which stay the same from one version to the next where its own wording does not.
+    /// </summary>
+    private static readonly string[] NoConnection =
+    [
+        "error sending request", "dns error", "failed to lookup address", "tcp connect error", "Connection refused",
+        "Network is unreachable", "No route to host", "operation timed out", "No such host is known",
+    ];
+
+    /// <summary>What it, or the system under it, says when the disk is full.</summary>
+    private static readonly string[] NoSpace = ["No space left on device", "not enough space on the disk", "os error 28", "os error 112"];
+
+    /// <summary>
+    /// What a line of a failed step's output says about why it failed, if it says: the runner's own names for the
+    /// two cases, else the installer's words for no connection or a full disk.
+    /// </summary>
+    public static SheetReaderFailure? Reason(string line)
+    {
+        string said = line.Trim();
+        if (said == DiskFull) return SheetReaderFailure.DiskFull;
+        if (said == WeightsNotFetched) return SheetReaderFailure.Network;
+        if (NoSpace.Any(w => said.Contains(w, StringComparison.OrdinalIgnoreCase))) return SheetReaderFailure.DiskFull;
+        if (NoConnection.Any(w => said.Contains(w, StringComparison.OrdinalIgnoreCase))) return SheetReaderFailure.Network;
+        return null;
+    }
 }
 
 /// <summary>Why the reader was not installed.</summary>
@@ -78,8 +107,10 @@ public enum SheetReaderFailure
     NotSetUp,
     /// <summary>pixi could not install its environment.</summary>
     Environment,
-    /// <summary>Its weights could not be fetched: no network, or one that stalled.</summary>
+    /// <summary>The environment or the weights could not be fetched: no network, or one that stalled.</summary>
     Network,
+    /// <summary>The disk filled up during the install.</summary>
+    DiskFull,
     /// <summary>The weights step stopped on something else (a checksum that does not match, the disk).</summary>
     Weights,
 }
@@ -273,13 +304,16 @@ public sealed class Bootstrapper
         string hash = InstalledLockHash;
         var install = InstallSpec(SheetReader.Environment);
         _log.Write($"bandroom: installing the reader of printed music: {install.FileName} {string.Join(' ', install.Arguments)}");
-        int code = await RunAsync(install, _ => { }, ct).ConfigureAwait(false);
-        if (code != 0) throw new SheetReaderException(SheetReaderFailure.Environment, code);
+        // Why a step failed is the last thing its output says about it: a full disk, no connection, or neither.
+        SheetReaderFailure? why = null;
+        void Listen(string line) => why = SheetReader.Reason(line) ?? why;
+        int code = await RunAsync(install, Listen, ct).ConfigureAwait(false);
+        if (code != 0) throw new SheetReaderException(why ?? SheetReaderFailure.Environment, code);
         var weights = ReaderWeightsSpec();
         _log.Write($"bandroom: fetching the reader's weights: {weights.FileName} {string.Join(' ', weights.Arguments)}");
-        bool notFetched = false;
-        code = await RunAsync(weights, line => notFetched |= line.Trim() == SheetReader.WeightsNotFetched, ct).ConfigureAwait(false);
-        if (code != 0) throw new SheetReaderException(notFetched ? SheetReaderFailure.Network : SheetReaderFailure.Weights, code);
+        why = null;
+        code = await RunAsync(weights, Listen, ct).ConfigureAwait(false);
+        if (code != 0) throw new SheetReaderException(why ?? SheetReaderFailure.Weights, code);
         WriteMarker(ReaderMarker, hash);
         _log.Write("bandroom: the reader of printed music is installed");
     }

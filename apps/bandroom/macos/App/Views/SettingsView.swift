@@ -54,7 +54,7 @@ struct SettingsView: View {
                 // What it is, its licence and where it comes from, before the button that fetches it.
                 Text("Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence.")
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Brasscribe doesn't pass it on: this Mac downloads it from PyPI and from homr's releases on GitHub (about \(Strings.gigabytes(SheetReader.downloadBytes)) GB) and runs it as a separate program.")
+                Text("It doesn't come with Brasscribe: this Mac downloads it straight from its makers (PyPI and GitHub, about \(Strings.gigabytes(SheetReader.downloadBytes)) GB), and Brasscribe runs it as a separate program.")
                     .font(.caption).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
                 switch app.readerState {
                 case .notInstalled:
@@ -73,6 +73,8 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 case .failed(let why):
                     Text(Strings.readerFailure(why)).fixedSize(horizontal: false, vertical: true)
+                    // Where its words send the person to the log: the way there, as in the panel's details.
+                    if case .stopped = why { Button("Show logs") { app.showLogs() } }
                 }
                 HStack {
                     Button("Read about homr and its licence") { NSWorkspace.shared.open(SheetReader.page) }

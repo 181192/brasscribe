@@ -72,6 +72,7 @@ REFUSALS = {
     "too_many_pages": f"there are more than {pages.MAX_PAGES} pages",
     "page_too_large": "a page is too large to read",
     "weights_missing": "the reader's files could not be fetched: check the network and try again",
+    "no_space": "the computer's disk is full: free some space on it and try again",
 }
 NOT_READ = "the pages could not be read"
 # What the API answers 503 with for a job of these profiles on a computer without the recogniser.

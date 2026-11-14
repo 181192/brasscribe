@@ -105,6 +105,10 @@ public sealed class SheetReaderTests : IDisposable
         Assert.Contains("REFUSAL = \"scribe-refusal: \"", runner);
         Assert.Contains("{REFUSAL}weights_missing", runner);
         Assert.Equal("scribe-refusal: weights_missing", SheetReader.WeightsNotFetched);
+        Assert.Contains("{REFUSAL}no_space", runner);
+        Assert.Equal("scribe-refusal: no_space", SheetReader.DiskFull);
+        // A step that says nothing of the kind is not guessed at.
+        Assert.Null(SheetReader.Reason("error: the lockfile is not up to date"));
         // The weights are pinned in the runner alone: Bandroom names no archive, size or checksum of its own.
         var pinned = Regex.Matches(runner, @"""((?:segnet|encoder|decoder)[\w-]+\.zip)""").Select(m => m.Groups[1].Value).ToList();
         Assert.Equal(3, pinned.Count);
@@ -122,12 +126,17 @@ public sealed class SheetReaderTests : IDisposable
 
     [Theory]
     [InlineData("install", null, SheetReaderFailure.Environment)]
+    [InlineData("install", "  × error sending request for url (https://pypi.org/simple/homr/)", SheetReaderFailure.Network)]
+    [InlineData("install", "  ╰─▶ dns error: failed to lookup address information", SheetReaderFailure.Network)]
+    [InlineData("install", "failed to write: No space left on device (os error 28)", SheetReaderFailure.DiskFull)]
+    [InlineData("install", "There is not enough space on the disk. (os error 112)", SheetReaderFailure.DiskFull)]
     [InlineData("run", "scribe-refusal: weights_missing", SheetReaderFailure.Network)]
+    [InlineData("run", "scribe-refusal: no_space", SheetReaderFailure.DiskFull)]
     [InlineData("run", "segnet.zip: SHA-256 abc, expected def; not kept", SheetReaderFailure.Weights)]
     public async Task A_step_that_fails_says_which_and_leaves_the_reader_uninstalled(string step, string? output, SheetReaderFailure expected)
     {
         var (boot, launcher, _) = await SetUpAsync(spec => spec.Arguments[0] == step ? 4 : 0);
-        if (output is not null) launcher.Output = ["urlopen error: no route to the host", output];
+        if (output is not null) launcher.Output = ["Installing the environment", output, "  help: see the documentation"];
         var e = await Assert.ThrowsAsync<SheetReaderException>(() => boot.InstallReaderAsync(CancellationToken.None));
         Assert.Equal(expected, e.Failure);
         Assert.Equal(4, e.ExitCode);
@@ -139,6 +148,43 @@ public sealed class SheetReaderTests : IDisposable
         launcher.Output = [];
         await boot.InstallReaderAsync(CancellationToken.None);
         Assert.True(boot.ReaderInstalled);
+    }
+
+    /// <summary>
+    /// The reader's install goes through the gate setup uses. Finish setting up pressed meanwhile used to join that
+    /// run and do nothing; now it waits for it and then runs. Anything else that is going is still joined.
+    /// </summary>
+    [Fact]
+    public async Task Finish_setting_up_during_a_reader_install_runs_after_it_and_is_not_swallowed_by_it()
+    {
+        var gate = new SingleFlight();
+        var readerDone = new TaskCompletionSource();
+        var order = new List<string>();
+        var reader = gate.RunAsync(async () => { order.Add("reader starts"); await readerDone.Task; order.Add("reader ends"); }, "reader");
+        var finish = gate.RunAfterAsync("reader", () => { order.Add("setup runs"); return Task.CompletedTask; });
+        await Task.Delay(20);
+        Assert.Equal(["reader starts"], order);
+        Assert.False(finish.IsCompleted);
+        readerDone.SetResult();
+        await finish;
+        await reader;
+        Assert.Equal(["reader starts", "reader ends", "setup runs"], order);
+
+        // A reader install that fails does not take Finish setting up with it.
+        var failing = gate.RunAsync(() => Task.FromException(new SheetReaderException(SheetReaderFailure.Network, 4)), "reader");
+        await gate.RunAfterAsync("reader", () => { order.Add("setup runs again"); return Task.CompletedTask; });
+        await Assert.ThrowsAsync<SheetReaderException>(() => failing);
+        Assert.Equal("setup runs again", order[^1]);
+
+        // Setup itself going: a second press joins it, as before.
+        var setupDone = new TaskCompletionSource();
+        var setup = gate.RunAsync(() => setupDone.Task);
+        int ran = 0;
+        var second = gate.RunAfterAsync("reader", () => { ran++; return Task.CompletedTask; });
+        setupDone.SetResult();
+        await Task.WhenAll(setup, second);
+        Assert.Equal(0, ran);
+        Assert.False(gate.IsRunning);
     }
 
     [Fact]
@@ -220,9 +266,10 @@ public sealed class SheetReaderTests : IDisposable
         Assert.Contains("not part of Brasscribe", en.Body);
         Assert.Contains("AGPL-3.0", en.Body);
         Assert.Contains("PyPI", en.Source);
-        Assert.Contains("homr's releases on GitHub", en.Source);
+        Assert.Contains("GitHub", en.Source);
+        Assert.StartsWith("It doesn't come with Brasscribe", en.Source);
         Assert.Contains("about 0.6 GB", en.Source);
-        Assert.Contains("this PC downloads it", en.Source);
+        Assert.Contains("this PC downloads it straight from its makers", en.Source);
         Assert.Contains("separate program", en.Source);
         Assert.Equal("Read about homr and its licence", en.ReadMore);
         Assert.Equal("Install the reader", en.Button);
@@ -250,10 +297,13 @@ public sealed class SheetReaderTests : IDisposable
         var deck = File.ReadLines(Path.Combine(TestPaths.RepoRoot, "design", "shared", "server-app.md"))
             .Where(l => l.StartsWith("| settings.reader", StringComparison.Ordinal))
             .Select(l => l.Trim('|').Split(" | ").Select(c => c.Trim()).ToArray())
-            .ToDictionary(c => c[0], c => (En: c[1], Nb: c[2]));
+            // "words · [button]": the button beside a message has a string of its own (Show logs is tech.logs).
+            .ToDictionary(c => c[0], c => (En: Regex.Replace(c[1], @" · \[[^\]]+\]$", ""), Nb: Regex.Replace(c[2], @" · \[[^\]]+\]$", "")));
+        string wholeDeck = File.ReadAllText(Path.Combine(TestPaths.RepoRoot, "design", "shared", "server-app.md"));
+        Assert.Contains($"| settings.reader.failed | {Strings.En["Settings_Reader_Failed"]} · [{Strings.En["Tech_Logs"]}] | {Strings.Nb["Settings_Reader_Failed"]} · [{Strings.Nb["Tech_Logs"]}] |", wholeDeck);
         string mac = File.ReadAllText(Path.Combine(TestPaths.RepoRoot, "apps", "bandroom", "macos", "scripts", "make-strings.py"));
         var keys = Strings.En.All.Keys.Where(k => k.StartsWith("Settings_Reader", StringComparison.Ordinal)).ToList();
-        Assert.Equal(11, keys.Count);
+        Assert.Equal(12, keys.Count);
         Assert.Equal(keys.Count + 1, deck.Count); // the source line is there once per platform
         foreach (var key in keys)
         {
@@ -286,8 +336,9 @@ public sealed class SheetReaderTests : IDisposable
         Assert.Equal(SheetReaderState.Installing, vm.State);
 
         vm.ShowSample(SheetReaderViewModel.SampleState("reader-failed")!.Value);
-        Assert.Equal("The reader's files couldn't be downloaded. Check the internet connection, then try again.", vm.Status);
+        Assert.Equal("The reader wasn't installed. Check the internet connection and try again; the log has the details.", vm.Status);
         Assert.Equal("Try again", vm.Button);
+        Assert.True(vm.ShowsLogs); // the view with the most on it: the words, the way to the log, Try again
         vm.Refresh();
         Assert.Equal(SheetReaderState.Failed, vm.State);
 
@@ -337,8 +388,9 @@ public sealed class SheetReaderTests : IDisposable
 
     [Theory]
     [InlineData(SheetReaderFailure.Network, "The reader's files couldn't be downloaded. Check the internet connection, then try again.")]
-    [InlineData(SheetReaderFailure.Environment, "The reader wasn't installed. Try again; the log has the details.")]
-    [InlineData(SheetReaderFailure.Weights, "The reader wasn't installed. Try again; the log has the details.")]
+    [InlineData(SheetReaderFailure.DiskFull, "The disk is full, so the reader wasn't installed. Free some space, then try again.")]
+    [InlineData(SheetReaderFailure.Environment, "The reader wasn't installed. Check the internet connection and try again; the log has the details.")]
+    [InlineData(SheetReaderFailure.Weights, "The reader wasn't installed. Check the internet connection and try again; the log has the details.")]
     public async Task A_failure_is_said_on_the_card_with_try_again(SheetReaderFailure failure, string words)
     {
         var host = new Host { Install = () => throw new SheetReaderException(failure, 4) };
@@ -350,10 +402,14 @@ public sealed class SheetReaderTests : IDisposable
         Assert.Equal("Try again", vm.Button);
         Assert.True(vm.ShowsButton && vm.CanInstall);
         Assert.Equal([words], said.Said);
+        // Words that send the person to the log come with the way there; the others say what to do themselves.
+        Assert.Equal(words.Contains("the log has the details"), vm.ShowsLogs);
+        Assert.Equal("Show logs", vm.Logs);
 
         host.Install = () => { host.Installed = true; return Task.CompletedTask; };
         await vm.InstallAsync();
         Assert.Equal(SheetReaderState.Installed, vm.State);
+        Assert.False(vm.ShowsLogs);
         Assert.Equal(2, host.Installs);
     }
 

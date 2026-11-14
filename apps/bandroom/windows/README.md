@@ -87,7 +87,10 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   Bandroom. A marker like the other environments' is written once both steps are done, so after an app update with
   a new `pixi.lock` an installed reader is reinstalled with the rest, and one never asked for is not. The engine
   looks for the environment at each request, so phones are offered the two profiles as soon as it is there, without
-  a restart; the card shows it as not installed, installing, installed, or why it stopped, with Try again. It lives
+  a restart; the card shows it as not installed, installing, installed, or why it stopped (no connection, a full
+  disk, or the log has the details, with Show logs beside it), with Try again. The install goes through the gate
+  setup uses, so pixi never installs two things at once; Finish setting up pressed meanwhile waits for it and then
+  runs. It lives
   in the data folder with the other environments and models, and goes when they go.
 - **The engine** is `pixi run --manifest-path <envs>\pixi.toml --frozen -e default scribe serve --lan
   --port N` on the first free port from 8765, in a job object (Stop, Restart and Bandroom exiting end the
