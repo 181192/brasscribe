@@ -116,6 +116,11 @@ public sealed class BandroomController
     public double SetupFraction { get; set; }
     /// <summary>Which of the downloads a full-band score needs are missing (<see cref="ModelCheck"/>); checked every tick.</summary>
     public Func<ModelCheckResult> CheckModels { get; set; } = () => ModelCheckResult.Ready;
+    /// <summary>Whether full-band scores are wanted here; null in tests that don't care.</summary>
+    public BandWriterSetup? BandWriter { get; set; }
+    /// <summary>Raised each time a phone asks for a full-band score that this computer is not set up for.</summary>
+    public event Action? BandWriterAskedFor;
+    private int _refusalsSaid;
     /// <summary>The model download, when one has been started: its progress replaces the missing-download problem.</summary>
     public ModelDownloader? Downloads { get; set; }
     /// <summary>The computer's name and hardware; the name changes when one is set in Settings.</summary>
@@ -241,6 +246,15 @@ public sealed class BandroomController
         try
         {
             _status = await api.GetStatusAsync(ct).ConfigureAwait(false);
+            // A phone sent a recording that needs the band writer, and the engine did not take it.
+            // Said at every refusal (the count goes up), so a phone that asks again is heard again.
+            if (_status.SetupNeeded?.Contains(BandWriterSetup.EngineName) == true && BandWriter is { } bandWriter)
+            {
+                bool news = bandWriter.Want();
+                if (news) Log?.Invoke("bandroom: a phone asked for a full-band score: the band writer is part of setup from now on");
+                if (news || _status.SetupRefusals > _refusalsSaid) BandWriterAskedFor?.Invoke();
+                _refusalsSaid = _status.SetupRefusals;
+            }
             _job = _status.JobsRunning > 0 ? JobView.From(await api.GetJobsAsync(ct).ConfigureAwait(false), _time.GetUtcNow()) : null;
             if (FlyoutOpen)
                 DevicesChanged?.Invoke(await api.GetDevicesAsync(ct).ConfigureAwait(false));

@@ -192,6 +192,26 @@
       }
     },
     "A heading": {},
+    "A phone asked for a full-band score. Open Bandroom on this Mac to finish setting up.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En telefon ba om et partitur for fullt band. Åpne Bandroom på denne Macen for å gjøre ferdig oppsettet."
+          }
+        }
+      }
+    },
+    "A score for a full band needs one more download (%@ GB) and a free Hugging Face account.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et partitur for fullt band trenger én nedlasting til (%@ GB) og en gratis Hugging Face-konto."
+          }
+        }
+      }
+    },
     "About": {
       "localizations": {
         "nb": {
@@ -460,6 +480,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brasscribe er klar"
+          }
+        }
+      }
+    },
+    "Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this Mac.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brasscribe er klar for tabber og enkeltstemmer. Et partitur for fullt band trenger ett steg til på denne Macen."
           }
         }
       }
@@ -1015,6 +1045,16 @@
         }
       }
     },
+    "Full-band scores": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partitur for fullt band"
+          }
+        }
+      }
+    },
     "Full-band scores need one more step": {
       "localizations": {
         "nb": {
@@ -1337,12 +1377,12 @@
       }
     },
     "Named": {},
-    "Needs about 15 GB · %lld GB free": {
+    "Needs about %lld GB · %lld GB free": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trenger omtrent 15 GB · %lld GB ledig"
+            "value": "Trenger omtrent %lld GB · %lld GB ledig"
           }
         }
       }
@@ -1407,12 +1447,12 @@
         }
       }
     },
-    "Not enough space: needs about 15 GB, %lld GB free": {
+    "Not enough space: needs about %lld GB, %lld GB free": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ikke nok plass: trenger omtrent 15 GB, %lld GB ledig"
+            "value": "Ikke nok plass: trenger omtrent %lld GB, %lld GB ledig"
           }
         }
       }
@@ -1898,6 +1938,16 @@
         }
       }
     },
+    "Set up full-band scores": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sett opp partitur for fullt band"
+          }
+        }
+      }
+    },
     "Setting up": {
       "localizations": {
         "nb": {
@@ -2074,6 +2124,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stoppet uventet"
+          }
+        }
+      }
+    },
+    "Tabs and single lines work now. A score for a full band needs one more download (%@ GB, a few minutes on a fast connection) and a free Hugging Face account. Bandroom asks for it when a phone first sends a recording that needs it, or you can set it up now.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabber og enkeltstemmer virker nå. Et partitur for fullt band trenger én nedlasting til (%@ GB, noen minutter på en rask forbindelse) og en gratis Hugging Face-konto. Bandroom ber om den første gang en telefon sender et opptak som trenger den, eller du kan sette den opp nå."
           }
         }
       }
@@ -2506,6 +2566,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hvor nedlastingene lagres"
+          }
+        }
+      }
+    },
+    "Without full-band scores": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uten partitur for fullt band"
           }
         }
       }

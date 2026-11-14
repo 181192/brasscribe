@@ -193,7 +193,8 @@ struct StatusPanel: View {
                 Divider()
             }
             HealthRow(symbol: "checkmark.circle", label: "Ready to make scores",
-                      value: app.models.isReady ? String(localized: "Ready") : Strings.missingDownloads(app.models.missing.count), meter: nil)
+                      value: !app.modelsToFetch.isEmpty ? Strings.missingDownloads(app.modelsToFetch.count)
+                          : app.bandWriterLeftOut ? String(localized: "Without full-band scores") : String(localized: "Ready"), meter: nil)
             Text(app.monitor.health?.device == "cpu" ? String(localized: "Processor only: slower")
                  : String(localized: "Uses the graphics chip"))
                 .brFont(.caption).foregroundStyle(Color.Scribe.textMuted)

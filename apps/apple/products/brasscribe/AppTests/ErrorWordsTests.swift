@@ -12,6 +12,7 @@ import TranscriptionKit
     let percussion = TranscriptionError.http(422, #"{"code": "percussion_solo", "detail": "x"}"#)
     #expect(ErrorWords.plain(percussion) == Seats.percussionSoloRefused)
     #expect(ErrorWords.plain(TranscriptionError.http(422, #"{"code": "quartet_needs_group", "detail": "x"}"#)) == "Needs a recording of the whole group")
+    #expect(ErrorWords.plain(TranscriptionError.http(409, #"{"code": "band_writer_not_set_up", "detail": "x", "audio_id": "a"}"#)).contains("Open Bandroom there"))
     #expect(ErrorWords.specific(TranscriptionError.http(422, "old engine")) != nil)
     #expect(ErrorWords.specific(TranscriptionError.http(500, "boom"))?.contains("couldn't finish") == true)
     #expect(ErrorWords.specific(TranscriptionError.unreachable("refused"))?.hasPrefix("Can't reach") == true)

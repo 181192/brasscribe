@@ -92,7 +92,10 @@ internal sealed class FakeEngine : IEngineApi
     public Task<HealthInfo> GetHealthAsync(CancellationToken ct = default) =>
         Task.FromResult(new HealthInfo("ok", "0.9.4", "cuda", false, "3f9c2a7e11", "Brasscribe on Kari's PC", InterfaceVersion: Wire.InterfaceVersion));
     public Task<StatusInfo> GetStatusAsync(CancellationToken ct = default) =>
-        Task.FromResult(new StatusInfo("3f9c2a7e11", "Brasscribe on Kari's PC", "0.9.4", Devices.Count(d => d.Online == true), Devices.Count, PairingOpen, 0, 0));
+        Task.FromResult(new StatusInfo("3f9c2a7e11", "Brasscribe on Kari's PC", "0.9.4", Devices.Count(d => d.Online == true), Devices.Count, PairingOpen, 0, 0, SetupNeeded, SetupRefusals));
+    /// <summary>What the engine says a job was refused for (StatusInfo.SetupNeeded).</summary>
+    public IReadOnlyList<string> SetupNeeded { get; set; } = [];
+    public int SetupRefusals { get; set; }
     public Task<IReadOnlyList<DeviceInfo>> GetDevicesAsync(CancellationToken ct = default) { Log.Add("devices"); return Task.FromResult<IReadOnlyList<DeviceInfo>>(Devices.ToList()); }
     public Task RemoveDeviceAsync(string deviceId, CancellationToken ct = default) { Devices.RemoveAll(d => d.DeviceId == deviceId); return Task.CompletedTask; }
     public Task<PairingState> GetPairingAsync(CancellationToken ct = default) => Task.FromResult(State());

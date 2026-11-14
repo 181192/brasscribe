@@ -282,6 +282,9 @@
   <data name="Error_Arrange" xml:space="preserve">
     <value>Couldn't arrange it with these choices. Try another band or difficulty.</value>
   </data>
+  <data name="Error_BandWriterNotSetUp" xml:space="preserve">
+    <value>Your computer isn't set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.</value>
+  </data>
   <data name="Error_ChooseAnother" xml:space="preserve">
     <value>Choose another recording</value>
   </data>

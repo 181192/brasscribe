@@ -292,6 +292,7 @@
     <string name="error_reads_not_offered">Instrumentet ditt skrives ikke i den nøkkelen. Velg på nytt under Hva du spiller.</string>
     <string name="error_invalid_options">Bandroom på datamaskinen godtok ikke disse valgene. Den trenger kanskje en oppdatering.</string>
     <string name="error_core_missing">Bandroom på datamaskinen trenger en oppdatering for å skrive tab. Oppdater den der, og prøv igjen.</string>
+    <string name="error_band_writer_not_set_up">Datamaskinen er ikke satt opp for partitur for fullt band ennå. Åpne Bandroom der og følg det den sier, og send så opptaket på nytt.</string>
     <string name="recording_sent_again">Datamaskinen hadde ikke lenger opptaket, så telefonen sender sin kopi.</string>
     <string name="error_recording_gone">Datamaskinen har ikke lenger dette opptaket, og telefonen har ingen kopi av det. Åpne opptaket på nytt fra Hjem.</string>
     <string name="problem_no_notes_title">Fant ingen toner</string>

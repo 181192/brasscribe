@@ -24,6 +24,9 @@ struct SetupView: View {
     private var keySaved: Bool { app.savedKey.state == .found }
 
     private let steps: [LocalizedStringKey] = ["Check this computer", "Accept one licence", "Download", "Ready"]
+    /// The steps in the list at the side. The licence is one of them only when the band writer is being set up: a
+    /// first run fetches everything that needs no account, and asks for nothing.
+    private var shownSteps: [Int] { app.bandWriterWanted || step == 1 ? [0, 1, 2, 3] : [0, 2, 3] }
 
     /// `step` 0 to 3; the screen catalogue opens each one.
     init(step: Int = 0) { _step = State(initialValue: step) }
@@ -32,7 +35,7 @@ struct SetupView: View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 10) {
                 Mark(size: 32, color: Color.Scribe.brand).padding(.bottom, 10)
-                ForEach(steps.indices, id: \.self) { i in
+                ForEach(shownSteps, id: \.self) { i in
                     HStack(spacing: 8) {
                         Image(systemName: i < step ? "checkmark.circle.fill" : (i == step ? "circle.inset.filled" : "circle"))
                             .accessibilityHidden(true)
@@ -71,8 +74,7 @@ struct SetupView: View {
             // Finish setting up: straight to what is left. The band writer without a key starts at the licence.
             guard app.setupComplete else { return }
             finishing = true
-            let missing = app.models.missing
-            step = missing.contains(.bandWriter) && !keySaved && !app.downloader.isActive ? 1 : 2
+            step = app.modelsToFetch.contains(.bandWriter) && !keySaved && !app.downloader.isActive ? 1 : 2
         }
     }
 
@@ -88,20 +90,22 @@ struct SetupView: View {
 
     private var checkComputer: some View {
         let free = app.host?.diskFreeGB ?? 0
-        let enough = free >= 15 || app.host == nil
+        let needs = BandWriterSetup.firstRunFreeGB
+        let enough = free >= needs || app.host == nil
         return VStack(alignment: .leading, spacing: 16) {
             Text("Make scores on this computer").brFont(.display)
             Text("Brasscribe does the heavy work here, so your phones and tablets can make scores for the whole band. Recordings stay on your own devices.")
                 .brFont(.body).fixedSize(horizontal: false, vertical: true)
             checkRow("cpu", "\(HostSampler.chipName()) · \(String(localized: "Fast: uses the graphics chip"))")
             checkRow(enough ? "internaldrive" : "exclamationmark.triangle.fill",
-                     enough ? String(localized: "Needs about 15 GB · \(free) GB free")
-                            : String(localized: "Not enough space: needs about 15 GB, \(free) GB free"))
+                     enough ? String(localized: "Needs about \(needs) GB · \(free) GB free")
+                            : String(localized: "Not enough space: needs about \(needs) GB, \(free) GB free"))
             checkRow("wifi", String(localized: "Internet: needed once, for the downloads"))
             Spacer()
             HStack {
                 Spacer()
-                Button { step = 1 } label: { Text("Continue") }
+                // Straight to the downloads: nothing in a first run needs an account or a key.
+                Button { step = app.bandWriterWanted && !keySaved ? 1 : 2 } label: { Text("Continue") }
                     .buttonStyle(BRButtonStyle(kind: .primary, height: 40)).keyboardShortcut(.defaultAction)
             }
         }
@@ -170,7 +174,7 @@ struct SetupView: View {
             Spacer()
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Button { step = 2 } label: { Text("Skip for now") }.buttonStyle(.brPlain)
+                    Button { app.dontWantBandWriter(); step = 2 } label: { Text("Skip for now") }.buttonStyle(.brPlain)
                     Text("Without it, Brasscribe can't write down a full band. You can add it later.")
                         .brFont(.caption).foregroundStyle(Color.Scribe.textMuted)
                         .fixedSize(horizontal: false, vertical: true)
@@ -212,7 +216,7 @@ struct SetupView: View {
     /// What this step fetches: the engine's own tools on the first run, then only the missing models.
     private var items: [ModelComponent] {
         let d = app.downloader
-        return d.components.isEmpty || d.phase == .idle ? app.models.missing : d.components
+        return d.components.isEmpty || d.phase == .idle ? app.modelsToFetch : d.components
     }
 
     private var download: some View {
@@ -404,6 +408,16 @@ struct SetupView: View {
                 .brFont(.callout).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
             Toggle(isOn: $startAtLogin) { Text("Start when I log in").brFont(.body) }
                 .toggleStyle(.switch)
+            if app.bandWriterLeftOut {
+                // What a first run leaves out: the one download that needs an account. Offered, never required.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Tabs and single lines work now. A score for a full band needs one more download (\(Strings.gigabytes(ModelComponent.bandWriter.totalBytes)) GB, a few minutes on a fast connection) and a free Hugging Face account. Bandroom asks for it when a phone first sends a recording that needs it, or you can set it up now.")
+                        .brFont(.callout).fixedSize(horizontal: false, vertical: true)
+                    Button { app.wantBandWriter(); finishing = true; step = keySaved ? 2 : 1 } label: { Text("Set up full-band scores") }
+                        .buttonStyle(.brOutline)
+                }
+                .card(padding: 12)
+            }
             Text("Next, your Mac asks whether Brasscribe may find devices on your network. Choose **Allow** so phones can connect.")
                 .brFont(.callout).fixedSize(horizontal: false, vertical: true)
             Spacer()

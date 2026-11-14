@@ -183,6 +183,26 @@ public sealed class ModelDownloadTests : IDisposable
         Assert.False(File.Exists(SepFile + ".part"));
         Assert.Equal(1, d.Fraction);
         Assert.Equal([ModelComponent.BandWriter], ModelCheck.Check(ModelsDir, HubDir, Catalog()).Missing);
+        // Until someone asks for a full-band score, the band writer is not counted: nothing is left to finish.
+        Assert.True(ModelCheck.Check(ModelsDir, HubDir, Catalog(), bandWriterWanted: false).IsReady);
+    }
+
+    [Fact]
+    public void The_band_writer_is_wanted_with_a_key_or_once_a_phone_has_asked_and_that_outlasts_a_restart()
+    {
+        string marker = Path.Combine(ModelsDir, "..", "bandroom", "band-writer-wanted");
+        bool key = false;
+        var setup = new BandWriterSetup(marker, () => key);
+        Assert.False(setup.Wanted);
+        Assert.True(setup.Want());   // news the first time
+        Assert.False(setup.Want());
+        Assert.True(new BandWriterSetup(marker, () => false).Wanted);
+        File.Delete(marker);
+        Assert.False(setup.Wanted);
+        key = true;                  // a saved key is someone who wants it
+        Assert.True(setup.Wanted);
+        Assert.False(setup.Want());
+        Assert.False(File.Exists(marker));
     }
 
     private const string ChecksUrl = "https://example.org/lists/download_checks.json";

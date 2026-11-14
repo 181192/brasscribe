@@ -40,6 +40,15 @@ final class AppModel {
     let opener = WindowOpener()
     private(set) var host: HostSnapshot?
     private(set) var models: ModelCheck.Result = .init(missing: [])
+    /// Full-band scores are wanted on this Mac: a phone sent a recording that needs the band writer, or the person
+    /// chose to set it up (`BandWriterSetup`). Until then its absence is not a problem and nothing asks for a key.
+    var bandWriterWanted: Bool {
+        didSet { defaults.set(bandWriterWanted, forKey: BandWriterSetup.defaultsKey) }
+    }
+    /// What is left to download: everything missing but a band writer nobody has asked for.
+    var modelsToFetch: [ModelComponent] { BandWriterSetup.toFetch(missing: models.missing, bandWriterWanted: bandWriterWanted) }
+    /// The band writer is not here and has not been asked for: tabs work, full-band scores wait for it.
+    var bandWriterLeftOut: Bool { models.missing.contains(.bandWriter) && !bandWriterWanted }
     var setupComplete: Bool {
         didSet { defaults.set(setupComplete, forKey: "setupComplete") }
     }
@@ -147,6 +156,8 @@ final class AppModel {
         // A checkout that already has its environment needs no first-run setup.
         let checkoutReady: Bool = if case .checkout = source { source.isEnvironmentReady } else { false }
         setupComplete = defaults.bool(forKey: "setupComplete") || checkoutReady || demo
+        // A key in the environment is someone who set full-band scores up by hand.
+        bandWriterWanted = defaults.bool(forKey: BandWriterSetup.defaultsKey) || hfToken != nil
         loginItemEnabled = SMAppService.mainApp.status == .enabled
 
         let log = logger
@@ -161,6 +172,7 @@ final class AppModel {
         monitor.onNewRequest = { [weak self] r in self?.pairRequestArrived(r) }
         monitor.onJobsChanged = { [weak self] n in self?.jobsChanged(n) }
         monitor.onAnswered = { [weak self] in self?.engineAnswered() }
+        monitor.onSetupNeeded = { [weak self] needed in self?.engineAskedFor(needed) }
         savedKey.onChange = { [weak self] _ in self?.huggingFaceKeyChanged() }
         log.write("Bandroom \(Bundle.main.shortVersion) starting; data \(paths.data.path); source \(source)")
         // HF_TOKEN in the environment wins, so there's nothing to read then.
@@ -385,7 +397,7 @@ final class AppModel {
         if let host, host.isDiskLow { list.append(.lowDisk(freeGB: host.diskFreeGB)) }
         if let refusal = pixiRefusal { list.append(.pixiTooOld(refusal)) }
         if let failedUpdate, interfaceMismatch != .engine { list.append(failedUpdate) }
-        if case .running = phase, !models.isReady { list.append(.missingDownload(models.missing)) }
+        if case .running = phase, !modelsToFetch.isEmpty { list.append(.missingDownload(modelsToFetch)) }
         return list
     }
 
@@ -646,10 +658,33 @@ final class AppModel {
     /// Fetches what is missing, only that. Waits for nothing: the engine can run meanwhile.
     func downloadMissing() {
         guard !demo else { return }
-        let missing = ModelCheck.check(models: downloader.models).missing
-        models = .init(missing: missing)
+        models = ModelCheck.check(models: downloader.models)
+        let missing = modelsToFetch
         guard !missing.isEmpty else { return }
         downloader.start(missing)
+    }
+
+    /// Full-band scores are to be set up: from now on the band writer is fetched with the rest, and missing it is
+    /// something to finish.
+    func wantBandWriter() {
+        guard !bandWriterWanted else { return }
+        bandWriterWanted = true
+        logger.write("full-band scores are wanted: the band writer is part of setup from now on")
+    }
+
+    /// Skip for now at the licence: full-band scores wait until they are asked for again.
+    func dontWantBandWriter() {
+        guard savedKey.value == nil else { return }
+        bandWriterWanted = false
+    }
+
+    /// A phone sent a recording that needs the band writer, and the engine did not take it (`EngineStatus.setupNeeded`).
+    private func engineAskedFor(_ needed: [String]) {
+        // Every time, also after Skip for now at the licence: the phone asked again, so it is wanted again.
+        guard needed.contains(BandWriterSetup.engineName), models.missing.contains(.bandWriter) else { return }
+        wantBandWriter()
+        Notifier.post(id: "band-writer", title: String(localized: "Full-band scores need one more step"),
+                      body: String(localized: "A phone asked for a full-band score. Open Bandroom on this Mac to finish setting up."))
     }
 
     private func downloadsFinished() {
@@ -659,13 +694,17 @@ final class AppModel {
         // First run, with the window closed: the engine is installed, so finish and say so (§6.3).
         if !setupComplete, bootstrapper.phase == .done { finishSetup(startAtLogin: true) }
         Notifier.post(id: "ready", title: String(localized: "Brasscribe is ready"),
-                      body: String(localized: "Brasscribe is ready. Phones and tablets can make full-band scores now."))
+                      body: models.missing.contains(.bandWriter)
+                          ? String(localized: "Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this Mac.")
+                          : String(localized: "Brasscribe is ready. Phones and tablets can make full-band scores now."))
     }
 
     /// The engine reads the key from its environment (the adapter asks Hugging Face for the band writer), so a
     /// new key means a restart, after the score being made.
     func huggingFaceKeyChanged() {
         guard !demo else { return }
+        // A saved key is someone who wants full-band scores (also from before the key was asked for only then).
+        if savedKey.value != nil { wantBandWriter() }
         switch supervisor.useHuggingFaceKey(savedKey.value, environment: environment, busy: isBusy) {
         case .none: break
         case .restartNow: restartUnlessBusy()

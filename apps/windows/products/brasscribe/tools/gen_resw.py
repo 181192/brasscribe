@@ -548,6 +548,7 @@ code = {
     "Output_NeedsCore": ("Arranging on this PC needs Brasscribe's arranger, which isn't installed.", "Arrangering på denne PC-en krever arrangøren i Brasscribe, som ikke er installert."),
     "Output_Ready": ("The score is ready", "Partituret er klart"),
     "Error_Arrange": ("Couldn't arrange it with these choices. Try another band or difficulty.", "Kunne ikke arrangere med disse valgene. Prøv et annet band eller en annen vanskegrad."),
+    "Error_BandWriterNotSetUp": ("Your computer isn't set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.", "Datamaskinen er ikke satt opp for partitur for fullt band ennå. Åpne Bandroom der og følg det den sier, og send så opptaket på nytt."),
     "Error_PercussionSolo": ("Brasscribe can't write down percussion from a solo take yet. Record the band: a recording with drums gets a percussion part.", "Brasscribe kan ikke skrive ned slagverk fra et soloopptak ennå. Ta opp bandet: et opptak med trommer får en slagverkstemme."),
     "Error_SeatNoTune": ("The tune can't go on your part in this band. Under Who plays the tune?, choose the band's usual part.", "Melodien kan ikke gå på stemmen din i dette bandet. Velg den vanlige stemmen under Hvem spiller melodien?"),
     "Error_ReadsNotOffered": ("Your part isn't written in that clef. Choose the clef again in Settings, What you play.", "Stemmen din skrives ikke med den nøkkelen. Velg nøkkel på nytt i Innstillinger, Hva du spiller."),

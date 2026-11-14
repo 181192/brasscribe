@@ -142,7 +142,9 @@ mean: [apps/windows/products/brasscribe/Kalli.Brasscribe.Catalogue/README.md](..
   (the separators into `models\`, the band writer into the Hugging Face hub cache) from their upstream URLs:
   progress shows in the flyout's **Ready to make scores** row, Pause and Resume are in the icon's menu, and the
   Hugging Face key (HF_TOKEN, or the one saved in Settings in Credential Manager) is asked for through a
-  Needs-attention problem. The Settings card where the key is saved shows the band writer's terms, and Save waits
+  Needs-attention problem, and only once full-band scores are wanted (`BandWriterSetup`: a key is saved, or a
+  phone sent a recording that needs the band writer and the engine said so). Until then the band writer is not
+  counted as missing and tabs work without it. The Settings card where the key is saved shows the band writer's terms, and Save waits
   for the box under them to be ticked.
 - Check for updates and About (the More menu has Open Studio, Start when I log in, Remove, Quit).
 - Needs-attention detection for Windows Firewall blocking and a Public network (strings and fixes are in place).

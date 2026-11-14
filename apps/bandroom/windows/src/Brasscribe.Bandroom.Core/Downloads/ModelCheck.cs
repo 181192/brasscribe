@@ -8,6 +8,33 @@ public sealed record ModelCheckResult(IReadOnlyList<ModelComponent> Missing, IRe
 }
 
 /// <summary>
+/// The band writer is the one download that needs something of the person first: an account with Hugging Face, its
+/// licence accepted there, and an access key. Everything else (tabs, both separators) works without it, so Bandroom
+/// counts it as missing only once it is wanted: a key is saved, or a phone sent a recording that needs it and the
+/// engine said so (<c>StatusInfo.SetupNeeded</c>). That a phone asked is kept in a file, so it outlasts a restart.
+/// </summary>
+public sealed class BandWriterSetup(string markerFile, Func<bool> keyPresent)
+{
+    /// <summary>The engine's word for it in its status.</summary>
+    public const string EngineName = "band-writer";
+
+    public bool Wanted => keyPresent() || File.Exists(markerFile);
+
+    /// <summary>Notes that it is wanted. True when that is news.</summary>
+    public bool Want()
+    {
+        if (Wanted) return false;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(markerFile)!);
+            File.WriteAllText(markerFile, "");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+        return true;
+    }
+}
+
+/// <summary>
 /// Whether the downloads a full-band score needs are there (§7 "Ready to make scores"). Runs every few
 /// seconds, so it looks at names and sizes (and reads a .json with no size to check, once per change); checksums are
 /// checked once, when a download finishes.
@@ -17,13 +44,17 @@ public static class ModelCheck
     /// <param name="models">The folder the engine gets as SCRIBE_MODELS.</param>
     /// <param name="hub">The Hugging Face hub cache (<see cref="ModelCatalog.HubCache()"/>), where the band writer lives.</param>
     /// <param name="catalog">The files of each component; the real catalogue unless a test says otherwise.</param>
-    public static ModelCheckResult Check(string models, string hub, Func<ModelComponent, IReadOnlyList<ModelFile>>? catalog = null)
+    /// <param name="bandWriterWanted">False leaves the band writer out: nobody has asked for full-band scores
+    /// (<see cref="BandWriterSetup"/>), so its absence is nothing to finish.</param>
+    public static ModelCheckResult Check(string models, string hub, Func<ModelComponent, IReadOnlyList<ModelFile>>? catalog = null,
+        bool bandWriterWanted = true)
     {
         catalog ??= ModelCatalog.Files;
         var missing = new List<ModelComponent>();
         var files = new List<string>();
         foreach (var c in ModelCatalog.All)
         {
+            if (!bandWriterWanted && c.NeedsHuggingFaceKey()) continue;
             var absent = MissingFiles(c, models, hub, catalog(c));
             if (absent.Count == 0) continue;
             missing.Add(c);

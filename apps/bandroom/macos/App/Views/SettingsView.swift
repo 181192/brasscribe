@@ -39,8 +39,16 @@ struct SettingsView: View {
                         .foregroundStyle(Color.Scribe.textMuted)
                 }
             }
-            Section("Hugging Face access") {
-                Button("Sign in again…") { app.openWindow("setup") }
+            if app.bandWriterLeftOut {
+                Section("Full-band scores") {
+                    Text("A score for a full band needs one more download (\(Strings.gigabytes(ModelComponent.bandWriter.totalBytes)) GB) and a free Hugging Face account.")
+                        .font(.caption).foregroundStyle(Color.Scribe.textMuted)
+                    Button("Set up full-band scores") { app.wantBandWriter(); app.openWindow("setup") }
+                }
+            } else {
+                Section("Hugging Face access") {
+                    Button("Sign in again…") { app.openWindow("setup") }
+                }
             }
             Section("Appearance") {
                 Picker("Appearance", selection: $appearance) {

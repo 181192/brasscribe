@@ -213,6 +213,7 @@
     <string name="error_reads_not_offered">Your instrument isn\'t written in that clef. Choose again under What you play.</string>
     <string name="error_invalid_options">Bandroom on your computer didn\'t accept these choices. It may need an update.</string>
     <string name="error_core_missing">Bandroom on your computer needs an update to write tabs. Update it there, then try again.</string>
+    <string name="error_band_writer_not_set_up">Your computer isn\'t set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.</string>
     <!-- Writing a song down again from the recording the computer holds, when it no longer has it. -->
     <string name="recording_sent_again">Your computer no longer had the recording, so the phone is sending its copy.</string>
     <string name="error_recording_gone">Your computer no longer has this recording, and the phone has no copy of it. Open the recording again from Home.</string>

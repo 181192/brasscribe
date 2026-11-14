@@ -48,6 +48,8 @@ object ErrorWords {
             "reads_not_offered" -> R.string.error_reads_not_offered
             "invalid_options" -> R.string.error_invalid_options
             "core_missing" -> R.string.error_core_missing
+            // not taken: the computer has not been set up for a full band yet (the band writer and its key)
+            "band_writer_not_set_up" -> R.string.error_band_writer_not_set_up
             else -> when (e.status) {
                 0 -> R.string.error_unreachable
                 401, 403 -> R.string.error_pair_again

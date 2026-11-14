@@ -225,6 +225,10 @@ ROWS = [
     ("Setup_Failed", "The download stopped. Check the internet connection, then try again.", "Nedlastingen stoppet. Sjekk internettforbindelsen, og prøv igjen."),  # (+)
     ("Setup_4_Where", "It runs quietly in the corner of the taskbar. If you don't see it, choose ^ (Show hidden icons).", "Den kjører i det stille i hjørnet av oppgavelinjen. Ser du den ikke, velger du ^ (Vis skjulte ikoner)."),
     ("Notify_Ready", "Brasscribe is ready. Phones and tablets can make full-band scores now.", "Brasscribe er klar. Telefoner og nettbrett kan lage partitur for fullt band nå."),
+    ("Notify_Ready_Tabs", "Brasscribe is ready for tabs and single lines. A score for a full band needs one more step on this PC.",
+     "Brasscribe er klar for tabber og enkeltstemmer. Et partitur for fullt band trenger ett steg til på denne PC-en."),  # (+) without the band writer
+    ("Notify_BandWriter", "A phone asked for a full-band score. Open Bandroom on this PC to finish setting up: it asks for your Hugging Face access key in Settings.",
+     "En telefon ba om et partitur for fullt band. Åpne Bandroom på denne PC-en for å gjøre ferdig oppsettet: den ber om tilgangsnøkkelen din fra Hugging Face i Innstillinger."),  # (+)
     # 10.5 Needs attention and errors
     ("Lan_Title", "Phones can't find this computer", "Telefoner finner ikke denne datamaskinen"),
     ("Lan_Win_Why", "Windows Firewall is blocking Brasscribe on this network.", "Windows-brannmuren stopper Brasscribe på dette nettverket."),

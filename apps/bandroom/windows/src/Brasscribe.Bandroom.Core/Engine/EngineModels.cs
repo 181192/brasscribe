@@ -12,7 +12,11 @@ public sealed record StatusInfo(
     int PairedDevices,
     bool PairingOpen,
     int JobsRunning,
-    int JobsQueued);
+    int JobsQueued,
+    // What a job was refused for since the engine started and still is not set up here (BandWriterSetup.EngineName).
+    IReadOnlyList<string>? SetupNeeded = null,
+    // How many jobs the engine has refused for it since it started.
+    int SetupRefusals = 0);
 
 /// <summary>
 /// GET /v1/health. <see cref="Build"/> (commit and workspace stamp) is null from engines that don't report it;

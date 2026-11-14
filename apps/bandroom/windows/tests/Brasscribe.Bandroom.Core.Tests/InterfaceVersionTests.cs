@@ -1,3 +1,4 @@
+using Brasscribe.Bandroom.Core.Downloads;
 using System.Net;
 using System.Text.RegularExpressions;
 using Brasscribe.Bandroom.Core.Engine;
@@ -148,6 +149,37 @@ public sealed class InterfaceVersionTests : IDisposable
         await sup.StartAsync();
         await Until(() => sup.State == EngineState.Running && published, "the engine did not reach Running");
         return (sup, ctl);
+    }
+
+    [Fact]
+    public async Task A_phone_asking_for_a_full_band_score_makes_the_band_writer_part_of_setup_and_is_said_each_time()
+    {
+        string marker = Path.Combine(Path.GetTempPath(), "bandroom-test-" + Guid.NewGuid().ToString("N"), "band-writer-wanted");
+        var setup = new BandWriterSetup(marker, () => false);
+        int asked = 0;
+        var (sup, ctl) = await RunningAsync(Wire.InterfaceVersion, before: c => { c.BandWriter = setup; c.BandWriterAskedFor += () => asked++; });
+        await using var _ = sup;
+        try
+        {
+            await ctl.TickAsync();
+            Assert.False(setup.Wanted);
+            _engine.Inner.SetupNeeded = [BandWriterSetup.EngineName]; // the engine refused a job for it
+            _engine.Inner.SetupRefusals = 1;
+            ctl.FlyoutOpen = true; // asks the engine at the next check
+            await ctl.TickAsync();
+            ctl.FlyoutOpen = true;
+            await ctl.TickAsync();
+            Assert.True(setup.Wanted);
+            Assert.Equal(1, asked);
+            _engine.Inner.SetupRefusals = 2; // the phone asks again: said again
+            ctl.FlyoutOpen = true;
+            await ctl.TickAsync();
+            Assert.Equal(2, asked);
+        }
+        finally
+        {
+            if (Directory.Exists(Path.GetDirectoryName(marker))) Directory.Delete(Path.GetDirectoryName(marker)!, recursive: true);
+        }
     }
 
     [Theory]

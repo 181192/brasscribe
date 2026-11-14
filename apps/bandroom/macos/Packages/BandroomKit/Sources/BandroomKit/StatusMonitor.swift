@@ -84,6 +84,9 @@ public final class StatusMonitor {
     /// Called each time the engine has answered a check, after the answer is in `status` (a restart that waits
     /// for an answer is decided again here: `onJobsChanged` is silent while the numbers stay the same).
     @ObservationIgnored public var onAnswered: (() -> Void)?
+    /// Called each time the engine has refused a job for something that is left to set up, with what that is: at
+    /// the first refusal and at every one after it, so a phone that asks again is heard again.
+    @ObservationIgnored public var onSetupNeeded: (([String]) -> Void)?
 
     @ObservationIgnored public var client: (any EngineAPI)? {
         didSet { if client == nil { clear() } else { refreshDue = true; requestsDue = true; healthDue = true } }
@@ -153,6 +156,10 @@ public final class StatusMonitor {
         do {
             let s = try await client.status()
             let previous = status.map { [$0.jobsRunning, $0.jobsQueued] }
+            // (A new engine process counts from nothing again: any refusal of its own is news.)
+            if !s.setupNeeded.isEmpty, s.setupRefusals != (status?.serverId == s.serverId ? status?.setupRefusals : nil) ?? 0 {
+                onSetupNeeded?(s.setupNeeded)
+            }
             status = s
             reachable = true
             failedRefreshes = 0

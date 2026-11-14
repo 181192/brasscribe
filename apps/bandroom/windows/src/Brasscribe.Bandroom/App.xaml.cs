@@ -53,6 +53,7 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
     private EngineLog? _log;
     private bool _cuda;
     private ModelDownloader? _downloads;
+    private BandWriterSetup? _bandWriter;
     /// <summary>Setup and updates: one at a time.</summary>
     private readonly SingleFlight _setup = new();
     private string _hub = "";
@@ -192,12 +193,14 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
             : $"bandroom: core command line {coreCli}");
         _config = new EngineLaunchConfig(_paths, pixi, computer, token, _cuda, band, coreCli) { HuggingFaceToken = HuggingFaceKey.Read };
         _hub = ModelCatalog.HubCache();
+        _bandWriter = new BandWriterSetup(_paths.BandWriterWantedFile, () => HuggingFaceKey.Current() is not null);
         _downloads = new ModelDownloader(_paths.Models, _hub, HuggingFaceKey.Current) { Log = _log.Write };
         _downloads.Changed += () => _controller?.Publish();
         _downloads.Completed += () => _ui.TryEnqueue(() =>
         {
             var models = _controller?.CheckModels();
-            if (models?.IsReady == true) Announce(_s["Notify_Ready"]);
+            // Ready, with or without the band writer: without it, tabs work and full-band scores wait until asked for.
+            if (models?.IsReady == true) Announce(_s[_bandWriter?.Wanted == true ? "Notify_Ready" : "Notify_Ready_Tabs"]);
             // The separators came without a key: ask for it now (a run that fails never completes, so no loop).
             else if (models?.Missing is [ModelComponent.BandWriter] && HuggingFaceKey.Current() is null) _downloads.Start([ModelComponent.BandWriter]);
             _controller?.Publish();
@@ -215,13 +218,21 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _controller = new BandroomController(_supervisor, ApiFor, new WindowsMetrics(), _s, _paths,
             new MachineInfo(computer, _cuda ? "Health_Speed_Nvidia" : "Health_Speed_Cpu", runsOn, Machine.LanAddresses()))
         {
-            CheckModels = () => ModelCheck.Check(_paths.Models, _hub),
+            CheckModels = () => ModelCheck.Check(_paths.Models, _hub, bandWriterWanted: _bandWriter?.Wanted != false),
+            BandWriter = _bandWriter,
             Downloads = _downloads,
             Log = _log.Write,
             // A workspace from a folder of the developer's choosing: this app can neither update it nor replace it.
             DevelopmentEngine = Environment.GetEnvironmentVariable("SCRIBE_BANDROOM_WORKSPACE") is { Length: > 0 },
         };
         _controller.SnapshotReady += snap => _ui.TryEnqueue(() => ApplySnapshot(snap));
+        // A phone asked for a full-band score: say so, and start the band writer's download, which asks for the key.
+        _controller.BandWriterAskedFor += () => _ui.TryEnqueue(() =>
+        {
+            Announce(_s["Notify_BandWriter"]);
+            StartMissingDownloads();
+            _controller?.Publish();
+        });
         _controller.DevicesChanged += list => _ui.TryEnqueue(() => _vm.ApplyDevices(list, DateTimeOffset.UtcNow));
         _controller.Requests.Arrived += r => _ui.TryEnqueue(() => OnPairRequest(r));
         _controller.Requests.Gone += id => _ui.TryEnqueue(() => OnPairRequestGone(id));

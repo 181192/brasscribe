@@ -13,6 +13,8 @@ class ErrorWordsTest {
         assertEquals(R.string.lead_seat_refused, ErrorWords.of(EngineException(422, "x", "seat_no_tune")))
         assertEquals(R.string.error_reads_not_offered, ErrorWords.of(EngineException(422, "x", "reads_not_offered")))
         assertEquals(R.string.error_invalid_options, ErrorWords.of(EngineException(422, "x", "invalid_options")))
+        // a full-band score asked of a computer that is not set up for one: what to do there, not "something went wrong"
+        assertEquals(R.string.error_band_writer_not_set_up, ErrorWords.of(EngineException(409, "x", "band_writer_not_set_up")))
         // a tab asked of a computer that cannot write one is not "these choices"
         assertEquals(R.string.error_core_missing, ErrorWords.of(EngineException(422, "x", "core_missing")))
         // an engine too old to send a code

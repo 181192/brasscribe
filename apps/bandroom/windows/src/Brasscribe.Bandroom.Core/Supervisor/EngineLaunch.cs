@@ -21,6 +21,8 @@ public sealed record BandroomPaths(string DataDir)
     public string AppearanceFile => Path.Combine(State, "appearance");
     /// <summary>The name shown to phones, when one is set in Settings.</summary>
     public string ComputerNameFile => Path.Combine(State, "computer-name");
+    /// <summary>There once a phone has asked for a full-band score (<c>BandWriterSetup</c>).</summary>
+    public string BandWriterWantedFile => Path.Combine(State, "band-writer-wanted");
     public string StatusFile => Path.Combine(DataDir, "engine.json");
     /// <summary>The engine's entry point in its installed environment: the command a start runs, as pixi installs it.</summary>
     public string EngineCommand => Path.Combine(Workspace, ".pixi", "envs", "default", "Scripts", EngineLaunchConfig.Command + ".exe");

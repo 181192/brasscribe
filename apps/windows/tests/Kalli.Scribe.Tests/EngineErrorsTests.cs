@@ -27,6 +27,7 @@ public class EngineErrorsTests
     [Theory]
     [InlineData("quartet_needs_group", "Output_QuartetNeedsGroup")]
     [InlineData("percussion_solo", "Error_PercussionSolo")]
+    [InlineData("band_writer_not_set_up", "Error_BandWriterNotSetUp")]
     [InlineData("seat_no_tune", "Error_SeatNoTune")]
     [InlineData("reads_not_offered", "Error_ReadsNotOffered")]
     [InlineData("invalid_options", "Error_Options")]
@@ -60,7 +61,7 @@ public class EngineErrorsTests
     {
         var en = Strings("en-US");
         var nb = Strings("nb-NO");
-        var keys = new[] { "quartet_needs_group", "percussion_solo", "seat_no_tune", "reads_not_offered", "invalid_options" }
+        var keys = new[] { "quartet_needs_group", "percussion_solo", "seat_no_tune", "reads_not_offered", "invalid_options", "band_writer_not_set_up" }
             .Select(c => EngineErrors.Key(Refused(c)))
             .Concat(["Error_Unreachable", "Error_Timeout", "Error_NeedsPairing", "Error_NotFound", "Error_Engine", "Error_TooLarge", "Error_Arrange"]);
         foreach (var key in keys)

@@ -89,6 +89,9 @@ def _test_client_host(monkeypatch):
 def settings(tmp_path: Path, monkeypatch) -> Settings:
     for var in ENGINE_ENV:
         monkeypatch.delenv(var, raising=False)
+    # The fake models stand in for ones that are gated on Hugging Face: with a key, the engine takes their jobs
+    # whether or not this machine has the real model.
+    monkeypatch.setenv("HF_TOKEN", "hf_test")
     adapters = make_adapters(tmp_path / "adapters")
     s = Settings(data_dir=tmp_path / "data", adapters_dir=adapters, gpu_lock=tmp_path / "gpu.lock")
     s.ensure()

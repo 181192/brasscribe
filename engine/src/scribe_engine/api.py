@@ -43,7 +43,7 @@ from . import schemas as m
 from .adapters import host_device
 from .config import Settings
 from .guard import BodyLimit, RequestGuard
-from .jobs import TERMINAL, Job, JobManager
+from .jobs import TERMINAL, Job, JobManager, NeedsSetup
 from .names import is_audio, valid_id, valid_relpath
 from .uploads import UploadRoute, UploadSink
 
@@ -82,6 +82,13 @@ class CachedStaticFiles(StaticFiles):
         response = super().file_response(*args, **kwargs)
         response.headers["Cache-Control"] = self.cache_control
         return response
+
+
+# What a model that waits for setup (adapters.waits_for_setup) is called outside the engine, and what a
+# player is told when a job needs it.
+SETUP_NAMES = {"muscriptor": "band-writer"}
+SETUP_MESSAGES = {"muscriptor": "The computer is not set up for full-band scores yet. Open Bandroom on the computer and "
+                                "follow what it says, then send the recording again."}
 
 
 def create_app(settings: Settings | None = None, *, trust_loopback: bool | None = None, workers: int = 1) -> FastAPI:
@@ -211,6 +218,15 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         have = set(outputs_of(job))
         return [m.MissingOutput(**x) for x in runner.missing_told(job.missing) if x["name"] not in have]
 
+    def needs_setup(e: NeedsSetup, audio_id: str | None) -> JSONResponse:
+        """409 for a job that was not taken because a model waits for setup, with the same shape as a refused
+        option: a code an app can have its own words for, and a sentence a player can act on. With the id of
+        the recording when the engine has it (an upload is kept), so the app can ask again for the same one
+        (POST /v1/jobs with `audio_id`) without sending it a second time."""
+        code = f"{SETUP_NAMES[e.adapters[0]].replace('-', '_')}_not_set_up"
+        print(f"job refused ({code})", file=sys.stderr, flush=True)
+        return JSONResponse({"code": code, "detail": SETUP_MESSAGES[e.adapters[0]], "audio_id": audio_id}, status_code=409)
+
     def target_of(job: Job) -> targets.Target | None:
         return targets.of_run(job.profile, jobs.run_dir(job.id) / "outputs")
 
@@ -333,7 +349,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return m.EngineStatus(server_id=app.state.identity.server_id, server_name=app.state.server_name,
                               version=__version__, online_devices=sum(map(app.state.devices.is_online, devices)),
                               paired_devices=len(devices), pairing_open=app.state.pairing.is_open,
-                              jobs_running=running, jobs_queued=queued)
+                              jobs_running=running, jobs_queued=queued,
+                              setup_refusals=jobs.refusals, setup_needed=[SETUP_NAMES[a] for a in jobs.setup_needed()])
 
     @app.delete("/v1/devices/{device_id}", status_code=204, operation_id="revokeDevice", tags=["devices"],
                 dependencies=[Depends(owner)], response_class=Response,
@@ -488,7 +505,9 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return p, p.name
 
     @app.post("/v1/jobs", response_model=m.Job, status_code=202, operation_id="createJob", tags=["jobs"],
-              dependencies=[Depends(auth)])
+              dependencies=[Depends(auth)], responses={409: {"description": "not taken: the job needs a model that is not set up on the computer "
+                                                "(`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` "
+                                                "names the recording when the engine kept it, to ask again with"}})
     def create_job(body: m.JobCreate, request: Request) -> m.Job:
         if body.profile not in profiles.PROFILES:
             raise HTTPException(422, f"unknown profile {body.profile}; choose from {', '.join(profiles.PROFILES)}")
@@ -508,8 +527,11 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             print(f"job options refused ({code}): {e}", file=sys.stderr, flush=True)
             return JSONResponse({"code": code, "detail": profiles.option_error_message(code)}, status_code=422)
         device = getattr(request.state, "device", None)
-        job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,
-                          allow_heavy=body.allow_heavy, device_name=device.name if device else None)
+        try:
+            job = jobs.submit(path, body.profile, audio_id=body.audio_id, title=title, params=params,
+                              allow_heavy=body.allow_heavy, device_name=device.name if device else None)
+        except NeedsSetup as e:
+            return needs_setup(e, body.audio_id)
         return job_model(job)
 
     @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
@@ -524,13 +546,19 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         if not input_allowed(old.audio_path, anywhere=not is_device(request)):
             raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
                                      "(uploads, captures, eval)")
-        job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
-                          allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
-                          device_name=old.device_name)
+        try:
+            job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
+                              allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
+                              device_name=old.device_name)
+        except NeedsSetup as e:
+            return needs_setup(e, old.audio_id)
         return job_model(job)
 
     @app.post("/v1/jobs/upload", response_model=m.Job, status_code=202, operation_id="createJobFromUpload",
-              tags=["jobs"], dependencies=[Depends(auth)])
+              tags=["jobs"], dependencies=[Depends(auth)],
+              responses={409: {"description": "not taken: the job needs a model that is not set up on the computer "
+                                                "(`code` band_writer_not_set_up); `detail` says what to do there, and `audio_id` "
+                                                "names the recording when the engine kept it, to ask again with"}})
     def create_job_from_upload(request: Request, file: UploadFile = File(...), profile: str = Form("orchestra-with-soloist"),
                                title: str | None = Form(None, max_length=200), render_audio: bool = Form(True),
                                lineup: m.Lineup | None = Form(None), difficulty: m.Difficulty = Form("faithful"),
