@@ -72,6 +72,82 @@
   "status": 200,
   "body": [
    {
+    "id": "old-hundredth-unread",
+    "profile": "sheet",
+    "target": "brass",
+    "title": "Old Hundredth (a page lying on its side)",
+    "audio_id": "0c9e4b7a1d3f5826",
+    "status": "failed",
+    "created": 1767434400.0,
+    "started": 1767434400.0,
+    "finished": 1767434444.0,
+    "error": "read: StageFailed: read: no notes were found on the page",
+    "progress": 0.0,
+    "previous_run_id": null,
+    "device_name": null,
+    "stages": [
+     {
+      "name": "read",
+      "kind": "read",
+      "status": "failed",
+      "seconds": 12.3,
+      "queue_wait_s": null,
+      "run_s": null,
+      "device": null
+     }
+    ],
+    "outputs": []
+   },
+   {
+    "id": "old-hundredth-sheet",
+    "profile": "sheet",
+    "target": "brass",
+    "title": "Old Hundredth — from the page (draft)",
+    "audio_id": "5f1d7c3a9e2b4860",
+    "status": "succeeded",
+    "created": 1767430800.0,
+    "started": 1767430800.0,
+    "finished": 1767430844.0,
+    "error": null,
+    "progress": 1.0,
+    "previous_run_id": null,
+    "device_name": null,
+    "stages": [
+     {
+      "name": "read",
+      "kind": "read",
+      "status": "ran",
+      "seconds": 41.2,
+      "queue_wait_s": 0.0,
+      "run_s": 41.2,
+      "device": "cpu"
+     },
+     {
+      "name": "arrange",
+      "kind": "arrange",
+      "status": "ran",
+      "seconds": 0.4,
+      "queue_wait_s": 0.0,
+      "run_s": 0.4,
+      "device": null
+     },
+     {
+      "name": "export",
+      "kind": "export",
+      "status": "ran",
+      "seconds": 2.1,
+      "queue_wait_s": 0.0,
+      "run_s": 2.1,
+      "device": null
+     }
+    ],
+    "outputs": [
+     "brass-band.musicxml",
+     "composition.json",
+     "sheet.json"
+    ]
+   },
+   {
     "id": "old-hundredth-failed",
     "profile": "brass-band",
     "target": "brass",
@@ -789,6 +865,284 @@
     "status": "failed",
     "key": null,
     "seconds": 1.4,
+    "queue_wait_s": null,
+    "run_s": null,
+    "device": null,
+    "files": []
+   }
+  ]
+ },
+ "/v1/jobs/old-hundredth-sheet": {
+  "status": 200,
+  "body": {
+   "id": "old-hundredth-sheet",
+   "profile": "sheet",
+   "target": "brass",
+   "title": "Old Hundredth — from the page (draft)",
+   "audio_id": "5f1d7c3a9e2b4860",
+   "status": "succeeded",
+   "created": 1767430800.0,
+   "started": 1767430800.0,
+   "finished": 1767430844.0,
+   "error": null,
+   "progress": 1.0,
+   "previous_run_id": null,
+   "device_name": null,
+   "stages": [
+    {
+     "name": "read",
+     "kind": "read",
+     "status": "ran",
+     "seconds": 41.2,
+     "queue_wait_s": 0.0,
+     "run_s": 41.2,
+     "device": "cpu"
+    },
+    {
+     "name": "arrange",
+     "kind": "arrange",
+     "status": "ran",
+     "seconds": 0.4,
+     "queue_wait_s": 0.0,
+     "run_s": 0.4,
+     "device": null
+    },
+    {
+     "name": "export",
+     "kind": "export",
+     "status": "ran",
+     "seconds": 2.1,
+     "queue_wait_s": 0.0,
+     "run_s": 2.1,
+     "device": null
+    }
+   ],
+   "outputs": [
+    "brass-band.musicxml",
+    "composition.json",
+    "sheet.json"
+   ]
+  }
+ },
+ "/v1/jobs/old-hundredth-sheet/artifacts/sheet.json": {
+  "status": 200,
+  "body": {
+   "recogniser": "homr",
+   "staves": 1,
+   "bars": 12,
+   "notes": 32,
+   "doubtful_bars": [
+    {
+     "staff": 1,
+     "bar": 6
+    }
+   ]
+  }
+ },
+ "/v1/jobs/old-hundredth-sheet/composition": {
+  "status": 200,
+  "file": "old-hundredth-sheet/composition.json"
+ },
+ "/v1/jobs/old-hundredth-sheet/input": {
+  "status": 200,
+  "type": "application/octet-stream",
+  "picture": "page"
+ },
+ "/v1/jobs/old-hundredth-sheet/manifest": {
+  "status": 200,
+  "body": {
+   "schema": 1,
+   "run_id": "old-hundredth-sheet",
+   "created": "2026-01-03T09:00:00+00:00",
+   "profile": "sheet",
+   "pipeline": "sheet",
+   "title": "Old Hundredth — from the page (draft)",
+   "params": {},
+   "options": {
+    "allow_heavy": false,
+    "cold": []
+   },
+   "input": {
+    "path": "uploads/5f1d7c3a9e2b4860.png"
+   },
+   "status": "succeeded",
+   "error": null,
+   "stages": [
+    {
+     "stage": "read",
+     "kind": "read",
+     "status": "ran",
+     "seconds": 41.2
+    },
+    {
+     "stage": "arrange",
+     "kind": "arrange",
+     "status": "ran",
+     "seconds": 0.4
+    },
+    {
+     "stage": "export",
+     "kind": "export",
+     "status": "ran",
+     "seconds": 2.1
+    }
+   ],
+   "git": {
+    "sha": null,
+    "branch": null,
+    "dirty": null
+   }
+  }
+ },
+ "/v1/jobs/old-hundredth-sheet/musicxml": {
+  "status": 200,
+  "type": "application/vnd.recordare.musicxml+xml",
+  "file": "old-hundredth-sheet/brass-band.musicxml"
+ },
+ "/v1/jobs/old-hundredth-sheet/roundtrip": {
+  "status": 200,
+  "body": {
+   "status": "not_run",
+   "musescore": null,
+   "parts": null,
+   "notes_in": null,
+   "notes_out": null,
+   "detail": null,
+   "part_results": []
+  }
+ },
+ "/v1/jobs/old-hundredth-sheet/stages": {
+  "status": 200,
+  "body": [
+   {
+    "stage": "read",
+    "kind": "read",
+    "status": "ran",
+    "key": null,
+    "seconds": 41.2,
+    "queue_wait_s": 0.0,
+    "run_s": 41.2,
+    "device": "cpu",
+    "files": []
+   },
+   {
+    "stage": "arrange",
+    "kind": "arrange",
+    "status": "ran",
+    "key": null,
+    "seconds": 0.4,
+    "queue_wait_s": 0.0,
+    "run_s": 0.4,
+    "device": null,
+    "files": []
+   },
+   {
+    "stage": "export",
+    "kind": "export",
+    "status": "ran",
+    "key": null,
+    "seconds": 2.1,
+    "queue_wait_s": 0.0,
+    "run_s": 2.1,
+    "device": null,
+    "files": []
+   }
+  ]
+ },
+ "/v1/jobs/old-hundredth-sheet/validation": {
+  "status": 200,
+  "body": []
+ },
+ "/v1/jobs/old-hundredth-unread": {
+  "status": 200,
+  "body": {
+   "id": "old-hundredth-unread",
+   "profile": "sheet",
+   "target": "brass",
+   "title": "Old Hundredth (a page lying on its side)",
+   "audio_id": "0c9e4b7a1d3f5826",
+   "status": "failed",
+   "created": 1767434400.0,
+   "started": 1767434400.0,
+   "finished": 1767434444.0,
+   "error": "read: StageFailed: read: no notes were found on the page",
+   "progress": 0.0,
+   "previous_run_id": null,
+   "device_name": null,
+   "stages": [
+    {
+     "name": "read",
+     "kind": "read",
+     "status": "failed",
+     "seconds": 12.3,
+     "queue_wait_s": null,
+     "run_s": null,
+     "device": null
+    }
+   ],
+   "outputs": []
+  }
+ },
+ "/v1/jobs/old-hundredth-unread/composition": {
+  "status": 404,
+  "body": {
+   "detail": "job has no Composition output"
+  }
+ },
+ "/v1/jobs/old-hundredth-unread/input": {
+  "status": 200,
+  "type": "application/octet-stream",
+  "picture": "page"
+ },
+ "/v1/jobs/old-hundredth-unread/manifest": {
+  "status": 200,
+  "body": {
+   "schema": 1,
+   "run_id": "old-hundredth-unread",
+   "created": "2026-01-03T10:00:00+00:00",
+   "profile": "sheet",
+   "pipeline": "sheet",
+   "title": "Old Hundredth (a page lying on its side)",
+   "params": {},
+   "options": {
+    "allow_heavy": false,
+    "cold": []
+   },
+   "input": {
+    "path": "uploads/0c9e4b7a1d3f5826.png"
+   },
+   "status": "failed",
+   "error": "read: StageFailed: read: no notes were found on the page",
+   "stages": [
+    {
+     "stage": "read",
+     "kind": "read",
+     "status": "failed",
+     "seconds": 12.3
+    }
+   ],
+   "git": {
+    "sha": null,
+    "branch": null,
+    "dirty": null
+   }
+  }
+ },
+ "/v1/jobs/old-hundredth-unread/musicxml": {
+  "status": 404,
+  "body": {
+   "detail": "job has no MusicXML output"
+  }
+ },
+ "/v1/jobs/old-hundredth-unread/stages": {
+  "status": 200,
+  "body": [
+   {
+    "stage": "read",
+    "kind": "read",
+    "status": "failed",
+    "key": null,
+    "seconds": 12.3,
     "queue_wait_s": null,
     "run_s": null,
     "device": null,
@@ -1869,7 +2223,8 @@
      "contour.solo.swift-f0",
      "arrange",
      "export"
-    ]
+    ],
+    "input": "audio"
    },
    {
     "name": "brass-band",
@@ -1883,7 +2238,8 @@
      "transcribe.mix.basic-pitch",
      "arrange",
      "export"
-    ]
+    ],
+    "input": "audio"
    },
    {
     "name": "pop-rock",
@@ -1902,7 +2258,8 @@
      "transcribe.bass.basic-pitch",
      "arrange",
      "export"
-    ]
+    ],
+    "input": "audio"
    },
    {
     "name": "orchestra-with-soloist",
@@ -1923,7 +2280,8 @@
      "contour.solo.swift-f0",
      "arrange",
      "export"
-    ]
+    ],
+    "input": "audio"
    },
    {
     "name": "tab",
@@ -1939,7 +2297,8 @@
      "notes",
      "arrange",
      "export"
-    ]
+    ],
+    "input": "audio"
    },
    {
     "name": "bass-tab",
@@ -1955,7 +2314,35 @@
      "notes",
      "arrange",
      "export"
-    ]
+    ],
+    "input": "audio"
+   },
+   {
+    "name": "sheet",
+    "target": "brass",
+    "pipeline": "sheet",
+    "description": "Printed music from a screenshot, a photo or a PDF, read into a score as it is written: parts, PDF, MIDI, braille and the talking score; not arranged",
+    "validated": false,
+    "stages": [
+     "read",
+     "arrange",
+     "export"
+    ],
+    "input": "pages"
+   },
+   {
+    "name": "sheet-tab",
+    "target": "fretted",
+    "pipeline": "sheet",
+    "description": "Printed music from a screenshot, a photo or a PDF, its first staff written as tablature for one fretted instrument (instrument)",
+    "validated": false,
+    "stages": [
+     "read",
+     "notes",
+     "arrange",
+     "export"
+    ],
+    "input": "pages"
    }
   ]
  },
@@ -2581,5 +2968,12 @@
     "device": "cpu"
    }
   ]
+ },
+ "POST /v1/jobs/pages": {
+  "status": 415,
+  "body": {
+   "code": "not_a_page",
+   "detail": "IMG_0001.HEIC is a HEIC or AVIF picture: a page is a PNG, JPEG or WebP picture, or a PDF"
+  }
  }
 }

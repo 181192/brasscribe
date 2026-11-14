@@ -55,6 +55,13 @@ function withCode(text: string, parts: Record<string, string>): Child[] {
   return out;
 }
 
+/** Studio's words for a refusal the engine names by a code ({code, detail}); null for one it has no words for. */
+export function refusalWords(err: unknown): string | null {
+  if (!(err instanceof ApiError) || !err.code) return null;
+  const key = `refusal.${err.code}`;
+  return t(key) === key ? null : t(key);
+}
+
 export interface NoticeOptions {
   /** What "Try again" does; by default the current view is shown again. */
   retry?: () => void;
@@ -96,6 +103,11 @@ export function errorNotice(err: unknown, opts: NoticeOptions = {}): HTMLElement
     body = withCode(t("err.missingBody"), { endpoint: err.endpoint });
     cls = "notice notice-missing";
     role = "note";
+  } else if (refusalWords(err)) {
+    // A refusal the engine names: Studio's words for it, and the engine's own (which name the file) under Details.
+    title = t("err.refused");
+    body = [refusalWords(err)];
+    detail = (err as ApiError).message;
   } else if (err instanceof ApiError && err.status >= 500) {
     title = t("err.server");
     body = [t("err.serverBody", { status: err.status }), err.message ? h("span", { class: "mono small detail" }, err.message) : null];

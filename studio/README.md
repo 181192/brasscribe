@@ -27,7 +27,7 @@ cd .. && pixi run serve --lan     # 0.0.0.0, prints a LAN URL and a pairing code
 ## Test
 
 ```sh
-npm test                                  # vitest: MIDI, beats, note diff, SSE reducer, MusicXML, validation, DSP
+npm test                                  # vitest: MIDI, beats, note diff, SSE reducer, MusicXML, validation, DSP, the new-run form
 npx playwright install chromium           # once
 npm run build                             # the browser tests and the catalogue run against the built bundle
 npm run test:catalogue                    # the screen catalogue and its checks' own tests, no engine
@@ -46,7 +46,7 @@ STUDIO_E2E_MUSESCORE=1 npm run e2e        # also run the MuseScore round trip fr
 | `browser/` | the viewer, appearance, Pink and the SoundFont on the built bundle | the built bundle and Chromium |
 | `e2e/` | a live engine: runs, the pipeline, benchmarks, MuseScore, the Mikkel run | an engine and `data/` |
 
-**The screen catalogue** (`catalogue/`, `npm run test:catalogue`) opens the built bundle as static files and answers the engine's API with `page.route` from `e2e/fixtures/api/responses.json`: responses an engine gave for the public-domain runs in `e2e/fixtures/compare`, the tab run in `apps/fixtures/guitar-line`, a failed run, a short benchmark history and a conformance report written for it. A request the fixtures do not answer, a page error or a console error fails the view (a view that is there to show a failure names the console errors it expects, `expectedErrors`). Every view (`catalogue/views.ts`: the runs, a run's score and each of its tabs, a failed run, a tab run, the viewer empty, with a score, with a tab and with a file it cannot show, Compare, Benchmarks, Parity, Conformance, Datasets and models, the shortcut sheet and the narrow menu) is opened in every variant: light, dark, high contrast light and dark (`prefers-contrast: more`), bokmål, 200 % zoom (720 × 500 CSS px), 320 px, and bokmål at 320 px; the narrow ones are reached the way a reader gets there, by narrowing the window after the view opened wide. Each runs these checks:
+**The screen catalogue** (`catalogue/`, `npm run test:catalogue`) opens the built bundle as static files and answers the engine's API with `page.route` from `e2e/fixtures/api/responses.json`: responses an engine gave for the public-domain runs in `e2e/fixtures/compare`, the tab run in `apps/fixtures/guitar-line`, a failed run, a short benchmark history and a conformance report written for it, and, written by hand from the engine's shapes, a run that read a page of printed music (`e2e/fixtures/api/old-hundredth-sheet`) and one that could not read its page. The picture of a page is made by the catalogue (`catalogue/page.ts`), not kept in git. A request that is not a GET is answered only when the fixtures name it with its method (`POST /v1/jobs/pages`: an upload the engine turns down). A request the fixtures do not answer, a page error or a console error fails the view (a view that is there to show a failure names the console errors it expects, `expectedErrors`). Every view (`catalogue/views.ts`: the runs, the new-run form with pages of printed music chosen, with those pages turned down by the engine, and on a computer without the reader of printed music, a run's score and each of its tabs, a failed run, a tab run, a run that read a page, the page it read and a run whose page could not be read, the viewer empty, with a score, with a tab and with a file it cannot show, Compare, Benchmarks, Parity, Conformance, Datasets and models, the shortcut sheet and the narrow menu) is opened in every variant: light, dark, high contrast light and dark (`prefers-contrast: more`), bokmål, 200 % zoom (720 × 500 CSS px), 320 px, and bokmål at 320 px; the narrow ones are reached the way a reader gets there, by narrowing the window after the view opened wide. Each runs these checks:
 - axe-core with the WCAG 2.2 AA tags (every view and variant; serious and critical fail)
 - no text cut off: by its own box or by a box around it that hides what overflows (an ellipsis too), on either axis; text a part that scrolls has out of view is not cut, but what it shows can still be cut by a box further out (every view and variant)
 - the page does not scroll sideways (light, bokmål, 200 %, 320 px and bokmål at 320 px); at 320 px neither does a part of it that scrolls (a dialog, a panel), unless it needs both directions: a data table in its wrapper (`.table-wrap`), `pre` and `code`, and the engraved score
@@ -59,7 +59,7 @@ STUDIO_E2E_MUSESCORE=1 npm run e2e        # also run the MuseScore round trip fr
 
 The catalogue always plays without the band SoundFont, so a checkout that has it shows the same as CI. It also turns off alphaTab's scrolling of a score to its cursor (`player.scrollMode` off, in `catalogue/open.ts`), for the checks as well as the pictures, so that a score following its cursor is not covered here. Dates come from the fixtures and the clock is fixed; the time a score took to draw is blanked before a screenshot.
 
-**What stays in e2e** (an engine and `data/`): a real run and its stage graph over SSE, playing a bar, re-running from a manifest, a benchmark suite and the MuseScore round trip from the UI, the inspector tabs with a run's own audio, stems, piano roll and beats (the catalogue's runs have no stage files, so those tabs show their empty state), and the Mikkel score in every theme. The e2e suite's axe and reflow checks overlap the catalogue's; they stay for the views only a live engine fills.
+**What stays in e2e** (an engine and `data/`): a real run and its stage graph over SSE, playing a bar, re-running from a manifest, a benchmark suite and the MuseScore round trip from the UI, the inspector tabs with a run's own audio, stems, piano roll and beats (the catalogue's runs have no stage files, so those tabs show their empty state), printed music read by the reader itself (a PDF or several pages as a run's input, and the tab made from a page; the engine lists the profiles that read pages only where the reader is installed), and the Mikkel score in every theme. The e2e suite's axe and reflow checks overlap the catalogue's; they stay for the views only a live engine fills.
 
 The e2e suite needs `data/` with at least one finished Mikkel run and `data/golden/mikkel-arranged-band/`. By default it launches no MuseScore. It checks the following:
 - It loads the Mikkel run, renders the 18-part score and plays bar 9 from the keyboard.
@@ -92,6 +92,7 @@ Screenshots go to `docs/screenshots/`.
   - FFT, spectrogram and energy
   - the talking score (`talking.ts`, checked against `docs/shared/accessibility/talking-score-vectors.json`), built from MusicXML (`talkingxml.ts`) and navigated by note, beat, bar, part and uncertain note (`navigator.ts`)
   - the notation diff that marks changed notes in Compare (`xmldiff.ts`)
+  - pages of printed music as a run's input (`pages.ts`): which profiles read them, their order and limits in the new-run form, what a run's input is by its first bytes, and the engine's fixed words for pages that could not be read
   - what a score's staves show (notation, tablature or both) and the alphaTab stave profile that draws it (`stavelayout.ts`)
 - `src/components/`: custom elements:
   - `bs-score`: alphaTab with transport, loop, speed, zoom, parts, mute and solo, and keyboard navigation; a score, a tab, or a tab under its notation, as the file has it
@@ -100,7 +101,7 @@ Screenshots go to `docs/screenshots/`.
   - `bs-stems`
   - `bs-pianoroll`
   - `bs-beats`
-- `src/views/`: runs, one run (stage graph and inspector), compare, benchmarks, conversion parity, core conformance, datasets and models, and the score viewer.
+- `src/views/`: runs (a run starts from a recording, or from pictures or a PDF of printed music where the engine has the reader), one run (stage graph and inspector; for a run that read pages, the page in place of the recording, stems, piano roll and beats), compare, benchmarks, conversion parity, core conformance, datasets and models, and the score viewer.
 
 Styling is the Brasscribe design system (`design/brands/brasscribe/system.md` §7, the workbench variant). `src/styles.css` imports `design/brands/brasscribe/dist/web/brasscribe.css` and `fonts.css`, which esbuild bundles into `assets/studio-style.css`. Icons come from `design/brands/brasscribe/dist/web/icons.js`, and the lockup from `design/brands/brasscribe/brand/logo`. The favicons come from `design/brands/brasscribe/dist/icons/web`. After a token change, run `uv run design/tooling/build.py`, then `npm run build`.
 

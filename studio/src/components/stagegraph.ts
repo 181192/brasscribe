@@ -9,7 +9,7 @@ import { t } from "../i18n";
 import { stageTime, stageTimeTip, WAIT_NOTE_ID } from "../lib/stagetime";
 import { clear, h } from "../ui/dom";
 
-const ORDER = ["beats", "stems", "separate", "layers", "transcribe", "vote", "arrange", "export"];
+const ORDER = ["read", "beats", "stems", "separate", "layers", "transcribe", "vote", "notes", "arrange", "export"];
 
 export function columns(stages: StageView[]): StageView[][] {
   const cols = new Map<string, StageView[]>();

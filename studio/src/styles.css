@@ -299,6 +299,13 @@ button.chip[aria-pressed="true"] .count { color: var(--scribe-text); }
 .new-run { max-width: 48rem; }
 .new-run h2 { margin-top: 0; }
 fieldset.source { display: grid; gap: var(--scribe-space-2); justify-items: start; padding-top: var(--scribe-space-1); }
+/* The pages chosen for a run, in the order they are read; each with the buttons that move it or take it out. */
+.pages { display: grid; gap: var(--scribe-space-2); justify-items: start; }
+.pages .hint { margin: 0; }
+.page-list { display: grid; gap: var(--scribe-space-2); margin: 0; padding-left: var(--scribe-space-6); }
+.page-list .page-name { overflow-wrap: anywhere; }
+/* The page a run read: on paper, whatever the theme (a picture of black notes with no background of its own). */
+.page-read { display: block; max-width: 100%; height: auto; margin: var(--scribe-space-3) 0; background: #fff; border: 1px solid var(--scribe-border); }
 /* Headings that are a disclosure's summary. */
 summary > h2.in-summary, summary > h3.in-summary { margin: 0; display: inline; overflow-wrap: break-word; }
 summary > .row { align-items: center; }

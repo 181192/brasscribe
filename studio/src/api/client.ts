@@ -2,9 +2,10 @@
 // never build URLs themselves.
 import type {
   AdapterInfo, AudioRef, BenchRun, Comparison, Composition, ConformanceReport, ConformanceRun, DatasetInfo, Health, Job, JobCreate,
-  JobEvent, Manifest, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
+  JobEvent, Manifest, PagesJob, ParityReport, ProfileInfo, Reference, RoundTrip, Source, StageFiles, SuiteInfo,
   SuiteRun, ValidationIssue, PartSources,
 } from "./types";
+import { pageFormat, type SheetSummary } from "../lib/pages";
 import { interfaceMatch, type InterfaceMatch } from "./wire";
 
 /** The engine answered 404 for a route it does not have (as opposed to a missing resource). */
@@ -15,7 +16,8 @@ export class MissingEndpoint extends Error {
 }
 
 export class ApiError extends Error {
-  constructor(readonly status: number, message: string) {
+  /** `code` is the name the engine gives a refusal it answers as {code, detail}: what Studio's own words go by. */
+  constructor(readonly status: number, message: string, readonly code?: string) {
     super(message);
   }
 }
@@ -129,8 +131,9 @@ export function url(path: string): string {
 async function fail(r: Response, endpoint: string): Promise<never> {
   const text = await r.text();
   let detail: unknown;
+  let code: unknown;
   try {
-    detail = JSON.parse(text).detail;
+    ({ detail, code } = JSON.parse(text));
   } catch {
     detail = undefined;
   }
@@ -139,7 +142,7 @@ async function fail(r: Response, endpoint: string): Promise<never> {
   if (r.status === 404 && (detail === undefined || detail === "Not Found")) throw new MissingEndpoint(endpoint);
   if (r.status === 405) throw new MissingEndpoint(endpoint);
   const msg = typeof detail === "string" ? detail : Array.isArray(detail) ? JSON.stringify(detail) : text || r.statusText;
-  throw new ApiError(r.status, msg);
+  throw new ApiError(r.status, msg, typeof code === "string" ? code : undefined);
 }
 
 async function get<T>(path: string, endpoint = path, timeoutS = TIMEOUT_S, opts: CallOptions = {}): Promise<T> {
@@ -179,6 +182,9 @@ export async function fetchText(path: string, endpoint = path, opts: CallOptions
 
 const enc = encodeURIComponent;
 
+/** What a job read, when it read pages: one picture (to show), a PDF, or several pages as one archive. */
+export type PagesInput = { kind: "picture"; picture: Blob } | { kind: "pdf" | "archive" | "other" };
+
 export const api = {
   /** Also notes whether the engine's interface version is this Studio's (engineInterface). */
   health: async (): Promise<Health> => {
@@ -201,7 +207,8 @@ export const api = {
   renderedAudioUrl: (id: string) => url(`/v1/jobs/${enc(id)}/audio`),
   midiUrl: (id: string) => url(`/v1/jobs/${enc(id)}/midi`),
   pdfUrl: (id: string) => url(`/v1/jobs/${enc(id)}/pdf`),
-  inputAudioUrl: (id: string) => url(`/v1/jobs/${enc(id)}/input`),
+  /** The job's input as it was given: the recording, or the page (several pages as one archive). */
+  inputUrl: (id: string) => url(`/v1/jobs/${enc(id)}/input`),
   cancel: (id: string) => send<Job>("DELETE", `/v1/jobs/${enc(id)}`),
   /** Remove a finished run's files (the artifact cache is kept). */
   deleteRun: async (id: string): Promise<void> => {
@@ -223,6 +230,43 @@ export const api = {
   // Fields the engine defaults (difficulty, muscriptor, lineup…) may be left out.
   createJob: (body: Omit<JobCreate, "difficulty" | "muscriptor" | "lead"> & Partial<Pick<JobCreate, "difficulty" | "muscriptor" | "lead">>) =>
     send<Job>("POST", "/v1/jobs", body as JobCreate),
+  /** Printed music as a job: the pages in order (pictures or PDFs), for a profile that reads pages. */
+  createJobFromPages: (pages: File[], body: PagesJob) => {
+    const fd = new FormData();
+    for (const page of pages) fd.append("files", page);
+    for (const [k, v] of Object.entries(body)) if (v !== null && v !== undefined) fd.append(k, String(v));
+    return send<Job>("POST", "/v1/jobs/pages", fd, "POST /v1/jobs/pages");
+  },
+  /** What a job that kept the page as a score read: its counts and the bars in doubt. */
+  sheetSummary: (id: string, opts?: CallOptions) =>
+    get<SheetSummary>(`/v1/jobs/${enc(id)}/artifacts/sheet.json`, "GET /v1/jobs/{id}/artifacts/{name}", undefined, opts),
+  /**
+   * The input of a job that read pages. What it is, is read from its first bytes: a picture is fetched whole,
+   * to be shown; of a PDF or an archive (which may be large) no more than that is fetched.
+   */
+  pagesInput: async (id: string, opts: CallOptions = {}): Promise<PagesInput> => {
+    const r = await request(`/v1/jobs/${enc(id)}/input`, { signal: opts.signal }, 300);
+    if (!r.ok) return fail(r, "GET /v1/jobs/{id}/input");
+    const reader = r.body!.getReader();
+    const chunks: Uint8Array[] = [];
+    let head = new Uint8Array(0);
+    let type: string | undefined;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (value) {
+        chunks.push(value);
+        if (head.length < 12) head = Uint8Array.of(...head, ...value.subarray(0, 12));
+      }
+      if (type === undefined && (head.length >= 12 || done)) {
+        type = pageFormat(head) ?? "";
+        if (!type.startsWith("image/")) {
+          await reader.cancel().catch(() => undefined);
+          return { kind: type === "application/pdf" ? "pdf" : type === "application/zip" ? "archive" : "other" };
+        }
+      }
+      if (done) return { kind: "picture", picture: new Blob(chunks as BlobPart[], { type }) };
+    }
+  },
   eventsUrl: (id: string, after = -1) => url(`/v1/jobs/${enc(id)}/events?after=${after}`),
   suites: () => get<SuiteInfo[]>("/v1/suites"),
   runSuite: (name: string, mode: "cached" | "live" = "cached") =>
