@@ -176,7 +176,14 @@ public sealed partial class TranscriptionViewModel : ObservableObject
 
     /// <summary>The last take the computer took in and would not write down yet (<see cref="BandWriterNotSetUp"/>): the
     /// recording stays there, so trying the same take again names it and sends nothing a second time.</summary>
-    private (string Wav, string AudioId)? _refusedTake;
+    private (string Take, string AudioId)? _refusedTake;
+
+    /// <summary>A recording as it is now: the same take until the file is written again.</summary>
+    private static string TakeOf(string wav)
+    {
+        var file = new FileInfo(wav);
+        return file.Exists ? $"{wav}:{file.Length}:{file.LastWriteTimeUtc.Ticks}" : wav;
+    }
 
     private async Task RunJobAsync(SourceAudio source, string kindLabel, string profile, Func<string, JobCreate> request,
         ArrangementOptions? options, string? audioId)
@@ -212,7 +219,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
 
             // A take the computer refused for unfinished setup is still there: it is named, not sent again.
-            bool refusedBefore = audioId is null && _refusedTake is { } held && held.Wav == source.WavPath;
+            string take = TakeOf(source.WavPath);
+            bool refusedBefore = audioId is null && _refusedTake is { } held && held.Take == take;
             if (refusedBefore) audioId = _refusedTake!.Value.AudioId;
             async Task<string> SendAsync()
             {
@@ -237,10 +245,10 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             }
             catch (EngineException e) when (e.Code == BandWriterNotSetUp)
             {
-                _refusedTake = (source.WavPath, audioId);
+                _refusedTake = (take, audioId);
                 throw;
             }
-            if (_refusedTake?.Wav == source.WavPath) _refusedTake = null;
+            if (_refusedTake?.Take == take) _refusedTake = null;
             _jobId = job.Id;
             estimator.Start();
 

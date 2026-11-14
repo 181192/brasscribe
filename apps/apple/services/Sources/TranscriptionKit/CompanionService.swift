@@ -363,7 +363,18 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     /// The last take the computer took in and would not write down yet, because something is left to set up there
     /// (`band_writer_not_set_up`), with the id the computer keeps it under. The recording stays on the computer, so
     /// trying the same take again names it and sends nothing a second time.
+    /// Behind `lock`, like the rest of what this class remembers: two transcriptions can be on their way at once.
     private var refusedTake: (take: String, audioID: String)?
+
+    /// The id the computer keeps `take` under when it is the take it refused; forgotten in the same step, so two
+    /// tries at once cannot both name it.
+    private func takeRefused(matching take: String) -> String? {
+        lock.withLock {
+            guard let held = refusedTake, held.take == take else { return nil }
+            refusedTake = nil
+            return held.audioID
+        }
+    }
 
     /// A recording as it is now: the same take until the file is written again.
     private static func take(_ url: URL) -> String {
@@ -375,7 +386,7 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     private func note(refusal data: Data, of take: String) {
         guard let said = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               said["code"] as? String == "band_writer_not_set_up", let id = said["audio_id"] as? String else { return }
-        refusedTake = (take, id)
+        lock.withLock { refusedTake = (take, id) }
     }
 
     /// A job from a recording the computer already holds.
@@ -406,9 +417,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     func upload(_ req: TranscriptionRequest) async throws -> Job {
         try await requireMatch()
         let take = Self.take(req.audioURL)
-        if let held = refusedTake, held.take == take {
-            refusedTake = nil
-            do { return try await job(audioID: held.audioID, req, take: take) } catch TranscriptionError.http(404, _) {
+        if let audioID = takeRefused(matching: take) {
+            do { return try await job(audioID: audioID, req, take: take) } catch TranscriptionError.http(404, _) {
                 // The computer has let go of it since: it is sent again, below.
             }
         }
