@@ -131,7 +131,17 @@ jobs:
       - name: On-device models
         uses: ./.github/actions/on-device-models
 
-      # Fixture-dependent tests (SCRIBE_FIXTURES / data/golden) skip themselves when absent.
+      # The band SoundFont is not in git. With the pinned pack's 16-bit file (cached per pack) the playback
+      # package's tests that play the band run here: the Old Hundredth fixture through the real player and
+      # output stage against the shared levels, and the band's presets. Without it they skip themselves, and a
+      # level that has moved shows only on a machine that has the sounds. (The full-band phrase tests still
+      # skip: they need data/sounds/phrases, which sounds/phrases.py writes and CI does not.)
+      - name: Fetch the band SoundFont for the level tests
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-16bit.sf2
+
+      # Tests that need data/golden (SCRIBE_FIXTURES) skip themselves when it is absent.
       - name: Test (packages, macOS app)
         run: make package-test test-mac-app
 

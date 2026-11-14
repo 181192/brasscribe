@@ -327,3 +327,24 @@ the golden output:
 - at merge, and only then, moves the old golden to `data/golden-backups/before-<change>/`, renames the
   sibling to `mikkel-arranged-band`, and reverts the paths in the same commit
   (`chore: promote the … golden`).
+
+**The band's level follows a promotion.** A new golden is a new arrangement to the players, and the level the
+apps are held to (`band.arrangement_lufs` in `sounds/playback-levels.json`) is the golden as Windows plays it. In
+the commit that promotes a golden:
+
+- measure it on Windows, on a machine with `data/`: `Golden_arrangement_plays_at_the_recording_target`
+  (`apps/windows/tests/Kalli.Scribe.Tests/PlaybackLevelTests.cs`) prints `LEVELS windows golden arrangement … LUFS`;
+  write that number to `band.arrangement_lufs`, run `sounds/playback_levels.py --vectors`, and set
+  `PlaybackLevels.bandArrangementLUFS` on Apple to it;
+- run Apple's playback tests with the golden and the band SoundFont present
+  (`cd apps/apple/services && swift test --no-parallel --filter LevelTests`): `LEVELS golden arrangement` must be
+  within `band.arrangement_tolerance_lu` of the new number. When it is more than 1 LU off, refit Apple's band gain
+  (`band.gain_db.apple`) in the same commit, as docs/shared/research/12-band-sound.md §14 did.
+
+CI cannot do this for the golden, which is not in git. On every Apple pull request it plays the public Old
+Hundredth fixture instead (`ArrangementLevelTests`), held to Windows' level within the same tolerance and to
+Apple's own level on the CI Mac within 0.5 LU (`appleOldHundredthLUFS` in the test). That second number is a
+guard against a level that moves by accident: change it only in the commit that refits `band.gain_db.apple`,
+after the Windows measurement above, to what the CI run of that commit prints (`LEVELS Old Hundredth
+arrangement`). The full-band phrase and dynamics tests need `data/sounds/phrases` and run in the full local tier
+only.

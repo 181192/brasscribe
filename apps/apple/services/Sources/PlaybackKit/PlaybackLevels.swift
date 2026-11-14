@@ -9,16 +9,19 @@ public enum PlaybackLevels {
     public static let limiterCeiling = 0.98
     /// The full-band test phrase lands here (integrated LUFS) through the band stage.
     public static let bandPhraseLUFS = -12.0
-    /// The full-band phrase as Windows plays it (alphaSynth), and how far Apple's may be from it: Apple's band gain
-    /// is fitted on whole arrangements, where its phrase-to-arrangement ratio is 1.9 LU off alphaSynth's
-    /// (docs/shared/research/12-band-sound.md §14).
+    /// The full-band phrase as Windows plays it (alphaSynth). Apple's band gain is fitted on whole arrangements,
+    /// where its phrase-to-arrangement ratio is 1.9 LU off alphaSynth's (docs/shared/research/12-band-sound.md §14),
+    /// so its phrase is held to Windows' within `playerToleranceLU`, like an arrangement.
     public static let windowsPhraseLUFS = -12.80
-    public static let phraseToleranceLU = 1.1
     /// A whole arrangement played with its dynamics: the Mikkel golden score as Windows plays it.
     public static let bandArrangementLUFS = -14.50
+    /// The public Old Hundredth fixture (apps/fixtures/old-hundredth) as Windows plays it.
+    public static let oldHundredthLUFS = -15.68
+    /// How far this app's player may be from Windows' on the same music (band.arrangement_tolerance_lu).
+    public static let playerToleranceLU = 1.5
     /// Make-up gain on the band before the limiter: fitted so the golden lands within 1 LU of where Windows plays it
-    /// and the phrase within `phraseToleranceLU` of Windows' (they pull opposite ways: the golden 0.96 over, the
-    /// phrase 1.06 under).
+    /// and the phrase as near Windows' as that allows (they pull opposite ways: the golden 0.96 over, the phrase
+    /// 1.06 under).
     public static let bandGainDB = 29.40
     /// Added to the make-up gain when "Concert hall sound" is off: the hall's share of the band's
     /// loudness, measured on the golden arrangement and Old Hundredth (band.dry_room_gain_db).
