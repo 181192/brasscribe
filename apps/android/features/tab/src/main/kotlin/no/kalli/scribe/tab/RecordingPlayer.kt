@@ -51,6 +51,9 @@ interface RecordingPlayer {
         fun onPlaying(playing: Boolean)
         fun onEnded()
         fun onFailed()
+
+        /** The stretch being repeated was played to its end and has turned back to its start. */
+        fun onTurned() = Unit
     }
 }
 
@@ -80,7 +83,7 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
                     // A stretch that reaches the end of the recording turns here, when it starts before that end (one that
                     // starts past it would end again at once, for ever); else the recording has been played.
                     val again = repeat
-                    if (again != null && player.playWhenReady && turnsBack(again.start, duration)) seekTo(again.start)
+                    if (again != null && player.playWhenReady && turnsBack(again.start, duration)) { seekTo(again.start); listener.onTurned() }
                     else { player.playWhenReady = false; listener.onEnded() }
                 }
                 tell()
@@ -125,7 +128,7 @@ class MediaRecordingPlayer(context: Context, file: File, private val listener: R
             turn?.cancel()
             turn = value?.let { stretch ->
                 // Told on the playback thread at the stretch's last millisecond, every time it is reached.
-                player.createMessage { _, _ -> if (repeat == stretch) seekTo(stretch.start) }
+                player.createMessage { _, _ -> if (repeat == stretch) { seekTo(stretch.start); listener.onTurned() } }
                     .setLooper(Looper.getMainLooper())
                     .setPosition((stretch.endInclusive * 1000).toLong().coerceAtLeast(1))
                     .setDeleteAfterDelivery(false)

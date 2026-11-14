@@ -349,6 +349,16 @@
     <string name="fs_practice_metronome_tip">A click on every beat.</string>
     <string name="fs_practice_sound_done">Done</string>
     <string name="fs_sound_failed">This phone couldn\'t make the sound for the tab\'s notes, the count-in and the metronome.</string>
+    <!-- The speed trainer and the saved repeats, in Repeat bars -->
+    <string name="fs_trainer">Speed trainer</string>
+    <string name="fs_trainer_tip">Starts at %1$d%% and goes %3$d%% faster after every %4$d times through, up to %2$d%%.</string>
+    <string name="fs_trainer_from">Start at</string>
+    <string name="fs_trainer_to">Up to</string>
+    <string name="fs_trainer_every">Times through at each speed</string>
+    <string name="fs_trainer_less">%1$s: less</string>
+    <string name="fs_trainer_more">%1$s: more</string>
+    <string name="fs_practice_repeat_save">Save this repeat</string>
+    <string name="fs_practice_repeat_forget">Forget this repeat</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
 </resources>
