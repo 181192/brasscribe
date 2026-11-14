@@ -654,7 +654,10 @@ def tally(page, first: str = "", link: str = "") -> str:
     if link:
         return "\n".join(out)
     # On a phone the cards are a row that scrolls by itself, a card at a time; the keyboard can scroll it too.
-    return (f'<div class="sure-grid" role="region" aria-label="{esc(say("sure.cards"))}" tabindex="0">\n' + "\n".join(out) + "\n</div>")
+    # Under the row, which card is in view of how many ("1 of 3"): what a finger on a phone would otherwise not know.
+    count = esc(json.dumps(say("sure.count"), ensure_ascii=False))
+    return (f'<div class="sure-grid" role="region" aria-label="{esc(say("sure.cards"))}" tabindex="0" data-count="{count}">\n' + "\n".join(out)
+            + f'\n</div>\n<p class="sure-count await-js" aria-hidden="true">{esc(say("sure.count").format(n=1, total=len(out)))}</p>')
 
 
 def measured(page) -> str:

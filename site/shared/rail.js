@@ -101,6 +101,9 @@ const markMine = () => {
   chip.classList.add("mine");
   // The tag is part of the link's words, so a screen reader says it too.
   if (!chip.querySelector(".mine-tag")) chip.insertAdjacentHTML("beforeend", ` <span class="mine-tag">${rail.dataset.mine}</span>`);
+  // In a narrow window the rail is a row that scrolls: the visitor's own place is brought into it.
+  const row = rail.getBoundingClientRect(), box = chip.getBoundingClientRect();
+  if (box.left < row.left || box.right > row.right) rail.scrollLeft += box.left - row.left - 24;
   // A panel with two downloads (Android and iPhone) fills the visitor's; the other stays outlined.
   const own = document.querySelector(`main.downloads .dl-device[data-group="${group}"] .button`);
   const filled = own?.closest("section").querySelector(".button.primary");

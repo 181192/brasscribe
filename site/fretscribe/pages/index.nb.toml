@@ -103,8 +103,9 @@ setup = "Sett opp Bandroom"
 
 [sure]
 cards = "Hvor sikker den er, et kort for hver type musiker"
+count = "{n} av {total}"
 title = "Hvor sikker <em>er den?</em>"
-lead = "<b>Rundt 9 av 10 noter den skriver, er de som ble spilt.</b>{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}} Og når den setter <b class=\"doubt-mark\">?</b> over en, har den nesten alltid grunn til det: 9 av 10 ganger trengte den noten en ekstra lytt.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
+lead = "<b>Rundt 9 av 10 noter den skriver, er de som ble spilt</b> for en bass, også plukket ut av en låt, eller en gitar alene; rundt 5 av 10 for en gitar midt i et fullt band.{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}}{{holds fretted/guitar-tab/song.onset_p >= 0.45}}{{holds fretted/guitar-tab/song.onset_p < 0.6}} Og når den setter <b class=\"doubt-mark\">?</b> over en, har den nesten alltid grunn til det: 9 av 10 ganger trengte den noten en ekstra lytt.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
 of_first = "av 100 noter den skriver, er riktige"
 of = "av 100 noter"
 right = "riktig note på riktig sted"

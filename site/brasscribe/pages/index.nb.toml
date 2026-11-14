@@ -121,6 +121,7 @@ setup = "Sett opp Bandroom"
 
 [sure]
 cards = "Hvor sikker den er, et kort for hver type musiker"
+count = "{n} av {total}"
 title = "Hvor sikker <em>er den?</em>"
 lead = "Gi den ett messinginstrument, så havner <b>minst 9 av 10 noter i stemmen med riktig tone til riktig tid</b> for de fleste instrumentene, for kornett nærmere 19 av 20.{{holds brass/solo-instruments/trumpet.seat_recall >= 0.925}}{{holds brass/solo-instruments/flugelhorn.seat_recall >= 0.925}}{{holds brass/solo-instruments/baritone.seat_recall >= 0.9}}{{holds brass/solo-instruments/trombone.seat_recall >= 0.9}} Der den måtte gjette, sier den fra med et <b class=\"doubt-mark\">?</b>."
 of_first = "av 100 spilte noter er skrevet riktig"

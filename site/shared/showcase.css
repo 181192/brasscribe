@@ -153,8 +153,16 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
     -webkit-mask-image: linear-gradient(90deg, var(--fade-before), #000 40px, #000 calc(100% - 40px), var(--fade-after));
     mask-image: linear-gradient(90deg, var(--fade-before), #000 40px, #000 calc(100% - 40px), var(--fade-after));
   }
-  /* Tight enough that four short choices (Standard, Drop D, Open G, DADGAD) stand whole on a 390 px phone. */
+  /* Tight enough that four short choices (Standard, Drop D, Open G, DADGAD) stand whole on a phone: in one row down
+     to 375 px, two rows of two under that. */
   .seg button { flex: 1 0 auto; white-space: nowrap; padding: 0 var(--scribe-space-2); font-size: 0.9375rem; }
+}
+@media (max-width: 400px) { .seg button { padding: 0 var(--scribe-space-1); font-size: 0.875rem; } }
+@media (max-width: 374px) {
+  .seg[data-tuning] { flex-wrap: wrap; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  .seg[data-tuning] button { flex: 1 0 45%; border-bottom: 1px solid var(--scribe-border-strong); }
+  .seg[data-tuning] button:nth-child(2n) { border-right: 0; }
+  .seg[data-tuning] button:nth-last-child(-n + 2) { border-bottom: 0; }
 }
 @media (forced-colors: active) { .seg button[aria-checked="true"] { background: Highlight; color: HighlightText; } }
 .bar-play { flex: none; min-height: 44px; }
@@ -267,6 +275,8 @@ main > section > .wrap > h2 { max-width: 20em; }
     margin-left: calc(-1 * var(--scribe-space-6)); margin-right: calc(-1 * var(--scribe-space-6)); padding: 0 var(--scribe-space-6) var(--scribe-space-3); }
   .sure-grid > .tally { scroll-snap-align: start; }
 }
+.sure-count { margin: var(--scribe-space-2) 0 0; text-align: center; font-size: var(--scribe-type-caption-size); color: var(--scribe-text-muted); font-variant-numeric: tabular-nums; }
+@media (min-width: 601px) { .sure-count { display: none; } }
 .tally { background: var(--scribe-surface-raised); color: var(--scribe-text); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); padding: var(--scribe-space-6); }
 .tally h3 { margin: 0 0 2px; font-size: var(--scribe-type-headline-size); }
 .tally .where { color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); margin: 0 0 var(--scribe-space-4); }
