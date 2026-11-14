@@ -165,8 +165,8 @@ class ScoreRenderTest : ScreenTest() {
         val c = vm.scoreController!!
         val renders = c.renders.value
         slowEngraver(c)
-        // Engraved again, without the title block (the score upright has it).
-        rule.runOnUiThread { c.setTitleShown(false) }
+        // Engraved again, with the title block (a phone's score has none: its top bar names it).
+        rule.runOnUiThread { c.setTitleShown(true) }
         waitForEngravedScore()
         assertTrue("the wait was over before the new render (renders: $renders, then ${c.renders.value})", c.renders.value > renders)
         val ink = inkShare(rule.onNodeWithTag("score-view").captureToImage().asAndroidBitmap())

@@ -14,15 +14,17 @@ import no.kalli.scribe.play.screen.ScreenTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * The engraved title block ("Old Hundredth / arr. Brasscribe": the title, composer, arranger and rights) shows on the
- * score upright, where it does not crowd the music. On the music stand and on a phone on its side the top band names
- * the score, and the music starts at the top: there the block took about a third of the music's room.
+ * The engraved title block ("Old Hundredth / arr. Brasscribe": the title, composer, arranger and rights) shows on a
+ * tablet's score upright, where it does not crowd the music. On a phone (whose top bar names the score), on the music
+ * stand and on its side the music starts at the top: on a small phone the block and the part's line took about 150 dp
+ * above the first system.
  */
 @RunWith(AndroidJUnit4::class)
 class ScoreTitleTest : ScreenTest() {
@@ -56,8 +58,42 @@ class ScoreTitleTest : ScreenTest() {
 
     private fun titled() = firstSystem().let { (top, height) -> top >= height / 2 }
 
+    /** A tablet upright: the one place the title block is engraved. */
+    private fun tablet() = assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 800, 1280))
+
     @Test
-    fun uprightTheScoreShowsItsTitle() {
+    fun onAPhoneUprightTheMusicStartsAtTheTop() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        open()
+        assertTrue("on a phone, no title block: ${firstSystem()}", !titled())
+        // The top bar names it.
+        assertTrue(rule.onAllNodesWithText("Old Hundredth").fetchSemanticsNodes().isNotEmpty())
+        // And what the block said is in the score's menu: the title in full, who arranged it.
+        rule.onNodeWithTag("top-more").performClick()
+        waitUntil(5_000) { rule.onAllNodesWithTag("score-credits").fetchSemanticsNodes().isNotEmpty() }
+        val credits = rule.onNodeWithTag("score-credits").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("\n") { it.text }
+        assertTrue(credits, credits.contains("Old Hundredth") && credits.contains("arr. Brasscribe"))
+        assertTrue(credits, credits.contains(text(R.string.about_part, "")))
+        checkAccessibility()
+    }
+
+    /** In bokmål the menu says it in its words, and a long title is there in full. */
+    @Test
+    fun onAPhoneTheMenuHasTheTitleInFullInBokmal() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        language("nb-NO")
+        val long = "Old Hundredth, the Doxology, as sung in the Genevan Psalter of 1551 and arranged for the whole band"
+        open(hymn.replace(Regex("<work-title>[^<]*</work-title>"), "<work-title>$long</work-title>"))
+        rule.onNodeWithTag("top-more").performClick()
+        waitUntil(5_000) { rule.onAllNodesWithTag("score-credits").fetchSemanticsNodes().isNotEmpty() }
+        assertTrue(rule.onAllNodesWithText("Om partituret").fetchSemanticsNodes().isNotEmpty())
+        val credits = rule.onNodeWithTag("score-credits").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("\n") { it.text }
+        assertTrue(credits, credits.contains(long) && credits.contains("Stemme: "))
+    }
+
+    @Test
+    fun uprightOnATabletTheScoreShowsItsTitle() {
+        tablet()
         assertTrue(hymn.contains("<work-title>") && hymn.contains("<creator"))
         open()
         assertTrue("the title block is above the first system: ${firstSystem()}", titled())
@@ -72,6 +108,7 @@ class ScoreTitleTest : ScreenTest() {
 
     @Test
     fun onTheMusicStandTheMusicStartsAtTheTop() {
+        tablet()
         open()
         rule.onNodeWithTag("stand-enter").performClick()
         waitUntil(20_000) { rule.onAllNodesWithTag("stand-score").fetchSemanticsNodes().isNotEmpty() }
@@ -87,6 +124,7 @@ class ScoreTitleTest : ScreenTest() {
 
     @Test
     fun aLongTitleIsShownWholeAndNoTitleLeavesNoGap() {
+        tablet()
         // A long title: still engraved upright, and the music under it.
         val long = "Old Hundredth, the Doxology, as sung in the Genevan Psalter of 1551 and arranged for the whole band"
         open(hymn.replace(Regex("<work-title>[^<]*</work-title>"), "<work-title>$long</work-title>"))
