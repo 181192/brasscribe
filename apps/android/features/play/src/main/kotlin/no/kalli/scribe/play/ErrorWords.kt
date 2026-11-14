@@ -13,6 +13,12 @@ class EngineJobFailedException(message: String) : Exception(message)
 /** The app has no computer to send the job to. */
 class NoCompanionException : Exception("no computer paired")
 
+/** The computer offers no profile that reads printed music: its Bandroom is from before that, or has no reader of it installed. */
+class PagesNotReadException : Exception("the computer's Bandroom does not read pages")
+
+/** The computer no longer holds the pages a tab is to be written from again; the phone let go of them when the tab was made. */
+class PagesGoneException : Exception("the computer no longer holds the pages")
+
 /** The take is longer than the phone's free memory holds for a band draft. */
 class DraftTooLongException(detail: String) : Exception(detail)
 
@@ -33,14 +39,34 @@ object ErrorWords {
     @StringRes
     fun update(which: InterfaceMatch): Int = if (which == InterfaceMatch.UPDATE_APP) R.string.conn_update_app else R.string.conn_update_computer
 
+    // The fixed words a job that reads pages fails with, at the end of its error (the engine's sheet.py).
+    const val NO_NOTES_ON_PAGE = "no notes were found on the page"
+    const val ONLY_TAB_ON_PAGE = "no staff of notes was found on the page: a tab staff is not read"
+    const val PAGE_TOO_LARGE = "a page is too large to read"
+    const val PAGES_NOT_READ = "the pages could not be read"
+    private val TOO_MANY_PAGES = Regex("""there are more than \d+ pages$""")
+
+    /** The app's words for why a job read no pages, from the engine's own at the end of [error]; null for any other failure. */
+    @StringRes
+    fun pagesNotRead(error: String?): Int? = error?.trim()?.let { said ->
+        when {
+            said.endsWith(ONLY_TAB_ON_PAGE) -> R.string.error_only_tab_on_page
+            said.endsWith(PAGE_TOO_LARGE) -> R.string.error_page_too_large
+            TOO_MANY_PAGES.containsMatchIn(said) -> R.string.error_too_many_pages
+            else -> null
+        }
+    }
+
     @StringRes
     fun of(e: Throwable): Int = if (networkClosed(e)) R.string.pair_network_refused else when (e) {
         is QuartetNeedsGroupException -> R.string.lineup_quartet_needs_group
         is LeadSeatRefusedException -> R.string.lead_seat_refused
         is NoCompanionException -> R.string.where_companion_missing
         is InterfaceMismatchException -> update(e.update)
-        is EngineJobFailedException -> R.string.error_engine_failed
+        is EngineJobFailedException -> pagesNotRead(e.message) ?: R.string.error_engine_failed
         is RecordingGoneException -> R.string.error_recording_gone
+        is PagesNotReadException -> R.string.error_pages_not_read
+        is PagesGoneException -> R.string.error_pages_gone
         is EngineException -> when (e.code) {
             "quartet_needs_group" -> R.string.lineup_quartet_needs_group
             "percussion_solo" -> R.string.percussion_solo_refused
@@ -50,10 +76,14 @@ object ErrorWords {
             "core_missing" -> R.string.error_core_missing
             // not taken: the computer has not been set up for a full band yet (the band writer and its key)
             "band_writer_not_set_up" -> R.string.error_band_writer_not_set_up
+            no.kalli.scribe.engine.InputRefusal.NOT_A_PAGE -> R.string.error_not_a_page
+            no.kalli.scribe.engine.InputRefusal.PAGE_TOO_LARGE -> R.string.error_page_too_large
+            no.kalli.scribe.engine.InputRefusal.READER_MISSING -> R.string.error_reader_missing
             else -> when (e.status) {
                 0 -> R.string.error_unreachable
                 401, 403 -> R.string.error_pair_again
                 408, 504 -> R.string.error_timeout
+                413 -> R.string.error_too_large_for_computer
                 422 -> R.string.error_invalid_options
                 in 500..599 -> R.string.error_engine_failed
                 else -> R.string.error_generic

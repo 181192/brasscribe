@@ -67,10 +67,15 @@ import kotlinx.coroutines.flow.map
 import java.io.File
 import java.util.zip.ZipInputStream
 
-enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, LICENCES, SETTINGS, PROBLEM, HELP }
+enum class Screen { FIRST_RUN, WHAT_DO_YOU_PLAY, HOME, RECORD, PROFILE, PAGES, TRANSCRIBE, REVIEW, OUTPUT, SCORE, EXPORT, COMPANION, ABOUT, LICENCES, SETTINGS, PROBLEM, HELP }
 
 /** Something went wrong that the user has to act on: shown full screen with a way forward. */
-enum class Problem { FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC, OPEN_FAILED }
+enum class Problem {
+    FILE_UNREADABLE, NO_SOUND_TRACK, NOTHING_HEARD, RECORDING_FAILED, SCORE_FAILED, TOO_LARGE, DRAFT_TOO_LONG, DRAFT_REFUSED, NO_NOTES, SHEET_MUSIC, OPEN_FAILED,
+
+    /** Printed music: what was brought in is no picture and no PDF; no notes were found on the pages; reading them failed some other way. */
+    NOT_A_PAGE, NO_NOTES_ON_PAGE, PAGES_FAILED,
+}
 
 /** [r] is to be checked note by note, and holds no note to check: it opens on the problem screen instead. */
 fun foundNoNotes(r: TranscriptionResult, then: Screen): Boolean =
@@ -86,7 +91,12 @@ fun noNotesOffersComputer(madeOnPhone: Boolean, computerThere: Boolean): Boolean
 @StringRes
 fun noNotesRecordWords(kind: SourceKind?): Int = if (kind == SourceKind.MICROPHONE) R.string.problem_record_again else R.string.home_record_mic
 
-enum class SourceKind { FILE, VIDEO, MICROPHONE, DEVICE, SCORE }
+enum class SourceKind {
+    FILE, VIDEO, MICROPHONE, DEVICE, SCORE,
+
+    /** Printed music: the pages in hand ([PlayViewModel.pages]) and not a recording. */
+    PAGES,
+}
 
 /**
  * What the user brought in. [file] holds the bytes sent to the engine (for a video, only its sound);
@@ -107,7 +117,9 @@ enum class Step(@StringRes val text: Int) {
     QUEUED(R.string.stage_queued), UPLOAD(R.string.stage_upload), BEATS(R.string.stage_beats), STEMS(R.string.stage_stems),
     LAYERS(R.string.stage_layers), TRANSCRIBE(R.string.stage_transcribe), ARRANGE(R.string.stage_arrange),
     EXPORT(R.string.stage_export), DECODE(R.string.stage_decode), PITCH(R.string.stage_pitch), QUANTIZE(R.string.stage_quantize),
-    CONFIRM(R.string.stage_confirm);
+    CONFIRM(R.string.stage_confirm),
+    // Printed music: the pages are sent, read, and written as they stand (nothing is arranged).
+    UPLOAD_PAGES(R.string.stage_upload_pages), READ(R.string.stage_read), WRITE(R.string.stage_write);
 
     companion object {
         fun ofKind(kind: String?): Step = when (kind) {
@@ -115,8 +127,12 @@ enum class Step(@StringRes val text: Int) {
             "arrange" -> ARRANGE; "export" -> EXPORT
             // A bass tab's own stage: the two transcribers' notes joined and put on the beat grid.
             "notes" -> QUANTIZE
+            "read" -> READ
             else -> QUEUED
         }
+
+        /** As [ofKind], for a job of [profile]: a score read from pages is written as it stands, not arranged. */
+        fun of(kind: String?, profile: Profile): Step = if (profile == Profile.SHEET && kind == "arrange") WRITE else ofKind(kind)
     }
 }
 
@@ -348,6 +364,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
 
     /** How far an import has got (0..1) while it runs; null when there is nothing to measure. */
     val importProgress = MutableStateFlow<Float?>(null)
+    /** Printed music in hand, in the order it is read: kept until its score or tab is made, so it can be sent once the computer is there. */
+    val pages = MutableStateFlow<List<Page>>(emptyList())
     val companionState = MutableStateFlow<String?>(null)
     private val clips = ClipPlayer()
     /** "Listen to this bar": [clipPlaying] is the bar playing now; the button shows Stop while it is. */
@@ -434,6 +452,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         restore()
         // Where the user is, and what they brought in, outlive the process (the system may end it in the background).
         viewModelScope.launch { backStack.collect { stack -> savedState[KEY_STACK] = ArrayList(stack.map { it.name }) } }
+        viewModelScope.launch { pages.collect { list -> savedState[KEY_PAGES] = ArrayList(list.map { "${it.file.path}\n${it.name}" }) } }
         viewModelScope.launch {
             var previous: File? = null
             source.collect { s ->
@@ -467,6 +486,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private fun restore() {
         val names = savedState.get<ArrayList<String>>(KEY_STACK)
         val restoredSource = savedState.get<String>(KEY_SOURCE)?.let(SavedSource::decode)
+        // The pages in hand come back too: the phone may end the app while its camera takes the next one.
+        pages.value = savedState.get<ArrayList<String>>(KEY_PAGES).orEmpty().mapNotNull { saved ->
+            val (path, name) = saved.split("\n", limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
+            Page(File(path), name).takeIf { it.file.isFile }
+        }
         // The process ended while the full score of a draft was being made: the draft comes back.
         val scoreId = currentSavedScoreId ?: draftBehind
         draftBehind = null
@@ -492,7 +516,10 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         }
         viewModelScope.launch {
             val keep = source.value?.file
+            val inHand = pages.value.map { it.file }.toSet() + listOfNotNull(photoFile)
             val list = withContext(storage) {
+                // Pages of a score that was made, or left behind when the app was closed.
+                pagesDir.listFiles()?.filter { it !in inHand }?.forEach { it.delete() }
                 // Takes and imports from before, and the rendered scores fetched for "Listen to this bar".
                 takesDir.listFiles()?.filter { it != keep && it != CaptureController.activeFile() }?.forEach { it.delete() }
                 getApplication<Application>().cacheDir.listFiles { f -> f.name.startsWith("score-") && f.name.endsWith(".mp3") }?.forEach { it.delete() }
@@ -672,6 +699,11 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             // Asking the provider for the name can block on its process: not on the main thread.
             val name = withContext(Dispatchers.IO) { displayName(uri, "recording") }
+            // Printed music (a picture or a PDF) is told by its type and how it starts, and goes to the pages.
+            val page = withContext(Dispatchers.IO) {
+                Pages.isPage(runCatching { ctx.contentResolver.getType(uri) }.getOrNull()) { ctx.contentResolver.openInputStream(uri) }
+            }
+            if (page) { busy.value = false; addPages(listOf(uri), fresh = true); return@launch }
             if (container.product.opensScores) {
                 if (name.substringAfterLast('.', "").lowercase() in SCORE_EXTENSIONS) { openScore(uri, name); return@launch }
             } else {
@@ -818,6 +850,150 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         return if (m == 0) sec else res.getQuantityString(R.plurals.duration_minutes, m, m) + " " + sec
     }
 
+    // ---- Printed music ---------------------------------------------------------------------------------
+
+    /** Where the pages in hand are kept, each as it is sent. */
+    private val pagesDir get() = File(getApplication<Application>().cacheDir, PAGES_DIR)
+
+    /** Files handed to the app together (the share sheet's "several"): pages, in their order; one alone is opened as [importUri] opens it. */
+    fun importUris(uris: List<Uri>) {
+        if (uris.size == 1) importUri(uris.single()) else addPages(uris, fresh = true)
+    }
+
+    /**
+     * Takes [uris] in as pages, after the ones in hand ([fresh]: in their place, for music that arrives from another
+     * app). Each is copied as it is sent ([Pages.take]). A file that is no picture and no PDF is left out, and the
+     * pages' screen says so; when nothing that arrived from elsewhere is a page, that is its own problem screen.
+     */
+    fun addPages(uris: List<Uri>, fresh: Boolean = false) {
+        if (uris.isEmpty()) return
+        val ctx = getApplication<Application>()
+        busy.value = true
+        viewModelScope.launch {
+            try {
+                val before = if (fresh) emptyList() else pages.value
+                val room = (EngineApi.MAX_PAGES - before.size).coerceAtLeast(0)
+                // In order with the clearing away at a start: a page that arrives as the app starts is copied after it, never under it.
+                var tooLarge = false
+                val (taken, leftOut) = withContext(storage) {
+                    val taken = mutableListOf<Page>()
+                    var leftOut = 0
+                    for (uri in uris.take(room)) {
+                        try {
+                            taken += Pages.take(ctx, uri, displayName(uri, res.getString(R.string.pages_photo_name)), pagesDir)
+                        } catch (e: PageTooLargeException) {
+                            // Larger than the computer reads: said now, in the words the computer's refusal has, and not sent.
+                            tooLarge = true
+                        } catch (e: Exception) {
+                            android.util.Log.w(TAG, "not taken as a page", e)
+                            leftOut++
+                        }
+                    }
+                    taken to leftOut
+                }
+                if (fresh) dropPages(pages.value)
+                pages.value = before + taken
+                if (pages.value.isEmpty() && !tooLarge && backStack.value.last() != Screen.PAGES) { showProblem(Problem.NOT_A_PAGE); return@launch }
+                showPages()
+                when {
+                    tooLarge -> say(R.string.error_page_too_large)
+                    uris.size > room -> say(R.string.pages_too_many, EngineApi.MAX_PAGES)
+                    leftOut > 0 -> sayText(res.getQuantityString(R.plurals.pages_left_out, leftOut, leftOut))
+                }
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    /** The phone no longer asks about the camera (the player said no for good): the pages' screen offers its settings. */
+    val cameraBlocked = MutableStateFlow(false)
+
+    /** The file the camera is to write the next page's photo to; it is the app's own until [photoTaken]. */
+    fun photoFile(): File = File(pagesDir.apply { mkdirs() }, "photo-${System.currentTimeMillis()}.jpg").also { photoFile = it }
+
+    /** The photo the camera is asked for, also after the phone ended the app while its camera was in front. */
+    private var photoFile: File?
+        get() = savedState.get<String>(KEY_PHOTO)?.let(::File)
+        set(v) { savedState[KEY_PHOTO] = v?.path }
+
+    /** The camera is back: with a photo ([taken]) it is the next page; without, nothing changes. */
+    fun photoTaken(taken: Boolean) {
+        val file = photoFile ?: return
+        photoFile = null
+        if (!taken || file.length() == 0L) { file.delete(); return }
+        if (pages.value.size >= EngineApi.MAX_PAGES) { file.delete(); say(R.string.pages_too_many, EngineApi.MAX_PAGES); return }
+        busy.value = true
+        viewModelScope.launch {
+            try {
+                val page = withContext(storage) { runCatching { Pages.photo(file, res.getString(R.string.pages_photo_name)) }.getOrNull() }
+                if (page != null) pages.update { it + page } else sayText(res.getQuantityString(R.plurals.pages_left_out, 1, 1))
+                showPages()
+            } finally {
+                busy.value = false
+            }
+        }
+    }
+
+    fun removePage(page: Page) {
+        val at = pages.value.indexOf(page)
+        if (at < 0) return
+        pages.update { it - page }
+        dropPages(listOf(page))
+        say(R.string.pages_removed, at + 1)
+    }
+
+    private fun dropPages(gone: List<Page>) {
+        if (gone.isNotEmpty()) viewModelScope.launch { withContext(storage) { gone.forEach { it.file.delete() } } }
+    }
+
+    /** The pages' screen, over Home: where it is already on top it stays as it is. */
+    fun showPages() {
+        if (backStack.value.last() != Screen.PAGES) backStack.value = listOf(Screen.HOME, Screen.PAGES)
+    }
+
+    /**
+     * Read the notes: the pages in hand go to the computer, which reads them into this app's kind of result. The
+     * score is named after the first page. The pages stay in hand until it is made.
+     */
+    fun readPages() {
+        val first = pages.value.firstOrNull() ?: return
+        setSource(Source(ScoreTitles.withoutExtension(first.name), SourceKind.PAGES, 0.0))
+        profile.value = Profile.pagesOf(container.product.target)
+        where.value = Where.COMPANION
+        startTranscription()
+    }
+
+    /**
+     * Sends [list] and starts the job that reads it. A computer whose Bandroom is from before it could read pages, or
+     * has no reader of printed music installed, has no such profile: it is asked first, and nothing is sent to it. One that cannot be asked is sent the pages, and
+     * answers for itself.
+     */
+    private suspend fun sendPages(engine: EngineApi, list: List<Page>, p: Profile, title: String): Pair<String, no.kalli.scribe.engine.Job> {
+        val listed = try {
+            engine.profiles()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: InterfaceMismatchException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
+        if (listed != null && listed.none { it.name == p.id }) throw PagesNotReadException()
+        seatFellBack = false
+        val job = try {
+            withContext(Dispatchers.IO) {
+                engine.createJobFromPages(list.map { UploadSource.of(it.file, it.name) }, p, title, tab = container.product.pagesOptions(this@PlayViewModel),
+                    onProgress = { sent, total -> if (total > 0) transcribe.update { it.copy(fraction = (sent.toDouble() / total).coerceIn(0.0, 1.0)) } })
+            }
+        } catch (e: EngineException) {
+            // No such address: a Bandroom from before the pages that could not be asked what it has.
+            if (e.status == 404 || e.status == 405) throw PagesNotReadException() else throw e
+        }
+        transcribe.update { it.copy(fraction = 0.0) }
+        return job.audioId.orEmpty() to job
+    }
+
     // ---- Transcription --------------------------------------------------------------------------------
 
     fun chooseProfile(p: Profile) {
@@ -864,6 +1040,12 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 saveCurrentScore(r)
                 // It has a score now: a recording kept in Your scores leaves it (its file goes once it is not in hand).
                 forgetKept(s)
+                // And the pages it was read from are no longer in hand: their screen is not gone back to.
+                if (s.kind == SourceKind.PAGES) {
+                    dropPages(pages.value)
+                    pages.value = emptyList()
+                    backStack.update { stack -> stack.filter { it != Screen.PAGES } }
+                }
                 transcribe.update { it.copy(running = false, fraction = 1.0, etaSeconds = 0) }
                 // An engine that ignored the seat wrote for Solo Cornet: say so once, not silently.
                 if (ignored) sayText(res.getString(R.string.transcribe_done) + " " + res.getString(R.string.engine_too_old_seat))
@@ -883,8 +1065,14 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 transcribe.update { it.copy(running = false, error = e.message ?: e.javaClass.simpleName) }
                 keepRecording(s)
                 refused(e)
-                showProblem(if (isTooLarge(e)) Problem.TOO_LARGE else Problem.SCORE_FAILED, e.message ?: e.toString(),
-                    ErrorWords.of(e).takeIf { it != R.string.error_generic })
+                val failed = when {
+                    isTooLarge(e) -> Problem.TOO_LARGE
+                    s.kind == SourceKind.PAGES -> pagesProblem(e)
+                    else -> Problem.SCORE_FAILED
+                }
+                // (The two problems that say what is wrong with the pages need no line that says it again, unless it says more.)
+                val said = failed == Problem.NOT_A_PAGE || (failed == Problem.NO_NOTES_ON_PAGE && ErrorWords.of(e) == R.string.error_engine_failed)
+                showProblem(failed, e.message ?: e.toString(), ErrorWords.of(e).takeIf { it != R.string.error_generic && !said })
             }
         }
     }
@@ -1141,13 +1329,17 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
     private suspend fun transcribeWithEngine(s: Source, p: Profile): TranscriptionResult {
         val engine: EngineApi = container.engine() ?: throw NoCompanionException()
         val stages = FixtureEngineApi.stagesOf(p).size
-        transcribe.value = TranscribeState(true, Step.UPLOAD, 0.0, 0, stages, null,
+        // Printed music is sent as its pages. Once it is written (a tab written again), the computer holds them as it holds a recording.
+        val toRead = if (s.kind == SourceKind.PAGES) pages.value else emptyList()
+        val sending = if (toRead.isEmpty()) Step.UPLOAD else Step.UPLOAD_PAGES
+        transcribe.value = TranscribeState(true, sending, 0.0, 0, stages, null,
             res.getString(R.string.transcribe_where_companion, container.product.computerName(this)))
         val title = ScoreTitles.withoutExtension(s.name)
         val app = getApplication<Application>()
         // In the foreground from here, so the recording is sent and the job followed while the player is away; a
         // notification says when it is done. No job made (it failed, or the app was closed meanwhile): let go again.
         val (audioId, created) = ComputerJobService.whileSending(app, title) {
+            if (toRead.isNotEmpty()) return@whileSending sendPages(engine, toRead, p, title)
             // Streamed from the file: memory stays flat whatever its size (a video arrives here as its sound only).
             // The phone's copy: the recording opened, else the one the product kept for the song.
             val copy = withContext(Dispatchers.IO) { s.file?.takeIf { it.isFile }?.let { UploadSource.of(it) } ?: container.product.keptRecording(this@PlayViewModel) }
@@ -1157,7 +1349,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             // twice, unless the computer no longer has it.
             // The file as it is now: the same take until it is recorded or picked again.
             val take = s.file?.let { "${it.path}:${it.length()}:${it.lastModified()}" } ?: s.name
-            jobFromRecording(
+            try { jobFromRecording(
                 // A take the computer refused for unfinished setup is still there: it is named, not sent again.
                 held = { refusedTake.on(take) ?: container.product.audioOnComputer(this, engine) },
                 canSend = copy != null,
@@ -1179,19 +1371,23 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                             title = title, seat = output.value.seat, reads = output.value.reads.takeIf { output.value.seat != null })),
                     ).also { seatFellBack = it.second }.first
                 }
+            } } catch (e: RecordingGoneException) {
+                // What the computer held for a result read from pages is those pages, and the phone let go of its
+                // own when the result was made: they are what must be sent again.
+                if (p.readsPages) throw PagesGoneException() else throw e
             }
         }
         engineJobId = created.id
         // The service that holds the app is told of the job (the player may have left by now). From here it follows the
         // job by itself, also when this stops following it (the events were lost, or the app was closed).
         ComputerJobService.follow(app, created.id, title)
-        val kinds = created.stages.map { Step.ofKind(it.kind ?: it.name.substringBefore('.')) }.filter { it != Step.QUEUED }.distinct()
-        transcribe.update { it.copy(steps = listOf(Step.UPLOAD) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }
+        val kinds = created.stages.map { Step.of(it.kind ?: it.name.substringBefore('.'), p) }.filter { it != Step.QUEUED }.distinct()
+        transcribe.update { it.copy(steps = listOf(sending) + kinds.ifEmpty { listOf(Step.BEATS, Step.STEMS, Step.LAYERS, Step.TRANSCRIBE, Step.ARRANGE, Step.EXPORT) }) }
         val tracker = ProgressTracker(created.stages.size.takeIf { it > 0 } ?: stages)
         engine.events(created.id).collect { e ->
             val pr = tracker.onEvent(e)
             transcribe.update {
-                it.copy(step = if (pr.currentKind != null) Step.ofKind(pr.currentKind) else Step.QUEUED, fraction = pr.fraction,
+                it.copy(step = if (pr.currentKind != null) Step.of(pr.currentKind, p) else Step.QUEUED, fraction = pr.fraction,
                     stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, error = pr.error)
             }
         }
@@ -1215,8 +1411,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         if (transcribe.value.running) {
             transcribe.update { it.copy(running = false) }
             val s = source.value
-            // Said once the recording is kept, and only then that it is in Your scores.
-            if (s != null && keepsRecording(s)) keepRecording(s) { kept -> say(if (kept) R.string.transcribe_cancelled_kept else R.string.transcribe_cancelled) }
+            // Said once the recording is kept, and only then that it is in Your scores. Pages stay where they are.
+            if (s?.kind == SourceKind.PAGES && pages.value.isNotEmpty()) say(R.string.transcribe_cancelled_pages)
+            else if (s != null && keepsRecording(s)) keepRecording(s) { kept -> say(if (kept) R.string.transcribe_cancelled_kept else R.string.transcribe_cancelled) }
             else say(R.string.transcribe_cancelled)
         }
     }
@@ -2051,6 +2248,17 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             return walk(e)
         }
 
+        /**
+         * The problem screen of pages that were not read, from why ([e]): the computer took a file for no page, its
+         * reader found no notes on them, or anything else.
+         */
+        fun pagesProblem(e: Throwable): Problem = when {
+            e is EngineException && e.code == no.kalli.scribe.engine.InputRefusal.NOT_A_PAGE -> Problem.NOT_A_PAGE
+            // No notes at all, or only a tab staff, which is not read: other pages are the way forward.
+            e is EngineJobFailedException && e.message?.trim().orEmpty().let { it.endsWith(ErrorWords.NO_NOTES_ON_PAGE) || it.endsWith(ErrorWords.ONLY_TAB_ON_PAGE) } -> Problem.NO_NOTES_ON_PAGE
+            else -> Problem.PAGES_FAILED
+        }
+
         /** Reads at most [limit] bytes; more is an error, not a truncated file. */
         fun readLimited(input: java.io.InputStream, limit: Long): ByteArray {
             val out = java.io.ByteArrayOutputStream()
@@ -2067,6 +2275,10 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         private const val KEY_SOURCE = "source"
         private const val KEY_SCORE = "score"
         private const val KEY_DRAFT_BEHIND = "draftBehind"
+        private const val KEY_PAGES = "pages"
+        private const val KEY_PHOTO = "photo"
+        /** The folder of the pages in hand, in the app's cache (the camera writes its photos there: res/xml/export_paths.xml). */
+        const val PAGES_DIR = "pages"
         const val ASK_POLL_MS = 2_000L
         /** The engine forgets a pairing request after two minutes. */
         const val ASK_TIMEOUT_MS = 125_000L

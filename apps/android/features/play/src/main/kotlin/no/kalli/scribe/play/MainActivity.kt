@@ -121,8 +121,9 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file; scribe://pair pairs; a tap on
-     * "ready" opens that job's score or tab.
+     * Share sheet (ACTION_SEND) and "Open with" (ACTION_VIEW) both import the file: a recording, or, from the share
+     * sheet, printed music as a picture or a PDF (several shared at once, ACTION_SEND_MULTIPLE, are its pages in
+     * order); scribe://pair pairs; a tap on "ready" opens that job's score or tab.
      */
     fun handleIntent(intent: Intent?) {
         if (intent?.action == JobNotices.ACTION_OPEN_JOB) {
@@ -134,14 +135,15 @@ class MainActivity : ComponentActivity() {
             vm.openPairLink(intent.data.toString())
             return
         }
-        val uri: Uri? = when (intent?.action) {
-            Intent.ACTION_SEND -> intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            Intent.ACTION_VIEW -> intent.data
-            else -> null
+        val uris: List<Uri> = when (intent?.action) {
+            Intent.ACTION_SEND -> listOfNotNull(intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java))
+            Intent.ACTION_SEND_MULTIPLE -> intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
+            Intent.ACTION_VIEW -> listOfNotNull(intent.data)
+            else -> emptyList()
         }
-        if (uri != null) {
+        if (uris.isNotEmpty()) {
             vm.home()
-            vm.importUri(uri)
+            vm.importUris(uris)
         }
     }
 }

@@ -18,10 +18,10 @@
     <string name="home_hero_end">tab.</string>
     <string name="home_tagline">Spill det, ta det opp, eller åpne en fil. Bandroom på datamaskinen skriver ned tonene.</string>
     <string name="home_record_mic_desc">Spill et riff eller en hel sang</string>
-    <string name="home_open_score">Åpne en tab</string>
-    <string name="problem_sheet_music_title">Fretscribe kan ikke åpne noter ennå</string>
-    <string name="problem_sheet_music_body">Den lager tabber fra opptak. Åpne et opptak, eller spill inn det du spiller.</string>
-    <string name="home_open_score_desc">En MusicXML-fil fra MuseScore eller Guitar Pro</string>
+    <string name="home_open_score">Åpne noter</string>
+    <string name="problem_sheet_music_title">Fretscribe kan ikke åpne MusicXML-filer ennå</string>
+    <string name="problem_sheet_music_body">Den lager tabber fra opptak, og fra et bilde eller en PDF av notene.</string>
+    <string name="home_open_score_desc">Et bilde eller en PDF av notene</string>
     <string name="home_scores_empty">Ingenting er skrevet ned ennå. Spill inn et riff eller åpne et opptak.</string>
     <string name="home_your_scores">Sangene dine</string>
     <string name="kept_row_subtitle">%1$s · Ingen tab ennå</string>
@@ -52,7 +52,7 @@
 
     <!-- Hjelp -->
     <string name="help_1_title">Lag en tab</string>
-    <string name="help_1_text">Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt.</string>
+    <string name="help_1_text">Åpne et opptak, eller spill inn med mikrofonen. Si hva det er, så skriver Bandroom på datamaskinen ned tonene som tab for instrumentet ditt. Trykte noter går også: under Åpne noter velger du bilder eller en PDF, eller tar bilde av en side, så leser Bandroom dem og skriver det som tab.</string>
     <string name="help_2_text">Et «?» over en tone betyr at Fretscribe var usikker på den. En «!» i en boks viser en tone instrumentet ditt ikke kan spille der. Lytt til den takten i opptaket for å sjekke den.</string>
     <string name="help_3_text">Sett ned farten på opptaket, og gjenta de vanskelige taktene.</string>
     <string name="help_4_title">Sangene dine</string>
@@ -313,4 +313,8 @@
     <string name="fs_sound_failed">Denne telefonen klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
+    <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->
+    <string name="pages_lead">Bandroom på datamaskinen leser de trykte notene og skriver dem som tab for instrumentet ditt.</string>
+    <string name="stage_write">Skriver tabben</string>
+    <string name="fs_practice_from_pages">Denne tabben er lest fra noter, så det finnes ikke noe opptak å spille sammen med. Du kan fortsatt lese tabben.</string>
 </resources>

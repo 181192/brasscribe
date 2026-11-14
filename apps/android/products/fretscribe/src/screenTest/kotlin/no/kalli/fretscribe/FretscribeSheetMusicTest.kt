@@ -49,7 +49,8 @@ object SheetMusicFiles {
 }
 
 /**
- * Fretscribe opens no sheet music yet, and says so on a screen of its own however the file arrives: what it says
+ * Fretscribe opens no MusicXML file yet, and says so on a screen of its own however the file arrives, with the way
+ * its notes can still become a tab (a picture or a PDF of them): what it says
  * must still be there when the first screen is drawn after the file, which a line on Home was not.
  */
 @RunWith(AndroidJUnit4::class)
@@ -74,21 +75,21 @@ class FretscribeSheetMusicTest : ScreenTest() {
     @Test
     fun sharedWhileOnAnotherScreen() {
         arrives(SheetMusicFiles.shared(SheetMusicFiles.handedOver("A tab.musicxml")))
-        assertRefused("Fretscribe can't open sheet music yet", "It makes tabs from recordings.", "Open a recording", "Record with the microphone")
+        assertRefused("Fretscribe can't open a MusicXML file yet", "It makes tabs from recordings, and from a picture or a PDF of the notes.", "Choose pictures or a PDF", "Open a recording")
     }
 
     @Test
     fun openedWithWhileOnAnotherScreenInBokmal() {
         language("nb")
         arrives(SheetMusicFiles.openWith(SheetMusicFiles.handedOver("A tab.mxl")))
-        assertRefused("Fretscribe kan ikke åpne noter ennå", "Den lager tabber fra opptak.", "Åpne et opptak", "Spill inn med mikrofonen")
+        assertRefused("Fretscribe kan ikke åpne MusicXML-filer ennå", "Den lager tabber fra opptak, og fra et bilde eller en PDF av notene.", "Velg bilder eller en PDF", "Åpne et opptak")
     }
 
     /** Chosen with Open a recording: a name that says nothing, and MusicXML inside. */
     @Test
     fun sheetMusicWithoutItsNameIsRefused() {
         openFromHome(File(SheetMusicFiles.handedOver("A tab").path!!))
-        assertRefused("Fretscribe can't open sheet music yet", "It makes tabs from recordings.", "Open a recording", "Record with the microphone")
+        assertRefused("Fretscribe can't open a MusicXML file yet", "It makes tabs from recordings, and from a picture or a PDF of the notes.", "Choose pictures or a PDF", "Open a recording")
     }
 
     /** An .xml file that is no MusicXML is a file that could not be read, not sheet music. */
@@ -97,7 +98,7 @@ class FretscribeSheetMusicTest : ScreenTest() {
         openFromHome(File(SheetMusicFiles.handedOver("Settings.xml", "<?xml version=\"1.0\"?>\n<settings><volume>3</volume></settings>".toByteArray()).path!!))
         waitUntil(10_000) { vm.screen.value.last() == Screen.PROBLEM }
         assertTrue(vm.problem.value.toString(), vm.problem.value != Problem.SHEET_MUSIC)
-        assertFalse(shown(), shown().contains("sheet music"))
+        assertFalse(shown(), shown().contains("MusicXML"))
     }
 }
 
@@ -106,14 +107,14 @@ class FretscribeSheetMusicTest : ScreenTest() {
 class FretscribeOpenedWithSheetMusicTest : ScreenTest(SheetMusicFiles.openWith(SheetMusicFiles.handedOver("A tab.musicxml"))) {
     @Test
     fun theAppStartsOnWhatItCannotOpen() {
-        waitUntil(10_000) { shown().contains("Fretscribe can't open sheet music yet") }
+        waitUntil(10_000) { shown().contains("Fretscribe can't open a MusicXML file yet") }
         assertEquals(listOf(Screen.HOME, Screen.PROBLEM), vm.screen.value)
-        assertTrue(shown(), shown().contains("It makes tabs from recordings.") && shown().contains("Open a recording") && shown().contains("Record with the microphone"))
-        assertEquals(1, rule.onAllNodes(hasText("Fretscribe can't open sheet music yet") and
+        assertTrue(shown(), shown().contains("It makes tabs from recordings, and from a picture or a PDF of the notes.") && shown().contains("Choose pictures or a PDF") && shown().contains("Open a recording"))
+        assertEquals(1, rule.onAllNodes(hasText("Fretscribe can't open a MusicXML file yet") and
             SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Assertive)).fetchSemanticsNodes().size)
         // In Bokmål the screen is still there: the phone's language draws the app again.
         language("nb")
-        waitUntil(10_000) { shown().contains("Fretscribe kan ikke åpne noter ennå") }
-        assertTrue(shown(), shown().contains("Den lager tabber fra opptak.") && shown().contains("Åpne et opptak") && shown().contains("Spill inn med mikrofonen"))
+        waitUntil(10_000) { shown().contains("Fretscribe kan ikke åpne MusicXML-filer ennå") }
+        assertTrue(shown(), shown().contains("Den lager tabber fra opptak, og fra et bilde eller en PDF av notene.") && shown().contains("Velg bilder eller en PDF") && shown().contains("Åpne et opptak"))
     }
 }

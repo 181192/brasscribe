@@ -29,7 +29,7 @@ import no.kalli.scribe.play.ui.theme.ProductColors
 object Brasscribe : Product {
     override val name = "Brasscribe"
 
-    /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
+    /** Home's Open sheet music offers a score file: a MusicXML file from elsewhere opens on the score. */
     override val opensScores = true
     override val musicStand = true
 
@@ -87,8 +87,12 @@ object Brasscribe : Product {
      */
     override fun makes(target: String?): Boolean = target == this.target.id
 
-    /** Check the notes and the output choices are offered for this profile's scores. */
-    override fun arranges(profile: Profile): Boolean = profile.target == target
+    /**
+     * Check the notes and the output choices are offered for this profile's scores. Not for printed music read from
+     * pages: it is written as it stands on the page, so there is no band, difficulty or key to choose, and no
+     * recording to check a note against.
+     */
+    override fun arranges(profile: Profile): Boolean = profile.target == target && !profile.readsPages
 
     /** The job as it is sent to the computer: the band profiles take nothing more. */
     @Suppress("UNUSED_PARAMETER")
@@ -122,8 +126,11 @@ object Brasscribe : Product {
      * The screen that follows a finished transcription: Check the notes, or the score for a draft made on the phone.
      * A draft has only Basic Pitch on the melody, so every melody note is marked "?", and its notice already says it
      * is rough; Check the notes is still reachable from the score (design/brands/brasscribe/system.md, the band draft).
+     * Printed music read from pages goes to the score too: nothing is arranged, and the bars the reader was unsure of
+     * carry their "?" there.
      */
-    override fun afterTranscription(result: TranscriptionResult): Screen = if (result.draft) Screen.SCORE else Screen.REVIEW
+    override fun afterTranscription(result: TranscriptionResult): Screen =
+        if (result.draft || result.profile.readsPages) Screen.SCORE else Screen.REVIEW
 
     /**
      * The screen after Check the notes: a solo ("One instrument") goes straight to the score, on the player's part; band,

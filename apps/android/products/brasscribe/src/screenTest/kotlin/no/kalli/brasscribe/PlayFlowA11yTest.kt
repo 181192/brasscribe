@@ -97,7 +97,7 @@ class PlayFlowA11yTest : ScreenTest() {
 
     @Test
     fun homeButtonsAreLargeLabelledTargets() {
-        for (label in listOf("Open a recording", "Record with the microphone", "Record what's playing", "Open a score")) {
+        for (label in listOf("Open a recording", "Record with the microphone", "Record what's playing", "Open sheet music")) {
             val h = rule.onNodeWithText(label).fetchSemanticsNode().boundsInRoot.height / rule.density.density
             assertTrue("$label is $h dp", h >= 48f)
         }

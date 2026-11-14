@@ -28,6 +28,7 @@
     "zoom-out":        {"en": "Zoom out",             "nb": "Zoom ut",               "apple": "minus.magnifyingglass",   "material": "zoom_out",            "windows": {"glyph": "E71F", "name": "ZoomOut"}},
     "transpose":       {"en": "Key",                  "nb": "Toneart",               "apple": "arrow.up.arrow.down",     "material": "swap_vert",           "windows": {"glyph": "E8CB", "name": "Sort"}},
     "video":           {"en": "Show video",           "nb": "Vis video",                 "apple": "film",                    "material": "movie",               "windows": {"glyph": "E714", "name": "Video"}},
+    "take-photo":      {"en": "Take a photo of a page", "nb": "Ta bilde av en side",   "apple": "camera",                  "material": {"custom": "camera"},  "windows": {"glyph": "E722", "name": "Camera"}},
     "picture-in-picture": {"en": "Picture in picture", "nb": "Bilde i bilde",        "apple": "pip.enter",               "material": "picture_in_picture",  "windows": {"glyph": "E93A", "name": "MiniExpand"}},
     "computer":        {"en": "Brasscribe on your computer", "nb": "Brasscribe på datamaskinen", "apple": "desktopcomputer", "material": "computer",    "windows": {"glyph": "E977", "name": "PC1"}},
     "settings":        {"en": "Settings",             "nb": "Innstillinger",         "apple": "gearshape",               "material": "settings",            "windows": {"glyph": "E713", "name": "Settings"}},

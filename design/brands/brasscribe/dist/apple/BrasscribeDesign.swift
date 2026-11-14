@@ -240,6 +240,7 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
     case zoomOut
     case transpose
     case video
+    case takePhoto
     case pictureInPicture
     case computer
     case settings
@@ -301,6 +302,7 @@ public enum BrasscribeIcon: CaseIterable, Sendable {
         case .zoomOut: "minus.magnifyingglass"
         case .transpose: "arrow.up.arrow.down"
         case .video: "film"
+        case .takePhoto: "camera"
         case .pictureInPicture: "pip.enter"
         case .computer: "desktopcomputer"
         case .settings: "gearshape"

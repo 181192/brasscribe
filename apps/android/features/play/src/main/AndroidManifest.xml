@@ -18,7 +18,8 @@
     <!-- A band draft made on the phone (DraftService). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- The pairing QR code, read on the phone (QrCamera); typing the code works without it. -->
+    <!-- The pairing QR code, read on the phone (QrCamera); typing the code works without it. A photo of a page of
+         printed music is taken by the phone's camera app, which an app that declares this must be allowed to open. -->
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- AndroidX adds this for receivers on systems before Android 13, which the apps no longer run on. -->
@@ -49,7 +50,8 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Share sheet: send an audio or video file to Play. -->
+            <!-- Share sheet: send an audio or video file to Play, or printed music as a picture (a screenshot, a
+                 photo of a page) or a PDF. -->
             <intent-filter android:label="@string/share_target_label">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -57,6 +59,15 @@
                 <data android:mimeType="video/*" />
                 <data android:mimeType="application/vnd.recordare.musicxml+xml" />
                 <data android:mimeType="application/vnd.recordare.musicxml" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
+            <!-- Several pictures or PDFs shared at once: the pages of one piece, in order. -->
+            <intent-filter android:label="@string/share_target_label">
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
             </intent-filter>
             <!-- "Open with" from Files. -->
             <intent-filter android:label="@string/share_target_label">

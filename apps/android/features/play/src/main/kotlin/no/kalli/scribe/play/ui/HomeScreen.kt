@@ -229,15 +229,21 @@ fun HomeScreen(vm: PlayViewModel) {
                 if (p != null && p > 0f) LinearProgressIndicator(progress = { p }, modifier = Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border, drawStopIndicator = {})
                 else LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
             }
-            val openScoreAction = {
+            val openScoreFile = {
                 // Most pickers give MusicXML no type of its own, so the wildcard has to be there too.
                 pickScore.launch(arrayOf("application/vnd.recordare.musicxml+xml", "application/vnd.recordare.musicxml", "application/xml", "text/xml", "application/octet-stream", "*/*"))
             }
+            // Sheet music has one way in, and what it is (a score file, pictures or a PDF, a page to photograph) is asked
+            // next. (The pickers are Home's own: they hand back their answer after the sheet that opened them is gone.)
+            var asking by remember { mutableStateOf(false) }
+            val pickPages = rememberPagePicker(vm)
+            val openSheetMusic = { asking = true }
+            if (asking) OpenSheet(openScoreFile.takeIf { vm.container.product.opensScores }, pickPages) { asking = false }
             // On its side: Open a recording and the icons in one row. Upright: Open a recording, the icons under it.
             if (compact) {
                 Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalAlignment = Alignment.CenterVertically) {
                     PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, Modifier.weight(1f), enabled = !busy, icon = DesignR.drawable.ic_bc_import_file)
-                    OtherWaysIn(recorder, if (vm.container.product.opensScores) openScoreAction else null, busy, Modifier.width(72.dp))
+                    OtherWaysIn(recorder, openSheetMusic, busy, Modifier.width(72.dp))
                 }
             } else {
                 PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, enabled = !busy, icon = DesignR.drawable.ic_bc_import_file)
@@ -248,10 +254,9 @@ fun HomeScreen(vm: PlayViewModel) {
                     RowDivider()
                     ListRow(stringResource(R.string.home_record_device), recorder.askDevice, icon = DesignR.drawable.ic_bc_record_device,
                         subtitle = stringResource(R.string.home_record_device_desc).takeIf { !library }, enabled = !busy, chevron = !library)
-                    if (vm.container.product.opensScores) {
-                        RowDivider()
-                        ListRow(stringResource(R.string.home_open_score), openScoreAction, icon = DesignR.drawable.ic_bc_file, subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy, chevron = !library)
-                    }
+                    RowDivider()
+                    ListRow(stringResource(R.string.home_open_score), openSheetMusic, Modifier.testTag("home-open"), icon = DesignR.drawable.ic_bc_file,
+                        subtitle = stringResource(R.string.home_open_score_desc).takeIf { !library }, enabled = !busy, chevron = !library)
                 }
             }
             if (!library) InfoNote(stringResource(R.string.home_links_tip), boxed = false)
@@ -452,14 +457,41 @@ fun RecordScreen(vm: PlayViewModel) {
 fun phoneMinutes(): Int = (no.kalli.scribe.audio.AudioDecoder.maxSamplesInMemory / (48_000L * 60)).toInt()
 
 /**
+ * What Open sheet music opens: a score file (MusicXML; [pickScore] is null in an app that opens none), or printed
+ * music as pictures or a PDF (the phone's picker for those) or as a photo taken now (its camera app). Printed music
+ * goes on to the pages' screen, where more pages are added.
+ */
+@Composable
+private fun OpenSheet(pickScore: (() -> Unit)?, pages: PagePicker, onDismiss: () -> Unit) {
+    PlaySheet(onDismiss, ScribeTheme.colors.surfaceRaised, dragHandle = false) {
+        Column(Modifier.padding(horizontal = ScreenMargin).padding(bottom = ScribeSpace.s6).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+            SubHeading(stringResource(R.string.open_title))
+            RowGroup {
+                if (pickScore != null) {
+                    ListRow(stringResource(R.string.open_score), { onDismiss(); pickScore() }, Modifier.testTag("open-score"),
+                        subtitle = stringResource(R.string.open_score_desc), icon = DesignR.drawable.ic_bc_file)
+                    RowDivider()
+                }
+                ListRow(stringResource(R.string.pages_choose), { onDismiss(); pages.choose() }, Modifier.testTag("open-pages"),
+                    subtitle = stringResource(R.string.pages_choose_desc), icon = DesignR.drawable.ic_bc_import_file)
+                RowDivider()
+                ListRow(stringResource(R.string.pages_photo), { onDismiss(); pages.photograph() }, Modifier.testTag("open-photo"),
+                    subtitle = stringResource(R.string.pages_photo_desc), icon = DesignR.drawable.ic_bc_take_photo)
+            }
+        }
+    }
+}
+
+/**
  * The ways in after Open a recording, by their icons, each [modifier] wide (in a row the caller makes). While a
  * recording is being opened ([busy]) they do nothing, as the rows do.
  */
 @Composable
-private fun OtherWaysIn(recorder: Recorder, openScore: (() -> Unit)?, busy: Boolean, modifier: Modifier) {
+private fun OtherWaysIn(recorder: Recorder, openSheetMusic: () -> Unit, busy: Boolean, modifier: Modifier) {
     WayIn(DesignR.drawable.ic_bc_record_mic, stringResource(R.string.home_record_mic), { if (!busy) recorder.startMicrophone() }, modifier.testTag("home-record-mic"))
     WayIn(DesignR.drawable.ic_bc_record_device, stringResource(R.string.home_record_device), { if (!busy) recorder.askDevice() }, modifier.testTag("home-record-device"))
-    if (openScore != null) WayIn(DesignR.drawable.ic_bc_file, stringResource(R.string.home_open_score), { if (!busy) openScore() }, modifier.testTag("home-open-score"))
+    WayIn(DesignR.drawable.ic_bc_file, stringResource(R.string.home_open_score), { if (!busy) openSheetMusic() }, modifier.testTag("home-open"))
 }
 
 /** A way in by its icon alone, named in full for a screen reader: in a row of them where Home has little height. */

@@ -321,15 +321,28 @@ enum class Profile(val id: String, val target: Target) {
     /** One fretted instrument as tablature (bass, guitar, ukulele, mandolin): its result is a [Tab], not a band score. */
     TAB("tab", Target.FRETTED),
     /** [TAB] with a bass, under the id older apps sent: jobs made by them still carry it. */
-    BASS_TAB("bass-tab", Target.FRETTED);
+    BASS_TAB("bass-tab", Target.FRETTED),
+    /** Printed music (pictures or a PDF) read into a score as it is written: nothing is arranged. */
+    SHEET("sheet", Target.BRASS),
+    /** Printed music read into a tab for one fretted instrument: [TAB]'s options, without the two about a recording. */
+    SHEET_TAB("sheet-tab", Target.FRETTED);
 
     /** The profile's result is a [Tab]. */
     val writesTab: Boolean get() = target == Target.FRETTED
+
+    /** The profile reads pages (pictures or a PDF of printed music) and not a recording: its job is made by [EngineApi.createJobFromPages]. */
+    val readsPages: Boolean get() = this == SHEET || this == SHEET_TAB
 
     companion object {
         fun of(id: String): Profile? = entries.firstOrNull { it.id == id }
 
         /** The profile [id] names writes a tab; false for an id this client does not know. */
         fun writesTab(id: String): Boolean = of(id)?.writesTab == true
+
+        /** The profile of [target] that reads pages. */
+        fun pagesOf(target: Target): Profile = entries.first { it.readsPages && it.target == target }
+
+        /** [ProfileInfo.input] of a profile that reads pages. */
+        const val INPUT_PAGES = "pages"
     }
 }

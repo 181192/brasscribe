@@ -32,6 +32,21 @@ enum class Refusal(val code: String) {
     }
 }
 
+/** The engine's codes for an input it does not take (a 415's `code`, [EngineException.code]). */
+object InputRefusal {
+    /** A file sent as a page is no picture and no PDF. */
+    const val NOT_A_PAGE = "not_a_page"
+
+    /** A recording for a profile that reads pages, or pages for one that listens. */
+    const val WRONG_INPUT = "wrong_input"
+
+    /** A file sent as a page is larger than the engine reads, or a picture of more pixels than it reads (a 413). */
+    const val PAGE_TOO_LARGE = "page_too_large"
+
+    /** The computer has no reader of printed music installed (a 503); its profiles then list none that reads pages. */
+    const val READER_MISSING = "reader_missing"
+}
+
 /**
  * The engine companion API as Play uses it. [KtorEngineApi] talks to a real engine on the LAN;
  * [FixtureEngineApi] replays a finished engine output folder for tests.
@@ -56,6 +71,17 @@ interface EngineApi {
     /** [tab]: the options of a [Profile.TAB] job (or [Profile.BASS_TAB]); the engine refuses them for any other profile. */
     suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean = true,
                                     onProgress: UploadProgress = { _, _ -> }, tab: TabOptions? = null): Job
+
+    /**
+     * Sends printed music and starts the job that reads it, in one request: [pages] in their order, each a picture
+     * (PNG, JPEG, WebP) or a PDF, 1 to [MAX_PAGES] of them; [profile] is one that reads pages
+     * ([Profile.readsPages]). [tab]: the options of [Profile.SHEET_TAB], which takes neither a recording's kind nor a
+     * choice of chords. [onProgress] reports the bytes sent of all the pages together. An engine from before this
+     * answers 404; a file that is no page 415 with [InputRefusal.NOT_A_PAGE], one that is too large 413 with
+     * [InputRefusal.PAGE_TOO_LARGE], and a computer without the reader 503 with [InputRefusal.READER_MISSING].
+     */
+    suspend fun createJobFromPages(pages: List<UploadSource>, profile: Profile, title: String?, renderAudio: Boolean = true,
+                                   onProgress: UploadProgress = { _, _ -> }, tab: TabOptions? = null): Job
     suspend fun job(jobId: String): Job
     suspend fun jobs(): List<Job>
     suspend fun cancel(jobId: String): Job
@@ -107,7 +133,7 @@ interface EngineApi {
     companion object {
         /** operationIds of engine/openapi.json this client implements; checked by EngineContractTest. */
         val OPERATIONS = setOf(
-            "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "getJob",
+            "getHealth", "pairDevice", "listProfiles", "uploadAudio", "createJob", "createJobFromUpload", "createJobFromPages", "getJob",
             "listJobs", "cancelJob", "streamJobEvents", "getComposition", "getMusicXml", "getMidi", "getPdf",
             "getRenderedAudio", "getJobInput", "listJobArtifacts", "getJobArtifact", "getJobManifest", "getBraille", "getTalkingScore",
             "getJobEvidence", "getTab", "updateRun", "deleteRun", "getThisDevice", "rotateDeviceToken", "unpairThisDevice",
@@ -119,6 +145,12 @@ interface EngineApi {
         /** The largest recording taken from the computer: the largest upload the engine itself accepts by default (2 GiB), so everything it was sent fits and nothing else does. */
         const val MAX_INPUT_BYTES = 2L shl 30
 
+        /** The most pages one job reads. */
+        const val MAX_PAGES = 40
+
+        /** The largest file the engine reads as a page. */
+        const val MAX_PAGE_BYTES = 50L shl 20
+
         /** operationIds deliberately left out: Studio's benchmarks, inspection and dataset tools, and the computer's own. */
         val NOT_USED = setOf(
             "getPartSources",
@@ -126,8 +158,6 @@ interface EngineApi {
             "runRoundtrip", "getStageFile", "getValidation", "listAdapters", "listConformanceReports", "listDatasets",
             "listJobStages", "listParityReports", "listReferences", "listSources", "rerunJob", "getConformanceRun",
             "runConformance",
-            // Printed music from pictures: not sent from the phone yet.
-            "createJobFromPages",
             // Only the computer itself may call these (Brasscribe Bandroom).
             "listDevices", "revokeDevice", "getPairing", "openPairing", "closePairing", "listPairingRequests",
             "decidePairingRequest", "getStatus",

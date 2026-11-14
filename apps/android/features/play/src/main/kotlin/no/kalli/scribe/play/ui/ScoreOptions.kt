@@ -150,6 +150,7 @@ fun scoreSubtitle(entry: ScoreEntry, product: no.kalli.scribe.play.Product): Str
         "brass-band" -> stringResource(R.string.profile_brass_band)
         "orchestra-with-soloist" -> stringResource(R.string.profile_orchestra)
         "pop-rock" -> stringResource(R.string.profile_pop)
+        "sheet" -> stringResource(R.string.profile_sheet)
         else -> entry.profile
     }
     val date = android.text.format.DateUtils.getRelativeTimeSpanString(entry.updated, System.currentTimeMillis(),
@@ -164,8 +165,10 @@ fun scoreSubtitle(entry: ScoreEntry, product: no.kalli.scribe.play.Product): Str
             container.scoreLibrary.content(saved.id)?.let { factsOf(saved, it, container.core) }
         }
     }
+    // Printed music read from pages was arranged for no one, and has no notes to check against a recording.
+    val read = no.kalli.scribe.engine.Profile.of(entry.profile)?.readsPages == true
     // The label comes from the lineup the score was arranged for; the part count only tells a band from a solo.
-    val band = facts?.let { f ->
+    val band = facts?.takeIf { !read }?.let { f ->
         when (f.lineup) {
             no.kalli.scribe.play.Lineup.QUARTET -> stringResource(R.string.lineup_quartet)
             no.kalli.scribe.play.Lineup.MINIMAL -> stringResource(R.string.lineup_minimal)
@@ -174,7 +177,7 @@ fun scoreSubtitle(entry: ScoreEntry, product: no.kalli.scribe.play.Product): Str
         }
     } ?: profile
     val bars = facts?.bars?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_bars, it, it) }
-    val left = facts?.left?.takeIf { it > 0 }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
+    val left = facts?.left?.takeIf { it > 0 && !read }?.let { androidx.compose.ui.res.pluralStringResource(R.plurals.home_to_check, it, it) }
     val draft = if (entry.saved?.draft == true) stringResource(R.string.draft_label) else null
     return listOfNotNull(band, draft, bars, date, left, if (entry.onComputer) stringResource(R.string.on_your_computer) else null).joinToString(" · ")
 }

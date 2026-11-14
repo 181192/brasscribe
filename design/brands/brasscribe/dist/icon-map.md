@@ -33,6 +33,7 @@ Custom glyphs live in `design/brands/brasscribe/brand/icons/custom/`.
 | zoom-out | Zoom out | Zoom ut | `minus.magnifyingglass` | `zoom_out` | `ZoomOut` U+E71F |
 | transpose | Key | Toneart | `arrow.up.arrow.down` | `swap_vert` | `Sort` U+E8CB |
 | video | Show video | Vis video | `film` | `movie` | `Video` U+E714 |
+| take-photo | Take a photo of a page | Ta bilde av en side | `camera` | custom `camera` | `Camera` U+E722 |
 | picture-in-picture | Picture in picture | Bilde i bilde | `pip.enter` | `picture_in_picture` | `MiniExpand` U+E93A |
 | computer | Brasscribe on your computer | Brasscribe på datamaskinen | `desktopcomputer` | `computer` | `PC1` U+E977 |
 | settings | Settings | Innstillinger | `gearshape` | `settings` | `Settings` U+E713 |

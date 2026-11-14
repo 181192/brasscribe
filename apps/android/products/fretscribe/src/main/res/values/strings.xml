@@ -23,11 +23,11 @@
     <string name="home_tagline">Play it, record it, or open a file. Bandroom on your computer writes down the notes.</string>
     <string name="home_record_mic_desc">Play a riff or a whole song</string>
     <!-- Not shown for now (Product.opensScores): an imported tab would open on the score screen, not in the tab view. -->
-    <string name="home_open_score">Open a tab</string>
+    <string name="home_open_score">Open sheet music</string>
     <!-- A MusicXML file chosen with Open a recording, shared to the app or opened with "Open with". -->
-    <string name="problem_sheet_music_title">Fretscribe can\'t open sheet music yet</string>
-    <string name="problem_sheet_music_body">It makes tabs from recordings. Open a recording, or record what you play.</string>
-    <string name="home_open_score_desc">A MusicXML file from MuseScore or Guitar Pro</string>
+    <string name="problem_sheet_music_title">Fretscribe can\'t open a MusicXML file yet</string>
+    <string name="problem_sheet_music_body">It makes tabs from recordings, and from a picture or a PDF of the notes.</string>
+    <string name="home_open_score_desc">A picture or a PDF of the notes</string>
     <string name="home_scores_empty">Nothing written down yet. Record a riff or open a recording.</string>
     <string name="home_your_scores">Your songs</string>
     <!-- A take kept in Your songs before it has a tab (Product.keptRecordingDays: 30). -->
@@ -63,7 +63,7 @@
 
     <!-- Help (Settings > Help): what this app does, in its own words. -->
     <string name="help_1_title">Write down a tab</string>
-    <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument.</string>
+    <string name="help_1_text">Open a recording, or record with the microphone. Say what it is, and Bandroom on your computer writes down the notes as tab for your instrument. Printed music works too: under Open sheet music, choose pictures or a PDF, or take a photo of a page, and Bandroom reads it into a tab.</string>
     <string name="help_2_text">A “?” above a note means Fretscribe wasn\'t sure of it. A boxed “!” marks a note your instrument can\'t play there. Listen to that bar of the recording to check it.</string>
     <string name="help_3_text">Slow the recording down, and repeat the hard bars.</string>
     <string name="help_4_title">Your songs</string>
@@ -351,4 +351,8 @@
     <string name="fs_sound_failed">This phone couldn\'t make the sound for the tab\'s notes, the count-in and the metronome.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
+    <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->
+    <string name="pages_lead">Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.</string>
+    <string name="stage_write">Writing the tab</string>
+    <string name="fs_practice_from_pages">This tab was read from sheet music, so there is no recording to play along with. You can still read the tab.</string>
 </resources>

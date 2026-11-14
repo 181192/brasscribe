@@ -34,6 +34,7 @@ enum class BrasscribeIcon(val drawable: String, val material: String) {
     ZOOM_OUT("ic_bc_zoom_out", "zoom_out"),
     TRANSPOSE("ic_bc_transpose", "swap_vert"),
     VIDEO("ic_bc_video", "movie"),
+    TAKE_PHOTO("ic_bc_take_photo", "custom:camera"),
     PICTURE_IN_PICTURE("ic_bc_picture_in_picture", "picture_in_picture"),
     COMPUTER("ic_bc_computer", "computer"),
     SETTINGS("ic_bc_settings", "settings"),

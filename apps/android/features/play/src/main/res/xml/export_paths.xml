@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="exports" path="exports/" />
+    <!-- The pages of printed music in hand: the camera app writes its photo of a page here. -->
+    <cache-path name="pages" path="pages/" />
 </paths>

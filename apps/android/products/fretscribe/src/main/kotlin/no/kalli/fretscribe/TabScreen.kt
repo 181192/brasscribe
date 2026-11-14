@@ -347,7 +347,7 @@ fun TabScreen(vm: PlayViewModel) {
     // Sound (what is heard, the count-in, the metronome) is asked for from the header or from the player.
     var sounds by rememberSaveable { mutableStateOf(false) }
     val fetches = r.jobId != null && remember(practice.recording) { vm.container.engine() != null }
-    if (sounds) SoundDialog(practice, fetches, { vm.container.engine()?.let(practice::fetch) }) { sounds = false }
+    if (sounds) SoundDialog(practice, fetches, { vm.container.engine()?.let(practice::fetch) }, fromPages = r.profile.readsPages) { sounds = false }
     // One scroll moves the header (when it is not pinned), the marks and alphaTab's page.
     val scroll = rememberScrollState()
     var viewport by remember { mutableIntStateOf(0) }
@@ -720,7 +720,9 @@ fun TabScreen(vm: PlayViewModel) {
             ).joinToString(". ") + "."
             val player: @Composable () -> Unit = {
                 PracticeBar(practice, s.index.measures, place, follows = clock != null, canFetch = fetches, withNote = noteShown,
-                    onFetch = { vm.container.engine()?.let(practice::fetch) }, soundHere = inFocus || !(soundInHeader || noteInOneRow), onSound = { sounds = true })
+                    onFetch = { vm.container.engine()?.let(practice::fetch) }, soundHere = inFocus || !(soundInHeader || noteInOneRow), onSound = { sounds = true },
+                    // Read from printed music: what the computer holds for it is its pages, not a recording to play.
+                    fromPages = r.profile.readsPages)
             }
             Box(Modifier.fillMaxSize()) {
             // (The controls come first in the keyboard's order, and are drawn over the tab.)

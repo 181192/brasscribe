@@ -21,6 +21,7 @@ import no.kalli.scribe.play.ui.ExportScreen
 import no.kalli.scribe.play.ui.FirstRunScreen
 import no.kalli.scribe.play.ui.HelpScreen
 import no.kalli.scribe.play.ui.HomeScreen
+import no.kalli.scribe.play.ui.PagesScreen
 import no.kalli.scribe.play.ui.ProblemScreen
 import no.kalli.scribe.play.ui.RecordScreen
 import no.kalli.scribe.play.ui.TranscribeScreen
@@ -36,6 +37,7 @@ fun BrasscribeRoot(vm: PlayViewModel) {
         Screen.HOME -> HomeScreen(vm)
         Screen.RECORD -> RecordScreen(vm)
         Screen.PROFILE -> ProfileScreen(vm)
+        Screen.PAGES -> PagesScreen(vm)
         Screen.TRANSCRIBE -> TranscribeScreen(vm)
         Screen.REVIEW -> ReviewScreen(vm)
         Screen.OUTPUT -> OutputScreen(vm)

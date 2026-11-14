@@ -109,7 +109,8 @@ private const val DISABLED_ALPHA = 0.38f
  * The player under the tab (design/brands/fretscribe/system.md §4, Practice player), in its order: Play, back to
  * the start (of the repeat), a bar back and a bar on, where the song is, the speed, and the bars to repeat.
  * It wraps onto as many rows as it needs and never clips. When the recording is not on the phone it says
- * so, and offers to get it from the computer when the computer is there.
+ * so, and offers to get it from the computer when the computer is there. A tab read from printed music
+ * ([fromPages]) has no recording: it says that, and offers nothing to get.
  *
  * The tab is what the screen is for, so the player takes no more height than it must. On a small phone on its side
  * it is one row: only Play keeps the 64 dp, the word Speed is left out and Repeat bars is one word or its icon (the
@@ -123,7 +124,7 @@ private const val DISABLED_ALPHA = 0.38f
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, place: Pair<Int, Int>?, follows: Boolean, canFetch: Boolean, withNote: Boolean = false, onFetch: () -> Unit,
-    soundHere: Boolean = false, onSound: () -> Unit = {}) {
+    soundHere: Boolean = false, onSound: () -> Unit = {}, fromPages: Boolean = false) {
     val c = ScribeTheme.colors
     val state = practice.recording
     // Nothing is said while it is still being found out what there is to play: the recording looked for, the tab's sound made.
@@ -133,7 +134,7 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
         // Without the recording the tab's own sound plays, and Sound says what became of the recording.
         if (!follows || (state != RecordingState.HERE && !practice.tabSound)) {
             Column(Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
-                RecordingNote(state, follows, canFetch, onFetch)
+                RecordingNote(state, follows, canFetch, onFetch, fromPages)
             }
             return@Column
         }
@@ -270,9 +271,11 @@ private fun soundName(sound: PracticeSound): Int = when (sound) {
 
 /** What became of the recording when it is not played: where it is, getting it, and how that went; with the button that gets it. */
 @Composable
-private fun RecordingNote(state: RecordingState, follows: Boolean, canFetch: Boolean, onFetch: () -> Unit) {
+private fun RecordingNote(state: RecordingState, follows: Boolean, canFetch: Boolean, onFetch: () -> Unit, fromPages: Boolean = false) {
     val c = ScribeTheme.colors
     val words = stringResource(when {
+        // Read from printed music: there never was a recording, and nothing to get.
+        fromPages -> R.string.fs_practice_from_pages
         !follows -> R.string.fs_practice_no_beats
         state == RecordingState.GETTING -> R.string.fs_practice_getting
         state == RecordingState.GONE -> R.string.fs_practice_gone
@@ -289,7 +292,7 @@ private fun RecordingNote(state: RecordingState, follows: Boolean, canFetch: Boo
     Text(words, style = MaterialTheme.typography.bodyLarge, color = c.text,
         modifier = Modifier.testTag("fs-practice-says").semantics { liveRegion = LiveRegionMode.Polite })
     if (follows && state == RecordingState.GETTING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
-    if (follows && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER || state == RecordingState.NO_ROOM)) OutlineButton(
+    if (follows && !fromPages && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER || state == RecordingState.NO_ROOM)) OutlineButton(
         stringResource(if (state == RecordingState.NOT_HERE) R.string.fs_practice_get else R.string.retry), onFetch,
         Modifier.testTag("fs-practice-get"), icon = DesignR.drawable.ic_bc_download, fill = false)
 }
@@ -300,7 +303,7 @@ private fun RecordingNote(state: RecordingState, follows: Boolean, canFetch: Boo
  * Without the recording on the phone only the tab's notes can be heard, and the dialog says how to get the recording.
  */
 @Composable
-internal fun SoundDialog(practice: PracticeModel, canFetch: Boolean, onFetch: () -> Unit, close: () -> Unit) {
+internal fun SoundDialog(practice: PracticeModel, canFetch: Boolean, onFetch: () -> Unit, fromPages: Boolean = false, close: () -> Unit) {
     val c = ScribeTheme.colors
     val here = practice.recording == RecordingState.HERE
     val tab = practice.tabSound
@@ -327,7 +330,7 @@ internal fun SoundDialog(practice: PracticeModel, canFetch: Boolean, onFetch: ()
                     }
                 }
                 if (!here) Column(Modifier.fillMaxWidth().padding(vertical = ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
-                    RecordingNote(practice.recording, follows = true, canFetch, onFetch)
+                    RecordingNote(practice.recording, follows = true, canFetch, onFetch, fromPages)
                 }
                 // The tab's notes, the count-in and the metronome are one sound: without it they are off, and it says why.
                 if (!tab) Text(stringResource(R.string.fs_sound_failed), style = MaterialTheme.typography.bodyLarge, color = c.text,
