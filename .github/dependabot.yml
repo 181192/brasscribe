@@ -52,6 +52,11 @@ updates:
       minor-and-patch: { update-types: [minor, patch] }
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
+    ignore:
+      # alphaSkia is alphaTab's drawing backend and follows alphaTab's own dependency (alphaTab 1.9 needs
+      # 3.5). Nothing published supports 4.0, so leave the major to alphaTab's releases.
+      - dependency-name: "net.alphatab:alphaSkia*"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: nuget
     directories: [/apps/windows, /apps/bandroom/windows, /core/dotnet]
@@ -61,6 +66,10 @@ updates:
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
     ignore:
+      # alphaSkia is alphaTab's drawing backend and follows alphaTab's own dependency (alphaTab 1.9 needs
+      # 3.5). Nothing published supports 4.0, so leave the major to alphaTab's releases.
+      - dependency-name: "AlphaSkia*"
+        update-types: [version-update:semver-major]
       # Play for Windows needs Microsoft.ML.OnnxRuntime.DirectML, whose last release is 1.24.4; the
       # managed API, the native runtime and DirectML share one version (Directory.Packages.props).
       # Raise all three together once a newer DirectML build exists.

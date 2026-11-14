@@ -39,10 +39,12 @@
     s.display.layoutMode = at.LayoutMode.Page;
     s.display.scale = opts.scale || 1;
     s.display.stretchForce = 0.6;
-    s.display.justifyLastSystem = false;
+    s.display.lastSystemFillThreshold = 1;
     s.player.playerMode = at.PlayerMode.Disabled;
     s.player.enableCursor = false;
-    s.player.enableUserInteraction = false;
+    s.player.enableSeekToClick = false;
+    s.player.enablePlaybackRangeSelection = false;
+    s.player.resetPlaybackRangeOnClick = false;
     s.player.scrollMode = at.ScrollMode.Off;
     s.notation.rhythmMode = at.TabRhythmMode.ShowWithBars;
     for (const e of hidden()) s.notation.elements.set(e, false);
@@ -243,6 +245,8 @@
       started = performance.now();
       const bytes = Uint8Array.from(atob(song), (c) => c.charCodeAt(0));
       score = at.importer.ScoreLoader.loadScoreFromBytes(bytes, api.settings);
+      // alphaTab 1.9 numbers only the first bar of each system; the marks stand above the numbers, so every bar has one.
+      for (const config of [score.stylesheet.scoreConfig, score.stylesheet.tabConfig, score.stylesheet.slashConfig, score.stylesheet.numberedConfig]) config.barNumber = at.model.BarNumberDisplay.AllBars;
       for (const st of score.tracks[0].staves) {
         const tabStaff = st.isStringed;
         st.showTablature = tabStaff;
