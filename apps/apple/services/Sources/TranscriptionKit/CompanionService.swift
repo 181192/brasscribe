@@ -360,9 +360,68 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         _ = try await send(request("v1/runs/\(jobID)", method: "DELETE"))
     }
 
-    /// Multipart upload streamed from a temporary file, so long recordings never sit in memory.
+    /// The last take the computer took in and would not write down yet, because something is left to set up there
+    /// (`band_writer_not_set_up`), with the id the computer keeps it under. The recording stays on the computer, so
+    /// trying the same take again names it and sends nothing a second time.
+    /// Behind `lock`, like the rest of what this class remembers: two transcriptions can be on their way at once.
+    private var refusedTake: (take: String, audioID: String)?
+
+    /// The id the computer keeps `take` under when it is the take it refused; forgotten in the same step, so two
+    /// tries at once cannot both name it.
+    private func takeRefused(matching take: String) -> String? {
+        lock.withLock {
+            guard let held = refusedTake, held.take == take else { return nil }
+            refusedTake = nil
+            return held.audioID
+        }
+    }
+
+    /// A recording as it is now: the same take until the file is written again.
+    private static func take(_ url: URL) -> String {
+        let a = try? FileManager.default.attributesOfItem(atPath: url.path)
+        return "\(url.path):\(a?[.size] as? Int ?? 0):\((a?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)"
+    }
+
+    /// Remembers the take when the computer's answer is that refusal, which names the recording it kept.
+    private func note(refusal data: Data, of take: String) {
+        guard let said = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              said["code"] as? String == "band_writer_not_set_up", let id = said["audio_id"] as? String else { return }
+        lock.withLock { refusedTake = (take, id) }
+    }
+
+    /// A job from a recording the computer already holds.
+    private func job(audioID: String, _ req: TranscriptionRequest, take: String) async throws -> Job {
+        var body: [String: Any] = ["audio_id": audioID, "profile": req.profile, "render_audio": false]
+        if let t = req.title { body["title"] = t }
+        // The target's own options: the same names as the form's, whole numbers as numbers.
+        for f in req.fields { body[f.name] = ["transpose", "capo"].contains(f.name) ? (Int(f.value) as Any? ?? f.value) : f.value }
+        var r = request("v1/jobs", method: "POST")
+        r.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        r.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, resp): (Data, URLResponse)
+        do { (data, resp) = try await session.data(for: r) } catch {
+            interface = nil
+            throw TranscriptionError.unreachable(error.localizedDescription)
+        }
+        let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        if code == 401 { throw TranscriptionError.notPaired }
+        guard (200..<300).contains(code) else {
+            if code == 409 { note(refusal: data, of: take) }
+            throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self))
+        }
+        return try JSONDecoder().decode(Job.self, from: data)
+    }
+
+    /// Multipart upload streamed from a temporary file, so long recordings never sit in memory. A take the computer
+    /// refused for unfinished setup is not sent again: the job is asked for by the recording's id (`refusedTake`).
     func upload(_ req: TranscriptionRequest) async throws -> Job {
         try await requireMatch()
+        let take = Self.take(req.audioURL)
+        if let audioID = takeRefused(matching: take) {
+            do { return try await job(audioID: audioID, req, take: take) } catch TranscriptionError.http(404, _) {
+                // The computer has let go of it since: it is sent again, below.
+            }
+        }
         let boundary = "scribe-\(UUID().uuidString)"
         let tmp = FileManager.default.temporaryDirectory.appending(path: "upload-\(UUID().uuidString)")
         FileManager.default.createFile(atPath: tmp.path, contents: nil)
@@ -397,7 +456,10 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
         if code == 401 { throw TranscriptionError.notPaired }
-        guard (200..<300).contains(code) else { throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self)) }
+        guard (200..<300).contains(code) else {
+            if code == 409 { note(refusal: data, of: take) }
+            throw TranscriptionError.http(code, String(decoding: data.prefix(300), as: UTF8.self))
+        }
         return try JSONDecoder().decode(Job.self, from: data)
     }
 

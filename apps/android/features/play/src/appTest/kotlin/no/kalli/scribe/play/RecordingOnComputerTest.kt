@@ -63,4 +63,43 @@ class RecordingOnComputerTest {
         assertEquals(404, assertThrows(EngineException::class.java) { run({ null }, refuse = mapOf("sent" to 404)) }.status)
         assertEquals(listOf("create held", "send", "create sent"), said)
     }
+
+    /** The computer took the recording and then said that something is left to set up: trying again names the
+     *  recording it already holds, and nothing is sent a second time. Another take is sent as usual. */
+    @Test
+    fun aTakeRefusedForUnfinishedSetupIsNotSentAgain() = runBlocking {
+        val refused = RefusedTake()
+        var ready = false
+        suspend fun attempt(take: String) = jobFromRecording(
+            held = { refused.on(take) },
+            canSend = true,
+            send = { said += "send $take"; "id-of-$take" },
+            resent = { said += "resent" },
+        ) { sent ->
+            refused.noting(take, sent) { audio ->
+                said += "create $audio"
+                if (!ready) throw EngineException(409, "/v1/jobs: 409", "band_writer_not_set_up")
+                "job of $audio"
+            }
+        }
+        assertThrows(EngineException::class.java) { runBlocking { attempt("take-1") } }
+        assertEquals("id-of-take-1", refused.on("take-1"))
+        ready = true  // setup is finished on the computer, and the player tries the same take again
+        assertEquals("id-of-take-1" to "job of id-of-take-1", attempt("take-1"))
+        assertEquals(listOf("send take-1", "create id-of-take-1", "create id-of-take-1"), said)
+        assertEquals(null, refused.on("take-1"))  // written down: nothing left to remember
+        said.clear()
+        assertEquals("id-of-take-2" to "job of id-of-take-2", attempt("take-2"))
+        assertEquals(listOf("send take-2", "create id-of-take-2"), said)
+    }
+
+    /** Any other failure is not remembered: the take is sent again, as before. */
+    @Test
+    fun anotherFailureIsNotRemembered() = runBlocking {
+        val refused = RefusedTake()
+        assertThrows(EngineException::class.java) {
+            runBlocking { refused.noting("take", "id") { throw EngineException(500, "/v1/jobs: 500") } }
+        }
+        assertEquals(null, refused.on("take"))
+    }
 }
