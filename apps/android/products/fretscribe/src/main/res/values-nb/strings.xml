@@ -212,6 +212,8 @@
     <string name="fs_tab_reading">Åpner tabben…</string>
     <string name="fs_tab_failed">Denne tabben kan ikke vises. Gå tilbake og åpne den på nytt.</string>
     <string name="fs_tab_chip">%1$s · %2$s</string>
+    <!-- The top bar on a phone on its side, where the chip is a scroll up: "Bass line · Standard · no capo" -->
+    <string name="fs_tab_title_tuning">%1$s · %2$s</string>
     <string name="fs_tab_no_capo">uten capo</string>
     <string name="fs_tab_capo">capo %1$d</string>
     <string name="fs_tab_chip_name">Stemming: %1$s, %2$s</string>

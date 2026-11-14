@@ -44,6 +44,8 @@ class TabRoomTest : TabScreenTest() {
         rest()
     }
 
+    private fun theTabView(): TabView { theTab(); return engraved() }
+
     /** A button that is docked under what scrolls, or, where the screen is short, at the end of it. */
     private fun tap(tag: String) {
         runCatching { rule.onNodeWithTag(tag).performScrollTo() }
@@ -61,6 +63,8 @@ class TabRoomTest : TabScreenTest() {
         assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
         theTab()
         shot("tab-small-landscape")
+        // The tuning is in the top bar, where the line with it is a scroll up.
+        rule.onNode(androidx.compose.ui.test.isHeading() and androidx.compose.ui.test.hasText("Standard", substring = true)).assertExists()
         // One row: Play's 64 dp and the space around it.
         assertTrue("the player is one row (${height("fs-practice")} dp)", height("fs-practice") <= 84f)
         assertTrue("the tab has half the screen (${height("fs-tab-scroll")} dp)", height("fs-tab-scroll") >= 180f)
@@ -73,6 +77,26 @@ class TabRoomTest : TabScreenTest() {
         assertTrue("the player steps aside for the note", !there("fs-practice"))
         assertTrue("the tab keeps its room with a note open (${height("fs-tab-scroll")} dp)", height("fs-tab-scroll") >= 180f)
         assertEquals(text(R.string.fs_tab_note_slowly), rule.onNodeWithTag("fs-tab-note-slowly").fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single())
+    }
+
+    /**
+     * With the largest text on a phone on its side the note's words take three lines and the tab less room: the page
+     * is moved so the column of the note being checked, its mark and its numerals, is whole all the same.
+     */
+    @Test
+    fun onItsSideWithTheLargestTextTheNoteBeingCheckedIsWhole() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        textSize(2f)
+        val tab = theTabView()
+        openANote()
+        shot("tab-note-small-landscape-200")
+        val box = tab.engraving.value!!.boxes.first()
+        val mark = rule.onNodeWithTag("fs-tab-mark-0").fetchSemanticsNode()
+        val page = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
+        val top = mark.positionInWindow.y
+        val bottom = top + (box.columnBottom - box.top)
+        assertTrue("the mark is in view ($top in ${page.top}..${page.bottom})", top >= page.top - 1f)
+        assertTrue("the numerals under it are in view ($bottom in ${page.top}..${page.bottom})", bottom <= page.bottom + 1f)
     }
 
     /**
@@ -105,8 +129,15 @@ class TabRoomTest : TabScreenTest() {
         // Play, the speed and the repeat stay; where the song is steps aside, and the player is a row lower.
         assertTrue("Play, the speed and the repeat stay", there("fs-practice-play") && there("fs-practice-speed") && there("fs-practice-repeat"))
         assertTrue("where the song is steps aside for the note", !there("fs-practice-place"))
-        assertTrue("the player is lower ($before -> ${height("fs-practice")} dp)", height("fs-practice") <= before - 40f)
+        // (At this text size Repeat bars is its icon beside the transport, so the player is two rows with or without a note.)
+        assertTrue("the player is no higher ($before -> ${height("fs-practice")} dp)", height("fs-practice") <= before)
         assertTrue("the tab keeps room for the note being checked (${height("fs-tab-scroll")} dp)", height("fs-tab-scroll") >= 170f)
+        // And the note being checked is in it: its mark, and the numerals under it.
+        val box = TabScreenProbe.view!!.engraving.value!!.boxes.first()
+        val mark = rule.onNodeWithTag("fs-tab-mark-0").fetchSemanticsNode()
+        val page = rule.onNodeWithTag("fs-tab-scroll").fetchSemanticsNode().boundsInWindow
+        assertTrue("the mark is in view (${mark.positionInWindow.y} in ${page.top}..${page.bottom}, column ${box.top}..${box.columnBottom}, lines ${TabScreenProbe.view!!.engraving.value!!.lines})", mark.positionInWindow.y >= page.top - 1f)
+        assertTrue("the numerals under it are in view", mark.positionInWindow.y + (box.columnBottom - box.top) <= page.bottom + 1f)
 
         rule.onNodeWithTag("fs-tab-note-close").performClick()
         rest()

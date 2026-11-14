@@ -72,6 +72,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.material3.Text
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.foundation.layout.heightIn
@@ -367,11 +368,14 @@ fun TabScreen(vm: PlayViewModel) {
             Text(words, style = if (noteInOneRow) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge, color = c.text,
                 modifier = m.testTag("fs-tab-note").semantics { liveRegion = LiveRegionMode.Polite; if (then != null) contentDescription = "$words $then" })
         }
+        val largeText = LocalDensity.current.fontScale >= 1.3f
         val nextButton: @Composable () -> Unit = {
             TextButton({ next?.let(::showMark) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-next").semantics {
                 contentDescription = nextName
                 if (next == null) { disabled(); stateDescription = lastState }
-            }, shape = ScribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text)) {
+            }, shape = ScribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = if (next == null) c.text.copy(alpha = 0.38f) else c.text),
+                // (Beside Play this bar slowly, upright, it has that button's outline.)
+                border = if (noteInOneRow) null else androidx.compose.foundation.BorderStroke(1.dp, c.borderStrong)) {
                 Text(stringResource(R.string.fs_tab_note_next), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
             }
         }
@@ -386,11 +390,19 @@ fun TabScreen(vm: PlayViewModel) {
             ) {
                 note(Modifier.weight(1f))
                 // (With a word of its own: the bare triangle is Play, one row up.)
-                if (canPlay) TextButton({ practice.playBarSlowly(column.bar) }, Modifier.heightIn(min = 48.dp).testTag("fs-tab-note-slowly").semantics { contentDescription = slowly },
-                    shape = ScribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = c.text)) {
-                    BcIcon(DesignR.drawable.ic_bc_play, null)
-                    Spacer(Modifier.size(ScribeSpace.s1))
-                    Text(stringResource(R.string.fs_tab_note_slowly_brief), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
+                // The note has the player's place here, so this is the one button for the sound: Pause while it plays
+                // (the bar goes round until then), Play this bar slowly otherwise. With large text it is its icon alone.
+                val playing = practice.playing
+                val pause = stringResource(R.string.pause)
+                if (canPlay) TextButton({ if (playing) practice.pause() else practice.playBarSlowly(column.bar) },
+                    Modifier.heightIn(min = 48.dp).widthIn(min = 48.dp).testTag("fs-tab-note-slowly").semantics { contentDescription = if (playing) pause else slowly },
+                    shape = ScribeButtonShape, colors = ButtonDefaults.textButtonColors(contentColor = c.text),
+                    contentPadding = if (largeText) androidx.compose.foundation.layout.PaddingValues(0.dp) else ButtonDefaults.TextButtonContentPadding) {
+                    BcIcon(if (playing) DesignR.drawable.ic_bc_pause else DesignR.drawable.ic_bc_play, null)
+                    if (!largeText) {
+                        Spacer(Modifier.size(ScribeSpace.s1))
+                        Text(if (playing) pause else stringResource(R.string.fs_tab_note_slowly_brief), style = MaterialTheme.typography.labelLarge, modifier = Modifier.clearAndSetSemantics { })
+                    }
                 }
                 if (showNext) nextButton()
                 close()
@@ -429,7 +441,11 @@ fun TabScreen(vm: PlayViewModel) {
         containerColor = c.bg,
         topBar = {
             // The back button has no word here: the title and four buttons need the width.
-            if (!inFocus) PlayTopBar(title, vm::back, null, titleIsHeading = true) {
+            // On a phone on its side the line with the tuning is a scroll up from where the tab opens: the top bar says it.
+            val barTitle = if (noteInOneRow && s != null) stringResource(R.string.fs_tab_title_tuning, title,
+                stringResource(R.string.fs_tab_chip, tuningName(s.tuning), if (s.capo > 0) stringResource(R.string.fs_tab_capo, s.capo) else stringResource(R.string.fs_tab_no_capo)))
+            else title
+            if (!inFocus) PlayTopBar(barTitle, vm::back, null, titleIsHeading = true) {
                 if (s != null && s.index.bars > 0) IconButton({ focus = focus.enter() }, Modifier.size(48.dp).testTag("fs-tab-full-screen")) {
                     BcIcon(R.drawable.ic_fs_fullscreen, stringResource(R.string.fs_tab_full_screen))
                 }
@@ -576,8 +592,11 @@ fun TabScreen(vm: PlayViewModel) {
             LaunchedEffect(tab, e, inset) {
                 if (e == null || (e === placedFor && inset == placedInset)) return@LaunchedEffect
                 placedFor = null
+                // (A mark whose note is open stands a little over its line's top: the page starts at the mark then.)
+                val line = e.topOfBar(reading) ?: 0
+                val mark = told?.let { t -> e.boxes.firstOrNull { it.column == t }?.top?.toInt() }?.takeIf { it < line && line - it < viewport / 3 }
                 scroll.scrollTo(when {
-                    reading != 0 -> inset + (e.topOfBar(reading) ?: 0)
+                    reading != 0 -> inset + (mark ?: line)
                     readFromTheTop || headerShown -> 0
                     else -> inset
                 })
@@ -613,6 +632,9 @@ fun TabScreen(vm: PlayViewModel) {
                     val to = (top - viewport / 3).coerceAtLeast(bottom - viewport).coerceAtMost(top).coerceIn(0, scroll.maxValue)
                     if (reducedMotion) scroll.scrollTo(to) else scroll.animateScrollTo(to)
                 }
+                // The mark's line is the one being read from here on: a page engraved again (the note under it changed its
+                // room) is put back at it, not where the song was.
+                s.marks.columns.getOrNull(column)?.bar?.let { reading = it; TabPlaces.keep(song, it) }
                 reveal = null
             }
 
@@ -738,7 +760,7 @@ fun TabScreen(vm: PlayViewModel) {
                                         .testTag("fs-tab-mark-${box.column}")
                                         .onFocusChanged { focused = it.isFocused }
                                         .then(if (focused) Modifier.border(FretscribeTab.focusWidth, c.focus, RoundedCornerShape(6.dp)) else Modifier)
-                                        .clickable(role = Role.Button) { told = box.column }
+                                        .clickable(role = Role.Button) { showMark(box.column) }
                                         .semantics { contentDescription = words },
                                 )
                             }

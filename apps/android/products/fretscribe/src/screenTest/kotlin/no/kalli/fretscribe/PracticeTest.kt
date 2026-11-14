@@ -545,6 +545,30 @@ class PracticeTest : ScreenTest() {
         assertEquals(0, count(screen(), open, edge))
     }
 
+    /**
+     * On a phone on its side an open note takes the player's place, so its one button is the one for the sound: it plays
+     * the bar slowly, is Pause while that plays, and plays it again after.
+     */
+    @Test
+    fun onItsSideTheNotesButtonPlaysTheBarSlowlyAndPausesIt() {
+        org.junit.Assume.assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        practise()
+        rule.onNodeWithTag("fs-tab-mark-0").performScrollTo().performClick()
+        waitForTag("fs-tab-note", 5_000)
+        assertTrue("the note has the player's place", rule.onAllNodesWithTag("fs-practice").fetchSemanticsNodes().isEmpty())
+        assertEquals("Play this bar slowly", described("fs-tab-note-slowly"))
+        rule.onNodeWithTag("fs-tab-note-slowly").performClick()
+        waitUntilPlaying()
+        rule.waitForIdle()
+        assertEquals("Pause", described("fs-tab-note-slowly"))
+        rule.onNodeWithTag("fs-tab-note-slowly").performClick()
+        waitUntilPlaying(false)
+        rule.waitForIdle()
+        assertEquals("Play this bar slowly", described("fs-tab-note-slowly"))
+        rule.onNodeWithTag("fs-tab-note-close").performClick()
+        waitForTag("fs-practice", 5_000)
+    }
+
     @Test
     fun aMarkLeadsToItsBarPlayedSlowlyAndOnToTheNextMark() {
         practise()

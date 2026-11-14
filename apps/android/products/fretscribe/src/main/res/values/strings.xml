@@ -240,6 +240,8 @@
     <string name="fs_tab_failed">This tab can\'t be shown. Go back and open it again.</string>
     <!-- The tuning chip: "Standard · no capo" -->
     <string name="fs_tab_chip">%1$s · %2$s</string>
+    <!-- The top bar on a phone on its side, where the chip is a scroll up: "Bass line · Standard · no capo" -->
+    <string name="fs_tab_title_tuning">%1$s · %2$s</string>
     <string name="fs_tab_no_capo">no capo</string>
     <string name="fs_tab_capo">capo %1$d</string>
     <!-- The chip as it is read: "Tuning: Standard, no capo" -->

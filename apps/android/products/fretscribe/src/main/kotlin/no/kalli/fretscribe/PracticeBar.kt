@@ -154,6 +154,26 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
             !short && screen.screenWidthDp < NARROW_SCREEN_DP -> 56.dp
             else -> TRANSPORT
         }
+        // Upright with large text the chip is its icon beside the transport, so the player is two rows, not three.
+        val early = !short && largeText
+        val repeatChip: @Composable () -> Unit = {
+            // The chip's words are its name: what is seen is what is said.
+            val shown = when {
+                repeat == null -> stringResource(R.string.fs_practice_repeat)
+                repeat.first == repeat.last -> stringResource(R.string.fs_practice_repeat_on_one, number(repeat.first))
+                else -> stringResource(R.string.fs_practice_repeat_on, number(repeat.first), number(repeat.last))
+            }
+            // On a small phone on its side the chip is as short as it can be: Repeat (its icon alone with large text), or the bars when it
+            // is on. Its name is the whole of it either way.
+            val brief = when {
+                repeat == null -> if (largeText) "" else stringResource(R.string.fs_practice_repeat_brief)
+                repeat.first == repeat.last -> number(repeat.first)
+                else -> stringResource(R.string.fs_practice_repeat_bars_brief, number(repeat.first), number(repeat.last))
+            }
+            if (tight || early) PracticeChip(brief, repeat != null, { choosing = true }, Modifier.widthIn(min = 48.dp).testTag("fs-practice-repeat"),
+                icon = DesignR.drawable.ic_bc_loop, role = Role.Button, accessibleName = shown)
+            else PracticeChip(shown, repeat != null, { choosing = true }, Modifier.testTag("fs-practice-repeat"), icon = DesignR.drawable.ic_bc_loop, role = Role.Button)
+        }
         FlowRow(
             Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s3, vertical = ScribeSpace.s2),
             horizontalArrangement = Arrangement.spacedBy(if (tight) ScribeSpace.s2 else ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1),
@@ -181,6 +201,7 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                         tint = if (noBarOn) LocalContentColor.current.copy(alpha = DISABLED_ALPHA) else Color.Unspecified)
                 }
             }
+            if (early) repeatChip()
             // Where the song is. It changes with every beat while the recording plays, so it is only announced when the
             // player moved it: a bar back or on, or back to the start.
             val measure = place?.let { measures.getOrNull(it.first) }
@@ -215,22 +236,7 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                     modifier = Modifier.widthIn(min = 56.dp).testTag("fs-practice-speed").semantics { contentDescription = speed; liveRegion = LiveRegionMode.Polite })
                 StepButton("+", stringResource(R.string.fs_practice_faster), "fs-practice-faster", practice.speed < PracticeSpeed.MAX, repeats = true, onClick = practice::faster)
             }
-            // The chip's words are its name: what is seen is what is said.
-            val shown = when {
-                repeat == null -> stringResource(R.string.fs_practice_repeat)
-                repeat.first == repeat.last -> stringResource(R.string.fs_practice_repeat_on_one, number(repeat.first))
-                else -> stringResource(R.string.fs_practice_repeat_on, number(repeat.first), number(repeat.last))
-            }
-            // On a small phone on its side the chip is as short as it can be: Repeat (its icon alone with large text), or the bars when it
-            // is on. Its name is the whole of it either way.
-            val brief = when {
-                repeat == null -> if (largeText) "" else stringResource(R.string.fs_practice_repeat_brief)
-                repeat.first == repeat.last -> number(repeat.first)
-                else -> stringResource(R.string.fs_practice_repeat_bars_brief, number(repeat.first), number(repeat.last))
-            }
-            if (tight) PracticeChip(brief, repeat != null, { choosing = true }, Modifier.widthIn(min = 48.dp).testTag("fs-practice-repeat"),
-                icon = DesignR.drawable.ic_bc_loop, role = Role.Button, accessibleName = shown)
-            else PracticeChip(shown, repeat != null, { choosing = true }, Modifier.testTag("fs-practice-repeat"), icon = DesignR.drawable.ic_bc_loop, role = Role.Button)
+            if (!early) repeatChip()
         }
         if (choosing) RepeatDialog(measures, repeat, place?.first ?: 0, { practice.repeat(it); choosing = false }) { choosing = false }
     }
