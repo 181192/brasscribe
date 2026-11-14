@@ -62,6 +62,7 @@ tags = "Status"
 ready = "Ready"
 test = "Test version"
 early = "Early version"
+mine = "This device"
 shared = "Shared by every Scribe app"
 none = "Not for this app"
 matrix = "Where each Scribe app runs, and how ready it is"
@@ -115,25 +116,35 @@ down = "score or tab"
 computer = "Bandroom on your computer"
 computer_does = "listens and writes it down"
 
+
+# The download page's own words: one main button per device, three steps for the first time, the files folded away.
+[download]
+first = "The first time on {device}"
+tech = "For the band's tech person"
+sums = "Checksums of every file"
+then = "Then: Bandroom on your computer"
+bandroom = "All about Bandroom"
+tablet = "The same app as on a phone: an Android tablet takes the Android download, an iPad the iPhone one, both under <a href='#phone'>Phone</a>."
+
 [groups.android]
 title = "Android"
-note = "Needs Android 16 or newer. Allow installs from your browser or file manager, then open the file you downloaded. It updates an earlier version in place, and what you have made stays. Most phones and tablets take the first file."
+button = "Download for Android"
+steps = ["Download it on the phone or tablet, and open the file you downloaded.", "Your phone asks whether your browser may install apps: allow it, and install.", "Next time a new version installs over this one, and what you have made stays."]
 
 [groups.ios]
-title = "iPhone and iPad"
-note = "Needs iOS or iPadOS 26 or newer. Not in the App Store yet. This is a test version: it needs a few steps with your own Apple account before it installs, and <a href=\"@/guide/#download-ios\">the guide shows them</a>."
+title = "iPhone"
+button = "Download for iPhone"
+steps = ["Download it on a computer: it is a test version, which you sign with your own Apple account.", "Sign it and put it on the iPhone or iPad with a sideloading tool: <a href='@/guide/#download-ios'>the guide shows how</a>.", "A free Apple account's signature lasts 7 days. Sign it again, and what you have made stays."]
 
 [groups.mac]
 title = "Mac"
-note = "Needs macOS 26 or newer and a Mac with an M-series chip. Your Mac will warn you the first time: unzip, move the app to Applications and open it once, then choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>."
+button = "Download for Mac"
+steps = ["Download it, unzip it, and move the app to Applications.", "Open it once. Your Mac warns you the first time: choose <strong>Open Anyway</strong> under <strong>System Settings › Privacy &amp; Security</strong>.", "From then on it opens like any other app."]
 
 [groups.windows]
 title = "Windows"
-note = "For Windows 11. Windows will warn you the first time: unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
-
-[groups.bandroom]
-title = "Bandroom, on your computer"
-note = "Bandroom runs on your own Mac or PC and writes down the notes for the app on your phone, over your own network. One Bandroom serves every Scribe app. <a href=\"@/guide/#computer\">How to set it up</a>."
+button = "Download for Windows"
+steps = ["Download it and unzip the folder anywhere.", "Start the app inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>.", "From then on it starts like any other program."]
 
 [groups.tools]
 title = "For the tech person"

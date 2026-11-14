@@ -178,8 +178,9 @@ def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int
     say = page.say
     config = {**config, "barBeat": say("fig.bar_beat"), "play": say("fig.play"), "pause": say("fig.pause")}
     audio = f' data-audio="{config.pop("audio")}"' if "audio" in config else ""
+    # The stage clips its music in the markup itself, so a wide strip never widens the page while the styles load.
     return f"""<figure class="strip {classes}"{audio} data-strip="{esc(json.dumps(config, separators=(",", ":")))}" style="--strip-height: {height}px;{style}">
-  <div class="strip-stage" role="img" aria-label="{esc(label)}">
+  <div class="strip-stage" style="overflow: hidden" role="img" aria-label="{esc(label)}">
     <div class="strip-ink">{ink}</div>
     <div class="strip-sound"><svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-hidden="true" focusable="false"><path class="wave" d="{wave}"/></svg></div>
     <div class="strip-pen" aria-hidden="true"></div>
@@ -436,10 +437,11 @@ RAIL = ("phone", "tablet", "mac", "windows", "bandroom", "studio")  # the same o
 
 
 def tags(page, place: dict) -> str:
-    """How ready each device of a place is: a word and a shape, never a colour alone."""
-    say = page.say
+    """How ready each device of a place is: a word and a shape, never a colour alone. The device is named only where
+    a place holds two; where it holds one, the place's own name already says it."""
+    say, two = page.say, len(place["devices"]) > 1
     return (f'<ul class="tags" aria-label="{esc(say("variants.tags"))}">'
-            + "".join(f'<li class="tag {d["status"]}"><span class="tag-device">{d["name"]}</span> {say("variants." + d["status"])}</li>' for d in place["devices"])
+            + "".join(f'<li class="tag {d["status"]}">{f"""<span class="tag-device">{d["name"]}</span> """ if two else ""}{say("variants." + d["status"])}</li>' for d in place["devices"])
             + "</ul>")
 
 
@@ -452,7 +454,7 @@ def rail(page, product=None, base: str = "#") -> str:
         shared = ' class="shared"' if v["id"] == "bandroom" else ""
         chips.append(f'<li><a href="{base}{v["id"]}"{shared} data-variant="{v["id"]}">{page.site.glyphs[v["id"]]}'
                      f'<span class="rail-name">{say(f"variants.{v["id"]}.name")}</span>{f" <small>{sub}</small>" if sub else ""}</a></li>')
-    return f'<ul class="rail" aria-label="{esc(say("variants.label"))}">' + "".join(chips) + "</ul>"
+    return f'<ul class="rail" aria-label="{esc(say("variants.label"))}" data-mine="{esc(say("variants.mine"))}">' + "".join(chips) + "</ul>"
 
 
 def devices(page) -> str:
