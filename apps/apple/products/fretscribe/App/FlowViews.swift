@@ -177,8 +177,6 @@ struct SongFacts: Decodable {
     struct Key: Decodable { let name: String; let mode: String? }
     struct Meter: Decodable { let beats: Int; let beatUnit: Int; enum CodingKeys: String, CodingKey { case beats; case beatUnit = "beat_unit" } }
     struct Reference: Decodable { let cents: Double; let retuned: Bool? }
-    struct Note: Decodable { let confidence: Double?; let outOfRange: Bool?; let fret: Int?
-        enum CodingKeys: String, CodingKey { case confidence, fret; case outOfRange = "out_of_range" } }
     let preset: String
     let instrument: Instrument
     let tuningSuggestions: [Suggestion]?
@@ -189,12 +187,11 @@ struct SongFacts: Decodable {
     let tempoBpm: Double?
     let key: Key?
     let meter: Meter?
-    let notes: [Note]
     let unplayableDropped: Int?
     let inferredNotes: Int?
 
     enum CodingKeys: String, CodingKey {
-        case preset, instrument, key, meter, notes
+        case preset, instrument, key, meter
         case tuningSuggestions = "tuning_suggestions", octaveShift = "octave_shift", octaveSource = "octave_source"
         case octaveNotesMoved = "octave_notes_moved", referencePitch = "reference_pitch", tempoBpm = "tempo_bpm"
         case unplayableDropped = "unplayable_dropped", inferredNotes = "inferred_notes"
@@ -207,14 +204,15 @@ struct SongFacts: Decodable {
     var tuningName: String { instrument.tuning?.name ?? preset }
     /// The tuning the notes fit better, when there is one.
     var soundsLike: Suggestion? { tuningSuggestions?.first.flatMap { $0.preset == preset ? nil : $0 } }
-    var doubtful: Int { notes.filter { ($0.confidence ?? 1) < SongMarks.doubt }.count }
-    var noPlace: Int { notes.filter { $0.outOfRange == true || $0.fret == nil }.count }
 }
 
 /// "Check the song": what Fretscribe heard. If something here is wrong, the frets are wrong too.
 struct CheckTheSongView: View {
     @Environment(FretscribeModel.self) private var model
     let song: TabSong
+
+    /// The notes to check, counted as the tab draws them: read once, off the main thread.
+    @State private var marks: TabMarks?
 
     var body: some View {
         let facts = SongFacts.of(song)
@@ -250,14 +248,15 @@ struct CheckTheSongView: View {
                             row(String(localized: "Key and tempo"), "\(key.name) · ♩ = \(Int(bpm.rounded())) · \(meter.beats)/\(meter.beatUnit)",
                                 id: "fs-check-key-tempo")
                         }
-                        if facts.doubtful > 0 {
+                        if let doubtful = marks?.doubtful, doubtful > 0 {
                             Divider().overlay(Color.Scribe.border)
-                            row(String(localized: "Notes to check"), String(localized: "\(facts.doubtful) notes marked ?"), id: "fs-check-notes")
+                            row(String(localized: "Notes to check"), TabWords.marked(doubtful), id: "fs-check-notes")
                         }
-                        if facts.noPlace > 0 {
+                        if let noPlace = marks?.noPlace, noPlace > 0 {
                             Divider().overlay(Color.Scribe.border)
                             row(String(localized: "Notes with no place"),
-                                String(localized: "\(facts.noPlace) notes with no place on your instrument. Is the tuning right?"), id: "fs-check-no-place")
+                                noPlace == 1 ? String(localized: "\(noPlace) note with no place on your instrument. Is the tuning right?")
+                                    : String(localized: "\(noPlace) notes with no place on your instrument. Is the tuning right?"), id: "fs-check-no-place")
                         }
                     }
                     .card(padding: 0)
@@ -271,6 +270,7 @@ struct CheckTheSongView: View {
             .readingColumn()
         }
         .pageBackground()
+        .task(id: song.id) { marks = SongMarks.of(song) }
         .navigationTitle(Text("Check the song"))
         .toolbar(removing: .title)
         .safeAreaInset(edge: .bottom) {

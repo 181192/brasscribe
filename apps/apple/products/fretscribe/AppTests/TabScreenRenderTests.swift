@@ -18,7 +18,7 @@ import WebKit
     /// The song "Bass line" in a folder of its own, with the recording `recording` when it is given.
     private static func song(in songs: URL, recording: URL? = nil) throws -> TabSong {
         setenv("SCRIBE_SONGS", songs.path, 1)
-        let song = TabSong(id: UUID(), title: "Bass line", created: Date(), jobID: nil, preset: "bass-4-standard", toCheck: 2, recording: recording)
+        let song = TabSong(id: UUID(), title: "Bass line", created: Date(), jobID: nil, preset: "bass-4-standard", toCheck: 2, noPlace: 1, recording: recording)
         try song.save()
         try FileManager.default.copyItem(at: fixture("bass-line-marks/tab.musicxml"), to: song.musicXMLURL)
         try FileManager.default.copyItem(at: fixture("bass-line-marks/tab.json"), to: song.tabURL)

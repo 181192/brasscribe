@@ -191,6 +191,16 @@
         }
       }
     },
+    "%lld note with no place on your instrument. Is the tuning right?": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tone uten plass på instrumentet ditt. Er stemmingen riktig?"
+          }
+        }
+      }
+    },
     "%lld notes are written an octave lower than they were heard.": {
       "localizations": {
         "nb": {
@@ -217,16 +227,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld toner merket ? · Sjekk dem"
-          }
-        }
-      }
-    },
-    "%lld notes to check": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld toner å sjekke"
           }
         }
       }

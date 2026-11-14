@@ -38,6 +38,7 @@
   "%lld notes marked ?": "%lld toner merket ?",
   "%lld notes marked ? · Check them": "%lld toner merket ? · Sjekk dem",
   "%lld notes with no place": "%lld toner uten plass",
+  "%lld note with no place on your instrument. Is the tuning right?": "%lld tone uten plass på instrumentet ditt. Er stemmingen riktig?",
   "%lld notes with no place on your instrument. Is the tuning right?": "%lld toner uten plass på instrumentet ditt. Er stemmingen riktig?",
   "%lld-string bass": "%lld-strengs bass",
   "%lld-string guitar": "%lld-strengs gitar",
