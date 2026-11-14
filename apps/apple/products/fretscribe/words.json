@@ -258,7 +258,18 @@
   "no capo": "uten capo",
   "tab.": "tab.",
   "♩ = %lld": "♩ = %lld",
-  "Scan the code": "Skann koden"
+  "Scan the code": "Skann koden",
+  "Sound": "Lyd",
+  "Sound: %@": "Lyd: %@",
+  "The recording": "Opptaket",
+  "The tab's notes": "Notene i tabben",
+  "Both": "Begge",
+  "Count-in": "Inntelling",
+  "One bar of clicks before it plays.": "Én takt med klikk før det spiller.",
+  "Metronome": "Metronom",
+  "A click on every beat.": "Et klikk på hvert slag.",
+  "Done": "Ferdig",
+  "This device couldn't make the sound for the tab's notes, the count-in and the metronome.": "Denne enheten klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen."
  },
  "info_nb": {
   "CFBundleDisplayName": "Fretscribe",

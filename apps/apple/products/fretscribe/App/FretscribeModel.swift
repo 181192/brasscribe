@@ -100,7 +100,9 @@ final class FretscribeModel: PlayHost {
         instrumentStore = YourInstrumentStore(defaults)
         instrument = YourInstrumentStore(defaults).load()
         let support = URL.applicationSupportDirectory.appending(path: "Fretscribe", directoryHint: .isDirectory)
-        practice = PracticeModel(recordings: support.appending(path: "Recordings"), places: support.appending(path: "Practice"))
+        // An iPhone's sound is set for playing before practice plays: the silent switch and a locked phone do not mute it.
+        practice = PracticeModel(recordings: support.appending(path: "Recordings"), places: support.appending(path: "Practice"),
+                                 readyToPlay: { MediaTools.configureSession(recording: false) })
         if LaunchOptions.reset { firstRunDone = LaunchOptions.skipFirstRun }
         rebuild()
     }

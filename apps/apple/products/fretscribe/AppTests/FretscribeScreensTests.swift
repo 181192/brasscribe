@@ -140,6 +140,10 @@ import TranscriptionKit
             nodes.contains { $0.label.hasPrefix("Bass line.") } ? nil : "the engraved tab"
         }) { TabScreen(song: bass) }
         try await window("problem", model: full) { ProblemView(problem: .sheetMusic) }
+        // The tab's sound is made off the main thread once the tab is open: the sheet is shown with it made.
+        for _ in 0..<500 where full.practice.tabSoundLoading { try await Task.sleep(for: .milliseconds(10)) }
+        #expect(!full.practice.tabSoundLoading)
+        try await sheet("sound", model: full) { SoundSheet(practice: full.practice, canFetch: true, onFetch: {}) {} }
 
         try await sheet("settings", model: full) { SettingsView() }
         try await sheet("first-run", model: Self.model()) { FirstRunView() }

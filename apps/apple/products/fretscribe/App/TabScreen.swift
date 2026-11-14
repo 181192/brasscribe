@@ -32,7 +32,6 @@ struct TabScreen: View {
     @Environment(FretscribeModel.self) private var model
     @Environment(\.self) private var environment
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .body) private var bodySize: CGFloat = 17
 
     @State private var holder = TabPageHolder()
@@ -61,7 +60,8 @@ struct TabScreen: View {
 
     private var page: TabPage { holder.page }
     private var practice: PracticeModel { model.practice }
-    private var canPlay: Bool { clock != nil && practice.recording == .here }
+    /// The recording plays, or the tab's own sound does when the recording is not on the device.
+    private var canPlay: Bool { clock != nil && practice.canPlay }
     private var inFocus: Bool { focus.on && (sheet?.index.bars ?? 0) > 0 }
     private var assistive: Bool { AccessibilityNotifier.screenReaderRunning }
     private var palette: TabPalette { TabColours.palette(in: environment) }
@@ -100,7 +100,6 @@ struct TabScreen: View {
                 setIdle(playing: false)
             }
             .onChange(of: told) { practice.endSlowly() }
-            .onChange(of: scenePhase) { _, phase in if phase == .background { practice.pause() } }
             .onChange(of: practice.playing) { _, playing in setIdle(playing: playing) }
             .onChange(of: inFocus) { _, on in
                 AccessibilityNotifier.announce(on ? String(localized: "Full screen") : String(localized: "Left full screen"))
@@ -162,7 +161,10 @@ struct TabScreen: View {
             clock = TabClock.of(read.index, tab: read.data, saved: nil)
         }
         practice.open(song: song.id.uuidString, job: song.jobID, clock: clock, inHand: song.recording,
-                      songs: Set(model.local.compactMap(\.jobID)))
+                      songs: Set(model.local.compactMap(\.jobID)), tab: sheet.map { read in
+                          TabSoundSource(index: read.index, program: EngineTabSoundPlayer.program(
+                              family: read.preset?.kind.rawValue, lowest: read.index.pieces.map(\.pitch).min()))
+                      })
     }
 
     private func fetch() {
@@ -314,6 +316,12 @@ struct TabScreen: View {
         .onKeyPress(.rightArrow) {
             guard canPlay else { return .ignored }
             practice.step(1)
+            return .handled
+        }
+        // C and M turn the count-in and the metronome on and off.
+        .onKeyPress(characters: CharacterSet(charactersIn: "cCmM")) { press in
+            guard canPlay, practice.tabSound, press.modifiers.subtracting(.shift).isEmpty else { return .ignored }
+            if press.characters.lowercased() == "c" { practice.countIn(!practice.countIn) } else { practice.metronome(!practice.metronome) }
             return .handled
         }
         .task(id: EngraveKey(scale: scale, palette: palette, ready: width > 0)) { await engrave(sheet) }
