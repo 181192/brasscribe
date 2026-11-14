@@ -124,6 +124,7 @@ fun TranscribeScreen(vm: PlayViewModel) {
     val status by vm.status.collectAsState()
     val s by vm.transcribe.collectAsState()
     val source by vm.source.collectAsState()
+    val pagesInHand by vm.pages.collectAsState()
     val c = ScribeTheme.colors
     var confirmCancel by remember { mutableStateOf(false) }
     val percent = (s.fraction * 100).toInt()
@@ -216,7 +217,15 @@ fun TranscribeScreen(vm: PlayViewModel) {
         AlertDialog(
             onDismissRequest = { confirmCancel = false },
             title = { Text(stringResource(R.string.transcribe_cancel_title)) },
-            text = { Text(stringResource(if (vm.container.product.keepsRecordings) R.string.transcribe_cancel_text_kept else R.string.transcribe_cancel_text)) },
+            text = {
+                // Printed music has no recording to keep: its pages stay in hand, on their screen.
+                val pages = source?.kind == no.kalli.scribe.play.SourceKind.PAGES && pagesInHand.isNotEmpty()
+                Text(stringResource(when {
+                    pages -> R.string.transcribe_cancel_text_pages
+                    vm.container.product.keepsRecordings -> R.string.transcribe_cancel_text_kept
+                    else -> R.string.transcribe_cancel_text
+                }))
+            },
             confirmButton = { PlainButton(stringResource(R.string.transcribe_cancel_confirm), { confirmCancel = false; vm.cancelTranscription(); vm.back() }) },
             dismissButton = { PlainButton(stringResource(R.string.transcribe_cancel_keep), { confirmCancel = false }) },
         )

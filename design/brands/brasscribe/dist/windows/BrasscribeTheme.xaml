@@ -370,6 +370,7 @@
     <x:String x:Key="BcIconZoomOut">&#xE71F;</x:String>
     <x:String x:Key="BcIconTranspose">&#xE8CB;</x:String>
     <x:String x:Key="BcIconVideo">&#xE714;</x:String>
+    <x:String x:Key="BcIconTakePhoto">&#xE722;</x:String>
     <x:String x:Key="BcIconPictureInPicture">&#xE93A;</x:String>
     <x:String x:Key="BcIconComputer">&#xE977;</x:String>
     <x:String x:Key="BcIconSettings">&#xE713;</x:String>

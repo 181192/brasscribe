@@ -28,7 +28,10 @@ class DirectoryFixtureSource(private val dir: File) : FixtureSource {
  * .nb.txt), and tab.pdf and tab.mid when present): every job walks the stages of its
  * profile with timed progress events and then serves those files. A folder with a profiles.json (a list of
  * profile ids) plays a computer that has only those: an older one, from before the tab profile. (The file is
- * read each time the profiles are asked for, so a source may take its time over it, or fail.) Tests only: the JVM tests replay
+ * read each time the profiles are asked for, so a source may take its time over it, or fail.) A job made from pages of
+ * printed music serves the same files: the pages are checked to be pictures or PDFs, and not read. A folder with a
+ * job-error.txt plays a job that fails with those words, and one with a no-reader file a computer without the reader
+ * of printed music. Tests only: the JVM tests replay
  * data/golden and the tab fixtures of apps/fixtures (bass-line, guitar-line, ukulele-line), the instrumented tests apps/fixtures/old-hundredth.
  */
 class FixtureEngineApi(
@@ -59,13 +62,16 @@ class FixtureEngineApi(
     override suspend fun pollPairingRequest(requestId: String) = PairRequestResult("approved", "fixture-token", "fixture-device", SERVER_ID, SERVER_NAME)
 
     override suspend fun profiles(): List<ProfileInfo> = known().map {
-        ProfileInfo(it.id, it.target.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it))
+        ProfileInfo(it.id, it.target.id, it.id, "Fixture output", it == Profile.ORCHESTRA_WITH_SOLOIST, stagesOf(it),
+            input = if (it.readsPages) Profile.INPUT_PAGES else "audio")
     }
 
     /** The profiles this computer has: all of them, or the ones the fixture's profiles.json lists. */
     private fun known(): List<Profile> {
         val listed = source.read(PROFILES_FILE)?.let { no.kalli.scribe.model.BrasscribeJson.decodeFromString(ListSerializer(String.serializer()), String(it)) }
-        return Profile.entries.filter { listed == null || it.id in listed }
+        // As the engine: the profiles that read pages are offered only where their reader is installed.
+        val reader = source.read(NO_READER_FILE) == null
+        return Profile.entries.filter { (listed == null || it.id in listed) && (reader || !it.readsPages) }
     }
 
     // Hashes the stream in chunks, as the engine does, so a fixture upload holds no more than a buffer.
@@ -95,6 +101,9 @@ class FixtureEngineApi(
         if (!profile.writesTab && request.tabOptionsNamed()) throw EngineException(422, "only the tab profile takes the tab options", Refusal.INVALID_OPTIONS.code)
         // As the engine: the older id is for a bass only, and an instrument takes its own tunings.
         val instrument = request.instrument ?: if (profile == Profile.BASS_TAB) FrettedInstrument.BASS_4 else FrettedInstrument.GUITAR_6
+        // As the engine: a page is not a recording, so what is asked about one is refused.
+        if (profile == Profile.SHEET_TAB && (request.recording != null || request.chords != null))
+            throw EngineException(422, "recording, chords: the ${profile.id} profile reads a page, not a recording", Refusal.INVALID_OPTIONS.code)
         if (profile.writesTab && (instrument.id == null || (profile == Profile.BASS_TAB && !instrument.isBass) ||
                 (request.tuning != null && request.tuning !in instrument.tunings) || (instrument.isBass && request.chords == TabChords.COMPLETED)))
             throw EngineException(422, "not an instrument, a tuning or a chords choice of the ${profile.id} profile", Refusal.INVALID_OPTIONS.code)
@@ -108,6 +117,44 @@ class FixtureEngineApi(
     override suspend fun createJobFromUpload(source: UploadSource, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress,
                                              tab: TabOptions?): Job =
         createJob(JobCreate(uploadAudio(source, onProgress).audioId, profile.id, renderAudio, title = title).withTab(tab ?: TabOptions()))
+
+    /**
+     * As the engine: a computer from before the profiles that read pages has no such address (404), and one without
+     * the reader of printed music says so (503); a file that is neither a picture nor a PDF is refused, by how it
+     * starts, and one over the engine's size too; the pages are kept as one upload. What is on the
+     * pages is not read: the job serves the fixture's files, as every job does.
+     */
+    override suspend fun createJobFromPages(pages: List<UploadSource>, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress,
+                                            tab: TabOptions?): Job {
+        if (source.read(NO_READER_FILE) != null) throw EngineException(503, "this computer has no reader of printed music installed", InputRefusal.READER_MISSING)
+        if (runCatching { known() }.getOrDefault(Profile.entries).none { it.readsPages }) throw EngineException(404, "v1/jobs/pages: 404 Not Found")
+        if (pages.isEmpty() || pages.size > EngineApi.MAX_PAGES) throw EngineException(422, "1 to ${EngineApi.MAX_PAGES} pages, not ${pages.size}")
+        val total = pages.sumOf { it.size }
+        var before = 0L
+        val sent = pages.map { page ->
+            if (!page.open().use(::startsAsAPage)) throw EngineException(415, "${page.filename} is not a picture or a PDF", InputRefusal.NOT_A_PAGE)
+            if (page.size > EngineApi.MAX_PAGE_BYTES) throw EngineException(413, "${page.filename} is larger than a page can be", InputRefusal.PAGE_TOO_LARGE)
+            uploadAudio(page) { n, _ -> onProgress(before + n, total) }.also { before += page.size }
+        }
+        if (!profile.readsPages) throw EngineException(415, "the ${profile.id} profile reads a recording", InputRefusal.WRONG_INPUT)
+        return createJob(JobCreate(sent.first().audioId, profile.id, renderAudio, title = title).withTab(tab ?: TabOptions()))
+    }
+
+    /** A PDF, or a PNG, JPEG or WebP picture, by its first bytes (the engine's pages.py). */
+    private fun startsAsAPage(input: java.io.InputStream): Boolean {
+        val bytes = ByteArray(12)
+        var filled = 0
+        while (filled < bytes.size) {
+            val n = input.read(bytes, filled, bytes.size - filled)
+            if (n < 0) break
+            filled += n
+        }
+        val head = bytes.copyOf(filled)
+        fun starts(vararg bytes: Int) = head.size >= bytes.size && bytes.indices.all { head[it] == bytes[it].toByte() }
+        val text = String(head, Charsets.ISO_8859_1)
+        return text.startsWith("%PDF-") || starts(0x89, 0x50, 0x4E, 0x47) || starts(0xFF, 0xD8, 0xFF) ||
+            (text.startsWith("RIFF") && text.drop(8).startsWith("WEBP"))
+    }
 
     private fun JobCreate.tabOptionsNamed() = listOf(instrument, tuning, capo, style, recording, octave, layout, chords).any { it != null }
 
@@ -132,6 +179,13 @@ class FixtureEngineApi(
         jobs[jobId] = job.copy(status = JobStatus.RUNNING, started = now())
         send(JobEvent(id++, "job", run = jobId, time = now(), status = "running"))
         for ((i, stage) in stages.withIndex()) {
+            // A fixture with a [JOB_ERROR_FILE] plays a job that fails in its first stage, with those words.
+            source.read(JOB_ERROR_FILE)?.let { said ->
+                val error = "$stage: ${String(said).trim()}"
+                jobs[jobId] = job(jobId).copy(status = JobStatus.FAILED, finished = now(), error = error)
+                send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "failed", error = error))
+                send(JobEvent(id, "job", run = jobId, time = now(), status = "failed", error = error)); return@flow
+            }
             if (jobId in cancelled) {
                 jobs[jobId] = job(jobId).copy(status = JobStatus.CANCELLED, finished = now())
                 send(JobEvent(id++, "job", run = jobId, time = now(), status = "cancelled")); return@flow
@@ -227,6 +281,10 @@ class FixtureEngineApi(
         const val INPUT_FILE = "input.wav"
         /** A fixture file that lists the profile ids the computer has, when it has not all of them. */
         const val PROFILES_FILE = "profiles.json"
+        /** A fixture file whose presence plays a computer without the reader of printed music. */
+        const val NO_READER_FILE = "no-reader"
+        /** A fixture file that holds the words a job fails with (after its stage's name), when it is to fail. */
+        const val JOB_ERROR_FILE = "job-error.txt"
         val OUTPUTS = listOf("composition.json", "brass-band.musicxml", "brass-band.pdf", "brass-band.mp3", "brass-band.brf")
         /** What a tab job leaves, in the engine's order; the PDF and the MIDI only on a computer with MuseScore. */
         val TAB_OUTPUTS = listOf(
@@ -265,6 +323,8 @@ class FixtureEngineApi(
                 listOf("beats") + (if (wholeRecording) emptyList() else listOf("stems")) +
                     listOf("transcribe.$kind.basic-pitch", "transcribe.$kind.swift-f0", "notes", "arrange", "export")
             }
+            Profile.SHEET -> listOf("read", "arrange", "export")
+            Profile.SHEET_TAB -> listOf("read", "notes", "arrange", "export")
             Profile.SOLO -> listOf("beats", "transcribe.mix.swift-f0", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
             Profile.BRASS_BAND -> listOf("beats", "transcribe.mix.muscriptor", "transcribe.mix.basic-pitch", "arrange", "export")
             Profile.POP_ROCK -> listOf("beats", "stems") + listOf("vocals", "other", "guitar", "piano").map { "transcribe.$it.muscriptor" } +

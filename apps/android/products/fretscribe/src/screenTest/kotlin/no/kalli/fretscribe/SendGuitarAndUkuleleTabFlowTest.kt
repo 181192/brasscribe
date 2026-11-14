@@ -559,7 +559,8 @@ class SendGuitarAndUkuleleTabFlowTest : ScreenTest() {
         // Nothing chosen yet: the line and the button both say so.
         rule.onNodeWithTag("fs-what-missing").assert(hasText("Choose one to continue."))
         assertEquals("Choose one to continue.", continueSays())
-        assertEquals(setOf("tab", "bass-tab"), ComputerProfiles.listed!!.filter { it.contains("tab") }.toSet())
+        // (The fixture computer has every profile of this app: the tab from a recording under both its ids, and the one from pages.)
+        assertEquals(setOf("tab", "bass-tab", "sheet-tab"), ComputerProfiles.listed!!.filter { it.contains("tab") }.toSet())
         card("instrument").performClick()
         rule.onNodeWithTag("fs-what-continue").assertIsEnabled()
         assertNull(continueSays())

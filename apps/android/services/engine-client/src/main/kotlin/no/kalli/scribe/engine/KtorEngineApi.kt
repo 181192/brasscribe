@@ -239,6 +239,19 @@ class KtorEngineApi(
             tab?.formFields()?.forEach { (name, value) -> append(name, value) }
         }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: source.size) } }.ok().body()
 
+    override suspend fun createJobFromPages(pages: List<UploadSource>, profile: Profile, title: String?, renderAudio: Boolean, onProgress: UploadProgress,
+                                            tab: TabOptions?): Job {
+        val size = pages.sumOf { it.size }
+        return http.submitFormWithBinaryData("v1/jobs/pages", formData {
+            // One field, repeated: the engine reads the pages in the order they are sent.
+            pages.forEach { appendFile(it, "files") }
+            append("profile", profile.id)
+            append("render_audio", renderAudio.toString())
+            title?.let { append("title", it) }
+            tab?.formFields()?.forEach { (name, value) -> append(name, value) }
+        }) { auth(); onUpload { sent, total -> onProgress(sent, total ?: size) } }.ok().body()
+    }
+
     override suspend fun job(jobId: String): Job = http.get("v1/jobs/$jobId") { auth() }.ok().body()
     override suspend fun jobs(): List<Job> = http.get("v1/jobs") { auth() }.ok().body()
     override suspend fun cancel(jobId: String): Job = http.delete("v1/jobs/$jobId") { auth() }.ok().body()
@@ -347,8 +360,8 @@ class KtorEngineApi(
      * the HTTP engine writes it straight from the file, a buffer at a time. The stream is opened
      * when the body is written (again on a retry), never read into memory.
      */
-    private fun io.ktor.client.request.forms.FormBuilder.appendFile(source: UploadSource) {
-        append("file", ChannelProvider(source.size) { source.open().toByteReadChannel() }, Headers.build {
+    private fun io.ktor.client.request.forms.FormBuilder.appendFile(source: UploadSource, field: String = "file") {
+        append(field, ChannelProvider(source.size) { source.open().toByteReadChannel() }, Headers.build {
             append(HttpHeaders.ContentType, "application/octet-stream")
             append(HttpHeaders.ContentDisposition, "filename=\"${source.filename.replace("\"", "")}\"")
         })

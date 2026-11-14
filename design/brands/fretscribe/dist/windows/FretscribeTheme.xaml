@@ -341,6 +341,7 @@
     <x:String x:Key="FsIconZoomOut">&#xE71F;</x:String>
     <x:String x:Key="FsIconTranspose">&#xE8CB;</x:String>
     <x:String x:Key="FsIconVideo">&#xE714;</x:String>
+    <x:String x:Key="FsIconTakePhoto">&#xE722;</x:String>
     <x:String x:Key="FsIconPictureInPicture">&#xE93A;</x:String>
     <x:String x:Key="FsIconComputer">&#xE977;</x:String>
     <x:String x:Key="FsIconSettings">&#xE713;</x:String>

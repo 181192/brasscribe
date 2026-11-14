@@ -121,7 +121,8 @@ fun CheckTheSongScreen(vm: PlayViewModel) {
     fun writeAgain(change: Change, made: Heard.Ready) {
         val options = change.options(SongCheck.optionsOf(made.tab, made.stages))
         SongAnswers.set(source, SongAnswer(options.recording, again = options))
-        vm.chooseProfile(Profile.TAB)
+        // A tab read from pages is written again from those pages, under its own profile.
+        vm.chooseProfile(vm.result.value?.profile?.takeIf { it.readsPages } ?: Profile.TAB)
         // Writing down the notes takes this screen's place, and it comes back when they are written.
         vm.back()
         vm.startTranscription()

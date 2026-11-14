@@ -15,6 +15,7 @@ import no.kalli.scribe.play.ui.ExportScreen
 import no.kalli.scribe.play.ui.FirstRunScreen
 import no.kalli.scribe.play.ui.HelpScreen
 import no.kalli.scribe.play.ui.HomeScreen
+import no.kalli.scribe.play.ui.PagesScreen
 import no.kalli.scribe.play.ui.ProblemScreen
 import no.kalli.scribe.play.ui.RecordScreen
 import no.kalli.scribe.play.ui.SettingsScreen
@@ -62,8 +63,8 @@ object Fretscribe : Product {
     override val name = "Fretscribe"
 
     /**
-     * Home has no Open a tab: a MusicXML file opened from Home would show on Brasscribe's score screen, not in the tab
-     * view. It comes back once an imported tab opens there.
+     * Home's Open sheet music offers no score file: a MusicXML file opened from Home would show on Brasscribe's score
+     * screen, not in the tab view. It comes back once an imported tab opens there.
      */
     override val opensScores = false
     override val musicStand = false
@@ -130,6 +131,7 @@ object Fretscribe : Product {
             Screen.HOME -> HomeScreen(vm)
             Screen.RECORD -> RecordScreen(vm)
             Screen.PROFILE -> WhatIsThisScreen(vm)
+            Screen.PAGES -> PagesScreen(vm)
             Screen.TRANSCRIBE -> TranscribeScreen(vm)
             Screen.REVIEW, Screen.OUTPUT -> CheckTheSongScreen(vm)
             Screen.SCORE -> TabScreen(vm)
@@ -169,9 +171,16 @@ object Fretscribe : Product {
      * The job as it is sent to the computer: a tab takes the player's instrument and the answers for this song,
      * under the profile id the computer has for it (a computer from before the tab profile still takes a bass).
      */
-    override fun job(vm: PlayViewModel, request: JobCreate): JobCreate =
-        if (!Profile.writesTab(request.profile)) request
-        else tabJob(request, tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswers.of(vm.source.value)), ComputerProfiles.listed)
+    override fun job(vm: PlayViewModel, request: JobCreate): JobCreate {
+        if (!Profile.writesTab(request.profile)) return request
+        val options = tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswers.of(vm.source.value))
+        // A tab read from pages and written again keeps its own profile, on the pages the computer holds.
+        return if (Profile.of(request.profile)?.readsPages == true) pagesJob(request, options) else tabJob(request, options, ComputerProfiles.listed)
+    }
+
+    /** Printed music is written as a tab for the player's instrument, as a recording is: its tuning and what the player reads. */
+    override fun pagesOptions(vm: PlayViewModel): no.kalli.scribe.engine.TabOptions =
+        pagesOptions(tabOptions(yourInstrumentStore(vm.getApplication()).load(), SongAnswer()))
 
     /**
      * The recording as the computer already holds it, when Check the song has the song written down again:

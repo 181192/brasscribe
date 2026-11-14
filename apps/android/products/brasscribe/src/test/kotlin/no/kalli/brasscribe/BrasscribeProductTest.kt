@@ -25,8 +25,11 @@ class BrasscribeProductTest {
             assertTrue(it.id, Brasscribe.arranges(it))
         }
         // A tab is Fretscribe's, whichever instrument it is for: also a bass tab an older app made.
-        val tabs = listOf(Profile.TAB, Profile.BASS_TAB)
-        assertEquals(Profile.entries.toSet(), (band + tabs).toSet())
+        val tabs = listOf(Profile.TAB, Profile.BASS_TAB, Profile.SHEET_TAB)
+        // Printed music read from pages is this app's score, and is written as it stands: there is nothing to arrange.
+        assertEquals(Profile.entries.toSet(), (band + tabs + Profile.SHEET).toSet())
+        assertFalse(Brasscribe.arranges(Profile.SHEET))
+        assertEquals(Target.BRASS, Profile.SHEET.target)
         tabs.forEach {
             // No band options and no Check the notes for it.
             assertFalse(it.id, Brasscribe.arranges(it))
@@ -122,9 +125,17 @@ class BrasscribeProductTest {
 
     @Test
     fun aTranscriptionIsFollowedByCheckTheNotes() {
-        Profile.entries.forEach {
+        Profile.entries.filter { !it.readsPages }.forEach {
             assertEquals(it.id, Screen.REVIEW, Brasscribe.afterTranscription(TranscriptionResult(null, "<score-partwise/>", it, onDevice = false)))
         }
+    }
+
+    @Test
+    fun printedMusicReadFromPagesOpensOnTheScore() {
+        // Nothing was heard and nothing is arranged: no Check the notes, and no question about the band.
+        val read = TranscriptionResult(null, "<score-partwise/>", Profile.SHEET, onDevice = false, jobId = "j")
+        assertEquals(Screen.SCORE, Brasscribe.afterTranscription(read))
+        assertEquals(Profile.SHEET, Profile.pagesOf(Brasscribe.target))
     }
 
     @Test

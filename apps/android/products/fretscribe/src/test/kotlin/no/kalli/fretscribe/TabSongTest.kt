@@ -25,6 +25,7 @@ import no.kalli.scribe.engine.Recording
 import no.kalli.scribe.engine.ReferencePitch
 import no.kalli.scribe.engine.Refusal
 import no.kalli.scribe.engine.Tab
+import no.kalli.scribe.engine.TabChords
 import no.kalli.scribe.engine.TabLayout
 import no.kalli.scribe.engine.TabOptions
 import no.kalli.scribe.engine.Target
@@ -219,6 +220,25 @@ class TabSongTest {
         assertEquals(Octave.AUTO, job.octave)
         assertEquals(TabLayout.TAB, job.layout)
         assertNull(job.style)
+    }
+
+    @Test
+    fun printedMusicIsWrittenForThePlayersInstrumentWithNothingAboutARecording() {
+        // What is this? is not asked of a page: the instrument, its tuning and what the player reads go, and no more.
+        val mine = YourInstrument(FrettedInstrument.GUITAR_6, tuning = "drop-d")
+        val options = pagesOptions(tabOptions(mine, SongAnswer()))
+        assertEquals(TabOptions(FrettedInstrument.GUITAR_6, "drop-d", 0, octave = Octave.AUTO, layout = TabLayout.TAB), options)
+        assertEquals(Profile.SHEET_TAB, Profile.pagesOf(Fretscribe.target))
+        // Written again from Check the song (a capo, say): its own profile on the pages the computer holds, and what
+        // the tab's data says of a recording is not sent, as the computer refuses it for a page.
+        val again = tabOptions(mine, SongAnswer(Recording.INSTRUMENT, again = options.copy(capo = 2, recording = Recording.INSTRUMENT, chords = TabChords.HEARD)))
+        val job = pagesJob(JobCreate("pages-1", Profile.SHEET_TAB.id, title = "Hymn", seat = "2nd-cornet", reads = "treble", lead = "seat"), again)
+        assertEquals("sheet-tab", job.profile)
+        assertEquals("pages-1", job.audioId)
+        assertEquals(listOf(null, null, null), listOf(job.seat, job.reads, job.lead))
+        assertEquals(listOf<Any?>(FrettedInstrument.GUITAR_6, "drop-d", 2, null, null), listOf(job.instrument, job.tuning, job.capo, job.recording, job.chords))
+        // It is a tab like any other after that: Check the song, then the tab.
+        assertEquals(Screen.OUTPUT, Fretscribe.afterTranscription(TranscriptionResult(null, "<score-partwise/>", Profile.SHEET_TAB, onDevice = false)))
     }
 
     @Test

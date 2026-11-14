@@ -52,6 +52,10 @@ private val COPY = mapOf(
     Problem.NO_NOTES to ProblemCopy(R.string.problem_no_notes_title, R.string.problem_no_notes_body, emptyList(), null),
     Problem.SHEET_MUSIC to ProblemCopy(R.string.problem_sheet_music_title, R.string.problem_sheet_music_body, emptyList(), null),
     Problem.OPEN_FAILED to ProblemCopy(R.string.problem_open_title, R.string.problem_open_body, emptyList(), null),
+    Problem.NOT_A_PAGE to ProblemCopy(R.string.problem_not_a_page_title, R.string.problem_not_a_page_body, emptyList(), null),
+    Problem.NO_NOTES_ON_PAGE to ProblemCopy(R.string.problem_no_notes_on_page_title, R.string.problem_no_notes_on_page_body,
+        listOf(R.string.problem_no_notes_on_page_picture, R.string.problem_no_notes_on_page_kind), R.string.problem_pages_kept),
+    Problem.PAGES_FAILED to ProblemCopy(R.string.problem_pages_title, R.string.problem_pages_body, emptyList(), R.string.problem_pages_kept),
 )
 
 /**
@@ -67,6 +71,9 @@ fun ProblemScreen(vm: PlayViewModel) {
     val c = ScribeTheme.colors
     val pickFile = rememberFilePicker(vm)
     val recorder = rememberRecorder(vm)
+    val pickPages = rememberPagePicker(vm)
+    // Printed music that was not read: its pages stay in hand, and their screen is the way back to them.
+    val pages by vm.pages.collectAsState()
     var details by rememberSaveable { mutableStateOf(false) }
     // A take too long for a draft: the computer is the way forward, as soon as it is there. Back goes to
     // What is this?, where the recording still is.
@@ -125,10 +132,23 @@ fun ProblemScreen(vm: PlayViewModel) {
                     PrimaryButton(stringResource(R.string.problem_import_instead), { pickFile.launch(AUDIO_TYPES) }, primary, icon = DesignR.drawable.ic_bc_import_file)
                     SecondaryButton(stringResource(R.string.home_record_mic), { vm.home(); recorder.startMicrophone() }, icon = DesignR.drawable.ic_bc_record_mic)
                 }
-                // Nothing was wrong with the file: the ways forward are the two Home starts with.
+                // The pages are still in hand: reading them again is the likely fix, and their screen the way to change them.
+                Problem.PAGES_FAILED -> {
+                    PrimaryButton(stringResource(R.string.retry), vm::retryTranscription, primary, icon = DesignR.drawable.ic_bc_retry)
+                    if (pages.isNotEmpty()) SecondaryButton(stringResource(R.string.problem_pages_change), vm::showPages)
+                    else SecondaryButton(stringResource(R.string.back_home), vm::home)
+                }
+                // Reading the same pages again finds the same: other pages are the way forward.
+                Problem.NOT_A_PAGE, Problem.NO_NOTES_ON_PAGE -> {
+                    if (pages.isNotEmpty()) PrimaryButton(stringResource(R.string.problem_pages_change), vm::showPages, primary)
+                    else PrimaryButton(stringResource(R.string.pages_choose), pickPages.choose, primary, icon = DesignR.drawable.ic_bc_import_file)
+                    SecondaryButton(stringResource(R.string.back_home), vm::home)
+                }
+                // Nothing was wrong with the file: its notes can still become a tab from a picture or a PDF of them, and a
+                // recording is the other way in.
                 Problem.SHEET_MUSIC -> {
-                    PrimaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, primary, icon = DesignR.drawable.ic_bc_import_file)
-                    SecondaryButton(stringResource(R.string.home_record_mic), { vm.home(); recorder.startMicrophone() }, icon = DesignR.drawable.ic_bc_record_mic)
+                    PrimaryButton(stringResource(R.string.pages_choose), pickPages.choose, primary, icon = DesignR.drawable.ic_bc_import_file)
+                    SecondaryButton(stringResource(R.string.home_import), { pickFile.launch(AUDIO_TYPES) }, icon = DesignR.drawable.ic_bc_import_file)
                 }
                 else -> {
                     PrimaryButton(stringResource(R.string.problem_choose_another), { pickFile.launch(AUDIO_TYPES) }, primary, icon = DesignR.drawable.ic_bc_import_file)
@@ -170,6 +190,7 @@ fun ProblemScreen(vm: PlayViewModel) {
         val note = when (copy.note) {
             R.string.problem_score_kept -> if (inYourScores) R.string.problem_score_kept_scores else R.string.problem_score_kept.takeIf { recording != null }
             R.string.draft_too_long_kept -> if (inYourScores) R.string.draft_too_long_kept_scores else R.string.draft_too_long_kept
+            R.string.problem_pages_kept -> R.string.problem_pages_kept.takeIf { pages.isNotEmpty() }
             else -> copy.note
         }
         note?.let { InfoNote(stringResource(it)) }

@@ -35,9 +35,11 @@ class TabProfileTest {
 
     @Test
     fun aTabJobIsOfEitherProfileIdAndABandJobIsNot() {
-        assertEquals(listOf(Profile.TAB, Profile.BASS_TAB), Profile.entries.filter { it.writesTab })
-        assertEquals(listOf(Profile.TAB, Profile.BASS_TAB), Profile.entries.filter { it.target == Target.FRETTED })
-        assertEquals(listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK), Profile.entries.filter { it.target == Target.BRASS })
+        // (The two that read pages are PagesJobTest's.)
+        assertEquals(listOf(Profile.TAB, Profile.BASS_TAB), Profile.entries.filter { it.writesTab && !it.readsPages })
+        assertEquals(listOf(Profile.TAB, Profile.BASS_TAB), Profile.entries.filter { it.target == Target.FRETTED && !it.readsPages })
+        assertEquals(listOf(Profile.SOLO, Profile.BRASS_BAND, Profile.ORCHESTRA_WITH_SOLOIST, Profile.POP_ROCK),
+            Profile.entries.filter { it.target == Target.BRASS && !it.readsPages })
         assertTrue(Profile.writesTab("tab") && Profile.writesTab("bass-tab"))
         listOf("solo", "brass-band", "orchestra-with-soloist", "pop-rock", "tabs", "", "a-newer-profile").forEach { assertFalse(it, Profile.writesTab(it)) }
         assertEquals("tab", JobCreate.tab("a1").profile)

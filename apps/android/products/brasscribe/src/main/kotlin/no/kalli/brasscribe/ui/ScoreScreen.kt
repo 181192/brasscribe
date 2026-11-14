@@ -240,7 +240,8 @@ fun ScoreScreen(vm: PlayViewModel) {
     val myPart = your.index
     // Asked of the core off the main thread: a full band's Composition takes a moment to encode and read.
     val sources by androidx.compose.runtime.produceState(emptyMap<String, no.kalli.scribe.model.PartSource>(), r) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { vm.partSources(r) }
+        // A score read from pages has no recording behind any part: nothing says where a part came from.
+        value = if (r.profile.readsPages) emptyMap() else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { vm.partSources(r) }
     }
     val stateText = stringResource(if (st.playing) R.string.player_playing else R.string.player_paused)
     val summary = stringResource(R.string.score_summary, st.title.ifBlank { r.composition?.title.orEmpty() }, shownText, st.bar, st.totalBars)

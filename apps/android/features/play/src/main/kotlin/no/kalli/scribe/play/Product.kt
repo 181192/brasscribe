@@ -29,7 +29,7 @@ interface Product {
     /** Check the notes and the output choices are offered for this profile's results. */
     fun arranges(profile: Profile): Boolean
 
-    /** Home offers Open a score: a MusicXML file from elsewhere opens on the score. */
+    /** Home's Open sheet music offers a score file: a MusicXML file from elsewhere opens on the score. */
     val opensScores: Boolean
 
     /** A result can be read on the music stand: the library's rows offer to open it there. */
@@ -67,6 +67,9 @@ interface Product {
 
     /** The job as it is sent to the computer. */
     fun job(vm: PlayViewModel, request: JobCreate): JobCreate = request
+
+    /** The tab options of a job that reads pages ([Profile.readsPages]); null for a product whose pages become a score. */
+    fun pagesOptions(vm: PlayViewModel): no.kalli.scribe.engine.TabOptions? = null
 
     /** The recording as the computer already holds it, for a job that needs no upload; null sends it. */
     suspend fun audioOnComputer(vm: PlayViewModel, engine: EngineApi): String? = null

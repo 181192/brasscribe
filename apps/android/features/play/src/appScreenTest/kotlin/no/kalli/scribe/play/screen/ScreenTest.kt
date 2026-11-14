@@ -111,8 +111,10 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
             container.shownVersion = container.appVersion
             container.updateAppearance(Appearance.SYSTEM)
             vm.scores.value.forEach(vm::deleteEntry)
+            vm.pages.value.toList().forEach(vm::removePage)
             vm.home()
         }
+        PageFiles.clear()
     }
 
     /**
@@ -244,6 +246,21 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
     /** The fixture computer: the files of [folder] in apps/fixtures, each changed by [change] on the way when it answers one. */
     protected fun computer(folder: String, change: (name: String, bytes: ByteArray?) -> ByteArray? = { _, bytes -> bytes }) {
         container.fixtureSource = FixtureSource { name -> change(name, ScreenDevice.fixture("$folder/$name")) }
+    }
+
+    /**
+     * The pages' screen with [count] pages of printed music in hand (pictures made here), as if they were chosen on
+     * the phone: its picker is the phone's own, so what it hands back is given to the view model.
+     */
+    protected fun pagesInHand(count: Int) {
+        rule.runOnUiThread { vm.pages.value.toList().forEach(vm::removePage); vm.home(); vm.navigate(no.kalli.scribe.play.Screen.PAGES) }
+        if (count > 0) {
+            rule.runOnUiThread { vm.addPages((1..count).map { PageFiles.handedOver("Old Hundredth $it.png", PageFiles.picture()) }) }
+            waitUntil(20_000) { vm.pages.value.size == count && !vm.busy.value }
+        }
+        // (What was said while the pages of the screen before were cleared away is not this screen's.)
+        rule.runOnUiThread { vm.status.value = null }
+        rule.waitForIdle()
     }
 
     /** Two seconds of a low E as a WAV file: a recording to open. */

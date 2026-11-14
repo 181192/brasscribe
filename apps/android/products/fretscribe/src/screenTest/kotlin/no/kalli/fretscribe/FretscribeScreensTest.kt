@@ -197,6 +197,19 @@ class FretscribeScreensTest : ScreenCatalogue() {
         Entry("problem") { rule.runOnUiThread { vm.showProblem(Problem.FILE_UNREADABLE) } },
         Entry("problem-no-notes") { whatIsThis(); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES) } },
         Entry("problem-sheet-music") { rule.runOnUiThread { vm.showProblem(Problem.SHEET_MUSIC) } },
+        // Printed music from a picture or a PDF: its pages before they are sent, while they are read, and what can go wrong.
+        Entry("home-open") { rule.onNodeWithTag("home-open").performScrollTo().performClick(); waitForTag("open-pages", 5_000); rest() },
+        Entry("pages") { rule.runOnUiThread { container.fixtureSource = null }; pagesInHand(0) },
+        Entry("pages-in-hand") { theComputer(); pagesInHand(3) },
+        Entry("pages-without-the-computer") { rule.runOnUiThread { container.fixtureSource = null }; pagesInHand(2) },
+        Entry("pages-being-read", steady = false) {
+            theComputer(); pagesInHand(2)
+            rule.onNodeWithTag("pages-read").performClick()
+            waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
+        },
+        Entry("problem-not-a-page") { rule.runOnUiThread { vm.showProblem(Problem.NOT_A_PAGE) } },
+        Entry("problem-no-notes-on-the-page") { pagesInHand(2); rule.runOnUiThread { vm.showProblem(Problem.NO_NOTES_ON_PAGE) } },
+        Entry("problem-pages-not-read") { pagesInHand(2); rule.runOnUiThread { vm.showProblem(Problem.PAGES_FAILED, "v1/jobs/pages: 404", R.string.error_pages_not_read) } },
         Entry("problem-tab-not-opened") { rule.runOnUiThread { vm.showProblem(Problem.OPEN_FAILED, null, R.string.error_unreachable) } },
         // The computer's Bandroom is older than this app, or the app is older than it: Home's row says which to update,
         // and the pairing screen has where to get the latest Bandroom. (The phone is paired with nothing after each.)

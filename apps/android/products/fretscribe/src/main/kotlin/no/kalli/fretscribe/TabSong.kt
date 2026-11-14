@@ -141,6 +141,16 @@ fun tabProfile(kind: FrettedInstrument?, listed: Set<String>?): Profile? {
 fun tabJob(request: JobCreate, options: TabOptions, listed: Set<String>? = null): JobCreate =
     request.copy(profile = (tabProfile(options.instrument, listed) ?: Profile.TAB).id, seat = null, reads = null, lead = null).withTab(options)
 
+/**
+ * [options] for a tab read from pages (`sheet-tab`): the tab's own, without the two that are about a recording
+ * (whether it is the instrument alone, and how its chords are written), which the computer refuses for a page.
+ */
+fun pagesOptions(options: TabOptions): TabOptions = options.copy(recording = null, chords = null)
+
+/** [request] as a job that writes pages as a tab: its profile as it is, the tab options, and none of the band's. */
+fun pagesJob(request: JobCreate, options: TabOptions): JobCreate =
+    request.copy(seat = null, reads = null, lead = null).withTab(pagesOptions(options))
+
 /** One row of Check the song (design/brands/fretscribe/flows.md §7): what Fretscribe heard, as the result tells it. */
 sealed interface SongRow {
     /** The tuning the tab is written for, and the one the notes fit better when there is one; [kind]: the instrument, when it is known. */
