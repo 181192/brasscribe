@@ -252,9 +252,9 @@ fun ReviewScreen(vm: PlayViewModel) {
 
     PlayScaffold(
         title = null, onBack = vm::back,
-        // (A narrow phone has room for the arrow and Finish later, not for the score's name between them.)
+        // (A narrow phone, or larger text, has room for the arrow and Finish later, not for the score's name between them.)
         backLabel = (composition.title.ifBlank { null }?.let(PartNames::shortTitle) ?: stringResource(R.string.home))
-            .takeIf { current == null || androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 360 },
+            .takeIf { current == null || androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp / androidx.compose.ui.platform.LocalDensity.current.fontScale >= 360 },
         status = status, scroll = false,
         actions = { if (current != null) PlainButton(stringResource(R.string.review_finish_later, todo.size), { confirmLater = true }) },
         bottom = {
@@ -263,15 +263,15 @@ fun ReviewScreen(vm: PlayViewModel) {
                 // While a third of the notes carry a "?" (review 3, P1-A), a whole bar can be kept at once.
                 val restOfBar = items.filter { it.head.bar == current.bar }
                 val skipButton = @Composable { m: Modifier -> SecondaryButton(stringResource(R.string.review_skip), { advance(current.index) }, m, icon = DesignR.drawable.ic_bc_skip) }
-                if (restOfBar.size > 1) {
+                // With more notes in the bar there are three: one row where they fit (a phone on its side), and
+                // otherwise Keep over the other two.
+                if (restOfBar.size > 1) SideBySideIfTheyFit {
                     keepButton()
-                    Row(horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
-                        skipButton(Modifier.weight(1f))
-                        OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
-                            vm.markCheckedAll(voiceId, restOfBar.flatMap { g -> g.members.map { it.index } }, todo.size - restOfBar.size)
-                            picked = null
-                        }, Modifier.weight(1.4f))
-                    }
+                    skipButton(Modifier)
+                    OutlineButton(pluralStringResource(R.plurals.review_keep_bar, restOfBar.size, restOfBar.size), {
+                        vm.markCheckedAll(voiceId, restOfBar.flatMap { g -> g.members.map { it.index } }, todo.size - restOfBar.size)
+                        picked = null
+                    }, Modifier.semantics { testTag = "review-keep-bar" })
                 // Keep and Skip share a row where both fit on a line, so the note above them keeps the height.
                 } else SideBySideIfTheyFit { keepButton(); skipButton(Modifier) }
             } else PrimaryButton(stringResource(
@@ -549,34 +549,49 @@ private fun NoteCard(
     val alternative = evidence?.alternativeShift?.let { pitchLabel(evidence.pitch + it) }
     val levelSentence = if (alternative != null) stringResource(R.string.review_could_also_be, level, withArticle(alternative, lang))
         else stringResource(R.string.review_listen_side_by_side, level)
+    // What the note is, read as one; then what can be done about it.
+    val about: @Composable (Modifier) -> Unit = { m ->
+    Column(
+        m.focusRequester(focus).focusable().semantics(mergeDescendants = true) {
+            contentDescription = listOfNotNull(spoken, changed, levelSentence).joinToString(". ")
+            customActions = listOfNotNull(
+                CustomAccessibilityAction(listenLabel) { if (playing) stop() else listen(); true },
+                CustomAccessibilityAction(checkLabel) { keep(); true },
+                CustomAccessibilityAction(nextLabel) { next(); true },
+                changed?.let { CustomAccessibilityAction(undoLabel) { undo(); true } },
+            )
+        },
+        verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.review_position, position, total), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+        }
+        Box(Modifier.tagged("review-bar")) { snippet() }
+        Text(noteLine(e, lang), style = MaterialTheme.typography.titleMedium)
+        // After Save: what the note is now and what Brasscribe wrote. It keeps its "?" until Keep.
+        if (changed != null) Text(changed, style = MaterialTheme.typography.titleMedium, modifier = Modifier.tagged("note-changed"))
+        Text(levelSentence, style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+    }
+    }
+    val actions: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {
+        ListenButton(playing, listen, stop)
+        OutlineButton(stringResource(R.string.change_note), changeNote, icon = DesignR.drawable.ic_bc_transpose)
+        if (changed != null) PlainButton(undoLabel, undo, Modifier.fillMaxWidth().tagged("undo-change"))
+    }
     Surface(shape = MaterialTheme.shapes.large, color = c.surfaceRaised, border = androidx.compose.foundation.BorderStroke(1.dp, c.border)) {
-        Column(Modifier.fillMaxWidth().padding(ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
-            Column(
-                Modifier.fillMaxWidth().focusRequester(focus).focusable().semantics(mergeDescendants = true) {
-                    contentDescription = listOfNotNull(spoken, changed, levelSentence).joinToString(". ")
-                    customActions = listOfNotNull(
-                        CustomAccessibilityAction(listenLabel) { if (playing) stop() else listen(); true },
-                        CustomAccessibilityAction(checkLabel) { keep(); true },
-                        CustomAccessibilityAction(nextLabel) { next(); true },
-                        changed?.let { CustomAccessibilityAction(undoLabel) { undo(); true } },
-                    )
-                },
-                verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                    Text(stringResource(R.string.review_position, position, total), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
-                }
-                Box(Modifier.tagged("review-bar")) { snippet() }
-                Text(noteLine(e, lang), style = MaterialTheme.typography.titleMedium)
-                // After Save: what the note is now and what Brasscribe wrote. It keeps its "?" until Keep.
-                if (changed != null) Text(changed, style = MaterialTheme.typography.titleMedium, modifier = Modifier.tagged("note-changed"))
-                Text(levelSentence, style = MaterialTheme.typography.bodyLarge, color = c.textMuted)
+        // On a phone on its side the bar is narrow and the room beside it empty: Listen and Change stand there, in
+        // view with the bar, and not under it below the fold.
+        if (shortScreen()) Row(Modifier.fillMaxWidth().padding(ScribeSpace.s4), horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+                about(Modifier.fillMaxWidth())
+                if (evidence != null) EvidencePanel(evidence, pitchLabel)
             }
+            Column(Modifier.weight(0.6f), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3), content = actions)
+        } else Column(Modifier.fillMaxWidth().padding(ScribeSpace.s4), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+            about(Modifier.fillMaxWidth())
             if (evidence != null) EvidencePanel(evidence, pitchLabel)
-            ListenButton(playing, listen, stop)
-            OutlineButton(stringResource(R.string.change_note), changeNote, icon = DesignR.drawable.ic_bc_transpose)
-            if (changed != null) PlainButton(undoLabel, undo, Modifier.fillMaxWidth().tagged("undo-change"))
+            actions()
         }
     }
 }
