@@ -30,12 +30,28 @@ const quietFor = (stop) => document.addEventListener("scribe:sound", (e) => e.de
 // reaches only it, and the arrow keys move the choice.
 function segmented(group, changed) {
   const buttons = [...group.querySelectorAll("button[data-value]")];
+  // On a phone the row scrolls: the checked one is brought into it (the row moves, not the page), and a fade on a
+  // side says there is more that way.
+  const edges = () => {
+    group.classList.toggle("more-before", group.scrollLeft > 1);
+    group.classList.toggle("more-after", group.scrollLeft + group.clientWidth < group.scrollWidth - 1);
+  };
+  const reveal = (b) => {
+    const row = group.getBoundingClientRect(), box = b.getBoundingClientRect();
+    if (box.left < row.left) group.scrollLeft -= row.left - box.left + 24;
+    else if (box.right > row.right) group.scrollLeft += box.right - row.right + 24;
+    edges();
+  };
+  group.addEventListener("scroll", edges, { passive: true });
+  addEventListener("resize", edges);
+  requestAnimationFrame(edges);
   const control = {
     get value() { return buttons.find((b) => b.getAttribute("aria-checked") === "true")?.dataset.value; },
     set value(v) {
       buttons.forEach((b) => {
         b.setAttribute("aria-checked", String(b.dataset.value === v));
         b.tabIndex = b.dataset.value === v ? 0 : -1;
+        if (b.dataset.value === v) reveal(b);
       });
     },
   };
@@ -51,8 +67,7 @@ function segmented(group, changed) {
       const to = by ? buttons[(i + by + buttons.length) % buttons.length] : { Home: buttons[0], End: buttons.at(-1) }[e.key];
       if (!to) return;
       e.preventDefault();
-      to.focus();
-      to.scrollIntoView({ block: "nearest", inline: "nearest" });
+      to.focus({ preventScroll: true });
       pick(to);
     });
   });
@@ -75,9 +90,9 @@ function recording(src) {
   return {
     audio,
     play() {
-      run++;
+      const mine = ++run, from = audio.currentTime;
       context ??= new AudioContext();
-      context.resume();
+      const waking = context.state === "running" ? null : context.resume();
       if (!gain) {
         gain = context.createGain();
         context.createMediaElementSource(audio).connect(gain).connect(context.destination);
@@ -85,6 +100,15 @@ function recording(src) {
       gain.gain.cancelScheduledValues(context.currentTime);
       gain.gain.setValueAtTime(0, context.currentTime);
       ramp(gain, 1);
+      // play() is called at once, while the tap still counts as one (a phone wants that). The page's sound may be
+      // slow to wake, and the recording runs on muted meanwhile: once it is awake, it starts again from the start.
+      waking?.then(() => {
+        if (mine !== run) return;
+        audio.currentTime = from;
+        gain.gain.cancelScheduledValues(context.currentTime);
+        gain.gain.setValueAtTime(0, context.currentTime);
+        ramp(gain, 1);
+      });
       return audio.play();
     },
     pause() {

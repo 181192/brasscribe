@@ -574,9 +574,9 @@ html.js .variants:has(.variant-panel.chosen) .variant-panel:first-of-type:not(.c
   .flow-scroll .flow li { flex: 0 0 240px; scroll-snap-align: start; }
   .flow-scroll .flow .phone-frame { max-width: none; }
 }
-/* The app's mark beside its name, in the hero on a desktop. */
+/* The app's mark over its headline, in the hero on a desktop. */
 .hero h1 .app-icon { display: none; }
 @media (min-width: 900px) {
   .hero .wrap { position: relative; }
-  .hero h1 .app-icon { display: inline-block; vertical-align: middle; margin-right: var(--scribe-space-4); width: 64px; height: 64px; }
+  .hero h1 .app-icon { display: block; margin: 0 0 var(--scribe-space-4); width: 64px; height: 64px; }
 }

@@ -11,7 +11,7 @@ main { counter-reset: rehearsal; }
 main > section:has(h2) { counter-increment: rehearsal; }
 main > section h2::before {
   content: counter(rehearsal, upper-alpha) / ""; display: inline-grid; place-items: center; vertical-align: 0.35em;
-  width: 1.15em; height: 1.15em; margin-right: 0.4em; font: 700 0.55em/1 var(--scribe-font-text); font-style: normal;
+  width: 1.15em; height: 1.15em; margin-right: 0.4em; font: 400 0.62em/1 var(--scribe-font-display); font-style: normal;
   color: var(--scribe-text); border: 1.5px solid currentColor; border-radius: 2px;
 }
 main > section:nth-of-type(odd):has(h2) {

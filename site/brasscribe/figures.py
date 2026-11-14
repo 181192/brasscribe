@@ -151,11 +151,15 @@ def steps(page) -> str:
     before = [n for n in lead["notes"] if n[0] < end][-1]
     crop = (before[2] + after[2]) / 2
     written, _, _ = engraving(f'part-{lead["id"]}.svg', False, crop, named(lead, page.lang))
+    key_heard, tall_heard = shared.roll_key(page, [("listener-1", "fig.listener_1"), ("listener-2", "fig.listener_2")], keyed - 4)
+    key_placed, tall_placed = shared.roll_key(page, [("ghost", "fig.heard_here"), ("heard", "fig.written_here")]
+                                              + ([("move", "fig.moved")] if 'class="move"' in placed else [])
+                                              + ([("doubt", "fig.not_sure")] if any(n[3] for n in placed_notes if n[0] < end) else []), keyed - 4)
     stack = "".join(engraving(f'part-{p["id"]}.svg', p is not lead, crop, named(p, page.lang))[0].replace("<svg ", '<svg class="score-ink" ', 1) for p in data["parts"])
     frames = [svg(f'<path class="wave" d="{wave}"/>'),
               svg(f'<path class="wave faint" d="{wave}"/>{grid()}'),
-              svg(f'{grid(True, tall)}{axis}{listeners}{shared.roll_key(page, [("listener-1", "fig.listener_1"), ("listener-2", "fig.listener_2")], keyed - 4)}', keyed),
-              svg(f'{grid(False, tall)}{axis}{placed}{shared.roll_key(page, [("ghost", "fig.heard_here"), ("heard", "fig.written_here")], keyed - 4)}', keyed),
+              svg(f'{grid(True, tall)}{axis}{listeners}{key_heard}', tall_heard),
+              svg(f'{grid(False, tall)}{axis}{placed}{key_placed}', tall_placed),
               written.replace("<svg ", '<svg class="stage-figure score-ink" role="img" aria-label="{alt}" ', 1),
               f'<div class="stage-figure band" role="img" aria-label="{{alt}}">{stack}</div>']
     # What can be heard: the recording of these bars, the tune that was written, and every part together.
