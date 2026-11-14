@@ -102,6 +102,7 @@ line = "Gratis. Ikke i appbutikkene ennå, så første installasjon tar tre ekst
 setup = "Sett opp Bandroom"
 
 [sure]
+cards = "Hvor sikker den er, et kort for hver type musiker"
 title = "Hvor sikker <em>er den?</em>"
 lead = "<b>Rundt 9 av 10 noter den skriver, er de som ble spilt.</b>{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}} Og når den setter <b class=\"doubt-mark\">?</b> over en, har den nesten alltid grunn til det: 9 av 10 ganger trengte den noten en ekstra lytt.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
 of_first = "av 100 noter den skriver, er riktige"

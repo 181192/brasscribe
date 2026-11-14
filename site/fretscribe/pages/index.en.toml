@@ -102,6 +102,7 @@ line = "Free. Not in the app stores yet, so the first install takes three extra 
 setup = "Set up Bandroom"
 
 [sure]
+cards = "How sure it is, a card for each kind of player"
 title = "How sure <em>is it?</em>"
 lead = "<b>About 9 notes in 10 it writes are the notes that were played.</b>{{holds fretted/bass-tab/song.onset_p >= 0.85}}{{holds fretted/guitar-tab/report.solo.onset_p >= 0.85}} And when it puts a <b class=\"doubt-mark\">?</b> over one, it is nearly always right to: 9 times in 10 that note needed a second listen.{{holds fretted/bass-tab/song.doubt_precision >= 0.88}}{{holds fretted/guitar-tab/report.solo.doubt_precision >= 0.88}}"
 of_first = "of 100 notes written are right"

@@ -653,7 +653,8 @@ def tally(page, first: str = "", link: str = "") -> str:
 </article>""")
     if link:
         return "\n".join(out)
-    return '<div class="sure-grid">\n' + "\n".join(out) + "\n</div>"
+    # On a phone the cards are a row that scrolls by itself, a card at a time; the keyboard can scroll it too.
+    return (f'<div class="sure-grid" role="region" aria-label="{esc(say("sure.cards"))}" tabindex="0">\n' + "\n".join(out) + "\n</div>")
 
 
 def measured(page) -> str:

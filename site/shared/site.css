@@ -517,6 +517,13 @@ main.guide { padding-left: var(--scribe-space-6); padding-right: var(--scribe-sp
    Without the script every panel is there, one under the other, and a chip leads to its panel; with it the chips
    are tabs and one panel shows. */
 .rail { display: flex; flex-wrap: wrap; gap: var(--scribe-space-2); list-style: none; margin: var(--scribe-space-6) 0 0; padding: 0; }
+/* On a phone the six places are one row that scrolls (the chosen one is brought into it), not three rows. */
+@media (max-width: 600px) {
+  .rail { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; scroll-padding-inline: var(--scribe-space-6);
+    margin-left: calc(-1 * var(--scribe-space-6)); margin-right: calc(-1 * var(--scribe-space-6)); padding: 10px var(--scribe-space-6) 4px; }
+  .rail li { flex: none; }
+  .rail a { white-space: nowrap; }
+}
 .rail a {
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
   border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-md); background: var(--scribe-surface-raised);

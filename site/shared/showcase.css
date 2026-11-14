@@ -153,7 +153,8 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
     -webkit-mask-image: linear-gradient(90deg, var(--fade-before), #000 40px, #000 calc(100% - 40px), var(--fade-after));
     mask-image: linear-gradient(90deg, var(--fade-before), #000 40px, #000 calc(100% - 40px), var(--fade-after));
   }
-  .seg button { flex: none; white-space: nowrap; padding: 0 var(--scribe-space-3); }
+  /* Tight enough that four short choices (Standard, Drop D, Open G, DADGAD) stand whole on a 390 px phone. */
+  .seg button { flex: 1 0 auto; white-space: nowrap; padding: 0 var(--scribe-space-2); font-size: 0.9375rem; }
 }
 @media (forced-colors: active) { .seg button[aria-checked="true"] { background: Highlight; color: HighlightText; } }
 .bar-play { flex: none; min-height: 44px; }
@@ -257,6 +258,15 @@ main > section > .wrap > h2 { max-width: 20em; }
    hundred cells (filled: right; a "?" in the family's one doubt colour: not right, and marked; hollow: not right,
    no mark) and its legend with the counts as text. Pointing at a legend row lights its cells. */
 .sure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--scribe-space-6); margin-top: var(--scribe-space-8); }
+.sure-grid:focus-visible { outline: 2px solid var(--scribe-focus); outline-offset: 4px; }
+/* On a phone the cards stand side by side in a row that scrolls, a card at a time, with the next one showing at the
+   edge: the page is a card long, not three. */
+@media (max-width: 600px) {
+  .sure-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 86%; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--scribe-space-6); overscroll-behavior-x: contain; scrollbar-width: thin; gap: var(--scribe-space-4);
+    margin-left: calc(-1 * var(--scribe-space-6)); margin-right: calc(-1 * var(--scribe-space-6)); padding: 0 var(--scribe-space-6) var(--scribe-space-3); }
+  .sure-grid > .tally { scroll-snap-align: start; }
+}
 .tally { background: var(--scribe-surface-raised); color: var(--scribe-text); border: 1px solid var(--scribe-border); border-radius: var(--scribe-radius-md); padding: var(--scribe-space-6); }
 .tally h3 { margin: 0 0 2px; font-size: var(--scribe-type-headline-size); }
 .tally .where { color: var(--scribe-text-muted); font-size: var(--scribe-type-callout-size); margin: 0 0 var(--scribe-space-4); }
