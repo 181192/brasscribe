@@ -14,6 +14,8 @@ plugins {
 val repoRoot = rootProject.extra["repoRoot"] as File
 // The band SoundFonts (data/sounds/band, outside git); SCRIBE_BAND_SOUNDS_DIR points at another pack to try it.
 val bandSoundsDir = System.getenv("SCRIBE_BAND_SOUNDS_DIR")?.let(::File) ?: File(repoRoot, "data/sounds/band")
+// The on-device models (models/converted, outside git); SCRIBE_MODELS_DIR points at another folder of them to try it.
+val modelsDir = System.getenv("SCRIBE_MODELS_DIR")?.let(::File) ?: File(repoRoot, "models/converted")
 val play = project(":features:play").projectDir
 
 android {
@@ -121,19 +123,22 @@ kotlin {
 
 /*
  * Brasscribe's assets that come from outside git:
- * - models/: SwiftF0 (1.1 MB), Basic Pitch (0.26 MB) and Beat This! small (9.4 MB) ONNX from convert/ (all MIT),
- *   bundled in every build when present.
+ * - models/: SwiftF0 (1.1 MB, MIT), Basic Pitch (0.26 MB, Apache-2.0) and Beat This! small (9.4 MB, MIT) ONNX, the
+ *   pinned pack (convert/on-device-models.json) that `python3 convert/models_pack.py fetch` puts in models/converted,
+ *   with the pack's NOTICE.md (convert/on-device-models-NOTICE.md) beside them. A release build stops without them
+ *   (verifyModelAssets; -Pbrasscribe.allowNoModels to try one anyway); a debug build bundles them when present.
  * - sounds/brasscribe-band-mobile.sf2: the phone band SoundFont (apps/android/scripts/mobile_soundfont.py,
  *   VSCO 2 CE CC0, Univ. of Iowa MIS, MS Basic kit MIT), bundled in every build when present, so the band plays
  *   its own instruments without a download. Without it the app says the band sounds are missing.
  * And the band SoundFont's part map (committed in sounds/), so presets and balance match the other apps.
  */
+// The names are OnPhoneModels' MODEL_ASSET, BASIC_PITCH_ASSET and BEAT_THIS_ASSET, and the pin's.
+val onDeviceModels = mapOf("swift-f0" to "swift-f0-window.onnx", "basic-pitch" to "nmp-b1.onnx", "beat-this" to "beat-this-small0.onnx")
 val modelAssets = tasks.register<Sync>("syncModelAssets") {
     into(layout.buildDirectory.dir("generated/models"))
     into("models") {
-        from(File(repoRoot, "models/converted/swift-f0")) { include("swift-f0-window.onnx") }
-        from(File(repoRoot, "models/converted/basic-pitch")) { include("nmp-b1.onnx") }
-        from(File(repoRoot, "models/converted/beat-this")) { include("beat-this-small0.onnx") }
+        onDeviceModels.forEach { (folder, name) -> from(File(modelsDir, folder)) { include(name) } }
+        from(File(repoRoot, "convert")) { include("on-device-models-NOTICE.md"); rename { "NOTICE.md" } }
     }
     into("sounds") { from(bandSoundsDir) { include("brasscribe-band-mobile.sf2") } }
     filePermissions { user { read = true; write = true } }
@@ -144,6 +149,12 @@ val soundMap = tasks.register<Sync>("syncSoundMap") {
     filePermissions { user { read = true; write = true } }
 }
 tasks.named("preBuild") { dependsOn(modelAssets, soundMap) }
+val verifyModelAssets = tasks.register<VerifyModelAssets>("verifyModelAssets") {
+    pin.set(File(repoRoot, "convert/on-device-models.json"))
+    converted.set(modelsDir)
+    models.set(onDeviceModels.values.toList())
+    allowMissing.set(providers.gradleProperty("brasscribe.allowNoModels").isPresent)
+}
 
 androidComponents {
     onVariants { variant ->
@@ -157,6 +168,10 @@ androidComponents {
         val checked = setOf("assemble", "package", "bundle", "install").map { "$it$variantName" }.toSet() +
             "test${variantName}UnitTest"
         tasks.matching { it.name in checked }.configureEach { dependsOn(verifyNoGoogleServices) }
+        // A release carries the on-device models: its assets are not merged without them.
+        if (variant.buildType == "release") {
+            tasks.matching { it.name == "merge${variantName}Assets" }.configureEach { dependsOn(verifyModelAssets) }
+        }
     }
 }
 

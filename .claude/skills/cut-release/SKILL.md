@@ -21,6 +21,10 @@ steps are scripted in `scripts/release.sh`. Read both before starting.
    pushes the tag, which starts `.github/workflows/release.yml`.
 6. Watch it: `gh run list -w release -L 1`, then `gh run watch <id>`. When it finishes, check the
    release page lists every file the site links to (the `[[downloads]]` in `site/shared/site.toml` and in each `site/<app>/product.toml`).
+   The run's summary has the table of on-device models per file (step "On-device models in the release files" of
+   the `github` job, `.github/scripts/release-models.py`): Play for Android must show the three models and
+   `NOTICE.md` as ok. The step fails the release before publishing when an app lacks its models; fix the build,
+   never skip it. For files built by hand, run `.github/scripts/release-models.py <folder>` before publishing.
 7. If the workflow did not start from the tag, start it: `gh workflow run release.yml --ref vX.Y.Z`.
 
 Never move or delete a published tag, and never publish from a local build unless the doc's

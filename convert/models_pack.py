@@ -30,6 +30,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -44,6 +45,7 @@ PIN = Path(__file__).resolve().parent / "on-device-models.json"
 NOTICE = Path(__file__).resolve().parent / "on-device-models-NOTICE.md"  # each model's source and licence
 SUMS = "SHA256SUMS"
 ZIP = ".zip"
+GH_TIMEOUT = 600  # seconds for one `gh release download`; a stalled one is tried once more
 
 
 def load_pin() -> dict:
@@ -114,25 +116,54 @@ def gh_download(pin: dict, patterns: list[str], into: Path) -> None:
     cmd = [gh, "release", "download", pin["version"], "--repo", pin["repo"], "--dir", str(into), "--clobber"]
     for p in patterns:
         cmd += ["--pattern", p]
-    print(f"gh release download {pin['version']} ({', '.join(patterns)})", flush=True)
-    if subprocess.run(cmd).returncode != 0:
-        raise SystemExit(f"could not download the models from release {pin['version']} of {pin['repo']} "
-                         "(logged in with `gh auth login`, or GH_TOKEN set with contents: read?)")
+    for attempt in (1, 2):
+        print(f"gh release download {pin['version']} ({', '.join(patterns)})", flush=True)
+        try:
+            if subprocess.run(cmd, timeout=GH_TIMEOUT).returncode == 0:
+                return
+            why = "failed"
+        except subprocess.TimeoutExpired:
+            why = f"took longer than {GH_TIMEOUT} s"
+        print(f"the download {why}" + ("; trying once more" if attempt == 1 else ""), file=sys.stderr, flush=True)
+    raise SystemExit(f"could not download the models from release {pin['version']} of {pin['repo']} "
+                     "(logged in with `gh auth login`, or GH_TOKEN set with contents: read?)")
 
 
 def install(name: str, want: dict, data: bytes, converted: Path) -> None:
+    """Put one checked file in place. The new file or folder is written beside the target inside its folder and
+    then renamed over it, so an interrupted install leaves the old model or the new one, never half of either."""
     into = converted / want["into"]
     into.mkdir(parents=True, exist_ok=True)
     target = into / name.removesuffix(ZIP)
     if not name.endswith(ZIP):
-        target.write_bytes(data)
+        fd, tmp = tempfile.mkstemp(prefix=f".{target.name}.", dir=into)
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(data)
+            os.replace(tmp, target)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
     else:
         with zipfile.ZipFile(io.BytesIO(data)) as z:
             top = f"{target.name}/"
             if any(not m.startswith(top) or ".." in Path(m).parts for m in z.namelist()):
                 raise SystemExit(f"{name} holds files outside {target.name}; nothing installed")
-            shutil.rmtree(target, ignore_errors=True)
-            z.extractall(into)
+            staging = Path(tempfile.mkdtemp(prefix=f".{target.name}.", dir=into))
+            try:
+                z.extractall(staging)
+                old = None
+                if target.exists():
+                    old = staging / "old"
+                    os.replace(target, old)
+                try:
+                    os.replace(staging / target.name, target)
+                except BaseException:
+                    if old is not None:
+                        os.replace(old, target)
+                    raise
+            finally:
+                shutil.rmtree(staging, ignore_errors=True)
     print(f"installed {target}")
 
 

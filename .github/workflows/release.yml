@@ -107,6 +107,11 @@ jobs:
           pattern: dist-*
           merge-multiple: true
 
+      # Which on-device models each file carries; stops the release when an app lacks the ones it needs
+      # (.github/scripts/release-models.py says which those are).
+      - name: On-device models in the release files
+        run: .github/scripts/release-models.py dist
+
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
 
