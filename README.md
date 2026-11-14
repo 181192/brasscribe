@@ -81,7 +81,7 @@ Areas: `engine`, `core`, `conformance`, `studio`, `apple`, `android`, `windows`,
 `bandroom-mac`. Without areas, the ones the branch touches.
 
 The band SoundFonts are not in git; `pixi run fetch-sounds` downloads the pinned pack (needs the GitHub
-CLI, logged in). Some tests use recordings and reference output under `data/`, which is not in the
+CLI, logged in), and `python3 convert/models_pack.py fetch` the on-device models Play bundles. Some tests use recordings and reference output under `data/`, which is not in the
 repository either; without it those tests are skipped.
 
 Releases are built by CI from a tag; `scripts/release.sh X.Y.Z` prepares one ([docs/shared/dev/release.md](docs/shared/dev/release.md)). Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
