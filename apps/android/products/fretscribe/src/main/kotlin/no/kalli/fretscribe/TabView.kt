@@ -82,6 +82,17 @@ data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: Li
 
     val barsPerLine: List<Int> get() = lines.map { it.lastBar - it.firstBar + 1 }
 
+    /**
+     * The beat drawn at ([x], [y]) of the page: its bar (counted from 0) and where in the bar it starts, in alphaTab's
+     * ticks. Within [slack] pixels above and below the bar, and of the beat's own column; null where no beat is.
+     */
+    fun beatAt(x: Float, y: Float, slack: Float): Pair<Int, Int>? {
+        val bar = bars.firstOrNull { y >= it.top - slack && y <= it.bottom + slack && x >= it.left && x <= it.right } ?: return null
+        val stop = bar.stops.minByOrNull { kotlin.math.abs(x - (it.left + it.width / 2)) } ?: return null
+        if (kotlin.math.abs(x - (stop.left + stop.width / 2)) > maxOf(stop.width / 2, slack)) return null
+        return bar.bar to stop.tick
+    }
+
     /** The first bar of the line that [y] pixels down the page is in: the last line that starts at or above it. */
     fun barAt(y: Int): Int? = (lines.lastOrNull { it.top <= y + 2 } ?: lines.firstOrNull())?.firstBar
 
@@ -293,6 +304,7 @@ class TabView(
         }
         columns = marks.columns
         cursorStaff = index.markStaff
+        ghosts(s, index)
         place(s)
         tint(s)
         // alphaTab skips an engraving asked of a view that has no width yet, and does not always make it up when the
@@ -320,6 +332,30 @@ class TabView(
             empty.index = k.toDouble()
         }
     }
+
+    /**
+     * The page's ghost notes (an x for a head) are dead notes in alphaTab's score, which draws an x for their fret:
+     * alphaTab 1.8.4 does not read the head from MusicXML.
+     */
+    private fun ghosts(s: Score, index: TabIndex) {
+        val staves = s.tracks[0].staves
+        for (piece in index.pieces) {
+            val string = piece.string ?: continue
+            val fret = piece.fret ?: continue
+            if (!piece.ghost || piece.staff >= staves.length.toInt()) continue
+            val staff = staves[piece.staff]
+            if (piece.bar >= staff.bars.length.toInt()) continue
+            val strings = staff.tuning.length.toInt()
+            for (voice in staff.bars[piece.bar].voices) for (b in voice.beats) {
+                if (b.isEmpty || Math.abs(b.playbackStart - piece.onset) >= 1.0) continue
+                for (note in b.notes) if (note.isStringed && note.fret.toInt() == fret && strings - note.string.toInt() + 1 == string) note.isDead = true
+            }
+        }
+    }
+
+    /** The score alphaTab engraves, for the tests that look at its notes. */
+    @get:androidx.annotation.VisibleForTesting
+    internal val engraved: Score? get() = score
 
     /** Finds each column's beat in alphaTab's score: the same staff and measure, and the same start. */
     private fun place(s: Score) {

@@ -312,6 +312,7 @@
     <string name="fs_practice_sound_done">Ferdig</string>
     <string name="fs_sound_failed">Denne telefonen klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.</string>
 
+<<<<<<< HEAD
     <!-- Del eller skriv ut, for en tab -->
     <string name="fs_share_print">Skriv ut</string>
     <string name="fs_share_as">Del som</string>
@@ -337,6 +338,26 @@
     <string name="fs_share_making_print">Gjør sidene klare …</string>
     <string name="fs_share_failed">Det gikk ikke. Prøv igjen.</string>
     <string name="fs_share_marks_note">\? står ved en note Fretscribe ikke er sikker på. ! står ved en note som ikke har plass på instrumentet.</string>
+=======
+    <!-- Rett en note -->
+    <string name="fs_fix_title">Rett en note</string>
+    <string name="fs_fix_this">Rett denne noten</string>
+    <string name="fs_fix_where">Hvor den spilles</string>
+    <string name="fs_fix_place">%1$s streng, bånd %2$d</string>
+    <string name="fs_fix_place_open">%1$s streng, åpen</string>
+    <string name="fs_fix_one_place">Denne noten kan bare spilles her.</string>
+    <string name="fs_fix_was">Fretscribe skrev den på %1$s.</string>
+    <string name="fs_fix_ghost">Dempet note</string>
+    <string name="fs_fix_ghost_tip">Slås an med strengen dempet: en x i tabben.</string>
+    <string name="fs_fix_keep">Den er riktig som den er</string>
+    <string name="fs_fix_leave_out">Ta den ut</string>
+    <string name="fs_fix_revert">Tilbake til Fretscribes versjon</string>
+    <string name="fs_fix_put_back">Sett inn igjen</string>
+    <plurals name="fs_fix_left_out">
+        <item quantity="one">%1$d note tatt ut</item>
+        <item quantity="other">%1$d noter tatt ut</item>
+    </plurals>
+>>>>>>> 9be641993 (feat(android): fix a note in a Fretscribe tab: move it to another string, keep it, leave it out or make it a ghost note)
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
     <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->

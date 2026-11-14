@@ -187,6 +187,22 @@ object TabWords {
         }
     }
 
+    /** "Bar 3, beat 2." for a place on the page; in the pickup, "The pickup bar, beat 2." */
+    fun barBeat(res: Resources, piece: TabPiece): String =
+        if (piece.pickup) res.getString(R.string.fs_tab_pickup_beat, piece.beat) else res.getString(R.string.fs_tab_bar_beat, piece.barNumber, piece.beat)
+
+    /** "3rd string, fret 7, D-flat." for a written note; its name alone on a notation staff. */
+    fun place(res: Resources, piece: TabPiece, bokmal: Boolean): String {
+        val name = pitch(piece.step, piece.alter, bokmal)
+        val string = piece.string
+        val fret = piece.fret
+        return when {
+            string == null || fret == null -> "$name."
+            fret == 0 -> res.getString(R.string.fs_tab_place_open, ordinal(res, string), name)
+            else -> res.getString(R.string.fs_tab_place, ordinal(res, string), fret, name)
+        }
+    }
+
     /** "3rd": strings are named by number, 1st the highest, never by a note name (the tuning changes that). */
     fun ordinal(res: Resources, n: Int): String = res.getStringArray(R.array.fs_tab_ordinals).getOrNull(n - 1) ?: n.toString()
 

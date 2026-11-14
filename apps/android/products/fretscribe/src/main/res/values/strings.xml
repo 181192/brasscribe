@@ -350,6 +350,7 @@
     <string name="fs_practice_sound_done">Done</string>
     <string name="fs_sound_failed">This phone couldn\'t make the sound for the tab\'s notes, the count-in and the metronome.</string>
 
+<<<<<<< HEAD
     <!-- Share or print, for a tab -->
     <string name="fs_share_print">Print</string>
     <string name="fs_share_as">Share as</string>
@@ -375,6 +376,26 @@
     <string name="fs_share_making_print">Getting the pages ready…</string>
     <string name="fs_share_failed">That didn\'t work. Try again.</string>
     <string name="fs_share_marks_note">\? marks a note Fretscribe is not sure of. ! marks a note with no place on the instrument.</string>
+=======
+    <!-- Fix a note -->
+    <string name="fs_fix_title">Fix a note</string>
+    <string name="fs_fix_this">Fix this note</string>
+    <string name="fs_fix_where">Where to play it</string>
+    <string name="fs_fix_place">%1$s string, fret %2$d</string>
+    <string name="fs_fix_place_open">%1$s string, open</string>
+    <string name="fs_fix_one_place">This note can only be played here.</string>
+    <string name="fs_fix_was">Fretscribe wrote it on the %1$s.</string>
+    <string name="fs_fix_ghost">Ghost note</string>
+    <string name="fs_fix_ghost_tip">Struck with the string muted: an x on the tab.</string>
+    <string name="fs_fix_keep">It\'s right as it is</string>
+    <string name="fs_fix_leave_out">Leave it out</string>
+    <string name="fs_fix_revert">Back to Fretscribe\'s version</string>
+    <string name="fs_fix_put_back">Put back</string>
+    <plurals name="fs_fix_left_out">
+        <item quantity="one">%1$d note left out</item>
+        <item quantity="other">%1$d notes left out</item>
+    </plurals>
+>>>>>>> 9be641993 (feat(android): fix a note in a Fretscribe tab: move it to another string, keep it, leave it out or make it a ghost note)
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
     <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->
