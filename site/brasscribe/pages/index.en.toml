@@ -17,7 +17,7 @@ lead = "The whole band's music on paper, and a way to practise it."
 title = "A part for every player"
 text = "Full brass band, a small band or a quartet. Each part in its range, written for B flat or E flat as the player reads it."
 [[get.items]]
-title = "Honest question marks"
+title = "A ? where it is not sure"
 text = "A note it was not sure of gets a ?. You hear that bar, keep the note or change it, and go on to the next."
 [[get.items]]
 title = "The band to practise with"
@@ -131,7 +131,7 @@ how = "How this was measured"
 
 [getit]
 title = "Get <em>Brasscribe.</em>"
-lead = "Free, and in early testing: there is no store listing yet, so you download it here, for Android, iPhone and iPad, Mac and Windows."
+lead = "Free. Pick your device and it is on your stand in a few minutes."
 download = "Download"
 guide = "Read the guide"
-family = "See the Scribe apps"
+family = "All Scribe apps"

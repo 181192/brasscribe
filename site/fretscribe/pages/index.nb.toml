@@ -6,8 +6,8 @@ title = "Gjør et opptak om til <em>tab.</em>"
 lead = "Spill et riff eller åpne et opptak, så skriver Fretscribe det ned som tab for instrumentet og stemmingen din."
 get = "Last ned"
 see = "Se hvordan"
-strip_label = "Opptaket av en gitarist, som lydbølge til høyre, blir til tab til venstre når det passerer pennen: {notes} toner i {bars} takter, {doubt} av dem med spørsmålstegn."
-strip_note = "Et ekte opptak: en gitarist som plukker akkordene fra Pachelbels kanon, fra <a href=\"https://doi.org/10.5281/zenodo.3371780\">GuitarSet</a> (CC BY 4.0). Fretscribe skrev tabben, spørsmålstegnene også. Spill gir deg opptaket, eller tonene den skrev."
+strip_label = "Opptaket av en gitarist, som lydbølge til høyre, blir til tab til venstre når det passerer pennen: {notes} noter i {bars} takter, {doubt} av dem med spørsmålstegn."
+strip_note = "Et ekte opptak: en gitarist som plukker akkordene fra Pachelbels kanon, fra <a href=\"https://doi.org/10.5281/zenodo.3371780\">GuitarSet</a> (CC BY 4.0). Fretscribe skrev tabben, spørsmålstegnene også. Spill gir deg opptaket, eller notene den skrev."
 
 [get]
 title = "Dette <em>får du.</em>"
@@ -20,11 +20,8 @@ text = "Gitar, bass, ukulele eller mandolin, med de strengene du har og den stem
 title = "Du får se før den skriver"
 text = "Først viser den stemmingen, tonearten og tempoet den hørte. Er noe galt, retter du det før et eneste bånd blir skrevet."
 [[get.items]]
-title = "Ærlige spørsmålstegn"
-text = "En tone den er usikker på, får et ?. Velg den, så spiller den takten sakte, og du kan høre selv."
-[[get.items]]
-title = "Noe å øve med"
-text = "Opptaket ditt spiller sammen med tabben, saktere hvis du vil, og gjentar de taktene du velger."
+title = "Et ? der den er usikker"
+text = "Velg en note med ?, så spiller den takten sakte, og du kan høre selv. Spill så sammen med opptaket, saktere hvis du vil, de vanskelige taktene om og om igjen."
 
 [[screens.items]]
 shot = "home"
@@ -69,7 +66,7 @@ text = "Ingen spiller nøyaktig på slaget. Hver tone flyttes fra der den ble h�
 alt = "Den samme takten: hver tone begynner nå på et slag eller mellom to, med et stiplet omriss der den ble hørt."
 [[steps.items]]
 title = "Velger strenger og bånd"
-text = "Hver tone kan spilles flere steder på halsen. Fretscribe velger der hånda flytter seg minst: her er {open} av de {notes} tonene på løse strenger."
+text = "Hver tone kan spilles flere steder på halsen. Fretscribe velger der hånda flytter seg minst: her er {open} av de {notes} notene på løse strenger."
 alt = "To takter som tab: båndtall på {strings} strenglinjer."
 
 [try]
@@ -77,9 +74,9 @@ title = "De samme tonene, <em>din stemming.</em>"
 lead = "Tabben til opptaket over. Bytt stemming: tonene blir stående, båndene flytter seg. Velg et tall for å se alle stedene den tonen kan spilles."
 
 [try.words]
-summary = "{tuning}: alle tonene har en plass på halsen."
-summary_lost = "{tuning}: {lost} toner har ingen plass på halsen."
-summary_lost_one = "{tuning}: én tone har ingen plass på halsen."
+summary = "{tuning}: alle notene har en plass på halsen."
+summary_lost = "{tuning}: {lost} noter har ingen plass på halsen."
+summary_lost_one = "{tuning}: én note har ingen plass på halsen."
 summary_left = "{left} til er utelatt her (–)."
 at = "Takt {bar}, slag {beat}, {name}:"
 place = "{string} streng, bånd {fret}"
@@ -90,8 +87,8 @@ only = "Den har ingen annen plass."
 lost = "den har ingen plass på halsen i denne stemmingen."
 nowhere = "ingen stemming her har plass til den."
 left = "den er utelatt her."
-doubt = "Fretscribe er ikke sikker på denne tonen."
-neck = "Halsen: den fylte prikken er plassen i tabben, ringene er de andre plassene for denne tonen."
+doubt = "Fretscribe er ikke sikker på denne noten."
+neck = "Halsen: den fylte prikken er plassen i tabben, ringene er de andre plassene for denne noten."
 legend_doubt = "Fretscribe er ikke sikker"
 legend_lost = "ingen plass på halsen"
 legend_left = "utelatt"
@@ -117,8 +114,8 @@ limits = "«Riktig» betyr riktig tone til riktig tid. Hvilken streng du spiller
 how = "Slik ble det målt"
 
 [getit]
-title = "Hent <em>Fretscribe.</em>"
-lead = "Gratis, og en tidlig versjon: den ligger ikke i noen appbutikk ennå, så du laster den ned her, for Android, iPhone og iPad, Mac og Windows."
+title = "Last ned <em>Fretscribe.</em>"
+lead = "Gratis. Velg enheten din, så spiller du med om noen minutter."
 download = "Last ned"
 guide = "Les veiledningen"
-family = "Se Scribe-appene"
+family = "Alle Scribe-appene"

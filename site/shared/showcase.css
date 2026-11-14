@@ -245,3 +245,5 @@ main > section > .wrap > h2 { max-width: 20em; }
   .hundred i.q::after { color: HighlightText; }
   .hundred i.x { background: Canvas; box-shadow: inset 0 0 0 1.5px CanvasText; }
 }
+/* A quiet way on, beside the buttons: a link, not a third button. */
+.actions .text-link { display: inline-flex; align-items: center; min-height: 48px; font-weight: 600; }
