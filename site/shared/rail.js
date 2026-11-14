@@ -79,23 +79,30 @@ roots().forEach(make);
 started = true;
 
 // On a download page the rail leads to every panel, all of them shown; the visitor's own device is marked, when the
-// browser says which it is.
+// browser says which it is, and its download becomes the filled button of its panel. [place, download]
 const device = () => {
   const ua = navigator.userAgent;
-  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "tablet";
-  if (/Android/.test(ua)) return /Mobile/.test(ua) ? "phone" : "tablet";
-  if (/iPhone/.test(ua)) return "phone";
-  if (/Macintosh/.test(ua)) return "mac";
-  if (/Windows/.test(ua)) return "windows";
-  return null;
+  if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return ["tablet", "ios"];
+  if (/Android/.test(ua)) return [/Mobile/.test(ua) ? "phone" : "tablet", "android"];
+  if (/iPhone/.test(ua)) return ["phone", "ios"];
+  if (/Macintosh/.test(ua)) return ["mac", "mac"];
+  if (/Windows/.test(ua)) return ["windows", "windows"];
+  return [];
 };
 const markMine = () => {
-  const rail = document.querySelector("main.downloads .rail"), mine = device();
+  const rail = document.querySelector("main.downloads .rail"), [mine, group] = device();
   const chip = mine && rail?.querySelector(`a[data-variant="${mine}"]`);
   if (!chip) return;
   chip.classList.add("mine");
-  chip.setAttribute("aria-current", "true");
-  if (!chip.querySelector(".mine-tag")) chip.insertAdjacentHTML("beforeend", `<span class="mine-tag">${rail.dataset.mine}</span>`);
+  // The tag is part of the link's words, so a screen reader says it too.
+  if (!chip.querySelector(".mine-tag")) chip.insertAdjacentHTML("beforeend", ` <span class="mine-tag">${rail.dataset.mine}</span>`);
+  // A panel with two downloads (Android and iPhone) fills the visitor's; the other stays outlined.
+  const own = document.querySelector(`main.downloads .dl-device[data-group="${group}"] .button`);
+  const filled = own?.closest("section").querySelector(".button.primary");
+  if (own && filled && filled !== own) {
+    filled.classList.replace("primary", "outline");
+    own.classList.replace("outline", "primary");
+  }
 };
 document.addEventListener("scribe:lang", markMine);
 markMine();

@@ -178,8 +178,9 @@ def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int
     say = page.say
     config = {**config, "barBeat": say("fig.bar_beat"), "play": say("fig.play"), "pause": say("fig.pause")}
     audio = f' data-audio="{config.pop("audio")}"' if "audio" in config else ""
+    # The stage clips its music in the markup itself, so a wide strip never widens the page while the styles load.
     return f"""<figure class="strip {classes}"{audio} data-strip="{esc(json.dumps(config, separators=(",", ":")))}" style="--strip-height: {height}px;{style}">
-  <div class="strip-stage" role="img" aria-label="{esc(label)}">
+  <div class="strip-stage" style="overflow: hidden" role="img" aria-label="{esc(label)}">
     <div class="strip-ink">{ink}</div>
     <div class="strip-sound"><svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-hidden="true" focusable="false"><path class="wave" d="{wave}"/></svg></div>
     <div class="strip-pen" aria-hidden="true"></div>

@@ -338,7 +338,7 @@ class Page:
 
         def device(group: str, primary: bool) -> str:
             steps = "".join(f"<li>{step}</li>" for step in say(f"groups.{group}.steps"))
-            return (f'  <div class="dl-device">\n    <a class="button {"primary" if primary else "outline"}" href="{self.file(groups[group][0]["file"])}">{say(f"groups.{group}.button")}</a>\n'
+            return (f'  <div class="dl-device" data-group="{group}">\n    <a class="button {"primary" if primary else "outline"}" href="{self.file(groups[group][0]["file"])}">{say(f"groups.{group}.button")}</a>\n'
                     f'    <p class="first-title">{say("download.first", device=say(f"groups.{group}.title"))}</p>\n    <ol class="first-steps">{steps}</ol>\n  </div>')
 
         parts = [f'<h1>{say("download.heading")}</h1>\n<p class="lead">{say("download.lead")}</p>\n{shared.rail(self)}\n<div class="download-groups">']
