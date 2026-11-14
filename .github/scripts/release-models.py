@@ -52,7 +52,7 @@ APPLE = ("swift-f0-window-fp32.mlpackage.zip", "nmp-b1-fp32.mlpackage.zip", "bea
 RULES = (
     Rule("brasscribe-*.apk", "Play for Android", "assets/models/", onnx=ANDROID, notice=True),
     Rule("fretscribe-*.apk", "Fretscribe for Android", none=".onnx"),
-    # The Apple apps do not bundle the models yet: these rules report, without failing, until their build does.
+    # The Apple apps bundle the models once their build stages them (apps/apple/scripts/stage-models.sh).
     Rule("brasscribe-play-ios*.ipa", "Play for iPhone and iPad", "Payload/BrasscribePlay.app/Models/",
          coreml=APPLE, notice=True, enforced=False),
     Rule("brasscribe-play-macos*.zip", "Play for Mac", "Brasscribe Play.app/Contents/Resources/Models/",

@@ -8,9 +8,8 @@ convert/on-device-models.json pins one pack: the GitHub release tag (`version`) 
 size and sha256 of every file. A Core ML model is a folder (`.mlpackage`), so it travels as a `.zip` of that
 folder, stored without compression and with fixed dates: the same folder always gives the same file, which is
 how `verify` checks an installed folder against the pin. ONNX models travel as they are. Each file's `into`
-is its folder under models/converted, the layout the apps read: the Android build
-(apps/android/products/brasscribe/build.gradle.kts) and the Apple apps' model store in development
-(apps/apple/services/Sources/OnDeviceKit/ModelStore.swift, through SCRIBE_MODELS).
+is its folder under models/converted, the layout the apps' builds read (apps/apple/scripts/stage-models.sh,
+apps/android/products/brasscribe/build.gradle.kts).
 
 `fetch` uses the GitHub CLI (`gh release download`), which needs a login (`gh auth login`) or GH_TOKEN. What is
 already in models/converted with the pinned content is kept; anything else is replaced by the pinned file. The
