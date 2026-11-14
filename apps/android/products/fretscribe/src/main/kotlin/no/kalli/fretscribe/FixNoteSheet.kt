@@ -52,6 +52,9 @@ data class FretPlace(val string: Int, val fret: Int)
 
 /** Where the notes of a tab can be played, and which notes share a beat. */
 object FixNote {
+    /** How far from a fret number's middle a tap still finds it, to each side and above and below: 48 dp across. */
+    val REACH = 24.dp
+
     /** The frets a place is offered up to when the song does not say how many the instrument has. */
     const val FRETS = 24
 

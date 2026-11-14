@@ -111,6 +111,14 @@ class TabMarks(val columns: List<TabColumn>, val doubtful: Int, val noPlace: Int
          * Without [tab] (a saved song when the computer is away) the page itself is read: the confidence it
          * carries on its doubtful notes, and its boxed words.
          */
+        /**
+         * The marks of a saved page [musicXml] as the tab shows them, the same on every screen: a page the player has
+         * fixed is read as it is shown (`TabEdits.shown`: a note left out is gone, a kept one has no "?"), by its own
+         * marks and not the computer's data, which still says what it said before the fixes.
+         */
+        fun ofPage(musicXml: String, tab: Tab?): TabMarks =
+            if (TabEdits.changed(musicXml)) of(TabIndex.parse(TabEdits.shown(musicXml)), null) else of(TabIndex.parse(musicXml), tab)
+
         fun of(index: TabIndex, tab: Tab?, threshold: Double = TabTokens.UNCERTAIN_THRESHOLD): TabMarks {
             val staff = index.markStaff
             val found = LinkedHashMap<Triple<Int, Int, Int>, MutableList<MarkedNote>>()

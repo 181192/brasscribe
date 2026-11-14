@@ -365,7 +365,8 @@ fun TabScreen(vm: PlayViewModel) {
     val fetches = r.jobId != null && remember(practice.recording) { vm.container.engine() != null }
     if (sounds) SoundDialog(practice, fetches, { vm.container.engine()?.let(practice::fetch) }, fromPages = r.profile.readsPages) { sounds = false }
     var sharing by rememberSaveable { mutableStateOf(false) }
-    if (sharing) TabShareSheet(vm, title, r.musicXml, r.jobId, r.engineOutputs) { sharing = false }
+    // What leaves the app is the tab as it is shown: with the player's fixes, a note left out gone.
+    if (sharing) TabShareSheet(vm, title, TabEdits.shown(r.musicXml), r.jobId, r.engineOutputs, TabEdits.changed(r.musicXml)) { sharing = false }
     // Fix a note: the beat that was tapped (its bar and where in the bar it starts), and the list of the notes left out.
     var fixing by rememberSaveable(song, stateSaver = listSaver<Pair<Int, Int>?, Int>(save = { it?.let { p -> listOf(p.first, p.second) } ?: emptyList() },
         restore = { it.takeIf { l -> l.size == 2 }?.let { l -> l[0] to l[1] } })) { mutableStateOf(null) }
@@ -828,9 +829,10 @@ fun TabScreen(vm: PlayViewModel) {
                     // It takes the drags, the keyboard's focus and the screen reader. No stretch at the ends: the page under it would not stretch with it.
                     Column(Modifier.fillMaxSize().testTag("fs-tab-scroll").verticalScroll(scroll, overscrollEffect = null)) {
                         if (!pinned && !inFocus) header()
-                        // A tap on a fret number (any beat of the page) opens Fix a note for it. Not in full screen, where a tap
+                        // A tap on a fret number (any beat of the page) opens Fix a note for it: 24 dp to each side and above and below,
+                        // a 48 dp target where the neighbours leave the room (TabEngraving.targets). Not in full screen, where a tap
                         // shows and hides the controls.
-                        val reach = with(density) { 12.dp.toPx() }
+                        val reach = with(density) { FixNote.REACH.toPx() }
                         Box(Modifier.fillMaxWidth().height(with(density) { (e?.height ?: 0).toDp() }).testTag("fs-tab-page")
                             .pointerInput(e, s, inFocus) {
                                 if (!inFocus && e != null) detectTapGestures { at ->

@@ -370,6 +370,46 @@ class TabSongTest {
         assertTrue("the marked bass line has notes to check", facts("bass-line-marks").doubtful > 0)
     }
 
+    /**
+     * After each kind of fix the tab, Home and Check the song count the same notes: all three read the page as it is
+     * shown (`TabMarks.ofPage`), and not the computer's data, which still says what it said before the fix.
+     */
+    @Test
+    fun afterEachKindOfFixEveryScreenCountsTheSame() {
+        for (take in listOf("bass-line-marks", "guitar-line")) {
+            val raw = File(fixture!!.resolveSibling(take), "tab.musicxml").readText()
+            val index = TabIndex.parse(raw)
+            val before = TabMarks.ofPage(raw, recorded(take))
+            val doubt = before.columns.flatMap { it.notes }.first { it.kind == MarkKind.DOUBT && it.note != null }.note!!
+            val piece = index.of(doubt).first { it.string != null }
+            val strings = SongFacts.openStrings(raw)
+            val elsewhere = FixNote.places(piece.pitch, strings).first { it.string != piece.string }
+            val fixes = mapOf(
+                "kept" to TabEdits.keep(raw, doubt),
+                "left out" to TabEdits.leaveOut(raw, doubt),
+                "moved" to TabEdits.place(raw, doubt, elsewhere.string, elsewhere.fret),
+                "a ghost note" to TabEdits.ghost(raw, doubt, true),
+            )
+            for ((kind, fixed) in fixes) {
+                val case = "$take, $kind"
+                // The tab: the shown page's own marks (TabSheet.read).
+                val tab = TabMarks.of(TabIndex.parse(TabEdits.shown(fixed)), null)
+                // Home: the saved page.
+                val home = SongFacts.of(fixed)
+                // Check the song, with the computer there and its data.
+                val check = TabMarks.ofPage(fixed, recorded(take))
+                val rows = SongCheck.rows(recorded(take), check)
+                assertEquals(case, listOf(tab.doubtful, tab.noPlace), listOf(home.doubtful, home.noPlace))
+                assertEquals(case, listOf(tab.doubtful, tab.noPlace), listOf(check.doubtful, check.noPlace))
+                assertEquals(case, tab.doubtful, rows.filterIsInstance<SongRow.Doubtful>().singleOrNull()?.count ?: 0)
+                // A kept, moved or left-out note is no longer to check (the player has looked at it); a ghost note keeps
+                // its "?" (how it is struck changed, not whether it was heard right).
+                val expected = if (kind == "a ghost note") before.doubtful else before.doubtful - 1
+                assertEquals(case, expected, tab.doubtful)
+            }
+        }
+    }
+
     /** A note the page folds into another is not drawn on the tab: Check the song does not count it either. */
     @Test
     fun checkTheSongCountsNoNoteTheTabDoesNotDraw() {

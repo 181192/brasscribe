@@ -83,14 +83,28 @@ data class TabEngraving(val height: Int, val lines: List<TabLine>, val boxes: Li
     val barsPerLine: List<Int> get() = lines.map { it.lastBar - it.firstBar + 1 }
 
     /**
-     * The beat drawn at ([x], [y]) of the page: its bar (counted from 0) and where in the bar it starts, in alphaTab's
-     * ticks. Within [slack] pixels above and below the bar, and of the beat's own column; null where no beat is.
+     * Where a tap finds each beat of [bar]: from the column's middle, [reach] pixels to each side (or the column's own
+     * half width, when wider), and never past the middle between it and the next beat, which takes the rest. So a
+     * fret number is a target of twice [reach] where its neighbours leave the room, and the nearer beat otherwise.
      */
-    fun beatAt(x: Float, y: Float, slack: Float): Pair<Int, Int>? {
-        val bar = bars.firstOrNull { y >= it.top - slack && y <= it.bottom + slack && x >= it.left && x <= it.right } ?: return null
-        val stop = bar.stops.minByOrNull { kotlin.math.abs(x - (it.left + it.width / 2)) } ?: return null
-        if (kotlin.math.abs(x - (stop.left + stop.width / 2)) > maxOf(stop.width / 2, slack)) return null
-        return bar.bar to stop.tick
+    fun targets(bar: BarBox, reach: Float): List<ClosedFloatingPointRange<Float>> = bar.stops.mapIndexed { i, stop ->
+        val centre = stop.left + stop.width / 2
+        val half = maxOf(stop.width / 2, reach)
+        val prev = bar.stops.getOrNull(i - 1)?.let { (it.left + it.width / 2 + centre) / 2 }
+        val next = bar.stops.getOrNull(i + 1)?.let { (it.left + it.width / 2 + centre) / 2 }
+        maxOf(centre - half, prev ?: Float.NEGATIVE_INFINITY)..minOf(centre + half, next ?: Float.POSITIVE_INFINITY)
+    }
+
+    /**
+     * The beat drawn at ([x], [y]) of the page: its bar (counted from 0) and where in the bar it starts, in alphaTab's
+     * ticks. Within [reach] pixels above and below the bar (the nearest bar when two lines are that close), and within
+     * the beat's target ([targets]); null where no beat is.
+     */
+    fun beatAt(x: Float, y: Float, reach: Float): Pair<Int, Int>? {
+        fun away(b: BarBox) = if (y < b.top) b.top - y else if (y > b.bottom) y - b.bottom else 0f
+        val bar = bars.filter { x >= it.left && x <= it.right && away(it) <= reach }.minByOrNull(::away) ?: return null
+        val i = targets(bar, reach).indexOfFirst { x in it }.takeIf { it >= 0 } ?: return null
+        return bar.bar to bar.stops[i].tick
     }
 
     /** The first bar of the line that [y] pixels down the page is in: the last line that starts at or above it. */

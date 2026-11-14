@@ -2,6 +2,7 @@ package no.kalli.fretscribe
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
@@ -10,6 +11,7 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import no.kalli.scribe.tab.NoteEdit
@@ -149,5 +151,79 @@ class FixNoteTest : TabScreenTest() {
         waitUntil(10_000) { xml == before }
         waitUntil(10_000) { !there("fs-tab-left-out") && !there("fs-fix-put-back-0") }
         engravedWith("every note") { frets(it).size == notes }
+    }
+
+    /** Leaves out the first note of the page by a tap on it. */
+    private fun leaveOutTheFirstNote(tab: TabView) {
+        val bar = tab.engraving.value!!.bar(0)!!
+        val stop = bar.stops.first()
+        rule.onNodeWithTag("fs-tab-page").performTouchInput { click(Offset(stop.left + stop.width / 2, (bar.top + bar.bottom) / 2)) }
+        waitForTag("fs-fix-done", 5_000)
+        rule.onNodeWithTag("fs-fix-leave-out-0").performScrollTo().performClick()
+        waitUntil(10_000) { TabEdits.leftOut(xml) == listOf(0) }
+        waitUntil(5_000) { !there("fs-fix-done") }
+    }
+
+    /**
+     * FileProvider keeps the folders it shares from in a static map, by authority, from the first share on: on the JVM
+     * every test has a data folder of its own, so a share after another test's would look in the last one's.
+     */
+    @org.junit.Before
+    fun freshFileProvider() {
+        @Suppress("UNCHECKED_CAST")
+        (androidx.core.content.FileProvider::class.java.getDeclaredField("sCache").apply { isAccessible = true }.get(null) as MutableMap<String, *>).clear()
+    }
+
+    /** What leaves the app is the tab as it is shown: a note left out is not in the MusicXML shared, and the computer's text files, which do not have the fix, say so. */
+    @Test
+    fun aFixedSongIsSharedAsItIsShown() {
+        computer("bass-line")
+        leaveOutTheFirstNote(showTheTab())
+        val exports = java.io.File(rule.activity.cacheDir, "exports").apply { deleteRecursively() }
+        rule.onNodeWithTag("fs-tab-share").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        waitForTag("fs-share-print", 5_000)
+        rule.onNodeWithTag("fs-share-pdf-from").assertTextContains("The PDF is laid out on this phone.")
+        for (row in listOf("text", "instructions")) {
+            rule.onNodeWithTag("fs-share-$row").performScrollTo().assertIsNotEnabled()
+                .assertTextContains("Your computer wrote this before you fixed notes. The other files have your fixes.")
+        }
+        checkAccessibility()
+        rule.onNodeWithTag("fs-share-musicxml").performScrollTo().performClick()
+        val shared = exports.resolve("Bass line.musicxml")
+        waitUntil(30_000) { shared.isFile && shared.length() > 0 }
+        waitUntil(10_000) { !there("fs-share-making") }
+        no.kalli.scribe.play.screen.ScreenDevice.closeSystemSheet(rule)
+        assertEquals(TabEdits.shown(xml), shared.readText())
+        val written = TabIndex.parse(xml).pieces.count { it.first && it.staff == 0 && it.fret != null }
+        assertEquals(written - 1, TabIndex.parse(shared.readText()).pieces.count { it.first && it.staff == 0 && it.fret != null })
+    }
+
+    /** Writing the song again makes a new tab: with fixes, it asks first, naming how many are lost, and Cancel keeps them. */
+    @Test
+    fun writingAFixedSongAgainAsksFirst() {
+        computer("bass-line-marks")
+        leaveOutTheFirstNote(showTheTab())
+        val fixed = xml
+        val job = vm.result.value!!.jobId
+        // Check the song, a tap from the tab's header.
+        rule.runOnUiThread { vm.back() }
+        waitForTag("fs-check-change-tuning", 20_000)
+        rule.onNodeWithTag("fs-check-change-tuning").performScrollTo().performClick()
+        waitForTag("fs-check-again", 5_000)
+        rule.onNode(androidx.compose.ui.test.hasText("The note you fixed goes back to how Fretscribe wrote it.", substring = true)).assertExists()
+        checkAccessibility()
+        shot("write-again-asks")
+        // Cancel: nothing is written, the fix stays.
+        rule.onNodeWithTag("fs-check-again-cancel").performClick()
+        waitUntil(5_000) { !there("fs-check-again") }
+        settle()
+        assertEquals(fixed, xml)
+        assertEquals(job, vm.result.value!!.jobId)
+        // Asked again and confirmed: the song is written again.
+        rule.onNodeWithTag("fs-check-change-tuning").performScrollTo().performClick()
+        waitForTag("fs-check-again", 5_000)
+        rule.onNodeWithTag("fs-check-again-write").performClick()
+        waitUntil(60_000) { vm.result.value?.jobId != job }
+        assertFalse(TabEdits.changed(vm.result.value!!.musicXml))
     }
 }

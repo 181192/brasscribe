@@ -40,6 +40,8 @@ enum class TabShareMissing {
     NOT_FROM_COMPUTER,
     /** The computer did not write it for this song. */
     NOT_MADE,
+    /** The player fixed notes on the phone since: the computer's file does not have the fixes. */
+    FIXED,
 }
 
 /**
@@ -52,10 +54,11 @@ class TabExports(private val context: Context) {
     private val dir: File get() = File(context.cacheDir, "exports").apply { mkdirs() }
 
     /** Why [format] can't be had for the song of [job] (null: not from a computer) that wrote [outputs], with the computer there or not; null when it can. */
-    fun missing(format: TabShareFormat, job: String?, outputs: Set<String>, connected: Boolean, lang: Lang): TabShareMissing? = when (format) {
+    fun missing(format: TabShareFormat, job: String?, outputs: Set<String>, connected: Boolean, lang: Lang, fixed: Boolean = false): TabShareMissing? = when (format) {
         TabShareFormat.PDF, TabShareFormat.GUITAR_PRO, TabShareFormat.MUSICXML, TabShareFormat.MIDI -> null
         TabShareFormat.TEXT, TabShareFormat.INSTRUCTIONS -> when {
             job == null -> TabShareMissing.NOT_FROM_COMPUTER
+            fixed -> TabShareMissing.FIXED
             !connected -> TabShareMissing.NEEDS_COMPUTER
             // (A computer that does not say what it wrote is asked all the same.)
             outputs.isNotEmpty() && artifact(format, lang) !in outputs -> TabShareMissing.NOT_MADE
@@ -64,7 +67,8 @@ class TabExports(private val context: Context) {
     }
 
     /** The computer's PDF is used: it wrote one and can be asked for it. Else the phone lays the pages out. */
-    fun pdfFromComputer(job: String?, outputs: Set<String>, connected: Boolean): Boolean = job != null && connected && TAB_PDF in outputs
+    fun pdfFromComputer(job: String?, outputs: Set<String>, connected: Boolean, fixed: Boolean = false): Boolean =
+        job != null && connected && !fixed && TAB_PDF in outputs
 
     private fun artifact(format: TabShareFormat, lang: Lang): String =
         if (format == TabShareFormat.TEXT) "tab.txt" else "tab-instructions.${if (lang == Lang.NB) "nb" else "en"}.txt"
@@ -78,7 +82,7 @@ class TabExports(private val context: Context) {
      * Throws what the computer or alphaTab throws.
      */
     suspend fun build(format: TabShareFormat, title: String, musicXml: String, job: String?, outputs: Set<String>, engine: EngineApi?, connected: Boolean,
-                      lang: Lang, legend: String, suffix: String): File = withContext(Dispatchers.IO) {
+                      lang: Lang, legend: String, suffix: String, fixed: Boolean = false): File = withContext(Dispatchers.IO) {
         val base = safe(title).ifBlank { "tab" }
         val name = if (format == TabShareFormat.INSTRUCTIONS) "$base $suffix" else base
         val file = File(dir, "$name.${format.extension}")
@@ -87,11 +91,11 @@ class TabExports(private val context: Context) {
             TabShareFormat.GUITAR_PRO -> guitarPro(musicXml)
             TabShareFormat.MIDI -> midi(musicXml)
             TabShareFormat.TEXT, TabShareFormat.INSTRUCTIONS -> {
-                if (engine == null || job == null || !connected) throw IllegalStateException("$format needs the computer")
+                if (engine == null || job == null || !connected || fixed) throw IllegalStateException("$format needs the computer's, without fixes")
                 engine.artifact(job, artifact(format, lang))
             }
             TabShareFormat.PDF -> {
-                val computers = if (engine != null && job != null && pdfFromComputer(job, outputs, connected)) {
+                val computers = if (engine != null && job != null && pdfFromComputer(job, outputs, connected, fixed)) {
                     try {
                         engine.pdf(job)
                     } catch (e: CancellationException) {

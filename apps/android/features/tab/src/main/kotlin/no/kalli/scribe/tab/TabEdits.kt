@@ -121,6 +121,11 @@ object TabEdits {
     fun leftOut(musicXml: String): List<Int> =
         NOTE.findAll(musicXml).map { it.value }.filter { it.has(LEFT_OUT) }.mapNotNull { it.noteIndex() }.distinct().toList()
 
+    /** How many notes the player has fixed in [musicXml] (moved, kept, left out or made a ghost note). */
+    fun fixed(musicXml: String): Int =
+        NOTE.findAll(musicXml).map { it.value }.filter { piece -> listOf(WAS, CHECKED, LEFT_OUT, GHOST).any { piece.has(it) } }
+            .mapNotNull { it.noteIndex() }.distinct().count()
+
     /** The player has changed something in [musicXml]. */
     fun changed(musicXml: String): Boolean = listOf(WAS, CHECKED, LEFT_OUT, GHOST).any { musicXml.contains("<?$it") }
 
