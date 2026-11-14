@@ -235,7 +235,8 @@ object SongCheck {
         }
         add(SongRow.KeyAndTempo(tab.key.fifths, tab.key.mode == no.kalli.scribe.engine.KeyMode.MINOR, Math.round(tab.tempoBpm).toInt(),
             tab.meter.beats, tab.meter.beatUnit))
-        val doubtful = tab.notes.count { it.doubtful }
+        // As the tab marks them: a note with no place is under a "!", and is not also one of the notes marked "?".
+        val doubtful = tab.notes.count { it.doubtful && !it.outOfRange && it.position != null }
         if (doubtful > 0) add(SongRow.Doubtful(doubtful))
         val noPlace = tab.notes.count { it.outOfRange || it.position == null }
         if (noPlace > 0) add(SongRow.NoPlace(noPlace))

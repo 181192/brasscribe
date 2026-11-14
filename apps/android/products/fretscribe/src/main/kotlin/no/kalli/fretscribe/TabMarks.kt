@@ -190,29 +190,34 @@ object TabWords {
     /** "3rd": strings are named by number, 1st the highest, never by a note name (the tuning changes that). */
     fun ordinal(res: Resources, n: Int): String = res.getStringArray(R.array.fs_tab_ordinals).getOrNull(n - 1) ?: n.toString()
 
-    /** "Bar 13, beat 2. 3rd string, fret 7, D-flat. Fretscribe isn't sure about this one." */
+    /**
+     * "Bar 13, beat 2. 3rd string, fret 7, D-flat. Fretscribe isn't sure about this one." With a note that has no place
+     * on the same beat: "… Also on this beat: D2 is lower than your lowest string. Is the tuning right?"
+     */
     fun describe(res: Resources, column: TabColumn, bokmal: Boolean): String {
         val parts = ArrayList<String>()
         parts += if (column.pickup) res.getString(R.string.fs_tab_pickup_beat, column.beat) else res.getString(R.string.fs_tab_bar_beat, column.barNumber, column.beat)
-        for (n in column.notes) when (n.kind) {
-            MarkKind.DOUBT -> {
-                val name = n.step?.let { pitch(it, n.alter, bokmal) }
-                parts += when {
-                    n.string == null || n.fret == null -> name?.let { "$it." }.orEmpty()
-                    n.fret == 0 -> res.getString(R.string.fs_tab_place_open, ordinal(res, n.string), name.orEmpty())
-                    else -> res.getString(R.string.fs_tab_place, ordinal(res, n.string), n.fret, name.orEmpty())
-                }
-                parts += res.getString(R.string.fs_tab_not_sure)
+        // Each note has its own sentences, the notes marked "?" first; a note with no place on the same beat is said to
+        // be another note, so its words are not read as the first one's.
+        for (n in column.notes.filter { it.kind == MarkKind.DOUBT }) {
+            val name = n.step?.let { pitch(it, n.alter, bokmal) }
+            parts += when {
+                n.string == null || n.fret == null -> name?.let { "$it." }.orEmpty()
+                n.fret == 0 -> res.getString(R.string.fs_tab_place_open, ordinal(res, n.string), name.orEmpty())
+                else -> res.getString(R.string.fs_tab_place, ordinal(res, n.string), n.fret, name.orEmpty())
             }
-            MarkKind.NO_PLACE -> {
-                val name = n.step?.let { pitch(it, n.alter, bokmal) } ?: n.name
-                parts += when {
-                    name == null -> res.getString(R.string.fs_tab_no_place)
-                    n.why == NoPlaceWhy.TOO_LOW -> res.getString(R.string.fs_tab_no_place_low, name)
-                    n.why == NoPlaceWhy.TOO_HIGH -> res.getString(R.string.fs_tab_no_place_high, name)
-                    else -> res.getString(R.string.fs_tab_no_place_named, name)
-                }
+            parts += res.getString(R.string.fs_tab_not_sure)
+        }
+        val both = column.notes.any { it.kind == MarkKind.DOUBT }
+        for (n in column.notes.filter { it.kind == MarkKind.NO_PLACE }) {
+            val name = n.step?.let { pitch(it, n.alter, bokmal) } ?: n.name
+            val words = when {
+                name == null -> res.getString(R.string.fs_tab_no_place)
+                n.why == NoPlaceWhy.TOO_LOW -> res.getString(R.string.fs_tab_no_place_low, name)
+                n.why == NoPlaceWhy.TOO_HIGH -> res.getString(R.string.fs_tab_no_place_high, name)
+                else -> res.getString(R.string.fs_tab_no_place_named, name)
             }
+            parts += if (both) res.getString(R.string.fs_tab_also_on_beat, words) else words
         }
         return parts.filter { it.isNotBlank() }.joinToString(" ")
     }

@@ -241,6 +241,8 @@
     <string name="fs_tab_place">%1$s streng, bånd %2$d, %3$s.</string>
     <string name="fs_tab_place_open">%1$s streng, åpen, %2$s.</string>
     <string name="fs_tab_not_sure">Fretscribe er ikke sikker på denne.</string>
+    <!-- Before the words of a note with no place that shares its beat with a note marked "?" -->
+    <string name="fs_tab_also_on_beat">På samme slag: %1$s</string>
     <string name="fs_tab_no_place">En tone her har ingen plass på instrumentet ditt. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_named">%1$s har ingen plass på instrumentet ditt her. Er stemmingen riktig?</string>
     <string name="fs_tab_no_place_low">%1$s er lavere enn den laveste strengen din. Er stemmingen riktig?</string>
