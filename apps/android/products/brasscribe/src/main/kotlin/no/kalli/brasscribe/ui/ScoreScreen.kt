@@ -620,6 +620,8 @@ fun ScoreScreen(vm: PlayViewModel) {
                 PlainButton(stringResource(R.string.check_them), { vm.navigate(Screen.REVIEW) })
             }
             if (r.draft) DraftNotice(computerThere, vm::makeFullScore, Modifier.padding(horizontal = ScreenMargin))
+            if (r.beforeSetup) BeforeSetupNotice(vm, computerThere && r.canBeWrittenAgain,
+                { vm.writeDownAgain { still -> if (still) vm.say(R.string.before_setup_still) } }, Modifier.padding(horizontal = ScreenMargin))
             }
             // More above the score than its share: it fades out over a hairline, so it reads as scrolling, not cut.
             if (topScroll.canScrollForward) {
