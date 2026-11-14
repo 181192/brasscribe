@@ -8,22 +8,46 @@ public sealed class SingleFlight
 {
     private readonly Lock _gate = new();
     private Task? _running;
+    private string? _kind;
 
     public bool IsRunning
     {
         get { lock (_gate) return _running is { IsCompleted: false }; }
     }
 
-    /// <summary>Starts <paramref name="work"/>, or returns the run already going.</summary>
-    public Task RunAsync(Func<Task> work)
+    /// <summary>
+    /// Starts <paramref name="work"/>, or returns the run already going. <paramref name="kind"/> names a run that is
+    /// not everybody's to join (<see cref="RunAfterAsync"/>).
+    /// </summary>
+    public Task RunAsync(Func<Task> work, string? kind = null)
     {
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         lock (_gate)
         {
             if (_running is { IsCompleted: false } running) return running;
             _running = done.Task;
+            _kind = kind;
         }
         return RunCoreAsync(work, done);
+    }
+
+    /// <summary>
+    /// As <see cref="RunAsync"/>, but a run of <paramref name="kind"/> that is going is not joined: it does something
+    /// else than what is asked for here, so <paramref name="work"/> starts once it has ended, however it ended. (The
+    /// reader of printed music's install goes through the gate setup uses; Finish setting up pressed meanwhile must
+    /// still finish setting up.)
+    /// </summary>
+    public async Task RunAfterAsync(string kind, Func<Task> work)
+    {
+        while (true)
+        {
+            Task? other;
+            lock (_gate) other = _running is { IsCompleted: false } running && _kind == kind ? running : null;
+            if (other is null) break;
+            try { await other.ConfigureAwait(false); }
+            catch (Exception) { } // its own caller hears of it
+        }
+        await RunAsync(work).ConfigureAwait(false);
     }
 
     private static async Task RunCoreAsync(Func<Task> work, TaskCompletionSource done)

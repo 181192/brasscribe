@@ -366,6 +366,87 @@ class PagesFlowTest : ScreenTest() {
         }
     }
 
+    private fun enabled(tag: String): Boolean = rule.onNodeWithTag(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Disabled) == null
+
+    private fun top(tag: String): Float = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInWindow.top
+
+    /** A page is moved up or down by its buttons, and the order on the screen is the order the computer is sent. */
+    @Test
+    fun aPageIsMovedAndTheOrderShownIsTheOrderRead() {
+        theComputer()
+        fromHome()
+        chosen(png("A.png"), png("B.png"), png("C.png"))
+        rule.waitForIdle()
+        // Nothing is promised of the order the pages came in: the screen says which order counts, and how to change it.
+        assertTrue(shown(), shows(R.string.pages_order_hint))
+        // Each row has a picture of its page, and the ends have nowhere further to go.
+        waitUntil(10_000) { rule.onAllNodesWithTag("pages-picture-2").fetchSemanticsNodes().isNotEmpty() }
+        assertFalse(enabled("pages-up-0"))
+        assertTrue(enabled("pages-down-0") && enabled("pages-up-1") && enabled("pages-down-1") && enabled("pages-up-2"))
+        assertFalse(enabled("pages-down-2"))
+        for (tag in listOf("pages-up-1", "pages-down-1", "pages-remove-1")) {
+            val size = rule.onNodeWithTag(tag).fetchSemanticsNode().size
+            assertTrue("$tag is $size", size.width >= 48 * rule.density.density - 1 && size.height >= 48 * rule.density.density - 1)
+        }
+        checkAccessibility()
+
+        // The last page first, one place at a time; each move says the new place, once.
+        rule.onNodeWithTag("pages-up-2").performScrollTo().performClick()
+        waitUntil(5_000) { names() == listOf("A.png", "C.png", "B.png") }
+        rule.waitForIdle()
+        assertEquals(1, rule.onAllNodesWithText(text(R.string.pages_moved, 3, 2)).fetchSemanticsNodes().size)
+        rule.onNodeWithTag("pages-up-1").performScrollTo().performClick()
+        waitUntil(5_000) { names() == listOf("C.png", "A.png", "B.png") }
+        rule.onNodeWithTag("pages-down-1").performScrollTo().performClick()
+        waitUntil(5_000) { names() == listOf("C.png", "B.png", "A.png") }
+        rule.waitForIdle()
+        assertTrue(shown(), shows(R.string.pages_moved, 2, 3))
+        // The rows say their new places.
+        assertEquals(text(R.string.pages_move_up, 3), rule.onNodeWithTag("pages-up-2").fetchSemanticsNode().config
+            .getOrNull(SemanticsProperties.ContentDescription)?.firstOrNull() ?: rule.onNodeWithTag("pages-up-2", useUnmergedTree = true).fetchSemanticsNode()
+            .children.firstNotNullOfOrNull { it.config.getOrNull(SemanticsProperties.ContentDescription)?.firstOrNull() })
+
+        rule.onNodeWithTag("pages-read").performClick()
+        waitForTheResult()
+        assertEquals(listOf("C.png", "B.png", "A.png"), (container.engine() as FixtureEngineApi).pagesSent)
+    }
+
+    /** With as many pages as one piece can have, the ways to add one are still at the top of the screen, over the list. */
+    @Test
+    fun withFortyPagesTheWaysToAddOneAreStillInView() {
+        theComputer()
+        fromHome()
+        chosen(*(1..no.kalli.scribe.engine.EngineApi.MAX_PAGES).map { png("Page $it.png") }.toTypedArray())
+        rule.waitForIdle()
+        assertEquals(no.kalli.scribe.engine.EngineApi.MAX_PAGES, vm.pages.value.size)
+        assertTrue("the ways to add a page are over the pages", top("pages-choose") < top("pages-list") && top("pages-photo") < top("pages-list"))
+        for (tag in listOf("pages-choose", "pages-photo")) {
+            val row = rule.onNodeWithTag(tag).fetchSemanticsNode()
+            assertEquals("$tag is in view, whole", row.size.height.toFloat(), row.boundsInWindow.height, 1f)
+        }
+        assertTrue(readEnabled())
+    }
+
+    /** The order the pages were put in is the order they come back in, after the phone ended the app. */
+    @Test
+    fun theOrderThePagesWerePutInComesBackWithTheAppsState() {
+        val state = androidx.lifecycle.SavedStateHandle()
+        lateinit var first: PlayViewModel
+        rule.runOnUiThread { first = PlayViewModel(rule.activity.application, state) }
+        rule.runOnUiThread { first.addPages(listOf(png("A.png"), png("B.png"), png("C.png"))) }
+        waitUntil(20_000) { first.pages.value.size == 3 && !first.busy.value }
+        rule.runOnUiThread { first.movePage(first.pages.value[2], up = true); first.movePage(first.pages.value[1], up = true) }
+        waitUntil(5_000) { state.get<ArrayList<String>>("pages")?.map { it.substringAfter('\n') } == listOf("C.png", "A.png", "B.png") }
+
+        // What a new process is given back is what was saved: the pages by their files, in the order they were left in.
+        val saved = androidx.lifecycle.SavedStateHandle(mapOf("stack" to arrayListOf(Screen.HOME.name, Screen.PAGES.name), "pages" to ArrayList(state.get<ArrayList<String>>("pages")!!)))
+        lateinit var restored: PlayViewModel
+        rule.runOnUiThread { restored = PlayViewModel(rule.activity.application, saved) }
+        assertEquals(listOf("C.png", "A.png", "B.png"), restored.pages.value.map { it.name })
+        assertEquals(listOf(Screen.HOME, Screen.PAGES), restored.screen.value)
+        rule.runOnUiThread { restored.pages.value.toList().forEach(restored::removePage) }
+    }
+
     @Test
     fun pagesInHandComeBackWithTheAppsState() {
         theComputer()

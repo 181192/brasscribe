@@ -30,7 +30,7 @@ import Testing
         case setupDownload = "setup-download"
         case setupReady = "setup-ready"
         case settings
-        /// Settings while the reader of printed music is fetched, once it is there, and after a fetch that failed.
+        /// Settings while the reader of printed music is fetched, once it is there, and after an install that stopped.
         case settingsReaderInstalling = "settings-reader-installing"
         case settingsReaderInstalled = "settings-reader-installed"
         case settingsReaderFailed = "settings-reader-failed"
@@ -118,6 +118,7 @@ import Testing
         #expect(SheetReaderState.resolve(phase: .done, installed: true) == .installed)
         let network = Strings.readerFailure(.network)
         #expect(network.contains("internet") && network != Strings.readerFailure(.stopped("exit code 1")))
+        #expect(Strings.readerFailure(.diskFull) != network && Strings.readerFailure(.diskFull) != Strings.readerFailure(.stopped("exit code 1")))
         let space = Strings.readerFailure(.notEnoughSpace(neededBytes: 2_000_000_000, freeBytes: 1_200_000_000))
         #expect(space.contains(Strings.gigabytes(1_200_000_000)) && space.contains(Strings.gigabytes(2_000_000_000)), "\(space)")
     }
@@ -144,7 +145,7 @@ import Testing
                 app.readerStateShown = switch screen {
                 case .settingsReaderInstalling: .installing
                 case .settingsReaderInstalled: .installed
-                default: .failed(.network)
+                default: .failed(.stopped("exit code 1"))  // the failure with the most on it: its words and Show logs
                 }
                 return app
             }()

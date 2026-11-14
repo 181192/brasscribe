@@ -201,7 +201,8 @@ enum Strings {
         case .notEnoughSpace(let needed, let free):
             String(localized: "Not enough space: the reader needs about \(gigabytes(needed)) GB, and \(gigabytes(free)) GB is free.")
         case .network: String(localized: "The reader's files couldn't be downloaded. Check the internet connection, then try again.")
-        case .stopped: String(localized: "The reader wasn't installed. Try again; the log has the details.")
+        case .diskFull: String(localized: "The disk is full, so the reader wasn't installed. Free some space, then try again.")
+        case .stopped: String(localized: "The reader wasn't installed. Check the internet connection and try again; the log has the details.")
         }
     }
 

@@ -57,12 +57,19 @@ public sealed partial class SheetReaderViewModel : ObservableObject
     public string ReadMore => _s["Settings_Reader_Read"];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Status), nameof(Button), nameof(ShowsButton), nameof(CanInstall), nameof(IsInstalling), nameof(ShowsProgress))]
+    [NotifyPropertyChangedFor(nameof(Status), nameof(Button), nameof(ShowsButton), nameof(CanInstall), nameof(IsInstalling), nameof(ShowsProgress), nameof(ShowsLogs))]
     private SheetReaderState _state;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Status))]
     private string _failure = "";
+
+    /// <summary>The button that shows the log, as in the panel's details.</summary>
+    public string Logs => _s["Tech_Logs"];
+
+    /// <summary>The failure shown is one whose words send the person to the log: the way there is beside them.</summary>
+    public bool ShowsLogs => State == SheetReaderState.Failed && _detailsInLog;
+    private bool _detailsInLog;
 
     /// <summary>The line under the description: installing, installed, or why it stopped. Empty before anything was asked for.</summary>
     public string Status => State switch
@@ -95,12 +102,14 @@ public sealed partial class SheetReaderViewModel : ObservableObject
 
     /// <summary>
     /// Sample content, for the screen catalogue: the card as it is while the reader installs, once it is there, or
-    /// after a fetch that failed on the network. Nothing is installed.
+    /// after an install that stopped with its details in the log (the failure with the most on the card: its words
+    /// and the way to the log). Nothing is installed.
     /// </summary>
     public void ShowSample(SheetReaderState state)
     {
         IsSample = true;
-        Failure = state == SheetReaderState.Failed ? _s["Settings_Reader_Failed_Network"] : "";
+        _detailsInLog = state == SheetReaderState.Failed;
+        Failure = state == SheetReaderState.Failed ? _s["Settings_Reader_Failed"] : "";
         State = state;
         OnPropertyChanged(nameof(ShowsProgress));
     }
@@ -137,27 +146,30 @@ public sealed partial class SheetReaderViewModel : ObservableObject
         }
         catch (SheetReaderException e)
         {
-            Fail(_s[e.Failure switch
+            string key = e.Failure switch
             {
                 SheetReaderFailure.Network => "Settings_Reader_Failed_Network",
+                SheetReaderFailure.DiskFull => "Settings_Reader_Failed_Full",
                 SheetReaderFailure.NotSetUp => "Settings_Reader_Wait",
                 _ => "Settings_Reader_Failed",
-            }]);
+            };
+            Fail(_s[key], detailsInLog: key == "Settings_Reader_Failed");
             return;
         }
         catch (Exception)
         {
             // Whatever it was (pixi could not be started, the disk): it is in the log, and the card must not stay on Installing.
-            Fail(_s["Settings_Reader_Failed"]);
+            Fail(_s["Settings_Reader_Failed"], detailsInLog: true);
             return;
         }
-        if (!_host.Installed) { Fail(_s["Settings_Reader_Failed"]); return; }
+        if (!_host.Installed) { Fail(_s["Settings_Reader_Failed"], detailsInLog: true); return; }
         State = SheetReaderState.Installed;
         _announcer.Announce(Status);
     }
 
-    private void Fail(string why)
+    private void Fail(string why, bool detailsInLog = false)
     {
+        _detailsInLog = detailsInLog;
         Failure = why;
         State = SheetReaderState.Failed;
         _announcer.Announce(why);

@@ -28,6 +28,8 @@ public interface ISettingsHost
     void OpenLicences();
     /// <summary>homr's page: what the reader of printed music is, its source and its licence.</summary>
     void OpenReaderPage();
+    /// <summary>Shows the log in its folder, as Show logs in the panel does.</summary>
+    void ShowLogs();
 }
 
 /// <summary>
@@ -119,6 +121,8 @@ internal sealed class SettingsWindow : Window
         AutomationProperties.SetLabeledBy(readerBusy, readerStatus);
         var readerPage = new Button { Content = reader.ReadMore, Style = S("PlainButtonStyle") };
         var readerInstall = new Button { Style = S("OutlineButtonStyle") };
+        // After a failure whose details are in the log: the way to it.
+        var readerLogs = new Button { Content = reader.Logs, Style = S("PlainButtonStyle"), HorizontalAlignment = HorizontalAlignment.Left };
         void ShowReader()
         {
             readerStatus.Text = reader.Status;
@@ -127,6 +131,7 @@ internal sealed class SettingsWindow : Window
             readerInstall.Content = reader.Button;
             readerInstall.Visibility = reader.ShowsButton ? Visibility.Visible : Visibility.Collapsed;
             readerInstall.IsEnabled = reader.CanInstall;
+            readerLogs.Visibility = reader.ShowsLogs ? Visibility.Visible : Visibility.Collapsed;
             // Read with the button, so a screen reader hears why it is unavailable, or why the last try stopped.
             AutomationProperties.SetHelpText(readerInstall, reader.Status);
         }
@@ -138,7 +143,8 @@ internal sealed class SettingsWindow : Window
         Closed += (_, _) => reader.PropertyChanged -= OnReaderChanged;
         readerInstall.Click += async (_, _) => await reader.InstallAsync();
         readerPage.Click += (_, _) => settings.OpenReaderPage();
-        var readerCard = Stacked(readerHeader, readerBody, readerSource, readerStatus, readerBusy, Row(readerPage, readerInstall));
+        readerLogs.Click += (_, _) => settings.ShowLogs();
+        var readerCard = Stacked(readerHeader, readerBody, readerSource, readerStatus, readerBusy, readerLogs, Row(readerPage, readerInstall));
 
         // ----- Appearance -----
         var appearanceHeader = new TextBlock { Text = appearance.Header, Style = S("StrongStyle") };

@@ -943,6 +943,15 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         say(R.string.pages_removed, at + 1)
     }
 
+    /** Moves [page] one place towards the start ([up]) or the end: the order shown is the order the computer reads. */
+    fun movePage(page: Page, up: Boolean) {
+        val from = pages.value.indexOf(page)
+        val to = if (up) from - 1 else from + 1
+        if (from < 0 || to !in pages.value.indices) return
+        pages.update { list -> list.toMutableList().apply { add(to, removeAt(from)) } }
+        say(R.string.pages_moved, from + 1, to + 1)
+    }
+
     private fun dropPages(gone: List<Page>) {
         if (gone.isNotEmpty()) viewModelScope.launch { withContext(storage) { gone.forEach { it.file.delete() } } }
     }

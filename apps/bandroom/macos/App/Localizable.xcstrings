@@ -471,16 +471,6 @@
         }
       }
     },
-    "Brasscribe doesn't pass it on: this Mac downloads it from PyPI and from homr's releases on GitHub (about %@ GB) and runs it as a separate program.": {
-      "localizations": {
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Brasscribe deler den ikke videre. Macen laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent %@ GB) og kjører den som et eget program."
-          }
-        }
-      }
-    },
     "Brasscribe is ready": {
       "localizations": {
         "nb": {
@@ -516,7 +506,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Brasscribe gjøres fortsatt klar. Noteleseren kan installeres når det er ferdig."
+            "value": "Brasscribe er ikke ferdig satt opp ennå. Noteleseren kan installeres når det er gjort."
           }
         }
       }
@@ -1237,6 +1227,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Den kunne ikke startes. Opptakene på telefonene er trygge."
+          }
+        }
+      }
+    },
+    "It doesn't come with Brasscribe: this Mac downloads it straight from its makers (PyPI and GitHub, about %@ GB), and Brasscribe runs it as a separate program.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den følger ikke med Brasscribe: Macen laster den ned rett fra dem som har laget den (PyPI og GitHub, omtrent %@ GB), og Brasscribe kjører den som et eget program."
           }
         }
       }
@@ -2271,6 +2271,16 @@
         }
       }
     },
+    "The disk is full, so the reader wasn't installed. Free some space, then try again.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disken er full, så noteleseren ble ikke installert. Frigjør plass, og prøv igjen."
+          }
+        }
+      }
+    },
     "The download stopped": {
       "localizations": {
         "nb": {
@@ -2411,12 +2421,12 @@
         }
       }
     },
-    "The reader wasn't installed. Try again; the log has the details.": {
+    "The reader wasn't installed. Check the internet connection and try again; the log has the details.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noteleseren ble ikke installert. Prøv igjen. Detaljene står i loggen."
+            "value": "Noteleseren ble ikke installert. Sjekk internettforbindelsen, og prøv igjen. Detaljene står i loggen."
           }
         }
       }

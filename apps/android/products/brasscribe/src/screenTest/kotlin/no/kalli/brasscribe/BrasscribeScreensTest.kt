@@ -171,6 +171,9 @@ class BrasscribeScreensTest : ScreenCatalogue() {
         Entry("home-open") { rule.onNodeWithTag("home-open").performScrollTo().performClick(); waitForTag("open-pages", 5_000); rest() },
         Entry("pages") { rule.runOnUiThread { container.fixtureSource = null }; pagesInHand(0) },
         Entry("pages-in-hand") { computer("old-hundredth"); pagesInHand(3) },
+        // (The same screen as pages-in-hand, whose order is compared. Here the list scrolls many screens under the keyboard, and
+        // the comparison places a row where it was when the keyboard reached it; that everything is reached is still checked.)
+        Entry("pages-forty", ownOrder = "the list is many screens long, and the order is compared on pages-in-hand") { computer("old-hundredth"); pagesInHand(40) },
         Entry("pages-without-the-computer") { rule.runOnUiThread { container.fixtureSource = null }; pagesInHand(2) },
         Entry("pages-being-read", steady = false) {
             computer("old-hundredth"); pagesInHand(2)

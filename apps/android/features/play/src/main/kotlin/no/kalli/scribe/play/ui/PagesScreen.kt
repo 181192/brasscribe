@@ -8,7 +8,30 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import no.kalli.scribe.design.ScribeSpace
+import no.kalli.scribe.play.Page
+import no.kalli.scribe.play.PageThumbnail
+import no.kalli.scribe.play.PageThumbnails
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.IconButton
@@ -80,8 +103,9 @@ fun rememberPagePicker(vm: PlayViewModel): PagePicker {
 }
 
 /**
- * Printed music before it is sent: the pages in the order they are read, each with its way out, the two ways to
- * add one, and one primary button that has the computer read them. The computer reads them: a row under the pages
+ * Printed music before it is sent: the two ways to add a page, then the pages in the order they are read, each with
+ * a small picture of it and the ways to move it and to take it out, and one primary button that has the computer
+ * read them. The computer reads them: a row under the pages
  * says it is there, and when it is not the band over the button says what is needed, with the way to connect; the
  * pages stay meanwhile.
  */
@@ -122,19 +146,7 @@ fun PagesScreen(vm: PlayViewModel) {
         ScreenTitle(stringResource(R.string.pages_title), Modifier.focusRequester(headingFocus).focusable())
         Lead(stringResource(R.string.pages_lead))
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
-        if (pages.isNotEmpty()) {
-            SectionLabel(pluralStringResource(R.plurals.pages_count, pages.size, pages.size))
-            RowGroup(Modifier.testTag("pages-list")) {
-                pages.forEachIndexed { i, page ->
-                    if (i > 0) RowDivider()
-                    ListRow(stringResource(R.string.pages_page, i + 1), null, subtitle = page.name, trailing = {
-                        IconButton({ vm.removePage(page) }, Modifier.size(48.dp).testTag("pages-remove-$i")) {
-                            BcIcon(DesignR.drawable.ic_bc_delete, stringResource(R.string.pages_remove, i + 1))
-                        }
-                    })
-                }
-            }
-        }
+        // The ways to add a page come before the pages: with forty in hand they are still at the top, not under them.
         RowGroup {
             ListRow(stringResource(if (pages.isEmpty()) R.string.pages_choose else R.string.pages_choose_more), picker.choose,
                 Modifier.testTag("pages-choose"), subtitle = stringResource(R.string.pages_choose_desc), icon = DesignR.drawable.ic_bc_import_file, enabled = !busy)
@@ -154,8 +166,74 @@ fun PagesScreen(vm: PlayViewModel) {
                 }
             }, Modifier.testTag("pages-camera-settings"))
         }
+        if (pages.isNotEmpty()) {
+            SectionLabel(pluralStringResource(R.plurals.pages_count, pages.size, pages.size))
+            // What the phone's picker hands back is in no promised order: the order here is the one that counts.
+            if (pages.size > 1) Text(stringResource(R.string.pages_order_hint), Modifier.testTag("pages-order"),
+                style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+            val thumbnails = remember { PageThumbnails() }
+            RowGroup(Modifier.testTag("pages-list")) {
+                pages.forEachIndexed { i, page ->
+                    if (i > 0) RowDivider()
+                    // (Keyed by the page: a row that moves keeps its picture and its place in the keyboard's round.)
+                    androidx.compose.runtime.key(page.file.path) { PageRow(vm, page, i, pages.size, thumbnails) }
+                }
+            }
+        }
         if (there) RowGroup(Modifier.testTag("pages-where")) {
             ListRow(stringResource(R.string.where_companion), null, subtitle = stringResource(R.string.pages_where_desc), icon = DesignR.drawable.ic_bc_computer)
+        }
+    }
+}
+
+/**
+ * One page in hand: a small picture of it, its place and its name, and the ways to move it one place up or down and
+ * to take it out. The three buttons are under the words where the row is narrow or the text large, so the name is
+ * never squeezed to a column of letters.
+ */
+@Composable
+private fun PageRow(vm: PlayViewModel, page: Page, index: Int, count: Int, thumbnails: PageThumbnails) {
+    val c = ScribeTheme.colors
+    // Read small and off the main thread, once: the row shows the icon until it is there, and after it when there is none.
+    val thumbnail by produceState<PageThumbnail?>(null, page.file.path) { value = withContext(Dispatchers.IO) { thumbnails.of(page) } }
+    val words = @Composable { modifier: Modifier ->
+        Column(modifier) {
+            Text(stringResource(R.string.pages_page, index + 1), style = MaterialTheme.typography.titleMedium, color = c.text)
+            val pdfPages = thumbnail?.pages?.let { pluralStringResource(R.plurals.pages_count, it, it) }
+            Text(listOfNotNull(page.name, pdfPages).joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+        }
+    }
+    val picture = @Composable {
+        Box(Modifier.size(width = 44.dp, height = 56.dp).background(c.secondary, MaterialTheme.shapes.small).border(1.dp, c.border, MaterialTheme.shapes.small)
+            .clip(MaterialTheme.shapes.small).testTag("pages-picture-$index"), contentAlignment = Alignment.Center) {
+            val bitmap = thumbnail?.picture
+            // The words beside it say which page it is: the picture has no name of its own.
+            if (bitmap != null) Image(bitmap.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = Alignment.TopCenter)
+            else BcIcon(DesignR.drawable.ic_bc_file, null)
+        }
+    }
+    val buttons = @Composable {
+        IconButton({ vm.movePage(page, up = true) }, Modifier.size(48.dp).testTag("pages-up-$index"), enabled = index > 0) {
+            BcIcon(DesignR.drawable.ic_bc_open, stringResource(R.string.pages_move_up, index + 1), Modifier.rotate(-90f),
+                tint = if (index > 0) c.text else c.textMuted)
+        }
+        IconButton({ vm.movePage(page, up = false) }, Modifier.size(48.dp).testTag("pages-down-$index"), enabled = index < count - 1) {
+            BcIcon(DesignR.drawable.ic_bc_open, stringResource(R.string.pages_move_down, index + 1), Modifier.rotate(90f),
+                tint = if (index < count - 1) c.text else c.textMuted)
+        }
+        IconButton({ vm.removePage(page) }, Modifier.size(48.dp).testTag("pages-remove-$index")) {
+            BcIcon(DesignR.drawable.ic_bc_delete, stringResource(R.string.pages_remove, index + 1))
+        }
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stacked = maxWidth < 340.dp || largeText()
+        Column(Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s2)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3)) {
+                picture()
+                words(Modifier.weight(1f))
+                if (!stacked) buttons()
+            }
+            if (stacked) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { buttons() }
         }
     }
 }
