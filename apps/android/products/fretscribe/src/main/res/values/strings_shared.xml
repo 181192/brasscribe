@@ -221,6 +221,7 @@
     <string name="problem_record_instead">Record instead</string>
     <string name="bandroom_open">Open the download page</string>
     <string name="bandroom_no_browser">This phone has no browser to open it. Type the address on your computer.</string>
+    <string name="update_no_browser">This phone has no browser to download the update with.</string>
     <string name="companion_address">Computer address</string>
     <string name="companion_chosen">Chosen</string>
     <string name="companion_code">Six-digit code</string>

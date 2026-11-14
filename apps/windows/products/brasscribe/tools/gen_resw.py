@@ -448,8 +448,8 @@ code = {
     "Connection_PairAgain": ("Pair this PC again", "Koble til PC-en på nytt"),
     "Connection_GetUpdate": ("Get the update", "Hent oppdateringen"),
     "Connection_ConnectHelp": ("Connect this PC to Brasscribe on your computer", "Koble denne PC-en til Brasscribe på datamaskinen"),
-    "Connection_GetUpdateHelp": ("Opens the page with the newest Brasscribe Play and the newest Brasscribe for your computer",
-                                 "Åpner siden med nyeste Brasscribe Play og nyeste Brasscribe for datamaskinen"),
+    "Connection_GetUpdateHelp": ("Opens your browser to get the newest version",
+                                 "Åpner nettleseren for å hente den nyeste versjonen"),
     "Connection_YourComputer": ("your computer", "datamaskinen"),
     "Connection_ThisPc": ("this PC", "denne PC-en"),
     "Connection_DetailsAddress": ("Address: {0}", "Adresse: {0}"),
@@ -864,8 +864,8 @@ add("Error_UpdateBandroom_Reason", "Your recording is safe. This app is newer th
 add("Error_UpdateBandroom_Step1", "Update Brasscribe on the computer.", "Oppdater Brasscribe på datamaskinen.")
 add("Error_UpdateBandroom_Step2", "Choose Try again.", "Velg Prøv igjen.")
 add("Error_GetUpdate", "Get the update", "Hent oppdateringen")
-add("Error_GetUpdate_Help", "Opens the page with the newest Brasscribe Play and the newest Brasscribe for your computer",
-    "Åpner siden med nyeste Brasscribe Play og nyeste Brasscribe for datamaskinen")
+add("Error_GetUpdate_Help", "Opens your browser to get the newest version",
+    "Åpner nettleseren for å hente den nyeste versjonen")
 add("Notice_Problem", "Something went wrong, but your work is safe. If it happens again, restart Brasscribe Play.",
     "Noe gikk galt, men arbeidet ditt er trygt. Hvis det skjer igjen, start Brasscribe Play på nytt.")
 add("Score_RenderFailed", "The notes can't be drawn. Try another zoom or part, or open the score again.",

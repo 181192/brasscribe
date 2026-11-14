@@ -363,7 +363,7 @@ public class AppFlowTests
             Assert.Equal(ErrorKind.UpdateBandroom, main.Error.Kind);
             Assert.Equal("Update Brasscribe on your computer", main.Error.Title);
             Assert.Equal("Get the update", main.Error.LinkLabel);
-            Assert.Equal("https://github.com/181192/brasscribe/releases/latest", main.Error.LinkUri!.AbsoluteUri);
+            Assert.Equal("https://github.com/181192/brasscribe/releases/tag/bandroom-latest", main.Error.LinkUri!.AbsoluteUri);
         }
         if (scene == "error-update-app")
         {

@@ -345,8 +345,8 @@ public class InterfaceVersionTests
 
         Assert.True(rig.Monitor.HasAction);
         Assert.Equal("Get the update", rig.Monitor.ActionText);
-        Assert.StartsWith("Opens the page", rig.Monitor.ActionHelp);
-        Assert.Equal("https://github.com/181192/brasscribe/releases/latest", rig.Monitor.ActionUri!.AbsoluteUri);
+        Assert.Equal("Opens your browser to get the newest version", rig.Monitor.ActionHelp);
+        Assert.Equal("https://github.com/181192/brasscribe/releases/tag/bandroom-latest", rig.Monitor.ActionUri!.AbsoluteUri);
         Assert.Equal(rig.Time.GetUtcNow(), rig.Monitor.LastOk);
         Assert.Contains("Last answered: ", rig.Monitor.DetailsText);
         // The stored record keeps its last good check: the next launch does not start from "Connected".
@@ -557,11 +557,11 @@ public class InterfaceVersionTests
         Assert.Equal(0, studio.Pairings);
         Assert.False(vm.IsPaired);
         OnlyTheNumberWasAsked(lan);
-        // Not words only: the pairing screen offers the page with the update, as the status row does.
+        // Not words only: the pairing screen offers the update, as the status row does.
         Assert.True(vm.HasEngineStatusLink);
         Assert.Equal(ConnectionMonitor.LatestRelease, vm.EngineStatusLink);
         Assert.Equal("Get the update", vm.EngineStatusLinkLabel);
-        Assert.StartsWith("Opens the page", vm.EngineStatusLinkHelp);
+        Assert.Equal("Opens your browser to get the newest version", vm.EngineStatusLinkHelp);
 
         // After the update the pairing goes through, and the link is gone with the sentence.
         studio.InterfaceVersion = Wire.InterfaceVersion;
@@ -710,5 +710,24 @@ public class InterfaceVersionTests
         // The engine was not told: it still holds the device.
         Assert.Contains("tok-1", studio.Tokens);
         OnlyTheNumberWasAsked(lan);
+    }
+
+    [Fact]
+    public void The_update_is_the_file_to_download_where_this_pc_can_use_it_and_the_page_elsewhere()
+    {
+        const string releases = "https://github.com/181192/brasscribe/releases";
+        var before = (Downloads.AppProduct, Downloads.AppFile, Downloads.DesktopFile);
+        try
+        {
+            (Downloads.AppProduct, Downloads.AppFile) = ("fretscribe", "fretscribe-windows-x64.zip"); // as the app says at its start
+            Downloads.DesktopFile = "brasscribe-bandroom-windows-x64.zip";
+            Assert.Equal($"{releases}/download/fretscribe-latest/fretscribe-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false).AbsoluteUri);
+            // An older Bandroom on this PC: Bandroom for Windows. On another computer, which may be a Mac: its page.
+            Assert.Equal($"{releases}/download/bandroom-latest/brasscribe-bandroom-windows-x64.zip", Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: true).AbsoluteUri);
+            Assert.Equal($"{releases}/tag/bandroom-latest", Downloads.For(InterfaceAnswer.UpdateBandroom, engineOnThisPc: false).AbsoluteUri);
+            (Downloads.AppProduct, Downloads.AppFile) = (null, null); // code outside an app
+            Assert.Equal(Downloads.LatestRelease, Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false));
+        }
+        finally { (Downloads.AppProduct, Downloads.AppFile, Downloads.DesktopFile) = before; }
     }
 }

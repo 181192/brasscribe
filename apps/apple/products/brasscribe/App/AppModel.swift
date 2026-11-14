@@ -423,8 +423,10 @@ final class AppModel: PlayHost {
         ask(PendingSource(audioURL: url, title: title))
     }
 
-    /// Brasscribe Play and Bandroom are downloaded from the repository's latest release.
-    let downloads = URL(string: "https://github.com/181192/brasscribe/releases/latest")!
+    /// Bandroom, the program for the computer, is downloaded from the page of its newest release.
+    let downloads = Releases.bandroom
+    /// Brasscribe Play's own release and its file for the Mac (`PlayHost.appDownload`).
+    let appDownload = Releases.app(product: "brasscribe", macFile: "brasscribe-play-macos-arm64.zip")
 
     func recorded(_ url: URL, title: String) { acceptRecording(url, title: title) }
     func recordedSilence() { show(.silence) }

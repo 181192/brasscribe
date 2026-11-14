@@ -652,8 +652,8 @@ public partial class App : Application, IBandroomActions, IPanelHost, ISettingsH
         _downloads.Start(missing);
     }
 
-    /// <summary>Where the newest Bandroom is (the fix when its pixi is too old).</summary>
-    private const string LatestRelease = "https://github.com/181192/brasscribe/releases/latest";
+    /// <summary>The newest Bandroom, straight to its file (the fix when this one is behind, or its pixi is too old).</summary>
+    private const string LatestRelease = Wire.LatestBandroom;
 
     public void Fix(ProblemKind problem)
     {

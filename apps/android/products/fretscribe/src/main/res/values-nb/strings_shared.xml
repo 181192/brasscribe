@@ -217,6 +217,7 @@
     <string name="problem_record_instead">Spill inn i stedet</string>
     <string name="bandroom_open">Åpne nedlastingssiden</string>
     <string name="bandroom_no_browser">Telefonen har ingen nettleser som kan åpne den. Skriv inn adressen på datamaskinen.</string>
+    <string name="update_no_browser">Telefonen har ingen nettleser å laste ned oppdateringen med.</string>
     <string name="companion_address">Adressen til datamaskinen</string>
     <string name="companion_chosen">Valgt</string>
     <string name="companion_code">Sekssifret kode</string>

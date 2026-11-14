@@ -312,6 +312,7 @@
     <string name="bandroom_get_text">It is free for Mac (Apple silicon) and Windows. On your computer, download it from this address:</string>
     <string name="bandroom_open">Open the download page</string>
     <string name="bandroom_no_browser">This phone has no browser to open it. Type the address on your computer.</string>
+    <string name="update_no_browser">This phone has no browser to download the update with.</string>
     <string name="companion_title">Brasscribe Bandroom</string>
     <string name="companion_explain">Open Brasscribe Bandroom on your computer and choose Pair a phone. Type the six digits it shows.</string>
     <string name="companion_address">Computer address</string>

@@ -548,10 +548,10 @@ final class AppModel {
         NSWorkspace.shared.activateFileViewerSelecting([log])
     }
 
-    /// The latest release, where a newer Bandroom is: one with a newer pixi (`Problem.pixiTooOld`), or with this
-    /// engine's interface version or a newer engine (`MismatchFix.getBandroom`).
+    /// The newest Bandroom for Mac, straight to its file in the latest release: one with a newer pixi
+    /// (`Problem.pixiTooOld`), or with this engine's interface version or a newer engine (`MismatchFix.getBandroom`).
     func openLatestRelease() {
-        NSWorkspace.shared.open(URL(string: "https://github.com/181192/brasscribe/releases/latest")!)
+        NSWorkspace.shared.open(Wire.latestBandroom)
     }
 
     func openPrivacySettings() {

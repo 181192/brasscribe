@@ -9,6 +9,12 @@ public static class Wire
     /// pairing code it opened when it started (<see cref="InterfaceMatch"/>).
     /// </summary>
     public const int InterfaceVersion = 1;
+
+    /// <summary>
+    /// The newest Bandroom for Windows: its own file in Bandroom's newest release (bandroom-latest), never a version by name. Where Bandroom
+    /// sends the person when it is the one to update (or carries a setup tool that is too old).
+    /// </summary>
+    public const string LatestBandroom = "https://github.com/181192/brasscribe/releases/download/bandroom-latest/brasscribe-bandroom-windows-x64.zip";
 }
 
 /// <summary>What gets the engine and Bandroom to the same interface version again.</summary>

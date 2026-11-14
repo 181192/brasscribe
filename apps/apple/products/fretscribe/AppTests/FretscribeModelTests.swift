@@ -11,6 +11,16 @@ struct FretscribeModelTests {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../../../fixtures/\(name)").standardizedFileURL
     }
 
+    /// When this app is the one to update, a Mac goes straight to the app's own file in the latest release.
+    @Test func anOutdatedAppIsSentToItsOwnFile() {
+        let model = FretscribeModel(defaults: UserDefaults(suiteName: "fs-model-\(UUID().uuidString)")!)
+        #if os(macOS)
+        #expect(model.appDownload.absoluteString == "https://github.com/181192/brasscribe/releases/download/fretscribe-latest/fretscribe-macos-arm64.zip")
+        #else
+        #expect(model.appDownload.absoluteString == "https://github.com/181192/brasscribe/releases/tag/fretscribe-latest")
+        #endif
+    }
+
     /// A tab job carries the player's instrument, tuning and reading, and what "What is this?" was answered with; none of
     /// the band's options.
     @Test func aTabJobSaysTheInstrumentAndTheRecording() {

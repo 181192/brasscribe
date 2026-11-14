@@ -409,8 +409,8 @@ add("Error_TryAgain", "Try again", "Prøv igjen")
 add("Error_DetailsHeading", "Details for whoever set up the computer", "Detaljer for den som satte opp datamaskinen")
 name("ErrorSteps", "What to do", "Hva du kan gjøre")
 add("Error_GetUpdate", "Get the update", "Hent oppdateringen")
-add("Error_GetUpdate_Help", "Opens the page with the newest Fretscribe and the newest Bandroom for your computer",
-    "Åpner siden med nyeste Fretscribe og nyeste Bandroom for datamaskinen")
+add("Error_GetUpdate_Help", "Opens your browser to get the newest version",
+    "Åpner nettleseren for å hente den nyeste versjonen")
 add("Error_ComputerUnreachable_Title", "Can't reach Bandroom on your computer", "Får ikke kontakt med Bandroom på datamaskinen")
 add("Error_ComputerUnreachable_Reason", "Your recording is safe. Tabs are written on your computer, and it isn't answering.",
     "Opptaket ditt er trygt. Tabber skrives på datamaskinen, og den svarer ikke.")
@@ -562,8 +562,8 @@ add("Connection_DetailsAddress", "Address: {0}", "Adresse: {0}")
 add("Connection_DetailsLastSeen", "Last answered: {0}", "Svarte sist: {0}")
 add("Connection_DetailsServerId", "Server id: {0}", "Server-ID: {0}")
 add("Connection_GetUpdate", "Get the update", "Hent oppdateringen")
-add("Connection_GetUpdateHelp", "Opens the page with the newest Fretscribe and the newest Bandroom for your computer",
-    "Åpner siden med nyeste Fretscribe og nyeste Bandroom for datamaskinen")
+add("Connection_GetUpdateHelp", "Opens your browser to get the newest version",
+    "Åpner nettleseren for å hente den nyeste versjonen")
 add("Connection_NeedsPairing", "The computer no longer recognises this PC.", "Datamaskinen kjenner ikke igjen denne PC-en lenger.")
 add("Connection_Offline", "Not connected. Tabs are written on your computer: connect it to write a new one.",
     "Ikke tilkoblet. Tabber skrives på datamaskinen: koble den til for å skrive en ny.")

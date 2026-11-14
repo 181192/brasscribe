@@ -154,7 +154,7 @@
     <value>Hent oppdateringen</value>
   </data>
   <data name="Connection_GetUpdateHelp" xml:space="preserve">
-    <value>Åpner siden med nyeste Fretscribe og nyeste Bandroom for datamaskinen</value>
+    <value>Åpner nettleseren for å hente den nyeste versjonen</value>
   </data>
   <data name="Connection_NeedsPairing" xml:space="preserve">
     <value>Datamaskinen kjenner ikke igjen denne PC-en lenger.</value>
@@ -247,7 +247,7 @@
     <value>Hent oppdateringen</value>
   </data>
   <data name="Error_GetUpdate_Help" xml:space="preserve">
-    <value>Åpner siden med nyeste Fretscribe og nyeste Bandroom for datamaskinen</value>
+    <value>Åpner nettleseren for å hente den nyeste versjonen</value>
   </data>
   <data name="Error_NeedsPairing" xml:space="preserve">
     <value>Datamaskinen må kobles til på nytt. Skriv inn koden den viser, i Innstillinger.</value>

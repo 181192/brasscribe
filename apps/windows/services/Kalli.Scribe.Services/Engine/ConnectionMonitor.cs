@@ -89,7 +89,7 @@ public sealed partial class ConnectionMonitor : ObservableObject
     [ObservableProperty] public partial string StatusText { get; private set; } = "";
 
     /// <summary>Where the newest Brasscribe Play and Bandroom are: the row's action while one of the two must be updated.</summary>
-    public static readonly Uri LatestRelease = new("https://github.com/181192/brasscribe/releases/latest");
+    public static Uri LatestRelease => Downloads.LatestRelease;
 
     /// <summary>The label of the row's action: "Connect" when offline, "Pair again" after a 401, "Get the update" for another interface version, else empty.</summary>
     [ObservableProperty] public partial string ActionText { get; private set; } = "";
@@ -97,8 +97,16 @@ public sealed partial class ConnectionMonitor : ObservableObject
     /// <summary>What the action does, for screen readers.</summary>
     [ObservableProperty] public partial string ActionHelp { get; private set; } = "";
 
-    /// <summary>The page the action opens; null when the action is Connect or Pair again.</summary>
-    public Uri? ActionUri => NeedsUpdate ? LatestRelease : null;
+    /// <summary>
+    /// What the action opens: the file to download for the one of the two that needs the update (<see cref="Downloads.For"/>);
+    /// null when the action is Connect or Pair again.
+    /// </summary>
+    public Uri? ActionUri => State switch
+    {
+        ConnectionState.UpdateApp => Downloads.For(InterfaceAnswer.UpdateApp, engineOnThisPc: false),
+        ConnectionState.UpdateBandroom => Downloads.For(InterfaceAnswer.UpdateBandroom, !IsPreview && _address().IsLoopback),
+        _ => null,
+    };
 
     /// <summary>For the band's tech person: address, server id and when the engine last answered.</summary>
     [ObservableProperty] public partial string DetailsText { get; private set; } = "";

@@ -154,7 +154,7 @@
     <value>Get the update</value>
   </data>
   <data name="Connection_GetUpdateHelp" xml:space="preserve">
-    <value>Opens the page with the newest Fretscribe and the newest Bandroom for your computer</value>
+    <value>Opens your browser to get the newest version</value>
   </data>
   <data name="Connection_NeedsPairing" xml:space="preserve">
     <value>The computer no longer recognises this PC.</value>
@@ -247,7 +247,7 @@
     <value>Get the update</value>
   </data>
   <data name="Error_GetUpdate_Help" xml:space="preserve">
-    <value>Opens the page with the newest Fretscribe and the newest Bandroom for your computer</value>
+    <value>Opens your browser to get the newest version</value>
   </data>
   <data name="Error_NeedsPairing" xml:space="preserve">
     <value>Your computer needs pairing again. Enter the code it shows in Settings.</value>
