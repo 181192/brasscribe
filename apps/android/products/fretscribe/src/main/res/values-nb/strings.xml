@@ -311,6 +311,32 @@
     <string name="fs_practice_metronome_tip">Et klikk på hvert slag.</string>
     <string name="fs_practice_sound_done">Ferdig</string>
     <string name="fs_sound_failed">Denne telefonen klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.</string>
+
+    <!-- Del eller skriv ut, for en tab -->
+    <string name="fs_share_print">Skriv ut</string>
+    <string name="fs_share_as">Del som</string>
+    <string name="fs_share_pdf">PDF</string>
+    <string name="fs_share_pdf_for">For utskrift, eller for å lese på en annen skjerm</string>
+    <string name="fs_share_pdf_computer">PDF-en kommer fra Bandroom på datamaskinen.</string>
+    <string name="fs_share_pdf_phone">PDF-en settes opp på denne telefonen.</string>
+    <string name="fs_share_gp">Guitar Pro</string>
+    <string name="fs_share_gp_for">For å jobbe videre i Guitar Pro 7 eller nyere</string>
+    <string name="fs_share_musicxml">MusicXML</string>
+    <string name="fs_share_musicxml_for">Beholder strenger og bånd, for MuseScore og andre noteprogrammer</string>
+    <string name="fs_share_midi">MIDI</string>
+    <string name="fs_share_midi_for">Bare notene, for andre musikkapper</string>
+    <string name="fs_share_text">Teksttab</string>
+    <string name="fs_share_text_for">Tabben med bokstaver og streker, til å lime inn hvor som helst</string>
+    <string name="fs_share_instructions">Spilleinstruksjoner</string>
+    <string name="fs_share_instructions_for">Hva du skal spille, i ord, for skjermleser eller leselist</string>
+    <string name="fs_share_instructions_suffix">spilleinstruksjoner</string>
+    <string name="fs_share_needs_computer">Datamaskinen skriver denne. Koble til den først.</string>
+    <string name="fs_share_not_from_computer">Bare for en sang datamaskinen har skrevet ned.</string>
+    <string name="fs_share_not_made">Datamaskinen skrev ikke denne for sangen.</string>
+    <string name="fs_share_making">Lager %1$s …</string>
+    <string name="fs_share_making_print">Gjør sidene klare …</string>
+    <string name="fs_share_failed">Det gikk ikke. Prøv igjen.</string>
+    <string name="fs_share_marks_note">\? står ved en note Fretscribe ikke er sikker på. ! står ved en note som ikke har plass på instrumentet.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">«?» betyr at Fretscribe var usikker på en tone. «?» i en boks betyr svært usikker.</string>
     <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->

@@ -28,10 +28,10 @@ class TabRoomTest : TabScreenTest() {
     private fun there(tag: String) = rule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
 
     /** The tab with its player, by the way a player gets there (every step scrolled to: the screen is small). */
-    private fun theTab() {
+    private fun theTab(file: String = "Bass line.wav") {
         computer("bass-line-marks")
         showing = false
-        openFromHome(recording())
+        openFromHome(recording(file))
         waitForTag("fs-what-continue", 20_000)
         rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performScrollTo().performClick()
@@ -77,6 +77,62 @@ class TabRoomTest : TabScreenTest() {
         assertTrue("the player steps aside for the note", !there("fs-practice"))
         assertTrue("the tab keeps its room with a note open (${height("fs-tab-scroll")} dp)", height("fs-tab-scroll") >= 180f)
         assertEquals(text(R.string.fs_tab_note_slowly), rule.onNodeWithTag("fs-tab-note-slowly").fetchSemanticsNode().config[SemanticsProperties.ContentDescription].single())
+    }
+
+    /**
+     * On its side the top bar carries the tuning after the title: a long title gives way to it with "…", and the
+     * buttons and the tuning stay whole in the bar. One case for each text size (100, 130 and 200 %) in English and
+     * in bokmål, on a 640 × 360 phone; every assertion names its case.
+     */
+    @Test
+    fun onItsSideALongTitleGivesWayToTheTuningAndTheButtons() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 640, 360))
+        val long = "The long walk home through the hills as the band played it at the spring concert"
+        assertEquals(80, long.length)
+        theTab("$long.wav")
+        // The Sound button joins the bar once the tab's sound is ready: the bar is then at its fullest.
+        waitUntil(20_000) { rule.onAllNodesWithTag("fs-practice-sound").fetchSemanticsNodes().isNotEmpty() }
+        shot("tab-long-title-small-landscape")
+        fun layout(node: androidx.compose.ui.semantics.SemanticsNode) = mutableListOf<androidx.compose.ui.text.TextLayoutResult>().also {
+            node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(it)
+        }.single()
+        for (lang in listOf("en-GB", "nb-NO")) {
+            language(lang)
+            for (scale in listOf(1.0f, 1.3f, 2.0f)) {
+                textSize(scale)
+                rest()
+                val case = "$lang at ${(scale * 100).toInt()} %"
+                val title = rule.onNodeWithTag("top-bar-title", useUnmergedTree = true).fetchSemanticsNode()
+                val tail = rule.onNodeWithTag("top-bar-title-tail", useUnmergedTree = true).fetchSemanticsNode()
+                // The title is cut with "…"; the tuning and capo are whole.
+                assertTrue("$case: the long title is cut with …", layout(title).isLineEllipsized(0))
+                val t = layout(tail)
+                assertTrue("$case: the tuning is not cut", !t.isLineEllipsized(0) && t.lineCount == 1 && t.getLineRight(0) <= t.size.width + 1f)
+                assertEquals("$case: the tuning is in view, whole", tail.size.width.toFloat(), tail.boundsInWindow.width, 1f)
+                val tailText = tail.config[SemanticsProperties.Text].joinToString("") { it.text }
+                assertTrue("$case: the tuning and capo are said ($tailText)",
+                    tailText.contains(text(R.string.fs_tab_no_capo)) && tailText.length > text(R.string.fs_tab_no_capo).length + 4)
+                // Every button of the bar is in the window, whole, at least 48 dp, and right of the tuning.
+                val window = rule.activity.window.decorView.width.toFloat()
+                val inBar = listOf("fs-practice-sound", "fs-tab-share", "fs-tab-full-screen", "fs-tab-zoom-out", "fs-tab-zoom-in").flatMap { tag ->
+                    rule.onAllNodesWithTag(tag).fetchSemanticsNodes().filter { it.boundsInWindow.top < tail.boundsInWindow.bottom }.map { tag to it.boundsInWindow }
+                }
+                assertEquals("$case: the bar's buttons (${inBar.map { it.first }})", 5, inBar.size)
+                for ((tag, b) in inBar) {
+                    assertTrue("$case: $tag is inside the window ($b of $window)", b.left >= 0f && b.right <= window + 0.5f)
+                    assertTrue("$case: $tag is at least 48 dp (${b.width / density} × ${b.height / density})", b.width >= 47.5f * density && b.height >= 47.5f * density)
+                    assertTrue("$case: $tag is right of the tuning", b.left >= tail.boundsInWindow.right - 0.5f)
+                }
+                // The heading is read whole, with commas where the bar shows "·": the full title, the tuning and the capo.
+                val heading = rule.onNode(androidx.compose.ui.test.isHeading() and androidx.compose.ui.test.hasText(long, substring = true)).fetchSemanticsNode()
+                val spoken = heading.config[SemanticsProperties.ContentDescription].joinToString(" ")
+                assertTrue("$case: the heading says the title ($spoken)", spoken.startsWith("$long, "))
+                assertTrue("$case: the heading says the capo ($spoken)", spoken.endsWith(", " + text(R.string.fs_tab_no_capo)))
+                assertTrue("$case: the heading has no \"·\" ($spoken)", '·' !in spoken)
+            }
+        }
+        textSize(1.0f)
+        language("en-GB")
     }
 
     /**

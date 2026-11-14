@@ -332,14 +332,32 @@ fun BrandMark(size: Dp = 56.dp, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null, titleIsHeading: Boolean = false, actions: @Composable RowScope.() -> Unit = {}) {
+fun PlayTopBar(title: String?, onBack: (() -> Unit)?, backLabel: String? = null, titleIsHeading: Boolean = false,
+               /** Words after the title that are never cut: a long title gives way to them, with "…" (the tab's tuning). */
+               titleTail: String? = null,
+               /** What a screen reader says for the title and its tail together, when it should differ from what is shown. */
+               titleSpoken: String? = null, actions: @Composable RowScope.() -> Unit = {}) {
     val c = ScribeTheme.colors
     // With large text the back label would collide with the title and the actions: keep the arrow.
     val backText = backLabel.takeIf { androidx.compose.ui.platform.LocalDensity.current.fontScale < 1.3f }
     CenterAlignedTopAppBar(
         // A screen whose content has no title of its own (the tab) takes the top bar's as its heading.
-        title = { if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            modifier = if (titleIsHeading) Modifier.semantics { heading() } else Modifier) },
+        title = {
+            if (title != null && titleTail != null) Row(
+                Modifier.semantics(mergeDescendants = true) {
+                    if (titleIsHeading) heading()
+                    if (titleSpoken != null) contentDescription = titleSpoken
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false).testTag("top-bar-title"))
+                // (Never wider than the bar in today's words; should one be, it is cut softly rather than clipped.)
+                Text(titleTail, style = MaterialTheme.typography.titleMedium, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("top-bar-title-tail"))
+            } else if (title != null) Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = if (titleIsHeading) Modifier.semantics { heading() } else Modifier)
+        },
         navigationIcon = {
             if (onBack != null) {
                 if (backText != null) {
