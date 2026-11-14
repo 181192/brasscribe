@@ -481,26 +481,25 @@ fun ScoreScreen(vm: PlayViewModel) {
     var bottomHeight by remember { mutableStateOf(0) }
     var uprightFirstHidden by remember { mutableStateOf(Int.MAX_VALUE) }
     // Upright on a phone, in order of need: your part (and the stand), the lineup notice, what to check, the band sounds.
-    val uprightLarge = largeText()
+    // Where the part comes from stands beside the part picker where the two fit one line; where it would take a line
+    // of its own (a small phone, larger text) it is in the ⋯ menu, so the score keeps that line.
+    var sourceBeside by remember { mutableStateOf(true) }
     val uprightItems = buildList<@Composable (Boolean) -> Unit> {
         add { inSheet ->
-            if (!inSheet) FlowRow(
+            if (!inSheet) BesideIfItFits(
                 Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
-                horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2),
-            ) {
-                PracticeChip(if (mine) stringResource(R.string.stand_part_yours, shownText) else shownText, false, { sheet = Sheet.PARTS },
-                    Modifier.semantics { testTag = "part-picker" }, icon = DesignR.drawable.ic_bc_parts, role = Role.Button, trailingIcon = DesignR.drawable.ic_bc_choose)
-                if (!uprightLarge) shownSource?.let { SourceLabel(it, compact = true, onExplain = { sheet = Sheet.SOURCE }) }
-            }
+                first = {
+                    PracticeChip(if (mine) stringResource(R.string.stand_part_yours, shownText) else shownText, false, { sheet = Sheet.PARTS },
+                        Modifier.semantics { testTag = "part-picker" }, icon = DesignR.drawable.ic_bc_parts, role = Role.Button, trailingIcon = DesignR.drawable.ic_bc_choose)
+                },
+                second = shownSource?.let { src -> { SourceLabel(src, compact = true, onExplain = { sheet = Sheet.SOURCE }) } },
+                onFits = { sourceBeside = it },
+            )
         }
         // A draft says so before anything else about the score, so it is never the line that moves to the ⋯ sheet.
         if (r.draft) add { inSheet ->
             if (inSheet) DraftNotice(computerThere, { sheet = null; vm.makeFullScore() })
             else NoticeLine(stringResource(R.string.draft_notice_short), { sheet = Sheet.DRAFT }, Modifier.padding(horizontal = ScreenMargin))
-        }
-        // At large text the pill is a line of its own, so the part picker alone is always there.
-        if (uprightLarge && shownSource != null) add { inSheet ->
-            SourceLabel(shownSource, if (inSheet) Modifier else Modifier.padding(horizontal = ScreenMargin), compact = true, onExplain = { sheet = Sheet.SOURCE })
         }
         if (showMapped) add { inSheet ->
             MappedBanner(mappedShortLine!!, { sheet = Sheet.MAPPED }, { vm.closeMappedNotice() }, if (inSheet) Modifier else Modifier.padding(horizontal = ScreenMargin))
@@ -772,9 +771,9 @@ fun ScoreScreen(vm: PlayViewModel) {
                     for (item in hidden) item(true)
                 }
             }
-            // On a phone on its side the row under the score has no room for where the part comes from: it is here, and
-            // says what it means when pressed.
-            if (compact) shownSource?.let { SourceLabel(it, compact = true) }
+            // On a phone on its side the row under the score has no room for where the part comes from, nor upright where
+            // it would take a line of its own: it is here, as a chip like the others, and says what it means when pressed.
+            if (compact || (phoneUpright && !sourceBeside)) shownSource?.let { SourceLabel(it, chip = true) }
             // A solo opens on its score without How should the score be?: its band, difficulty and key are here, by name.
             if (r.isSoloTake && r.composition != null && no.kalli.brasscribe.Brasscribe.arranges(r.profile)) {
                 PracticeChip(stringResource(R.string.change_output), false, { sheet = null; vm.navigate(Screen.OUTPUT) },
@@ -1164,5 +1163,32 @@ private fun DraftNotice(computerThere: Boolean, onMakeFull: () -> Unit, modifier
         InfoNote(stringResource(R.string.draft_notice), boxed = false)
         if (computerThere) SecondaryButton(stringResource(R.string.draft_make_full), onMakeFull, fill = false)
         else Text(stringResource(R.string.draft_no_computer), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
+    }
+}
+
+/**
+ * [first], and [second] beside it on the same line where the two fit; where they do not, [first] alone, and [onFits]
+ * says so (the caller shows [second] elsewhere). [second] is measured from a copy that is never placed nor read.
+ */
+@Composable
+private fun BesideIfItFits(modifier: Modifier, first: @Composable () -> Unit, second: (@Composable () -> Unit)?, onFits: (Boolean) -> Unit) {
+    val gap = ScribeSpace.s2
+    val report by androidx.compose.runtime.rememberUpdatedState(onFits)
+    androidx.compose.ui.layout.SubcomposeLayout(modifier) { constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val a = subcompose("first", first).map { it.measure(loose) }
+        val aWidth = a.maxOfOrNull { it.width } ?: 0
+        val gapPx = gap.roundToPx()
+        val secondWidth = if (second == null) null else subcompose("probe") {
+            Box(Modifier.clearAndSetSemantics { }) { second() }
+        }.maxOfOrNull { it.maxIntrinsicWidth(constraints.maxHeight) }
+        val fits = secondWidth == null || aWidth + gapPx + secondWidth <= constraints.maxWidth
+        report(fits)
+        val b = if (second != null && fits) subcompose("second", second).map { it.measure(loose) } else emptyList()
+        val height = maxOf(a.maxOfOrNull { it.height } ?: 0, b.maxOfOrNull { it.height } ?: 0)
+        layout(constraints.maxWidth, height) {
+            a.forEach { it.placeRelative(0, (height - it.height) / 2) }
+            b.forEach { it.placeRelative(aWidth + gapPx, (height - it.height) / 2) }
+        }
     }
 }

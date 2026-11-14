@@ -299,7 +299,7 @@ private fun Choices(label: String, options: List<Pair<String, String>>, selected
  * button (48 dp) that opens one sentence of explanation.
  */
 @Composable
-fun SourceLabel(source: no.kalli.scribe.model.PartSource, modifier: Modifier = Modifier, compact: Boolean = false, onExplain: (() -> Unit)? = null) {
+fun SourceLabel(source: no.kalli.scribe.model.PartSource, modifier: Modifier = Modifier, compact: Boolean = false, chip: Boolean = false, onExplain: (() -> Unit)? = null) {
     val c = ScribeTheme.colors
     var open by rememberSaveable { mutableStateOf(false) }
     val (@StringRes text, @DrawableRes icon) = when (source) {
@@ -309,17 +309,20 @@ fun SourceLabel(source: no.kalli.scribe.model.PartSource, modifier: Modifier = M
         no.kalli.scribe.model.PartSource.EMPTY -> R.string.source_empty to DesignR.drawable.ic_bc_parts
     }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
+        // [chip]: among the practice chips of a menu, in their shape and type.
+        val shape = if (chip) ScribeButtonShape else androidx.compose.foundation.shape.RoundedCornerShape(percent = 50)
         Row(
             Modifier.heightIn(min = 48.dp)
-                .border(1.dp, c.borderStrong, androidx.compose.foundation.shape.RoundedCornerShape(percent = 50))
+                .then(if (chip) Modifier.background(c.surfaceRaised, shape) else Modifier)
+                .border(1.dp, c.borderStrong, shape)
                 .clickable(role = Role.Button) { if (onExplain != null) onExplain() else open = !open }
                 .testTag("source-${source.id}")
-                .padding(horizontal = if (compact) ScribeSpace.s3 else ScribeSpace.s4),
+                .padding(horizontal = when { chip -> 10.dp; compact -> ScribeSpace.s3; else -> ScribeSpace.s4 }),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (compact) ScribeSpace.s1 else ScribeSpace.s2),
+            horizontalArrangement = Arrangement.spacedBy(when { chip -> 6.dp; compact -> ScribeSpace.s1; else -> ScribeSpace.s2 }),
         ) {
-            BcIcon(icon, null, Modifier.size(if (compact) 16.dp else 20.dp), tint = c.text)
-            Text(stringResource(text), style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, color = c.text)
+            BcIcon(icon, null, Modifier.size(if (compact && !chip) 16.dp else 20.dp), tint = c.text)
+            Text(stringResource(text), style = if (compact && !chip) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, color = c.text)
         }
         if (open) Text(
             stringResource(explainOf(source)),

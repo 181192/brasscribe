@@ -30,7 +30,8 @@ class ScoreSourceKeyboardTest : ScreenTest() {
     @After
     fun clean() = rule.runOnUiThread { vm.home() }
 
-    private fun theKeyboardReachesIt(how: String) {
+    /** [inMenu]: where the part comes from is not on the screen but in the top bar's menu. */
+    private fun theKeyboardReachesIt(how: String, inMenu: Boolean? = null) {
         if (rule.onAllNodesWithTag("seat-skip").fetchSemanticsNodes().isNotEmpty()) rule.onNodeWithTag("seat-skip").performClick()
         computer("old-hundredth")
         rule.runOnUiThread {
@@ -45,10 +46,13 @@ class ScoreSourceKeyboardTest : ScreenTest() {
         rule.runOnUiThread { vm.navigate(Screen.SCORE) }
         waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true && (vm.scoreController?.renders?.value ?: 0) > 0 }
         rest()
+        // (Only what is placed: a part of the screen that is composed and not placed is not there for a finger or a key.)
         fun sources() = rule.onAllNodes(androidx.compose.ui.test.SemanticsMatcher("a part's source") {
-            it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("source-") == true
+            it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("source-") == true && it.layoutInfo.isPlaced
         }).fetchSemanticsNodes()
-        // On a phone on its side the score has the screen, and what stands over it upright is in the top bar's menu.
+        // On a phone on its side the score has the screen, and what stands over it upright is in the top bar's menu; so
+        // is where the part comes from wherever it would take a line of its own.
+        if (inMenu != null) assertEquals("where the part comes from is ${if (inMenu) "in the menu" else "on the screen"}", inMenu, sources().isEmpty())
         if (sources().isEmpty()) {
             rule.onNodeWithTag("top-more").performClick()
             waitUntil(5_000) { sources().isNotEmpty() }
@@ -59,8 +63,11 @@ class ScoreSourceKeyboardTest : ScreenTest() {
         shot("score-source-$how")
         val reached = tabThrough()
         assertTrue("the keyboard reaches it; it goes ${reached.map { it.config.getOrNull(SemanticsProperties.TestTag) ?: it.id }}", reached.any { it.id == sources.single().id })
-        // (The dimmed screen behind a sheet closes it for a finger; the keyboard has Escape and Back for that.)
-        assertEquals("nothing a finger can act on is left out", emptyList<Control>(), missedByTheKeyboard(reached).filter { it.words != "Close sheet" })
+        // (The dimmed screen behind a sheet closes it for a finger; the keyboard has Escape and Back for that. Its name is
+        // Material's own, in the phone's language.)
+        val closeSheet = rule.activity.resources.getIdentifier("close_sheet", "string", rule.activity.packageName)
+            .takeIf { it != 0 }?.let { rule.activity.getString(it) } ?: "Close sheet"
+        assertEquals("nothing a finger can act on is left out", emptyList<Control>(), missedByTheKeyboard(reached).filter { it.words != closeSheet })
     }
 
     @Test
@@ -77,7 +84,20 @@ class ScoreSourceKeyboardTest : ScreenTest() {
         assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
         textSize(1.3f)
         language("nb-NO")
-        theKeyboardReachesIt("small")
+        theKeyboardReachesIt("small", inMenu = true)
+    }
+
+    @Test
+    fun withTheLargestTextToo() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 360, 640))
+        textSize(2f)
+        theKeyboardReachesIt("small-200", inMenu = true)
+    }
+
+    @Test
+    fun onACommonPhoneItIsBesideThePartPicker() {
+        assumeTrue("this device keeps its own size", ScreenDevice.size(rule, 412, 915))
+        theKeyboardReachesIt("common", inMenu = false)
     }
 
     @Test

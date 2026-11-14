@@ -41,7 +41,7 @@ import java.io.File
 
 /**
  * Upright, the score keeps the height too: with your part in a lineup that lacks your seat (the mapping
- * banner) and its source pill both showing, the score view has at least 55 % of the height inside the
+ * banner) and its source pill both showing (at 200 % the pill is in the ⋯ menu), the score view has at least 55 % of the height inside the
  * system bars and shows notation, at 100 % and 200 % text. Closing the banner keeps it closed for the score.
  */
 @RunWith(AndroidJUnit4::class)
@@ -127,8 +127,11 @@ class ScorePortraitTest : ScreenTest() {
         shot(label)
         val placed = { tag: String -> rule.onAllNodesWithTag(tag).fetchSemanticsNodes().any { it.layoutInfo.isPlaced } }
         if (fontScale == "1.0") assertTrue("$label: the mapping banner shows", placed("mapped-notice"))
-        assertTrue("$label: the source pill shows", rule.onAllNodesWithTag("source-recording").fetchSemanticsNodes().isNotEmpty() ||
-            rule.onAllNodesWithTag("source-arranged").fetchSemanticsNodes().isNotEmpty())
+        // Where the part comes from is beside the part picker at 100 %; at 200 % it would take a line of its own, and is in
+        // the ⋯ menu (ScoreSourceKeyboardTest).
+        val source = placed("source-recording") || placed("source-arranged")
+        if (fontScale == "1.0") assertTrue("$label: the source pill shows", source)
+        else assertFalse("$label: the source pill is in the menu, not a line of its own", source)
 
         var available = 0
         rule.runOnUiThread {
