@@ -35,6 +35,11 @@ class FixtureEngineApi(
     private val source: FixtureSource,
     /** Seconds each simulated stage takes. */
     private val stageSeconds: Double = 0.6,
+    /**
+     * While this says so, a job stays in the stage it is at: for a test that looks at the screen while the notes are
+     * written down, however slowly the machine it runs on gets there.
+     */
+    private val held: () -> Boolean = { false },
 ) : EngineApi {
     private val uploads = ConcurrentHashMap<String, AudioRef>()
     private val jobs = ConcurrentHashMap<String, Job>()
@@ -133,6 +138,7 @@ class FixtureEngineApi(
             }
             send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "started"))
             delay((stageSeconds * 1000).toLong())
+            while (held() && jobId !in cancelled) delay(HELD_POLL_MS)
             if (jobId in cancelled) {
                 jobs[jobId] = job(jobId).copy(status = JobStatus.CANCELLED, finished = now())
                 send(JobEvent(id++, "job", run = jobId, time = now(), status = "cancelled")); return@flow
@@ -207,6 +213,8 @@ class FixtureEngineApi(
     private fun now() = System.currentTimeMillis() / 1000.0
 
     companion object {
+        /** How often a held job looks whether it may go on. */
+        private const val HELD_POLL_MS = 20L
         const val SERVER_ID = "fixture"
         const val SERVER_NAME = "Brasscribe (test fixture)"
         /** A fixture file that is the recording the job was made from. */

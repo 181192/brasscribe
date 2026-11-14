@@ -101,6 +101,7 @@ abstract class ScreenTest(launch: android.content.Intent? = null) {
     @After
     fun leaveClean() {
         ScreenDevice.reset(rule)
+        container.fixtureHeld = false
         rule.runOnUiThread {
             container.fixtureSource = null
             container.qrCamera = no.kalli.scribe.play.ui.PhoneQrCamera

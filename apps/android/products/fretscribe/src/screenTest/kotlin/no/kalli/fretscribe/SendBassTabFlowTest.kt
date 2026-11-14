@@ -151,6 +151,9 @@ class SendBassTabFlowTest : ScreenTest() {
             (if (whole) song else alone).assertIsNotSelected()
             rule.onNodeWithTag("fs-what-continue").assertIsEnabled()
             if (whole) shot("what-is-this-chosen-en-light")
+            // The computer stays in its first step while the screen is looked at: the test does not race it, however
+            // slowly this machine gets there.
+            container.fixtureHeld = true
             rule.onNodeWithTag("fs-what-continue").performClick()
 
             // Writing down the notes: Cancel asks first, and the answer is still there afterwards.
@@ -181,6 +184,7 @@ class SendBassTabFlowTest : ScreenTest() {
             val bar = rule.onNode(hasContentDescription(text(R.string.transcribe_progress_label)), useUnmergedTree = true).fetchSemanticsNode()
             assertTrue(bar.config.contains(SemanticsProperties.ProgressBarRangeInfo))
             shot("writing-down-${lang.take(2)}-light")
+            container.fixtureHeld = false
 
             // Check the song: what was heard, each finding one element, and one primary.
             waitForTag("fs-show-tab")
@@ -342,18 +346,17 @@ class SendBassTabFlowTest : ScreenTest() {
         key(KeyEvent.KEYCODE_ENTER)
         card("instrument").assertIsSelected()
         tabTo("Continue")
+        // (The computer stays in its first step until Cancel and Keep going have been reached.)
+        container.fixtureHeld = true
         key(KeyEvent.KEYCODE_ENTER)
-        waitUntil(20_000) { vm.screen.value.last() == Screen.TRANSCRIBE || vm.screen.value.last() == Screen.OUTPUT }
+        waitUntil(20_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
         // Writing down the notes: Cancel is reached, asks, and Keep going is reached too.
-        if (vm.screen.value.last() == Screen.TRANSCRIBE) {
-            tabTo("Cancel")
-            key(KeyEvent.KEYCODE_ENTER)
-            waitUntil(5_000) { rule.onAllNodesWithText("Stop writing down the notes?").fetchSemanticsNodes().isNotEmpty() || vm.screen.value.last() == Screen.OUTPUT }
-            if (vm.screen.value.last() == Screen.TRANSCRIBE) {
-                tabTo("Keep going")
-                key(KeyEvent.KEYCODE_ENTER)
-            }
-        }
+        tabTo("Cancel")
+        key(KeyEvent.KEYCODE_ENTER)
+        waitUntil(5_000) { rule.onAllNodesWithText("Stop writing down the notes?").fetchSemanticsNodes().isNotEmpty() }
+        tabTo("Keep going")
+        key(KeyEvent.KEYCODE_ENTER)
+        container.fixtureHeld = false
         // Check the song: the row's button, the way back and Show the tab; Enter shows the tab.
         waitForTag("fs-check-change-octave")
         val here = mutableSetOf<String>()
