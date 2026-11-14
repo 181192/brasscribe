@@ -24,6 +24,7 @@ file = "File"
 for = "For"
 
 [fig]
+screens = "The app's screens. Scroll sideways for more."
 play = "Play"
 pause = "Pause"
 listener_1 = "first listener"

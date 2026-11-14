@@ -24,6 +24,7 @@ file = "Fil"
 for = "For"
 
 [fig]
+screens = "Skjermene i appen. Rull sidelengs for flere."
 play = "Spill"
 pause = "Pause"
 listener_1 = "første lytter"

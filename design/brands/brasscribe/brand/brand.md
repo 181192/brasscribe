@@ -57,6 +57,17 @@ The mark is drawn on a 64-unit grid as a single even-odd path, so every platform
   - Never use it for body text, labels, buttons or numbers.
 - **Everything else: the platform's own UI face.** SF Pro on Apple, Roboto on Android, Segoe UI Variable on Windows, `system-ui` in Studio. These scale with the system text size and read best for older eyes.
 
+## On the public site
+
+- **Rehearsal marks.** Each section of a Brasscribe page opens with its letter in a small box (A, B, C …), as on a
+  band part, so the mark says where on the page you are.
+- **The engraver's rule.** Each paper section opens with a double hairline, thin and thick, like a final barline
+  turned on its side.
+- **The part header.** Music on the page is named as on a real part ("1st Cornet") at the start of the line,
+  wherever the music has run.
+- The doubt mark in the site's own figures has the Scribe family's one doubt colour (amber); a picture of the app's
+  own score keeps the app's colours (principle 3 in `design/README.md`).
+
 ## Voice
 
 Brasscribe talks like a **good section leader**: calm, specific and on your side. It never talks like software.

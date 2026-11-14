@@ -617,7 +617,8 @@ class Site:
             (folder / "index.html").write_text(
                 f'<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <title>This page has moved</title>\n'
                 # The script keeps the place on the page the old address pointed at (#…).
-                f'  <script>location.replace("{to}" + location.hash)</script>\n'
+                # The script keeps ?lang= when the old address had it and the new one does not say a language itself.
+                f'  <script>location.replace("{to}" + {"\"\"" if "?" in to else "location.search"} + location.hash)</script>\n'
                 f'  <noscript><meta http-equiv="refresh" content="0; url={to}"></noscript>\n  <link rel="canonical" href="{to}">\n  <meta name="robots" content="noindex">\n'
                 f'</head>\n<body>\n<p>This page has moved: <a href="{to}">go to the new address</a>.</p>\n</body>\n</html>\n')
 

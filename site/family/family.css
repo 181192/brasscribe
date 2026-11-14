@@ -48,12 +48,17 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .app:hover::before, .app:focus-within::before { width: 100%; }
 @media (prefers-reduced-motion: reduce) { .app::before { transition: none; } }
 .app .strip { margin: 0; }
+/* Both sheets' strips stand at one height, so their controls line up side by side; the music sits in the middle. */
+.app .strip-stage { height: 220px; }
+.app .strip-ink > svg, .app .strip-sound > svg { top: 50%; margin-top: calc(var(--strip-height) / -2); }
 .app .strip-stage { --pen: 46%; background: var(--scribe-surface-raised); border-top: 0; -webkit-mask-image: none; mask-image: none; }
 .app .strip-controls, .app .strip figcaption { padding: 0 var(--scribe-space-5); }
 .app-for { margin: var(--scribe-space-5) var(--scribe-space-5) 0; font-weight: 600; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
-.app h2 { font-family: var(--scribe-font-display); font-size: calc(2.25rem * var(--site-display-scale, 1)); font-weight: var(--site-display-weight, 400); letter-spacing: -0.01em; line-height: 1.1; margin: 0; padding: var(--scribe-space-1) var(--scribe-space-5) var(--scribe-space-4); color: var(--scribe-brand-text); }
+.app h2 { font-family: var(--scribe-font-display); font-size: calc(2.25rem * var(--site-display-scale, 1)); font-weight: var(--site-display-weight, 400); letter-spacing: -0.01em; margin: 0 0 var(--scribe-space-2); padding: 0 var(--scribe-space-5); height: 60px; line-height: 60px; white-space: nowrap; color: var(--scribe-brand-text); }
 [data-brand="brasscribe"] { --site-display-scale: 1.2; }
 [data-brand="fretscribe"] { --site-display-weight: 600; }
+.app h2 .app-icon { display: inline-block; vertical-align: -6px; margin-right: var(--scribe-space-3); }
+@media (max-width: 400px) { .app h2 .app-icon { width: 36px; height: 36px; margin-right: var(--scribe-space-2); } }
 .app-text { padding: var(--scribe-space-6) var(--scribe-space-5); margin-top: auto; }
 .app-text .actions { align-items: center; margin-top: var(--scribe-space-5); }
 .app .button { min-height: 48px; }
@@ -136,4 +141,16 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 @media (forced-colors: active) {
   .diagram .net { fill: Canvas; stroke: CanvasText; }
   .chip { forced-color-adjust: none; }
+}
+
+/* The pen draws its line once, left to right, when a heading first comes into view (the script marks it drawn).
+   Without the script, or with less motion, the line is simply there. */
+.pen-heading::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
+.pen-words { transition: background-size var(--scribe-duration-slow) ease-out; }
+html.js .pen-heading:not(.drawn)::after { clip-path: inset(0 100% 0 0); }
+html.js .line-hero:not(.drawn) .pen-words { background-size: 0 var(--family-pen-width); }
+@media (prefers-reduced-motion: reduce) {
+  .pen-heading::after, .pen-words { transition: none; }
+  html.js .pen-heading:not(.drawn)::after { clip-path: none; }
+  html.js .line-hero:not(.drawn) .pen-words { background-size: 100% var(--family-pen-width); }
 }

@@ -564,3 +564,19 @@ html.js .variants:has(.variant-panel.chosen) .variant-panel:first-of-type:not(.c
 @media (max-width: 400px) { .variant-shot, .variant-shot.tablet { width: 80px; } }
 @media print { html.js .variant-panel { display: grid !important; } .rail { display: none; } }
 @media (forced-colors: active) { .rail a[aria-selected="true"] { outline: 2px solid CanvasText; } .tag::before { forced-color-adjust: none; background-color: CanvasText; } }
+
+/* The screens row: a grid on a desktop; on a phone a row of screens 240 px wide that scrolls by itself, a screen at
+   a time, and the page does not. */
+.flow-scroll:focus-visible { outline-offset: 4px; }
+@media (max-width: 600px) {
+  .flow-scroll { overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--scribe-space-6)); padding: 0 var(--scribe-space-6) var(--scribe-space-3); scrollbar-width: thin; }
+  .flow-scroll .flow { display: flex; gap: var(--scribe-space-5); width: max-content; }
+  .flow-scroll .flow li { flex: 0 0 240px; scroll-snap-align: start; }
+  .flow-scroll .flow .phone-frame { max-width: none; }
+}
+/* The app's mark beside its name, in the hero on a desktop. */
+.hero h1 .app-icon { display: none; }
+@media (min-width: 900px) {
+  .hero .wrap { position: relative; }
+  .hero h1 .app-icon { display: inline-block; vertical-align: middle; margin-right: var(--scribe-space-4); width: 64px; height: 64px; }
+}

@@ -422,7 +422,15 @@ def screens(page) -> str:
     for item in page.say("screens.items"):
         shot = page.shot(item["shot"], "(max-width: 520px) 44vw, 232px", "", "lazy", said=item["alt"]).replace("\n", "\n      ")
         items.append(f'  <li>\n    <div class="phone-frame">\n      {shot}\n    </div>\n    <h3>{item["title"]}</h3>\n    <p>{item["text"]}</p>\n  </li>')
-    return '<ol class="flow">\n' + "\n".join(items) + "\n</ol>"
+    # On a phone the screens are a row that scrolls by itself, a screen at a time; the page does not.
+    return (f'<div class="flow-scroll" role="region" aria-label="{esc(page.say("fig.screens"))}" tabindex="0">\n<ol class="flow">\n'
+            + "\n".join(items) + "\n</ol>\n</div>")
+
+
+def icon(page, size: str = "64") -> str:
+    """The app's mark, beside its name: in the hero on a desktop, and on its sheet on the family home."""
+    mark = Path(page.product.data["marks"][0]).name
+    return f'<img class="app-icon" src="@/assets/logo/{mark}" width="{size}" height="{size}" alt="">'
 
 
 def places(page, product=None) -> list[dict]:
