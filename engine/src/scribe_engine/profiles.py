@@ -14,6 +14,8 @@
                           SW stem (or the recording, when it is the instrument alone), Basic Pitch
                           with SwiftF0 as a second opinion, a string and fret per note (tab.py)
   bass-tab                tab with a bass, under the id older apps know (bass_tab.py)
+  sheet                   printed music from a picture or a PDF, read into a score (sheet.py); no recording
+  sheet-tab               the same page read into tab for one fretted instrument (sheet.py)
 
 In brass-band, Basic Pitch hears the recording retuned to A = 440 when it is out of
 tune (tuning.py); not in the draft (muscriptor=False), which follows the device.
@@ -41,6 +43,7 @@ class Profile:
     description: str
     validated: bool
     build: callable  # (title, params) -> list[Stage] and outputs
+    input: str = "audio"  # what a job of the profile reads: "audio" (a recording) or "pages" (pictures, a PDF)
 
     @property
     def target(self) -> targets.Target:
@@ -150,6 +153,14 @@ def job_options(profile: str, params: dict) -> dict:
     the seat's part in the band lineups only)."""
     from scribe_music.instruments import PERCUSSION_SOLO, lead_lineup, lineup_by_name, seat_by_id
 
+    if sheet.is_sheet(profile):
+        opts = sheet.job_options(profile, params)
+        if profile == sheet.TAB:
+            try:  # before the page is read: the last stage needs the core
+                bass_tab.core_cli()
+            except bass_tab.CoreCliMissing as e:
+                raise OptionError(str(e), CORE_MISSING_CODE) from e
+        return opts
     if tab.is_tab(profile):
         opts = tab.job_options(profile, params)
         try:  # before any model runs: the last stage needs the core
@@ -385,6 +396,26 @@ PROFILES[tab.PROFILE] = Profile(tab.PROFILE, "tab", "One fretted instrument as t
 PROFILES[bass_tab.PROFILE] = Profile(bass_tab.PROFILE, "tab", "The bass line as tablature; BS-RoFormer SW bass stem (or the "
                                      "recording itself), Basic Pitch, a string and fret per note. Kept for older apps: it is "
                                      "the tab profile with a bass", False, bass_tab.build)
+
+
+# Printed music read from pictures (sheet.py): one profile for each target.
+from . import sheet  # noqa: E402 - it reads this module's stage helpers when it builds
+
+PROFILES[sheet.SCORE] = Profile(sheet.SCORE, "sheet", "Printed music from a screenshot, a photo or a PDF, read into a score "
+                                "as it is written: parts, PDF, MIDI, braille and the talking score; not arranged", False,
+                                sheet.build_score, input="pages")
+PROFILES[sheet.TAB] = Profile(sheet.TAB, "sheet", "Printed music from a screenshot, a photo or a PDF, its first staff "
+                              "written as tablature for one fretted instrument (instrument)", False, sheet.build_tab,
+                              input="pages")
+
+
+def check_input(profile: str, path: Path) -> None:
+    """A job's input is the kind its profile reads: pages for the sheet profiles, a recording for the others.
+    pages.WrongInput when it is not: no refused option, so it has no code among the ones above."""
+    from . import pages
+
+    if (PROFILES[profile].input == "pages") != pages.is_pages(path):
+        raise pages.WrongInput(pages.WRONG_INPUT_DETAIL)
 
 
 def default_title(profile: str, audio: Path) -> str:

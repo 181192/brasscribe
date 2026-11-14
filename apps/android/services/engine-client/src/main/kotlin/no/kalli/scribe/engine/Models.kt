@@ -98,6 +98,8 @@ data class ProfileInfo(
     val description: String,
     val validated: Boolean,
     val stages: List<String>,
+    /** What a job of the profile reads: "audio" (a recording) or "pages" (pictures or a PDF of printed music). */
+    val input: String = "audio",
 )
 
 @Serializable

@@ -292,7 +292,7 @@ def test_both_profile_ids_are_tab_profiles_and_bass_tab_keeps_its_own_instrument
     assert tab.job_options("bass-tab", {}) == bass_tab.options({}) and tab.job_options("tab", {}) == tab.options({})
     with pytest.raises(ValueError, match="instrument must be one of bass-4, bass-5, bass-6"):
         tab.job_options("bass-tab", {"instrument": "guitar-6"})
-    assert list(profiles.PROFILES)[-2:] == ["tab", "bass-tab"]
+    assert list(profiles.PROFILES)[-4:-2] == ["tab", "bass-tab"]  # the profiles that read pages come after them
     assert (profiles.PROFILES["tab"].pipeline, profiles.PROFILES["bass-tab"].pipeline) == ("tab", "tab")  # Studio hides both
     assert "older apps" in profiles.PROFILES["bass-tab"].description
     assert profiles.default_title("tab", Path("my_song.wav")) == "My Song — tab (draft)"

@@ -106,8 +106,10 @@ public sealed record FileRef(string Name, long Bytes, string MediaType, string U
 public sealed record StageArtifacts(string Stage, string Status, IReadOnlyList<FileRef> Files, string? Kind = null,
     string? Key = null, string? Device = null, double? Seconds = null, double? QueueWaitS = null, double? RunS = null);
 
-/// <summary>Target: the target the profile belongs to ("brass", "fretted"); an app offers the profiles of its own.</summary>
-public sealed record ProfileInfo(string Name, string Target, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages);
+/// <summary>Target: the target the profile belongs to ("brass", "fretted"); an app offers the profiles of its own.
+/// Input: what a job of the profile reads, "audio" (a recording) or "pages" (pictures or a PDF of printed music).</summary>
+public sealed record ProfileInfo(string Name, string Target, string Pipeline, string Description, bool Validated, IReadOnlyList<string> Stages,
+    string Input = "audio");
 
 public sealed record PairRequest(string Code, string? DeviceName = null, string? Platform = null);
 

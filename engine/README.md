@@ -1,7 +1,7 @@
 # scribe-engine
 
-The Python engine: it turns a recording into a brass-band score and serves the HTTP API that Studio and
-the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine.
+The Python engine: it turns a recording, or a picture of printed music, into a brass-band score or a tab and
+serves the HTTP API that Studio and the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine.
 
 - **Targets.** A target is one kind of output: a score for a brass band (`brass`), a tab for a fretted instrument
   (`fretted`). Every profile belongs to one target, and the target says what its files are called and what a job
@@ -98,6 +98,57 @@ the Play apps use. Bandroom (Mac and Windows) installs and runs this same engine
     [`guitar_tab_bench.py`](../eval/scribe_eval/guitar_tab_bench.py),
     [`small_tab_bench.py`](../eval/scribe_eval/small_tab_bench.py)); they run where the data and the models
     are, not in CI.
+- **Printed music from a picture.** The `sheet` and `sheet-tab` profiles (`sheet.py`) read pages instead of a
+  recording: a screenshot, a photo of a page, or a PDF, and several pages in order as one score. `/v1/profiles`
+  marks them `input: pages`, and `POST /v1/jobs/pages` (`createJobFromPages`) uploads the pages and starts the
+  job. One page is stored as it is, several as one archive (`pages.py`), so a job still has one input with one
+  checksum and can be run again.
+  - What is refused, each as `{"code": …, "detail": …}`, and before anything is kept: a recording for one of
+    these profiles or a picture for a profile that listens (415, `wrong_input`); a file that is not a PNG, JPEG
+    or WebP picture or a PDF (415, `not_a_page`: an iPhone's HEIC photo is the one met in practice); a file over
+    50 MB, or a picture whose header says it holds more than 50 million pixels (413, `page_too_large`: the size
+    is read from the header, so nothing decodes a picture that is a few kilobytes on disk and gigabytes in
+    memory); a job of these profiles on a computer without the recogniser (503, `reader_missing`).
+  - The pages are read by [homr](https://github.com/liebharc/homr), an adapter like the models (AGPL-3.0, a
+    separate program; [why it was chosen](../docs/shared/research/19-sheet-music-from-pictures.md)). Its
+    environment is about 0.5 GB and no installation gets it unasked: the two profiles are offered only where it
+    is there (`uv sync --frozen --project ml/adapters/homr` on an Apple silicon Mac, `pixi install -e homr`
+    elsewhere), and `python ml/adapters/run_adapter.py --setup homr` fetches its weights ahead of the first job.
+    The weights are fetched by the runner, checked against pinned SHA-256s and kept under `SCRIBE_MODELS/homr`,
+    so a run's manifest names them; homr runs on the CPU with them on every computer, and does not look for the
+    page's title (that needs an OCR model it would fetch on its own).
+  - Before homr sees them the pages are made ready (`ml/adapters/homr/prepare.py`): a PDF's pages are rendered
+    there, at 300 dpi or less for a page that would be more than 50 million pixels, and more than 40 pages in
+    all are refused. homr has fifteen minutes for a job.
+  - A page that cannot be read fails the job in fixed words: `no notes were found on the page`, `there are more
+    than 40 pages`, `a page is too large to read`, or `the pages could not be read`. What homr itself said is in
+    the job's log with the computer's paths cut out.
+  - A photo is turned the way its EXIF orientation says before it is read (a march photographed sideways with
+    the tag read as well as upright). A page that lies on its side with no such tag is not read: no notes are
+    found on it.
+  - `sheet` (the band's target) keeps what was read as it is written: the parts, clefs, keys and bars of the page
+    under the job's title, with each staff's notes put one after another (the recogniser writes a piano system
+    chord by chord). It is exported like any band score: PDF, MIDI, MP3, a file per part, braille and the talking
+    score. Nothing is arranged, so it takes none of the band options: a lead sheet stays a lead sheet. The
+    recogniser names every part alike, so the parts are numbered.
+  - `sheet-tab` (the fretted target) writes the notes of the first staff as tab for `instrument`, through the
+    fingering a recording's notes get, with the tab profile's options except `recording` and `chords`. A guitar's
+    and a bass's notation is written an octave above where it sounds: with `octave: auto` the line is taken an
+    octave down for them, then moved by octaves while that brings more of it onto the instrument; a chosen octave
+    counts from what the staff shows. A tab staff on the page is not read, and a page that holds nothing else
+    fails saying so.
+  - Doubt: the recogniser gives no confidence. A bar whose notes and rests do not add up (a pickup and the last
+    bar aside) is marked "?" in the score, listed in the composition's review items and in `sheet.json`, and its
+    notes get a confidence under the doubt threshold, which a tab shows as its own "?". Each staff is counted by
+    itself. A bar is held to its time signature, unless the bars around it agree on another amount: then the
+    signature is what was misread, and the first of those bars carries the doubt. A wrong pitch in a bar that
+    adds up is not found this way.
+  - There is no recording, so the tempo is a fixed one and the times in `composition.json` and `tab.json` are
+    those of the score played at it.
+  - `scribe bench sheet-image` measures it ([`sheet_image_bench.py`](../eval/scribe_eval/sheet_image_bench.py)).
+    CI scores the recogniser's readings kept in `eval/fixtures/sheet-image` and does not run homr; `--mode live`
+    engraves the pages and reads them again, and is what a change to the adapter needs
+    ([eval/README.md](../eval/README.md)).
 - **HTTP service** (`api.py`, FastAPI): Studio in the browser on the same computer, and companion mode
   for the Play apps on the LAN, with pairing, per-device tokens (`companion.py`) and Bonjour/mDNS
   advertisement as `_scribe._tcp` (`discovery.py`). The contract is the committed
