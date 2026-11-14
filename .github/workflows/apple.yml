@@ -144,6 +144,7 @@ jobs:
       # The test phrases the level tests play are written by a script, not kept in git (sounds/phrases.py: it
       # needs only mido, at the version sounds/uv.lock pins).
       - name: Write the band's test phrases
+        working-directory: .
         run: |
           mido=$(awk '/^name = "mido"$/ { getline; gsub(/[^0-9.]/, ""); print; exit }' sounds/uv.lock)
           [ -n "$mido" ] || { echo "sounds/uv.lock no longer names mido's version" >&2; exit 1; }
