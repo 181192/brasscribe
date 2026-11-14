@@ -7,20 +7,25 @@ struct SourceLabel: View {
     let kind: PartSourceKind
     /// The small pill of the part row: caption text, the 44 pt target kept by its hit area.
     var compact = false
+    /// Its icon alone, where its words do not fit (the part row on a short or narrow phone at larger text); the
+    /// name is still what VoiceOver says, and a tap still explains it.
+    var iconOnly = false
     @State private var explaining = false
 
     var body: some View {
         Button { explaining = true } label: {
             HStack(spacing: Space.s2) {
                 Image(systemName: kind.icon.systemName).accessibilityHidden(true)
-                Text(kind.title)
-                    .lineLimit(compact ? 1 : nil)
-                    .fixedSize(horizontal: false, vertical: !compact)
+                if !iconOnly {
+                    Text(kind.title)
+                        .lineLimit(compact ? 1 : nil)
+                        .fixedSize(horizontal: false, vertical: !compact)
+                }
             }
             .font(compact ? Font.Scribe.caption.weight(.semibold) : Font.Scribe.label)
             .foregroundStyle(Color.Scribe.text)
             .padding(.horizontal, compact ? Space.s3 : Space.s4)
-            .frame(minHeight: compact ? 30 : 44)
+            .frame(minWidth: iconOnly ? 44 : nil, minHeight: compact ? 30 : 44)
             .overlay(Capsule().strokeBorder(Color.Scribe.borderStrong, lineWidth: 1))
             .padding(.vertical, compact ? 7 : 0)
             .contentShape(Rectangle())
