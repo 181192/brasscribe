@@ -392,7 +392,9 @@ export interface paths {
         };
         /**
          * Get Input
-         * @description The job's original input audio (for A/B listening).
+         * @description What the job read (Job.input says which): the recording, for A/B listening, or the pages. One page is the
+         *     picture or the PDF itself, under its own media type; several pages are one ZIP of them in order
+         *     (page-001.png, page-002.jpg, …).
          */
         get: operations["getJobInput"];
         put?: never;
@@ -1497,6 +1499,13 @@ export interface components {
             finished?: number | null;
             /** Id */
             id: string;
+            /**
+             * Input
+             * @description what the job read: a recording, or pages of printed music (getJobInput then gives a picture, a PDF or a ZIP of the pages, not audio)
+             * @default audio
+             * @enum {string}
+             */
+            input: "audio" | "pages";
             /**
              * Missing
              * @description files a succeeded job should have had and has not (its PDF, its MIDI), each with why. The rest of the job is whole; asking for one of these files answers 404 with the same message
@@ -3099,7 +3108,7 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description a page is too large to read: {code: page_too_large, detail} */
+            /** @description a page is too large to read ({code: page_too_large, detail}), or there are more files than a job reads ({code: too_many_pages, detail}) */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -3578,7 +3587,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/pdf": unknown;
+                    "application/zip": unknown;
                     "audio/wav": unknown;
+                    "image/jpeg": unknown;
+                    "image/png": unknown;
+                    "image/webp": unknown;
                 };
             };
             /** @description Validation Error */

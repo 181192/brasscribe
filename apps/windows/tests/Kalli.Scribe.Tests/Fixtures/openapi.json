@@ -1346,6 +1346,16 @@
             "title": "Id",
             "type": "string"
           },
+          "input": {
+            "default": "audio",
+            "description": "what the job read: a recording, or pages of printed music (getJobInput then gives a picture, a PDF or a ZIP of the pages, not audio)",
+            "enum": [
+              "audio",
+              "pages"
+            ],
+            "title": "Input",
+            "type": "string"
+          },
           "missing": {
             "description": "files a succeeded job should have had and has not (its PDF, its MIDI), each with why. The rest of the job is whole; asking for one of these files answers 404 with the same message",
             "items": {
@@ -4543,7 +4553,7 @@
             "description": "Successful Response"
           },
           "413": {
-            "description": "a page is too large to read: {code: page_too_large, detail}"
+            "description": "a page is too large to read ({code: page_too_large, detail}), or there are more files than a job reads ({code: too_many_pages, detail})"
           },
           "415": {
             "description": "a file is not a picture or a PDF ({code: not_a_page, detail}), or the profile does not read pages ({code: wrong_input, detail})"
@@ -5451,7 +5461,7 @@
     },
     "/v1/jobs/{job_id}/input": {
       "get": {
-        "description": "The job's original input audio (for A/B listening).",
+        "description": "What the job read (Job.input says which): the recording, for A/B listening, or the pages. One page is the\npicture or the PDF itself, under its own media type; several pages are one ZIP of them in order\n(page-001.png, page-002.jpg, …).",
         "operationId": "getJobInput",
         "parameters": [
           {
@@ -5483,7 +5493,12 @@
         "responses": {
           "200": {
             "content": {
-              "audio/wav": {}
+              "application/pdf": {},
+              "application/zip": {},
+              "audio/wav": {},
+              "image/jpeg": {},
+              "image/png": {},
+              "image/webp": {}
             },
             "description": "Successful Response"
           },

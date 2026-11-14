@@ -215,6 +215,8 @@ data class Job(
     val created: Double,
     val stages: List<StageState>,
     @SerialName("audio_id") val audioId: String? = null,
+    /** What the job read: "audio" (a recording) or "pages" (pictures or a PDF of printed music). */
+    val input: String = "audio",
     val title: String? = null,
     val started: Double? = null,
     val finished: Double? = null,
