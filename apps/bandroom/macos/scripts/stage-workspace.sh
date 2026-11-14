@@ -5,8 +5,17 @@
 # app update replaces that copy when its stamp (.scribe-workspace.json, written last) differs from this one.
 #   scripts/stage-workspace.sh <destination>
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$HERE/../../../.." && pwd)"
 DEST="$1"
+# From an empty folder every time. A Bandroom that was run keeps the adapters' environments inside this folder
+# (ml/adapters/<name>/.venv; the reader of printed music's is AGPL-3.0), and rsync leaves a folder it excludes
+# where it already is: the app built next would carry it, and the stamp below would hash it.
+case "$DEST" in
+  */workspace) ;;
+  *) echo "error: stage-workspace.sh empties its destination first, so it only takes a folder named workspace (got $DEST)" >&2; exit 1 ;;
+esac
+rm -rf "$DEST"
 mkdir -p "$DEST"
 cp "$ROOT/pixi.toml" "$ROOT/pixi.lock" "$DEST/"
 BENCH=ev''al
@@ -45,6 +54,9 @@ if [ ! -f "$CACHE/inference.py" ]; then
 fi
 mkdir -p "$DEST/ml/adapters/mega53/msst"
 rsync -a --delete --exclude '.git' --exclude 'tests' --exclude 'docs' "$CACHE/" "$DEST/ml/adapters/mega53/msst/"
+
+# Nothing staged may be an adapter's environment: the build stops here if one is.
+"$HERE/check-no-reader-bundled.sh" "$DEST"
 
 # The workspace stamp: a hash of every staged file's path and content (never dates), so Bandroom can tell at launch
 # that the copy in the data folder comes from another build. pixi.lock gets its own hash: only a new lockfile needs

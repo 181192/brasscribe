@@ -435,6 +435,12 @@ jobs:
         shell: bash
         run: bash ../macos/scripts/check-bundled-pixi.sh "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribeBandroom/pixi/pixi.exe"
 
+      # homr (the reader of printed music) is AGPL-3.0 and is only ever fetched on the user's own computer: neither it
+      # nor any other adapter environment may be in the download.
+      - name: The download holds no adapter environment
+        shell: bash
+        run: bash ../macos/scripts/check-no-reader-bundled.sh "$(cygpath -u "$RUNNER_TEMP")/publish/BrasscribeBandroom"
+
       - name: Zip
         run: |
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null

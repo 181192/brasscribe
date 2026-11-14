@@ -167,6 +167,7 @@ jobs:
       # Windows has gawk; scripts/check.sh bandroom-mac runs it with the macOS awk).
       - name: requires-pixi reader tests
         run: |
+          bash apps/bandroom/macos/scripts/test-no-reader-bundled.sh
           bash apps/bandroom/macos/scripts/test-pixi-spec.sh
           for a in gawk mawk; do
             if command -v "$a" > /dev/null; then AWK="$a" bash apps/bandroom/macos/scripts/test-pixi-spec.sh; fi

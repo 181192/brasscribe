@@ -89,6 +89,18 @@
     <Copy SourceFiles="@(_WsEv)" DestinationFiles="@(_WsEv->'$(_Ws)eval\scribe_eval\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_WsAdapters)" DestinationFiles="@(_WsAdapters->'$(_Ws)ml\adapters\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
     <!--
+      Nothing staged may be an adapter's Python environment. homr, the reader of printed music, is AGPL-3.0 and is
+      only ever fetched on the user's own computer (licences/README.md): a build that carried it would have to
+      take the AGPL. The copy above leaves .venv out and starts from an empty folder; this stops the build if a
+      change to it ever lets one through. The release build checks the whole download the same way
+      (apps/bandroom/macos/scripts/check-no-reader-bundled.sh).
+    -->
+    <ItemGroup>
+      <_WsEnvironment Include="$(_Ws)**\.venv\**\*;$(_Ws)**\site-packages\homr\**\*" />
+    </ItemGroup>
+    <Error Condition="'@(_WsEnvironment)' != ''"
+           Text="The staged engine workspace holds a Python environment, which must not be in a build of Bandroom (homr, the reader of printed music, is AGPL-3.0 and is only fetched on the user's own computer): @(_WsEnvironment->'%(RecursiveDir)', ';')" />
+    <!--
       The build's half of the workspace stamp (.scribe-workspace.json): the commit and version. Bandroom hashes
       the files itself at launch and replaces the copy in the data folder when the hash differs (spec §3.8).
     -->

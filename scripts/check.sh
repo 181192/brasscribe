@@ -164,10 +164,10 @@ run_area() {
     fast:windows) (cd apps/windows && dotnet test tests/Kalli.Scribe.Tests --filter 'Category!=Slow') ;;
     full:windows) apps/windows/tools/check-macos.sh ;;
     *:core-dotnet) (cd core/dotnet/Scribe.Core.Tests && dotnet test) ;;
-    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh) && (cd apps/apple/testing/ScreenCatalogue && swift test) ;;
+    fast:bandroom-mac) (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-no-reader-bundled.sh && scripts/test-kit.sh) && (cd apps/apple/testing/ScreenCatalogue && swift test) ;;
     # full adds the screen catalogue (apps/bandroom/macos/README.md, Testing), off screen; its build is the app's build.
     full:bandroom-mac) (cd apps/apple/testing/ScreenCatalogue && swift test) \
-                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-kit.sh && scripts/screenshots.sh record) ;;
+                       && (cd apps/bandroom/macos && scripts/test-pixi-spec.sh && scripts/test-no-reader-bundled.sh && scripts/test-kit.sh && scripts/screenshots.sh record) ;;
     *) echo "unknown area: $area ($ALL)" >&2; return 2 ;;
   esac
 }

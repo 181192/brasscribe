@@ -199,6 +199,7 @@ ditto "$S/dd-band/Build/Products/Release/Brasscribe Bandroom.app" "$B"
 mkdir -p "$B/Contents/Resources/bin"
 cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
 scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"   # stops unless it and .pixi-version (what CI bundles) meet requires-pixi in pixi.toml
+scripts/check-no-reader-bundled.sh "$B"   # stops if the app holds an adapter's environment: homr (AGPL-3.0) must never be in a build
 codesign -d --entitlements - --xml "$B" > "$S/band.entitlements"
 "$B/Contents/Resources/bin/scribe-core" version    # staged by the build
 codesign --force --sign - "$B/Contents/Resources/bin/pixi"
