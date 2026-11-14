@@ -26,15 +26,74 @@ const ready = (el) => el.querySelectorAll(".await-js").forEach((x) => x.classLis
 const sounding = (stop) => document.dispatchEvent(new CustomEvent("scribe:sound", { detail: stop }));
 const quietFor = (stop) => document.addEventListener("scribe:sound", (e) => e.detail !== stop && stop());
 
-// Segmented buttons in place of a list to pick from: the pressed one is the value.
+// Segmented buttons in place of a list to pick from, as a group of radio buttons: the checked one is the value, Tab
+// reaches only it, and the arrow keys move the choice.
 function segmented(group, changed) {
   const buttons = [...group.querySelectorAll("button[data-value]")];
   const control = {
-    get value() { return buttons.find((b) => b.getAttribute("aria-pressed") === "true")?.dataset.value; },
-    set value(v) { buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === v))); },
+    get value() { return buttons.find((b) => b.getAttribute("aria-checked") === "true")?.dataset.value; },
+    set value(v) {
+      buttons.forEach((b) => {
+        b.setAttribute("aria-checked", String(b.dataset.value === v));
+        b.tabIndex = b.dataset.value === v ? 0 : -1;
+      });
+    },
   };
-  for (const b of buttons) b.addEventListener("click", () => { control.value = b.dataset.value; changed(); });
+  const pick = (b) => {
+    if (b.dataset.value === control.value) return;
+    control.value = b.dataset.value;
+    changed();
+  };
+  buttons.forEach((b, i) => {
+    b.addEventListener("click", () => pick(b));
+    b.addEventListener("keydown", (e) => {
+      const by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      const to = by ? buttons[(i + by + buttons.length) % buttons.length] : { Home: buttons[0], End: buttons.at(-1) }[e.key];
+      if (!to) return;
+      e.preventDefault();
+      to.focus();
+      to.scrollIntoView({ block: "nearest", inline: "nearest" });
+      pick(to);
+    });
+  });
+  control.value = control.value;
   return control;
+}
+
+// Sound comes in and goes out over a few milliseconds, so starting and stopping it does not click.
+const FADE = 0.015;
+const ramp = (gain, to) => {
+  const now = gain.context.currentTime;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.linearRampToValueAtTime(to, now + FADE);
+};
+// The recording, played through the page's sound so it can fade. Made on the first Play, not before.
+function recording(src) {
+  const audio = new Audio(new URL(src, location.href));
+  let gain = null, run = 0;
+  return {
+    audio,
+    play() {
+      run++;
+      context ??= new AudioContext();
+      context.resume();
+      if (!gain) {
+        gain = context.createGain();
+        context.createMediaElementSource(audio).connect(gain).connect(context.destination);
+      }
+      gain.gain.cancelScheduledValues(context.currentTime);
+      gain.gain.setValueAtTime(0, context.currentTime);
+      ramp(gain, 1);
+      return audio.play();
+    },
+    pause() {
+      if (!gain || audio.paused) return audio.pause();
+      const mine = ++run;
+      ramp(gain, 0);
+      setTimeout(() => mine === run && audio.pause(), FADE * 1000 + 10);
+    },
+  };
 }
 
 // The notes that were written, as plain tones: a way to hear what is on the page beside the recording. `notes` are
@@ -43,7 +102,8 @@ let context = null;
 function synth(notes, from, voice) {
   context ??= new AudioContext();
   context.resume();
-  const now = context.currentTime + 0.05, voices = [];
+  const now = context.currentTime + 0.05, voices = [], all = context.createGain();
+  all.connect(context.destination);
   for (const [on, length, pitch] of notes) {
     if (on < from - 0.05) continue;
     const at = now + on - from, hold = Math.max(0.3, length);
@@ -55,7 +115,7 @@ function synth(notes, from, voice) {
       gain.gain.setValueAtTime(0.1, at + hold - 0.06);
     } else gain.gain.exponentialRampToValueAtTime(0.2, at + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, at + hold);
-    gain.connect(context.destination);
+    gain.connect(all);
     // A low note is below what a phone's speaker gives: its octave sounds along.
     for (const [octave, type] of [[1, "triangle"], [2, "sine"]]) {
       const osc = context.createOscillator();
@@ -68,12 +128,18 @@ function synth(notes, from, voice) {
     }
   }
   const last = Math.max(0, ...notes.map(([on, length]) => on + Math.max(0.3, length))) - from;
-  return { stop: () => voices.forEach((v) => { try { v.stop(); } catch {} }), seconds: last };
+  const stop = () => {
+    ramp(all, 0);
+    const end = context.currentTime + FADE + 0.01;
+    voices.forEach((v) => { try { v.stop(end); } catch {} });
+  };
+  return { stop, seconds: last };
 }
 
 // A Play button for a stretch of the recording or for written notes: Play again stops it, it stops by itself at
 // the end, and it falls silent when anything else on the page starts to sound.
-function player(button, src, words) {
+// `status` (when there is one) says so when the recording cannot be played.
+function player(button, src, words, status) {
   let audio = null, timer = 0, tones = null, playing = false;
   const stop = () => {
     playing = false;
@@ -85,6 +151,13 @@ function player(button, src, words) {
   };
   quietFor(stop);
   document.addEventListener("visibilitychange", () => document.hidden && stop());
+  // When the language changes, the button is made again: the old one must fall silent.
+  document.addEventListener("scribe:lang", () => !button.isConnected && stop());
+  const failed = () => {
+    stop();
+    if (status) status.textContent = words.failed;
+    else button.textContent = words.failed;
+  };
   const start = () => {
     playing = true;
     sounding(stop);
@@ -95,11 +168,11 @@ function player(button, src, words) {
     // The recording from one second to another.
     range(from, to) {
       if (playing) return stop();
-      audio ??= new Audio(new URL(src, location.href));
-      audio.currentTime = from;
+      audio ??= recording(src);
+      audio.audio.currentTime = from;
       start();
-      audio.play().catch(stop);
-      timer = setInterval(() => audio.currentTime >= to - 0.02 && stop(), 40);
+      audio.play().catch(failed);
+      timer = setInterval(() => audio.audio.currentTime >= to - 0.02 && stop(), 40);
     },
     // The written notes, from the first.
     notes(list, voice) {
@@ -161,7 +234,7 @@ function strip(el) {
   ready(el);
   // `quiet` is the run it makes by itself when it comes into view: no sound, and the button still says Play.
   let t = 0, from = 0, started = 0, playing = false, quiet = false, frame = 0, voices = [];
-  let mode = kept.mode ?? "recording", recording = null;
+  let mode = kept.mode ?? "recording", sound = null;
 
   // Tab runs straight in time; engraved notation does not, and brings its own seconds-to-pixels points.
   const px = (seconds) => {
@@ -176,13 +249,15 @@ function strip(el) {
     stage.style.setProperty("--t", px(t).toFixed(1));
     if (!byHand) range.value = t;
     const beat = Math.max(0, d.beats.findLastIndex((b) => b <= t));
-    out.textContent = d.barBeat.replace("{bar}", Math.floor(beat / d.perBar) + 1).replace("{beat}", (beat % d.perBar) + 1);
+    // The engine's first downbeat is below 0 when the take starts with an upbeat: its first beat is not beat 1.
+    const k = beat - (d.first ?? 0);
+    out.textContent = d.barBeat.replace("{bar}", Math.floor(k / d.perBar) + 1).replace("{beat}", (k % d.perBar) + 1);
     range.setAttribute("aria-valuetext", out.textContent);
   };
   const stop = () => {
     playing = quiet = false;
     cancelAnimationFrame(frame);
-    recording?.pause();
+    sound?.pause();
     for (const v of voices) v.stop();
     voices = [];
     button.textContent = d.play;
@@ -193,7 +268,7 @@ function strip(el) {
   const written = () => voices.push(synth(d.notes, t, d.voice));
   const run = (now) => {
     // The recording keeps its own time; without it the clock does.
-    set(playing && !quiet && mode === "recording" && recording && !recording.paused ? recording.currentTime : from + (now - started) / 1000);
+    set(playing && !quiet && mode === "recording" && sound && !sound.audio.paused ? sound.audio.currentTime : from + (now - started) / 1000);
     if (t >= d.dur) return stop();
     frame = requestAnimationFrame(run);
   };
@@ -207,9 +282,9 @@ function strip(el) {
       sounding(hush);
       button.textContent = d.pause;
       if (mode === "recording" && el.dataset.audio) {
-        recording ??= new Audio(new URL(el.dataset.audio, location.href));
-        recording.currentTime = t;
-        recording.play().catch(() => {});
+        sound ??= recording(el.dataset.audio);
+        sound.audio.currentTime = t;
+        sound.play().catch(() => {});
       } else written();
     }
     frame = requestAnimationFrame(run);
@@ -347,7 +422,7 @@ async function tabdemo(el) {
   const demo = await (await fetch(el.dataset.src)).json();
   const tuning = segmented(el.querySelector("[data-tuning]"), () => draw()), capo = el.querySelector("[data-capo]");
   const status = el.querySelector("[data-status]"), neck = el.querySelector("[data-neck]");
-  const playBar = el.querySelector("[data-bar-play]"), bar = player(playBar, el.dataset.audio, config);
+  const playBar = el.querySelector("[data-bar-play]"), bar = player(playBar, el.dataset.audio, config, status);
   const plain = el.querySelector("[data-plain]"), asText = el.querySelector("[data-as-text]");
   const scroll = el.querySelector(".tabdemo-scroll"), svg = scroll.querySelector("svg");
   const notes = [...svg.querySelectorAll("g.note")];
@@ -475,11 +550,10 @@ async function partview(el) {
     show();
   });
   const status = el.querySelector("[data-status]"), scroll = el.querySelector(".tabdemo-scroll");
-  const playBar = el.querySelector("[data-bar-play]"), bar = player(playBar, el.dataset.audio, config);
-  // Where a bar starts in the recording, and where it ends: the next bar's first beat, or one beat past the last.
-  const beatAt = (k) => score.beats[k] ?? score.beats.at(-1) + (score.beats.at(-1) - score.beats.at(-2)) * (k - score.beats.length + 1);
+  const playBar = el.querySelector("[data-bar-play]"), bar = player(playBar, el.dataset.audio, config, status);
+  // Where each bar starts in the recording, from bar 1, and where the last one ends: made at build time.
   let chosenBar = 0;
-  playBar.addEventListener("click", () => chosenBar && bar.range(beatAt((chosenBar - 1) * score.per_bar), beatAt(chosenBar * score.per_bar)));
+  playBar.addEventListener("click", () => chosenBar && bar.range(config.times[chosenBar - 1], config.times[chosenBar]));
   const drawings = [...scroll.querySelectorAll("svg[data-part]")];
   const all = score.parts.flatMap((part) => part.notes.map((n) => n[3])).filter(Boolean).length;
   let notes = [];

@@ -133,7 +133,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .tabdemo-controls label { display: inline-flex; align-items: center; gap: var(--scribe-space-2); font-weight: 600; }
 .tabdemo-controls { align-items: center; }
 .seg-label { font-weight: 600; }
-/* Segmented buttons: one row of choices, the chosen one filled in ink; they wrap on a phone. */
+/* Segmented buttons: one row of choices, the chosen one filled in ink; on a phone the row scrolls sideways. */
 .seg { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm); overflow: hidden; }
 .seg button {
   min-height: 44px; padding: 0 var(--scribe-space-4); font: inherit; font-weight: 600; cursor: pointer;
@@ -141,13 +141,14 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 }
 .seg button:last-child { border-right: 0; }
 .seg button:hover { background: var(--scribe-surface); }
-.seg button[aria-pressed="true"] { background: var(--scribe-primary); color: var(--scribe-on-primary); }
+.seg button[aria-checked="true"] { background: var(--scribe-primary); color: var(--scribe-on-primary); }
 .seg button:focus-visible { outline: 2px solid var(--scribe-focus); outline-offset: -4px; }
 @media (max-width: 600px) {
-  .seg { border: 0; gap: var(--scribe-space-2); overflow: visible; }
-  .seg button, .seg button:last-child { border: 1px solid var(--scribe-border-strong); border-radius: var(--scribe-radius-sm); padding: 0 var(--scribe-space-3); }
+  .tabdemo-controls .seg { flex: 1 1 100%; min-width: 0; }
+  .seg { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+  .seg button { flex: none; white-space: nowrap; padding: 0 var(--scribe-space-3); }
 }
-@media (forced-colors: active) { .seg button[aria-pressed="true"] { background: Highlight; color: HighlightText; } }
+@media (forced-colors: active) { .seg button[aria-checked="true"] { background: Highlight; color: HighlightText; } }
 .bar-play { flex: none; min-height: 44px; }
 .bar-play:disabled { opacity: 0.45; cursor: default; }
 .tabdemo-scroll { overflow-x: auto; padding: var(--scribe-space-2) 0; }
