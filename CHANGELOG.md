@@ -2,6 +2,74 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.15.0 (2026-11-14)
+
+### New features
+
+- **Android:** Play for Android writes solos on the phone, with its listening models in every release ([#486](https://github.com/181192/brasscribe/pull/486))
+- **iPhone, iPad and Mac:** Play for iPhone, iPad and Mac writes solos on the device, with its listening models in the app ([#492](https://github.com/181192/brasscribe/pull/492))
+- **Bandroom:** Setup asks for a Hugging Face key only when a full-band score is first wanted ([#456](https://github.com/181192/brasscribe/pull/456))
+- **Site:** Fretscribe gets its own pages, and a family page shows the apps side by side ([#433](https://github.com/181192/brasscribe/pull/433))
+- **Site:** Fretscribe's front page shows a recording become tab, step by step, and lets you try a tuning ([#448](https://github.com/181192/brasscribe/pull/448))
+- **Site:** A research paper with interactive figures, every number read from the gated benchmarks ([#451](https://github.com/181192/brasscribe/pull/451))
+- **Site:** Fretscribe gets a research paper with its results for bass, guitar, ukulele and mandolin ([#459](https://github.com/181192/brasscribe/pull/459))
+- **Site:** One Scribe family: a home for both apps, each showing a real recording being written down, in one address per page ([#464](https://github.com/181192/brasscribe/pull/464))
+- **Site:** Scribe, its apps, their devices: the top bar is a path, and every app shows its devices the same way ([#469](https://github.com/181192/brasscribe/pull/469))
+- **Site:** The other app is one tap away in the top bar, and the apps are called Brasscribe and Fretscribe everywhere ([#474](https://github.com/181192/brasscribe/pull/474))
+- **Site:** One Scribe family: the apps on a shared desk, the same six places for every app, and a page for Bandroom ([#478](https://github.com/181192/brasscribe/pull/478))
+- **Site:** "How sure is it?" shows what each app gets right, as a tally of a hundred notes ([#479](https://github.com/181192/brasscribe/pull/479))
+- **Site:** Hear any bar you pick, the steps with sound, and the plain-text tab in the tuning you chose ([#482](https://github.com/181192/brasscribe/pull/482))
+- **Site:** The guides share one chapter order, and the words are plainer in both languages ([#484](https://github.com/181192/brasscribe/pull/484))
+- **Site:** Download pages in a player's words: one button per device and three steps for the first time ([#487](https://github.com/181192/brasscribe/pull/487))
+- Every app ships the licence texts of what it includes, and opens them from About ([#455](https://github.com/181192/brasscribe/pull/455))
+
+### Fixes
+
+- **Android:** The answers in dialogs are 48 dp tall ([#452](https://github.com/181192/brasscribe/pull/452))
+- **Android:** Fretscribe's song menu no longer offers a music stand ([#454](https://github.com/181192/brasscribe/pull/454))
+- **Android:** A small phone shows the progress and the content, not just the buttons ([#434](https://github.com/181192/brasscribe/pull/434))
+- **Android:** Continue, Show the tab and Print are in view when the phone is on its side ([#480](https://github.com/181192/brasscribe/pull/480))
+- **Android:** Check the notes shows the note being checked on a small phone ([#481](https://github.com/181192/brasscribe/pull/481))
+- **Android:** A release without its listening models can no longer slip through a gap in the checks ([#491](https://github.com/181192/brasscribe/pull/491))
+- **iPhone, iPad and Mac:** The score is engraved to the width that is visible, also after a small change ([#463](https://github.com/181192/brasscribe/pull/463))
+- **iPhone, iPad and Mac:** The band plays a whole arrangement as loud as on Windows again ([#477](https://github.com/181192/brasscribe/pull/477))
+- **Bandroom for Mac:** A job sent right after an update is no longer lost to a restart, and a failed update says whether Brasscribe is running ([#450](https://github.com/181192/brasscribe/pull/450))
+- **Engine:** A tune in 6/8 keeps its bar of two when the notes are a little early or late ([#449](https://github.com/181192/brasscribe/pull/449))
+- **Engine:** A job without its PDF or MIDI says which file and why, and a MuseScore that is not starting is stopped within half a minute ([#453](https://github.com/181192/brasscribe/pull/453))
+- **Engine:** A slow first launch of MuseScore no longer fails a score ([#468](https://github.com/181192/brasscribe/pull/468))
+- **Site:** Mark the test and preview builds, and say what Bandroom's first run needs ([#435](https://github.com/181192/brasscribe/pull/435))
+- **Site:** Call the program on the computer Bandroom throughout Brasscribe's guide ([#436](https://github.com/181192/brasscribe/pull/436))
+- **Site:** The research papers' charts keep working after a change of language, and their words are in the language tables ([#472](https://github.com/181192/brasscribe/pull/472))
+- **Site:** "How sure is it?" starts with what the apps get right, and links to a place on a page land there in Norwegian too ([#471](https://github.com/181192/brasscribe/pull/471))
+
+<details><summary>Under the hood (22 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **iPhone, iPad and Mac:** The tab feature's tests no longer fail now and then on the iPhone simulator ([#470](https://github.com/181192/brasscribe/pull/470))
+- **Deps:** Bump certifi from 2026.7.22 to 2026.10.19 in /ml/adapters/panns ([#392](https://github.com/181192/brasscribe/pull/392))
+- **Deps:** Bump the minor-and-patch group in /core with 2 updates ([#424](https://github.com/181192/brasscribe/pull/424))
+- **Deps:** Bump the minor-and-patch group across 2 directories with 17 updates ([#430](https://github.com/181192/brasscribe/pull/430))
+- **Deps:** Bump msgpack from 1.2.2 to 1.2.3 in /ml/adapters/mega53
+- **Deps:** Bump certifi from 2026.7.22 to 2026.10.18 in /core/conformance ([#432](https://github.com/181192/brasscribe/pull/432))
+- **Deps:** Bump pillow from 12.3.0 to 13.0.0 in /eval ([#390](https://github.com/181192/brasscribe/pull/390))
+- **Deps:** Bump pillow from 12.3.0 to 13.0.0 in /core/conformance ([#391](https://github.com/181192/brasscribe/pull/391))
+- **Deps:** Bump pillow from 12.3.0 to 13.0.0 in /ml/adapters/panns ([#393](https://github.com/181192/brasscribe/pull/393))
+- **Deps:** Keep the zip crate on version 8 ([#437](https://github.com/181192/brasscribe/pull/437))
+- **Deps-dev:** Bump the minor-and-patch group in /studio with 4 updates ([#426](https://github.com/181192/brasscribe/pull/426))
+- **Deps-dev:** Bump happy-dom from 20.14.5 to 21.0.4 in /studio ([#427](https://github.com/181192/brasscribe/pull/427))
+- **Eval:** Measure which slot a tab writes each note on, with a chord-aware grid choice ready in the quantizer ([#461](https://github.com/181192/brasscribe/pull/461))
+- **Site:** The research papers follow the conventions of their field ([#465](https://github.com/181192/brasscribe/pull/465))
+- **Site:** The research papers report the doubt marks on recordings the model has not seen, and how tabs write sixteenths ([#476](https://github.com/181192/brasscribe/pull/476))
+- **Windows:** A leftover compiler process is no longer taken for the engine ([#475](https://github.com/181192/brasscribe/pull/475))
+- Bump the minor-and-patch group across 2 directories with 5 updates ([#428](https://github.com/181192/brasscribe/pull/428))
+- Bump the minor-and-patch group with 5 updates ([#429](https://github.com/181192/brasscribe/pull/429))
+- Bump the minor-and-patch group across 2 directories with 3 updates ([#441](https://github.com/181192/brasscribe/pull/441))
+- Bump Microsoft.Extensions.TimeProvider.Testing from 10.11.0 to 11.0.0 ([#443](https://github.com/181192/brasscribe/pull/443))
+- Bump Microsoft.Extensions.TimeProvider.Testing from 10.11.0 to 11.0.0 ([#447](https://github.com/181192/brasscribe/pull/447))
+- The on-device models travel as a pinned pack, fetched and checked before a build bundles them ([#485](https://github.com/181192/brasscribe/pull/485))
+
+</details>
+
 ## 0.14.0 (2026-10-25)
 
 ### New features

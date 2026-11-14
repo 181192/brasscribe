@@ -30,8 +30,8 @@ android {
         applicationId = "no.kalli.fretscribe"
         minSdk = 36
         targetSdk = 37
-        versionCode = 20
-        versionName = "0.14.0"
+        versionCode = 21
+        versionName = "0.15.0"
         fretscribeVersionCode?.let { versionCode = it }
         fretscribeVersionName?.let { versionName = it }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

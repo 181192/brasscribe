@@ -27,8 +27,8 @@ android {
         applicationId = "no.kalli.brasscribe"
         minSdk = 36
         targetSdk = 37
-        versionCode = 20
-        versionName = "0.14.0"
+        versionCode = 21
+        versionName = "0.15.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         // The audio library with sfizz, the realistic tier.
