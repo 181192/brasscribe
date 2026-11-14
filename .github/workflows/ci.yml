@@ -89,7 +89,8 @@ jobs:
             workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
             python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'licences/**', 'scripts/licences.py', 'sounds/**', 'design/**', 'convert/*models*', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
-            site: ['site/**', 'eval/baselines.json', 'convert/reports/**', 'design/brands/*/dist/**', 'design/brands/*/brand/**', '.github/workflows/ci.yml']
+            # What the site build reads (site/inputs.txt, which site/build.py checks this against), and this file.
+            site: ['site/**', 'eval/baselines.json', 'convert/reports/**', 'design/brands/*/dist/**', 'design/brands/*/brand/**', 'core/targets/fretted/src/tab.rs', 'README.md', '**/README.md', '.github/workflows/ci.yml']
             studio: ['studio/**', 'docs/shared/accessibility/talking-score-vectors.json', 'design/**', 'engine/openapi.json', 'engine/src/scribe_engine/static/**', 'apps/fixtures/old-hundredth/**']
             android: ['apps/android/*', 'apps/android/buildSrc/**', 'apps/android/gradle/**', 'apps/android/scripts/**', 'apps/android/services/**', 'apps/android/features/**', 'apps/android/design/**', 'apps/fixtures/**', 'core/**', 'engine/src/scribe_engine/**', 'engine/openapi.json', 'design/**', 'sounds/**', 'docs/shared/accessibility/talking-score-vectors.json', 'licences/dist/**']
             android_brasscribe: ['apps/android/products/brasscribe/**']

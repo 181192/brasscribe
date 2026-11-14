@@ -1,0 +1,11 @@
+# What site/build.sh reads, as path patterns from the repository's root: site/build.py checks that the site's
+# pull-request filter in .github/workflows/ci.yml and the deploy's trigger in .github/workflows/pages.yml both name
+# exactly these (each may add its own workflow file), so a change to any of them builds and checks the site.
+site/**
+eval/baselines.json
+convert/reports/**
+design/brands/*/dist/**
+design/brands/*/brand/**
+core/targets/fretted/src/tab.rs
+README.md
+**/README.md

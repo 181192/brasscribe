@@ -8,7 +8,9 @@ site/build.sh && python3 -m http.server -d site/_site 8000
 
 `site/build.sh` checks that nothing names a version, then runs `site/build.py` (Python's standard
 library only). The build fails on a link, an image or an anchor that points at nothing, on words
-missing in one of the two languages, and on words a page has but does not use.
+missing in one of the two languages, and on words a page has but does not use. It also fails when it has read a file
+that `inputs.txt` does not name, or when the workflows that build and check the site (`pages.yml`, and the `site`
+filter in `ci.yml`) do not name exactly what `inputs.txt` names.
 
 ## Where things are served
 
