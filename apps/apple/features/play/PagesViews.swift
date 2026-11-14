@@ -12,7 +12,8 @@ import UIKit
 // and what can go wrong, in the player's words. Each app says what becomes of the notes once they are read.
 
 /// The pages in hand, in the order they will be read. Each is kept as it is sent (`Pages.prepare`): the picture or PDF
-/// as it was, or another picture as an upright JPEG.
+/// as it was, or another picture as an upright JPEG. They are kept on the device with their order (`pages.json`), so
+/// they are still in hand when the system closed the app, until they are read or removed.
 @Observable @MainActor
 final class PageList {
     struct Page: Identifiable, Hashable {
@@ -25,14 +26,47 @@ final class PageList {
         var isPDF: Bool { url.pathExtension == "pdf" }
     }
 
-    private(set) var pages: [Page] = []
+    private(set) var pages: [Page] = [] { didSet { save() } }
     /// Pages in hand, every page of a PDF counted: at most `Pages.maxPages`.
     var pageCount: Int { pages.reduce(0) { $0 + $1.count } }
     /// Files are being made ready (converted, copied) off the main thread.
     private(set) var adding = 0
     /// What happened to the last pages added or moved, said under the list (and to a screen reader).
     var status: String?
-    private let folder = FileManager.default.temporaryDirectory.appending(path: "Pages", directoryHint: .isDirectory)
+    private let folder: URL
+
+    /// Where an app keeps its pages: in its own support folder, so two apps on one Mac keep theirs apart.
+    static var appFolder: URL {
+        // unit tests keep their pages out of the player's
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return FileManager.default.temporaryDirectory.appending(path: "PlayTests/Pages", directoryHint: .isDirectory)
+        }
+        return URL.applicationSupportDirectory.appending(path: Bundle.main.bundleIdentifier ?? "Play", directoryHint: .isDirectory)
+            .appending(path: "Pages", directoryHint: .isDirectory)
+    }
+
+    /// The pages kept in `folder`, in their order. A page whose file is gone is left out, and a file no page names
+    /// (left by an add that was cut short) is deleted.
+    init(folder: URL = PageList.appFolder) {
+        self.folder = folder
+        let kept = (try? Data(contentsOf: folder.appending(path: Self.index))).flatMap { try? JSONDecoder().decode([Kept].self, from: $0) } ?? []
+        let found = kept.filter { FileManager.default.fileExists(atPath: folder.appending(path: $0.file).path) }
+        pages = found.map { Page(url: folder.appending(path: $0.file), name: $0.name, count: $0.count) }
+        let named = Set(found.map(\.file) + [Self.index])
+        for file in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where !named.contains(file) {
+            try? FileManager.default.removeItem(at: folder.appending(path: file))
+        }
+    }
+
+    /// One page as it is kept: its file in the folder, the name it is shown with, and how many pages it holds.
+    private struct Kept: Codable { let file: String; let name: String; let count: Int }
+    private static let index = "pages.json"
+
+    private func save() {
+        let kept = pages.map { Kept(file: $0.url.lastPathComponent, name: $0.name, count: $0.count) }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try? JSONEncoder().encode(kept).write(to: folder.appending(path: Self.index), options: .atomic)
+    }
 
     /// Files chosen or shared, in their order. Each is made ready off the main thread and joins the list as it is
     /// ready, so the screen stays live with forty large photos. A file that is no page, a PDF that cannot be opened, or

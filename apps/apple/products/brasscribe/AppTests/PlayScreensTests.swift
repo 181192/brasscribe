@@ -190,8 +190,8 @@ import UniformTypeIdentifiers
         try piece.saveComposition(composition)
         try await window("problem-silence", app: full) { ProblemView(problem: .silence) }
         // Sheet music from a picture: none in hand yet, three in hand, and a read that found no notes
-        try await window("pages-empty", app: full) { PagesView(list: PageList(), lead: Self.pagesLead, computerThere: true) {} }
-        let inHand = PageList()
+        try await window("pages-empty", app: full) { PagesView(list: PageList(folder: FileManager.default.temporaryDirectory.appending(path: "catalogue-pages-\(UUID().uuidString)")), lead: Self.pagesLead, computerThere: true) {} }
+        let inHand = PageList(folder: FileManager.default.temporaryDirectory.appending(path: "catalogue-pages-\(UUID().uuidString)"))
         await inHand.add(try (1...3).map { try Self.pagePicture("Hymn page \($0).png") })
         try await window("pages-in-hand", app: full) { PagesView(list: inHand, lead: Self.pagesLead, computerThere: true) {} }
         try await window("pages-offline", app: LayoutFixtures.app(connection: .offline)) {
