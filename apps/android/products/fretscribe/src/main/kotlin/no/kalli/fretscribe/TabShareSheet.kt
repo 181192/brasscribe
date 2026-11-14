@@ -11,10 +11,12 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -30,8 +32,10 @@ import kotlinx.coroutines.launch
 import no.kalli.scribe.design.R as DesignR
 import no.kalli.scribe.design.ScribeSpace
 import no.kalli.scribe.design.ScribeTheme
+import no.kalli.scribe.play.OnDeviceRouting
 import no.kalli.scribe.play.PlayViewModel
 import no.kalli.scribe.play.ui.currentLang
+import no.kalli.scribe.play.ui.findActivity
 import no.kalli.scribe.play.export.Exporter
 import no.kalli.scribe.play.ui.ListRow
 import no.kalli.scribe.play.ui.PlaySheet
@@ -60,7 +64,13 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val exports = remember { TabExports(context.applicationContext) }
-    val engine = remember(job) { if (job != null) vm.container.engine() else null }
+    // The computer is there when it answers now, not when it is only paired (as the pages and Check the song decide it).
+    val connection by vm.connection.state.collectAsState()
+    val there = vm.container.usingFixture || OnDeviceRouting.computerThere(connection)
+    val engineNow = remember(job, there) { if (job != null && there) vm.container.engine() else null }
+    // Read as state: the sheet's content is composed in a window of its own, and follows it when the computer comes or goes.
+    val engine by rememberUpdatedState(engineNow)
+    println("SHEET connection=$connection there=$there")
     val lang = currentLang()
     val legend = stringResource(R.string.fs_share_marks_note)
     val suffix = stringResource(R.string.fs_share_instructions_suffix)
@@ -77,7 +87,7 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
         said = null
         scope.launch {
             try {
-                then(exports.build(format, title, musicXml, job, outputs, engine, lang, legend, suffix))
+                then(exports.build(format, title, musicXml, job, outputs, engine, engine != null, lang, legend, suffix))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -94,12 +104,14 @@ internal fun TabShareSheet(vm: PlayViewModel, title: String, musicXml: String, j
             Text(stringResource(R.string.export_title), style = MaterialTheme.typography.titleLarge, color = c.text,
                 modifier = Modifier.padding(horizontal = ScribeSpace.s4).semantics { heading() })
             val fromComputer = exports.pdfFromComputer(job, outputs, engine != null)
+            println("CONTENT engine=${engine != null} from=$fromComputer")
             Text(stringResource(if (fromComputer) R.string.fs_share_pdf_computer else R.string.fs_share_pdf_phone),
                 style = MaterialTheme.typography.bodyMedium, color = c.textMuted,
                 modifier = Modifier.padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s2).testTag("fs-share-pdf-from"))
             PrimaryButton(stringResource(R.string.fs_share_print), {
                 make(TabShareFormat.PDF, print = true) { file ->
-                    (context as? Activity)?.let { Exporter(it, vm.container.core, false).print(it, title.ifBlank { file.nameWithoutExtension }, file) }
+                    val activity = context.findActivity() ?: throw IllegalStateException("no activity to print from")
+                    Exporter(activity, vm.container.core, false).print(activity, title.ifBlank { file.nameWithoutExtension }, file)
                 }
             }, Modifier.padding(horizontal = ScribeSpace.s4).testTag("fs-share-print"), enabled = making == null, icon = DesignR.drawable.ic_bc_print)
             // What is being made, and what went wrong, are said once.

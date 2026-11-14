@@ -53,25 +53,103 @@ class TabExportsTest {
         return out
     }
 
+    /** Every file in the zip [bytes], read through [java.util.zip.ZipInputStream], which checks each one's checksum. */
+    private fun unzipChecked(bytes: ByteArray): Map<String, ByteArray> {
+        val files = HashMap<String, ByteArray>()
+        java.util.zip.ZipInputStream(bytes.inputStream()).use { zip -> generateSequence { zip.nextEntry }.forEach { files[it.name] = zip.readBytes() } }
+        return files
+    }
+
     @Test
     fun theGuitarProFileReadsBackWithEveryNoteOnItsStringAndFret() {
-        val gp = exports.guitarPro(marks)
-        // A Guitar Pro 7 file is a zip with the score inside.
-        assertEquals("PK", String(gp, 0, 2))
-        // Every file in it is whole, by its own checksum (alphaTab writes checksums other programs refuse; the app sets them right).
-        val files = HashMap<String, ByteArray>()
-        java.util.zip.ZipInputStream(gp.inputStream()).use { zip -> generateSequence { zip.nextEntry }.forEach { files[it.name] = zip.readBytes() } }
-        assertEquals("7.0", files["VERSION"]?.decodeToString())
-        assertTrue("${files.keys}", files["Content/score.gpif"]?.decodeToString()?.startsWith("<?xml") == true)
-        val back = ScoreLoader.loadScoreFromBytes(Uint8Array(gp.asUByteArray()), Settings())
-        val page = AlphaTabMusicXml.parse(marks.toByteArray(), Settings())
-        val written = fretted(page)
-        assertEquals(TabIndex.parse(marks).pieces.count { it.first && it.staff == 0 }, written.size)
-        assertEquals(written, fretted(back))
-        assertEquals(page.masterBars.length.toInt(), back.masterBars.length.toInt())
-        fun tuning(score: Score) = score.tracks[0].staves[0].stringTuning.tunings.let { t -> (0 until t.length.toInt()).map { t[it] } }
-        assertEquals(tuning(page), tuning(back))
-        assertEquals(4, tuning(back).size)
+        // A four-string bass with marked notes, a six-string guitar and a four-string ukulele.
+        for ((song, strings) in listOf("bass-line-marks" to 4, "guitar-line" to 6, "ukulele-line" to 4)) {
+            val xml = fixture("$song/tab.musicxml")
+            val gp = exports.guitarPro(xml)
+            // A Guitar Pro 7 file is a zip with the score inside.
+            assertEquals(song, "PK", String(gp, 0, 2))
+            // Every file in it is whole, by its own checksum (alphaTab writes checksums other programs refuse; the app sets them right).
+            val files = unzipChecked(gp)
+            assertEquals(song, "7.0", files["VERSION"]?.decodeToString())
+            assertTrue("$song: ${files.keys}", files["Content/score.gpif"]?.decodeToString()?.startsWith("<?xml") == true)
+            val back = ScoreLoader.loadScoreFromBytes(Uint8Array(gp.asUByteArray()), Settings())
+            val page = AlphaTabMusicXml.parse(xml.toByteArray(), Settings())
+            val written = fretted(page)
+            assertEquals(song, TabIndex.parse(xml).pieces.count { it.first && it.staff == 0 }, written.size)
+            assertEquals(song, written, fretted(back))
+            assertEquals(song, page.masterBars.length.toInt(), back.masterBars.length.toInt())
+            fun tuning(score: Score) = score.tracks[0].staves[0].stringTuning.tunings.let { t -> (0 until t.length.toInt()).map { t[it] } }
+            assertEquals(song, tuning(page), tuning(back))
+            assertEquals(song, strings, tuning(back).size)
+        }
+    }
+
+    /**
+     * What alphaTab writes itself does not pass the checksum check: what [TabExports.wholeZip] is there for. When this
+     * fails, alphaTab writes whole files and the rewrite can go.
+     */
+    @Test
+    fun alphaTabsOwnGuitarProFileFailsTheChecksums() {
+        val raw = exports.alphaTabsGuitarPro(marks)
+        val refused = runCatching { unzipChecked(raw) }.exceptionOrNull()
+        assertTrue("alphaTab's own file passed the checksum check", refused is java.util.zip.ZipException)
+        assertTrue(refused!!.message, refused.message!!.contains("CRC", ignoreCase = true))
+    }
+
+    /** A zip of two small files, stored and deflated, as [java.util.zip.ZipOutputStream] writes them. */
+    private fun twoFiles(): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        java.util.zip.ZipOutputStream(out).use { zip ->
+            val text = "Bar 1: E string, open.".toByteArray()
+            zip.putNextEntry(java.util.zip.ZipEntry("VERSION").apply {
+                method = java.util.zip.ZipEntry.STORED; size = 3; compressedSize = 3; crc = java.util.zip.CRC32().apply { update("7.0".toByteArray()) }.value
+            })
+            zip.write("7.0".toByteArray())
+            zip.closeEntry()
+            zip.putNextEntry(java.util.zip.ZipEntry("Content/score.gpif"))
+            zip.write(text)
+            zip.closeEntry()
+        }
+        return out.toByteArray()
+    }
+
+    /** The offset of the second file's entry in the zip's directory. */
+    private fun secondDirectoryEntry(zip: ByteArray): Int {
+        val b = java.nio.ByteBuffer.wrap(zip).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        val end = (zip.size - 22 downTo 0).first { b.getInt(it) == 0x06054b50 }
+        val first = b.getInt(end + 16)
+        return first + 46 + (b.getShort(first + 28).toInt() and 0xFFFF) + (b.getShort(first + 30).toInt() and 0xFFFF) + (b.getShort(first + 32).toInt() and 0xFFFF)
+    }
+
+    @Test
+    fun aZipThatSaysMoreThanItHasIsRefused() {
+        val good = twoFiles()
+        assertEquals(setOf("VERSION", "Content/score.gpif"), unzipChecked(TabExports.wholeZip(good)).keys)
+        fun patched(at: Int, value: Int, short: Boolean = false) = good.copyOf().also {
+            val b = java.nio.ByteBuffer.wrap(it).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            if (short) b.putShort(at, value.toShort()) else b.putInt(at, value)
+        }
+        val second = secondDirectoryEntry(good)
+        val end = (good.size - 22 downTo 0).first { java.nio.ByteBuffer.wrap(good).order(java.nio.ByteOrder.LITTLE_ENDIAN).getInt(it) == 0x06054b50 }
+        val cases = mapOf(
+            // A file that says it is 4 GB, or larger than the cap, once unpacked.
+            "a size of 4 GB" to patched(second + 24, -1),
+            "a size over the cap" to patched(second + 24, (TabExports.ZIP_MAX_BYTES + 1).toInt()),
+            // A file whose packed bytes run past the end of the zip.
+            "packed past the end" to patched(second + 20, good.size),
+            // A file whose header is past the end, and a directory past the end.
+            "a header past the end" to patched(second + 42, good.size + 100),
+            "a directory past the end" to patched(end + 16, good.size),
+            // More files than the cap.
+            "too many files" to patched(end + 10, TabExports.ZIP_MAX_ENTRIES + 1, short = true),
+            // A name longer than the directory.
+            "a name past the directory" to patched(second + 28, 0xFFFF, short = true),
+            "nothing of a zip" to "not a zip at all, only words".toByteArray(),
+        )
+        for ((case, zip) in cases) {
+            val thrown = runCatching { TabExports.wholeZip(zip) }.exceptionOrNull()
+            assertTrue("$case: $thrown", thrown is java.util.zip.ZipException)
+        }
     }
 
     @Test
@@ -135,7 +213,7 @@ class TabExportsTest {
         val xml = fixture("bass-line/tab.musicxml")
         val outputs = setOf("tab.txt", "tab-instructions.en.txt", "tab-instructions.nb.txt")
         suspend fun build(format: TabShareFormat, lang: Lang = Lang.EN, suffix: String = "playing instructions") =
-            exports.build(format, "Bass: line?", xml, "job", outputs, engine, lang, "legend", suffix)
+            exports.build(format, "Bass: line?", xml, "job", outputs, engine, connected = true, lang, "legend", suffix)
         val text = build(TabShareFormat.TEXT)
         assertEquals("Bass line.txt", text.name)
         assertEquals(fixture("bass-line/tab.txt"), text.readText())
@@ -151,6 +229,25 @@ class TabExportsTest {
         assertEquals("Bass line.pdf", pdf.name)
         assertTrue((PdfJoin.pageCount(pdf.readBytes()) ?: 0) >= 1)
         // A song with no name still has a file.
-        assertEquals("tab.musicxml", exports.build(TabShareFormat.MUSICXML, "??", xml, null, emptySet(), null, Lang.EN, "legend", "x").name)
+        assertEquals("tab.musicxml", exports.build(TabShareFormat.MUSICXML, "??", xml, null, emptySet(), null, connected = false, Lang.EN, "legend", "x").name)
+    }
+
+    @Test
+    fun thePdfIsLaidOutOnThePhoneWhenTheComputersCannotBeHad() = runBlocking {
+        val xml = fixture("bass-line/tab.musicxml")
+        // The computer says it wrote a PDF, but has none to give (it fails as an unreachable computer would).
+        val engine = FixtureEngineApi(FixtureSource { name -> fixtures.resolve("bass-line/$name").takeIf { it.isFile }?.readBytes() })
+        assertTrue(runCatching { engine.pdf("job") }.isFailure)
+        val outputs = setOf(TabExports.TAB_PDF)
+        for (connected in listOf(true, false)) {
+            val pdf = exports.build(TabShareFormat.PDF, "Bass line", xml, "job", outputs, engine, connected, Lang.EN, "legend", "x")
+            assertEquals("connected $connected", "%PDF", pdf.readBytes().decodeToString(0, 4))
+            assertTrue("connected $connected", (PdfJoin.pageCount(pdf.readBytes()) ?: 0) >= 1)
+        }
+        // What only the computer writes is not asked of a computer that does not answer.
+        for (format in listOf(TabShareFormat.TEXT, TabShareFormat.INSTRUCTIONS)) {
+            val thrown = runCatching { exports.build(format, "Bass line", xml, "job", setOf("tab.txt"), engine, connected = false, Lang.EN, "legend", "x") }.exceptionOrNull()
+            assertTrue("$format: $thrown", thrown is IllegalStateException)
+        }
     }
 }

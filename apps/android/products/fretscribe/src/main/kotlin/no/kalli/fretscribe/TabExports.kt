@@ -10,6 +10,7 @@ import alphaTab.model.Score
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import no.kalli.scribe.engine.EngineApi
@@ -72,10 +73,12 @@ class TabExports(private val context: Context) {
 
     /**
      * The file of [format] for the tab [musicXml] of the song [title]; [suffix] is added to the name of the playing
-     * instructions (they and the text tab are both .txt). Throws what the computer or alphaTab throws.
+     * instructions (they and the text tab are both .txt). [connected]: the computer answers now. The computer's PDF
+     * is used when it wrote one and answers; when asking for it fails, the phone lays the pages out after all.
+     * Throws what the computer or alphaTab throws.
      */
-    suspend fun build(format: TabShareFormat, title: String, musicXml: String, job: String?, outputs: Set<String>, engine: EngineApi?, lang: Lang,
-                      legend: String, suffix: String): File = withContext(Dispatchers.IO) {
+    suspend fun build(format: TabShareFormat, title: String, musicXml: String, job: String?, outputs: Set<String>, engine: EngineApi?, connected: Boolean,
+                      lang: Lang, legend: String, suffix: String): File = withContext(Dispatchers.IO) {
         val base = safe(title).ifBlank { "tab" }
         val name = if (format == TabShareFormat.INSTRUCTIONS) "$base $suffix" else base
         val file = File(dir, "$name.${format.extension}")
@@ -83,10 +86,23 @@ class TabExports(private val context: Context) {
             TabShareFormat.MUSICXML -> musicXml.toByteArray()
             TabShareFormat.GUITAR_PRO -> guitarPro(musicXml)
             TabShareFormat.MIDI -> midi(musicXml)
-            TabShareFormat.TEXT, TabShareFormat.INSTRUCTIONS -> engine!!.artifact(job!!, artifact(format, lang))
-            TabShareFormat.PDF ->
-                if (engine != null && pdfFromComputer(job, outputs, true)) engine.pdf(job!!)
-                else { file.outputStream().use { phonePdf(musicXml, title, legend, it) }; null }
+            TabShareFormat.TEXT, TabShareFormat.INSTRUCTIONS -> {
+                if (engine == null || job == null || !connected) throw IllegalStateException("$format needs the computer")
+                engine.artifact(job, artifact(format, lang))
+            }
+            TabShareFormat.PDF -> {
+                val computers = if (engine != null && job != null && pdfFromComputer(job, outputs, connected)) {
+                    try {
+                        engine.pdf(job)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        android.util.Log.w(TAG, "the computer's PDF could not be had: the phone lays it out", e)
+                        null
+                    }
+                } else null
+                computers ?: run { file.outputStream().use { phonePdf(musicXml, title, legend, it) }; null }
+            }
         }
         if (bytes != null) file.writeBytes(bytes)
         file
@@ -95,9 +111,12 @@ class TabExports(private val context: Context) {
     private fun score(musicXml: String, settings: Settings): Score = AlphaTabMusicXml.parse(musicXml.toByteArray(), settings)
 
     /** The tab as a Guitar Pro file, written by alphaTab's own exporter from what it reads of the MusicXML. */
-    fun guitarPro(musicXml: String): ByteArray {
+    fun guitarPro(musicXml: String): ByteArray = wholeZip(alphaTabsGuitarPro(musicXml))
+
+    /** The Guitar Pro file as alphaTab writes it, before [wholeZip]. */
+    internal fun alphaTabsGuitarPro(musicXml: String): ByteArray {
         val settings = Settings()
-        return wholeZip(Gp7Exporter().export(score(musicXml, settings), settings).buffer.asByteArray())
+        return Gp7Exporter().export(score(musicXml, settings), settings).buffer.asByteArray()
     }
 
     /** The tab as a MIDI file, as alphaTab would play it. */
@@ -131,49 +150,71 @@ class TabExports(private val context: Context) {
     companion object {
         const val TAB_PDF = "tab.pdf"
 
+        private const val TAG = "TabExports"
+
+        /** The most files, and the most bytes in one file and in all of them, [wholeZip] takes from a zip. */
+        const val ZIP_MAX_ENTRIES = 256
+        const val ZIP_MAX_BYTES = 64L * 1024 * 1024
+
         /**
          * The zip file [zip] written again with every file's checksum as its content has it. alphaTab 1.8.4 for Android
          * writes checksums into a Guitar Pro file that do not match its content: alphaTab reads it back all the same, but
          * a program that checks them refuses the file. The files are read by the directory at the end, without the check.
+         * Every offset and size is checked against the file, and at most [ZIP_MAX_ENTRIES] files of at most
+         * [ZIP_MAX_BYTES] in all are taken: anything else is refused with a [java.util.zip.ZipException].
          */
         fun wholeZip(zip: ByteArray): ByteArray {
+            fun refuse(why: String): Nothing = throw java.util.zip.ZipException(why)
             val b = java.nio.ByteBuffer.wrap(zip).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            fun u16(at: Long): Int { if (at < 0 || at + 2 > zip.size) refuse("cut short"); return b.getShort(at.toInt()).toInt() and 0xFFFF }
+            fun u32(at: Long): Long { if (at < 0 || at + 4 > zip.size) refuse("cut short"); return b.getInt(at.toInt()).toLong() and 0xFFFFFFFFL }
             // The end record: its signature, searched for from the end (a comment may follow it).
-            val end = (zip.size - 22 downTo 0).firstOrNull { b.getInt(it) == 0x06054b50 } ?: throw java.util.zip.ZipException("not a zip file")
-            val count = b.getShort(end + 10).toInt() and 0xFFFF
-            var at = b.getInt(end + 16)
+            val end = (zip.size - 22 downTo 0).firstOrNull { b.getInt(it) == 0x06054b50 }?.toLong() ?: refuse("not a zip file")
+            val count = u16(end + 10)
+            if (count > ZIP_MAX_ENTRIES) refuse("$count files")
+            var at = u32(end + 16)
+            var total = 0L
             val out = java.io.ByteArrayOutputStream()
             java.util.zip.ZipOutputStream(out).use { whole ->
                 repeat(count) {
-                    if (b.getInt(at) != 0x02014b50) throw java.util.zip.ZipException("not a zip directory")
-                    val method = b.getShort(at + 10).toInt() and 0xFFFF
-                    val packed = b.getInt(at + 20)
-                    val size = b.getInt(at + 24)
-                    val nameLength = b.getShort(at + 28).toInt() and 0xFFFF
-                    val skip = (b.getShort(at + 30).toInt() and 0xFFFF) + (b.getShort(at + 32).toInt() and 0xFFFF)
-                    val local = b.getInt(at + 42)
-                    val name = String(zip, at + 46, nameLength, Charsets.UTF_8)
+                    if (at + 46 > end || u32(at) != 0x02014b50L) refuse("not a zip directory")
+                    val method = u16(at + 10)
+                    val packed = u32(at + 20)
+                    val size = u32(at + 24)
+                    val nameLength = u16(at + 28)
+                    val skip = u16(at + 30) + u16(at + 32)
+                    val local = u32(at + 42)
+                    if (at + 46 + nameLength + skip > end) refuse("not a zip directory")
+                    val name = String(zip, (at + 46).toInt(), nameLength, Charsets.UTF_8)
                     at += 46 + nameLength + skip
-                    val from = local + 30 + (b.getShort(local + 26).toInt() and 0xFFFF) + (b.getShort(local + 28).toInt() and 0xFFFF)
+                    if (size > ZIP_MAX_BYTES || packed > ZIP_MAX_BYTES) refuse("$name is too large")
+                    total += size
+                    if (total > ZIP_MAX_BYTES) refuse("the files are too large")
+                    if (local + 30 > end || u32(local) != 0x04034b50L) refuse("$name has no header")
+                    val from = local + 30 + u16(local + 26) + u16(local + 28)
+                    if (from + packed > zip.size) refuse("$name is cut short")
+                    val packedBytes = zip.copyOfRange(from.toInt(), (from + packed).toInt())
                     val content = when (method) {
-                        0 -> zip.copyOfRange(from, from + packed)
-                        8 -> ByteArray(size).also { into ->
+                        0 -> { if (packed != size) refuse("$name is cut short"); packedBytes }
+                        8 -> ByteArray(size.toInt()).also { into ->
                             val inflater = java.util.zip.Inflater(true)
                             try {
                                 // (An extra byte after the stream, as the format asks of a reader without a header.)
-                                inflater.setInput(zip.copyOfRange(from, from + packed) + 0)
+                                inflater.setInput(packedBytes + 0)
                                 var read = 0
-                                while (read < size && !inflater.finished()) {
-                                    val n = inflater.inflate(into, read, size - read)
+                                while (read < into.size && !inflater.finished()) {
+                                    val n = inflater.inflate(into, read, into.size - read)
                                     if (n == 0 && (inflater.needsInput() || inflater.needsDictionary())) break
                                     read += n
                                 }
-                                if (read != size) throw java.util.zip.ZipException("$name is cut short")
+                                if (read != into.size) refuse("$name is cut short")
+                            } catch (e: java.util.zip.DataFormatException) {
+                                refuse("$name is not whole: ${e.message}")
                             } finally {
                                 inflater.end()
                             }
                         }
-                        else -> throw java.util.zip.ZipException("$name is packed in a way this does not read")
+                        else -> refuse("$name is packed in a way this does not read")
                     }
                     whole.putNextEntry(java.util.zip.ZipEntry(name))
                     whole.write(content)
