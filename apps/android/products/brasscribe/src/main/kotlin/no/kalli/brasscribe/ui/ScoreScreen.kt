@@ -772,6 +772,9 @@ fun ScoreScreen(vm: PlayViewModel) {
                     for (item in hidden) item(true)
                 }
             }
+            // On a phone on its side the row under the score has no room for where the part comes from: it is here, and
+            // says what it means when pressed.
+            if (compact) shownSource?.let { SourceLabel(it, compact = true) }
             // A solo opens on its score without How should the score be?: its band, difficulty and key are here, by name.
             if (r.isSoloTake && r.composition != null && no.kalli.brasscribe.Brasscribe.arranges(r.profile)) {
                 PracticeChip(stringResource(R.string.change_output), false, { sheet = null; vm.navigate(Screen.OUTPUT) },
