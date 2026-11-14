@@ -251,7 +251,24 @@ fun ListRow(
     enabled: Boolean = true,
     trailing: (@Composable RowScope.() -> Unit)? = null,
     role: Role = Role.Button,
+    /** The chevron left out only where that keeps the title to one line (a short screen's list of ways in). */
+    chevronOnlyOnOneLine: Boolean = false,
 ) {
+    if (chevron && chevronOnlyOnOneLine) {
+        androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val style = MaterialTheme.typography.titleMedium
+            val d = androidx.compose.ui.platform.LocalDensity.current
+            // The title's room beside the chevron, and without it: the row's padding, the icon's well and the gaps taken off.
+            val without = with(d) { (maxWidth - ScribeSpace.s4 * 2 - (if (icon != null) 40.dp + ScribeSpace.s4 else 0.dp)).roundToPx() }
+            val beside = without - with(d) { (ScribeSpace.s4 + ScribeSize.iconLarge).roundToPx() }
+            fun lines(room: Int) = measurer.measure(title, style, constraints = androidx.compose.ui.unit.Constraints(maxWidth = room.coerceAtLeast(0))).lineCount
+            // Left out only where that keeps the title to one line: a title that wraps either way keeps its chevron.
+            val keep = lines(beside) == 1 || lines(without) > 1
+            ListRow(title, onClick, Modifier, subtitle, icon, keep, enabled, trailing, role)
+        }
+        return
+    }
     val c = ScribeTheme.colors
     Row(
         modifier.fillMaxWidth().heightIn(min = 60.dp)
@@ -266,7 +283,7 @@ fun ListRow(
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
         trailing?.invoke(this)
-        if (chevron) BcIcon(DesignR.drawable.ic_bc_open, null, tint = c.textMuted)
+        if (chevron) BcIcon(DesignR.drawable.ic_bc_open, null, Modifier.testTag("row-chevron"), tint = c.textMuted)
     }
 }
 
