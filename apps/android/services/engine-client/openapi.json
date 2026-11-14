@@ -1251,6 +1251,14 @@
             "title": "Interface Version",
             "type": "integer"
           },
+          "not_set_up": {
+            "description": "what is not set up on the computer right now (`band-writer`): a job that needs it is refused, and a solo is written without it (Job.without). Empty when everything is there. An app reads it to know whether making such a job again would help yet",
+            "items": {
+              "type": "string"
+            },
+            "title": "Not Set Up",
+            "type": "array"
+          },
           "server_id": {
             "description": "stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.",
             "title": "Server Id",
@@ -1439,6 +1447,14 @@
               }
             ],
             "title": "Title"
+          },
+          "without": {
+            "description": "what the job was made without because it was not set up on the computer when the job was taken (`band-writer`: a solo line written from two listeners, not three, so a little less sure). Made again (rerunJob) once it is set up, the job uses it",
+            "items": {
+              "type": "string"
+            },
+            "title": "Without",
+            "type": "array"
           }
         },
         "required": [

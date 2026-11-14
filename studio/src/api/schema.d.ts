@@ -1457,6 +1457,11 @@ export interface components {
              */
             interface_version: number;
             /**
+             * Not Set Up
+             * @description what is not set up on the computer right now (`band-writer`): a job that needs it is refused, and a solo is written without it (Job.without). Empty when everything is there. An app reads it to know whether making such a job again would help yet
+             */
+            not_set_up?: string[];
+            /**
              * Server Id
              * @description stable id of this engine: kept across restarts and address or port changes, new only after `scribe devices reset`. Match a rediscovered engine to its stored credential by this id, not by address. An identifier, not proof of identity.
              */
@@ -1528,6 +1533,11 @@ export interface components {
             target: ("brass" | "fretted") | null;
             /** Title */
             title?: string | null;
+            /**
+             * Without
+             * @description what the job was made without because it was not set up on the computer when the job was taken (`band-writer`: a solo line written from two listeners, not three, so a little less sure). Made again (rerunJob) once it is set up, the job uses it
+             */
+            without?: string[];
         };
         /**
          * JobCreate

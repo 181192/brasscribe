@@ -78,6 +78,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -139,7 +140,7 @@ import no.kalli.scribe.score.ScoreUiState
 /** Index of the part a player most likely wants first: the lineup's lead (Solo Cornet, 1st Cornet in a quartet), else the first part. */
 fun defaultPart(parts: List<String>, lineup: no.kalli.scribe.play.Lineup? = null): Int = no.kalli.scribe.play.leadPartIndex(parts, lineup)
 
-private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, MAPPED, SOURCE, DRAFT }
+private enum class Sheet { PARTS, SPEED, LOOP, SOUND, PRACTICE, NOTICE, MAPPED, SOURCE, DRAFT, BEFORE_SETUP }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -501,6 +502,11 @@ fun ScoreScreen(vm: PlayViewModel) {
             if (inSheet) DraftNotice(computerThere, { sheet = null; vm.makeFullScore() })
             else NoticeLine(stringResource(R.string.draft_notice_short), { sheet = Sheet.DRAFT }, Modifier.padding(horizontal = ScreenMargin))
         }
+        // So does a score the computer wrote before it was fully set up.
+        if (r.beforeSetup) add { inSheet ->
+            if (inSheet) BeforeSetupNotice(vm, computerThere && r.canBeWrittenAgain, { sheet = null; vm.writeDownAgain { still -> if (still) vm.say(R.string.before_setup_still) } })
+            else NoticeLine(stringResource(R.string.before_setup_notice_short), { sheet = Sheet.BEFORE_SETUP }, Modifier.padding(horizontal = ScreenMargin))
+        }
         if (showMapped) add { inSheet ->
             MappedBanner(mappedShortLine!!, { sheet = Sheet.MAPPED }, { vm.closeMappedNotice() }, if (inSheet) Modifier else Modifier.padding(horizontal = ScreenMargin))
         }
@@ -711,6 +717,10 @@ fun ScoreScreen(vm: PlayViewModel) {
                         if (inSheet) DraftNotice(computerThere, { sheet = null; vm.makeFullScore() })
                         else NoticeLine(stringResource(R.string.draft_notice_short), { sheet = Sheet.DRAFT })
                     }
+                    if (r.beforeSetup) add { inSheet ->
+                        if (inSheet) BeforeSetupNotice(vm, computerThere && r.canBeWrittenAgain, { sheet = null; vm.writeDownAgain { still -> if (still) vm.say(R.string.before_setup_still) } })
+                        else NoticeLine(stringResource(R.string.before_setup_notice_short), { sheet = Sheet.BEFORE_SETUP })
+                    }
                     if (st.basicTier) add { inSheet ->
                         // In the More sheet there is room for the notice in full.
                         if (inSheet) BandSoundsMissing(st.bandSoundsExpected)
@@ -747,6 +757,7 @@ fun ScoreScreen(vm: PlayViewModel) {
         }
         Sheet.MAPPED -> BottomSheet({ sheet = null }) { mappedLine?.let { InfoNote(it, boxed = false) } }
         Sheet.DRAFT -> BottomSheet({ sheet = null }) { DraftNotice(computerThere, { sheet = null; vm.makeFullScore() }) }
+        Sheet.BEFORE_SETUP -> BottomSheet({ sheet = null }) { BeforeSetupNotice(vm, computerThere && r.canBeWrittenAgain, { sheet = null; vm.writeDownAgain { still -> if (still) vm.say(R.string.before_setup_still) } }) }
         Sheet.SOURCE -> BottomSheet({ sheet = null }) {
             shownSource?.let { SubHeading(stringResource(sourceWords(it))); Text(stringResource(explainOf(it)), style = MaterialTheme.typography.bodyLarge) }
         }
@@ -1163,6 +1174,25 @@ private fun DraftNotice(computerThere: Boolean, onMakeFull: () -> Unit, modifier
         InfoNote(stringResource(R.string.draft_notice), boxed = false)
         if (computerThere) SecondaryButton(stringResource(R.string.draft_make_full), onMakeFull, fill = false)
         else Text(stringResource(R.string.draft_no_computer), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
+    }
+}
+
+/**
+ * A score the computer wrote before it was fully set up (a solo from two of its three listeners): what that means,
+ * and "Write it down again" from the same recording. The computer is asked what can be done now: while it is still
+ * not set up the line says what to do there, and when it no longer has the recording the words promise nothing.
+ * The button is offered only when it would give the better score.
+ */
+@Composable
+private fun BeforeSetupNotice(vm: PlayViewModel, canWriteAgain: Boolean, onAgain: () -> Unit, modifier: Modifier = Modifier) {
+    val now by produceState<WriteAgain?>(null, canWriteAgain) { value = if (canWriteAgain) vm.writeAgainNow() else null }
+    Column(modifier.fillMaxWidth().semantics { testTag = "before-setup-notice" }, verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
+        InfoNote(stringResource(if (now == WriteAgain.RECORDING_GONE) R.string.before_setup_notice_gone else R.string.before_setup_notice), boxed = false)
+        when (now) {
+            WriteAgain.OFFER -> SecondaryButton(stringResource(R.string.before_setup_again), onAgain, fill = false)
+            WriteAgain.NOT_SET_UP -> Text(stringResource(R.string.before_setup_not_yet), style = MaterialTheme.typography.bodyMedium, color = ScribeTheme.colors.textMuted)
+            WriteAgain.RECORDING_GONE, null -> Unit
+        }
     }
 }
 

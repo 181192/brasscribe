@@ -199,6 +199,12 @@
     <string name="draft_make_full">Make the full score</string>
     <string name="draft_no_computer">Open Brasscribe Bandroom on your computer to make the full score from the same recording.</string>
     <string name="draft_label">Draft</string>
+    <string name="before_setup_notice_short">Written before your computer was fully set up.</string>
+    <string name="before_setup_notice">Your computer wrote this down before it was fully set up, so a few more notes can be wrong. When Bandroom there has finished setting up, write it down again from the same recording.</string>
+    <string name="before_setup_notice_gone">Your computer wrote this down before it was fully set up, so a few more notes can be wrong. It no longer has the recording: record or open it again for a better score.</string>
+    <string name="before_setup_again">Write it down again</string>
+    <string name="before_setup_still">Your computer still isn\'t fully set up. Finish setting up in Bandroom there, then try again.</string>
+    <string name="before_setup_not_yet">Your computer still isn\'t fully set up. Finish setting up in Bandroom there, and you can write this down again.</string>
     <string name="draft_too_long_title">Too long for a draft on this phone</string>
     <string name="draft_too_long_body">Your computer can make the score from this recording.</string>
     <string name="draft_too_long_body_away">Open Brasscribe Bandroom on your computer to make the score from this recording, or choose a shorter one.</string>

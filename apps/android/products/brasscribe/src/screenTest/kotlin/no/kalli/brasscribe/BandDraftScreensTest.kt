@@ -65,6 +65,23 @@ class BandDraftScreensTest : ScreenTest() {
         shot("score-draft-notice")
     }
 
+    /** A solo the computer wrote before it was fully set up says so on the score, with the way to write it down again. */
+    @Test
+    fun aScoreWrittenBeforeTheComputerWasSetUpSaysSo() {
+        val composition = container.core.decodeComposition(fixture("composition.json"))
+        rule.runOnUiThread {
+            vm.home()
+            vm.setSource(Source("Old Hundredth", SourceKind.SCORE, 0.0))
+            vm.result.value = TranscriptionResult(composition, fixture("brass-band.musicxml"), Profile.SOLO, onDevice = false,
+                jobId = "j1", audioId = "a1", compositionJson = fixture("composition.json"), beforeSetup = true)
+            vm.navigate(Screen.SCORE)
+        }
+        waitUntil(30_000) { vm.scoreController?.state?.value?.loaded == true }
+        waitUntil(5_000) { rule.onAllNodesWithTag("before-setup-notice").fetchSemanticsNodes().isNotEmpty() ||
+            rule.onAllNodesWithText(rule.activity.getString(R.string.before_setup_notice_short)).fetchSemanticsNodes().isNotEmpty() }
+        shot("score-before-setup-notice")
+    }
+
     private fun shows(id: Int) = rule.onAllNodesWithText(text(id)).fetchSemanticsNodes().isNotEmpty()
     private fun oldHundredth() = FixtureSource { name -> ScreenDevice.fixture("old-hundredth/$name") }
     private fun draftIsOnScreen() = vm.screen.value.last() == Screen.SCORE && vm.result.value?.draft == true

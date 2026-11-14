@@ -41,10 +41,10 @@ from fastapi.staticfiles import StaticFiles
 from . import __version__, bass_tab, build_info, history, inspection, pages, profiles, runner, sheet, tab, targets, wire
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
-from .adapters import host_device
+from .adapters import host_device, waits_for_setup
 from .config import Settings
 from .guard import BodyLimit, RequestGuard
-from .jobs import TERMINAL, Job, JobManager, NeedsSetup
+from .jobs import TERMINAL, Job, JobManager, NeedsSetup, asked_afresh
 from .names import is_audio, valid_id, valid_relpath
 from .uploads import UploadRoute, UploadSink
 
@@ -212,7 +212,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
                      device_name=job.device_name, target=getattr(target_of(job), "id", None),
-                     stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job))
+                     stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job),
+                     without=[SETUP_NAMES.get(a, a) for a in job.without])
 
     def missing_of(job: Job) -> list[m.MissingOutput]:
         """What the job lacks, without a file that is there after all."""
@@ -256,7 +257,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
     def health(request: Request) -> m.Health:
         return m.Health(version=__version__, interface_version=wire.INTERFACE_VERSION, build=build_info.build(), device=host_device(),
                         auth_required=not is_trusted(request), server_id=app.state.identity.server_id,
-                        server_name=app.state.server_name)
+                        server_name=app.state.server_name,
+                        not_set_up=[told for adapter, told in SETUP_NAMES.items() if waits_for_setup(adapter)])
 
     @app.post("/v1/pair", response_model=m.PairResponse, operation_id="pairDevice", tags=["session"],
               responses={403: {"description": "wrong pairing code, or pairing is closed"},
@@ -559,7 +561,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
                                      "(uploads, captures, eval)")
         try:
-            job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title, params=old.params,
+            job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title,
+                              params=asked_afresh(old.profile, old.params, old.without),
                               allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
                               device_name=old.device_name)
         except NeedsSetup as e:

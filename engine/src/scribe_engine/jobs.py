@@ -39,6 +39,15 @@ KEEP_FINISHED = 50
 WITHOUT_THE_BAND_WRITER = {"solo": {"muscriptor": False}}
 
 
+def asked_afresh(profile: str, params: dict, without: list[str]) -> dict:
+    """The parameters to make a job again with, when it was made without something that was not set up: the
+    ones that left it out are dropped, so the new job uses it if it is there now (and is made without it again
+    if it is not)."""
+    if not without:
+        return params
+    return {k: v for k, v in params.items() if k not in WITHOUT_THE_BAND_WRITER.get(profile, {})}
+
+
 class NeedsSetup(RuntimeError):
     """A job was not taken: it needs a model that is not on this computer and that the engine cannot fetch by
     itself (adapters.waits_for_setup). `adapters` names the adapters it waits for."""
@@ -66,6 +75,9 @@ class Job:
     finished: float | None = None
     error: str | None = None
     missing: list[dict] = field(default_factory=list)  # files a succeeded job lacks, and why (runner.missing_outputs)
+    # Adapters the job was made without because they were not set up (WITHOUT_THE_BAND_WRITER): made again once
+    # they are, it uses them.
+    without: list[str] = field(default_factory=list)
     events: list[dict] = field(default_factory=list)
     stages: dict[str, dict] = field(default_factory=dict)
     cancel: threading.Event = field(default_factory=threading.Event)
@@ -121,8 +133,11 @@ class JobManager:
                previous_run_id: str | None = None, device_name: str | None = None) -> Job:
         pipeline = profiles.build(profile, audio, title, params)
         waiting = sorted({s.adapter for s in pipeline.stages if s.adapter and waits_for_setup(s.adapter)})
+        without: list[str] = []
         if waiting and profile in WITHOUT_THE_BAND_WRITER:
-            # One line is written down well without it (as the apps do on the device), so the job is taken.
+            # One line is written down well without it (as the apps do on the device), so the job is taken, and
+            # says what it was made without.
+            without = waiting
             params = {**(params or {}), **WITHOUT_THE_BAND_WRITER[profile]}
             pipeline = profiles.build(profile, audio, title, params)
             waiting = sorted({s.adapter for s in pipeline.stages if s.adapter and waits_for_setup(s.adapter)})
@@ -132,7 +147,7 @@ class JobManager:
             raise NeedsSetup(waiting)
         job = Job(runner.new_run_id(profile), profile, pipeline.stage("arrange").params.get("title"), audio_id,
                   Path(audio), dict(params or {}), allow_heavy, set(cold or ()), previous_run_id,
-                  device_name)
+                  device_name, without=without)
         for s in pipeline.stages:
             job.stages[s.name] = {"name": s.name, "kind": s.kind, "status": "pending"}
         self._evict()
@@ -151,7 +166,7 @@ class JobManager:
             runner.run(self.settings, job.audio_path, job.profile, title=job.title, params=job.params,
                        allow_heavy=job.allow_heavy, cold=job.cold, run_id=job.id, emit=job.add_event,
                        cancel=job.cancel, previous_run_id=job.previous_run_id, audio_id=job.audio_id,
-                       device_name=job.device_name)
+                       device_name=job.device_name, without=job.without)
         except Exception as e:  # noqa: BLE001 - reported as a failed job
             job.add_event({"type": "job", "status": "failed", "error": f"{type(e).__name__}: {e}"})
 
@@ -384,7 +399,8 @@ class JobManager:
                   m.get("params", {}), m.get("options", {}).get("allow_heavy", True),
                   set(m.get("options", {}).get("cold", [])), m.get("previous_run_id"), m.get("device_name"),
                   status=m.get("status", "unknown"),
-                  created=created, error=m.get("error"), missing=m.get("missing") or [])
+                  created=created, error=m.get("error"), missing=m.get("missing") or [],
+                  without=m.get("without") or [])
         for st in m.get("stages", []):
             job.stages[st["stage"]] = {"name": st["stage"], "kind": st["kind"], "status": st["status"],
                                        "seconds": st.get("seconds"), "queue_wait_s": st.get("queue_wait_s"),

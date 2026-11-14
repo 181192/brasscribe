@@ -195,6 +195,12 @@
     <string name="draft_make_full">Lag hele partituret</string>
     <string name="draft_no_computer">Åpne Brasscribe Bandroom på datamaskinen for å lage hele partituret fra det samme opptaket.</string>
     <string name="draft_label">Utkast</string>
+    <string name="before_setup_notice_short">Skrevet før datamaskinen var ferdig satt opp.</string>
+    <string name="before_setup_notice">Datamaskinen skrev dette ned før den var ferdig satt opp, så noen flere noter kan være feil. Når Bandroom der er ferdig med oppsettet, kan du skrive det ned på nytt fra samme opptak.</string>
+    <string name="before_setup_notice_gone">Datamaskinen skrev dette ned før den var ferdig satt opp, så noen flere noter kan være feil. Den har ikke opptaket lenger: ta opp eller åpne det på nytt for å få et bedre partitur.</string>
+    <string name="before_setup_again">Skriv ned på nytt</string>
+    <string name="before_setup_still">Datamaskinen er fortsatt ikke ferdig satt opp. Gjør ferdig oppsettet i Bandroom der, og prøv igjen.</string>
+    <string name="before_setup_not_yet">Datamaskinen er fortsatt ikke ferdig satt opp. Gjør ferdig oppsettet i Bandroom der, så kan du skrive dette ned på nytt.</string>
     <string name="draft_too_long_title">For langt for et utkast på telefonen</string>
     <string name="draft_too_long_body">Datamaskinen kan lage partituret fra dette opptaket.</string>
     <string name="draft_too_long_body_away">Åpne Brasscribe Bandroom på datamaskinen for å lage partituret fra dette opptaket, eller velg et kortere.</string>
