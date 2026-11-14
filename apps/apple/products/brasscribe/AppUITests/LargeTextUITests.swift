@@ -1,9 +1,10 @@
 import XCTest
 
 #if os(iOS)
-/// On a phone with larger text (XXL and XXXL, below the accessibility sizes) the pinned buttons keep their words
-/// on one line and the page ends at their band: Check the notes and Share or print, in English and bokmål. The
-/// score at XXL is in `ScoreHeightUITests`.
+/// On a phone with larger text (XXL and XXXL, below the accessibility sizes) the buttons keep their words on one
+/// line and Listen is in view above Finish later, Keep and Skip: Check the notes and Share or print, in English and
+/// bokmål. Run on the newest iPhone and on an iPhone SE, the shortest screen (`make test-iphone-small`). The score
+/// at XXL is in `ScoreHeightUITests`.
 final class LargeTextUITests: XCTestCase {
     private let xxl = "UICTContentSizeCategoryXXL"
     private let xxxl = "UICTContentSizeCategoryXXXL"
@@ -60,13 +61,25 @@ final class LargeTextUITests: XCTestCase {
         let skip = app.buttons["skipNote"].firstMatch
         let later = app.buttons["openScore"].firstMatch
         XCTAssertTrue(keep.waitForExistence(timeout: 10))
+        picture(app, "review-\(textSize)-\(nb ? "nb" : "en")")
+        // As the page opens, Listen is whole and in view, above Finish later, Keep and Skip: pinned at the bottom
+        // where they leave room for it, or after it on the page (a short phone).
+        let window = app.windows.firstMatch.frame
+        XCTAssertTrue(window.contains(listen.frame), "Listen is in view (\(listen.frame) in \(window))")
+        XCTAssertTrue(listen.isHittable, "Listen can be tapped")
+        let band = min(later.frame.minY, keep.frame.minY, skip.frame.minY)
+        XCTAssertLessThanOrEqual(listen.frame.maxY, band + 1, "Listen is above Finish later, Keep and Skip")
+        // Finish later, Keep and Skip are in view, or a scroll away.
+        for _ in 0..<6 where ![later, keep, skip].allSatisfy({ window.contains($0.frame) && $0.isHittable }) {
+            app.swipeUp()
+        }
+        for (e, what) in [(later, "Finish later"), (keep, "Keep"), (skip, "Skip")] {
+            XCTAssertTrue(e.isHittable, "\(what) can be reached")
+        }
         oneLine(keep, like: listen, in: app, "Keep")
         oneLine(skip, like: listen, in: app, "Skip")
         XCTAssertFalse(keep.frame.intersects(skip.frame), "Keep and Skip do not overlap")
-        // The pinned band (Finish later, Keep, Skip) leaves the note and Listen in view above it.
-        let band = min(later.frame.minY, keep.frame.minY, skip.frame.minY)
-        picture(app, "review-\(textSize)-\(nb ? "nb" : "en")")
-        XCTAssertLessThanOrEqual(listen.frame.maxY, band + 1, "Listen is above the band, in view")
+        picture(app, "review-\(textSize)-\(nb ? "nb" : "en")-buttons")
     }
 
     // MARK: Share or print

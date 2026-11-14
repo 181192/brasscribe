@@ -33,10 +33,18 @@ struct ReviewView: View {
     /// Triage: your own part first (very unsure first), then the other parts, then all.
     enum Filter: Hashable { case mine, others, all }
 
-    /// Skip and Keep follow the note instead of staying pinned at the bottom: on the Mac, and at the
-    /// accessibility text sizes, where a pinned bar would cover most of the phone and leave the note
-    /// half hidden under it.
-    private var actionsFollow: Bool { PageActions.followContent || typeSize.isAccessibilitySize }
+    /// Skip and Keep follow the note instead of staying pinned at the bottom: on the Mac, at the
+    /// accessibility text sizes, and on a short phone (an iPhone SE, or any phone on its side) at XXL and
+    /// above, where the pinned bar (Finish later, Keep and Skip one above the other) would cover Listen and
+    /// leave the note half hidden under it.
+    private var actionsFollow: Bool {
+        PageActions.followContent || typeSize.isAccessibilitySize || (shortPage && typeSize >= .xxLarge)
+    }
+
+    /// The page is lower than this between the navigation bar and the home indicator on an iPhone SE
+    /// (about 600 pt) and on any phone on its side; the smallest phone with a taller screen has about 720.
+    private static let shortPageHeight: CGFloat = 660
+    @State private var shortPage = false
 
     private var wide: Bool {
         #if os(macOS)
@@ -115,6 +123,8 @@ struct ReviewView: View {
             }
         }
         .safeAreaInset(edge: .bottom) { if !actionsFollow, !allOpen.isEmpty, item != nil { actionBar } }
+        // measured around the band, not inside it: the page's height must not change with the band it decides on
+        .onGeometryChange(for: Bool.self) { $0.size.height < Self.shortPageHeight } action: { shortPage = $0 }
         .alert("Finish checking later?", isPresented: $confirmLater) {
             Button("Finish later") { finish() }
             Button("Keep checking", role: .cancel) {}
@@ -277,7 +287,7 @@ struct ReviewView: View {
                     .buttonStyle(.plainText)
                     .accessibilityIdentifier("keepRestOfBar")
                 }
-                // Mac and the largest text sizes: Skip and Keep follow the note, before the evidence
+                // Mac, the largest text sizes and a short phone at large text: Skip and Keep follow the note, before the evidence
                 if actionsFollow {
                     VStack(spacing: Space.s2) {
                         if !wide { finishLaterButton }

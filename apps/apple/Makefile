@@ -11,6 +11,7 @@
 #   make package-test-fast  package tests without the slow audio-rendering suites
 #   make build-for-testing-mac, then make test-mac-unit (repeatable): macOS app unit tests without rebuilding
 #   scripts/screenshots.sh record   the Mac screen catalogue, off screen, with its checks and a screenshot of each (README, Testing)
+#   make test-iphone-large-text  the large-text UI tests on the newest iPhone and on an iPhone SE simulator
 #   make test-mac-ui macOS UI tests: they take over the mouse and keyboard, so run them only in the
 #                    macOS VM (scripts/mac-vm.sh test-ui, docs/shared/dev/macos-vm.md) or in CI
 #   make install-mac Release build into /Applications/Brasscribe Play.app, launched and checked
@@ -40,7 +41,7 @@ XCB := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED)
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
 .PHONY: verovio alphatab project-fretscribe build-for-testing-fretscribe-mac test-fretscribe-mac build-for-testing-fretscribe-ios ipa-fretscribe soundfont bandsound models project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
-        build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit package-test-fast
+        build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit test-iphone-large-text package-test-fast
 
 verovio:
 	./scripts/build-verovio.sh
@@ -132,6 +133,14 @@ test-ios-unit:
 	@ls $(DERIVED)/Build/Products/BrasscribePlay-iOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-ios
 	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' \
 	  -only-testing:BrasscribePlayTests_iOS test-without-building
+
+# The large-text UI tests (LargeTextUITests) on the newest iPhone and on an iPhone SE, the shortest screen, made for
+# the run and deleted after it (scripts/small-iphone.sh). Uses the build of build-for-testing-ios.
+LARGE_TEXT := -only-testing:BrasscribePlayUITests_iOS/LargeTextUITests
+test-iphone-large-text:
+	@ls $(DERIVED)/Build/Products/BrasscribePlay-iOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-ios
+	SCRIBE_FIXTURES=$(FIXTURES) $(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' $(LARGE_TEXT) $(TEST_ARGS) test-without-building
+	SCRIBE_FIXTURES=$(FIXTURES) scripts/small-iphone.sh $(XCB) -scheme BrasscribePlay-iOS $(LARGE_TEXT) $(TEST_ARGS) test-without-building
 
 # Package tests without the slow audio-rendering suites (tier 1). --no-parallel as in package-test:
 # PlaybackKitTests crash (SIGTRAP) when Swift Testing runs them in parallel.
