@@ -22,6 +22,132 @@ const remember = (el, kind) => {
 // The controls have their place on the page from the start, and are shown once they work.
 const ready = (el) => el.querySelectorAll(".await-js").forEach((x) => x.classList.remove("await-js"));
 
+// One sound at a time on the whole page: what starts to play says so, and everything else falls silent.
+const sounding = (stop) => document.dispatchEvent(new CustomEvent("scribe:sound", { detail: stop }));
+const quietFor = (stop) => document.addEventListener("scribe:sound", (e) => e.detail !== stop && stop());
+
+// Segmented buttons in place of a list to pick from: the pressed one is the value.
+function segmented(group, changed) {
+  const buttons = [...group.querySelectorAll("button[data-value]")];
+  const control = {
+    get value() { return buttons.find((b) => b.getAttribute("aria-pressed") === "true")?.dataset.value; },
+    set value(v) { buttons.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === v))); },
+  };
+  for (const b of buttons) b.addEventListener("click", () => { control.value = b.dataset.value; changed(); });
+  return control;
+}
+
+// The notes that were written, as plain tones: a way to hear what is on the page beside the recording. `notes` are
+// [start, length, pitch] in seconds; they sound from `from` on. Gives back what stops them.
+let context = null;
+function synth(notes, from, voice) {
+  context ??= new AudioContext();
+  context.resume();
+  const now = context.currentTime + 0.05, voices = [];
+  for (const [on, length, pitch] of notes) {
+    if (on < from - 0.05) continue;
+    const at = now + on - from, hold = Math.max(0.3, length);
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, at);
+    if (voice === "brass") {
+      // Blown, not plucked: the note holds until it ends.
+      gain.gain.exponentialRampToValueAtTime(0.1, at + 0.04);
+      gain.gain.setValueAtTime(0.1, at + hold - 0.06);
+    } else gain.gain.exponentialRampToValueAtTime(0.2, at + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + hold);
+    gain.connect(context.destination);
+    // A low note is below what a phone's speaker gives: its octave sounds along.
+    for (const [octave, type] of [[1, "triangle"], [2, "sine"]]) {
+      const osc = context.createOscillator();
+      osc.type = type;
+      osc.frequency.value = 440 * 2 ** ((pitch - 69) / 12) * octave;
+      osc.connect(gain);
+      osc.start(at);
+      osc.stop(at + hold + 0.05);
+      voices.push(osc);
+    }
+  }
+  const last = Math.max(0, ...notes.map(([on, length]) => on + Math.max(0.3, length))) - from;
+  return { stop: () => voices.forEach((v) => { try { v.stop(); } catch {} }), seconds: last };
+}
+
+// A Play button for a stretch of the recording or for written notes: Play again stops it, it stops by itself at
+// the end, and it falls silent when anything else on the page starts to sound.
+function player(button, src, words) {
+  let audio = null, timer = 0, tones = null, playing = false;
+  const stop = () => {
+    playing = false;
+    audio?.pause();
+    tones?.stop();
+    clearInterval(timer);
+    clearTimeout(timer);
+    button.textContent = words.play;
+  };
+  quietFor(stop);
+  document.addEventListener("visibilitychange", () => document.hidden && stop());
+  const start = () => {
+    playing = true;
+    sounding(stop);
+    button.textContent = words.pause;
+  };
+  return {
+    stop,
+    // The recording from one second to another.
+    range(from, to) {
+      if (playing) return stop();
+      audio ??= new Audio(new URL(src, location.href));
+      audio.currentTime = from;
+      start();
+      audio.play().catch(stop);
+      timer = setInterval(() => audio.currentTime >= to - 0.02 && stop(), 40);
+    },
+    // The written notes, from the first.
+    notes(list, voice) {
+      if (playing) return stop();
+      start();
+      tones = synth(list, list.length ? Math.min(...list.map(([on]) => on)) : 0, voice);
+      timer = setTimeout(stop, tones.seconds * 1000 + 200);
+    },
+  };
+}
+
+// The plain-text tab of a tuning, from the tab viewer's data: two bars a line, a column for every third of a
+// sixteenth (as the engine writes its .txt), a "?" over a doubted note.
+function plainTab(demo, variant, frame) {
+  const names = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
+  const perBar = demo.meter.beats * demo.ticks_per_beat, step = demo.ticks_per_beat / 8, width = perBar / step;
+  const last = Math.max(...demo.notes.map(([, start, dur]) => start + dur));
+  const bars = Math.ceil(last / perBar), strings = variant.open.length;
+  const lines = frame.head.map((l) => l.startsWith("Tuning:")
+    ? `Tuning: ${variant.tuning} (${[...variant.open].reverse().map((p) => names[p % 12]).join(" ")}), bottom line to top` : l);
+  for (let first = 0; first < bars; first += 2) {
+    const shown = [first, first + 1].filter((b) => b < bars);
+    const rows = Array.from({ length: strings }, () => []), marks = [];
+    let numbers = "";
+    for (const b of shown) {
+      const end = b === bars - 1 ? Math.max(...demo.notes.filter(([, s]) => s >= b * perBar).map(([, s]) => Math.round((s - b * perBar) / step))) + 8 : width;
+      const cells = Array.from({ length: strings }, () => Array(end).fill("-")), doubt = Array(end).fill(" ");
+      demo.notes.forEach(([, start, , doubted], i) => {
+        if (start < b * perBar || start >= (b + 1) * perBar) return;
+        const [string, fret] = variant.places[i];
+        if (string === null) return;
+        const col = 1 + Math.round((start - b * perBar) / step);
+        String(fret).split("").forEach((ch, k) => (cells[string - 1][col + k] = ch));
+        if (doubted) doubt[col] = "?";
+      });
+      numbers += String(b + 1).padEnd(end + 1);
+      marks.push(" " + doubt.join(""));
+      cells.forEach((c, s) => rows[s].push(c.join("")));
+    }
+    lines.push("", "  " + numbers.trimEnd());
+    const mark = marks.join("");
+    if (mark.trim()) lines.push(" " + mark.trimEnd());
+    const end = shown.at(-1) === bars - 1 ? "||" : "|";
+    rows.forEach((r, s) => lines.push(`${names[variant.open[s] % 12]}|${r.join("|")}${end}`));
+  }
+  return [...lines, ...frame.foot].join("\n");
+}
+
 // The strip: sound on the right of the pen, written music on the left. --t is how far it has run, in px.
 // Play gives the recording itself, or, with the other button, the notes that were written from it.
 function strip(el) {
@@ -34,7 +160,7 @@ function strip(el) {
   const kept = remember(el, "strip");
   ready(el);
   // `quiet` is the run it makes by itself when it comes into view: no sound, and the button still says Play.
-  let t = 0, from = 0, started = 0, playing = false, quiet = false, frame = 0, audio = null, voices = [];
+  let t = 0, from = 0, started = 0, playing = false, quiet = false, frame = 0, voices = [];
   let mode = kept.mode ?? "recording", recording = null;
 
   // Tab runs straight in time; engraved notation does not, and brings its own seconds-to-pixels points.
@@ -57,39 +183,14 @@ function strip(el) {
     playing = quiet = false;
     cancelAnimationFrame(frame);
     recording?.pause();
-    for (const v of voices) try { v.stop(); } catch {}
+    for (const v of voices) v.stop();
     voices = [];
     button.textContent = d.play;
   };
-  // The notes that were written, as plain tones: a way to hear what is on the page beside the recording.
-  const written = () => {
-    audio ??= new AudioContext();
-    audio.resume();
-    const now = audio.currentTime + 0.05;
-    for (const [on, length, pitch] of d.notes) {
-      if (on < t - 0.05) continue;
-      const at = now + on - t, hold = Math.max(0.3, length);
-      const gain = audio.createGain();
-      gain.gain.setValueAtTime(0.0001, at);
-      if (d.voice === "brass") {
-        // Blown, not plucked: the note holds until it ends.
-        gain.gain.exponentialRampToValueAtTime(0.1, at + 0.04);
-        gain.gain.setValueAtTime(0.1, at + hold - 0.06);
-      } else gain.gain.exponentialRampToValueAtTime(0.2, at + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + hold);
-      gain.connect(audio.destination);
-      // A low note is below what a phone's speaker gives: its octave sounds along.
-      for (const [octave, type] of [[1, "triangle"], [2, "sine"]]) {
-        const osc = audio.createOscillator();
-        osc.type = type;
-        osc.frequency.value = 440 * 2 ** ((pitch - 69) / 12) * octave;
-        osc.connect(gain);
-        osc.start(at);
-        osc.stop(at + hold + 0.05);
-        voices.push(osc);
-      }
-    }
-  };
+  // Another sound on the page starts: a strip that is sounding stops; one that writes itself out quietly goes on.
+  const hush = () => playing && !quiet && stop();
+  // The notes that were written, as plain tones, from where the pen is.
+  const written = () => voices.push(synth(d.notes, t, d.voice));
   const run = (now) => {
     // The recording keeps its own time; without it the clock does.
     set(playing && !quiet && mode === "recording" && recording && !recording.paused ? recording.currentTime : from + (now - started) / 1000);
@@ -103,6 +204,7 @@ function strip(el) {
     from = t;
     started = performance.now();
     if (withSound) {
+      sounding(hush);
       button.textContent = d.pause;
       if (mode === "recording" && el.dataset.audio) {
         recording ??= new Audio(new URL(el.dataset.audio, location.href));
@@ -128,12 +230,28 @@ function strip(el) {
       if (was) play(true);
     });
   }
+  // A tap on the strip moves the pen there: to the left, back into what was written; to the right, on in the sound.
+  const at = (x) => {
+    if (!d.map) return x / d.pps;
+    let lo = 0, hi = d.dur;
+    for (let k = 0; k < 30; k++) { const mid = (lo + hi) / 2; if (px(mid) < x) lo = mid; else hi = mid; }
+    return lo;
+  };
+  stage.addEventListener("click", (e) => {
+    const box = stage.getBoundingClientRect(), pen = box.left + parseFloat(getComputedStyle(stage).getPropertyValue("--pen")) / 100 * box.width;
+    kept.touched = true;
+    const was = playing && !quiet;
+    if (playing) stop();
+    set(at(px(t) + e.clientX - pen));
+    if (was) play(true);
+  });
   range.addEventListener("input", () => {
     if (playing) stop();
     kept.touched = true;
     set(+range.value, true);
   });
   document.addEventListener("visibilitychange", () => document.hidden && playing && stop());
+  quietFor(hush);
   // When the language changes, the strip is drawn again: this one must fall silent.
   document.addEventListener("scribe:lang", () => !el.isConnected && stop());
 
@@ -181,7 +299,17 @@ function stages(list) {
   foot.append(previous, next);
   const kept = remember(list, "stages");
   let current = kept.step ?? 0;
+  // A step that can be heard has its Play: the recording, the line that was written, or every part.
+  const sound = list.dataset.sound && JSON.parse(list.dataset.sound);
+  const players = [];
+  for (const button of list.querySelectorAll("[data-stage-play]")) {
+    const play = sound.plays[button.dataset.stagePlay], p = player(button, list.dataset.audio, sound);
+    players.push(p);
+    button.addEventListener("click", () => (play.notes ? p.notes(play.notes, play.voice) : p.range(play.from, play.to)));
+  }
+  ready(list);
   const show = (i) => {
+    players.forEach((p) => p.stop());
     current = kept.step = Math.max(0, Math.min(items.length - 1, i));
     items.forEach((item, k) => (item.hidden = k !== current));
     buttons.forEach((b, k) => {
@@ -217,8 +345,10 @@ function stages(list) {
 async function tabdemo(el) {
   const config = JSON.parse(el.dataset.tabdemo), w = config.words;
   const demo = await (await fetch(el.dataset.src)).json();
-  const tuning = el.querySelector("[data-tuning]"), capo = el.querySelector("[data-capo]");
+  const tuning = segmented(el.querySelector("[data-tuning]"), () => draw()), capo = el.querySelector("[data-capo]");
   const status = el.querySelector("[data-status]"), neck = el.querySelector("[data-neck]");
+  const playBar = el.querySelector("[data-bar-play]"), bar = player(playBar, el.dataset.audio, config);
+  const plain = el.querySelector("[data-plain]"), asText = el.querySelector("[data-as-text]");
   const scroll = el.querySelector(".tabdemo-scroll"), svg = scroll.querySelector("svg");
   const notes = [...svg.querySelectorAll("g.note")];
   const x = notes.map((g) => g.getAttribute("transform").match(/translate\(([\d.]+)/)[1]);
@@ -287,9 +417,17 @@ async function tabdemo(el) {
       + (left ? " " + fill(w.summary_left, { left }) : "");
     status.textContent = chosen < 0 ? summary : describe(chosen);
     if (chosen >= 0) drawNeck(chosen);
+    // The plain text is the tab that is shown: in the tuning that is chosen.
+    plain.textContent = plainTab(demo, variant, config.text);
+    asText.textContent = fill(config.asText, { tuning: variant.tuning });
+    plain.setAttribute("aria-label", asText.textContent);
   };
+  const barOf = (i) => Math.floor(demo.notes[i][1] / perBar);
+  playBar.addEventListener("click", () => chosen >= 0 && bar.range(config.times[barOf(chosen)], config.times[barOf(chosen) + 1]));
   const choose = (i, focus) => {
+    if (i !== chosen) bar.stop();
     chosen = kept.chosen = i;
+    playBar.disabled = false;
     notes.forEach((g, k) => {
       g.classList.toggle("chosen", k === i);
       g.setAttribute("aria-pressed", String(k === i));
@@ -318,7 +456,6 @@ async function tabdemo(el) {
   });
   // The drawing is a group of buttons now, no longer one picture.
   svg.setAttribute("role", "group");
-  tuning.addEventListener("change", draw);
   capo?.addEventListener("change", draw);
   // After a change of language it stands as it stood.
   const before = kept.chosen;
@@ -333,7 +470,16 @@ async function tabdemo(el) {
 async function partview(el) {
   const config = JSON.parse(el.dataset.partview), w = config.words, lang = config.lang, kept = remember(el, "partview");
   const score = await (await fetch(el.dataset.src + "score.json")).json();
-  const select = el.querySelector("[data-part]"), status = el.querySelector("[data-status]"), scroll = el.querySelector(".tabdemo-scroll");
+  const select = segmented(el.querySelector("[data-part]"), () => {
+    delete kept.chosen;
+    show();
+  });
+  const status = el.querySelector("[data-status]"), scroll = el.querySelector(".tabdemo-scroll");
+  const playBar = el.querySelector("[data-bar-play]"), bar = player(playBar, el.dataset.audio, config);
+  // Where a bar starts in the recording, and where it ends: the next bar's first beat, or one beat past the last.
+  const beatAt = (k) => score.beats[k] ?? score.beats.at(-1) + (score.beats.at(-1) - score.beats.at(-2)) * (k - score.beats.length + 1);
+  let chosenBar = 0;
+  playBar.addEventListener("click", () => chosenBar && bar.range(beatAt((chosenBar - 1) * score.per_bar), beatAt(chosenBar * score.per_bar)));
   const drawings = [...scroll.querySelectorAll("svg[data-part]")];
   const all = score.parts.flatMap((part) => part.notes.map((n) => n[3])).filter(Boolean).length;
   let notes = [];
@@ -353,6 +499,10 @@ async function partview(el) {
   };
   const choose = (i, focus) => {
     kept.chosen = i;
+    const was = chosenBar;
+    chosenBar = notes[i].bar;
+    if (was !== chosenBar) bar.stop();
+    playBar.disabled = false;
     notes.forEach(({ g }, k) => {
       g.classList.toggle("chosen", k === i);
       g.setAttribute("aria-pressed", String(k === i));
@@ -378,7 +528,7 @@ async function partview(el) {
       g.setAttribute("role", "button");
       g.setAttribute("aria-pressed", "false");
       g.setAttribute("aria-label", text);
-      const note = { g, text, svg };
+      const note = { g, text, svg, bar: part.notes[i][4] };
       g.addEventListener("click", () => choose(notes.indexOf(note), true));
       g.addEventListener("keydown", (e) => {
         const i = notes.indexOf(note), by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
@@ -401,11 +551,10 @@ async function partview(el) {
     });
     if (notes.length) notes[0].g.tabIndex = 0;
     status.textContent = summary();
+    chosenBar = 0;
+    bar.stop();
+    playBar.disabled = true;
   };
-  select.addEventListener("change", () => {
-    delete kept.chosen;
-    show();
-  });
   // After a change of language it stands as it stood: the same part, the same note.
   const chosen = kept.chosen;
   if (kept.part) select.value = kept.part;

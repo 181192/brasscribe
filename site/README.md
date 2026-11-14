@@ -110,6 +110,12 @@ performs, what you get, see it work, try it, where it runs, how sure it is, get 
 it its words (`pages/index.<lang>.toml`), its brand, and its figures under the same names: `hero`,
 `steps`, `viewer`, `tally`, `devices` (the rail and its panels), `gets`, `screens`.
 
+Anything that shows music can be heard, one sound at a time on the whole page (`scribe:sound` in
+`shared/showcase.js`: what starts to play says so, and the rest falls silent). The hero plays the
+recording or the written notes, and a tap on it moves the pen. Choosing a note in a viewer offers
+**Play this bar**, the stretch of the recording that bar was written from. The steps that show sound
+or written music have their own Play. Viewers choose with segmented buttons, not a list.
+
 ## Figures, recordings and numbers
 
 A front page's figures are drawn at build time from files in the repository, so a page shows what

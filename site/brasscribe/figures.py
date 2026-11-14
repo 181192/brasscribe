@@ -97,7 +97,7 @@ def hero(page) -> str:
     ink = svg.replace("<svg ", f'<svg class="score-ink" width="{width}" height="{height}" aria-hidden="true" focusable="false" ', 1)
     f = facts(page, data)
     return shared.strip_frame(page, config, ink, wave, width, height, page.say("hero.strip_label", **f), page.say("hero.strip_note", **f),
-                              "score-strip", f" --t: {round(interpolate(points, 6.0))}")
+                              "score-strip", f" --t: {round(interpolate(points, 6.0))}", header=part["name"][page.lang])
 
 
 def steps(page) -> str:
@@ -107,7 +107,7 @@ def steps(page) -> str:
     heard = json.loads((HERE / "take" / "heard.json").read_text())
     sound = shared.Sound(HERE / "figures" / "sound.json")
     beats, per_bar = data["beats"], data["per_bar"]
-    width, height, x0 = 360, 230, 16
+    width, height, x0 = 360, 230, 40         # room on the left for the note names of the piano rolls
     end = beats[2 * per_bar + 1]            # the upbeat and two bars
     x = lambda t: x0 + t * (width - 2 * x0) / end
     tall = 340  # the notes of a quartet span three octaves and more: their pictures are taller, so each note can be seen
@@ -115,7 +115,9 @@ def steps(page) -> str:
     def grid(faint: bool = False, h: int = height) -> str:
         lines = "".join(f'<path class="beat{" down" if i % per_bar == 0 else ""}{" faint" if faint else ""}" d="M{shared.number(x(b))} 26V{h - 14}"/>'
                         for i, b in enumerate(beats) if b <= end + 0.01)
-        return lines
+        numbers = "".join(f'<text class="bar-no" x="{shared.number(x(b) + 3)}" y="16">{i // per_bar + 1}</text>'
+                          for i, b in enumerate(beats) if i % per_bar == 0 and b < end - 0.1)
+        return lines + numbers
 
     wave = shared.wave_path(sound, x, 0.0, end, 120, 170, 2.0)
     every = [n for notes in heard.values() for n in notes if n[0] < end]
@@ -126,7 +128,9 @@ def steps(page) -> str:
     notes = sounding(comp)
     as_heard = [[n[0], n[1], n[2]] for n in notes]
     placed_notes = [[n[5], n[6], n[2], "doubt" if n[4] else ""] for n in notes]
-    placed = shared.roll(as_heard, x, low, high, 28, row, "ghost", end) + shared.roll(placed_notes, x, low, high, 28, row, "heard", end)
+    placed = (shared.roll(as_heard, x, low, high, 28, row, "ghost", end) + shared.roll(placed_notes, x, low, high, 28, row, "heard", end)
+              + shared.moves(as_heard, placed_notes, x, low, high, 28, row, end))
+    axis, keyed = shared.pitch_axis(low, high, 28, row), tall + 22
     lead = data["parts"][0]
     after = next((n for n in lead["notes"] if n[0] >= end), lead["notes"][-1])
     before = [n for n in lead["notes"] if n[0] < end][-1]
@@ -135,11 +139,15 @@ def steps(page) -> str:
     stack = "".join(engraving(f'part-{p["id"]}.svg', p is not lead, crop, named(p, page.lang))[0].replace("<svg ", '<svg class="score-ink" ', 1) for p in data["parts"])
     frames = [svg(f'<path class="wave" d="{wave}"/>'),
               svg(f'<path class="wave faint" d="{wave}"/>{grid()}'),
-              svg(f"{grid(True, tall)}{listeners}", tall),
-              svg(f"{grid(False, tall)}{placed}", tall),
+              svg(f'{grid(True, tall)}{axis}{listeners}{shared.roll_key(page, [("listener-1", "fig.listener_1"), ("listener-2", "fig.listener_2")], keyed - 4)}', keyed),
+              svg(f'{grid(False, tall)}{axis}{placed}{shared.roll_key(page, [("ghost", "fig.heard_here"), ("heard", "fig.written_here")], keyed - 4)}', keyed),
               written.replace("<svg ", '<svg class="stage-figure score-ink" role="img" aria-label="{alt}" ', 1),
               f'<div class="stage-figure band" role="img" aria-label="{{alt}}">{stack}</div>']
-    return shared.stage_list(page, frames, facts(page, data))
+    # What can be heard: the recording of these bars, the tune that was written, and every part together.
+    lead_line = [[round(n[5], 3), round(n[6] - n[5], 3), n[2]] for n in notes if n[3] == "melody" and n[5] < end]
+    every_part = [[round(n[5], 3), round(n[6] - n[5], 3), n[2]] for n in notes if n[5] < end]
+    sounds = {1: {"from": 0, "to": round(end, 3)}, 5: {"notes": lead_line, "voice": "brass"}, 6: {"notes": every_part, "voice": "brass"}}
+    return shared.stage_list(page, frames, facts(page, data), sounds)
 
 
 def viewer(page) -> str:
@@ -148,8 +156,9 @@ def viewer(page) -> str:
     shared, data, lang, say = page.shared, score(), page.lang, page.say
     bars = len(data["beats"]) // data["per_bar"] + 1
     words = page.group("try.words.")
-    options = f'<option value="all">{say("try.all", n=len(data["parts"]))}</option>' + "".join(
-        f'<option value="{p["id"]}">{p["name"][lang]}</option>' for p in data["parts"])
+    # The parts as one row of buttons (up to five), all of them pressed first; they wrap on a phone.
+    options = f'<button type="button" data-value="all" aria-pressed="true">{say("try.all", n=len(data["parts"]))}</button>' + "".join(
+        f'<button type="button" data-value="{p["id"]}" aria-pressed="false">{p["name"][lang]}</button>' for p in data["parts"])
     stack = []
     for p in data["parts"]:
         svg, width, height = engraving(f'part-{p["id"]}.svg', False, None, named(p, lang))
@@ -160,12 +169,16 @@ def viewer(page) -> str:
         raise SystemExit(f"the part viewer has no words for a note at {sorted(odd)} of a beat")
     doubt = sum(n[3] for p in data["parts"] for n in p["notes"])
     start = words["start_all"].format(n=len(data["parts"]), doubt=doubt)
-    config = {"lang": lang, "words": words}
-    return f"""<div class="partview" data-partview="{shared.esc(json.dumps(config, separators=(",", ":"), ensure_ascii=False))}" data-src="@/assets/data/">
+    config = {"lang": lang, "words": words, "play": say("fig.play_bar"), "pause": say("fig.pause")}
+    return f"""<div class="partview" data-partview="{shared.esc(json.dumps(config, separators=(",", ":"), ensure_ascii=False))}" data-src="@/assets/data/" data-audio="@/assets/data/take.mp3">
   <div class="tabdemo-controls await-js">
-    <label>{say("try.part")} <select data-part>{options}</select></label>
+    <span class="seg-label" id="part-label-{lang}">{say("try.part")}</span>
+    <div class="seg" role="group" aria-labelledby="part-label-{lang}" data-part>{options}</div>
   </div>
   <div class="tabdemo-scroll" role="region" aria-label="{shared.esc(say("try.scroll"))}" tabindex="0"><div class="part-stack">{"".join(stack)}</div></div>
-  <p class="tabdemo-status" data-status role="status">{start}</p>
+  <div class="tabdemo-chosen">
+    <p class="tabdemo-status" data-status role="status">{start}</p>
+    <button type="button" class="button outline bar-play await-js" data-bar-play disabled>{say("fig.play_bar")}</button>
+  </div>
   <p class="tabdemo-hint await-js">{say("try.pick")}</p>
 </div>"""
