@@ -603,7 +603,12 @@ class Site:
                 target = OUT / page.dir / "index.html"  # a folder per page, so URLs have no .html
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text(text)
-                (target.parent / "nb.json").write_text(json.dumps(nb, ensure_ascii=False, separators=(",", ":")))
+                # The Norwegian words in two: what the top of the page needs (its words and its first figure), which
+                # the page waits for, and the other figures (nb-more.json), put in when they come.
+                slots = nb.get("slots", {})
+                first = dict(list(slots.items())[:1])
+                (target.parent / "nb.json").write_text(json.dumps({**nb, "slots": first} if "slots" in nb else nb, ensure_ascii=False, separators=(",", ":")))
+                (target.parent / "nb-more.json").write_text(json.dumps({"slots": {k: v for k, v in slots.items() if k not in first}}, ensure_ascii=False, separators=(",", ":")))
         self.stubs()
         (OUT / ".nojekyll").touch()
 
@@ -641,9 +646,9 @@ def check(out: Path) -> None:
     bad, ids = [], {}
     for page in out.rglob("index.html"):
         found = set(re.findall(r'\bid="([^"]+)"', page.read_text()))
-        nb = page.parent / "nb.json"
-        if nb.exists():
-            found |= set(re.findall(r'\bid=\\?"([^"\\]+)', nb.read_text()))
+        for nb in (page.parent / "nb.json", page.parent / "nb-more.json"):
+            if nb.exists():
+                found |= set(re.findall(r'\bid=\\?"([^"\\]+)', nb.read_text()))
         ids[page.resolve()] = found
     for page in out.rglob("index.html"):
         text = page.read_text()

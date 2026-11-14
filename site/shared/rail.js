@@ -118,6 +118,7 @@ markMine();
 // The family's pen draws under a heading once, when it first comes into view. When the headline's line is drawn the
 // pen goes on, onto the strips of the sheets under it (showcase.js waits for "scribe:penned").
 const still = matchMedia("(prefers-reduced-motion: reduce)");
+document.documentElement.classList.add("moving");
 const pen = new IntersectionObserver((entries) => {
   for (const e of entries) {
     if (!e.isIntersecting) continue;
@@ -131,6 +132,12 @@ const pen = new IntersectionObserver((entries) => {
     }
   }
 }, { threshold: 0.6 });
-const drawPens = () => document.querySelectorAll(".pen-heading:not(.drawn), .line-hero:not(.drawn)").forEach((el) => pen.observe(el));
+// Once a visit: on a page that has played (early.js), the lines stand drawn from the start.
+const drawPens = () => document.querySelectorAll(".pen-heading:not(.drawn), .line-hero:not(.drawn)").forEach((el) => {
+  if (document.documentElement.classList.contains("played")) {
+    el.classList.add("drawn");
+    document.documentElement.setAttribute("data-penned", "");
+  } else pen.observe(el);
+});
 document.addEventListener("scribe:lang", drawPens);
 drawPens();

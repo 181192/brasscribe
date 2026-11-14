@@ -102,7 +102,7 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 /* The pen comes down onto each sheet's strip before the strip runs: its line draws from the top (the script marks
    the strip inked). Without the script, or with less motion, the line is simply there. */
 .app .strip-pen { clip-path: inset(-8px); transition: clip-path var(--scribe-duration-slow) ease-out; }
-html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100% + 8px) -8px); }
+html.starting .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100% + 8px) -8px); }
 @media (prefers-reduced-motion: reduce) {
   .app .strip-pen { transition: none; }
   html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px); }
@@ -206,8 +206,8 @@ html.js .app .strip:not(.inked) .strip-pen { clip-path: inset(-8px -8px calc(100
    Without the script, or with less motion, the line is simply there. */
 .pen-heading::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
 .pen-words::after { transition: clip-path var(--scribe-duration-slow) ease-out; }
-html.js .pen-heading:not(.drawn)::after { clip-path: inset(0 100% 0 0); }
-html.js .line-hero:not(.drawn) .pen-words::after { clip-path: inset(0 100% 0 0); }
+html.starting .pen-heading:not(.drawn)::after { clip-path: inset(0 100% 0 0); }
+html.starting .line-hero:not(.drawn) .pen-words::after { clip-path: inset(0 100% 0 0); }
 @media (prefers-reduced-motion: reduce) {
   .pen-heading::after, .pen-words::after { transition: none; }
   html.js .pen-heading:not(.drawn)::after { clip-path: none; }

@@ -2,6 +2,8 @@
 // this adds the moving parts: the strip under the headline, the steps and the viewers.
 
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
+// Here to move what moves (early.js puts a page at rest when no script says so).
+document.documentElement.classList.add("moving");
 const SVG = "http://www.w3.org/2000/svg";
 const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key]);
 const make = (name, attributes = {}, parent) => {
@@ -293,7 +295,14 @@ function strip(el) {
   const run = (now) => {
     // The recording keeps its own time; without it the clock does.
     set(playing && !quiet && mode === "recording" && sound && !sound.audio.paused ? sound.audio.currentTime : from + (now - started) / 1000);
-    if (t >= d.dur) return stop();
+    if (t >= d.dur) {
+      // At the end of the quiet run, Play says once that there is sound to hear.
+      if (quiet) {
+        button.classList.add("nudge");
+        button.addEventListener("animationend", () => button.classList.remove("nudge"), { once: true });
+      }
+      return stop();
+    }
     frame = requestAnimationFrame(run);
   };
   const play = (withSound) => {
@@ -359,15 +368,18 @@ function strip(el) {
   // from the headline first: when the headline's line is drawn (rail.js says so), the pen's line on each sheet's
   // strip draws, the first sheet's, then the second's, and the strip runs.
   hear.forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.hear === mode)));
-  set(kept.touched || kept.traced ? kept.t : calm.matches ? d.dur * 0.4 : 0);
+  // (Once in half an hour: early.js marks the page "played" when a strip of it has written itself out.)
+  const played = document.documentElement.classList.contains("played");
+  set(kept.touched || kept.traced ? kept.t : calm.matches || played ? d.dur * 0.4 : 0);
   const sheet = el.closest(".app");
-  if (calm.matches || kept.touched || kept.traced) el.classList.add("inked");
+  if (calm.matches || played || kept.touched || kept.traced) el.classList.add("inked");
   else {
     const run = () => {
       el.classList.add("inked");
       setTimeout(() => {
         if (playing || t !== 0) return;
         kept.traced = true;
+        try { localStorage.setItem(`scribe-played:${location.pathname}`, String(Date.now())); } catch {}
         play(false);
       }, sheet ? 340 : 0);
     };

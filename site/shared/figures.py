@@ -171,6 +171,18 @@ def tab_marks(take: Take, xs: list[float], top: float, gap: float, size: float =
     return "".join(out), bottom
 
 
+def strip_px(config: dict, seconds: float) -> float:
+    """How far a strip's music has moved at a moment: showcase.js's px, at build time. Tab runs straight in time;
+    engraved notation brings its own seconds-to-pixels points."""
+    if "map" not in config:
+        return seconds * config["pps"]
+    points = config["map"]
+    found = next((i for i, (at, _) in enumerate(points) if at >= seconds), len(points) - 1)
+    i = max(1, found)
+    (t0, x0), (t1, x1) = points[i - 1], points[i]
+    return x1 if t1 == t0 else x0 + (x1 - x0) * (min(seconds, t1) - t0) / (t1 - t0)
+
+
 def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int, label: str, note: str, classes: str = "", style: str = "",
                 header: str = "") -> str:
     """The strip every app's page opens with: the recording as sound on the right of a pen and as written music on
@@ -178,6 +190,9 @@ def strip_frame(page, config: dict, ink: str, wave: str, width: int, height: int
     say = page.say
     config = {**config, "barBeat": say("fig.bar_beat"), "play": say("fig.play"), "pause": say("fig.pause")}
     audio = f' data-audio="{config.pop("audio")}"' if "audio" in config else ""
+    # Where the music stands at its start and part way through (as showcase.js's px puts it), so the page is drawn
+    # where the script will begin, or where it rests without the script.
+    style = f" --t-start: {number(strip_px(config, 0.0))}; --t-still: {number(strip_px(config, config['dur'] * 0.4))};{style}"
     # The stage clips its music in the markup itself, so a wide strip never widens the page while the styles load.
     return f"""<figure class="strip {classes}"{audio} data-strip="{esc(json.dumps(config, separators=(",", ":")))}" style="--strip-height: {height}px;{style}">
   <div class="strip-stage" style="overflow: hidden" role="img" aria-label="{esc(label)}">
