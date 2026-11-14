@@ -288,6 +288,9 @@ class Job(BaseModel):
     target: Target | None = Field(description="the target the job belongs to: its profile's, so an app knows its own jobs "
                                               "without knowing every profile. null only for a run kept from a profile the "
                                               "engine no longer lists that wrote no score")
+    input: Literal["audio", "pages"] = Field("audio", description="what the job read: a recording, or pages of printed "
+                                                                  "music (getJobInput then gives a picture, a PDF or a "
+                                                                  "ZIP of the pages, not audio)")
     title: str | None = None
     audio_id: str | None = None
     status: JobStatus | Literal["unknown"]

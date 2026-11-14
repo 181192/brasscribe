@@ -33,10 +33,11 @@ MAX_PAGES = 40  # files in one upload, and pages in all once its PDFs are opened
 MAX_PAGE_BYTES = 50 * 1024 * 1024  # one file: a phone's largest photo is a fifth of this
 MAX_PIXELS = 50_000_000  # one picture, decoded: an A4 page at 600 dpi is 35 million
 # What the API answers with, as {"code", "detail"}: 415 for a file that is not a page and for an input that is
-# not the kind the job's profile reads, 413 for a page too large to read.
+# not the kind the job's profile reads, 413 for a page too large to read and for more files than MAX_PAGES.
 NOT_A_PAGE = "not_a_page"
 WRONG_INPUT = "wrong_input"
 PAGE_TOO_LARGE = "page_too_large"
+TOO_MANY_PAGES = "too_many_pages"
 WRONG_INPUT_DETAIL = ("this profile does not read that kind of file: the sheet profiles read pictures and PDFs of "
                       "printed music, the others a recording")
 MEMBER = re.compile(r"page-\d{3}\.(png|jpg|webp|pdf)")

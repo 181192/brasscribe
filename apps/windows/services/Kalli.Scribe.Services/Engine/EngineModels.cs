@@ -83,7 +83,9 @@ public sealed record Job(
     string? DeviceName = null,
     string? Target = null,
     IReadOnlyList<MissingOutput>? Missing = null,
-    IReadOnlyList<string>? Without = null)
+    IReadOnlyList<string>? Without = null,
+    // What the job read: "audio" (a recording) or "pages" (pictures or a PDF of printed music).
+    string Input = "audio")
 {
 
     [JsonIgnore]

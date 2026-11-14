@@ -293,7 +293,7 @@ FAKE_RECOGNISER = """import os, shutil, sys
 # starts as a WebP, which it fails on as homr does on a page without a staff: a traceback, then the reason
 name, src, dst = sys.argv[1:4]
 assert name == "homr", name
-if open(src, "rb").read(4) == b"RIFF":
+if open(src, "rb").read(4) == b"RIFF" and not os.environ.get("FAKE_READS_ALL"):
     sys.stderr.write('Traceback (most recent call last):\\n  File "/home/someone/engine/ml/adapters/homr/main.py", line 1\\n'
                      'cv2.error: /var/folders/xy/T/tmp123/page-001.webp has no staff\\nscribe-refusal: ' + os.environ.get("FAKE_REFUSAL", "no_music") + '\\n')
     sys.exit(3)
@@ -346,8 +346,11 @@ def test_a_picture_becomes_a_score_with_parts_and_a_talking_score(client):
     assert (summary["bars"], summary["notes"], summary["doubtful_bars"]) == (12, 32, [])
     talking = client.get(f"/v1/jobs/{job['id']}/talking-score?format=json").json()
     assert talking["parts"][0]["name"] == "Part 1" and len(talking["parts"][0]["bars"]) == 12
-    # The job can be run again from its stored page, and its input is the picture.
-    assert client.get(f"/v1/jobs/{job['id']}/input").content == PNG
+    # The job can be run again from its stored page, and its input is the picture, served as one.
+    page = client.get(f"/v1/jobs/{job['id']}/input")
+    assert page.content == PNG and page.headers["content-type"] == "image/png"
+    assert (job["input"], done["input"]) == ("pages", "pages")
+    assert {j["id"]: j["input"] for j in client.get("/v1/jobs").json()}[job["id"]] == "pages"
     assert client.post(f"/v1/jobs/{job['id']}/rerun").status_code == 202
 
 
@@ -370,6 +373,7 @@ def test_several_pages_are_stored_as_one_input_in_the_order_given(client, settin
     assert r.status_code == 202, r.text
     job = r.json()
     assert job["title"] == "B (3 Pages) — from the page (draft)"
+    assert client.get(f"/v1/jobs/{job['id']}/input").headers["content-type"] == "application/zip"
     stored = settings.uploads_dir / f"{job['audio_id']}.zip"
     with zipfile.ZipFile(stored) as z:
         assert z.namelist() == ["page-001.png", "page-002.jpg", "page-003.pdf"]
@@ -379,6 +383,20 @@ def test_several_pages_are_stored_as_one_input_in_the_order_given(client, settin
     again = client.post("/v1/jobs/pages", files=[("files", ("b.png", PNG, "image/png")), ("files", ("a.jpg", JPEG, "image/jpeg")),
                                                  ("files", ("c.pdf", PDF, "application/pdf"))])
     assert again.json()["audio_id"] == job["audio_id"]
+
+
+@pytest.mark.parametrize("name, data, media", [("page.jpg", JPEG, "image/jpeg"), ("page.webp", picture("WEBP"), "image/webp"),
+                                               ("score.pdf", PDF, "application/pdf")])
+def test_a_jobs_page_is_served_under_its_own_media_type(client, name, data, media, monkeypatch):
+    monkeypatch.setenv("FAKE_READS_ALL", "1")
+    job = client.post("/v1/jobs/pages", files=[("files", (name, data, media))]).json()
+    assert client.get(f"/v1/jobs/{job['id']}/input").headers["content-type"] == media
+
+
+def test_a_job_says_what_it_read(client, audio):
+    heard = client.post("/v1/jobs/upload", files={"file": ("song.wav", audio.read_bytes())}, data={"profile": "test"}).json()
+    assert heard["input"] == "audio"
+    assert client.get(f"/v1/jobs/{heard['id']}/input").headers["content-type"] == "audio/wav"
 
 
 def test_a_file_that_is_not_a_page_is_refused_and_nothing_is_kept(client, settings):
@@ -398,7 +416,9 @@ def test_a_page_too_large_to_read_is_refused_before_anything_opens_it(client, se
     monkeypatch.setattr(pages, "MAX_PAGE_BYTES", 1000)
     r = client.post("/v1/jobs/pages", files=[("files", ("long.pdf", PDF + b"\0" * 2000, "application/pdf"))])
     assert (r.status_code, r.json()["code"]) == (413, "page_too_large")
-    assert client.post("/v1/jobs/pages", files=[("files", (f"{i}.png", PNG, "image/png")) for i in range(pages.MAX_PAGES + 1)]).status_code == 422
+    r = client.post("/v1/jobs/pages", files=[("files", (f"{i}.png", PNG, "image/png")) for i in range(pages.MAX_PAGES + 1)])
+    assert (r.status_code, r.json()["code"]) == (413, "too_many_pages") and "41 files" in r.json()["detail"]
+    assert client.post("/v1/jobs/pages", data={"profile": "sheet"}).status_code == 422  # no file at all: the form is wrong
     assert not list(settings.uploads_dir.iterdir())
 
 

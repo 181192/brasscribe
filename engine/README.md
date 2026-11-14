@@ -102,13 +102,15 @@ serves the HTTP API that Studio and the Play apps use. Bandroom (Mac and Windows
   recording: a screenshot, a photo of a page, or a PDF, and several pages in order as one score. `/v1/profiles`
   marks them `input: pages`, and `POST /v1/jobs/pages` (`createJobFromPages`) uploads the pages and starts the
   job. One page is stored as it is, several as one archive (`pages.py`), so a job still has one input with one
-  checksum and can be run again.
+  checksum and can be run again. A job says what it read (`Job.input`: `audio` or `pages`), and
+  `GET /v1/jobs/{id}/input` gives the page back under its own media type (a picture, a PDF, or the ZIP of several
+  pages).
   - What is refused, each as `{"code": …, "detail": …}`, and before anything is kept: a recording for one of
     these profiles or a picture for a profile that listens (415, `wrong_input`); a file that is not a PNG, JPEG
     or WebP picture or a PDF (415, `not_a_page`: an iPhone's HEIC photo is the one met in practice); a file over
     50 MB, or a picture whose header says it holds more than 50 million pixels (413, `page_too_large`: the size
     is read from the header, so nothing decodes a picture that is a few kilobytes on disk and gigabytes in
-    memory); a job of these profiles on a computer without the recogniser (503, `reader_missing`).
+    memory); more than 40 files (413, `too_many_pages`); a job of these profiles on a computer without the recogniser (503, `reader_missing`).
   - The pages are read by [homr](https://github.com/liebharc/homr), an adapter like the models (AGPL-3.0, a
     separate program; [why it was chosen](../docs/shared/research/19-sheet-music-from-pictures.md)). Its
     environment is about 0.5 GB and no installation gets it unasked: the two profiles are offered only where it

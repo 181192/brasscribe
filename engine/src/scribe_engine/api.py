@@ -65,11 +65,13 @@ ROTATE_AFTER_S = 30 * 86400.0  # clients are asked to rotate their token monthly
 SUFFIX_MEDIA = {".json": "application/json", ".musicxml": "application/vnd.recordare.musicxml+xml", ".pdf": "application/pdf",
                 ".mid": "audio/midi", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".flac": "audio/flac",
                 ".beats": "text/plain", ".brf": "text/plain; charset=us-ascii", ".html": "text/html; charset=utf-8",
-                ".txt": "text/plain; charset=utf-8"}
+                ".txt": "text/plain; charset=utf-8",
+                # The pages a job read: a picture as the browser shows it, several pages as their archive.
+                ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".zip": "application/zip"}
 
 
 def media_type(name: str) -> str:
-    return SUFFIX_MEDIA.get(Path(name).suffix, "application/octet-stream")
+    return SUFFIX_MEDIA.get(Path(name).suffix.lower(), "application/octet-stream")
 
 
 class CachedStaticFiles(StaticFiles):
@@ -211,9 +213,17 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return m.Job(id=job.id, profile=job.profile, title=job.title, audio_id=job.audio_id, status=job.status,
                      created=job.created, started=job.started, finished=job.finished, error=job.error,
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
-                     device_name=job.device_name, target=getattr(target_of(job), "id", None),
+                     device_name=job.device_name, target=getattr(target_of(job), "id", None), input=input_of(job),
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job),
                      without=[SETUP_NAMES.get(a, a) for a in job.without])
+
+    def input_of(job: Job) -> str:
+        """What the job read: its profile says, and for a run kept from a profile the engine no longer lists, the
+        file it read does."""
+        listed = profiles.PROFILES.get(job.profile)
+        if listed is not None:
+            return listed.input
+        return "pages" if pages.is_pages(job.audio_path) else "audio"
 
     def missing_of(job: Job) -> list[m.MissingOutput]:
         """What the job lacks, without a file that is there after all."""
@@ -599,8 +609,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         (pages.too_large: its bytes, or the pixels its header says it has), nothing is kept, and what is returned
         is the refusal: the status, its code, and the words that say which file and why."""
         up = settings.uploads_dir
-        if not 1 <= len(files) <= pages.MAX_PAGES:
-            raise HTTPException(422, f"give 1 to {pages.MAX_PAGES} pages")
+        if len(files) > pages.MAX_PAGES:
+            return 413, pages.TOO_MANY_PAGES, f"{len(files)} files: a job reads {pages.MAX_PAGES} pages at most"
         kept: list[tuple[Path, str]] = []
         try:
             for file in files:
@@ -649,7 +659,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
               tags=["jobs"], dependencies=[Depends(auth)],
               responses={415: {"description": "a file is not a picture or a PDF ({code: not_a_page, detail}), or the "
                                               "profile does not read pages ({code: wrong_input, detail})"},
-                         413: {"description": "a page is too large to read: {code: page_too_large, detail}"},
+                         413: {"description": "a page is too large to read ({code: page_too_large, detail}), or there are "
+                                              "more files than a job reads ({code: too_many_pages, detail})"},
                          503: {"description": "this computer has no reader of printed music installed: "
                                               "{code: reader_missing, detail}"}})
     def create_job_from_pages(request: Request, files: list[UploadFile] = File(..., description="the pages in order: "
@@ -924,12 +935,16 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         return p
 
     @app.get("/v1/jobs/{job_id}/input", operation_id="getJobInput", tags=["inspection"], dependencies=[Depends(auth)],
-             response_class=FileResponse, responses={200: {"content": {"audio/wav": {}}}})
+             response_class=FileResponse,
+             responses={200: {"content": {"audio/wav": {}, "image/png": {}, "image/jpeg": {}, "image/webp": {},
+                                          "application/pdf": {}, "application/zip": {}}}})
     def get_input(job_id: str, request: Request):
-        """The job's original input audio (for A/B listening)."""
+        """What the job read (Job.input says which): the recording, for A/B listening, or the pages. One page is the
+        picture or the PDF itself, under its own media type; several pages are one ZIP of them in order
+        (page-001.png, page-002.jpg, …)."""
         job = job_or_404(job_id)
         if not input_allowed(job.audio_path, anywhere=not is_device(request)):
-            raise HTTPException(404, "input audio no longer exists, or is not in the engine's audio folders")
+            raise HTTPException(404, "the job's input no longer exists, or is not in the engine's folders")
         return FileResponse(job.audio_path, media_type=media_type(job.audio_path.name), filename=job.audio_path.name)
 
     @app.get("/v1/jobs/{job_id}/stages", response_model=list[m.StageArtifacts], operation_id="listJobStages",
