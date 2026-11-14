@@ -223,7 +223,7 @@ the folder and `TEST_RUNNER_NB=1` for Norwegian).
 
 | Tier 1 (inner loop) | Tier 2 (before handoff) | Tier 3 (devices, UI) |
 | --- | --- | --- |
-| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh record` (the Mac screen catalogue) | `make test-ios-unit` (headless simulator), `make test-iphone` (its unit and UI tests; CI runs them every night, not on pull requests); `make test-mac-ui` only in the macOS VM |
+| `make package-test-fast`; `make test-mac-unit` after `make build-for-testing-mac` | `make package-test test-mac-unit`, then `scripts/screenshots.sh record` (the Mac screen catalogue) and `make test-iphone-catalogue` (the iPhone's, on the simulator) | `make test-ios-unit` (headless simulator), `make test-iphone` (its unit and UI tests; CI runs them every night, not on pull requests); `make test-mac-ui` only in the macOS VM |
 
 See [docs/shared/dev/verify.md](../../docs/shared/dev/verify.md).
 
@@ -315,3 +315,23 @@ job `play-screens`) runs it on every pull request that reaches Play, and the pic
 To measure the catalogue itself, `apple.yml` started by hand with `noise_play` (or `noise_bandroom`) takes it twice
 on one runner and compares the two takes file by file: nothing changed between them, so a picture that differs was
 taken in the wrong state (`gh workflow run apple.yml --ref <branch> -f noise_play=true`).
+
+## Screen catalogue (iPhone)
+
+`products/brasscribe/AppTests/PhoneScreensTests.swift` shows every screen as the phone does, in a navigation stack filling
+the screen, on two phones (`scripts/smallest-iphone.sh` finds or makes them): the smallest phone of the newest iOS (an
+iPhone 17e), upright at the default text size in light and dark and at XXL, and on its side; and an iPhone SE, the
+shortest screen (375 × 667), upright at the default text size and at XXL. The text size and appearance are trait
+overrides of its window, so the navigation bar and what is docked at the bottom get them too. It runs in the iPhone app's unit-test bundle on the
+simulator, with the same checks and the same rule for when a picture counts as the Mac's (`testing/ScreenCatalogue`, its
+`PhoneHost` and the iOS reader of `AXTree`): every control has a name and a target of at least 44 × 44 pt (a finger is the
+pointer; the navigation bar's own buttons are the system's), no text is cut
+off or outside the screen, the controls are in reading order (the navigation bar first, then the content, then what is
+docked under it), and every text can be read on its ground (4.5:1). The accessibility tree is the one VoiceOver reads,
+built in the test process by turning on libAccessibility's automation switch (`AXTree.enableInProcess`; `Guards.tree`
+fails when that stops working).
+
+`make test-iphone-catalogue` (after `make build-for-testing-ios`) runs it in English and in bokmål and writes the
+screenshots and each screen's tree into `build/catalogue/iphone/`; CI does the same on every pull request (`apple.yml`,
+job `play`) and keeps the pictures as the `play-iphone-screenshots` artefact. A new screen gets an entry here as well as in
+the Mac's catalogue. A known finding goes in `known`, with why.

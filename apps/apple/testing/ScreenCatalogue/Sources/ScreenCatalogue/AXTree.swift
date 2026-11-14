@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// One element of the accessibility tree, in the view's coordinates (origin top left).
 public struct AXNode: CustomStringConvertible, Sendable {
@@ -26,12 +30,14 @@ public struct AXNode: CustomStringConvertible, Sendable {
     public var description: String { "\(role) “\(words)” \(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))×\(Int(frame.height))" }
 
     public static let actionable: Set<String> = ["AXButton", "AXMenuButton", "AXPopUpButton", "AXCheckBox", "AXRadioButton", "AXLink",
-                                                 "AXTextField", "AXSlider", "AXDisclosureTriangle", "AXComboBox", "AXIncrementor"]
+                                                 "AXTextField", "AXSlider", "AXDisclosureTriangle", "AXComboBox", "AXIncrementor",
+                                                 "AXToolbarButton"]
     public var isActionable: Bool { Self.actionable.contains(role) }
     /// Text on its own (a heading made of one text is a heading, not a group of texts).
     public var isText: Bool { role == "AXStaticText" || (role == "AXHeading" && isLeaf) }
 }
 
+#if os(macOS)
 @MainActor
 public enum AXTree {
     /// SwiftUI builds its accessibility tree only for an assistive client. This attribute, which VoiceOver sets on an app,
@@ -90,3 +96,80 @@ public enum AXTree {
         return rect
     }
 }
+
+#else
+@MainActor
+public enum AXTree {
+    /// SwiftUI on iOS builds its accessibility tree only for an assistive client or UI automation. libAccessibility's
+    /// own switches for them (which the system sets when VoiceOver or an automation session starts) ask for it in this
+    /// process. They are not documented: `Guards.tree` fails loudly when they stop working.
+    public static func enableInProcess() {
+        guard let lib = dlopen("/usr/lib/libAccessibility.dylib", RTLD_NOW) else { return }
+        typealias Switch = @convention(c) (Int32) -> Void
+        for name in ["_AXSSetAutomationEnabled", "_AXSApplicationAccessibilitySetEnabled"] {
+            if let sym = dlsym(lib, name) { unsafeBitCast(sym, to: Switch.self)(1) }
+        }
+    }
+
+    /// The role a Mac would give an element with these traits, so the checks read both platforms alike.
+    nonisolated static func role(_ t: UIAccessibilityTraits) -> String {
+        if t.contains(.adjustable) { return "AXSlider" }
+        if t.contains(.link) { return "AXLink" }
+        if t.contains(.searchField) { return "AXTextField" }
+        if t.contains(.toggleButton) { return "AXCheckBox" }
+        if t.contains(.button) || t.contains(.tabBar) { return "AXButton" }
+        if t.contains(.header) { return "AXHeading" }
+        if t.contains(.image) { return "AXImage" }
+        if t.contains(.staticText) { return "AXStaticText" }
+        // No trait of its own: a group, or a control drawn without words of its own (a level, a progress bar).
+        return "AXGroup"
+    }
+
+    /// The tree under `view` (in a window at the origin of its screen), in the order VoiceOver goes through it (the
+    /// navigation bar first), each element in `view`'s points. An element inside a scroll view has what that scroll
+    /// view shows as its viewport.
+    public static func read(_ view: UIView) -> [AXNode] {
+        let origin = view.convert(CGPoint.zero, to: nil)
+        var bar: [AXNode] = []
+        var rest: [AXNode] = []
+        func children(_ e: NSObject) -> [NSObject] {
+            let n = e.accessibilityElementCount()
+            if n != NSNotFound, n > 0 { return (0..<n).compactMap { e.accessibilityElement(at: $0) as? NSObject } }
+            if let els = e.accessibilityElements as? [NSObject] { return els }
+            if let v = e as? UIView { return v.subviews.filter { !$0.isHidden && $0.alpha > 0.01 } }
+            return []
+        }
+        /// What holds the element, nearest first: its accessibility containers, then the views they are in.
+        func holders(_ e: NSObject) -> [NSObject] {
+            var out: [NSObject] = []
+            var c: Any? = (e as? UIView)?.superview ?? e.value(forKey: "accessibilityContainer")
+            while let o = c as? NSObject, out.count < 40 {
+                out.append(o)
+                c = (o as? UIView)?.superview ?? o.value(forKey: "accessibilityContainer")
+            }
+            return out
+        }
+        func walk(_ e: NSObject, depth: Int) {
+            guard depth < 60, !e.accessibilityElementsHidden else { return }
+            if e.isAccessibilityElement {
+                var frame = e.accessibilityFrame
+                frame.origin.x -= origin.x; frame.origin.y -= origin.y
+                let around = holders(e)
+                let scroller = around.first { $0 is UIScrollView } as? UIScrollView
+                let area = scroller.map { $0.convert($0.bounds, to: nil).offsetBy(dx: -origin.x, dy: -origin.y) }
+                // A button of the navigation bar is the system's: it takes a finger in more than the frame it reports
+                // (36 pt high on iOS 26), so it is told apart from the app's own (`Checks.ownControls`).
+                let inBar = around.contains { $0 is UINavigationBar }
+                let kind = role(e.accessibilityTraits)
+                let node = AXNode(role: inBar && kind == "AXButton" ? "AXToolbarButton" : kind, label: e.accessibilityLabel ?? "",
+                                  value: e.accessibilityValue ?? "", frame: frame, isLeaf: true, viewport: area)
+                if inBar { bar.append(node) } else { rest.append(node) }
+                return
+            }
+            for c in children(e) { walk(c, depth: depth + 1) }
+        }
+        walk(view, depth: 0)
+        return bar + rest
+    }
+}
+#endif

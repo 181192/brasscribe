@@ -487,7 +487,7 @@ struct ScoreToolbar: View {
                         Text("Concert").tag(PitchMode.concert)
                     } label: { Text("Pitch") }
                     .pickerStyle(.inline)
-                } header: { Text("Written is what you read on your part. Concert is how it sounds on a piano.") }
+                } header: { Text("Written is what you read on your part. Concert is how it sounds on a piano.").formHeader() }
                 Section {
                     Button { model.zoom = min(4, model.zoom + 0.25) } label: { Label("Zoom in", systemImage: BrasscribeIcon.zoomIn.systemName) }
                     Button { model.zoom = max(0.5, model.zoom - 0.25) } label: { Label("Zoom out", systemImage: BrasscribeIcon.zoomOut.systemName) }
@@ -517,11 +517,16 @@ struct ScoreToolbar: View {
                     .keyboardShortcut("p", modifiers: [.command, .shift])
             }
         } label: {
-            if iconOnly || (!wide && typeSize >= .accessibility1) {
-                Label("View", systemImage: BrasscribeIcon.more.systemName).labelStyle(.iconOnly).frame(minWidth: 44)
-            } else {
-                Label("View", systemImage: BrasscribeIcon.more.systemName)
+            // The label is the target a finger has: 44 pt high, not the text's own height.
+            Group {
+                if iconOnly || (!wide && typeSize >= .accessibility1) {
+                    Label("View", systemImage: BrasscribeIcon.more.systemName).labelStyle(.iconOnly).frame(minWidth: 44)
+                } else {
+                    Label("View", systemImage: BrasscribeIcon.more.systemName)
+                }
             }
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .menuStyle(.button)
         .tint(Color.Scribe.text)

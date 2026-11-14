@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 /// What was read off a screen at one moment: the first condition that does not hold (nil when all do), and what the
@@ -57,8 +61,8 @@ public enum SteadyTake {
         public init(takes: Int = 5, bound: TimeInterval = 30) { self.takes = takes; self.bound = bound }
     }
 
-    public struct Taken {
-        public let picture: NSBitmapImageRep
+    public struct Taken<Picture: PixelBuffer> {
+        public let picture: Picture
         public let tries: Int
         public let seconds: Double
         /// What it waited for on the way, and for how many tries each.
@@ -78,11 +82,11 @@ public enum SteadyTake {
     /// for. `readable` says what in the steady picture cannot be read (nil when all of it can): waiting does not
     /// change a picture that keeps still, so the screen is not taken at once, with that as its reason. `lastPicture`
     /// gets each picture as it is taken, so a screen that is not taken still leaves its last one to look at.
-    public static func take(_ screen: String, rule: Rule = Rule(), now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
-                            frames: () async -> Void, read: () -> Reading, picture: () -> NSBitmapImageRep,
-                            drawn: (NSBitmapImageRep) -> String? = { _ in nil },
-                            readable: (NSBitmapImageRep) -> String? = { _ in nil },
-                            lastPicture: (NSBitmapImageRep) -> Void = { _ in }) async throws -> Taken {
+    public static func take<Picture: PixelBuffer>(_ screen: String, rule: Rule = Rule(), now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+                            frames: () async -> Void, read: () -> Reading, picture: () -> Picture,
+                            drawn: (Picture) -> String? = { _ in nil },
+                            readable: (Picture) -> String? = { _ in nil },
+                            lastPicture: (Picture) -> Void = { _ in }) async throws -> Taken<Picture> {
         let start = now()
         var tries = 0, run = 0
         var last: Data?
@@ -123,6 +127,7 @@ public enum SteadyTake {
         throw ScreenNotTaken(screen: screen, waitedFor: waited.last?.condition ?? restless, tries: tries, seconds: now() - start)
     }
 
+    #if os(macOS)
     /// Two display frames of `view`'s window, which is never on a screen and so has no display link: for each, the
     /// main run loop turns (SwiftUI runs its updates and its tasks), then the layout, the drawing and the layer tree
     /// are committed.
@@ -134,8 +139,10 @@ public enum SteadyTake {
             CATransaction.flush()
         }
     }
+    #endif
 }
 
+#if os(macOS)
 /// One screen of a catalogue, taken by the rule: its picture and the tree read beside it.
 @MainActor
 public struct ScreenTake {
@@ -200,6 +207,7 @@ public struct ScreenTake {
         }
     }
 }
+#endif
 
 /// The appearance and language a screen is asked in.
 public struct Asked: Sendable, Equatable {
@@ -216,10 +224,12 @@ public struct Asked: Sendable, Equatable {
         ProcessInfo.processInfo.environment["CATALOGUE_LANGUAGE"].flatMap { $0.isEmpty ? nil : $0 }
     }
 
+    #if os(macOS)
     /// The AppKit appearance of the window: Increase Contrast gives the system's high-contrast one.
     public var appearance: NSAppearance.Name {
         increasedContrast ? (dark ? .accessibilityHighContrastDarkAqua : .accessibilityHighContrastAqua) : (dark ? .darkAqua : .aqua)
     }
+    #endif
 }
 
 /// What the content of a window sees: a view in it (`catalogueWitness`) writes down its colour scheme and contrast
@@ -229,12 +239,15 @@ public struct Asked: Sendable, Equatable {
 public final class AppearanceWitness {
     public fileprivate(set) var dark: Bool?
     public fileprivate(set) var increasedContrast: Bool?
+    /// The text size the content is drawn at (the phone's Dynamic Type).
+    public fileprivate(set) var textSize: DynamicTypeSize?
     public init() {}
 }
 
 private struct WitnessView: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.dynamicTypeSize) private var size
     let witness: AppearanceWitness
 
     var body: some View {
@@ -246,6 +259,7 @@ private struct WitnessView: View {
     private func note() {
         witness.dark = scheme == .dark
         witness.increasedContrast = contrast == .increased
+        witness.textSize = size
     }
 }
 
@@ -254,6 +268,7 @@ public extension View {
     func catalogueWitness(_ witness: AppearanceWitness) -> some View { background(WitnessView(witness: witness)) }
 }
 
+#if os(macOS)
 /// Increase Contrast for the process, as System Settings › Accessibility › Display sets it for the Mac. SwiftUI reads
 /// the setting from `NSWorkspace` in every hosting view (a split view's columns, a list's rows and a form's each have
 /// their own), so an environment value on the root view reaches only what the root draws itself. From the first view
@@ -290,10 +305,12 @@ extension NSWorkspace {
     /// exchanged, so calling itself reaches the system's own answer.
     @objc dynamic var catalogueIncreaseContrast: Bool { SystemContrast.asked ?? catalogueIncreaseContrast }
 }
+#endif
 
 /// The conditions of a take, each returning what does not hold yet, or nil.
 @MainActor
 public enum Conditions {
+    #if os(macOS)
     /// `view` is the content of `window`, shown, at `size`.
     public static func window(_ window: NSWindow, shows view: NSView, at size: CGSize) -> String? {
         if view.window !== window || window.contentView !== view { return "its view is not in its window" }
@@ -329,6 +346,7 @@ public enum Conditions {
         if let wanted = asked.language, wanted != language { return "the run is in \(language), not \(wanted)" }
         return nil
     }
+    #endif
 
     /// The content is in place, as far as the tree says: it has the screen's controls (or words), and nothing is
     /// still loading (a spinner). `busyExpected` for a screen that shows a spinner when it is ready.
@@ -349,7 +367,7 @@ public enum Conditions {
     /// The picture shows the tree's texts: every text in view has something drawn in its frame. A window that has
     /// not drawn yet, or a list whose rows have their words in the tree before they are on the screen, has frames of
     /// one flat colour: this is waited for. `unreadable` names texts known to fall short (`Unreadable`).
-    public static func drawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
+    public static func drawn(_ rep: some PixelBuffer, nodes: [AXNode], bounds: CGRect, unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
         if Pictures.isFlat(rep, in: CGRect(x: 0, y: 0, width: rep.pixelsWide, height: rep.pixelsHigh)) { return "nothing is drawn in its picture yet" }
         let missing = undrawn(rep, nodes: nodes, bounds: bounds).filter { !unreadable($0) }.map { Unreadable.text(of: $0, in: nodes).description }
         // All of them, each as `Unreadable` would name it, so that a screen that is not taken says everything it lacks in one run.
@@ -360,7 +378,7 @@ public enum Conditions {
     /// The texts the picture shows can be read: each has at least `minimum` contrast to the ground it is drawn on.
     /// Asked of a picture that keeps still, where waiting changes nothing: what it returns is why the screen is not
     /// taken. `unreadable` names texts known to fall short (`Unreadable`).
-    public static func readable(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double,
+    public static func readable(_ rep: some PixelBuffer, nodes: [AXNode], bounds: CGRect, minimum: Double,
                                 unreadable: (AXNode) -> Bool = { _ in false }) -> String? {
         let faint = faint(rep, nodes: nodes, bounds: bounds, minimum: minimum).filter { !unreadable($0.node) }
         if faint.isEmpty { return nil }
@@ -381,7 +399,7 @@ public enum Conditions {
     }
 
     /// The texts in view, each with its frame in the picture's pixels.
-    private static func textsInView(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> [(node: AXNode, pixels: CGRect)] {
+    private static func textsInView(_ rep: some PixelBuffer, nodes: [AXNode], bounds: CGRect) -> [(node: AXNode, pixels: CGRect)] {
         let scale = CGFloat(rep.pixelsWide) / max(bounds.width, 1)
         // A text under something docked over its scroll area (a sheet's footer) is in the tree and not in the picture.
         let docked = nodes.filter { !$0.inScrollArea && !$0.isText && $0.isLeaf && $0.frame.width >= 1 && $0.frame.height >= 1 }
@@ -395,14 +413,14 @@ public enum Conditions {
     }
 
     /// The texts in view that have nothing drawn in their frame in the picture.
-    public static func undrawn(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect) -> [AXNode] {
+    public static func undrawn(_ rep: some PixelBuffer, nodes: [AXNode], bounds: CGRect) -> [AXNode] {
         textsInView(rep, nodes: nodes, bounds: bounds).filter { Pictures.isFlat(rep, in: $0.pixels) }.map(\.node)
     }
 
     /// The texts in view that are drawn with less than `minimum` contrast to their ground, each with the ratio measured
     /// in the picture (`Pictures.contrast`, to two decimals, as it is reported); nil for a text whose ground is not in
     /// the picture.
-    public static func faint(_ rep: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double) -> [(node: AXNode, ratio: Double?)] {
+    public static func faint(_ rep: some PixelBuffer, nodes: [AXNode], bounds: CGRect, minimum: Double) -> [(node: AXNode, ratio: Double?)] {
         textsInView(rep, nodes: nodes, bounds: bounds).compactMap { text in
             if Pictures.isFlat(rep, in: text.pixels) { return nil }
             guard let measured = Pictures.contrast(rep, in: text.pixels) else { return (text.node, nil) }
@@ -449,7 +467,7 @@ public struct Unreadable: Sendable {
     /// The entries of `screen` that name no text falling short in `picture` (not drawn, or under `minimum`): what to
     /// take out of the list, or nil.
     @MainActor
-    public func stale(_ screen: String, picture: NSBitmapImageRep, nodes: [AXNode], bounds: CGRect, minimum: Double = 4.5) -> String? {
+    public func stale(_ screen: String, picture: some PixelBuffer, nodes: [AXNode], bounds: CGRect, minimum: Double = 4.5) -> String? {
         guard let listed = screens[screen] else { return nil }
         let short = Conditions.undrawn(picture, nodes: nodes, bounds: bounds)
             + Conditions.faint(picture, nodes: nodes, bounds: bounds, minimum: minimum).map(\.node)

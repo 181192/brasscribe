@@ -175,7 +175,7 @@ targets:
       - target: BrasscribePlay_${platform}
       - package: ScreenCatalogue
         product: ScreenCatalogue
-        destinationFilters: [macOS]
+        destinationFilters: [macOS, iOS]
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
