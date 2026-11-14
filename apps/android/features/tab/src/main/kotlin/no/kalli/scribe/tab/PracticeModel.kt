@@ -146,6 +146,30 @@ class PracticeRecordings(private val dir: File) {
     }
 }
 
+/** What is heard in practice. The id is what is kept on the phone. */
+enum class PracticeSound(val id: String) {
+    /** The recording the tab was written from. */
+    RECORDING("recording"),
+    /** The tab's own notes, played on the instrument's sound. */
+    TAB("tab"),
+    /** The recording with the tab's notes over it. */
+    BOTH("both"),
+}
+
+/** Whether the tab's own sound can be heard. */
+enum class TabSoundState {
+    /** The tab has no sound of its own: it does not follow the recording's beats, or has no notes. */
+    NONE,
+    /** The instrument is being made (its SoundFont read). */
+    LOADING,
+    READY,
+    /** The instrument could not be made on this phone. */
+    FAILED,
+}
+
+/** What the tab's own sound is made from: the page's notes, and the instrument's voices (made on the sound's own thread). */
+class TabSoundSource(val index: TabIndex, val voices: () -> TabVoices)
+
 /** Where a song was left in practice: the second of the recording, the speed in per cent, and the bars repeated. */
 data class PracticePlace(val at: Double, val speed: Int, val repeat: RepeatBars?)
 
@@ -202,7 +226,13 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     /** The places are written one at a time, in order: an older one never lands after a newer one. */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val writing = Dispatchers.IO.limitedParallelism(1)
+    private val choices = app.getSharedPreferences(CHOICES, android.content.Context.MODE_PRIVATE)
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
     private var player: RecordingPlayer? = null
+    /** The tab's own sound, when the tab can be followed. */
+    private var tabPlayer: TabSoundPlayer? = null
+    /** What [tabPlayer] plays: a new page or new beats make a new one. */
+    private var tabOf: Pair<TabIndex, TabClock>? = null
     private var clock: TabClock? = null
     private var song: String? = null
     private var job: String? = null
@@ -232,15 +262,50 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     var jumps by mutableIntStateOf(0)
         private set
 
+    /** What the player chose to hear. Without the recording on the phone the tab's own sound is heard, whatever was chosen ([hears]). */
+    var sound by mutableStateOf(PracticeSound.entries.firstOrNull { it.id == choices.getString(KEY_SOUND, null) } ?: PracticeSound.RECORDING)
+        private set
+    /** A bar is counted in before the song plays. */
+    var countIn by mutableStateOf(choices.getBoolean(KEY_COUNT_IN, false))
+        private set
+    /** The beats tick while the song plays. */
+    var metronome by mutableStateOf(choices.getBoolean(KEY_METRONOME, false))
+        private set
+    /** Where the tab's own sound is at: being made, there to play, or not to be had. */
+    var tabSoundState by mutableStateOf(TabSoundState.NONE)
+        private set
+
+    /** The tab's own sound can be played: the tab follows the recording's beats, and its sound was made. */
+    val tabSound: Boolean get() = tabSoundState == TabSoundState.READY
+    /** A bar is being counted in: the song has not started to move. */
+    var counting by mutableStateOf(false)
+        private set
+
+    /** There is something to play: the recording, or the tab's own sound. */
+    val canPlay: Boolean get() = recording == RecordingState.HERE || tabSound
+
+    /** What is heard: the choice, as far as there is a recording and a tab sound to play it with. */
+    val hears: PracticeSound get() = when {
+        !tabSound -> PracticeSound.RECORDING
+        recording != RecordingState.HERE -> PracticeSound.TAB
+        else -> sound
+    }
+
+    /** The player the song's place is read from: the recording when it is heard, else the tab's sound. */
+    private val lead: RecordingPlayer? get() = if (hears == PracticeSound.TAB) tabPlayer else player
+
+    /** The tab's sound plays along with the recording: its notes are heard, or its beats. */
+    private val along: Boolean get() = tabPlayer != null && lead === player && (hears == PracticeSound.BOTH || metronome)
+
     /** The second of the recording the song is at. */
-    fun now(): Double = player?.takeIf { playing }?.position ?: at
+    fun now(): Double = lead?.takeIf { playing && !counting }?.position ?: at
 
     /**
      * The song on screen: [song] names it, [job] is its job on the computer (the recording is kept and fetched
      * by it), [clock] follows the recording in its tab, and [inHand] is the recording's file when the phone
      * sent it. [songs]: the jobs of Your songs, when the list is known; the recordings of the others go.
      */
-    fun open(song: String, job: String?, clock: TabClock?, inHand: File?, songs: Set<String>? = null) {
+    fun open(song: String, job: String?, clock: TabClock?, inHand: File?, songs: Set<String>? = null, tab: TabSoundSource? = null) {
         this.clock = clock
         if (song != this.song) {
             remember()
@@ -258,6 +323,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         }
         this.job = job
         repeat = repeat?.takeIf { fits(it) }
+        voice(tab, clock)
         if (player != null || fetching?.isActive == true) { stretch(); return }
         val file = inHand?.takeIf { it.isFile && it.length() > 0 }
         val look = ++looking
@@ -294,17 +360,194 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     private fun fits(bars: RepeatBars): Boolean = clock.let { it == null || (bars.first in 0..bars.last && bars.last < it.bars) }
 
     private fun load(file: File) {
-        player = MediaRecordingPlayer(getApplication(), file, this, silent).also {
+        // The tab's own sound was playing in the recording's place: the song goes on in the sound chosen.
+        val was = playing
+        if (was) halt()
+        player = (recordingPlayers?.invoke(file, this) ?: MediaRecordingPlayer(getApplication(), file, this, silent)).also {
             it.speed = speed / 100f
             if (at > 0) it.seekTo(at)
         }
         stretch()
         recording = RecordingState.HERE
+        if (was) start(counted = false)
     }
 
-    /** Gives the player the seconds of the bars to repeat. */
+    /** Makes the tab's own sound for the page and beats on screen; the one of another page or other beats goes. */
+    private fun voice(tab: TabSoundSource?, clock: TabClock?) {
+        val of = if (tab != null && clock != null) tab.index to clock else null
+        if (of == tabOf && (tabPlayer != null || of == null)) return
+        val was = playing
+        if (was) halt()
+        tabPlayer?.release()
+        tabPlayer = null
+        tabOf = of
+        tabSoundState = TabSoundState.NONE
+        if (tab == null || clock == null) return
+        val score = TabSoundScore.of(tab.index, clock)
+        if (score.notes.isEmpty()) return
+        // The instrument is made on the sound's own thread: until it says so, there is nothing to hear.
+        tabSoundState = TabSoundState.LOADING
+        lateinit var made: TabSoundPlayer
+        made = TabSoundPlayer(getApplication(), score, tab.voices, tabListener, silent) {
+            if (tabPlayer === made) tabSoundState = TabSoundState.READY
+        }
+        made.speed = speed / 100f
+        made.seekTo(at)
+        tabPlayer = made
+        stretch()
+    }
+
+    /** What the tab's sound tells: it is listened to when the tab's sound is what the song's place is read from. */
+    private val tabListener = object : RecordingPlayer.Listener {
+        override fun onPlaying(playing: Boolean) {
+            if (lead === tabPlayer && !counting) playingChanged(playing)
+        }
+
+        override fun onEnded() {
+            if (lead === tabPlayer) endedNow()
+        }
+
+        override fun onFailed() {
+            val led = lead === tabPlayer
+            main.removeCallbacks(follow)
+            tabPlayer?.release()
+            tabPlayer = null
+            tabSoundState = TabSoundState.FAILED
+            if (led || counting) { counting = false; playing = false }
+        }
+    }
+
+    /** Gives the players the seconds of the bars to repeat. */
     private fun stretch() {
-        player?.repeat = repeat?.let { r -> clock?.span(r) }
+        val span = repeat?.let { r -> clock?.span(r) }
+        player?.repeat = span
+        tabPlayer?.repeat = span
+    }
+
+    /** Hears the recording, the tab's own sound, or both. While the song plays it goes on in the new sound. */
+    fun hear(sound: PracticeSound) {
+        if (sound == this.sound) return
+        val was = playing
+        if (was) halt()
+        this.sound = sound
+        choices.edit().putString(KEY_SOUND, sound.id).apply()
+        if (was) start(counted = false)
+    }
+
+    /** A bar is counted in before the song plays, or not. */
+    fun countIn(on: Boolean) {
+        countIn = on
+        choices.edit().putBoolean(KEY_COUNT_IN, on).apply()
+    }
+
+    /** The beats tick while the song plays, or not. */
+    fun metronome(on: Boolean) {
+        metronome = on
+        choices.edit().putBoolean(KEY_METRONOME, on).apply()
+        val tab = tabPlayer ?: return
+        tab.metronome = on
+        // Beside the recording the tab's sound runs only while something of it is heard.
+        if (playing && !counting && lead === player) {
+            if (along && !tab.asked) join() else if (!along && tab.asked) tab.pause()
+        }
+    }
+
+    /** Stops what sounds, with the song where it is. */
+    private fun halt() {
+        val now = now()
+        main.removeCallbacks(follow)
+        counting = false
+        tabPlayer?.pause()
+        player?.pause()
+        at = now
+        playing = false
+    }
+
+    /** Plays from where the song is: after a bar counted in when that is chosen ([counted]), in the sound chosen. */
+    private fun start(counted: Boolean = countIn) {
+        val lead = lead ?: return
+        val tab = tabPlayer
+        tab?.let {
+            it.notes = hears != PracticeSound.RECORDING
+            it.metronome = metronome
+            it.ownsFocus = lead === it
+        }
+        val clock = clock
+        tab?.trim = 1.0
+        if (counted && tab != null && clock != null) {
+            // A bar as it is counted where the song is: a bar of six-eight is two beats.
+            val bar = clock.placeAt(at).bar
+            val (beats, ticks) = TabSoundScore.counted(clock.measure(bar))
+            val beat = clock.secondsAt(bar, ticks) - clock.secondsAt(bar)
+            tab.seekTo(at)
+            tab.countIn(beats, beat)
+            counting = true
+            playing = true
+            tab.play()
+            // The count's end is looked for closely from a moment before it is due, so the recording starts on the beat.
+            countedBy = android.os.SystemClock.uptimeMillis() + (beats * beat / (speed / 100.0) * 1000).toLong()
+            main.postDelayed(follow, FOLLOW_MS)
+        } else {
+            // The player that was not heard till now is where it was left: it starts where the song is.
+            if (Math.abs(lead.position - at) > APART) lead.seekTo(at)
+            lead.play()
+            if (along) join()
+        }
+    }
+
+    /** The tab's sound joins the recording where it is. */
+    private fun join() {
+        val tab = tabPlayer ?: return
+        val recording = player ?: return
+        tab.ownsFocus = false
+        tab.trim = 1.0
+        tab.seekTo(recording.position)
+        tab.play()
+        main.removeCallbacks(follow)
+        main.postDelayed(follow, FOLLOW_MS)
+    }
+
+    /** When the bar being counted in is due to end, on the phone's clock (uptime, in milliseconds). */
+    private var countedBy = 0L
+
+    /**
+     * Looked at a few times a second while the tab's sound plays beside the recording, or counts a bar in for it. The
+     * recording starts when the bar has been counted (looked for every few milliseconds once that is nearly due). Then
+     * the tab's sound is kept where the recording is: it stops when the recording does; heard a little apart, it runs a
+     * little faster or slower until the two are together again, so no ringing note is cut; and only heard far apart (the
+     * recording was moved) is it moved.
+     */
+    private val follow: Runnable = object : Runnable {
+        override fun run() {
+            val tab = tabPlayer ?: return
+            val recording = player
+            if (counting) {
+                if (!tab.asked) { counting = false; playing = false; return }
+                if (tab.countingIn) {
+                    val due = countedBy - android.os.SystemClock.uptimeMillis()
+                    main.postDelayed(this, if (due < 2 * FOLLOW_MS) COUNT_MS else FOLLOW_MS)
+                    return
+                }
+                counting = false
+                if (lead === tab) { playingChanged(true); return }
+                if (!along) tab.pause()
+                recording?.play()
+            }
+            if (recording == null || lead !== recording || !along) return
+            if (!recording.playing) { if (tab.asked) tab.pause(); return }
+            if (!tab.asked) { tab.trim = 1.0; tab.seekTo(recording.position); tab.play() }
+            else {
+                var ahead = tab.position - recording.position
+                // Over a stretch being repeated, one of the two may have turned back a moment before the other: they are
+                // as far apart as the shorter way round the stretch.
+                val turn = repeat?.let { r -> clock?.span(r) }?.let { it.endInclusive - it.start }
+                if (turn != null && turn > 2 * APART && Math.abs(ahead) > turn / 2) ahead -= Math.copySign(turn, ahead)
+                if (Math.abs(ahead) > APART) { tab.trim = 1.0; tab.seekTo(recording.position) }
+                else tab.trim = (1.0 - ahead * PULL).coerceIn(1.0 - MOST, 1.0 + MOST)
+            }
+            main.removeCallbacks(this)
+            main.postDelayed(this, FOLLOW_MS)
+        }
     }
 
     /** Copies the recording from the computer, which holds what it was sent. */
@@ -337,8 +580,8 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     }
 
     fun toggle() {
-        val p = player ?: return
-        if (playing || p.playing) { p.pause(); return }
+        val p = lead ?: return
+        if (playing || p.playing) { halt(); remember(); return }
         // Asked to play while the phone holds the sound back: asked again, from the start of the asking.
         if (p.asked) p.pause()
         // From the end, or from outside the bars being repeated, it starts over.
@@ -346,20 +589,25 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         val end = clock?.end
         if (span != null && (at < span.start - EDGE || at >= span.endInclusive - EDGE)) seek(span.start)
         else if (end != null && at >= end - EDGE) seek(0.0)
-        p.play()
+        start()
     }
 
     fun pause() {
-        player?.pause()
+        if (playing || lead?.asked == true) { halt(); remember() }
     }
 
     private fun seek(seconds: Double) {
         changes++
         val to = seconds.coerceAtLeast(0.0)
+        // A bar being counted in is given up: the song plays on from where it is moved to.
+        val counted = counting
+        if (counted) halt()
         player?.seekTo(to)
+        tabPlayer?.seekTo(to)
         at = to
         jumps++
         remember()
+        if (counted) start(counted = false)
     }
 
     /** To the line of [bar], kept inside the bars being repeated. */
@@ -393,6 +641,7 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         changes++
         speed = percent
         player?.speed = percent / 100f
+        tabPlayer?.speed = percent / 100f
         remember()
     }
 
@@ -449,8 +698,15 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     }
 
     private fun release() {
-        player?.let { at = if (playing) it.position else at; it.release() }
+        at = now()
+        main.removeCallbacks(follow)
+        player?.release()
         player = null
+        tabPlayer?.release()
+        tabPlayer = null
+        tabOf = null
+        tabSoundState = TabSoundState.NONE
+        counting = false
         playing = false
     }
 
@@ -468,19 +724,37 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         viewModelScope.launch(writing) { places.save(job, place) }
     }
 
+    // What the recording tells is the song's while the recording is what is heard.
     override fun onPlaying(playing: Boolean) {
-        if (!playing) player?.let { at = it.position }
-        this.playing = playing
-        if (!playing) remember()
+        if (lead === player && !counting) playingChanged(playing)
     }
 
     override fun onEnded() {
-        player?.let { at = it.position }
+        if (lead === player) endedNow()
+    }
+
+    private fun playingChanged(playing: Boolean) {
+        if (!playing) lead?.let { at = it.position }
+        this.playing = playing
+        if (playing && along) { main.removeCallbacks(follow); main.postDelayed(follow, FOLLOW_MS) }
+        if (!playing) { if (lead === player) tabPlayer?.pause(); remember() }
+    }
+
+    private fun endedNow() {
+        lead?.let { at = it.position }
+        if (lead === player) tabPlayer?.pause()
         playing = false
     }
 
     override fun onFailed() {
-        release()
+        val now = now()
+        main.removeCallbacks(follow)
+        tabPlayer?.pause()
+        player?.release()
+        player = null
+        counting = false
+        playing = false
+        at = now
         recording = RecordingState.UNPLAYABLE
     }
 
@@ -504,6 +778,10 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     @get:VisibleForTesting
     val recordingPlayer: RecordingPlayer? get() = player
 
+    /** The tab's own sound, for the tests that listen to what it does. */
+    @get:VisibleForTesting
+    val tabSoundPlayer: TabSoundPlayer? get() = tabPlayer
+
     companion object {
         /** How near the end of a stretch counts as its end, in seconds. */
         private const val EDGE = 0.05
@@ -511,6 +789,29 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         private const val KEY_AT = "practice.at"
         private const val KEY_SPEED = "practice.speed"
         private const val KEY_REPEAT = "practice.repeat"
+
+        /** The preferences the sound, the count-in and the metronome are kept in: the same for every song. */
+        const val CHOICES = "practice_sound"
+        private const val KEY_SOUND = "sound"
+        private const val KEY_COUNT_IN = "count_in"
+        private const val KEY_METRONOME = "metronome"
+
+        /** How often the tab's sound is held against the recording, and the end of a count is looked for once it is nearly due, in milliseconds. */
+        private const val FOLLOW_MS = 100L
+        private const val COUNT_MS = 4L
+        /**
+         * How far apart the tab's sound and the recording may be heard, in seconds, before the tab's sound is moved: more
+         * than what the two outputs can be apart by themselves (a phone's own delay, a wireless speaker's), so only a
+         * move of the recording is followed by a move.
+         */
+        private const val APART = 0.35
+        /** Heard apart by less, the tab's sound runs faster or slower by this much of its speed for each second apart, and by no more than [MOST]. */
+        private const val PULL = 1.0
+        private const val MOST = 0.05
+
+        /** The tests' own player of a recording, in place of the phone's. */
+        @VisibleForTesting
+        @Volatile var recordingPlayers: ((File, RecordingPlayer.Listener) -> RecordingPlayer)? = null
 
         /** The tests play without sound. */
         @VisibleForTesting

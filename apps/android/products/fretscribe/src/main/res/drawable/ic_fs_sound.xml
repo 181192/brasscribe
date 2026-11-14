@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols (Apache-2.0), until design/tooling/icons.json carries it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="960" android:viewportHeight="960">
+    <group android:translateY="960">
+        <path android:fillColor="#FF000000" android:pathData="M560-131v-82q90-26 145-100t55-168q0-94-55-168T560-749v-82q124 28 202 125.500T840-481q0 127-78 224.500T560-131ZM120-360v-240h160l200-200v640L280-360H120Zm440 40v-322q47 22 73.500 66t26.500 96q0 51-26.500 94.500T560-320Z"/>
+    </group>
+</vector>

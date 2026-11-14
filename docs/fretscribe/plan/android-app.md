@@ -39,7 +39,9 @@ dependency of the Fretscribe app only), and the app follows it in the tab itself
 where the tab is at a second of the recording, and the cursor and the repeat are drawn over alphaTab's
 layout as the marks are. alphaTab's own player (its external-media mode) stays off: a tab view is made
 anew for every size and theme and the screen owns its scroll, and a player inside the view would start
-over with each of them.
+over with each of them. The tab's own sound, the count-in and the metronome are therefore played outside the
+view: the page's notes are placed on the recording's time by the same beats, and sound through alphaTab's
+synthesizer alone on its small SoundFont (`TabSynth`, `TabSoundPlayer`), so they keep with the recording.
 
 **What the app needs that isn't there yet.**
 
@@ -70,7 +72,7 @@ Each is one small pull request. Fretscribe strings always carry `values-nb`.
 | d | Done: open a recording, send a `tab` job to the paired computer, transcribing | medium (small seam in `PlayViewModel`) |
 | e | Done in a first form: Check the song from `/tab` (tuning, capo, octave, reference pitch, key and tempo, notes to check, notes left out); a change is a new job. Still to come: Other… tunings, and the capo that would fit (the computer does not suggest one) | none |
 | f1 | Done: the tab view to read: alphaTab, "?" and "!" from the data, fret numbers in Fretscribe Tab. Still to come: the layers menu, Show ? for, the tuning and capo sheet | low |
-| f2 | Done in a first form: Practice. The recording as the sound with a cursor that follows it, 5% speed steps with the pitch kept, repeat by bar, a 64 dp transport, and the recording fetched from the computer for a song opened without it. Still to come: count-in and metronome, Sound (Tab, Both), the speed trainer and 1% steps, saved repeats, hiding the controls while it plays, Lock the tab, and the line that scrolls past a fixed cursor | low |
+| f2 | Done in a first form: Practice. The recording as the sound with a cursor that follows it, 5% speed steps with the pitch kept, repeat by bar, a 64 dp transport, and the recording fetched from the computer for a song opened without it. Sound: the recording, the tab's notes or both, with a count-in and a metronome; a song without its recording plays the tab's notes. Still to come: the speed trainer and 1% steps, saved repeats, hiding the controls while it plays, Lock the tab, and the line that scrolls past a fixed cursor | low |
 | g0 | Core: FFI export (the note index is done) | medium (bindings) |
 | g | Fix a note: fretboard strip, pitch stepper, pins, provenance, undo | low |
 | h | Share or print | low |

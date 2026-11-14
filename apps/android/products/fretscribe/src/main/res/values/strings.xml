@@ -338,6 +338,17 @@
     <string name="fs_practice_no_beats">Fretscribe can\'t follow the recording in this tab. You can still read it.</string>
     <string name="fs_practice_no_room">There is no room on this phone for the recording. You can still read the tab.</string>
     <string name="fs_practice_too_large">The recording is too large to keep on this phone. You can still read the tab.</string>
+    <string name="fs_practice_sound">Sound</string>
+    <string name="fs_practice_sound_chip">Sound: %1$s</string>
+    <string name="fs_sound_recording">The recording</string>
+    <string name="fs_sound_tab">The tab\'s notes</string>
+    <string name="fs_sound_both">Both</string>
+    <string name="fs_practice_count_in">Count-in</string>
+    <string name="fs_practice_count_in_tip">One bar of clicks before it plays.</string>
+    <string name="fs_practice_metronome">Metronome</string>
+    <string name="fs_practice_metronome_tip">A click on every beat.</string>
+    <string name="fs_practice_sound_done">Done</string>
+    <string name="fs_sound_failed">This phone couldn\'t make the sound for the tab\'s notes, the count-in and the metronome.</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
 </resources>

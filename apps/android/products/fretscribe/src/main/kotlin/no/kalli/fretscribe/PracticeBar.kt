@@ -13,6 +13,9 @@ import no.kalli.scribe.tab.RecordingState
 import no.kalli.scribe.tab.RepeatBars
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +31,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import no.kalli.scribe.tab.PracticeSound
+import no.kalli.scribe.tab.TabSoundState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
@@ -105,38 +117,23 @@ private const val DISABLED_ALPHA = 0.38f
  * upright, it leaves out where the song is (the note says its own bar) and the word Speed, and is a row lower.
  *
  * [place]: the bar (counted from 0) and the beat the recording is at. [follows]: the tab has the beats to
- * follow the recording by.
+ * follow the recording by. [soundHere]: the Sound button is the player's last (with large text upright, on a
+ * wide screen on its side and in full screen; else the header over the tab or the top bar has it, where there is room).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, place: Pair<Int, Int>?, follows: Boolean, canFetch: Boolean, withNote: Boolean = false, onFetch: () -> Unit) {
+internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, place: Pair<Int, Int>?, follows: Boolean, canFetch: Boolean, withNote: Boolean = false, onFetch: () -> Unit,
+    soundHere: Boolean = false, onSound: () -> Unit = {}) {
     val c = ScribeTheme.colors
     val state = practice.recording
-    if (follows && state == RecordingState.LOOKING) return
+    // Nothing is said while it is still being found out what there is to play: the recording looked for, the tab's sound made.
+    if (follows && (state == RecordingState.LOOKING || (state != RecordingState.HERE && practice.tabSoundState == TabSoundState.LOADING))) return
     Column(Modifier.fillMaxWidth().background(c.bg).testTag("fs-practice")) {
         HorizontalDivider(thickness = 1.dp, color = c.border)
-        if (!follows || state != RecordingState.HERE) {
-            val words = stringResource(when {
-                !follows -> R.string.fs_practice_no_beats
-                state == RecordingState.GETTING -> R.string.fs_practice_getting
-                state == RecordingState.GONE -> R.string.fs_practice_gone
-                state == RecordingState.NO_ANSWER -> R.string.fs_practice_no_answer
-                state == RecordingState.UPDATE_APP -> R.string.conn_update_app
-                state == RecordingState.UPDATE_COMPUTER -> R.string.conn_update_computer
-                state == RecordingState.NO_ROOM -> R.string.fs_practice_no_room
-                state == RecordingState.TOO_LARGE -> R.string.fs_practice_too_large
-                state == RecordingState.UNPLAYABLE -> R.string.fs_practice_unplayable
-                canFetch -> R.string.fs_practice_not_here
-                else -> R.string.fs_practice_not_here_alone
-            })
+        // Without the recording the tab's own sound plays, and Sound says what became of the recording.
+        if (!follows || (state != RecordingState.HERE && !practice.tabSound)) {
             Column(Modifier.fillMaxWidth().padding(horizontal = ScribeSpace.s4, vertical = ScribeSpace.s3), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
-                // What became of the recording is said once when it changes: getting it, and how that went.
-                Text(words, style = MaterialTheme.typography.bodyLarge, color = c.text,
-                    modifier = Modifier.testTag("fs-practice-says").semantics { liveRegion = LiveRegionMode.Polite })
-                if (follows && state == RecordingState.GETTING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
-                if (follows && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER || state == RecordingState.NO_ROOM)) OutlineButton(
-                    stringResource(if (state == RecordingState.NOT_HERE) R.string.fs_practice_get else R.string.retry), onFetch,
-                    Modifier.testTag("fs-practice-get"), icon = DesignR.drawable.ic_bc_download, fill = false)
+                RecordingNote(state, follows, canFetch, onFetch)
             }
             return@Column
         }
@@ -237,8 +234,128 @@ internal fun PracticeBar(practice: PracticeModel, measures: List<TabMeasure>, pl
                 StepButton("+", stringResource(R.string.fs_practice_faster), "fs-practice-faster", practice.speed < PracticeSpeed.MAX, repeats = true, onClick = practice::faster)
             }
             if (!early) repeatChip()
+            if (soundHere && practice.tabSoundState >= TabSoundState.READY) SoundButton(practice, onSound)
         }
         if (choosing) RepeatDialog(measures, repeat, place?.first ?: 0, { practice.repeat(it); choosing = false }) { choosing = false }
+    }
+}
+
+/**
+ * Sound: what is heard, with the count-in and the metronome behind it. One small button, so the tab keeps the room;
+ * its name says what is on, and it is filled when anything but the recording alone is.
+ */
+@Composable
+internal fun SoundButton(practice: PracticeModel, onClick: () -> Unit) {
+    val c = ScribeTheme.colors
+    val name = (listOf(stringResource(R.string.fs_practice_sound_chip, stringResource(soundName(practice.hears)))) + listOfNotNull(
+        stringResource(R.string.fs_practice_count_in).takeIf { practice.countIn && practice.tabSound },
+        stringResource(R.string.fs_practice_metronome).takeIf { practice.metronome && practice.tabSound },
+    )).joinToString(", ")
+    val on = practice.tabSound && (practice.hears != PracticeSound.RECORDING || practice.countIn || practice.metronome)
+    Box(
+        Modifier.size(48.dp).testTag("fs-practice-sound")
+            .background(if (on) c.secondary else c.surfaceRaised, ScribeButtonShape)
+            .border(if (on) 1.5.dp else 1.dp, if (on) c.text else c.borderStrong, ScribeButtonShape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = name },
+        contentAlignment = Alignment.Center,
+    ) { BcIcon(R.drawable.ic_fs_sound, null, Modifier.size(24.dp)) }
+}
+
+private fun soundName(sound: PracticeSound): Int = when (sound) {
+    PracticeSound.RECORDING -> R.string.fs_sound_recording
+    PracticeSound.TAB -> R.string.fs_sound_tab
+    PracticeSound.BOTH -> R.string.fs_sound_both
+}
+
+/** What became of the recording when it is not played: where it is, getting it, and how that went; with the button that gets it. */
+@Composable
+private fun RecordingNote(state: RecordingState, follows: Boolean, canFetch: Boolean, onFetch: () -> Unit) {
+    val c = ScribeTheme.colors
+    val words = stringResource(when {
+        !follows -> R.string.fs_practice_no_beats
+        state == RecordingState.GETTING -> R.string.fs_practice_getting
+        state == RecordingState.GONE -> R.string.fs_practice_gone
+        state == RecordingState.NO_ANSWER -> R.string.fs_practice_no_answer
+        state == RecordingState.UPDATE_APP -> R.string.conn_update_app
+        state == RecordingState.UPDATE_COMPUTER -> R.string.conn_update_computer
+        state == RecordingState.NO_ROOM -> R.string.fs_practice_no_room
+        state == RecordingState.TOO_LARGE -> R.string.fs_practice_too_large
+        state == RecordingState.UNPLAYABLE -> R.string.fs_practice_unplayable
+        canFetch -> R.string.fs_practice_not_here
+        else -> R.string.fs_practice_not_here_alone
+    })
+    // What became of the recording is said once when it changes: getting it, and how that went.
+    Text(words, style = MaterialTheme.typography.bodyLarge, color = c.text,
+        modifier = Modifier.testTag("fs-practice-says").semantics { liveRegion = LiveRegionMode.Polite })
+    if (follows && state == RecordingState.GETTING) LinearProgressIndicator(Modifier.fillMaxWidth(), color = c.brand, trackColor = c.border)
+    if (follows && canFetch && (state == RecordingState.NOT_HERE || state == RecordingState.NO_ANSWER || state == RecordingState.NO_ROOM)) OutlineButton(
+        stringResource(if (state == RecordingState.NOT_HERE) R.string.fs_practice_get else R.string.retry), onFetch,
+        Modifier.testTag("fs-practice-get"), icon = DesignR.drawable.ic_bc_download, fill = false)
+}
+
+/**
+ * Sound: what is heard (the recording, the tab's own notes, or both), whether a bar is counted in before the song
+ * plays, and whether the beats tick. A choice is heard at once and the dialog stays open, so it can be tried.
+ * Without the recording on the phone only the tab's notes can be heard, and the dialog says how to get the recording.
+ */
+@Composable
+internal fun SoundDialog(practice: PracticeModel, canFetch: Boolean, onFetch: () -> Unit, close: () -> Unit) {
+    val c = ScribeTheme.colors
+    val here = practice.recording == RecordingState.HERE
+    val tab = practice.tabSound
+    AlertDialog(
+        onDismissRequest = close,
+        title = { Text(stringResource(R.string.fs_practice_sound), Modifier.semantics { heading() }) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s1)) {
+                Column(Modifier.selectableGroup()) {
+                    PracticeSound.entries.forEach { sound ->
+                        val on = practice.hears == sound
+                        val can = if (sound == PracticeSound.RECORDING) here else tab && (here || sound == PracticeSound.TAB)
+                        Row(
+                            Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                                .selectable(selected = on, enabled = can, role = Role.RadioButton) { practice.hear(sound) }
+                                .testTag("fs-sound-${sound.id}").padding(horizontal = ScribeSpace.s2, vertical = ScribeSpace.s1),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s4),
+                        ) {
+                            RadioButton(selected = on, onClick = null, enabled = can,
+                                colors = RadioButtonDefaults.colors(selectedColor = c.text, unselectedColor = c.borderStrong))
+                            Text(stringResource(soundName(sound)), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge,
+                                color = if (can) c.text else c.text.copy(alpha = DISABLED_ALPHA))
+                        }
+                    }
+                }
+                if (!here) Column(Modifier.fillMaxWidth().padding(vertical = ScribeSpace.s2), verticalArrangement = Arrangement.spacedBy(ScribeSpace.s2)) {
+                    RecordingNote(practice.recording, follows = true, canFetch, onFetch)
+                }
+                // The tab's notes, the count-in and the metronome are one sound: without it they are off, and it says why.
+                if (!tab) Text(stringResource(R.string.fs_sound_failed), style = MaterialTheme.typography.bodyLarge, color = c.text,
+                    modifier = Modifier.padding(vertical = ScribeSpace.s2).testTag("fs-sound-failed").semantics { liveRegion = LiveRegionMode.Polite })
+                HorizontalDivider(thickness = 1.dp, color = c.border)
+                SwitchRow(stringResource(R.string.fs_practice_count_in), stringResource(R.string.fs_practice_count_in_tip), practice.countIn, "fs-sound-count-in", tab, practice::countIn)
+                SwitchRow(stringResource(R.string.fs_practice_metronome), stringResource(R.string.fs_practice_metronome_tip), practice.metronome, "fs-sound-metronome", tab, practice::metronome)
+            }
+        },
+        confirmButton = { PlainButton(stringResource(R.string.fs_practice_sound_done), close, Modifier.testTag("fs-sound-done")) },
+    )
+}
+
+/** A switch with its name and a line about it: the whole row is the switch. */
+@Composable
+private fun SwitchRow(label: String, tip: String, on: Boolean, tag: String, enabled: Boolean, set: (Boolean) -> Unit) {
+    val c = ScribeTheme.colors
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = on, enabled = enabled, role = Role.Switch, onValueChange = set).testTag(tag)
+            .padding(horizontal = ScribeSpace.s2, vertical = ScribeSpace.s1),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(ScribeSpace.s3),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge, color = if (enabled) c.text else c.text.copy(alpha = DISABLED_ALPHA))
+            Text(tip, style = MaterialTheme.typography.bodyMedium, color = if (enabled) c.textMuted else c.textMuted.copy(alpha = DISABLED_ALPHA))
+        }
+        Switch(checked = on, onCheckedChange = null, enabled = enabled, colors = SwitchDefaults.colors(
+            checkedTrackColor = c.primary, checkedThumbColor = c.onPrimary, uncheckedTrackColor = c.surfaceRaised, uncheckedThumbColor = c.borderStrong, uncheckedBorderColor = c.borderStrong))
     }
 }
 
