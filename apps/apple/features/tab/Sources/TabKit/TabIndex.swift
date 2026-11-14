@@ -28,12 +28,14 @@ public struct TabPiece: Equatable, Sendable {
     public var beat: Int
     /// In a pickup: a first measure shorter than its time signature.
     public var pickup: Bool
+    /// How long this piece is written, in `TabIndex.ticks`; 0 for a grace note.
+    public var length: Int
 
     public init(note: Int, staff: Int, bar: Int, barNumber: String, onset: Int, pitch: Int, step: String, alter: Int,
-                string: Int?, fret: Int?, first: Bool, confidence: Double?, beat: Int = 1, pickup: Bool = false) {
+                string: Int?, fret: Int?, first: Bool, confidence: Double?, beat: Int = 1, pickup: Bool = false, length: Int = 0) {
         self.note = note; self.staff = staff; self.bar = bar; self.barNumber = barNumber; self.onset = onset
         self.pitch = pitch; self.step = step; self.alter = alter; self.string = string; self.fret = fret
-        self.first = first; self.confidence = confidence; self.beat = beat; self.pickup = pickup
+        self.first = first; self.confidence = confidence; self.beat = beat; self.pickup = pickup; self.length = length
     }
 }
 
@@ -267,7 +269,7 @@ public struct TabIndex: Sendable {
                         string: technical?.int("string"), fret: technical?.int("fret"),
                         first: !el.children("tie").contains { $0.attribute("type") == "stop" },
                         confidence: el.instruction("fretted-confidence").flatMap { Double($0) },
-                        beat: beatAt(inTicks(onset)), pickup: pickup))
+                        beat: beatAt(inTicks(onset)), pickup: pickup, length: grace ? 0 : inTicks(el.int("duration") ?? 0)))
                 default: break
                 }
             }

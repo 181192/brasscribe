@@ -31,6 +31,26 @@ mandolin, written down by Bandroom on the computer, as Fretscribe for Android do
 writing down the notes, Check the song, and the tab (`features/tab`, alphaTab in a web view) with its practice player,
 marks and full-screen mode. It needs no Verovio, no core and no band sounds.
 
+**Sound** in the practice player (the small button at its end, named by what is on; `TabSound.swift`,
+`TabSoundPlayer.swift`, `PracticeModel`) chooses what is heard: the recording, the tab's notes, or both; and has the
+count-in (one bar of clicks before the song moves) and the metronome (a click on every beat, the first of a bar
+higher). C and M turn those two on and off, and the choices are kept for every song. The tab's notes are placed on the
+recording's own time by the beats the cursor follows (`TabSoundScore`), so the recording, the notes and the clicks stay
+together at every speed. The notes sound on one General MIDI program of the small SoundFont alphaTab comes with
+(`make alphatab` fetches it with the page's alphaTab; a fingered bass, a steel-string guitar, a nylon-string one for a
+ukulele) through an `AVAudioUnitSampler`; `TabSynth` says which note starts in which frame and renders the clicks, in
+an `AVAudioSourceNode` of the same `AVAudioEngine`. alphaTab's own player in the web view is not used: the page is
+engraved anew for every size and theme. Beside the recording the tab's sound is held against it a few times a second: heard a little apart it runs up to 5 %
+faster or slower until the two are together (nothing that rings is cut), and only when the recording is moved is the
+tab's sound moved. The notes go out 6 dB down and the clicks at a quarter of full scale, so a full chord with a click
+has room. Every note is played plain (slides, bends, hammer-ons, ghost notes and let-ring are not read), and the bars
+are played once through as written. When the SoundFont cannot be read, Sound says so and the tab's notes, the
+count-in and the metronome are off. A song without its recording on the device plays the tab's notes, and Sound then says what became of
+the recording and has Get it from your computer. Not built: the speed trainer, the clicks' own volume, the beat shown
+as a moving dot. Tests: `TabSoundTests` (the synth, and the engine rendered without an output on every program),
+`PracticeSoundTests` (the model with players that sound nothing), `TabScreenRenderTests` and the catalogue's `sound`
+sheet.
+
 ```sh
 make project-fretscribe            # products/fretscribe/Fretscribe.xcodeproj (fetches alphaTab, makes the app icon catalog)
 make test-fretscribe-mac           # the macOS app's unit tests
@@ -104,7 +124,7 @@ and skip themselves when it is missing.
 | `services/` | Swift package `ScribeServices`: `ScoreKit` (Composition, MusicXML parser, talking score, MIDI, CoreBridge), `TranscriptionKit` (companion client and fixture service), `PlaybackKit` (AVAudioEngine), `SVGRender` (native SVG drawing), `OnDeviceKit` |
 | `features/play/` | The screens and pieces every Play app shares, compiled into each app (not a package): the connection row and its words, pairing, recording, the components built on the neutral design roles, window and sheet sizes. `PlayHost` is what they ask of the app. Their keys name no product; each product's catalog says them in its own words (`make-string-catalog.py`, `EN`), and `SharedWordsTests` (with `testing/PlayTests/SharedWords.swift`) fails when one, interpolated or not, is missing or its English or bokmål names another product. The download page is the product's (`PlayHost.downloads`) |
 | `features/score/` | `NotationKit`: Verovio wrapper: engraving, part filtering, concert pitch, timemap |
-| `features/tab/` | `TabKit`: the tab, engraved by alphaTab in a web view (`docs/tab-spike.md`), and its logic: reading `tab.musicxml`, the clock from the recording to the tab, practice (speed, repeats, where a song was left), the full-screen mode. `make alphatab` fetches alphaTab |
+| `features/tab/` | `TabKit`: the tab, engraved by alphaTab in a web view (`docs/tab-spike.md`), and its logic: reading `tab.musicxml`, the clock from the recording to the tab, practice (speed, repeats, where a song was left, the tab's own sound with a count-in and a metronome), the full-screen mode. `make alphatab` fetches alphaTab and the SoundFont it comes with |
 | `testing/ScreenCatalogue/` | The screen catalogues' checks, shared with Bandroom for Mac (test code only) |
 | `../../capture` | `AudioCapture` package (Core Audio process tap), used by the macOS app and the CLI |
 | `scripts/` | Verovio, core and sound-font builds, string catalog, fixture launchers, screenshots |

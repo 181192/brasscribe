@@ -5,8 +5,10 @@ import TabKit
 private let transport: CGFloat = 64
 
 /// The player under the tab, in its order: Play, back to the start (of the repeat), a bar back and a bar on, where the
-/// song is, the speed, and the bars to repeat. It wraps onto as many rows as it needs. When the recording is not on
-/// this device it says so, and offers to get it from the computer when the computer is there.
+/// song is, the speed, the bars to repeat, and Sound (what is heard, the count-in and the metronome). It wraps onto
+/// as many rows as it needs. A song whose recording is not on this device plays the tab's own notes, and Sound says
+/// what became of the recording and offers to get it from the computer when the computer is there; a tab that cannot
+/// be followed has no sound, and says so here.
 ///
 /// `place`: the bar (counted from 0) and the beat the recording is at. `follows`: the tab has the beats to follow the
 /// recording by.
@@ -19,6 +21,7 @@ struct PracticeBar: View {
     let onFetch: () -> Void
 
     @State private var choosing = false
+    @State private var sounds = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -28,8 +31,10 @@ struct PracticeBar: View {
         } else {
             VStack(spacing: 0) {
                 Divider().overlay(Color.Scribe.border)
-                if let words = TabWords.says(state, follows: follows, canFetch: canFetch) {
-                    message(words, state: state)
+                if let words = TabWords.says(state, follows: follows, canFetch: canFetch), !(follows && practice.tabSound) {
+                    RecordingNote(words: words, state: state, follows: follows, canFetch: canFetch, onFetch: onFetch)
+                        .padding(.horizontal, Space.s4)
+                        .padding(.vertical, Space.s3)
                 } else {
                     controls
                 }
@@ -42,30 +47,6 @@ struct PracticeBar: View {
                 if let words = TabWords.says(now, follows: follows, canFetch: canFetch) { AccessibilityNotifier.announce(words, polite: true) }
             }
         }
-    }
-
-    private func message(_ words: String, state: RecordingState) -> some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text(words)
-                .font(Font.Scribe.body)
-                .foregroundStyle(Color.Scribe.text)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("fs-practice-says")
-            if follows && state == .getting {
-                ProgressView().progressViewStyle(.linear).tint(Color.Scribe.brand)
-            }
-            if follows && canFetch && TabWords.offersFetch(state) {
-                Button(action: onFetch) {
-                    Label(state == .notHere ? String(localized: "Get it from your computer") : String(localized: "Try again"),
-                          systemImage: PlayIcon.download.systemName)
-                }
-                .buttonStyle(.outline)
-                .accessibilityIdentifier("fs-practice-get")
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Space.s4)
-        .padding(.vertical, Space.s3)
     }
 
     private func number(_ bar: Int) -> String { measures[safe: bar]?.number ?? "\(bar + 1)" }
@@ -135,6 +116,8 @@ struct PracticeBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("fs-practice-repeat")
+            // (Also when the tab's sound could not be made: Sound says so.)
+            if practice.tabSound || practice.tabSoundFailed { soundButton }
         }
         .padding(.horizontal, Space.s3)
         .padding(.vertical, Space.s2)
@@ -149,6 +132,31 @@ struct PracticeBar: View {
                 choosing = false
             } close: { choosing = false }
         }
+        .sheet(isPresented: $sounds) {
+            SoundSheet(practice: practice, canFetch: canFetch, onFetch: onFetch) { sounds = false }
+        }
+    }
+
+    /// Sound: one small button, so the tab keeps the room. Its name says what is on, and it is filled when anything but
+    /// the recording alone is.
+    private var soundButton: some View {
+        let on = practice.tabSound && (practice.hears != .recording || practice.countIn || practice.metronome)
+        return Button { sounds = true } label: {
+            Image(systemName: "speaker.wave.2")
+                .font(.body.weight(.medium))
+                .foregroundStyle(on ? Color.Scribe.onSecondary : Color.Scribe.text)
+                .frame(width: 48, height: 48)
+                .background {
+                    RoundedRectangle(cornerRadius: Radius.md)
+                        .fill(on ? Color.Scribe.secondary : Color.clear)
+                        .overlay(RoundedRectangle(cornerRadius: Radius.md)
+                            .strokeBorder(on ? Color.Scribe.text : Color.Scribe.borderStrong, lineWidth: 1))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: Radius.md))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(TabWords.soundButton(practice.hears, countIn: practice.countIn && practice.tabSound, metronome: practice.metronome && practice.tabSound))
+        .accessibilityIdentifier("fs-practice-sound")
     }
 
     private func transportButton(_ icon: PlayIcon, _ name: String, id: String, dimmed: Bool = false, action: @escaping () -> Void) -> some View {
@@ -161,6 +169,115 @@ struct PracticeBar: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(name)
+        .accessibilityIdentifier(id)
+    }
+}
+
+/// What became of the recording when it is not played: where it is, getting it, and how that went; with the button
+/// that gets it.
+struct RecordingNote: View {
+    let words: String
+    let state: RecordingState
+    let follows: Bool
+    let canFetch: Bool
+    let onFetch: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s2) {
+            Text(words)
+                .font(Font.Scribe.body)
+                .foregroundStyle(Color.Scribe.text)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("fs-practice-says")
+            if follows && state == .getting {
+                ProgressView().progressViewStyle(.linear).tint(Color.Scribe.brand)
+            }
+            if follows && canFetch && TabWords.offersFetch(state) {
+                Button(action: onFetch) {
+                    Label(state == .notHere ? String(localized: "Get it from your computer") : String(localized: "Try again"),
+                          systemImage: PlayIcon.download.systemName)
+                }
+                .buttonStyle(.outline)
+                .accessibilityIdentifier("fs-practice-get")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Sound: what is heard (the recording, the tab's own notes, or both), whether a bar is counted in before the song
+/// plays, and whether the beats tick. A choice is heard at once and the sheet stays open, so it can be tried. Without
+/// the recording on the device only the tab's notes can be heard, and the sheet says how to get the recording.
+struct SoundSheet: View {
+    let practice: PracticeModel
+    let canFetch: Bool
+    let onFetch: () -> Void
+    let close: () -> Void
+
+    var body: some View {
+        let here = practice.recording == .here
+        let tab = practice.tabSound
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s3) {
+                Text("Sound").font(Font.Scribe.title2).foregroundStyle(Color.Scribe.text).accessibilityAddTraits(.isHeader)
+                VStack(spacing: 0) {
+                    ForEach(PracticeSound.allCases, id: \.self) { sound in
+                        let on = practice.hears == sound
+                        let can = sound == .recording ? here : tab && (here || sound == .tab)
+                        Button { practice.hear(sound) } label: {
+                            HStack(spacing: Space.s3) {
+                                Image(systemName: on ? "largecircle.fill.circle" : "circle")
+                                    .foregroundStyle(on ? Color.Scribe.text : Color.Scribe.borderStrong)
+                                Text(TabWords.sound(sound)).font(Font.Scribe.body).foregroundStyle(Color.Scribe.text)
+                                Spacer(minLength: 0)
+                            }
+                            .frame(minHeight: 48)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!can)
+                        .opacity(can ? 1 : 0.38)
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                        .accessibilityIdentifier("fs-sound-\(sound.rawValue)")
+                    }
+                }
+                if !here, let words = TabWords.says(practice.recording, follows: true, canFetch: canFetch) {
+                    RecordingNote(words: words, state: practice.recording, follows: true, canFetch: canFetch, onFetch: onFetch)
+                }
+                // The tab's notes, the count-in and the metronome are one sound: without it they are off, and it says why.
+                if !tab {
+                    Text("This device couldn't make the sound for the tab's notes, the count-in and the metronome.")
+                        .font(Font.Scribe.body).foregroundStyle(Color.Scribe.text).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("fs-sound-failed")
+                }
+                Divider().overlay(Color.Scribe.border)
+                toggle("Count-in", "One bar of clicks before it plays.", id: "fs-sound-count-in",
+                       Binding(get: { practice.countIn }, set: { practice.countIn($0) }))
+                toggle("Metronome", "A click on every beat.", id: "fs-sound-metronome",
+                       Binding(get: { practice.metronome }, set: { practice.metronome($0) }))
+                HStack {
+                    Spacer()
+                    Button("Done", action: close).buttonStyle(.plainText).keyboardShortcut(.cancelAction)
+                        .accessibilityIdentifier("fs-sound-done")
+                }
+            }
+            .padding(Space.s5)
+        }
+        .frame(minWidth: 320, idealWidth: 400)
+        .pageBackground()
+        .presentationDetents([.medium, .large])
+    }
+
+    private func toggle(_ label: LocalizedStringKey, _ tip: LocalizedStringKey, id: String, _ on: Binding<Bool>) -> some View {
+        Toggle(isOn: on) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label).font(Font.Scribe.body).foregroundStyle(Color.Scribe.text)
+                Text(tip).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .tint(Color.Scribe.primary)
+        .frame(minHeight: 48)
+        .disabled(!practice.tabSound)
         .accessibilityIdentifier(id)
     }
 }

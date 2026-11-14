@@ -127,6 +127,9 @@ public struct TabClock: Sendable {
 
     public var bars: Int { measures.count }
 
+    /// The written measure `bar` (counted from 0); past either end, the nearest one.
+    public func measure(_ bar: Int) -> TabMeasure { measures[min(max(bar, 0), bars - 1)] }
+
     private func secondsOf(_ ticks: Int) -> Double {
         let beat = Double(ticks - lead) / Double(TabIndex.ticks) + Double(firstDownbeat)
         let last = beatTimes.count - 1
