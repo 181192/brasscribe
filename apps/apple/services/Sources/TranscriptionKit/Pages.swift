@@ -32,12 +32,28 @@ public enum Pages {
         case notAPage(String)
         /// Over `maxPageBytes`.
         case tooLarge(String)
+        /// A PDF this device cannot open: locked with a password, or damaged.
+        case unreadablePDF(String)
+    }
+
+    /// A page as it is sent, and how many pages it holds: a PDF's every page counts against `maxPages`, as the engine
+    /// counts them.
+    public struct Prepared: Sendable, Equatable {
+        public let url: URL
+        public let pages: Int
+    }
+
+    /// The pages in a PDF, or nil when it cannot be opened (locked or damaged).
+    public static func pdfPages(_ url: URL) -> Int? {
+        guard let doc = CGPDFDocument(url as CFURL), !doc.isEncrypted || doc.isUnlocked, doc.numberOfPages > 0 else { return nil }
+        return doc.numberOfPages
     }
 
     /// A page as it is sent, in `folder`: a PNG, JPEG, WebP or PDF is copied as it is; any other picture the system
     /// can open (HEIC, AVIF, GIF, TIFF, BMP) is written as an upright JPEG, its longest side at most `maxSide`. A file
-    /// over `maxPageBytes` is refused before it is copied.
-    public static func prepare(_ url: URL, into folder: URL) throws -> URL {
+    /// over `maxPageBytes`, and a PDF that cannot be opened, are refused before they are copied. Slow for a large
+    /// picture: call it off the main thread.
+    public static func prepare(_ url: URL, into folder: URL) throws -> Prepared {
         let name = url.lastPathComponent
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard size <= maxPageBytes else { throw Refusal.tooLarge(name) }
@@ -46,16 +62,21 @@ public enum Pages {
         let head = try reader.read(upToCount: 12) ?? Data()
         try reader.close()
         if let format = format(of: head) {
+            var count = 1
+            if format == .pdf {
+                guard let n = pdfPages(url) else { throw Refusal.unreadablePDF(name) }
+                count = n
+            }
             let dst = folder.appending(path: "\(UUID().uuidString).\(format == .jpeg ? "jpg" : format.rawValue)")
             try FileManager.default.copyItem(at: url, to: dst)
-            return dst
+            return Prepared(url: dst, pages: count)
         }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0 else {
             throw Refusal.notAPage(name)
         }
         let dst = folder.appending(path: "\(UUID().uuidString).jpg")
         try writeJPEG(from: source, to: dst, name: name)
-        return dst
+        return Prepared(url: dst, pages: 1)
     }
 
     /// A picture taken on this device (the camera's), as an upright JPEG in `folder`.

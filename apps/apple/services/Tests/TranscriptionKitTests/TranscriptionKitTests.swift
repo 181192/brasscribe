@@ -1150,7 +1150,7 @@ extension CompanionTests {
         let src = folder().appending(path: "scan.png")
         try FileManager.default.createDirectory(at: src.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Self.png.write(to: src)
-        let out = try Pages.prepare(src, into: folder())
+        let out = try Pages.prepare(src, into: folder()).url
         #expect(out.pathExtension == "png")
         #expect(try Data(contentsOf: out) == Self.png)
         #expect(Pages.format(of: Data("%PDF-1.4".utf8)) == .pdf)
@@ -1172,13 +1172,34 @@ extension CompanionTests {
         let picture = try #require(ctx.makeImage())
         CGImageDestinationAddImage(dest, picture, [kCGImagePropertyOrientation: 6] as CFDictionary)
         #expect(CGImageDestinationFinalize(dest))
-        let out = try Pages.prepare(src, into: dir)
+        let out = try Pages.prepare(src, into: dir).url
         #expect(Pages.format(of: try Data(contentsOf: out)) == .jpeg)
         let made = try #require(CGImageSourceCreateWithURL(out as CFURL, nil))
         let props = try #require(CGImageSourceCopyPropertiesAtIndex(made, 0, nil) as? [CFString: Any])
         let w = props[kCGImagePropertyPixelWidth] as? Int ?? 0, h = props[kCGImagePropertyPixelHeight] as? Int ?? 0
         #expect(h == Pages.maxSide && w == 750)
         #expect((props[kCGImagePropertyOrientation] as? Int ?? 1) == 1)
+    }
+
+    /// A PDF counts as its pages; one that cannot be opened (locked, damaged) is refused before it is copied.
+    @Test func aPDFCountsAsItsPagesAndALockedOrBrokenOneIsRefused() throws {
+        let dir = folder()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let pdf = dir.appending(path: "hymns.pdf")
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let ctx = try #require(CGContext(pdf as CFURL, mediaBox: &box, nil))
+        for _ in 0..<3 { ctx.beginPDFPage(nil); ctx.endPDFPage() }
+        ctx.closePDF()
+        #expect(try Pages.prepare(pdf, into: dir.appending(path: "out")).pages == 3)
+        let locked = dir.appending(path: "locked.pdf")
+        var box2 = box
+        let lockedCtx = try #require(CGContext(locked as CFURL, mediaBox: &box2,
+                                                [kCGPDFContextUserPassword: "secret", kCGPDFContextOwnerPassword: "secret"] as CFDictionary))
+        lockedCtx.beginPDFPage(nil); lockedCtx.endPDFPage(); lockedCtx.closePDF()
+        #expect(throws: Pages.Refusal.unreadablePDF("locked.pdf")) { try Pages.prepare(locked, into: dir.appending(path: "out")) }
+        let broken = dir.appending(path: "broken.pdf")
+        try Data("%PDF-1.7 and then nothing".utf8).write(to: broken)
+        #expect(throws: Pages.Refusal.unreadablePDF("broken.pdf")) { try Pages.prepare(broken, into: dir.appending(path: "out")) }
     }
 
     @Test func aFileThatIsNoPageOrTooLargeIsRefusedBeforeItIsCopied() throws {

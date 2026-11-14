@@ -207,7 +207,8 @@ struct SongFacts: Decodable {
     var soundsLike: Suggestion? { tuningSuggestions?.first.flatMap { $0.preset == preset ? nil : $0 } }
 }
 
-/// "Check the song": what Fretscribe heard. If something here is wrong, the frets are wrong too.
+/// "Check the song": what Fretscribe heard, or read on a page of printed music. If something here is wrong, the frets are
+/// wrong too.
 struct CheckTheSongView: View {
     @Environment(FretscribeModel.self) private var model
     let song: TabSong
@@ -220,7 +221,9 @@ struct CheckTheSongView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s5) {
                 Text("Check the song").font(Font.Scribe.display).foregroundStyle(Color.Scribe.text).accessibilityAddTraits(.isHeader)
-                Text("This is what Fretscribe heard. If something here is wrong, the frets are wrong too.")
+                // a tab read from printed music was read, not heard
+                Text(song.fromPages == true ? String(localized: "This is what Fretscribe read on the page. If something here is wrong, the frets are wrong too.")
+                     : String(localized: "This is what Fretscribe heard. If something here is wrong, the frets are wrong too."))
                     .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
                 if let facts {
                     VStack(spacing: 0) {
@@ -234,7 +237,8 @@ struct CheckTheSongView: View {
                         if let shift = facts.octaveShift, shift != 0 || (facts.octaveNotesMoved ?? 0) > 0 {
                             Divider().overlay(Color.Scribe.border)
                             row(String(localized: "Octave"), Self.octaveWords(shift: shift, chosen: facts.octaveSource == "chosen",
-                                                                            moved: facts.octaveNotesMoved ?? 0), id: "fs-check-octave")
+                                                                            moved: facts.octaveNotesMoved ?? 0, fromPages: song.fromPages == true),
+                                id: "fs-check-octave")
                         }
                         if let r = facts.referencePitch, abs(r.cents) > 10 {
                             Divider().overlay(Color.Scribe.border)
@@ -262,7 +266,8 @@ struct CheckTheSongView: View {
                     }
                     .card(padding: 0)
                 } else {
-                    Text("What Fretscribe heard can't be shown right now. You can still open the tab.")
+                    Text(song.fromPages == true ? String(localized: "What Fretscribe read on the page can't be shown right now. You can still open the tab.")
+                         : String(localized: "What Fretscribe heard can't be shown right now. You can still open the tab."))
                         .font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted)
                 }
                 Text("You can change this later.").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted)
@@ -284,11 +289,18 @@ struct CheckTheSongView: View {
         }
     }
 
-    static func octaveWords(shift: Int, chosen: Bool, moved: Int) -> String {
+    /// `fromPages`: the notes were read on a page of printed music, not heard.
+    static func octaveWords(shift: Int, chosen: Bool, moved: Int, fromPages: Bool = false) -> String {
         if chosen {
             if shift < 0 { return String(localized: "Written one octave lower, as you chose.") }
             if shift > 0 { return String(localized: "Written one octave higher, as you chose.") }
-            return String(localized: "Written as it was heard, as you chose.")
+            return fromPages ? String(localized: "Written as it is on the page, as you chose.") : String(localized: "Written as it was heard, as you chose.")
+        }
+        if fromPages {
+            if shift <= -24 { return String(localized: "Written two octaves lower than on the page.") }
+            if shift < 0 { return String(localized: "Written one octave lower than on the page.") }
+            if shift > 0 { return String(localized: "Written one octave higher than on the page.") }
+            return String(localized: "\(moved) notes are written an octave lower than on the page.")
         }
         if shift <= -24 { return String(localized: "Written two octaves lower than it was heard.") }
         if shift < 0 { return String(localized: "Written one octave lower than it was heard.") }

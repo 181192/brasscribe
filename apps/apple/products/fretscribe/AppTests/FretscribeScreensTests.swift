@@ -165,7 +165,7 @@ import UniformTypeIdentifiers
         // Sheet music from a picture: three pages in hand, and a read that found only a tab staff
         let lead = String(localized: "Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.")
         let inHand = PageList()
-        inHand.add(try (1...3).map { try Self.pagePicture("Riff page \($0).png") })
+        await inHand.add(try (1...3).map { try Self.pagePicture("Riff page \($0).png") })
         try await window("pages-in-hand", model: full) { PagesView(list: inHand, lead: lead, computerThere: true) {} }
         let unread = PagesJob(request: TranscriptionRequest(pages: inHand.pages.map(\.url), profile: "sheet-tab"),
                               service: FixtureService(directory: Self.fixture("bass-line"), stepDelay: 0, outputName: "tab"))

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 import TabKit
@@ -21,7 +22,9 @@ struct SheetMusicTests {
         let dir = FileManager.default.temporaryDirectory.appending(path: "fs-sheet-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let page = dir.appending(path: "Riff.pdf")
-        try Data("%PDF-1.7".utf8).write(to: page)
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let ctx = try #require(CGContext(page as CFURL, mediaBox: &box, nil))
+        ctx.beginPDFPage(nil); ctx.endPDFPage(); ctx.closePDF()
         await model.accept(url: page)
         #expect(model.path == [.pages])
         #expect(model.pageList.pages.map(\.name) == ["Riff.pdf"])

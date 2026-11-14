@@ -192,7 +192,7 @@ import UniformTypeIdentifiers
         // Sheet music from a picture: none in hand yet, three in hand, and a read that found no notes
         try await window("pages-empty", app: full) { PagesView(list: PageList(), lead: Self.pagesLead, computerThere: true) {} }
         let inHand = PageList()
-        inHand.add(try (1...3).map { try Self.pagePicture("Hymn page \($0).png") })
+        await inHand.add(try (1...3).map { try Self.pagePicture("Hymn page \($0).png") })
         try await window("pages-in-hand", app: full) { PagesView(list: inHand, lead: Self.pagesLead, computerThere: true) {} }
         try await window("pages-offline", app: LayoutFixtures.app(connection: .offline)) {
             PagesView(list: inHand, lead: Self.pagesLead, computerThere: false) {}

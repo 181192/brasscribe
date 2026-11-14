@@ -63,9 +63,10 @@ enum ScreenshotScenes {
         case "pages", "pages-unread":
             // three pages of printed music in hand; then a read that found no notes on them
             app.pageList.clear()
-            for _ in 1...3 { if let page = scenePage() { app.pageList.add(photo: page) } }
             app.path = [.pages]
-            if name == "pages-unread" {
+            Task {
+                for _ in 1...3 { if let page = scenePage() { await app.pageList.add(photo: page) } }
+                guard name == "pages-unread" else { return }
                 let job = PagesJob(request: TranscriptionRequest(pages: app.pageList.pages.map(\.url), profile: AppModel.sheetProfile),
                                    service: FrozenService())
                 job.error = TranscriptionError.jobFailed("read: StageFailed: read: no notes were found on the page")

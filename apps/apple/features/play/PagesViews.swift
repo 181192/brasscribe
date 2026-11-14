@@ -1,3 +1,4 @@
+import AVFoundation
 import ImageIO
 import PhotosUI
 import SwiftUI
@@ -19,42 +20,69 @@ final class PageList {
         let url: URL
         /// The file's name, as the player chose it ("IMG_2031.HEIC"), or "Sheet music" for a photo.
         let name: String
+        /// How many pages it holds: a PDF's every page counts, as the engine counts them.
+        var count: Int = 1
         var isPDF: Bool { url.pathExtension == "pdf" }
     }
 
     private(set) var pages: [Page] = []
+    /// Pages in hand, every page of a PDF counted: at most `Pages.maxPages`.
+    var pageCount: Int { pages.reduce(0) { $0 + $1.count } }
+    /// Files are being made ready (converted, copied) off the main thread.
+    private(set) var adding = 0
     /// What happened to the last pages added or moved, said under the list (and to a screen reader).
     var status: String?
     private let folder = FileManager.default.temporaryDirectory.appending(path: "Pages", directoryHint: .isDirectory)
 
-    /// Files chosen or shared, in their order. A file that is no page, or too large, is left out and said; past
-    /// `Pages.maxPages` the rest are left out.
-    func add(_ urls: [URL]) {
-        var notPages = 0, tooLarge = 0, over = 0
+    /// Files chosen or shared, in their order. Each is made ready off the main thread and joins the list as it is
+    /// ready, so the screen stays live with forty large photos. A file that is no page, a PDF that cannot be opened, or
+    /// one too large is left out and said; pages past `Pages.maxPages` (a PDF's every page counted) are left out.
+    func add(_ urls: [URL]) async {
+        var notPages = 0, tooLarge = 0, locked = 0, over = 0
+        adding += 1
+        defer { adding -= 1 }
         for url in urls {
-            guard pages.count < Pages.maxPages else { over += 1; continue }
-            let scoped = url.startAccessingSecurityScopedResource()
-            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            do {
-                pages.append(Page(url: try Pages.prepare(url, into: folder), name: url.lastPathComponent))
-            } catch Pages.Refusal.tooLarge {
+            guard pageCount < Pages.maxPages else { over += 1; continue }
+            let folder = self.folder
+            let made = await Task.detached(priority: .userInitiated) { () -> Result<Pages.Prepared, Error> in
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                return Result { try Pages.prepare(url, into: folder) }
+            }.value
+            switch made {
+            case .success(let page) where pageCount + page.pages > Pages.maxPages:
+                try? FileManager.default.removeItem(at: page.url)
+                over += 1
+            case .success(let page):
+                pages.append(Page(url: page.url, name: url.lastPathComponent, count: page.pages))
+            case .failure(Pages.Refusal.tooLarge):
                 tooLarge += 1
-            } catch {
+            case .failure(Pages.Refusal.unreadablePDF):
+                locked += 1
+            case .failure:
                 notPages += 1
             }
         }
-        status = PagesWords.added(notPages: notPages, tooLarge: tooLarge, over: over)
+        status = PagesWords.added(notPages: notPages, tooLarge: tooLarge, locked: locked, over: over)
         if let status { AccessibilityNotifier.announce(status) }
     }
 
-    /// A photo taken here or picked from the photo library.
-    func add(photo data: Data) {
-        guard pages.count < Pages.maxPages else { status = PagesWords.added(notPages: 0, tooLarge: 0, over: 1); return }
-        do {
-            pages.append(Page(url: try Pages.photo(data, into: folder), name: String(localized: "Sheet music")))
+    /// A photo taken here or picked from the photo library, made an upright JPEG off the main thread.
+    func add(photo data: Data) async {
+        guard pageCount < Pages.maxPages else { status = PagesWords.added(over: 1); return }
+        let folder = self.folder
+        adding += 1
+        defer { adding -= 1 }
+        let made = await Task.detached(priority: .userInitiated) { Result { try Pages.photo(data, into: folder) } }.value
+        switch made {
+        case .success(let url) where pageCount < Pages.maxPages:
+            pages.append(Page(url: url, name: String(localized: "Sheet music")))
             status = nil
-        } catch {
-            status = PagesWords.added(notPages: 1, tooLarge: 0, over: 0)
+        case .success(let url):
+            try? FileManager.default.removeItem(at: url)
+            status = PagesWords.added(over: 1)
+        case .failure:
+            status = PagesWords.added(notPages: 1)
         }
     }
 
@@ -128,12 +156,13 @@ enum PagesWords {
     }
 
     /// What was left out of the pages just added, or nil when nothing was.
-    static func added(notPages: Int, tooLarge: Int, over: Int) -> String? {
+    static func added(notPages: Int = 0, tooLarge: Int = 0, locked: Int = 0, over: Int = 0) -> String? {
         var said: [String] = []
         if notPages == 1 { said.append(String(localized: "One file is not a picture or a PDF, so it was left out.")) }
         if notPages > 1 { said.append(String(localized: "\(notPages) files are not pictures or PDFs, so they were left out.")) }
+        if locked > 0 { said.append(String(localized: "A PDF that is locked with a password, or damaged, can't be read, so it was left out.")) }
         if tooLarge > 0 { said.append(words(Pages.Refused.pageTooLarge)) }
-        if over > 0 { said.append(String(localized: "At most 40 pages can be read at once. The rest were left out.")) }
+        if over > 0 { said.append(String(localized: "At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.")) }
         return said.isEmpty ? nil : said.joined(separator: " ")
     }
 }
@@ -145,11 +174,15 @@ struct PagesView: View {
     /// What the app makes of the pages: "… a score you can play from", "… a tab for your instrument".
     let lead: String
     let computerThere: Bool
+    /// Whether the camera may be used, asked of the system (a parameter so the screen catalogue can show a refusal).
+    var cameraStatus: () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) }
     let onRead: () -> Void
 
     @State private var choosingFiles = false
     @State private var photos: [PhotosPickerItem] = []
     @State private var takingPhoto = false
+    /// The camera was refused for this app: the camera row says so and leads to Settings instead.
+    @State private var cameraRefused = false
 
     var body: some View {
         ScrollView {
@@ -159,6 +192,13 @@ struct PagesView: View {
                 Text(lead).font(Font.Scribe.body).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
                 adding
                 if !list.pages.isEmpty { pageRows }
+                if list.adding > 0 {
+                    HStack(spacing: Space.s2) {
+                        ProgressView().controlSize(.small)
+                        Text("Getting the pages ready…").font(Font.Scribe.callout).foregroundStyle(Color.Scribe.text)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
                 if let status = list.status {
                     Text(status).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.text).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("pages-status")
@@ -175,19 +215,20 @@ struct PagesView: View {
         .toolbar(removing: .title)
         .bottomActions { readRow.padding(.horizontal, Space.s5).padding(.vertical, Space.s3).readingColumn() }
         .fileImporter(isPresented: $choosingFiles, allowedContentTypes: [.image, .pdf], allowsMultipleSelection: true) { result in
-            if case .success(let urls) = result { list.add(urls) }
+            if case .success(let urls) = result { Task { await list.add(urls) } }
         }
         .onChange(of: photos) { _, picked in
             guard !picked.isEmpty else { return }
             Task {
                 // in the order they were picked
-                for item in picked { if let data = try? await item.loadTransferable(type: Data.self) { list.add(photo: data) } }
+                for item in picked { if let data = try? await item.loadTransferable(type: Data.self) { await list.add(photo: data) } }
                 photos = []
             }
         }
         #if os(iOS)
+        .onAppear { cameraRefused = CameraAccess.of(cameraStatus()) == .refused }
         .fullScreenCover(isPresented: $takingPhoto) {
-            CameraPicker { data in list.add(photo: data) }.ignoresSafeArea()
+            CameraPicker { data in Task { await list.add(photo: data) } }.ignoresSafeArea()
         }
         #endif
     }
@@ -202,7 +243,7 @@ struct PagesView: View {
             }
             Button(action: onRead) { Text("Read the notes") }
                 .buttonStyle(PrimaryButtonStyle(fullWidth: !PageActions.followContent))
-                .disabled(list.pages.isEmpty || !computerThere)
+                .disabled(list.pages.isEmpty || !computerThere || list.adding > 0)
                 .accessibilityHint(list.pages.isEmpty ? Text("Add a page first.")
                                    : computerThere ? Text(verbatim: "") : Text("Reading sheet music needs Bandroom on your computer."))
                 .accessibilityIdentifier("pages-read")
@@ -220,7 +261,7 @@ struct PagesView: View {
                      subtitle: first ? String(localized: "Several pages become one piece, in the order you set") : nil) { choosingFiles = true }
                 .accessibilityIdentifier("pages-choose")
             Divider().overlay(Color.Scribe.border)
-            PhotosPicker(selection: $photos, maxSelectionCount: max(1, Pages.maxPages - list.pages.count), selectionBehavior: .ordered,
+            PhotosPicker(selection: $photos, maxSelectionCount: max(1, Pages.maxPages - list.pageCount), selectionBehavior: .ordered,
                          matching: .images) {
                 WayInLabel(icon: PlayIcon.score.systemName, title: String(localized: "Choose from your photos"),
                            subtitle: first ? String(localized: "A screenshot or a photo of the notes") : nil)
@@ -232,14 +273,41 @@ struct PagesView: View {
                 Divider().overlay(Color.Scribe.border)
                 WayInRow(icon: PlayIcon.takePhoto.systemName,
                          title: first ? String(localized: "Take a photo of a page") : String(localized: "Take a photo of the next page"),
-                         subtitle: first ? String(localized: "Straight on, in good light, with the whole page in the picture") : nil) { takingPhoto = true }
+                         subtitle: cameraRefused ? CameraAccess.refusedWords
+                            : first ? String(localized: "Straight on, in good light, with the whole page in the picture") : nil) { useCamera() }
                     .accessibilityIdentifier("pages-camera")
+                    .accessibilityHint(cameraRefused ? Text("Opens Settings for this app") : Text(verbatim: ""))
+                if cameraRefused {
+                    Button { CameraAccess.openSettings() } label: { Text("Open Settings") }
+                        .buttonStyle(.outline)
+                        .padding(.horizontal, Space.s4)
+                        .padding(.bottom, Space.s3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("pages-camera-settings")
+                }
             }
             #endif
         }
         .card(padding: 0)
-        .disabled(list.pages.count >= Pages.maxPages)
+        .disabled(list.pageCount >= Pages.maxPages)
     }
+
+    #if os(iOS)
+    /// The camera row: the camera when it is allowed; the system's question the first time; Settings once refused.
+    private func useCamera() {
+        switch CameraAccess.of(cameraStatus()) {
+        case .open: takingPhoto = true
+        case .ask:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                Task { @MainActor in
+                    if granted { takingPhoto = true } else { cameraRefused = true; AccessibilityNotifier.announce(CameraAccess.refusedWords) }
+                }
+            }
+        case .refused:
+            if cameraRefused { CameraAccess.openSettings() } else { cameraRefused = true; AccessibilityNotifier.announce(CameraAccess.refusedWords) }
+        }
+    }
+    #endif
 
     private var pageRows: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -260,8 +328,8 @@ struct PagesView: View {
     }
 }
 
-/// One page: a small picture of it, its place and name, and the buttons that move it or take it out. The whole row is
-/// one element for a screen reader, with its moves as actions; the buttons are there for touch and the keyboard.
+/// One page: a small picture of it, its place and name, and the buttons that move it or take it out. The place and name
+/// are one element for a screen reader; each button is its own, named with the page's place.
 private struct PageRow: View {
     let page: PageList.Page
     let place: Int
@@ -282,7 +350,8 @@ private struct PageRow: View {
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Page \(place)").font(Font.Scribe.headline).foregroundStyle(Color.Scribe.text)
-                Text(page.name).font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted).lineLimit(2)
+                Text(page.count > 1 ? String(localized: "\(page.name) · \(page.count) pages") : page.name)
+                    .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted).lineLimit(2)
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: Space.s2)
@@ -355,6 +424,35 @@ private struct WayInLabel: View {
         .frame(minHeight: 60)
         .contentShape(Rectangle())
     }
+}
+
+/// What the camera row does, by what the system says of the camera for this app.
+enum CameraAccess: Equatable {
+    /// Allowed: the camera opens.
+    case open
+    /// Not asked yet: the system asks, and the camera opens if the player allows it.
+    case ask
+    /// Refused (by the player, or by a restriction such as Screen Time): the row says so and leads to Settings.
+    case refused
+
+    static func of(_ status: AVAuthorizationStatus) -> CameraAccess {
+        switch status {
+        case .authorized: .open
+        case .notDetermined: .ask
+        default: .refused
+        }
+    }
+
+    static var refusedWords: String {
+        String(localized: "The camera isn't allowed, so a photo of a page can't be taken. Allow it in Settings, or choose a picture you already have.")
+    }
+
+    #if os(iOS)
+    /// This app's page in the Settings app, where the camera is allowed.
+    @MainActor static func openSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+    }
+    #endif
 }
 
 #if os(iOS)

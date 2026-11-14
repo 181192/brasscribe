@@ -277,7 +277,7 @@ final class FretscribeModel: PlayHost {
         if ["musicxml", "xml", "mxl", "gp", "gp5", "gpx"].contains(ext) { show(.sheetMusic); return }
         // a picture or a PDF of the notes: the computer reads it, with any other pages in hand
         if let type = UTType(filenameExtension: ext), type.conforms(to: .image) || type.conforms(to: .pdf) {
-            pageList.add([url])
+            await pageList.add([url])
             openPages()
             return
         }

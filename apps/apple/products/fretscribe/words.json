@@ -270,7 +270,14 @@
   "This device couldn't make the sound for the tab's notes, the count-in and the metronome.": "Denne enheten klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen.",
   "Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.": "Bandroom på datamaskinen leser de trykte notene og skriver dem som tab for instrumentet ditt.",
   "Fretscribe can't open a MusicXML file yet": "Fretscribe kan ikke åpne MusicXML-filer ennå",
-  "It makes tabs from recordings, and from a picture or a PDF of the notes. Under Open sheet music on Home, choose pictures or a PDF.": "Den lager tab fra opptak, og fra et bilde eller en PDF av notene. Under Åpne noter på Hjem velger du bilder eller en PDF."
+  "It makes tabs from recordings, and from a picture or a PDF of the notes. Under Open sheet music on Home, choose pictures or a PDF.": "Den lager tab fra opptak, og fra et bilde eller en PDF av notene. Under Åpne noter på Hjem velger du bilder eller en PDF.",
+  "This is what Fretscribe read on the page. If something here is wrong, the frets are wrong too.": "Dette er det Fretscribe leste på siden. Er noe feil her, blir båndene feil også.",
+  "What Fretscribe read on the page can't be shown right now. You can still open the tab.": "Det Fretscribe leste på siden, kan ikke vises nå. Du kan likevel åpne tabben.",
+  "Written as it is on the page, as you chose.": "Skrevet slik det står på siden, slik du valgte.",
+  "Written two octaves lower than on the page.": "Skrevet to oktaver lavere enn på siden.",
+  "Written one octave lower than on the page.": "Skrevet én oktav lavere enn på siden.",
+  "Written one octave higher than on the page.": "Skrevet én oktav høyere enn på siden.",
+  "%lld notes are written an octave lower than on the page.": "%lld toner er skrevet en oktav lavere enn på siden."
  },
  "info_nb": {
   "CFBundleDisplayName": "Fretscribe",

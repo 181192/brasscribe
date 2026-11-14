@@ -121,6 +121,16 @@
         }
       }
     },
+    "%@ · %lld pages": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %lld sider"
+          }
+        }
+      }
+    },
     "%@ · Bar %lld": {
       "localizations": {
         "nb": {
@@ -491,6 +501,16 @@
         }
       }
     },
+    "A PDF that is locked with a password, or damaged, can't be read, so it was left out.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En PDF som er låst med passord eller er skadet, kan ikke leses, og ble ikke tatt med."
+          }
+        }
+      }
+    },
     "A picture, a photo or a PDF of the notes": {
       "localizations": {
         "nb": {
@@ -791,12 +811,12 @@
         }
       }
     },
-    "At most 40 pages can be read at once. The rest were left out.": {
+    "At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Høyst 40 sider kan leses om gangen. Resten ble ikke tatt med."
+            "value": "Høyst 40 sider kan leses om gangen, og hver side i en PDF teller. Resten ble ikke tatt med."
           }
         }
       }
@@ -1983,6 +2003,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kom i gang"
+          }
+        }
+      }
+    },
+    "Getting the pages ready…": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjør sidene klare …"
           }
         }
       }
@@ -3433,6 +3463,16 @@
         }
       }
     },
+    "Open Settings": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Innstillinger"
+          }
+        }
+      }
+    },
     "Open sheet music": {
       "localizations": {
         "nb": {
@@ -3449,6 +3489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpne nedlastingssiden"
+          }
+        }
+      }
+    },
+    "Opens Settings for this app": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpner Innstillinger for appen"
           }
         }
       }
@@ -5031,6 +5081,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lydene til bandet mangler. Installer Brasscribe Play på nytt for å høre bandet."
+          }
+        }
+      }
+    },
+    "The camera isn't allowed, so a photo of a page can't be taken. Allow it in Settings, or choose a picture you already have.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameraet er ikke tillatt, så det kan ikke tas bilde av en side. Tillat det i Innstillinger, eller velg et bilde du allerede har."
           }
         }
       }

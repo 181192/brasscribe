@@ -406,7 +406,7 @@ final class AppModel: PlayHost {
         }
         // a picture or a PDF of the notes: the computer reads it, with any other pages in hand
         if let type, type.conforms(to: .image) || type.conforms(to: .pdf) {
-            pageList.add([url])
+            await pageList.add([url])
             openPages()
             return
         }
