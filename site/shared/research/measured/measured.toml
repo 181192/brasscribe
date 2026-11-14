@@ -107,3 +107,59 @@ mark_precision = 0.176
 odd_even_wrong_notes_caught = 0.652
 odd_even_mark_precision = 0.599
 
+[review_marks_errors]
+# What the wrong notes of a solo line are, and how many of each kind carry a "?": the 93 ChoraleBricks parts,
+# a written note counted as wrong at 100 ms. The document gives these counts in a table and names no command
+# for them. held_out_* and fit_notes are the sizes behind [review_marks_held_out].
+source = "docs/shared/research/18-quality-revisit.md, 'The \"?\" marks on a solo line: what they miss'"
+dataset = "the 93 ChoraleBricks parts of the solo-instruments suite"
+written_notes = 4176
+wrong = 105
+marked = 21              # the sum of the five kinds below
+late_onset = 34          # right pitch, onset 100 to 250 ms off
+late_onset_marked = 0
+semitone = 48            # one or two semitones off
+semitone_tuba = 30
+semitone_marked = 13
+split = 14               # a held note heard as two
+split_marked = 1
+octave = 2
+octave_marked = 0
+phantom = 7              # no note there at all
+phantom_marked = 7
+held_out_notes = 1346
+held_out_wrong = 60
+fit_notes = 21380
+
+[beat_candidate_pieces]
+# md_beat_this (model run1) beside Beat This!, piece by piece: the share of the reference notes written on
+# their position, on each tracker's beats.
+source = "docs/shared/research/18-quality-revisit.md, '4. Not run: models worth a bench', 'md_beat_this on the brass ensembles'"
+command = "quant_bench --beats <the tracker's beats>, reference notes"
+dataset = "URMP brass (Entertainer, Arioso, Fugue, Slavonic Dance) and ChoraleBricks (the chorale in 6/4, Drese, Gesius)"
+entertainer_before = 0.48
+entertainer_after = 0.95
+arioso_before = 0.23
+arioso_after = 0.94
+chorale_64_before = 0.09
+chorale_64_after = 0.85
+slavonic_before = 0.52
+slavonic_after = 0.01
+gesius_before = 0.46
+gesius_after = 0.05
+
+[tab_grid_choice]
+# GuitarSet: of the correctly heard notes played on a 16th between the 8ths, the share the tab writes on that
+# slot when the quantizer chooses the grid for the instrument's distinct onsets (quantize(dense=True)). The
+# tab profiles do not use the option; today's shares are gated as guitar-tab <group>.slot_16th_off.
+# gated_*: metrics of `scribe bench fretted` that move beyond tolerance with the option.
+source = "docs/shared/research/18-quality-revisit.md, 'Tab rhythm: a grid for the onsets, not for the notes'"
+command = "guitar_tab_bench.written_slots(dense=True); scribe bench fretted with dense=clean in tab.played_notes"
+dataset = "GuitarSet, 90 recordings in each of the four groups"
+tune_solo_dense = 0.919
+tune_comp_dense = 0.853
+report_solo_dense = 0.893
+report_comp_dense = 0.874
+on_beat_and_eighth = 1.0
+gated_improved = 46
+gated_regressed = 25

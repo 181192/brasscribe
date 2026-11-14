@@ -188,6 +188,21 @@ scripts: charts.js
       <p data-t="results.p10"></p>
       {{chart agreement}}
       {{chart doubt}}
+      <p data-t="results.p_marks"></p>
+      <div class="table-scroll" tabindex="0" role="region" data-t-aria-label="results.aria_marks" id="table-mark-errors">
+        <table>
+          <caption data-t="results.caption_marks"></caption>
+          <thead><tr><th scope="col" data-t="results.th_marks1"></th><th scope="col" class="num" data-t="results.th_marks2"></th><th scope="col" class="num" data-t="results.th_marks3"></th></tr></thead>
+          <tbody>
+            <tr><th scope="row" data-t="results.th_marks5"></th><td class="num">{{data m/review_marks_errors/semitone int}}</td><td class="num">{{data m/review_marks_errors/semitone_marked int}}</td></tr>
+            <tr><th scope="row" data-t="results.th_marks4"></th><td class="num">{{data m/review_marks_errors/late_onset int}}</td><td class="num">{{data m/review_marks_errors/late_onset_marked int}}</td></tr>
+            <tr><th scope="row" data-t="results.th_marks6"></th><td class="num">{{data m/review_marks_errors/split int}}</td><td class="num">{{data m/review_marks_errors/split_marked int}}</td></tr>
+            <tr><th scope="row" data-t="results.th_marks8"></th><td class="num">{{data m/review_marks_errors/phantom int}}</td><td class="num">{{data m/review_marks_errors/phantom_marked int}}</td></tr>
+            <tr><th scope="row" data-t="results.th_marks7"></th><td class="num">{{data m/review_marks_errors/octave int}}</td><td class="num">{{data m/review_marks_errors/octave_marked int}}</td></tr>
+            <tr><th scope="row" data-t="results.th_marks9"></th><td class="num">{{data m/review_marks_errors/wrong int}}</td><td class="num">{{data m/review_marks_errors/marked int}}</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <h3 id="fast" data-t="results.h37"></h3>
       <p data-t="results.p11"></p>
@@ -321,6 +336,8 @@ scripts: charts.js
             <tr><th scope="row" data-t="appendix.th9"></th><td>{{data m/triplets/triplet_eighths pct}}</td><td data-t="appendix.td8"></td></tr>
             <tr><th scope="row" data-t="appendix.th10"></th><td data-t="appendix.td9"></td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
             <tr><th scope="row" data-t="appendix.th11"></th><td data-t="appendix.td10"></td><td><code>site/shared/research/measured/per-piece.json</code></td></tr>
+            <tr><th scope="row" data-t="appendix.th_marks"></th><td data-t="appendix.td_marks"></td><td data-t="appendix.td_marks_src"></td></tr>
+            <tr><th scope="row" data-t="appendix.th_cand"></th><td data-t="appendix.td_cand"></td><td data-t="appendix.td_cand_src"></td></tr>
             <tr><th scope="row" data-t="appendix.th12"></th><td data-t="appendix.td11"></td><td><code>convert/reports/*.json</code></td></tr>
           </tbody>
         </table>

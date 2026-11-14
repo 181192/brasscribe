@@ -141,12 +141,21 @@ FIGURES = {
     },
     "doubt": {
         "title": T("doubt.title"),
-        "holds": [f"brass/solo-instruments/{i}.q_hit < 0.34" for i, _ in INSTRUMENTS] + [f"brass/solo-instruments/{i}.q_false_alarm < 0.05" for i, _ in INSTRUMENTS],
+        "holds": [f"brass/solo-instruments/{i}.q_hit < 0.34" for i, _ in INSTRUMENTS] + [f"brass/solo-instruments/{i}.q_false_alarm < 0.05" for i, _ in INSTRUMENTS]
+                 + ["m/review_marks_held_out/wrong_notes_caught < m/review_marks_held_out/odd_even_wrong_notes_caught",
+                    "m/review_marks_held_out/mark_precision < m/review_marks_held_out/odd_even_mark_precision"],
         "format": "pct",
         "sub": T("doubt.sub"),
         "axis": SHARE_AXIS,
         "series": [T("doubt.series1"), T("doubt.series2")],
-        "views": [{"label": T("doubt.view_label"),
+        "view_label": T("doubt.views_name"),
+        "views": [{"label": T("doubt.held_label"), "note": T("doubt.held_note"), "axis": T("doubt.held_axis"),
+                   "series": [T("doubt.series1"), T("doubt.held_series2")],
+                   "rows": [{"label": T("doubt.held_row1"), "n": T("doubt.held_n1"),
+                             "keys": ["m/review_marks_held_out/wrong_notes_caught", "m/review_marks_held_out/mark_precision"]},
+                            {"label": T("doubt.held_row2"), "n": T("doubt.held_n2"),
+                             "keys": ["m/review_marks_held_out/odd_even_wrong_notes_caught", "m/review_marks_held_out/odd_even_mark_precision"]}]},
+                  {"label": T("doubt.view_label"),
                    "note": T("doubt.view_note"),
                    "rows": [{"label": label, "keys": [f"{B}solo-instruments/{i}.q_hit", f"{B}solo-instruments/{i}.q_false_alarm"],
                              "n": T("doubt.row_n", i)} for i, label in INSTRUMENTS]}],
@@ -532,6 +541,25 @@ FIGURES = {
                                (200, T("tab-phone.row3")), (300, T("tab-phone.row4")))]}],
         "caption": T("tab-phone.caption"),
         "source": T("tab-phone.source"),
+    },
+    "tab-slots": {
+        "title": T("tab-slots.title"),
+        "holds": [f"fretted/guitar-tab/report.comp.slot_16th_off <= fretted/guitar-tab/{g}.slot_16th_off" for g in ("tune.solo", "tune.comp", "report.solo")]
+                 + [f"fretted/guitar-tab/report.solo.slot_16th_off >= fretted/guitar-tab/{g}.slot_16th_off" for g in ("tune.solo", "tune.comp", "report.comp")]
+                 + [f"m/tab_grid_choice/tune_comp_dense <= m/tab_grid_choice/{g}_dense" for g in ("tune_solo", "report_solo", "report_comp")]
+                 + [f"m/tab_grid_choice/tune_solo_dense >= m/tab_grid_choice/{g}_dense" for g in ("tune_comp", "report_solo", "report_comp")]
+                 + ["m/tab_grid_choice/tune_comp_dense > fretted/guitar-tab/report.solo.slot_16th_off"],
+        "format": "pct",
+        "sub": T("tab-slots.sub"),
+        "axis": T("tab-slots.axis"),
+        "series": [T("tab-slots.series1"), T("tab-slots.series2")],
+        "views": [{"label": "GuitarSet", "note": T("tab-slots.view_note"), "rows": [
+            {"label": text, "keys": [F + f"guitar-tab/{group}.{kind}.slot_16th_off", f"m/tab_grid_choice/{group}_{kind}_dense"],
+             "n": T("tab-slots.row_n", group, kind)}
+            for text, group, kind in ((T("tab-slots.row1"), "tune", "solo"), (T("tab-slots.row2"), "tune", "comp"),
+                                      (T("tab-slots.row3"), "report", "solo"), (T("tab-slots.row4"), "report", "comp"))]}],
+        "caption": T("tab-slots.caption"),
+        "source": T("tab-slots.source"),
     },
     "tab-heldout": {
         "title": T("tab-heldout.title"),
