@@ -539,7 +539,8 @@ public sealed partial class MainViewModel : ObservableObject
                 Score.Evidence = evidence;
                 Score.Load(xml, composition);
                 _libraryId = Library?.AddMade(job.Title ?? item.Title, xml, composition, Score.Parts.Count, Score.Player.BarCount,
-                    Score.UncertainLeft, jobId, evidence, Lineups.Recorded(composition) is { } recorded ? Lineups.Engine(recorded) : null).Id;
+                    Score.UncertainLeft, jobId, evidence, Lineups.Recorded(composition) is { } recorded ? Lineups.Engine(recorded) : null,
+                    fromPages: job.Input == "pages").Id;
                 // The engine's score replaces the saved one, without the notes changed here.
                 ForgetReviewChanges();
                 Screen = Screen.Score;
@@ -617,7 +618,8 @@ public sealed partial class MainViewModel : ObservableObject
     private string LibrarySubtitle(LibraryEntry e)
     {
         if (!e.IsAvailable) return _s["Library_Unavailable"];
-        string lineup = LineupLabel(Lineups.Parse(e.Lineup), e.Parts);
+        // A score read from pages has no lineup of its own: it is what was printed.
+        string lineup = e.FromPages ? _s["Library_FromPages"] : LineupLabel(Lineups.Parse(e.Lineup), e.Parts);
         string check = e.NotesToCheck > 0 ? " · " + _s.Format(e.NotesToCheck == 1 ? "Library_ToCheckOne" : "Library_ToCheck", e.NotesToCheck) : "";
         return _s.Format("Library_Subtitle", lineup, e.Bars, LibraryViewModel.WhenText(e.Updated, _s)) + check;
     }
@@ -773,7 +775,7 @@ public sealed partial class MainViewModel : ObservableObject
         Score.Load(r.MusicXml, r.Composition);
         _libraryId = null;
         Keep(() => _libraryId = Library?.AddMade(Score.Title is { Length: > 0 } t ? t : r.Source.DisplayName, r.MusicXml, r.Composition,
-            Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence, null).Id);
+            Score.Parts.Count, Score.Player.BarCount, Score.UncertainLeft, r.JobId, r.Evidence, null, fromPages: true).Id);
         ForgetReviewChanges();
         Screen = Screen.Score;
     }

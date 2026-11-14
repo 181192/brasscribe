@@ -828,6 +828,9 @@
   <data name="Library_Deleted" xml:space="preserve">
     <value>Deleted {0}</value>
   </data>
+  <data name="Library_FromPages" xml:space="preserve">
+    <value>From sheet music</value>
+  </data>
   <data name="Library_FullBand" xml:space="preserve">
     <value>Full band</value>
   </data>

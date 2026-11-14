@@ -112,6 +112,8 @@ public class SheetMusicTests
         Assert.Contains("page-001.png", body);
         Assert.Contains("page-002.pdf", body);
         Assert.Matches("name=\"?profile\"?\\r\\n(.*\\r\\n)*\\r\\nsheet\\r\\n", body);
+        // No audio of a score read from its notes is played: none is rendered.
+        Assert.Matches("name=\"?render_audio\"?\\r\\n(.*\\r\\n)*\\r\\nfalse\\r\\n", body);
 
         refuse = true;
         var e = await Assert.ThrowsAsync<EngineException>(() => c.CreateJobFromPagesAsync([first], "sheet", null));

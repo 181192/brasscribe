@@ -146,7 +146,8 @@ public class AppFlowTests
             ("GET", "/v1/jobs/j1/events") when noNotes => FakeHandler.Sse(NoNotes),
             _ => null,
         });
-        var (main, _) = Build(engine);
+        var library = new ScoreLibrary(Path.Combine(Path.GetTempPath(), "brasscribe-library-" + Guid.NewGuid().ToString("N")));
+        var (main, _) = Build(engine, library: library);
         Assert.Equal(ConnectionState.Connected, await main.Settings.Connection.CheckAsync());
 
         string page = Path.Combine(Path.GetTempPath(), $"hymn-{Guid.NewGuid():N}.png");
@@ -159,6 +160,8 @@ public class AppFlowTests
         main.Pages.ReadCommand.Execute(null);
         await Until(() => main.Screen == Screen.Score);
         Assert.True(main.LastResult!.FromPages);
+        // Your scores says it was read from sheet music.
+        Assert.StartsWith("From sheet music · ", Assert.Single(main.LibraryItems, i => !i.OnComputer).Subtitle);
         Assert.Contains(engine.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/jobs/pages");
         Assert.DoesNotContain(engine.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
         Assert.Empty(main.Pages.Pages);
@@ -173,6 +176,21 @@ public class AppFlowTests
         main.Error.ChooseAnotherCommand.Execute(null);
         Assert.Equal(Screen.Pages, main.Screen);
         Assert.Single(main.Pages.Pages);
+    }
+
+    /// <summary>A score the computer read from pages says so in Your scores, also before it is on this PC.</summary>
+    [Fact]
+    public async Task A_score_read_from_pages_on_the_computer_says_so()
+    {
+        var engine = new FakeHandler((r, _) => (r.Method.Method, r.RequestUri!.AbsolutePath) switch
+        {
+            ("GET", "/v1/health") => FakeHandler.Json($$"""{"version":"0.1.0","interface_version":{{Wire.InterfaceVersion}},"device":"cpu","auth_required":false}"""),
+            ("GET", "/v1/jobs") => FakeHandler.Json($$"""[{"id":"p1","profile":"sheet","target":"brass","input":"pages","status":"succeeded","created":{{DateTimeOffset.Now.ToUnixTimeSeconds()}},"stages":[],"title":"Hymn","outputs":["brass-band.musicxml"]}]"""),
+            _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+        });
+        var (main, _) = Build(engine);
+        await main.RefreshComputerScoresAsync();
+        Assert.StartsWith("From sheet music · ", Assert.Single(main.LibraryItems).Subtitle);
     }
 
     [Fact]

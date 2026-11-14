@@ -941,6 +941,7 @@ add("Error_Pages_ReaderFilesMissing", "Your computer couldn't download the files
 add("Error_Pages_DiskFull", "Your computer's disk is full. Free some space on it, then send the pages again.", "Disken på datamaskinen er full. Frigjør plass på den, og send sidene på nytt.")
 add("Error_Pages_NotRead", "Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.",
     "Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning.")
+add("Library_FromPages", "From sheet music", "Fra noter")
 
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):
