@@ -434,7 +434,7 @@ def screens(page) -> str:
         shot = page.shot(item["shot"], "(max-width: 520px) 44vw, 232px", "", "lazy", said=item["alt"]).replace("\n", "\n      ")
         # A screen that shows one player's part is headed with that part's name, as the part itself is.
         part = f'\n    <p class="seats">{item["part"]}</p>' if "part" in item else ""
-        items.append(f'  <li>\n    <div class="phone-frame">\n      {shot}\n    </div>{part}\n    <h3>{item["title"]}</h3>\n    <p>{item["text"]}</p>\n  </li>')
+        items.append(f'  <li>\n    <div class="phone-frame">\n      {shot}\n    </div>\n    <h3>{item["title"]}</h3>{part}\n    <p>{item["text"]}</p>\n  </li>')
     # On a phone the screens are a row that scrolls by itself, a screen at a time; the page does not.
     return (f'<div class="flow-scroll" role="region" aria-label="{esc(page.say("fig.screens"))}" tabindex="0">\n<ol class="flow">\n'
             + "\n".join(items) + "\n</ol>\n</div>")
@@ -448,11 +448,11 @@ def icon(page, size: str = "64") -> str:
 
 def lineup(page, only: str = "") -> str:
     """Each place an app runs, shown as itself: a phone, a tablet on its stand, a Mac's window, and Bandroom in the
-    menu bar, with the marks of the apps that run there. The screens are Brasscribe's; Bandroom is drawn, not shot.
+    menu bar, with the marks of the apps that run there. The screens are the apps' own; Bandroom is drawn, not shot.
     only="bandroom": Bandroom's alone (its own page)."""
     say, apps = page.say, list(page.site.products.values())
-    lead = page.site.products["brasscribe"]
-    own = {v["id"]: v for v in lead.data["variants"]}
+    # The phone shows Fretscribe's tab, the tablet and the Mac Brasscribe's parts: both apps are seen at work.
+    shown = {"phone": page.site.products["fretscribe"], "tablet": page.site.products["brasscribe"], "mac": page.site.products["brasscribe"]}
 
     def mark(q) -> str:
         # An app whose mark has a dark form shows it on a dark page.
@@ -472,8 +472,9 @@ def lineup(page, only: str = "") -> str:
     items = []
     if not only:
         for place, frame, size in (("phone", "phone-frame", "120px"), ("tablet", "tablet-frame", "190px"), ("mac", "mac-frame", "(max-width: 700px) 70vw, 380px")):
-            v = own[place]
-            shot = page.shot(v["shot"], size, "", "lazy", product=lead, said=v[page.lang]["alt"])
+            q = shown[place]
+            v = next(x for x in q.data["variants"] if x["id"] == place)
+            shot = page.shot(v["shot"], size, "", "lazy", product=q, said=v[page.lang]["alt"])
             stand = '<span class="stand" aria-hidden="true"></span>' if place == "tablet" else ""
             items.append(f'<li class="lineup-{place}"><div class="lineup-device"><div class="{frame}">{shot}</div>{stand}</div>{caption(place)}</li>')
     bar = (f'<div class="menubar" aria-hidden="true"><div class="menubar-bar"><i></i><i></i><span class="menubar-mine">{page.site.glyphs["bandroom"]}</span><i></i></div>'
@@ -644,7 +645,7 @@ def tally(page, first: str = "", link: str = "") -> str:
         app = f'<p class="tally-app">{product.data["name"]}</p>\n  ' if link else ""
         more = f'\n  <p class="tally-more"><a href="@/#sure">{say("sure.more", app=product.data["name"])}</a></p>' if link else ""
         out.append(f"""<article class="tally" aria-labelledby="{uid}-title"{f' data-brand="{product.id}"' if link else ""}>
-  {app}{f'<p class="seats">{w["seats"]}</p>' if "seats" in w else ""}<h3 id="{uid}-title">{w["title"]}</h3>
+  {app}<h3 id="{uid}-title"{' class="seats"' if "seats" in w else ""}>{w.get("seats") or w["title"]}</h3>
   <p class="where">{w["where"]}</p>
   <p class="big"><span class="big-n">{c["right"]}</span> <span class="big-of">{say("sure.of_first" if i == 1 else "sure.of")}</span></p>
   <div class="hundred" role="img" aria-labelledby="{uid}-key">{cells}</div>

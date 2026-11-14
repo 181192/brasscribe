@@ -61,10 +61,11 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
 .lineup .phone-frame { width: 120px; }
 .lineup .tablet-frame { width: 190px; }
 .lineup .mac-frame { width: 100%; }
-/* The tablet stands on the music stand's ledge: a short neck and a base. */
-.lineup .stand { display: block; width: 14px; height: 22px; background: var(--scribe-border-strong); margin-top: -1px; position: relative; }
-.lineup .stand::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 96px; height: 6px; margin-left: -48px; border-radius: 3px; background: var(--scribe-border-strong); }
-.lineup-tablet .lineup-device { padding-bottom: 5px; }
+/* The tablet stands on a music stand: the ledge it rests on, a thin pole, and the stand's feet. */
+.lineup .stand { display: block; width: 3px; height: 34px; background: var(--scribe-border-strong); position: relative; }
+.lineup .stand::before { content: ""; position: absolute; left: 50%; top: 0; width: 214px; height: 7px; margin-left: -107px; border-radius: 2px; background: var(--scribe-border-strong); }
+.lineup .stand::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 60px; height: 14px; margin-left: -30px;
+  border: solid var(--scribe-border-strong); border-width: 3px 0 0; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
 .lineup-name { margin: var(--scribe-space-2) 0 0; white-space: nowrap; display: flex; align-items: center; gap: 6px; font-weight: 600; }
 .lineup-name small { font-weight: 400; color: var(--scribe-text-muted); }
 .lineup-apps { margin: 0; display: flex; gap: 6px; align-items: center; font-size: var(--scribe-type-callout-size); color: var(--scribe-text-muted); }
@@ -85,6 +86,16 @@ main > section:nth-of-type(even) { background: var(--scribe-surface); }
   .lineup:not(.alone) li { scroll-snap-align: start; }
   .lineup-mac .mac-frame { width: 280px; }
   .lineup-bandroom .lineup-device { width: 240px; }
+}
+/* On a phone the devices are two thirds of their size, so the row does not make the section much longer. */
+@media (max-width: 600px) {
+  .lineup .phone-frame { width: 80px; }
+  .lineup .tablet-frame { width: 127px; }
+  .lineup .stand { height: 22px; }
+  .lineup .stand::before { width: 143px; margin-left: -71px; }
+  .lineup .stand::after { width: 40px; margin-left: -20px; }
+  .lineup-mac .mac-frame { width: 187px; }
+  .lineup-bandroom .lineup-device { width: 180px; }
 }
 @media (forced-colors: active) { .menubar-mine { forced-color-adjust: none; background: CanvasText; color: Canvas; } .lineup .stand, .lineup .stand::after { background: CanvasText; } }
 

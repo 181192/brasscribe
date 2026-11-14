@@ -15,7 +15,7 @@ studio = "<strong>Studio comes with it.</strong> For the tech person, in a band 
 
 [get]
 title = "Get it."
-lead = "Free, for a Mac with an M-series chip or a PC with Windows 11. In the list of programs it is called Brasscribe Bandroom: it is the same program for every app."
+lead = "Free, for a Mac from late 2020 or newer or a PC with Windows 11. In the list of programs it is called Brasscribe Bandroom: it is the same program for every app."
 mac = "Download for Mac"
 windows = "Download for Windows (early version)"
 warn = "Your computer will warn you the first time, as it does for every program from outside the app stores. The guides show how to get past it."
