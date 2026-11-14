@@ -401,6 +401,16 @@
         }
       }
     },
+    "A click on every beat.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Et klikk på hvert slag."
+          }
+        }
+      }
+    },
     "A full song": {
       "localizations": {
         "nb": {
@@ -661,6 +671,16 @@
         }
       }
     },
+    "Both": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begge"
+          }
+        }
+      }
+    },
     "C standard (two whole steps down)": {
       "localizations": {
         "nb": {
@@ -797,6 +817,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fortsett"
+          }
+        }
+      }
+    },
+    "Count-in": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inntelling"
           }
         }
       }
@@ -1497,6 +1527,16 @@
         }
       }
     },
+    "Metronome": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Metronom"
+          }
+        }
+      }
+    },
     "Microphone access is off. Turn it on in Settings to record.": {
       "localizations": {
         "nb": {
@@ -1723,6 +1763,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bandroom er gratis for Mac (Apple silicon) og Windows. Last det ned på datamaskinen fra denne adressen:"
+          }
+        }
+      }
+    },
+    "One bar of clicks before it plays.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Én takt med klikk før det spiller."
           }
         }
       }
@@ -2317,12 +2367,32 @@
         }
       }
     },
+    "Sound": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyd"
+          }
+        }
+      }
+    },
     "Sound from another app on this Mac": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
             "value": "Lyd fra en annen app på denne Macen"
+          }
+        }
+      }
+    },
+    "Sound: %@": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyd: %@"
           }
         }
       }
@@ -2677,6 +2747,16 @@
         }
       }
     },
+    "The recording": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptaket"
+          }
+        }
+      }
+    },
     "The recording didn't come. Is your computer on?": {
       "localizations": {
         "nb": {
@@ -2787,6 +2867,16 @@
         }
       }
     },
+    "The tab's notes": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notene i tabben"
+          }
+        }
+      }
+    },
     "Then: %@.": {
       "localizations": {
         "nb": {
@@ -2823,6 +2913,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Denne enheten kan ikke spille av opptaket. Du kan fortsatt lese tabben."
+          }
+        }
+      }
+    },
+    "This device couldn't make the sound for the tab's notes, the count-in and the metronome.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne enheten klarte ikke å lage lyden til notene i tabben, inntellingen og metronomen."
           }
         }
       }

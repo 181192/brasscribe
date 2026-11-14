@@ -140,6 +140,7 @@ import TranscriptionKit
             nodes.contains { $0.label.hasPrefix("Bass line.") } ? nil : "the engraved tab"
         }) { TabScreen(song: bass) }
         try await window("problem", model: full) { ProblemView(problem: .sheetMusic) }
+        try await sheet("sound", model: full) { SoundSheet(practice: full.practice, canFetch: true, onFetch: {}) {} }
 
         try await sheet("settings", model: full) { SettingsView() }
         try await sheet("first-run", model: Self.model()) { FirstRunView() }
