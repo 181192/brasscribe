@@ -595,6 +595,11 @@
         <item quantity="one">Keep this bar</item>
         <item quantity="other">Keep the rest of this bar (%d)</item>
     </plurals>
+    <!-- On a short screen, beside Keep and Skip; its name in full is review_keep_bar. -->
+    <plurals name="review_keep_bar_short">
+        <item quantity="one">Keep this bar</item>
+        <item quantity="other">Keep the rest (%d)</item>
+    </plurals>
     <plurals name="review_most_right_start_very">
         <item quantity="one">Most of these are probably right. Start with the %d very unsure one.</item>
         <item quantity="other">Most of these are probably right. Start with the %d very unsure ones.</item>
