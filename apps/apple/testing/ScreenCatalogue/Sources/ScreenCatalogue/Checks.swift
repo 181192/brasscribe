@@ -1,9 +1,16 @@
+#if os(macOS)
 import AppKit
+/// The platform's font, for measuring a text.
+typealias PlatformFont = NSFont
+#else
+import UIKit
+typealias PlatformFont = UIFont
+#endif
 
 /// What a check found on a screen.
 public struct Finding: CustomStringConvertible, Hashable, Sendable {
     public enum Kind: String, Sendable {
-        case unlabelled = "no name", smallTarget = "target under 24 × 24 pt", clippedText = "text cut off",
+        case unlabelled = "no name", smallTarget = "target too small", clippedText = "text cut off",
              outOfOrder = "out of reading order", outsideWindow = "outside the window"
     }
     public let kind: Kind
@@ -12,11 +19,12 @@ public struct Finding: CustomStringConvertible, Hashable, Sendable {
     public var description: String { "\(kind.rawValue): \(node)" }
 }
 
-/// The checks on one screen in one variant: every control has a name, a target of at least 24 × 24 pt (WCAG 2.5.8),
-/// no text cut off or out of the window, and the controls in reading order.
+/// The checks on one screen in one variant: every control has a name, a target of at least `target` × `target` pt
+/// (24 on the Mac, WCAG 2.5.8; 44 on a phone, where a finger is the pointer), no text cut off or out of the window, and
+/// the controls in reading order.
 @MainActor
 public enum Checks {
-    public static func run(_ nodes: [AXNode], bounds: CGRect, text: TextFit) -> [Finding] {
+    public static func run(_ nodes: [AXNode], bounds: CGRect, text: TextFit, target: CGFloat = 24) -> [Finding] {
         var found: [Finding] = []
         let shown = nodes.filter { $0.frame.width >= 1 && $0.frame.height >= 1 }
         // A control a scroll area has under one docked over it (a sheet's footer) is out of view, not crowded.
@@ -30,7 +38,7 @@ public enum Checks {
             // and a control that is itself scrolled out of view (a row gone under a sheet's footer) is beside only
             // what its own scroll area holds.
             let beside = controls.filter { n.isOutOfView ? $0.viewport == n.viewport : !$0.isOutOfView || $0.viewport == n.viewport }
-            if isSmall(n, among: beside) { found.append(Finding(kind: .smallTarget, node: n.description)) }
+            if isSmall(n, among: beside, target: target) { found.append(Finding(kind: .smallTarget, node: "\(n.description), under \(Int(target)) × \(Int(target)) pt")) }
         }
         for n in shown where n.role == "AXImage" && n.words.isEmpty {
             found.append(Finding(kind: .unlabelled, node: n.description))
@@ -51,8 +59,8 @@ public enum Checks {
     /// exception: a circle of 24 pt across on each undersized one touches no other control and no other such circle.
     public nonisolated static let ownControls: Set<String> = ["AXButton", "AXMenuButton", "AXPopUpButton", "AXLink"]
 
-    public nonisolated static func isSmall(_ n: AXNode, among controls: [AXNode]) -> Bool {
-        let undersized = { (c: AXNode) in c.frame.width < 24 - 0.5 || c.frame.height < 24 - 0.5 }
+    public nonisolated static func isSmall(_ n: AXNode, among controls: [AXNode], target: CGFloat = 24) -> Bool {
+        let undersized = { (c: AXNode) in c.frame.width < target - 0.5 || c.frame.height < target - 0.5 }
         guard undersized(n) else { return false }
         if ownControls.contains(n.role) { return true }
         let center = CGPoint(x: n.frame.midX, y: n.frame.midY)
@@ -61,7 +69,7 @@ public enum Checks {
             // circle meets it when it is under 12 pt from the centre.
             let near = undersized(other) ? CGPoint(x: other.frame.midX, y: other.frame.midY)
                 : CGPoint(x: min(max(center.x, other.frame.minX), other.frame.maxX), y: min(max(center.y, other.frame.minY), other.frame.maxY))
-            let reach: CGFloat = undersized(other) ? 24 : 12
+            let reach: CGFloat = undersized(other) ? target : target / 2
             if hypot(near.x - center.x, near.y - center.y) < reach - 0.5 { return true }
         }
         return false
@@ -98,18 +106,18 @@ public enum Checks {
 /// is not (see `isCut`).
 @MainActor
 public struct TextFit {
-    private struct Face { let font: NSFont; let lineHeight: CGFloat }
+    private struct Face { let font: PlatformFont; let lineHeight: CGFloat }
     private let faces: [Face]
     /// The tallest frame judged as one line of text.
     static let tallestLine: CGFloat = 32
 
     /// `fonts`: PostScript names of the app's own faces (registered in the process, as the app's bundle does).
     public init(fonts: [String] = [], sizes: ClosedRange<CGFloat> = 10...56) {
-        var all: [NSFont] = []
+        var all: [PlatformFont] = []
         for tenth in stride(from: Int(sizes.lowerBound * 10), through: Int(sizes.upperBound * 10), by: 5) {
             let size = CGFloat(tenth) / 10
-            for weight in [NSFont.Weight.regular, .medium, .semibold, .bold] { all.append(.systemFont(ofSize: size, weight: weight)) }
-            for name in fonts { if let f = NSFont(name: name, size: size) { all.append(f) } }
+            for weight in [PlatformFont.Weight.regular, .medium, .semibold, .bold] { all.append(.systemFont(ofSize: size, weight: weight)) }
+            for name in fonts { if let f = PlatformFont(name: name, size: size) { all.append(f) } }
         }
         faces = all.map { Face(font: $0, lineHeight: ceil($0.ascender - $0.descender + $0.leading)) }
     }
@@ -133,7 +141,7 @@ public struct TextFit {
                 // where its words need as many lines as the frame has at that width, it fits; more, it was wrapped wider;
                 // either way it may well be in that face, so it is not called cut. Fewer: the face is too small to be it.
                 let needed = attributed.boundingRect(with: CGSize(width: frame.width + 1.5, height: .greatestFiniteMagnitude),
-                                                     options: [.usesLineFragmentOrigin, .usesFontLeading]).height
+                                                     options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil).height
                 if (needed / face.lineHeight).rounded() >= lines { return false }
             }
         }

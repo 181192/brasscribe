@@ -185,6 +185,20 @@ jobs:
           dest=$(scripts/newest-iphone.sh)
           make test-iphone-large-text IPHONE_DEST="$dest" TEST_ARGS="-retry-tests-on-failure -test-iterations 2"
 
+      # The iPhone screen catalogue (PhoneScreensTests, README "Screen catalogue (iPhone)"): every screen on the smallest
+      # phone of the newest iOS (scripts/smallest-iphone.sh), upright at the default text size and at XXL in light and
+      # dark, and on its side, in English and bokmål, with the catalogue's checks; the pictures are kept as an artefact.
+      - name: iPhone screen catalogue
+        run: make test-iphone-catalogue
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: play-iphone-screenshots
+          path: apps/apple/build/catalogue/iphone
+          if-no-files-found: ignore
+          retention-days: 14
+
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
         if: failure()

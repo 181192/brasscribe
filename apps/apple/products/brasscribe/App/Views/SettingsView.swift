@@ -34,7 +34,7 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityIdentifier("settingWhatYouPlay")
-                } header: { Text("Your instrument") } footer: {
+                } header: { Text("Your instrument").formHeader() } footer: {
                     Text("New scores open on your part. Scores you already have keep the part you chose for them.")
                         .foregroundStyle(Color.Scribe.textMuted)
                 }
@@ -48,7 +48,7 @@ struct SettingsView: View {
                     Toggle(isOn: $app.bandDraftOnDevice) { Text("Make band drafts on this device") }
                         .disabled(!app.modelsReady)
                         .accessibilityIdentifier("settingBandDraft")
-                } header: { Text("On this device") } footer: {
+                } header: { Text("On this device").formHeader() } footer: {
                     if app.modelsReady {
                         Text("\(Text("One instrument on its own can be written down here, with nothing sent anywhere and nothing to download.")) \(Text("A brass band gets a quick draft here when your computer isn't there; your computer makes a better score."))")
                             .foregroundStyle(Color.Scribe.textMuted)
@@ -77,7 +77,7 @@ struct SettingsView: View {
                         .accessibilityIdentifier("settingStandTurnPages")
                     Toggle(isOn: $standKeepControls) { Text("Keep the stand controls visible") }
                         .accessibilityIdentifier("settingStandKeepControls")
-                } header: { Text("Display") } footer: {
+                } header: { Text("Display").formHeader() } footer: {
                     VStack(alignment: .leading, spacing: Space.s1) {
                         Text("Page turners and pedals work when they send arrow keys or Page Up and Page Down. Space starts and stops the music.")
                         #if os(iOS)
@@ -91,7 +91,7 @@ struct SettingsView: View {
 
                 Section {
                     Toggle(isOn: $singleKeys) { Text("Single-key shortcuts") }
-                } header: { Text("Keyboard") } footer: {
+                } header: { Text("Keyboard").formHeader() } footer: {
                     Text("Space plays and pauses, the arrow keys move by bar, F opens the music stand, and L, C, M, A and O switch the practice controls. Turn this off if you use speech control or a switch.")
                         .foregroundStyle(Color.Scribe.textMuted)
                 }
@@ -119,7 +119,7 @@ struct SettingsView: View {
                     Text("Band sounds built from VSCO 2 Community Edition (CC0), the University of Iowa Musical Instrument Samples and MS Basic (MIT).")
                     NavigationLink { ThirdPartyLicencesView(resource: "brasscribe-apple") } label: { Text("Third-party licences") }
                         .accessibilityIdentifier("aboutLicences")
-                } header: { Text("About") }
+                } header: { Text("About").formHeader() }
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)

@@ -440,3 +440,9 @@ struct EqualWidths: Layout {
         }
     }
 }
+
+extension View {
+    /// A form section's header in the muted text colour, which reads 4.5:1 on the page: the system's own grey on a
+    /// phone's grouped form does not.
+    func formHeader() -> some View { foregroundStyle(Color.Scribe.textMuted) }
+}

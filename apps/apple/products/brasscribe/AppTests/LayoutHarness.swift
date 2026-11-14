@@ -1,5 +1,3 @@
-#if os(macOS)
-import AppKit
 import Foundation
 import ScoreKit
 import ScreenCatalogue
@@ -7,6 +5,8 @@ import SwiftUI
 import Testing
 import TranscriptionKit
 @testable import BrasscribePlay
+#if os(macOS)
+import AppKit
 
 /// The window's layout, as `RootView` builds it on the Mac: the library in a sidebar (`LibrarySplit`,
 /// with its window minimum and the sidebar rule) and the screen in the detail column's navigation stack.
@@ -24,6 +24,8 @@ struct HarnessShell<Content: View>: View {
             .tint(Color.Scribe.primary)
     }
 }
+
+#endif
 
 /// The score screen's switch between the score and the music stand (`ScoreScreen`), for a model the
 /// test holds.
@@ -104,6 +106,7 @@ enum LayoutFixtures {
     }
 }
 
+#if os(macOS)
 /// Where the thumbnails go: apps/apple/docs/responsive, only when SCRIBE_RESPONSIVE_SHOTS is set
 /// (TEST_RUNNER_SCRIBE_RESPONSIVE_SHOTS=1 on the xcodebuild line).
 enum Thumbnails {
