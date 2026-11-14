@@ -1,6 +1,6 @@
 // One run: live stage graph over SSE and the stage inspector.
-import { api, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
-import type { Composition, FileRef, Job, Manifest, Reference, StageFiles, ValidationIssue } from "../api/types";
+import { api, ApiError, fetchBytes, fetchText, isAbort, subscribe, type StreamState } from "../api/client";
+import type { Composition, FileRef, Job, Manifest, ProfileInfo, Reference, StageFiles, ValidationIssue } from "../api/types";
 import { audioPanel, type AudioSource } from "../components/audio";
 import { BeatView } from "../components/beats";
 import { PianoRoll, type RollLayer } from "../components/pianoroll";
@@ -12,6 +12,7 @@ import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../
 import { maxOf, minOf } from "../lib/extent";
 import { fromJob, reduce, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
+import { readFailure, readsPages, type SheetSummary } from "../lib/pages";
 import { stageTime, waitNote } from "../lib/stagetime";
 import { hasScore } from "../lib/targets";
 import { parseMusicXml, type XmlScore } from "../lib/musicxml";
@@ -23,7 +24,7 @@ import { icon } from "../ui/icons";
 const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
 const TAB_FOR_KIND: Record<string, string> = {
   beats: "beats", stems: "stems", separate: "stems", layers: "audio", transcribe: "roll", vote: "roll",
-  arrange: "score", export: "musicxml",
+  arrange: "score", export: "musicxml", read: "pages",
 };
 const MODEL_STYLE: Record<string, { colour: string; style: RollLayer["style"]; label: string }> = {
   muscriptor: { colour: "bc-model-1", style: "line", label: "MuScriptor" },
@@ -37,6 +38,8 @@ interface Ctx {
   job: Job;
   /** The run is a band score: the run view's score, checks and part table are made for one. */
   band: boolean;
+  /** The run read pages of printed music, not a recording: there is nothing heard to show (stems, beats, transcribers). */
+  pages: boolean;
   stages: StageFiles[] | Error;
   composition: Promise<Composition>;
   musicxml: Promise<string>;
@@ -79,6 +82,9 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   const { signal } = ctl;
   let view: RunView | null = null;
   let stages: StageFiles[] | Error = new Error("not loaded");
+  // Whether the run read pages, and what a page kept as a score says was read (sheet.json).
+  let pages = false;
+  let sheet: SheetSummary | null = null;
   let tabsEl: HTMLElement | null = null;
   // The inspector tab last chosen; the inspector is rebuilt on it when the run finishes.
   let currentTab = tab ?? "score";
@@ -100,7 +106,7 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null);
     if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
     if (header.firstChild !== summary) clear(header, summary, headRest, actionNote);
-    const key = JSON.stringify([job.id, job.status, job.error ?? null, job.outputs ?? [], job.previous_run_id ?? null, m?.run_id ?? null]);
+    const key = JSON.stringify([job.id, job.status, job.error ?? null, job.outputs ?? [], job.previous_run_id ?? null, m?.run_id ?? null, pages, sheet]);
     if (key !== restKey) {
       restKey = key;
       rebuild([headRest, actions], () => renderRest(job, m));
@@ -117,14 +123,16 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
   const renderRest = (job: Job, m: Manifest | null) => {
     clear(headRest,
       job.error ? errorSummary(job.error) : null,
+      pages ? h("p", {}, t("run.fromPages")) : null,
+      sheet?.doubtful_bars.length ? h("p", {}, t("run.doubt", { bars: doubtfulBars(sheet) })) : null,
       job.previous_run_id ? h("p", {}, h("a", { href: `#/compare?a=${encodeURIComponent(job.previous_run_id)}&b=${encodeURIComponent(job.id)}` }, t("run.compareRerun"))) : null,
       more(t("run.details"), h("dl", { class: "kv run-details" },
         h("dt", {}, t("run.kv.id")), h("dd", { class: "mono" }, job.id),
         h("dt", {}, t("runs.profile")), h("dd", {}, job.profile),
         m?.git?.sha ? [h("dt", {}, "Git"), h("dd", { class: "mono" }, fmt.hash(m.git.sha).slice(0, 7), m.git.dirty ? t("run.dirty") : "")] : null,
         m?.devices?.length ? [h("dt", {}, t("manifest.kv.devices")), h("dd", {}, m.devices.join(", "))] : null,
-        lineupRow(job.profile, m?.params),
-        seatRows(m?.params),
+        // A page is kept as it was read: no band is chosen for it, and no seat.
+        pages ? readRows(sheet) : [lineupRow(job.profile, m?.params), seatRows(m?.params)],
         h("dt", {}, t("run.kv.created")), h("dd", {}, fmt.date(job.created)))));
     // Built on demand: the same links also sit in More on narrow screens, and a node lives in one place only.
     const downloads = (cls = "") => [
@@ -195,9 +203,15 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     if (signal.aborted) return;
     view = fromJob(job);
     graph.update(view);
-    const [m, st] = await Promise.all([api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error)]);
+    const [m, st, profiles, read] = await Promise.all([
+      api.manifest(id, { signal }).catch(() => null), api.stages(id, { signal }).catch((e) => e as Error),
+      api.profiles().catch(() => [] as ProfileInfo[]),
+      job.outputs?.includes("sheet.json") ? api.sheetSummary(id, { signal }).catch(() => null) : null,
+    ]);
     if (signal.aborted) return;
     stages = st;
+    pages = readsPages(job, profiles);
+    sheet = read;
     renderHeader(job, m);
     if (!TERMINAL.has(job.status)) {
       stop = subscribe(id, (e) => {
@@ -212,20 +226,21 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
       }, (s) => showStream(s));
     }
     const ctx: Ctx = {
-      id, job, stages: st, band: isBandRun(job),
+      id, job, stages: st, band: isBandRun(job), pages,
       composition: api.composition(id, { signal }),
       musicxml: fetchText(`/v1/jobs/${encodeURIComponent(id)}/musicxml`, undefined, { signal }),
     };
     ctx.composition.catch(() => undefined);
     ctx.musicxml.catch(() => undefined);
+    const item = (id: string, render: (p: HTMLElement, ctx: Ctx) => void) => ({ id, label: t(`tab.${id}`), render: (p: HTMLElement) => render(p, ctx) });
+    // A run that read pages heard nothing: in place of the recording, its stems, the transcribers' notes and the
+    // beats there is the page; the score as sound is there when the run made it.
     const items = [
-      { id: "score", label: t("tab.score"), render: (p: HTMLElement) => scoreTab(p, ctx) },
-      { id: "audio", label: t("tab.audio"), render: (p: HTMLElement) => audioTab(p, ctx) },
-      { id: "stems", label: t("tab.stems"), render: (p: HTMLElement) => stemsTab(p, ctx) },
-      { id: "roll", label: t("tab.roll"), render: (p: HTMLElement) => rollTab(p, ctx) },
-      { id: "beats", label: t("tab.beats"), render: (p: HTMLElement) => beatsTab(p, ctx) },
-      { id: "voices", label: t("tab.voices"), render: (p: HTMLElement) => voicesTab(p, ctx) },
-      { id: "musicxml", label: t("tab.musicxml"), render: (p: HTMLElement) => musicxmlTab(p, ctx) },
+      item("score", scoreTab),
+      ...(pages ? [item("pages", pagesTab), ...(hasScore(job.outputs, "mp3") ? [item("audio", audioTab)] : [])]
+        : [item("audio", audioTab), item("stems", stemsTab), item("roll", rollTab), item("beats", beatsTab)]),
+      item("voices", voicesTab),
+      item("musicxml", musicxmlTab),
       { id: "manifest", label: t("tab.manifest"), render: (p: HTMLElement) => manifestTab(p, ctx, m) },
     ];
     tabsEl = tabs(t("run.inspectorViews"), items, currentTab, (sel) => {
@@ -263,10 +278,12 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
 function errorSummary(error: string): HTMLElement {
   const [first, ...rest] = error.trim().split("\n");
   const m = first.match(/^([\w.-]+): (\w+): (.*)$/);
+  // Pages that could not be read: Studio's words for the reason, and the engine's own under "Full error".
+  const unread = readFailure(error);
   return h("div", { class: "notice notice-error", role: "alert" },
     h("p", { class: "notice-title" }, h("strong", {}, m ? t("run.failedAt", { stage: stageLabel(m[1]) }) : t("run.failedShort"))),
-    h("p", {}, (m ? m[3] : first).replace(/:?\s*Traceback \(most recent call last\):?\s*$/, "")),
-    rest.length ? more(t("run.fullError"), h("pre", { class: "json", tabindex: 0 }, error)) : null);
+    h("p", {}, unread ? t(`run.unread.${unread}`) : (m ? m[3] : first).replace(/:?\s*Traceback \(most recent call last\):?\s*$/, "")),
+    rest.length || unread ? more(t("run.fullError"), h("pre", { class: "json", tabindex: 0 }, error)) : null);
 }
 
 function fileTable(files: FileRef[]): HTMLElement {
@@ -330,8 +347,9 @@ function scoreTab(p: HTMLElement, ctx: Ctx): void {
   ctx.musicxml.then(async (xml) => {
     const t0 = performance.now();
     await score.load(xml, ctx.job.title ?? ctx.id);
-    // Where each part comes from; an older engine without the endpoint just shows the names.
-    api.partSources(ctx.id).then((r) => { score.sources = r.parts; }).catch(() => undefined);
+    // Where each part comes from; an older engine without the endpoint just shows the names. A part read from
+    // a page comes from the page: there is no recording and no arranger to tell apart.
+    if (!ctx.pages) api.partSources(ctx.id).then((r) => { score.sources = r.parts; }).catch(() => undefined);
     status.textContent = t("score.rendered", { bars: score.bars.length, parts: score.api?.score?.tracks.length ?? 0, ms: Math.round(performance.now() - t0) });
     await renderChecks(checks, ctx, parseMusicXml(xml), score);
   }).catch((e) => clear(p, errorNotice(e)));
@@ -388,6 +406,23 @@ export function madeLineup(profile: string, params: Record<string, unknown> | un
 
 export function lineupRow(profile: string, params: Record<string, unknown> | undefined): HTMLElement[] {
   return [h("dt", {}, t("run.kv.lineup")), h("dd", {}, t(`run.lineup.${madeLineup(profile, params)}`))];
+}
+
+/** The bars the reader is unsure of, as a list in words; each with its staff when the page has more than one. */
+export function doubtfulBars(sheet: SheetSummary): string {
+  return sheet.doubtful_bars.map((d) => (sheet.staves > 1 ? t("run.doubtInStaff", { bar: d.bar, staff: d.staff }) : String(d.bar))).join(", ");
+}
+
+/** What a run that read pages read, as run details: that it was pages, and what sheet.json counts when there is one. */
+export function readRows(sheet: SheetSummary | null): HTMLElement[] {
+  const row = (label: string, value: string | number) => [h("dt", {}, label), h("dd", {}, value)];
+  return [
+    ...row(t("run.kv.readFrom"), t("run.readFrom.pages")),
+    ...(sheet ? [
+      ...row(t("run.kv.staves"), sheet.staves), ...row(t("run.kv.bars"), sheet.bars), ...row(t("run.kv.notes"), sheet.notes),
+      ...row(t("run.kv.doubt"), sheet.doubtful_bars.length ? doubtfulBars(sheet) : t("run.doubtNone")),
+    ] : []),
+  ];
 }
 
 /** A seat id as its band part name ("1st-baritone" -> "1st Baritone"; "eb-bass" -> "E♭ Bass"). */
@@ -448,13 +483,37 @@ async function renderChecks(el: HTMLElement, ctx: Ctx, xml: XmlScore, score: Sco
     ], { count: rows.length }) : null);
 }
 
+/** What a run read, in place of a recording's player: one picture is shown; a PDF or several pages are one file to open. */
+async function pagesTab(p: HTMLElement, ctx: Ctx): Promise<void> {
+  clear(p, loading());
+  const file = (kind: string) => h("p", {}, h("a", { class: "button", href: api.inputUrl(ctx.id), download: "" }, icon("file"), t(`pages.dl.${kind}`)));
+  try {
+    const input = await api.pagesInput(ctx.id);
+    if (input.kind !== "picture") {
+      clear(p, h("p", {}, t(`pages.is.${input.kind}`)), file(input.kind));
+      return;
+    }
+    const src = URL.createObjectURL(input.picture);
+    clear(p, h("p", {}, t("pages.is.picture")),
+      h("img", { class: "page-read", src, alt: t("pages.alt", { title: runTitle(ctx.job) }), onload: () => URL.revokeObjectURL(src) }),
+      file("picture"));
+  } catch (e) {
+    clear(p, e instanceof ApiError && e.status === 404 ? h("p", {}, t("pages.gone")) : errorNotice(e, { retry: () => void pagesTab(p, ctx) }));
+  }
+}
+
 function audioTab(p: HTMLElement, ctx: Ctx): void {
+  if (ctx.pages) {
+    // Nothing was heard: the score as sound, with no recording to set it against.
+    clear(p, h("p", {}, t("audio.fromPages")), audioPanel([{ label: t("audio.rendered"), url: api.renderedAudioUrl(ctx.id) }]));
+    return;
+  }
   const sources: AudioSource[] = [];
   if (hasScore(ctx.job.outputs, "mp3")) sources.push({ label: t("audio.rendered"), url: api.renderedAudioUrl(ctx.id) });
   for (const { stage, file } of stageFiles(ctx, (s) => s.kind === "layers" || s.kind === "stems" || s.kind === "separate")) {
     if (AUDIO.test(file.name)) sources.push({ label: `${stage.stage}/${file.name}`, url: file.url });
   }
-  const original: AudioSource = { label: t("audio.original"), url: api.inputAudioUrl(ctx.id) };
+  const original: AudioSource = { label: t("audio.original"), url: api.inputUrl(ctx.id) };
   const sel = h("select", { id: "audio-a" }, sources.map((s, i) => h("option", { value: String(i) }, s.label)));
   const holder = h("div", {});
   const show = () => {
@@ -609,9 +668,10 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   const rt = h("section", { "aria-labelledby": "rt-h" }, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading());
   const parts = h("section", { "aria-labelledby": "parts-h" }, h("h3", { id: "parts-h" }, t("mx.partsTitle")), loading());
   const golden = h("section", { "aria-labelledby": "gold-h" }, h("h3", { id: "gold-h" }, t("mx.reference")), loading());
-  // The references are band scores: a tab run has nothing to be compared with among them.
-  const tab = !ctx.band;
-  clear(p, rt, tab ? null : golden, parts);
+  // The references are band scores: a tab run has nothing to be compared with among them, nor has a page kept
+  // as it was read, which is not an arrangement.
+  const noReference = !ctx.band || ctx.pages;
+  clear(p, rt, noReference ? null : golden, parts);
 
   const renderRt = async (run = false) => {
     clear(rt, h("h3", { id: "rt-h" }, t("mx.roundtrip")), loading(run ? t("mx.running") : undefined));
@@ -631,7 +691,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
   };
   void renderRt();
 
-  const refs = tab ? [] : await api.references().catch((e) => e as Error);
+  const refs = noReference ? [] : await api.references().catch((e) => e as Error);
   const renderGolden = async (ref: Reference) => {
     const out = h("div", {}, loading());
     const sel = h("select", { id: "gold-ref", onchange: () => { const r = (refs as Reference[]).find((x) => x.name === sel.value); if (r) void renderGolden(r); } },
@@ -650,7 +710,7 @@ async function musicxmlTab(p: HTMLElement, ctx: Ctx): Promise<void> {
       clear(out, errorNotice(e));
     }
   };
-  if (tab) { /* no reference section */ } else if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
+  if (noReference) { /* no reference section */ } else if (Array.isArray(refs) && refs.length) void renderGolden(refs.find((r) => r.name.includes("mikkel")) ?? refs[0]);
   else clear(golden, h("h3", { id: "gold-h" }, t("mx.reference")), Array.isArray(refs) ? h("p", {}, t("mx.noRefs")) : errorNotice(refs));
 
   try {

@@ -14,6 +14,8 @@ export type Health = S["Health"];
 export type Artifact = S["Artifact"];
 export type AudioRef = S["AudioRef"];
 export type JobCreate = S["JobCreate"];
+/** What a job that reads pages is started with, apart from the pages (sent as files, in order): the profile, and for a tab its options. */
+export type PagesJob = Partial<Omit<S["Body_createJobFromPages"], "files" | "profile">> & { profile: string };
 
 export interface Note {
   pitch: number;
