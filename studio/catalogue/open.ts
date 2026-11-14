@@ -5,8 +5,8 @@ import { writeFileSync } from "node:fs";
 import { serveApi } from "./api";
 import type { Variant, View } from "./views";
 
-/** What the fixtures answer 404 on purpose: a run without its recording, a failed run without its score, no band sounds. */
-const EXPECTED_404 = [/\/v1\/jobs\/[^/]+\/input$/, /\/v1\/jobs\/old-hundredth-failed\/(musicxml|composition)$/, /\/assets\/band\//];
+/** What the fixtures answer 404 on purpose: a run without its recording, a failed run without its score (one that stopped at its beats, one that could not read its page), no band sounds. */
+const EXPECTED_404 = [/\/v1\/jobs\/[^/]+\/input$/, /\/v1\/jobs\/old-hundredth-(failed|unread)\/(musicxml|composition)$/, /\/assets\/band\//];
 
 export type Opened = {
   /** Page errors, console errors and requests the fixtures do not answer. */
