@@ -32,7 +32,6 @@ struct TabScreen: View {
     @Environment(FretscribeModel.self) private var model
     @Environment(\.self) private var environment
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .body) private var bodySize: CGFloat = 17
 
     @State private var holder = TabPageHolder()
@@ -101,7 +100,6 @@ struct TabScreen: View {
                 setIdle(playing: false)
             }
             .onChange(of: told) { practice.endSlowly() }
-            .onChange(of: scenePhase) { _, phase in if phase == .background { practice.pause() } }
             .onChange(of: practice.playing) { _, playing in setIdle(playing: playing) }
             .onChange(of: inFocus) { _, on in
                 AccessibilityNotifier.announce(on ? String(localized: "Full screen") : String(localized: "Left full screen"))
