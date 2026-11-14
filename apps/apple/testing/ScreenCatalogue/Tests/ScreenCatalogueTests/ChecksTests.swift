@@ -22,6 +22,25 @@ struct ChecksTests {
         #expect(Checks.isSmall(radio, among: [radio, crowded]))
     }
 
+    /// On a phone the target is 44 pt: a 36 pt button passes the Mac's 24 and not a phone's.
+    @Test func aPhonesTargetIs44Points() {
+        let window = CGRect(x: 0, y: 0, width: 390, height: 844)
+        let settings = button("Settings", 334, 51, 36, 36)
+        #expect(!Checks.run([settings], bounds: window, text: TextFit()).contains { $0.kind == .smallTarget })
+        #expect(Checks.run([settings], bounds: window, text: TextFit(), target: 44).contains { $0.kind == .smallTarget })
+        #expect(!Checks.run([button("Settings", 330, 47, 44, 44)], bounds: window, text: TextFit(), target: 44).contains { $0.kind == .smallTarget })
+    }
+
+    /// A navigation bar's button reports 36 pt and takes a finger in more: at 36 it passes; at 30 or 20 it is too small.
+    @Test func aToolbarButtonUnder36PointsFails() {
+        let window = CGRect(x: 0, y: 0, width: 390, height: 844)
+        func toolbar(_ side: CGFloat) -> AXNode { AXNode(role: "AXToolbarButton", label: "Done", frame: CGRect(x: 300, y: 51, width: max(side, 40), height: side)) }
+        #expect(!Checks.run([toolbar(36)], bounds: window, text: TextFit(), target: 44).contains { $0.kind == .smallTarget })
+        for side: CGFloat in [30, 20] {
+            #expect(Checks.run([toolbar(side)], bounds: window, text: TextFit(), target: 44).contains { $0.kind == .smallTarget }, "\(side) pt")
+        }
+    }
+
     /// A sheet's footer over its form: the form's rows go on under the footer, out of the scroll area's view.
     @Test func aSwitchScrolledUnderASheetsFooterIsNotBesideTheFootersButton() {
         let form = CGRect(x: 0, y: 63, width: 600, height: 642), window = CGRect(x: 0, y: 0, width: 600, height: 800)

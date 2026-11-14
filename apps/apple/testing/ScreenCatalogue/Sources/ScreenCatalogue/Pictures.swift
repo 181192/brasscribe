@@ -1,5 +1,63 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
+
+/// A picture's pixels, 8 bits a sample, rows from the top: what the checks read, on either platform.
+public protocol PixelBuffer {
+    var pixelsWide: Int { get }
+    var pixelsHigh: Int { get }
+    var bytesPerRow: Int { get }
+    var bitsPerPixel: Int { get }
+    var bitsPerSample: Int { get }
+    var hasAlpha: Bool { get }
+    /// The alpha sample comes before the colour ones.
+    var alphaIsFirst: Bool { get }
+    var bitmapData: UnsafeMutablePointer<UInt8>? { get }
+    /// The pixels, to tell whether two takes are the same.
+    var pixels: Data { get }
+    /// The picture as a PNG.
+    func png() -> Data?
+}
+
+#if os(macOS)
+extension NSBitmapImageRep: PixelBuffer {
+    public var alphaIsFirst: Bool { bitmapFormat.contains(.alphaFirst) }
+    public var pixels: Data { tiffRepresentation ?? Data() }
+    public func png() -> Data? { representation(using: .png, properties: [:]) }
+}
+#else
+/// A picture of a view on iOS, as RGBA bytes.
+public final class Bitmap: PixelBuffer {
+    public let pixelsWide: Int
+    public let pixelsHigh: Int
+    public let bytesPerRow: Int
+    public let bitsPerPixel = 32
+    public let bitsPerSample = 8
+    public let hasAlpha = true
+    public let alphaIsFirst = false
+    private let storage: UnsafeMutablePointer<UInt8>
+    private let image: CGImage
+
+    public init?(_ cg: CGImage) {
+        pixelsWide = cg.width; pixelsHigh = cg.height; bytesPerRow = cg.width * 4
+        storage = .allocate(capacity: bytesPerRow * pixelsHigh)
+        storage.initialize(repeating: 0, count: bytesPerRow * pixelsHigh)
+        guard let context = CGContext(data: storage, width: pixelsWide, height: pixelsHigh, bitsPerComponent: 8, bytesPerRow: bytesPerRow,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { storage.deallocate(); return nil }
+        context.draw(cg, in: CGRect(x: 0, y: 0, width: pixelsWide, height: pixelsHigh))
+        image = cg
+    }
+    deinit { storage.deallocate() }
+
+    public var bitmapData: UnsafeMutablePointer<UInt8>? { storage }
+    public var pixels: Data { Data(bytes: storage, count: bytesPerRow * pixelsHigh) }
+    public func png() -> Data? { UIImage(cgImage: image).pngData() }
+}
+#endif
 
 /// Black under increased contrast, white otherwise: what `Guards.contrast` draws.
 public struct ContrastProbe: View {
@@ -23,11 +81,13 @@ public enum Guards {
 
     /// `ContrastProbe` drawn inside a navigation stack while `SystemContrast` asks for increased contrast, as `rep`,
     /// must be black: a navigation stack's content is in a hosting view of its own, as most of a screen is.
+    #if os(macOS)
     public static func contrast(_ rep: NSBitmapImageRep) -> String? {
         let c = rep.colorAt(x: rep.pixelsWide / 2, y: rep.pixelsHigh / 2)?.usingColorSpace(.deviceRGB)
         return (c?.redComponent ?? 1) < 0.1 && (c?.greenComponent ?? 1) < 0.1 ? nil
             : "The increased-contrast variant draws as standard contrast: SwiftUI no longer reads Increase Contrast from NSWorkspace.accessibilityDisplayShouldIncreaseContrast (SystemContrast)."
     }
+    #endif
 
     /// In a run in another language than English, `localized` (an app string looked up in it) must differ from `english`.
     public static func language(_ language: String, localized: String, english: String) -> String? {
@@ -59,6 +119,7 @@ private extension Pictures {
 public enum Pictures {
     /// `view`'s pixels at `scale` pixels a point, whatever the screens of the machine: a Mac with a Retina display and a
     /// CI runner without one take the same pictures.
+    #if os(macOS)
     public static func bitmap(of view: NSView, scale: CGFloat = 2) -> NSBitmapImageRep {
         view.layoutSubtreeIfNeeded()
         let size = view.bounds.size
@@ -70,12 +131,25 @@ public enum Pictures {
         return rep
     }
 
+    #else
+    /// `window`'s pixels at `scale` pixels a point, as the screen shows them.
+    public static func bitmap(of window: UIWindow, scale: CGFloat = 2) -> Bitmap? {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = true
+        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+            _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        return image.cgImage.flatMap(Bitmap.init)
+    }
+    #endif
+
     /// The picture's pixels, to tell whether two takes are the same.
-    public static func pixels(_ rep: NSBitmapImageRep) -> Data { rep.tiffRepresentation ?? Data() }
+    public static func pixels(_ rep: some PixelBuffer) -> Data { rep.pixels }
 
     /// Every pixel of `rect` (in pixels, origin top left) is the same colour, within what dithering and a gradient
     /// too faint to see make: nothing is drawn there. Every `step`th pixel each way is read.
-    public static func isFlat(_ rep: NSBitmapImageRep, in rect: CGRect, step: Int = 1) -> Bool {
+    public static func isFlat(_ rep: some PixelBuffer, in rect: CGRect, step: Int = 1) -> Bool {
         guard let data = rep.bitmapData else { return true }
         let x0 = max(0, Int(rect.minX.rounded(.down))), x1 = min(rep.pixelsWide, Int(rect.maxX.rounded(.up)))
         let y0 = max(0, Int(rect.minY.rounded(.down))), y1 = min(rep.pixelsHigh, Int(rect.maxY.rounded(.up)))
@@ -100,13 +174,13 @@ public enum Pictures {
     /// the text (an icon, an edge, a rule that crosses it) decides the ratio, so a faint text beside something
     /// strong passes. 1 when nothing is drawn there; nil when the
     /// ground is not in the picture (it is see-through there: whatever is behind the view on a Mac decides).
-    public static func contrast(_ rep: NSBitmapImageRep, in rect: CGRect, share: Double = 0.0002) -> Double? {
+    public static func contrast(_ rep: some PixelBuffer, in rect: CGRect, share: Double = 0.0002) -> Double? {
         guard let data = rep.bitmapData else { return 1 }
         let x0 = max(0, Int(rect.minX.rounded(.down))), x1 = min(rep.pixelsWide, Int(rect.maxX.rounded(.up)))
         let y0 = max(0, Int(rect.minY.rounded(.down))), y1 = min(rep.pixelsHigh, Int(rect.maxY.rounded(.up)))
         let size = rep.bitsPerPixel / 8
         guard x1 > x0, y1 > y0, size >= 3, rep.bitsPerSample == 8 else { return 1 }
-        let alphaFirst = size >= 4 && rep.bitmapFormat.contains(.alphaFirst)
+        let alphaFirst = size >= 4 && rep.alphaIsFirst
         let colour = alphaFirst ? 1 : 0, alpha = size >= 4 && rep.hasAlpha ? (alphaFirst ? 0 : 3) : nil
         // Colours a few steps apart (dithering, a faint gradient) count as one: each is told by its upper six bits a
         // channel, and is the mean of its pixels.
@@ -148,9 +222,9 @@ public enum Pictures {
     }
 
     /// `<name>.png` and `<name>.ax.txt` in `directory`.
-    public static func write(_ rep: NSBitmapImageRep, tree: [AXNode], name: String, to directory: URL) throws {
+    public static func write(_ rep: some PixelBuffer, tree: [AXNode], name: String, to directory: URL) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        guard let png = rep.representation(using: .png, properties: [:]) else { throw CocoaError(.fileWriteUnknown) }
+        guard let png = rep.png() else { throw CocoaError(.fileWriteUnknown) }
         try png.write(to: directory.appending(path: "\(name).png"))
         try (tree.map(\.description).joined(separator: "\n") + "\n")
             .write(to: directory.appending(path: "\(name).ax.txt"), atomically: true, encoding: .utf8)

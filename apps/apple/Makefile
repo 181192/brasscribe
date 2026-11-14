@@ -40,7 +40,7 @@ XCB := xcodebuild -project $(PROJECT) -derivedDataPath $(DERIVED)
 # The screen catalogue (PlayScreensTests) runs through scripts/screenshots.sh record, not with the unit tests.
 SKIP_CATALOGUE := -skip-testing:BrasscribePlayTests_macOS/PlayScreensTests
 
-.PHONY: verovio alphatab project-fretscribe build-for-testing-fretscribe-mac test-fretscribe-mac build-for-testing-fretscribe-ios ipa-fretscribe soundfont bandsound models project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
+.PHONY: test-iphone-catalogue verovio alphatab project-fretscribe build-for-testing-fretscribe-mac test-fretscribe-mac build-for-testing-fretscribe-ios ipa-fretscribe soundfont bandsound models project build test test-mac-app test-iphone test-mac-ui package-test size install-mac ipa \
         build-for-testing-mac test-mac-unit build-for-testing-ios test-ios-unit test-iphone-small package-test-fast
 
 verovio:
@@ -128,6 +128,16 @@ test-mac-unit:
 
 build-for-testing-ios: project
 	$(XCB) -scheme BrasscribePlay-iOS -destination '$(IPHONE_DEST)' build-for-testing
+
+# The iPhone screen catalogue (README, Screen catalogue (iPhone)): every screen on the smallest phone of the newest iOS
+# and on an iPhone SE (the shortest screen), with the catalogue's checks and a screenshot each, in English and in
+# bokmål, into build/catalogue/iphone. After build-for-testing-ios (any iPhone simulator of the same runtime).
+# The two phones are made for the run, run at once and deleted after (scripts/iphone-catalogue.sh); CATALOGUE_DEST runs
+# that one simulator instead (CI).
+CATALOGUE_DEST ?=
+test-iphone-catalogue:
+	@ls $(DERIVED)/Build/Products/BrasscribePlay-iOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-ios
+	SCRIBE_FIXTURES=$(FIXTURES) XCB="$(XCB)" scripts/iphone-catalogue.sh $(if $(CATALOGUE_DEST),'$(CATALOGUE_DEST)')
 
 test-ios-unit:
 	@ls $(DERIVED)/Build/Products/BrasscribePlay-iOS_*.xctestrun >/dev/null 2>&1 || $(MAKE) build-for-testing-ios

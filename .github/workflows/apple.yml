@@ -167,16 +167,35 @@ jobs:
           make build-for-testing-ios IPHONE_DEST="$dest"
 
       # The tab feature's tests on the iPhone simulator as well: its page is a web view, and WebKit on iOS draws and
-      # loads differently from the Mac's. The simulator is started and waited for first: xcodebuild begins the tests
-      # as soon as it can install them, while the simulator's own services (media, WebKit) are still starting, and
-      # a test that waits for one of them then fails for that.
+      # loads differently from the Mac's. One simulator in this job, the smallest iPhone, for these tests and the
+      # catalogue after them: a fresh simulator's first start on a hosted runner takes minutes, and two or three
+      # starting at once can hang in it. It is started and waited for first (scripts/boot-simulator.sh, which erases
+      # and starts it again when it hangs): xcodebuild begins the tests as soon as it can install them, while the
+      # simulator's own services (media, WebKit) are still starting, and a test that waits for one of them then fails.
       - name: Test the tab feature on the iPhone simulator
+        timeout-minutes: 25
         working-directory: apps/apple/features/tab
         run: |
           make -C ../.. alphatab
-          dest=$(../../scripts/newest-iphone.sh)
-          xcrun simctl bootstatus "${dest##*id=}" -b
+          dest=$(../../scripts/smallest-iphone.sh)
+          ../../scripts/boot-simulator.sh "${dest##*id=}"
           xcodebuild -scheme TabKit -destination "$dest" -derivedDataPath ../../build/DerivedData-tab test -quiet
+
+      # The iPhone screen catalogue (PhoneScreensTests, README "Screen catalogue (iPhone)"): every screen on the smallest
+      # phone of the newest iOS (scripts/smallest-iphone.sh), upright at the default text size and at XXL in light and
+      # dark, and on its side, in English and bokmål, with the catalogue's checks; the pictures are kept as an artefact.
+      # The iPhone SE's half runs at night (job play-iphone).
+      - name: iPhone screen catalogue
+        timeout-minutes: 20
+        run: make test-iphone-catalogue CATALOGUE_DEST="$(scripts/smallest-iphone.sh)"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: play-iphone-screenshots
+          path: apps/apple/build/catalogue/iphone
+          if-no-files-found: ignore
+          retention-days: 14
 
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
@@ -256,6 +275,20 @@ jobs:
       - name: Test the layout on an iPhone SE
         if: ${{ !cancelled() }}
         run: make test-iphone-small TEST_ARGS="-retry-tests-on-failure -test-iterations 2"
+
+      # The iPhone screen catalogue on an iPhone SE, the half pull requests leave out (job play runs the smallest
+      # iPhone): every screen upright at the default text size and at XXL, in English and bokmål.
+      - name: iPhone screen catalogue on an iPhone SE
+        if: ${{ !cancelled() }}
+        timeout-minutes: 25
+        run: make test-iphone-catalogue CATALOGUE_DEST="$(scripts/smallest-iphone.sh shortest)"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: play-iphone-se-screenshots
+          path: apps/apple/build/catalogue/iphone
+          if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v7
         if: failure()
