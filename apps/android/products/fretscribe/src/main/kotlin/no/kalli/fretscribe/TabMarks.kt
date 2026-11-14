@@ -17,8 +17,8 @@ object TabTokens {
     const val BODY_SP = 16.0
     /** `tab.mark-size-line-spaces`: the height of "?" and the boxed "!" in tab line spaces. */
     const val MARK_LINE_SPACES = 1.4f
-    /** `tab.uncertain-threshold-default`: a note below this confidence gets a "?". */
-    const val UNCERTAIN_THRESHOLD = 0.4
+    /** `tab.uncertain-threshold-default`: a note below this confidence gets a "?" (the same as the tab's data says, [no.kalli.scribe.engine.TabNote.DOUBT]). */
+    const val UNCERTAIN_THRESHOLD = no.kalli.scribe.engine.TabNote.DOUBT
     /** The playback cursor's line and a repeat's brackets, in dp. */
     const val CURSOR_DP = 3f
 }
@@ -208,7 +208,8 @@ object TabWords {
             }
             parts += res.getString(R.string.fs_tab_not_sure)
         }
-        val both = column.notes.any { it.kind == MarkKind.DOUBT }
+        // "Also on this beat:" once, before the first of them.
+        var also = column.notes.any { it.kind == MarkKind.DOUBT }
         for (n in column.notes.filter { it.kind == MarkKind.NO_PLACE }) {
             val name = n.step?.let { pitch(it, n.alter, bokmal) } ?: n.name
             val words = when {
@@ -217,7 +218,8 @@ object TabWords {
                 n.why == NoPlaceWhy.TOO_HIGH -> res.getString(R.string.fs_tab_no_place_high, name)
                 else -> res.getString(R.string.fs_tab_no_place_named, name)
             }
-            parts += if (both) res.getString(R.string.fs_tab_also_on_beat, words) else words
+            parts += if (also) res.getString(R.string.fs_tab_also_on_beat, words) else words
+            also = false
         }
         return parts.filter { it.isNotBlank() }.joinToString(" ")
     }

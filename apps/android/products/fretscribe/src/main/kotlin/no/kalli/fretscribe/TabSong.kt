@@ -224,7 +224,8 @@ object SongCheck {
     }
 
     /** The rows the result has something to say for, in the order of the screen. */
-    fun rows(tab: Tab): List<SongRow> = buildList {
+    /** [marks]: the tab's marks of the same song, so the counts are the ones the tab says; without them, from the data. */
+    fun rows(tab: Tab, marks: TabMarks? = null): List<SongRow> = buildList {
         add(SongRow.Tuning(tuningOf(tab.preset) ?: tab.preset, tab.suggestedTuning?.let { tuningOf(it.preset) }, kindOf(tab.preset)))
         if (asksCapo(tab)) add(SongRow.Capo(tab.instrument.capo))
         val chosen = tab.octaveSource == OctaveSource.CHOSEN
@@ -235,18 +236,22 @@ object SongCheck {
         }
         add(SongRow.KeyAndTempo(tab.key.fifths, tab.key.mode == no.kalli.scribe.engine.KeyMode.MINOR, Math.round(tab.tempoBpm).toInt(),
             tab.meter.beats, tab.meter.beatUnit))
-        // As the tab marks them: a note with no place is under a "!", and is not also one of the notes marked "?".
-        val doubtful = tab.notes.count { it.doubtful && !it.outOfRange && it.position != null }
+        // As the tab marks them: a note with no place is under a "!", and is not also one of the notes marked "?"; a note
+        // the page folds into another is not drawn, and not counted.
+        val doubtful = marks?.doubtful ?: tab.notes.count { it.doubtful && !it.outOfRange && it.position != null }
         if (doubtful > 0) add(SongRow.Doubtful(doubtful))
-        val noPlace = tab.notes.count { it.outOfRange || it.position == null }
+        val noPlace = marks?.noPlace ?: tab.notes.count { it.outOfRange || it.position == null }
         if (noPlace > 0) add(SongRow.NoPlace(noPlace))
         if (tab.unplayableDropped > 0) add(SongRow.LeftOut(tab.unplayableDropped))
         if (tab.inferredNotes > 0) add(SongRow.Added(tab.inferredNotes))
     }
 }
 
-/** What a saved song's row on Home says: read from the tab's MusicXML and its notes, as the library keeps them. */
-data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int, val kind: FrettedInstrument? = null) {
+/**
+ * What a saved song's row on Home says: read from the tab's MusicXML, as the library keeps it. [doubtful] and [noPlace]
+ * are the tab's own two numbers for the page: the notes it marks "?" and those under a "!".
+ */
+data class SongFacts(val strings: Int?, val tuning: String?, val doubtful: Int, val kind: FrettedInstrument? = null, val noPlace: Int = 0) {
     companion object {
         private val STEPS = mapOf('C' to 0, 'D' to 2, 'E' to 4, 'F' to 5, 'G' to 7, 'A' to 9, 'B' to 11)
 
@@ -291,14 +296,12 @@ data class SongFacts(val strings: Int?, val tuning: String?, val toCheck: Int, v
                 (octave + 1) * 12 + step + alter
             }.toList().sorted()
 
-        /** [compositionJson]: the notes with their confidence, as the computer wrote them. */
-        fun of(musicXml: String, compositionJson: String?): SongFacts {
+        fun of(musicXml: String): SongFacts {
             val open = openStrings(musicXml)
             val preset = OPEN_STRINGS.entries.firstOrNull { it.value == open }?.key
-            val toCheck = compositionJson?.let { json ->
-                runCatching { CompositionJson.decode(json).voices.sumOf { v -> v.notes.count { it.confidence < TabNote.DOUBT } } }.getOrNull()
-            } ?: 0
-            return SongFacts(open.size.takeIf { it > 0 }, preset?.let(SongCheck::tuningOf), toCheck, preset?.let(SongCheck::kindOf))
+            // The marks as the tab draws them from the page itself.
+            val marks = runCatching { TabMarks.of(TabIndex.parse(musicXml), null) }.getOrNull()
+            return SongFacts(open.size.takeIf { it > 0 }, preset?.let(SongCheck::tuningOf), marks?.doubtful ?: 0, preset?.let(SongCheck::kindOf), marks?.noPlace ?: 0)
         }
     }
 }

@@ -149,7 +149,8 @@ class TabView(
     private val overlays = listOf(band, beatWash, washes, glyphs, cursorLine)
     private val density = context.resources.displayMetrics.density
     private var score: Score? = null
-    private var columns: List<TabColumn> = emptyList()
+    internal var columns: List<TabColumn> = emptyList()
+        private set
     /** The staff the cursor stops on its beats: the one the marks stand on. */
     private var cursorStaff = 0
 
@@ -401,8 +402,10 @@ class TabView(
             }
             // Above the numerals, and above the bar's number over the staff's first line.
             val bottom = minOf((top * density).toFloat() - 0.45f * ls, (staff.y * density).toFloat() - barNumber - 0.3f * ls)
+            // A boxed "!" with a "?" beside it: the element reaches over both.
+            val both = mark.kind == MarkKind.NO_PLACE && columns.getOrNull(mark.column)?.notes?.any { it.kind == MarkKind.DOUBT } == true
             MarkBox(mark.column, (centre * density).toFloat(), bottom - height, bottom, (columnBottom * density).toFloat(),
-                maxOf(height, (wide * density).toFloat() + 0.4f * ls))
+                maxOf(if (both) 2.2f * height + 0.3f * ls else height, (wide * density).toFloat() + 0.4f * ls))
         }
     }
 
@@ -563,7 +566,8 @@ internal enum class TabLayer(val under: Boolean) { BAND(true), BEAT(true), WASH(
 
 /**
  * Draws the marks inside alphaTab's render wrapper, from its layout (boundsLookup): under the engraving
- * the wash behind each doubtful numeral, over it the "?" in the doubt colour and the boxed "!" in ink.
+ * the wash behind each doubtful numeral, over it the "?" in the doubt colour and the boxed "!" in ink (with a "?" beside
+ * it where a note on the same beat is marked "?" as well).
  * The glyph carries the meaning; the colour only goes with it.
  */
 @SuppressLint("ViewConstructor")
@@ -666,6 +670,12 @@ internal class TabOverlay(context: Context, private val tab: TabView, private va
                 text.color = p.ink
                 text.textSize = height * 0.8f / CAP
                 canvas.drawText("!", box.centre, box.bottom - height * 0.1f, text)
+                // A note marked "?" on the same beat keeps its "?", beside the box, so the "?" counted is one drawn.
+                if (tab.columns.getOrNull(box.column)?.notes?.any { it.kind == MarkKind.DOUBT } == true) {
+                    text.color = p.uncertain
+                    text.textSize = height / CAP
+                    canvas.drawText("?", box.centre + w / 2 + text.measureText("?") / 2 + 0.15f * ls, box.bottom, text)
+                }
             } else {
                 text.color = p.uncertain
                 text.textSize = height / CAP

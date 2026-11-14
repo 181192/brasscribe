@@ -228,8 +228,8 @@
     <!-- Your songs -->
     <string name="fs_song_tab">Tab</string>
     <plurals name="fs_song_to_check">
-        <item quantity="one">%1$d note to check</item>
-        <item quantity="other">%1$d notes to check</item>
+        <item quantity="one">%1$d note marked ?</item>
+        <item quantity="other">%1$d notes marked ?</item>
     </plurals>
     <string name="check_notes">Check the song</string>
     <!-- A band score in the computer's list is Brasscribe's. -->

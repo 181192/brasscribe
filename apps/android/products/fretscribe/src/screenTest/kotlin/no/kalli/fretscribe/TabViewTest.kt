@@ -549,6 +549,43 @@ class TabViewTest : TabScreenTest() {
 
     private fun asset(path: String): String = checkNotNull(ScreenDevice.fixture(path)) { path }.decodeToString()
 
+    /**
+     * A beat with a note marked "?" and a note with no place is drawn with both: the boxed "!" and, beside it, the "?" in
+     * the doubt colour, so the "?" the tab counts is one the player can find. A "!" alone has no "?" beside it.
+     */
+    @Test
+    fun aBeatWithANoteMarkedAndANoteWithNoPlaceShowsBoth() {
+        val xml = asset("guitar-line/tab.musicxml")
+        val index = TabIndex.parse(xml)
+        val marks = TabMarks.of(index, no.kalli.scribe.model.BrasscribeJson.decodeFromString(no.kalli.scribe.engine.Tab.serializer(), asset("guitar-line/tab.json")))
+        val view = alone(xml, TabLayout.TAB, index, marks)
+        val both = marks.columns.indexOfFirst { c -> c.kind == MarkKind.NO_PLACE && c.notes.any { it.kind == MarkKind.DOUBT } }
+        val alone = marks.columns.indexOfFirst { c -> c.kind == MarkKind.NO_PLACE && c.notes.none { it.kind == MarkKind.DOUBT } }
+        assertTrue("the guitar line has a beat with both, and a ! alone", both >= 0 && alone >= 0)
+        // What the marks layer draws, read off its own canvas.
+        lateinit var image: Bitmap
+        lateinit var boxes: List<MarkBox>
+        rule.runOnUiThread {
+            val wrapper = view.view.findViewById<android.widget.RelativeLayout>(net.alphatab.R.id.renderWrapper)
+            val layers = (0 until wrapper.childCount).map { wrapper.getChildAt(it) }.filterIsInstance<TabOverlay>()
+            image = Bitmap.createBitmap(layers.maxOf { it.width }, layers.maxOf { it.height }, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(image)
+            layers.forEach { it.draw(canvas) }
+            boxes = view.engraving.value!!.boxes
+        }
+        val uncertain = ScribeLightColors.uncertain.toArgb()
+        fun beside(column: Int): Int {
+            val box = boxes.single { it.column == column }
+            val h = box.bottom - box.top
+            return count(image, Rect((box.centre + 0.46f * h).toInt(), box.top.toInt(), (box.centre + 1.8f * h).toInt(), box.bottom.toInt() + 2), uncertain)
+        }
+        assertTrue("a ? beside the boxed ! of the beat with both", beside(both) > 30)
+        assertEquals("no ? beside a ! alone", 0, beside(alone))
+        // The mark's element reaches over the box and the ? beside it.
+        val b = boxes.single { it.column == both }
+        assertTrue("the element is wide enough for both", b.width >= 2f * (b.bottom - b.top))
+    }
+
     @Test
     fun onTheProbesEveryMarkHasItsColumnInEveryLayout() {
         // What each probe has, as the data says it: columns with a mark, notes drawn "?", notes under a "!".
@@ -604,6 +641,18 @@ class TabViewTest : TabScreenTest() {
             "Bar 6, beat 1. G6 is higher than your highest fret. Is the tuning right?",
             "Bar 7, beat 1. 2nd string, open, B. Fretscribe isn't sure about this one. Also on this beat: D2 is lower than your lowest string. Is the tuning right?",
         ), guitar)
+        // The same in bokmål, and "Også på dette slaget:" said once before several notes with no place.
+        language("nb-NO")
+        val nbWords = TabMarks.of(TabIndex.parse(asset("guitar-line/tab.musicxml")), no.kalli.scribe.model.BrasscribeJson.decodeFromString(no.kalli.scribe.engine.Tab.serializer(), asset("guitar-line/tab.json")))
+            .columns.map { TabWords.describe(rule.activity.resources, it, true) }
+        assertTrue(nbWords[1], nbWords[1].contains(". Også på dette slaget: "))
+        val column = TabColumn(0, 6, "7", 0, 1, listOf(
+            MarkedNote(MarkKind.DOUBT, 1, 2, 0, "B"),
+            MarkedNote(MarkKind.NO_PLACE, 2, step = "D", why = NoPlaceWhy.TOO_LOW),
+            MarkedNote(MarkKind.NO_PLACE, 3, step = "C", why = NoPlaceWhy.TOO_LOW),
+        ))
+        val two = TabWords.describe(rule.activity.resources, column, true)
+        assertEquals(two, 1, Regex("Også på dette slaget").findAll(two).count())
     }
 
     @Test

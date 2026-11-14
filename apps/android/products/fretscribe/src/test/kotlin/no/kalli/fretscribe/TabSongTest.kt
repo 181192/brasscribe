@@ -322,27 +322,44 @@ class TabSongTest {
     }
 
     @Test
-    fun aSavedSongsLineIsReadFromItsTabAndItsNotes() {
+    fun aSavedSongsLineIsReadFromItsTab() {
         assumeTrue("apps/fixtures/bass-line is not in this checkout", fixture?.isDirectory == true)
         val xml = File(fixture, "tab.musicxml").readText()
-        val composition = File(fixture, "composition.json").readText()
         assertEquals(listOf(28, 33, 38, 43), SongFacts.openStrings(xml))
-        assertEquals(SongFacts(4, "standard", 0, FrettedInstrument.BASS_4), SongFacts.of(xml, composition))
-        // Two notes the computer was unsure of.
-        var n = 0
-        val unsure = Regex(""""confidence": [0-9.]+""").replace(composition) { if (n++ < 2) "\"confidence\": 0.25" else it.value }
-        assertEquals(SongFacts(4, "standard", 2, FrettedInstrument.BASS_4), SongFacts.of(xml, unsure))
+        assertEquals(SongFacts(4, "standard", 0, FrettedInstrument.BASS_4), SongFacts.of(xml))
         // Drop D: the lowest string a whole step down.
         val dropD = xml.replaceFirst("<tuning-step>E</tuning-step>", "<tuning-step>D</tuning-step>")
-        assertEquals(SongFacts(4, "drop-d", 0, FrettedInstrument.BASS_4), SongFacts.of(dropD, null))
+        assertEquals(SongFacts(4, "drop-d", 0, FrettedInstrument.BASS_4), SongFacts.of(dropD))
         // A tuning with no name here still says how many strings; a score that is no tab says nothing.
         val odd = xml.replaceFirst("<tuning-step>E</tuning-step>", "<tuning-step>C</tuning-step>")
-        assertEquals(SongFacts(4, null, 0), SongFacts.of(odd, null))
-        assertEquals(SongFacts(null, null, 0), SongFacts.of("<score-partwise/>", null))
+        assertEquals(SongFacts(4, null, 0), SongFacts.of(odd))
+        assertEquals(SongFacts(null, null, 0), SongFacts.of("<score-partwise/>"))
         // A guitar's and a ukulele's tab name their instrument and tuning the same way.
-        fun facts(take: String) = SongFacts.of(File(fixture!!.resolveSibling(take), "tab.musicxml").readText(), null)
-        assertEquals(SongFacts(6, "standard", 0, FrettedInstrument.GUITAR_6), facts("guitar-line"))
-        assertEquals(SongFacts(4, "high-g", 0, FrettedInstrument.UKULELE), facts("ukulele-line"))
+        fun page(take: String) = File(fixture!!.resolveSibling(take), "tab.musicxml").readText()
+        fun facts(take: String) = SongFacts.of(page(take))
+        assertEquals(listOf(6, 4), listOf(facts("guitar-line").strings, facts("ukulele-line").strings))
+        assertEquals(listOf("standard", "high-g"), listOf(facts("guitar-line").tuning, facts("ukulele-line").tuning))
+        // The notes to check are the tab's own two numbers for the page: marked "?", and with no place.
+        for (take in listOf("bass-line-marks", "guitar-line")) {
+            val marks = TabMarks.of(TabIndex.parse(page(take)), null)
+            assertEquals(take, listOf(marks.doubtful, marks.noPlace), facts(take).let { listOf(it.doubtful, it.noPlace) })
+        }
+        assertTrue("the marked bass line has notes to check", facts("bass-line-marks").doubtful > 0)
+    }
+
+    /** A note the page folds into another is not drawn on the tab: Check the song does not count it either. */
+    @Test
+    fun checkTheSongCountsNoNoteTheTabDoesNotDraw() {
+        val tab = recorded("guitar-line")
+        val marks = TabMarks.of(TabIndex.parse(File(fixture!!.resolveSibling("guitar-line"), "tab.musicxml").readText()), tab)
+        // One more doubtful note than the page draws: one it folded away.
+        val folded = TabMarks(marks.columns, marks.doubtful, marks.noPlace, unplaced = 1)
+        val withOneMore = tab.copy(notes = tab.notes.mapIndexed { i, n -> if (i == tab.notes.indexOfFirst { !it.doubtful && it.position != null }) n.copy(confidence = 0.1) else n })
+        assertEquals(marks.doubtful + 1, withOneMore.notes.count { it.doubtful && !it.outOfRange && it.position != null })
+        val rows = SongCheck.rows(withOneMore, folded)
+        assertTrue(folded.unplaced > 0)
+        assertEquals(SongRow.Doubtful(folded.doubtful), rows.filterIsInstance<SongRow.Doubtful>().single())
+        assertEquals(SongRow.NoPlace(folded.noPlace), rows.filterIsInstance<SongRow.NoPlace>().single())
     }
 
     @Test
