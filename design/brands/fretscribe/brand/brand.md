@@ -103,6 +103,19 @@ processing instruction on the note (an `<other-notation>` element makes MuseScor
 - All fonts are bundled. Nothing loads from a font CDN: that would be a network request from a product
   that promises nothing goes online.
 
+## On the public site
+
+- **Ruled paper, the whole sheet.** A paper section of a Fretscribe page is ruled across its whole width, a rule every
+  32 px in the brand's ink at 14 %, with the margin line down the column's left edge on a desktop (not on a phone).
+  Sections alternate with plain ones; what lies on the paper (a viewer, a panel) is a white index card.
+- **The section mark** is six strings with the slanted gap of the logo, 48 px wide, before every section heading. The
+  line ending in a dot belongs to the Scribe family, not to Fretscribe.
+- **Ink and pencil.** What Fretscribe heard is drawn in ink; what it is not sure of, or only one of the choices (the
+  other places on the neck), in pencil: a dashed line.
+- **Numbers are frets.** The steps' numbers are set in Fretscribe Tab, so they look like fret numbers.
+- The doubt mark in the site's own figures has the family's one doubt colour (amber), which is Fretscribe's
+  `uncertain`.
+
 ## Voice
 
 Fretscribe talks like **a good teacher**: explains once, never gushes, admits doubt. The Brasscribe

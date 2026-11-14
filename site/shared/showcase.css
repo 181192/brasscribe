@@ -28,6 +28,7 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .tab-ink .axis, .tab-ink .key-text { font: 11px var(--scribe-font-text); fill: var(--scribe-text-muted); }
 .tab-ink .key-listener-1 .swatch, .tab-ink .key-heard .swatch { fill: var(--scribe-brand); }
 .tab-ink .key-listener-2 .swatch { fill: none; stroke: var(--scribe-ink); stroke-width: 1.5; }
+.tab-ink .key-doubt .swatch { fill: var(--scribe-uncertain); }
 .tab-ink .key-ghost .swatch { fill: none; stroke: var(--scribe-border-strong); stroke-dasharray: 2 2; }
 .tab-ink .move { stroke: var(--scribe-ink); stroke-width: 1.2; fill: none; }
 .tab-ink .move-head { fill: var(--scribe-ink); }
@@ -145,7 +146,13 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .seg button:focus-visible { outline: 2px solid var(--scribe-focus); outline-offset: -4px; }
 @media (max-width: 600px) {
   .tabdemo-controls .seg { flex: 1 1 100%; min-width: 0; }
-  .seg { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+  .seg { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; --fade-before: #000; --fade-after: #000; }
+  .seg.more-before { --fade-before: transparent; }
+  .seg.more-after { --fade-after: transparent; }
+  .seg.more-before, .seg.more-after {
+    -webkit-mask-image: linear-gradient(90deg, var(--fade-before), #000 40px, #000 calc(100% - 40px), var(--fade-after));
+    mask-image: linear-gradient(90deg, var(--fade-before), #000 40px, #000 calc(100% - 40px), var(--fade-after));
+  }
   .seg button { flex: none; white-space: nowrap; padding: 0 var(--scribe-space-3); }
 }
 @media (forced-colors: active) { .seg button[aria-checked="true"] { background: Highlight; color: HighlightText; } }
@@ -211,7 +218,10 @@ button.button { font: inherit; font-weight: 600; cursor: pointer; background: no
 .hero .lead { max-width: 30em; margin-bottom: 0; }
 .hero .actions { margin-top: var(--scribe-space-5); }
 main > section > .wrap > h2 { max-width: 20em; }
-.gets { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: var(--scribe-space-6) var(--scribe-space-8); }
+/* One column on a phone, two on a tablet (an odd last one runs the full width, so none stands alone), three wide. */
+.gets { list-style: none; padding: 0; margin: var(--scribe-space-8) 0 0; display: grid; grid-template-columns: 1fr; gap: var(--scribe-space-6) var(--scribe-space-8); }
+@media (min-width: 600px) { .gets { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gets > li:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+@media (min-width: 900px) { .gets { grid-template-columns: repeat(3, minmax(0, 1fr)); } .gets > li:last-child:nth-child(odd) { grid-column: auto; } }
 .gets h3 { margin: 0 0 var(--scribe-space-1); font-size: var(--scribe-type-headline-size); }
 .gets p { margin: 0; color: var(--scribe-text-muted); }
 .gets li { padding-top: var(--scribe-space-3); border-top: 2px solid var(--scribe-brand); }

@@ -244,22 +244,29 @@ NAMES = ["C", "C♯", "D", "E♭", "E", "F", "F♯", "G", "G♯", "A", "B♭", "
 
 
 def pitch_axis(low: int, high: int, top: float, row: float) -> str:
-    """Three note names up the left of a piano roll (its lowest, middle and highest natural notes), each at its row."""
+    """Note names up the left of a piano roll, each at its row: every C in it, as a keyboard is read; where it holds
+    fewer than two, its lowest, middle and highest natural notes."""
     naturals = [p for p in range(low + 1, high) if "♯" not in NAMES[p % 12] and "♭" not in NAMES[p % 12]]
-    picked = sorted({naturals[0], naturals[len(naturals) // 2], naturals[-1]}) if naturals else []
+    cs = [p for p in naturals if p % 12 == 0]
+    picked = cs if len(cs) > 1 else sorted({naturals[0], naturals[len(naturals) // 2], naturals[-1]}) if naturals else []
     return "".join(f'<text class="axis" x="2" y="{number(top + (high - p) * row + max(6.0, row - 1.5) / 2 + 3.5)}">{NAMES[p % 12]}{p // 12 - 1}</text>'
                    for p in picked)
 
 
-def roll_key(page, items: list[tuple[str, str]], y: float) -> str:
-    """The key under a piano roll: a mark of each kind and what it is."""
+def roll_key(page, items: list[tuple[str, str]], y: float, width: float = 360) -> tuple[str, float]:
+    """The key under a piano roll: a mark of each kind and what it is, on as many lines as it needs. Gives the key and
+    the height its picture needs to hold it."""
     out, x = [], 40
     for kind, key in items:
         label = page.say(key)
-        out.append(f'<g class="key-{kind}" transform="translate({x} {number(y)})"><rect class="swatch" width="12" height="8" rx="2" y="-7"/>'
-                   f'<text class="key-text" x="17">{esc(label)}</text></g>')
-        x += 30 + 6.2 * len(label)
-    return "".join(out)
+        room = 30 + 6.2 * len(label)
+        if x > 40 and x + room - 12 > width:
+            x, y = 40, y + 16
+        mark = ('<path class="move" d="M0 -3H8"/><path class="move-head" d="M12 -3l-4 -3v6z"/>' if kind == "move"
+                else '<rect class="swatch" width="12" height="8" rx="2" y="-7"/>')
+        out.append(f'<g class="key-{kind}" transform="translate({x} {number(y)})">{mark}<text class="key-text" x="17">{esc(label)}</text></g>')
+        x += room
+    return "".join(out), y + 4
 
 
 def moves(heard: list, written: list, x_of, low: int, high: int, top: float, row: float, end: float, count: int = 3) -> str:
@@ -325,10 +332,14 @@ def stages(page) -> str:
     marks, bottom = tab_marks(take, [wide(one)(take.tick_time(take.notes[i]["start"])) for i in only], 62, 22, 14, only)
     bar_lines = "".join(f'<path class="bar" d="M{number(wide(one)(b) - 9)} 62V{bottom}"/>' for b in take.bars if b <= one + 0.01)
     keyed = height + 22
+    key_heard, tall_heard = roll_key(page, [("listener-1", "fig.listener_1"), ("listener-2", "fig.listener_2")], keyed - 4)
+    key_placed, tall_placed = roll_key(page, [("ghost", "fig.heard_here"), ("heard", "fig.written_here")]
+                                       + ([("move", "fig.moved")] if 'class="move"' in placed else [])
+                                       + ([("doubt", "fig.not_sure")] if any(w[3] for w in written) else []), keyed - 4)
     frames = [svg(f'<path class="wave" d="{wave}"/>'),
               svg(f'<path class="wave faint" d="{wave}"/>{grid(two)}'),
-              svg(f'{grid(one, True)}{axis}{heard}{roll_key(page, [("listener-1", "fig.listener_1"), ("listener-2", "fig.listener_2")], keyed - 4)}', keyed),
-              svg(f'{grid(one)}{axis}{placed}{roll_key(page, [("ghost", "fig.heard_here"), ("heard", "fig.written_here")], keyed - 4)}', keyed),
+              svg(f'{grid(one, True)}{axis}{heard}{key_heard}', tall_heard),
+              svg(f'{grid(one)}{axis}{placed}{key_placed}', tall_placed),
               svg(f"{bar_lines}{marks}")]
     # What can be heard: the recording of the two bars, and the notes of the bar that was written as tab.
     sounds = {1: {"from": 0, "to": round(two, 3)},
@@ -422,7 +433,15 @@ def screens(page) -> str:
     for item in page.say("screens.items"):
         shot = page.shot(item["shot"], "(max-width: 520px) 44vw, 232px", "", "lazy", said=item["alt"]).replace("\n", "\n      ")
         items.append(f'  <li>\n    <div class="phone-frame">\n      {shot}\n    </div>\n    <h3>{item["title"]}</h3>\n    <p>{item["text"]}</p>\n  </li>')
-    return '<ol class="flow">\n' + "\n".join(items) + "\n</ol>"
+    # On a phone the screens are a row that scrolls by itself, a screen at a time; the page does not.
+    return (f'<div class="flow-scroll" role="region" aria-label="{esc(page.say("fig.screens"))}" tabindex="0">\n<ol class="flow">\n'
+            + "\n".join(items) + "\n</ol>\n</div>")
+
+
+def icon(page, size: str = "64") -> str:
+    """The app's mark, beside its name: in the hero on a desktop, and on its sheet on the family home."""
+    mark = Path(page.product.data["marks"][0]).name
+    return f'<img class="app-icon" src="@/assets/logo/{mark}" width="{size}" height="{size}" alt="">'
 
 
 def places(page, product=None) -> list[dict]:

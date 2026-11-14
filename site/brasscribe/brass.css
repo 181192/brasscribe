@@ -5,15 +5,20 @@
 h1 { font-size: clamp(2.6rem, 6.4vw, 4.5rem); }
 .hero { background: linear-gradient(180deg, var(--scribe-brand-tint), var(--scribe-bg) 62%); }
 
-/* The page is a part on a music stand: a system's five lines open every section, as the pen's line does on
-   Fretscribe's ruled paper. */
+/* The page is a band part: each section is a rehearsal mark, its letter in a box before the heading (A, B, C …, as
+   on a real part), and each paper sheet opens with the engraver's double rule, thin and thick. */
+main { counter-reset: rehearsal; }
+main > section:has(h2) { counter-increment: rehearsal; }
 main > section h2::before {
-  content: ""; display: block; width: 96px; height: 25px; margin-bottom: var(--scribe-space-4);
+  content: counter(rehearsal, upper-alpha) / ""; display: inline-grid; place-items: center; vertical-align: 0.35em;
+  width: 1.15em; height: 1.15em; margin-right: 0.4em; font: 400 0.62em/1 var(--scribe-font-display); font-style: normal;
+  color: var(--scribe-text); border: 1.5px solid currentColor; border-radius: 2px;
+}
+main > section:nth-of-type(odd):has(h2) {
   background:
-    radial-gradient(ellipse 7px 5px at 82px 15.5px, var(--scribe-brand) 98%, transparent) no-repeat,
-    linear-gradient(var(--scribe-brand), var(--scribe-brand)) 88.5px 0 / 1.5px 16px no-repeat,
-    repeating-linear-gradient(180deg, var(--scribe-line) 0 1px, transparent 1px 6px);
-  opacity: 0.9;
+    linear-gradient(var(--scribe-line), var(--scribe-line)) 0 0 / 100% 1px no-repeat,
+    linear-gradient(var(--scribe-ink), var(--scribe-ink)) 0 4px / 100% 3px no-repeat,
+    var(--scribe-bg);
 }
 main > section + section { border-top: 0; }
 main > section:nth-of-type(even) { background: var(--scribe-surface); }

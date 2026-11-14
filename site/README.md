@@ -99,6 +99,11 @@ leaves out a place it does not have (Fretscribe has no Studio) and never reorder
 - **The footer**, one structure on every page: the line, its apps, Bandroom and the source, then
   the credits of the page's owner.
 
+Each app's look on the site is its own stylesheet over the shared one (`brass.css`: rehearsal marks and the
+engraver's rule; `ruled-paper.css`: ruled paper across the whole sheet, the six-string section mark, pencil for what
+is unsure); its brand file in `design/brands/<app>/brand/brand.md` says why. Old addresses keep `?lang=` when they
+send the visitor on.
+
 What only a script can work (a figure's buttons) carries the class `await-js`: it has its room on
 the page from the start and is shown when the script has made it work, so nothing moves while the
 page loads. An app's `preload` in `product.toml` names the font files of its headline.
