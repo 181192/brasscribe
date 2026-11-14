@@ -442,10 +442,11 @@ fun TabScreen(vm: PlayViewModel) {
         topBar = {
             // The back button has no word here: the title and four buttons need the width.
             // On a phone on its side the line with the tuning is a scroll up from where the tab opens: the top bar says it.
-            val barTitle = if (noteInOneRow && s != null) stringResource(R.string.fs_tab_title_tuning, title,
+            // A long title gives way, with "…", to the tuning and capo, which are never cut.
+            val barTail = if (noteInOneRow && s != null) stringResource(R.string.fs_tab_title_tuning, "",
                 stringResource(R.string.fs_tab_chip, tuningName(s.tuning), if (s.capo > 0) stringResource(R.string.fs_tab_capo, s.capo) else stringResource(R.string.fs_tab_no_capo)))
-            else title
-            if (!inFocus) PlayTopBar(barTitle, vm::back, null, titleIsHeading = true) {
+            else null
+            if (!inFocus) PlayTopBar(title, vm::back, null, titleIsHeading = true, titleTail = barTail) {
                 if (s != null && s.index.bars > 0) IconButton({ focus = focus.enter() }, Modifier.size(48.dp).testTag("fs-tab-full-screen")) {
                     BcIcon(R.drawable.ic_fs_fullscreen, stringResource(R.string.fs_tab_full_screen))
                 }
