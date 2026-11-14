@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
-    <!-- The app version, bumped with the others by scripts/release.sh. -->
-    <Version>0.15.0</Version>
+    <!-- Each app has its version in its own project (products/*), where scripts/release.sh bumps it. -->
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

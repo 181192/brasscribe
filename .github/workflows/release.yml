@@ -1,16 +1,24 @@
 name: release
 
-# On a semver tag (v1.2.3, v1.2.3-beta.1): the fast checks from ci.yml run first (a tag push
-# doesn't start ci.yml on its own), then each platform workflow builds its distributables
-# (artifacts named dist-*, each holding ready-to-ship files) and they are attached to a GitHub
-# release. Nothing is built if the checks fail. A store
-# upload (Play, App Store, Microsoft Store) goes in as its own job that `needs:` the matching build
-# and downloads its dist-* artifact.
+# On a product's release tag (brasscribe-v1.2.3, fretscribe-v1.2.3, bandroom-v1.2.3, scribe-core-v1.2.3, or a
+# pre-release such as brasscribe-v1.2.3-beta.1): the fast checks from ci.yml run first (a tag push doesn't start
+# ci.yml on its own), then the platform workflows build that product's distributables (artifacts named dist-*,
+# each holding ready-to-ship files) and the product's files are attached to a GitHub release. Nothing is built if
+# the checks fail, and nothing is published unless every build of the product succeeded. A store upload (Play,
+# App Store, Microsoft Store) goes in as its own job that `needs:` the matching build and downloads its dist-*
+# artifact.
+# Each product has its own version and tags (scripts/release.sh, docs/shared/dev/release.md). A second release,
+# PRODUCT-latest, always holds the product's newest files, so a download link never names a version:
+# https://github.com/OWNER/REPO/releases/download/PRODUCT-latest/FILE.
 # Pushed tags do not always start it (tags pushed in bulk never do), so it can also be started by hand
-# on a tag: `gh workflow run release.yml --ref vX.Y.Z`.
+# on a tag: `gh workflow run release.yml --ref PRODUCT-vX.Y.Z`.
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+    tags:
+      - "brasscribe-v[0-9]+.[0-9]+.[0-9]+*"
+      - "fretscribe-v[0-9]+.[0-9]+.[0-9]+*"
+      - "bandroom-v[0-9]+.[0-9]+.[0-9]+*"
+      - "scribe-core-v[0-9]+.[0-9]+.[0-9]+*"
   workflow_dispatch:
 
 permissions:
@@ -25,8 +33,16 @@ jobs:
   tag:
     name: started on a release tag
     runs-on: ubuntu-24.04
+    outputs:
+      product: ${{ steps.read.outputs.product }}
+      version: ${{ steps.read.outputs.version }}
     steps:
-      - run: '[[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]] || { echo "run this on a vX.Y.Z tag, not $GITHUB_REF" >&2; exit 1; }'
+      - id: read
+        run: |
+          [[ "$GITHUB_REF" =~ ^refs/tags/(brasscribe|fretscribe|bandroom|scribe-core)-v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?)$ ]] \
+            || { echo "run this on a PRODUCT-vX.Y.Z tag, not $GITHUB_REF" >&2; exit 1; }
+          echo "product=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          echo "version=${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
 
   checks:
     needs: tag
@@ -37,30 +53,37 @@ jobs:
       pull-requests: read
 
   core:
-    needs: checks
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'scribe-core' }}
     uses: ./.github/workflows/core.yml
     with:
       release: true
 
-  # The signing job reads the release key from the `release` environment's secrets; a called
+  # Both Android apps are built and signed in one job, whichever of them is released: the job checks each APK
+  # against the other app's certificate. Only the released product's APKs are published (job `github`).
+  # The signing job reads the release keys from the `release` environment's secrets; a called
   # workflow only gets secrets its caller passes on.
   android:
-    needs: checks
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'brasscribe' || needs.tag.outputs.product == 'fretscribe' }}
     uses: ./.github/workflows/android.yml
     with:
       release: true
     secrets: inherit
 
+  # Play for Mac, iPhone and iPad and Bandroom for Mac are built by the same job of apple.yml, for a release of
+  # either; only the released product's files are published.
   apple:
-    needs: checks
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'brasscribe' || needs.tag.outputs.product == 'bandroom' }}
     uses: ./.github/workflows/apple.yml
     with:
       release: true
       skip_fretscribe: true
 
-  # Fretscribe for Mac, iPhone and iPad on its own: when it fails, the release still goes out, without its files.
   apple-fretscribe:
-    needs: checks
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'fretscribe' }}
     uses: ./.github/workflows/apple.yml
     with:
       release: true
@@ -68,34 +91,54 @@ jobs:
       skip_bandroom: true
 
   windows:
-    needs: checks
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'brasscribe' }}
     uses: ./.github/workflows/windows.yml
     with:
       release: true
       skip_fretscribe: true
+      skip_bandroom: true
 
-  # Fretscribe for Windows on its own: when it fails, the release still goes out, without its zip.
   windows-fretscribe:
-    needs: checks
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'fretscribe' }}
     uses: ./.github/workflows/windows.yml
     with:
       release: true
       skip_play: true
       skip_bandroom: true
 
+  windows-bandroom:
+    needs: [tag, checks]
+    if: ${{ needs.tag.outputs.product == 'bandroom' }}
+    uses: ./.github/workflows/windows.yml
+    with:
+      release: true
+      skip_play: true
+      skip_fretscribe: true
+
   github:
     name: publish GitHub release
-    needs: [core, android, apple, apple-fretscribe, windows, windows-fretscribe]
+    needs: [tag, checks, core, android, apple, apple-fretscribe, windows, windows-fretscribe, windows-bandroom]
+    # Every build of the product succeeded; the other products' builds were skipped.
     if: >-
-      ${{ !cancelled() && needs.core.result == 'success' && needs.android.result == 'success'
-      && needs.apple.result == 'success' && needs.windows.result == 'success' }}
+      ${{ !cancelled() && needs.tag.result == 'success' && needs.checks.result == 'success'
+      && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     runs-on: ubuntu-24.04
+    # One product is published at a time: two tags of one product must not both write its PRODUCT-latest.
+    concurrency:
+      group: release-publish-${{ needs.tag.outputs.product }}
+      cancel-in-progress: false
     permissions:
       contents: write
       # git-cliff reads the merged pull requests for their links and first-time contributors.
       pull-requests: read
+    env:
+      PRODUCT: ${{ needs.tag.outputs.product }}
+      VERSION: ${{ needs.tag.outputs.version }}
+      TAG: ${{ github.ref_name }}
     steps:
-      # The whole history, for the notes: git-cliff reads the commits since the previous vX.Y.Z tag.
+      # The whole history, for the notes: git-cliff reads the commits since the product's previous release.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -103,57 +146,84 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          path: dist
+          path: built
           pattern: dist-*
           merge-multiple: true
 
-      # Which on-device models each file carries; stops the release when an app lacks the ones it needs
-      # (.github/scripts/release-models.py says which those are).
+      # A build job makes more than the released product's files (both Android apps; Play and Bandroom for Mac).
+      # The release holds exactly the product's files (scripts/release.sh): one that was not built stops it here,
+      # before anything is published.
+      - name: The product's files
+        id: files
+        run: |
+          mkdir dist
+          for f in $(scripts/release.sh --files "$PRODUCT"); do
+            [ -s "built/$f" ] || { echo "$f was not built; built:" >&2; ls built >&2; exit 1; }
+            mv "built/$f" dist/
+          done
+          echo "name=$(scripts/release.sh --title "$PRODUCT")" >> "$GITHUB_OUTPUT"
+
+      # Which on-device models each of the product's files carries; stops the release when an app lacks the ones
+      # it needs or carries ones it must not, when an app package is one the script has no rule for, or when one
+      # of the product's files is not there to be looked at (.github/scripts/release-models.py has the rules).
+      # What is required is the released product's own files (scripts/release.sh), so a Fretscribe or Bandroom
+      # release does not ask for Brasscribe's APKs, and a Brasscribe release asks for all of its own.
       - name: On-device models in the release files
-        run: >-
-          .github/scripts/release-models.py
-          --require 'brasscribe-play-android-arm64-v8a.apk' --require 'brasscribe-play-android-universal.apk'
-          --require 'brasscribe-play-ios-unsigned.ipa' --require 'brasscribe-play-macos-arm64.zip' dist
+        run: |
+          required=()
+          for f in $(scripts/release.sh --files "$PRODUCT"); do required+=(--require "$f"); done
+          .github/scripts/release-models.py "${required[@]}" dist
 
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
 
-      # Release notes from the Conventional Commits since the previous release (cliff.toml): new
-      # features and fixes sorted and labelled by scope, the rest folded away, first-time contributors
-      # named. The range is explicit, so a run started again for an older tag gets that tag's notes; a
-      # stable release counts from the previous stable one, past any pre-releases in between.
-      - name: Release notes range
-        id: range
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          if [[ $TAG == *-* ]]; then exclude=(); ignore=''; else exclude=(--exclude '*-*'); ignore='.*-.*'; fi
-          prev=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${exclude[@]}" "$TAG^" 2>/dev/null || true)
-          echo "range=${prev:+$prev..}$TAG" >> "$GITHUB_OUTPUT"
-          echo "ignore=$ignore" >> "$GITHUB_OUTPUT"
-          echo "notes for ${prev:-the start}..$TAG"
-
+      # Release notes from the Conventional Commits since the product's previous release (cliff.toml, and the
+      # product's paths in scripts/release.sh): new features and fixes sorted and labelled by scope, the rest folded
+      # away, first-time contributors named. The range is explicit, so a run started again for an older tag gets
+      # that tag's notes; a full release counts from the previous full one, past any pre-releases in between.
       - name: Release notes
-        uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4
-        with:
-          config: cliff.toml
-          args: ${{ steps.range.outputs.ignore && format('--ignore-tags {0}', steps.range.outputs.ignore) || '' }} --strip header ${{ steps.range.outputs.range }}
         env:
-          OUTPUT: ${{ runner.temp }}/notes.md
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Downloads note
         run: |
-          cat >> "$RUNNER_TEMP/notes.md" <<'EOF'
+          pipx install git-cliff==2.14.2
+          scripts/release.sh --notes "$TAG" > "$RUNNER_TEMP/notes.md"
+          cat >> "$RUNNER_TEMP/notes.md" <<EOF
 
           ---
           Which file to download, and how to install it: [the guide](https://kalli.no/brasscribe/guide/#download).
-          Check a download against `SHA256SUMS`.
+          Check a download against \`SHA256SUMS\`.
+
+          Each app is released on its own. The newest of each:
+          [Brasscribe Play](https://github.com/$GITHUB_REPOSITORY/releases/tag/brasscribe-latest),
+          [Fretscribe](https://github.com/$GITHUB_REPOSITORY/releases/tag/fretscribe-latest),
+          [Bandroom](https://github.com/$GITHUB_REPOSITORY/releases/tag/bandroom-latest),
+          [scribe-core](https://github.com/$GITHUB_REPOSITORY/releases/tag/scribe-core-latest).
           EOF
+
+      # A run started again for an older tag must not move anything that follows the newest release back.
+      - name: Is this the product's highest full release?
+        id: highest
+        run: |
+          if scripts/latest-release.sh --highest "$PRODUCT" "$TAG"; then echo "is=true" >> "$GITHUB_OUTPUT"; else echo "is=false" >> "$GITHUB_OUTPUT"; fi
 
       - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
+          name: ${{ steps.files.outputs.name }} ${{ needs.tag.outputs.version }}
           body_path: ${{ runner.temp }}/notes.md
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(needs.tag.outputs.version, '-') }}
+          # Each product has its own latest release (the next step). The repository's one "latest" is Bandroom's
+          # newest: apps installed before the products had releases of their own send people to releases/latest
+          # for Bandroom, and every release's notes name the newest of each app. Only Bandroom's highest full
+          # release takes it: an older tag run again leaves it where it is.
+          make_latest: ${{ needs.tag.outputs.product == 'bandroom' && steps.highest.outputs.is == 'true' }}
           files: dist/*
+
+      # PRODUCT-latest: the same files under a tag that keeps its name, so the site, the READMEs and the apps' own
+      # update links point at the product's newest release without naming a version (scripts/latest-release.sh:
+      # changed in place, never deleted; only the product's highest full release is put there, so a pre-release
+      # or a run started again for an older tag leaves it alone).
+      - name: The product's latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/latest-release.sh "$PRODUCT" "$TAG" dist

@@ -163,8 +163,11 @@ table of where the apps run, and its chip colour (its brand's colour on a dark g
 ## Download links
 
 No page names a version or writes a release URL. Pages use `{{file <name>}}` and `{{releases}}`,
-and `releases` in `shared/site.toml` says where they point. When an app gets releases of its own,
-give it its own `releases` in its `product.toml`; nothing else changes.
+and `releases` in `shared/site.toml` says where the repository's releases are. Each product is released on
+its own and has one release that always holds its newest files (`PRODUCT-latest`): `{{file <name>}}` points
+into the release of the product the file belongs to (`build.py` reads the product from the start of the
+file's name, `RELEASE_PRODUCTS`), and `{{releases}}` at the newest release of the page's own product. A new
+product's files get a line in `RELEASE_PRODUCTS`; nothing else changes.
 
 ## Content that waits for a release
 

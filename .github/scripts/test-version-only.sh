@@ -14,7 +14,7 @@ expect() { # expect 0|1 WHAT BASE HEAD   (in the current directory's repository)
 }
 
 # The files release.sh writes the version into.
-files="apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts apps/apple/products/brasscribe/project.yml apps/apple/products/fretscribe/project.yml apps/bandroom/macos/project.yml apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props"
+files="apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts apps/apple/products/brasscribe/project.yml apps/apple/products/fretscribe/project.yml apps/bandroom/macos/project.yml apps/windows/products/brasscribe/Kalli.Brasscribe/Kalli.Brasscribe.csproj apps/windows/products/fretscribe/Kalli.Fretscribe/Kalli.Fretscribe.csproj apps/bandroom/windows/Directory.Build.props"
 
 # ---- the real release commits (one that wrote a version file under an earlier path is skipped: the list is release.sh's)
 cd "$root"
@@ -40,8 +40,9 @@ base="$(git rev-parse HEAD)"
 bump() { # what release.sh writes, in every file
   sed -i.bak -E 's/^( *versionCode = )[0-9]+/\19999/; s/^( *versionName = )"[^"]*"/\1"99.0.0"/' apps/android/products/brasscribe/build.gradle.kts apps/android/products/fretscribe/build.gradle.kts
   sed -i.bak -E 's/^( *MARKETING_VERSION: )"[^"]*"/\1"99.0.0"/; s/^( *CURRENT_PROJECT_VERSION: )"[^"]*"/\1"9999"/' apps/apple/products/brasscribe/project.yml apps/apple/products/fretscribe/project.yml apps/bandroom/macos/project.yml
-  sed -i.bak -E 's#<Version>[^<]*</Version>#<Version>99.0.0</Version>#' apps/windows/Directory.Build.props apps/bandroom/windows/Directory.Build.props
+  sed -i.bak -E 's#<Version>[^<]*</Version>#<Version>99.0.0</Version>#' apps/windows/products/brasscribe/Kalli.Brasscribe/Kalli.Brasscribe.csproj apps/windows/products/fretscribe/Kalli.Fretscribe/Kalli.Fretscribe.csproj apps/bandroom/windows/Directory.Build.props
   echo "## 99.0.0" >> CHANGELOG.md
+  mkdir -p changelogs; echo "## 99.0.0" >> changelogs/fretscribe.md
   find . -name '*.bak' -delete
 }
 # Commits what the working tree holds, checks it, and goes back to the base.
