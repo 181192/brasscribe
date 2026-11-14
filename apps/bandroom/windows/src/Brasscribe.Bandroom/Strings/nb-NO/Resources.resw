@@ -293,6 +293,39 @@
   <data name="Settings_Save" xml:space="preserve">
     <value>Lagre</value>
   </data>
+  <data name="Settings_Reader" xml:space="preserve">
+    <value>Noter fra bilder</value>
+  </data>
+  <data name="Settings_Reader_Body" xml:space="preserve">
+    <value>Telefonene kan sende et bilde eller en PDF av trykte noter og få et partitur eller en tab tilbake. Til det trengs en noteleser, homr, som ikke er en del av Brasscribe: den er fri programvare under lisensen AGPL-3.0.</value>
+  </data>
+  <data name="Settings_Reader_Source" xml:space="preserve">
+    <value>Brasscribe deler den ikke videre. PC-en laster den ned fra PyPI og fra homrs utgivelser på GitHub (omtrent {0} GB) og kjører den som et eget program.</value>
+  </data>
+  <data name="Settings_Reader_Read" xml:space="preserve">
+    <value>Les om homr og lisensen</value>
+  </data>
+  <data name="Settings_Reader_Install" xml:space="preserve">
+    <value>Installer noteleseren</value>
+  </data>
+  <data name="Settings_Reader_Installing" xml:space="preserve">
+    <value>Installerer noteleseren … Det tar noen minutter.</value>
+  </data>
+  <data name="Settings_Reader_Installed" xml:space="preserve">
+    <value>Noteleseren er installert. Telefonene kan sende bilder av noter nå.</value>
+  </data>
+  <data name="Settings_Reader_Wait" xml:space="preserve">
+    <value>Brasscribe gjøres fortsatt klar. Noteleseren kan installeres når det er ferdig.</value>
+  </data>
+  <data name="Settings_Reader_Failed" xml:space="preserve">
+    <value>Noteleseren ble ikke installert. Prøv igjen. Detaljene står i loggen.</value>
+  </data>
+  <data name="Settings_Reader_Failed_Network" xml:space="preserve">
+    <value>Filene til noteleseren ble ikke lastet ned. Sjekk internettforbindelsen, og prøv igjen.</value>
+  </data>
+  <data name="Settings_Reader_Failed_Space" xml:space="preserve">
+    <value>Ikke nok plass: noteleseren trenger omtrent {0} GB, og {1} GB er ledig.</value>
+  </data>
   <data name="Settings_About" xml:space="preserve">
     <value>Brasscribe Bandroom er et ikke-kommersielt prosjekt. På denne PC-en lytter den med Microsofts ONNX Runtime, som sender bruksdata til Microsoft gjennom Windows’ diagnostikkdata, aldri et opptak.</value>
   </data>
@@ -601,6 +634,9 @@
   </data>
   <data name="Setup_Item_BeatFinder" xml:space="preserve">
     <value>Taktfinner</value>
+  </data>
+  <data name="Setup_Item_SheetReader" xml:space="preserve">
+    <value>Noteleser (homr)</value>
   </data>
   <data name="Setup_Failed" xml:space="preserve">
     <value>Nedlastingen stoppet. Sjekk internettforbindelsen, og prøv igjen.</value>

@@ -403,7 +403,9 @@ def test_a_page_too_large_to_read_is_refused_before_anything_opens_it(client, se
 
 
 @pytest.mark.parametrize("refusal, words", [("no_music", "no notes were found on the page"), ("too_many_pages", "there are more than 40 pages"),
-                                            ("page_too_large", "a page is too large to read"), ("something_else", "the pages could not be read")])
+                                            ("page_too_large", "a page is too large to read"),
+                                            ("weights_missing", "the reader's files could not be fetched: check the network and try again"),
+                                            ("something_else", "the pages could not be read")])
 def test_a_page_that_cannot_be_read_fails_in_fixed_words_without_the_computers_paths(client, monkeypatch, refusal, words):
     monkeypatch.setenv("FAKE_REFUSAL", refusal)
     blank = picture("WEBP")  # the fake recogniser finds no staff on a WebP
@@ -422,11 +424,51 @@ def test_the_recogniser_has_minutes_not_hours():
     assert all(f.startswith("homr/") and f.endswith(".zip") for f in ADAPTERS["homr"].model_files)
 
 
+def test_weights_that_cannot_be_fetched_are_named_and_not_taken_for_an_unreadable_page(tmp_path, monkeypatch, capsys):
+    """The runner itself (stdlib only), with homr's environment and the network stood in for: nothing is fetched."""
+    import importlib.util
+    import subprocess
+    import urllib.error
+
+    spec = importlib.util.spec_from_file_location("run_adapter_under_test", config.REPO_ROOT / "ml" / "adapters" / "run_adapter.py")
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    package = tmp_path / "site-packages" / "homr"
+    monkeypatch.setattr(runner, "MODELS", tmp_path / "models")
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, stdout=f"{package}\n", stderr=""))
+    asked = []
+
+    def no_network(url, part):
+        asked.append(url)
+        raise urllib.error.URLError("no route to the host")
+
+    monkeypatch.setattr(runner, "_fetch", no_network)
+    with pytest.raises(SystemExit) as stopped:
+        runner.homr_setup()
+    assert stopped.value.code not in (0, None)
+    said = capsys.readouterr().err.splitlines()
+    assert said[-1] == "scribe-refusal: weights_missing" and said[-1].removeprefix(runner.REFUSAL) in sheet.REFUSALS
+    assert len(asked) == 1 and asked[0].startswith(runner.HOMR_RELEASE)  # it stops at the first archive
+    assert not list((tmp_path / "models" / "homr").iterdir())  # and keeps no part of it
+
+    # A fetch that stalls is the same case: the socket's time limit is an OSError like the others.
+    monkeypatch.setattr(runner, "_fetch", lambda url, part: (_ for _ in ()).throw(TimeoutError("timed out")))
+    with pytest.raises(SystemExit):
+        runner.homr_setup()
+    assert capsys.readouterr().err.splitlines()[-1] == "scribe-refusal: weights_missing"
+    assert 0 < runner.HOMR_FETCH_TIMEOUT_S <= 120
+
+
 def test_without_the_recogniser_the_profiles_are_not_offered_and_a_job_is_refused(client, settings, monkeypatch):
     monkeypatch.setattr(sheet, "reader_installed", lambda adapters_dir: False)
     assert not {"sheet", "sheet-tab"} & {p["name"] for p in client.get("/v1/profiles").json()}
     r = client.post("/v1/jobs/pages", files=[("files", ("page.png", PNG, "image/png"))])
     assert (r.status_code, r.json()["code"]) == (503, "reader_missing")
+    # What to do about it, for the person with Bandroom first, then for an engine run from a checkout.
+    detail = r.json()["detail"]
+    assert "Bandroom" in detail and "Settings, Sheet music from pictures" in detail
+    assert detail.index("Bandroom") < detail.index("uv sync") < detail.index("pixi install -e homr")
     assert not list(settings.uploads_dir.iterdir())
 
 

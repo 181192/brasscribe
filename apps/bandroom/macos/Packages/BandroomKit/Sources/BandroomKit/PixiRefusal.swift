@@ -30,14 +30,21 @@ public struct PixiRefusal: Equatable, Sendable {
     /// The refusal in what the latest run wrote to `log`, if it refused. Each run starts with a "--- <date> <command>"
     /// line (`PosixLauncher`); only what follows the last one counts, so an earlier session's refusal is never blamed.
     public static func inLatestRun(log: URL, maxBytes: Int = 64 << 10) -> PixiRefusal? {
-        guard let h = try? FileHandle(forReadingFrom: log) else { return nil }
+        find(in: LatestRun.text(log: log, maxBytes: maxBytes))
+    }
+}
+
+/// What the latest run wrote to a log `PosixLauncher` writes: each run starts with a "--- <date> <command>" line,
+/// and only what follows the last one is the latest run's.
+enum LatestRun {
+    static func text(log: URL, maxBytes: Int = 64 << 10) -> String {
+        guard let h = try? FileHandle(forReadingFrom: log) else { return "" }
         defer { try? h.close() }
         let size = (try? h.seekToEnd()) ?? 0
         try? h.seek(toOffset: size > UInt64(maxBytes) ? size - UInt64(maxBytes) : 0)
-        guard let data = try? h.readToEnd() else { return nil }
+        guard let data = try? h.readToEnd() else { return "" }
         let text = String(decoding: data, as: UTF8.self)
-        let latest = text.range(of: "\n--- ", options: .backwards).map { String(text[$0.upperBound...]) }
+        return text.range(of: "\n--- ", options: .backwards).map { String(text[$0.upperBound...]) }
             ?? (text.hasPrefix("--- ") ? text : "")
-        return find(in: latest)
     }
 }

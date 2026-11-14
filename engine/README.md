@@ -114,6 +114,7 @@ serves the HTTP API that Studio and the Play apps use. Bandroom (Mac and Windows
     environment is about 0.5 GB and no installation gets it unasked: the two profiles are offered only where it
     is there (`uv sync --frozen --project ml/adapters/homr` on an Apple silicon Mac, `pixi install -e homr`
     elsewhere), and `python ml/adapters/run_adapter.py --setup homr` fetches its weights ahead of the first job.
+    Bandroom does both when its user asks for the reader in Settings, and not before.
     The weights are fetched by the runner, checked against pinned SHA-256s and kept under `SCRIBE_MODELS/homr`,
     so a run's manifest names them; homr runs on the CPU with them on every computer, and does not look for the
     page's title (that needs an OCR model it would fetch on its own).
@@ -121,8 +122,10 @@ serves the HTTP API that Studio and the Play apps use. Bandroom (Mac and Windows
     there, at 300 dpi or less for a page that would be more than 50 million pixels, and more than 40 pages in
     all are refused. homr has fifteen minutes for a job.
   - A page that cannot be read fails the job in fixed words: `no notes were found on the page`, `there are more
-    than 40 pages`, `a page is too large to read`, or `the pages could not be read`. What homr itself said is in
-    the job's log with the computer's paths cut out.
+    than 40 pages`, `a page is too large to read`, or `the pages could not be read`. A job whose weights could
+    not be fetched (no network, or a fetch that sends nothing for a minute) says that instead, and nothing about
+    the page: `the reader's files could not be fetched: check the network and try again`. What homr itself said
+    is in the job's log with the computer's paths cut out.
   - A photo is turned the way its EXIF orientation says before it is read (a march photographed sideways with
     the tag read as well as upright). A page that lies on its side with no such tag is not read: no notes are
     found on it.

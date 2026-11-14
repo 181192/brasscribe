@@ -293,6 +293,39 @@
   <data name="Settings_Save" xml:space="preserve">
     <value>Save</value>
   </data>
+  <data name="Settings_Reader" xml:space="preserve">
+    <value>Sheet music from pictures</value>
+  </data>
+  <data name="Settings_Reader_Body" xml:space="preserve">
+    <value>Phones can send a picture or a PDF of printed sheet music and get a score or a tab back. That takes a reader, homr, which is not part of Brasscribe: it is free software under the AGPL-3.0 licence.</value>
+  </data>
+  <data name="Settings_Reader_Source" xml:space="preserve">
+    <value>Brasscribe doesn't pass it on: this PC downloads it from PyPI and from homr's releases on GitHub (about {0} GB) and runs it as a separate program.</value>
+  </data>
+  <data name="Settings_Reader_Read" xml:space="preserve">
+    <value>Read about homr and its licence</value>
+  </data>
+  <data name="Settings_Reader_Install" xml:space="preserve">
+    <value>Install the reader</value>
+  </data>
+  <data name="Settings_Reader_Installing" xml:space="preserve">
+    <value>Installing the reader… This takes a few minutes.</value>
+  </data>
+  <data name="Settings_Reader_Installed" xml:space="preserve">
+    <value>The reader is installed. Phones can send pictures of sheet music now.</value>
+  </data>
+  <data name="Settings_Reader_Wait" xml:space="preserve">
+    <value>Brasscribe is still being set up. The reader can be installed once that is done.</value>
+  </data>
+  <data name="Settings_Reader_Failed" xml:space="preserve">
+    <value>The reader wasn't installed. Try again; the log has the details.</value>
+  </data>
+  <data name="Settings_Reader_Failed_Network" xml:space="preserve">
+    <value>The reader's files couldn't be downloaded. Check the internet connection, then try again.</value>
+  </data>
+  <data name="Settings_Reader_Failed_Space" xml:space="preserve">
+    <value>Not enough space: the reader needs about {0} GB, and {1} GB is free.</value>
+  </data>
   <data name="Settings_About" xml:space="preserve">
     <value>Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which sends usage data to Microsoft through Windows’ diagnostic data, never a recording.</value>
   </data>
@@ -601,6 +634,9 @@
   </data>
   <data name="Setup_Item_BeatFinder" xml:space="preserve">
     <value>Beat finder</value>
+  </data>
+  <data name="Setup_Item_SheetReader" xml:space="preserve">
+    <value>Reader of sheet music (homr)</value>
   </data>
   <data name="Setup_Failed" xml:space="preserve">
     <value>The download stopped. Check the internet connection, then try again.</value>

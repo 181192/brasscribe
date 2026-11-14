@@ -12,7 +12,7 @@ namespace Kalli.Scribe.ScreenCheck;
 /// </summary>
 internal static class BandroomCatalogue
 {
-    public const string Views = "flyout,flyout:busy,flyout:attention,flyout:update,flyout:update-bandroom,flyout:stopped,flyout:error,devices,devices:update,confirm-stop,window,pair,allow,settings";
+    public const string Views = "flyout,flyout:busy,flyout:attention,flyout:update,flyout:update-bandroom,flyout:stopped,flyout:error,devices,devices:update,confirm-stop,window,pair,allow,settings,settings:reader-installing,settings:reader-installed,settings:reader-failed";
 
     public static int Run(Options o)
     {

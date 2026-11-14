@@ -11,6 +11,8 @@ public sealed record BandroomPaths(string DataDir)
     public string Workspace => Path.Combine(DataDir, "envs");
     public string Manifest => Path.Combine(Workspace, "pixi.toml");
     public string Adapters => Path.Combine(Workspace, "ml", "adapters");
+    /// <summary>The reader of printed music's environment, where the engine looks for it (<c>SheetReader</c>).</summary>
+    public string ReaderEnvironment => Path.Combine(Workspace, ".pixi", "envs", SheetReader.Environment);
     public string PixiCache => Path.Combine(DataDir, "cache", "pixi");
     public string Models => Path.Combine(DataDir, "models");
     public string Logs => Path.Combine(DataDir, "logs");

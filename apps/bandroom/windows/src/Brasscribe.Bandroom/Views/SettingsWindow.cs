@@ -26,12 +26,15 @@ public interface ISettingsHost
     void OpenModelPage();
     /// <summary>Opens the file of third-party licences that ships with the app.</summary>
     void OpenLicences();
+    /// <summary>homr's page: what the reader of printed music is, its source and its licence.</summary>
+    void OpenReaderPage();
 }
 
 /// <summary>
 /// Settings (server-app.md, "Settings page in the window"): SettingsCard-style rows for Name shown to phones
 /// (only when the device name looks machine-made, or one is set), Hugging Face access (the band writer's terms,
-/// accepted before a key is saved, since saving starts its download), Appearance
+/// accepted before a key is saved, since saving starts its download), Sheet music from pictures (the reader that
+/// is fetched only when asked for here, with what it is and its licence above the button), Appearance
 /// (design/brands/brasscribe/system.md §10) and Start when I log in. Appearance is a ComboBox, as in Windows Settings ›
 /// Personalisation › Choose your mode; it applies at once, and focus stays on it.
 /// </summary>
@@ -39,7 +42,8 @@ internal sealed class SettingsWindow : Window
 {
     private static Style S(string key) => (Style)Application.Current.Resources[key];
 
-    public SettingsWindow(AppearanceViewModel appearance, IPanelHost host, ISettingsHost settings, IStrings s, ThemedWindows themes)
+    public SettingsWindow(AppearanceViewModel appearance, IPanelHost host, ISettingsHost settings, SheetReaderViewModel reader,
+        IStrings s, ThemedWindows themes)
     {
         // ----- Name shown to phones -----
         Border? nameCard = null;
@@ -106,6 +110,36 @@ internal sealed class SettingsWindow : Window
         openPage.Click += (_, _) => settings.OpenModelPage();
         var hfCard = Stacked(hfHeader, licence, keyNote, keyLabel, keyBox, terms, agree, Row(openPage, saveKey), keyState);
 
+        // ----- Sheet music from pictures -----
+        var readerHeader = new TextBlock { Text = reader.Header, Style = S("StrongStyle") };
+        var readerBody = new TextBlock { Text = reader.Body, Style = S("BodyStyle"), TextWrapping = TextWrapping.Wrap };
+        var readerSource = new TextBlock { Text = reader.Source, Style = S("MutedStyle"), TextWrapping = TextWrapping.Wrap };
+        var readerStatus = new TextBlock { Style = S("BodyStyle"), TextWrapping = TextWrapping.Wrap };
+        var readerBusy = new ProgressBar { IsIndeterminate = true };
+        AutomationProperties.SetLabeledBy(readerBusy, readerStatus);
+        var readerPage = new Button { Content = reader.ReadMore, Style = S("PlainButtonStyle") };
+        var readerInstall = new Button { Style = S("OutlineButtonStyle") };
+        void ShowReader()
+        {
+            readerStatus.Text = reader.Status;
+            readerStatus.Visibility = reader.Status.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            readerBusy.Visibility = reader.ShowsProgress ? Visibility.Visible : Visibility.Collapsed;
+            readerInstall.Content = reader.Button;
+            readerInstall.Visibility = reader.ShowsButton ? Visibility.Visible : Visibility.Collapsed;
+            readerInstall.IsEnabled = reader.CanInstall;
+            // Read with the button, so a screen reader hears why it is unavailable, or why the last try stopped.
+            AutomationProperties.SetHelpText(readerInstall, reader.Status);
+        }
+        ShowReader();
+        // The install reports from another thread; the card is drawn on this one.
+        var ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        void OnReaderChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => ui.TryEnqueue(ShowReader);
+        reader.PropertyChanged += OnReaderChanged;
+        Closed += (_, _) => reader.PropertyChanged -= OnReaderChanged;
+        readerInstall.Click += async (_, _) => await reader.InstallAsync();
+        readerPage.Click += (_, _) => settings.OpenReaderPage();
+        var readerCard = Stacked(readerHeader, readerBody, readerSource, readerStatus, readerBusy, Row(readerPage, readerInstall));
+
         // ----- Appearance -----
         var appearanceHeader = new TextBlock { Text = appearance.Header, Style = S("StrongStyle") };
         var contrastNote = new TextBlock { Style = S("MutedStyle"), TextWrapping = TextWrapping.Wrap };
@@ -158,6 +192,7 @@ internal sealed class SettingsWindow : Window
                             title,
                             nameCard ?? new Border { Visibility = Visibility.Collapsed },
                             hfCard,
+                            readerCard,
                             Card(new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center, Children = { appearanceHeader, contrastNote } }, picker),
                             Card(loginHeader, login),
                             about,

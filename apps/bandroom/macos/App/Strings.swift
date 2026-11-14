@@ -194,6 +194,17 @@ enum Strings {
 
     static func capitalizedFirst(_ s: String) -> String { s.prefix(1).uppercased() + s.dropFirst() }
 
+    /// Why the reader of printed music was not installed, with what to do about it.
+    static func readerFailure(_ why: SheetReaderFailure) -> String {
+        switch why {
+        case .notSetUp: String(localized: "Brasscribe is still being set up. The reader can be installed once that is done.")
+        case .notEnoughSpace(let needed, let free):
+            String(localized: "Not enough space: the reader needs about \(gigabytes(needed)) GB, and \(gigabytes(free)) GB is free.")
+        case .network: String(localized: "The reader's files couldn't be downloaded. Check the internet connection, then try again.")
+        case .stopped: String(localized: "The reader wasn't installed. Try again; the log has the details.")
+        }
+    }
+
     /// "1.4 GB", "3.1 of 9.8 GB".
     static func gigabytes(_ bytes: Int64) -> String {
         let gb = Double(bytes) / 1_000_000_000

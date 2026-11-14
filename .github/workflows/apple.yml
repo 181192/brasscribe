@@ -469,10 +469,11 @@ jobs:
 
       - run: brew install xcodegen
 
-      - name: Unit tests (requires-pixi reader, BandroomKit, the catalogue's checks)
+      - name: Unit tests (requires-pixi reader, the guard against a bundled reader, BandroomKit, the catalogue's checks)
         if: ${{ !inputs.noise_bandroom }}
         run: |
           scripts/test-pixi-spec.sh
+          scripts/test-no-reader-bundled.sh
           scripts/test-kit.sh
           (cd ../../apple/testing/ScreenCatalogue && swift test)
 
@@ -671,6 +672,8 @@ jobs:
           mkdir -p "$B/Contents/Resources/bin"
           cp -L "$(command -v pixi)" "$B/Contents/Resources/bin/pixi" && chmod 755 "$B/Contents/Resources/bin/pixi"
           scripts/check-bundled-pixi.sh "$B/Contents/Resources/bin/pixi"
+          # homr (the reader of printed music, AGPL-3.0) and every other adapter environment stay out of the download.
+          scripts/check-no-reader-bundled.sh "$B"
           "$B/Contents/Resources/bin/scribe-core" version || { echo "Bandroom has no core command line" >&2; exit 1; }
           codesign -d --entitlements - --xml "$B" > "$RUNNER_TEMP/band.entitlements"
           codesign --force --sign - "$B/Contents/Resources/bin/pixi"
