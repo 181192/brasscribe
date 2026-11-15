@@ -91,6 +91,7 @@ public class TabFlowTests : TempFolderTest
             ("GET", "/v1/profiles") => FakeHandler.Json(profiles),
             ("POST", "/v1/audio") => FakeHandler.Json("""{"audio_id":"a1","sha256":"00","filename":"take.wav","bytes":4}""", HttpStatusCode.Created),
             ("POST", "/v1/jobs") => FakeHandler.Json(TabFixtures.Text("guitar-line", "job.json").Replace("\"succeeded\"", "\"running\""), HttpStatusCode.Accepted),
+            ("POST", "/v1/jobs/pages") => FakeHandler.Json(TabFixtures.Text("guitar-line", "job.json").Replace("\"succeeded\"", "\"running\""), HttpStatusCode.Accepted),
             ("GET", "/v1/jobs/guitar-line/events") => FakeHandler.Sse(Done),
             ("GET", "/v1/jobs/guitar-line") => FakeHandler.Json(TabFixtures.Text("guitar-line", "job.json")),
             ("GET", "/v1/jobs/guitar-line/composition") => FakeHandler.Json(TabFixtures.Text("guitar-line", "composition.json")),
@@ -133,7 +134,8 @@ public class TabFlowTests : TempFolderTest
             new TranscriptionViewModel(() => flow!.Engine, said, strings, ui), settings, new YourInstrumentStore(store), practice,
             new TabExportViewModel(Dialogs, null, said, strings),
             (uri, token) => new EngineClient(new HttpClient(computer), uri) { Token = token }, said, strings,
-            new ScoreLibrary(Path.Combine(Dir, "library")), new KeptTakes(Path.Combine(Dir, "kept")));
+            new ScoreLibrary(Path.Combine(Dir, "library")), new KeptTakes(Path.Combine(Dir, "kept")),
+            new PagesViewModel(new NoDialogs(), said, strings));
         return (flow, computer, players);
     }
 
@@ -256,6 +258,34 @@ public class TabFlowTests : TempFolderTest
         Assert.DoesNotContain(computer.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
     }
 
+    /// <summary>
+    /// A picture opened from Home goes to the pages; Read the notes sends them for the player's instrument as a tab from
+    /// sheet music, and Check the song says it was read on the page and offers no change (there is no recording).
+    /// </summary>
+    [Fact]
+    public async Task Sheet_music_from_a_picture_is_read_into_a_tab_for_the_players_instrument()
+    {
+        var (flow, computer, _) = Build(Computer());
+        Assert.Equal(ConnectionState.Connected, await flow.Settings.Connection.CheckAsync());
+        string page = Path.Combine(Dir, $"riff-{Guid.NewGuid():N}.png");
+        await File.WriteAllBytesAsync(page, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13]);
+
+        await flow.Start.OpenPathAsync(page);
+        Assert.Equal(TabScreen.Pages, flow.Screen);
+        flow.Pages!.ReadCommand.Execute(null);
+        await Until(() => flow.Screen == TabScreen.CheckTheSong && !flow.Check.IsReading);
+
+        var sent = computer.Requests.Single(r => r.Request.RequestUri!.AbsolutePath == "/v1/jobs/pages").Body!;
+        foreach (var value in new[] { "sheet-tab", "guitar-6", "standard", "false" }) Assert.Contains($"\r\n\r\n{value}\r\n", sent);
+        Assert.DoesNotContain(computer.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
+        Assert.True(flow.LastResult!.FromPages);
+        Assert.Equal("Tab_Check_Lead_Page", flow.Check.LeadText);
+        Assert.DoesNotContain(flow.Check.Rows, r => r.HasChange);
+        Assert.Null(flow.Check.NoChangeText);
+        Assert.Empty(flow.Pages.Pages);
+        Assert.StartsWith("Library_FromPages · ", Assert.Single(flow.LibraryView.Items, i => !i.OnComputer).Subtitle);
+    }
+
     [Fact]
     public async Task Without_the_computer_What_is_this_says_to_connect_it_first()
     {
@@ -282,6 +312,7 @@ public class TabFlowTests : TempFolderTest
                 "transcribing" => TabScreen.Transcribing,
                 "check-the-song" => TabScreen.CheckTheSong,
                 "tab" or "tab-full-screen" or "export" => TabScreen.Tab,
+                "pages" => TabScreen.Pages,
                 _ => TabScreen.Error,
             };
             Assert.Equal(expected, flow.Screen);

@@ -42,6 +42,18 @@
   <data name="AboutText.Text" xml:space="preserve">
     <value>Fretscribe is a non-commercial project. Tab and notation: alphaTab (MPL-2.0). The faces are Atkinson Hyperlegible Next (SIL OFL 1.1) and Fretscribe Tab (SIL OFL 1.1).</value>
   </data>
+  <data name="AddPagesBody.Text" xml:space="preserve">
+    <value>PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Add pictures or a PDF</value>
+  </data>
+  <data name="AddPagesTitle.Text" xml:space="preserve">
+    <value>Add pictures or a PDF</value>
+  </data>
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Fretscribe</value>
   </data>
@@ -116,9 +128,6 @@
   </data>
   <data name="CheckLater.Text" xml:space="preserve">
     <value>You can change this later.</value>
-  </data>
-  <data name="CheckLead.Text" xml:space="preserve">
-    <value>This is what Fretscribe heard. If something here is wrong, the frets are wrong too.</value>
   </data>
   <data name="CheckReading.Text" xml:space="preserve">
     <value>Reading what Fretscribe heard…</value>
@@ -636,6 +645,57 @@
   <data name="Notice_Problem" xml:space="preserve">
     <value>Something went wrong, but your songs are safe. If it happens again, restart Fretscribe.</value>
   </data>
+  <data name="PageList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Pages, in the order they are read</value>
+  </data>
+  <data name="PagesHeading.Text" xml:space="preserve">
+    <value>Sheet music from a picture</value>
+  </data>
+  <data name="PagesIntro.Text" xml:space="preserve">
+    <value>Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.</value>
+  </data>
+  <data name="PagesListHeading.Text" xml:space="preserve">
+    <value>Pages, in the order they are read</value>
+  </data>
+  <data name="PagesNeedsComputer.Text" xml:space="preserve">
+    <value>Reading sheet music needs Bandroom on your computer.</value>
+  </data>
+  <data name="PagesOrderHint.Text" xml:space="preserve">
+    <value>The pages are read in this order. Move a page to change it.</value>
+  </data>
+  <data name="Pages_KindLabel" xml:space="preserve">
+    <value>Sheet music</value>
+  </data>
+  <data name="Pages_LeftOut_Many" xml:space="preserve">
+    <value>{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.</value>
+  </data>
+  <data name="Pages_LeftOut_One" xml:space="preserve">
+    <value>One file is not a PNG, JPEG or WebP picture or a PDF, so it was left out. Save a photo from a phone as JPEG first.</value>
+  </data>
+  <data name="Pages_MoveDown" xml:space="preserve">
+    <value>Move page {0} down</value>
+  </data>
+  <data name="Pages_MoveUp" xml:space="preserve">
+    <value>Move page {0} up</value>
+  </data>
+  <data name="Pages_Moved" xml:space="preserve">
+    <value>Page {0} is now page {1}.</value>
+  </data>
+  <data name="Pages_Page" xml:space="preserve">
+    <value>Page {0}</value>
+  </data>
+  <data name="Pages_Remove" xml:space="preserve">
+    <value>Remove page {0}</value>
+  </data>
+  <data name="Pages_Removed" xml:space="preserve">
+    <value>Page {0} is removed.</value>
+  </data>
+  <data name="Pages_Title" xml:space="preserve">
+    <value>Sheet music from a picture</value>
+  </data>
+  <data name="Pages_TooMany" xml:space="preserve">
+    <value>At most {0} pages can be read at once. The rest were left out.</value>
+  </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Code</value>
   </data>
@@ -650,6 +710,12 @@
   </data>
   <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Previous bar</value>
+  </data>
+  <data name="ReadPagesButton.Content" xml:space="preserve">
+    <value>Read the notes</value>
+  </data>
+  <data name="ReadPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Send the pages to your computer, which reads them into a tab for your instrument</value>
   </data>
   <data name="ReadsBox.Header" xml:space="preserve">
     <value>You read</value>
@@ -707,6 +773,9 @@
   </data>
   <data name="Screen_Home" xml:space="preserve">
     <value>Home</value>
+  </data>
+  <data name="Screen_Pages" xml:space="preserve">
+    <value>Sheet music from a picture</value>
   </data>
   <data name="Screen_Tab" xml:space="preserve">
     <value>Tab</value>
@@ -827,6 +896,18 @@
   </data>
   <data name="ShareButtonLabel.Text" xml:space="preserve">
     <value>Share or print</value>
+  </data>
+  <data name="SheetMusicBody.Text" xml:space="preserve">
+    <value>A picture or a PDF of the notes</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Pictures or a PDF of printed music, read by your computer into a tab</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Open sheet music</value>
+  </data>
+  <data name="SheetMusicTitle.Text" xml:space="preserve">
+    <value>Open sheet music</value>
   </data>
   <data name="ShowTabButton.Content" xml:space="preserve">
     <value>Show the tab</value>
@@ -1008,6 +1089,12 @@
   <data name="Tab_Check_KeyTempo_Value" xml:space="preserve">
     <value>{0} · ♩ = {1} · {2}/{3}</value>
   </data>
+  <data name="Tab_Check_Lead" xml:space="preserve">
+    <value>This is what Fretscribe heard. If something here is wrong, the frets are wrong too.</value>
+  </data>
+  <data name="Tab_Check_Lead_Page" xml:space="preserve">
+    <value>This is what Fretscribe read on the page. If something here is wrong, the frets are wrong too.</value>
+  </data>
   <data name="Tab_Check_LeftOut" xml:space="preserve">
     <value>{0} notes left out. They can't be played together with the rest.</value>
   </data>
@@ -1025,6 +1112,9 @@
   </data>
   <data name="Tab_Check_Missing" xml:space="preserve">
     <value>What Fretscribe heard can't be shown right now. {0}</value>
+  </data>
+  <data name="Tab_Check_Missing_Page" xml:space="preserve">
+    <value>What Fretscribe read on the page can't be shown right now. {0}</value>
   </data>
   <data name="Tab_Check_NoComputer" xml:space="preserve">
     <value>It was written on your computer, which isn't connected.</value>
@@ -1047,6 +1137,9 @@
   <data name="Tab_Check_Octave_AsHeard" xml:space="preserve">
     <value>Written as it was heard, as you chose.</value>
   </data>
+  <data name="Tab_Check_Octave_AsHeard_Page" xml:space="preserve">
+    <value>Written as it is on the page, as you chose.</value>
+  </data>
   <data name="Tab_Check_Octave_Auto" xml:space="preserve">
     <value>Let Fretscribe choose</value>
   </data>
@@ -1059,17 +1152,32 @@
   <data name="Tab_Check_Octave_Down" xml:space="preserve">
     <value>Written one octave lower than it was heard.</value>
   </data>
+  <data name="Tab_Check_Octave_Down_Page" xml:space="preserve">
+    <value>Written one octave lower than on the page.</value>
+  </data>
   <data name="Tab_Check_Octave_Notes" xml:space="preserve">
     <value>{0} notes are written an octave lower than they were heard.</value>
   </data>
   <data name="Tab_Check_Octave_Notes_One" xml:space="preserve">
     <value>{0} note is written an octave lower than it was heard.</value>
   </data>
+  <data name="Tab_Check_Octave_Notes_Page" xml:space="preserve">
+    <value>{0} notes are written an octave lower than on the page.</value>
+  </data>
+  <data name="Tab_Check_Octave_Notes_Page_One" xml:space="preserve">
+    <value>{0} note is written an octave lower than on the page.</value>
+  </data>
   <data name="Tab_Check_Octave_TwoDown" xml:space="preserve">
     <value>Written two octaves lower than it was heard.</value>
   </data>
+  <data name="Tab_Check_Octave_TwoDown_Page" xml:space="preserve">
+    <value>Written two octaves lower than on the page.</value>
+  </data>
   <data name="Tab_Check_Octave_Up" xml:space="preserve">
     <value>Written one octave higher than it was heard.</value>
+  </data>
+  <data name="Tab_Check_Octave_Up_Page" xml:space="preserve">
+    <value>Written one octave higher than on the page.</value>
   </data>
   <data name="Tab_Check_Reference" xml:space="preserve">
     <value>Reference pitch</value>

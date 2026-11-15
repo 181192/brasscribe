@@ -99,7 +99,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     {
         "solo" => ["Ready", "Beats", "Notes", "Arrange", "Layout"],
         // Pages of printed music: sent, read, laid out; nothing is heard or arranged.
-        PagesProfile => ["SendPages", "Read", "Layout"],
+        PagesProfile or TabProfiles.SheetTab => ["SendPages", "Read", "Layout"],
         _ => ["Ready", "Beats", "Separate", "Notes", "Arrange", "Layout"],
     };
 
@@ -349,7 +349,13 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     /// Pages of printed music, in order, read on the computer into a score as it is written (<see cref="PagesProfile"/>):
     /// nothing is heard or arranged. The pages stay where they are on this PC.
     /// </summary>
-    public async Task RunPagesAsync(IReadOnlyList<string> pages, string title, string kindLabel)
+    /// <param name="pages">The pages, in the order they are read.</param>
+    /// <param name="title">The run's title.</param>
+    /// <param name="kindLabel">What is read, as the steps' overline says it.</param>
+    /// <param name="profile">The profile that reads pages: a score (<see cref="PagesProfile"/>) or a tab (<see cref="TabProfiles.SheetTab"/>).</param>
+    /// <param name="options">The profile's options by their form names (a tab's instrument, tuning and layout).</param>
+    public async Task RunPagesAsync(IReadOnlyList<string> pages, string title, string kindLabel, string profile = PagesProfile,
+        IReadOnlyDictionary<string, string>? options = null)
     {
         _cts?.Cancel();
         _cts = new CancellationTokenSource();
@@ -361,7 +367,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         ErrorDetail = null;
         Failure = TranscriptionFailure.None;
         IsConfirmingCancel = false;
-        ResetSteps(PagesProfile, kindLabel);
+        ResetSteps(profile, kindLabel);
         Percent = 0;
         Title = title;
         StageText = _s["Transcribe_Stage_SendPages"];
@@ -378,12 +384,12 @@ public sealed partial class TranscriptionViewModel : ObservableObject
             }
             DeviceText = _s.Format("Transcribe_Device", health.Device.ToUpperInvariant());
             Job job;
-            try { job = await engine.CreateJobFromPagesAsync(pages, PagesProfile, title, ct: ct); }
+            try { job = await engine.CreateJobFromPagesAsync(pages, profile, title, options, ct); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { throw new UnreadableRecordingException(e); }
             var done = await FollowAsync(engine, job, estimator, ct);
             var source = new SourceAudio("", title, TimeSpan.Zero, null, false);
             Completed?.Invoke(this, new TranscriptionResult(done.Job.Id, done.Composition, done.Xml, done.Job.Outputs ?? [], source,
-                Profile: PagesProfile, Evidence: done.Evidence, FromPages: true));
+                Profile: profile, Evidence: done.Evidence, FromPages: true));
         }
         catch (OperationCanceledException e) when (!ct.IsCancellationRequested && e.InnerException is TimeoutException)
         {

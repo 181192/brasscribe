@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Kalli.Fretscribe.Views.PagesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Kalli.Scribe.ViewModels"
+    xmlns:views="using:Kalli.Fretscribe.Views"
+    NavigationCacheMode="Required"
+    AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop">
+
+    <!-- Sheet music from a picture: add pictures or PDFs, the pages in the order they are read, and Read the notes. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="820" Padding="40,64,40,32" Spacing="12" HorizontalAlignment="Center">
+            <TextBlock x:Name="Heading" x:Uid="PagesHeading" Style="{StaticResource ScreenHeadingStyle}"
+                       AutomationProperties.HeadingLevel="Level1" IsTabStop="True" />
+            <TextBlock x:Uid="PagesIntro" Style="{StaticResource LeadStyle}" Margin="0,0,0,8" />
+
+            <Button x:Name="AddPagesButton" x:Uid="AddPagesButton" Style="{StaticResource CardButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    MinHeight="0"
+                    Command="{x:Bind ViewModel.AddCommand}">
+                <!-- A grid, not a horizontal stack: the sentence wraps to the card's width, and the card is as tall as it. -->
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource IconWellStyle}" VerticalAlignment="Center">
+                        <FontIcon Glyph="{StaticResource FsIconImportFile}" FontSize="16" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock x:Uid="AddPagesTitle" Style="{StaticResource HeadlineStyle}" />
+                        <TextBlock x:Uid="AddPagesBody" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+            </Button>
+
+            <TextBlock x:Uid="PagesListHeading" Style="{StaticResource LabelStyle}" Margin="0,12,0,0"
+                       AutomationProperties.HeadingLevel="Level2" Visibility="{x:Bind ViewModel.HasPages, Mode=OneWay}" />
+            <TextBlock x:Uid="PagesOrderHint" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind ViewModel.ShowsOrderHint, Mode=OneWay}" />
+            <ItemsControl x:Name="PageList" x:Uid="PageList" ItemsSource="{x:Bind ViewModel.Pages}" IsTabStop="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PageItem">
+                        <Border Style="{StaticResource CardStyle}" Padding="16,8" Margin="0,0,0,8">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <!-- A small picture of the page, read small (never decoded whole); a PDF shows its icon. -->
+                                <Border Width="44" Height="56" Background="White" CornerRadius="4" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image Stretch="Uniform" Visibility="{x:Bind IsPicture}" AutomationProperties.AccessibilityView="Raw">
+                                            <Image.Source>
+                                                <BitmapImage UriSource="{x:Bind FileUri}" DecodePixelHeight="112" DecodePixelType="Logical" />
+                                            </Image.Source>
+                                        </Image>
+                                        <FontIcon Glyph="{StaticResource FsIconFile}" FontSize="20" Foreground="Black"
+                                                  Visibility="{x:Bind IsPdf}" AutomationProperties.AccessibilityView="Raw" />
+                                    </Grid>
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind Place, Mode=OneWay}" Style="{StaticResource HeadlineStyle}" />
+                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                    <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnMoveUp"
+                                            IsEnabled="{x:Bind vm:Screens.Not(IsFirst), Mode=OneWay}"
+                                            AutomationProperties.Name="{x:Bind MoveUpName, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind MoveUpName, Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE70E;" FontSize="16" />
+                                    </Button>
+                                    <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnMoveDown"
+                                            IsEnabled="{x:Bind vm:Screens.Not(IsLast), Mode=OneWay}"
+                                            AutomationProperties.Name="{x:Bind MoveDownName, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind MoveDownName, Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE70D;" FontSize="16" />
+                                    </Button>
+                                    <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnRemove"
+                                            AutomationProperties.Name="{x:Bind RemoveName, Mode=OneWay}"
+                                            ToolTipService.ToolTip="{x:Bind RemoveName, Mode=OneWay}">
+                                        <FontIcon Glyph="{StaticResource FsIconDelete}" FontSize="16" />
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Style="{StaticResource BodyStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
+                       AutomationProperties.LiveSetting="Polite" Visibility="{x:Bind views:Shown.HasText(ViewModel.StatusText), Mode=OneWay}" />
+
+            <Grid ColumnSpacing="16" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <!-- Why Read the notes waits: the computer is not connected. -->
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
+                            Visibility="{x:Bind views:Shown.Not(ViewModel.ComputerThere), Mode=OneWay}">
+                    <FontIcon Glyph="{StaticResource FsIconComputer}" FontSize="16" Foreground="{ThemeResource ScribeTextMutedBrush}" />
+                    <TextBlock x:Uid="PagesNeedsComputer" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" MaxWidth="480" />
+                </StackPanel>
+                <Button x:Name="ReadPagesButton" x:Uid="ReadPagesButton" Grid.Column="1" Style="{StaticResource PrimaryButtonStyle}"
+                        Command="{x:Bind ViewModel.ReadCommand}" AccessKey="R" />
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

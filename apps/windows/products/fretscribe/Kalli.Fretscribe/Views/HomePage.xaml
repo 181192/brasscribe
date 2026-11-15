@@ -66,6 +66,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Button x:Name="ImportButton" x:Uid="ImportButton" Style="{StaticResource CardButtonStyle}"
                         Command="{x:Bind ViewModel.ImportCommand}" AccessKey="O">
                     <StackPanel Spacing="12">
@@ -87,6 +91,19 @@
                         <StackPanel Spacing="2">
                             <TextBlock x:Uid="RecordSystemTitle" Style="{StaticResource HeadlineStyle}" />
                             <TextBlock x:Uid="RecordSystemBody" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Button>
+                <!-- Sheet music from a picture: pictures or a PDF of printed music, read on the computer into a tab. -->
+                <Button x:Name="SheetMusicButton" x:Uid="SheetMusicButton" Grid.Row="1" Style="{StaticResource CardButtonStyle}"
+                        Command="{x:Bind Main.OpenPagesCommand}">
+                    <StackPanel Spacing="12">
+                        <Border Style="{StaticResource IconWellStyle}" HorizontalAlignment="Left">
+                            <FontIcon Glyph="{StaticResource FsIconFile}" FontSize="16" />
+                        </Border>
+                        <StackPanel Spacing="2">
+                            <TextBlock x:Uid="SheetMusicTitle" Style="{StaticResource HeadlineStyle}" />
+                            <TextBlock x:Uid="SheetMusicBody" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
                         </StackPanel>
                     </StackPanel>
                 </Button>
