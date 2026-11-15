@@ -72,6 +72,8 @@ class ReleaseModels(unittest.TestCase):
         for abi in ("arm64-v8a", "universal"):
             self.write(f"brasscribe-play-android-{abi}.apk", apk())
             self.write(f"fretscribe-android-{abi}.apk", {"classes.dex": b"dex"})
+        self.write("brasscribe-play-android.aab", {f"base/{n}": d for n, d in apk().items()})
+        self.write("fretscribe-android.aab", {"base/dex/classes.dex": b"dex"})
         self.write("brasscribe-play-ios-unsigned.ipa", apple(APPLE_DIR))
         self.write("brasscribe-play-macos-arm64.zip", apple(MAC_DIR))
         self.write("fretscribe-ios-unsigned.ipa", {"Payload/Fretscribe.app/Info.plist": b"x"})
@@ -79,11 +81,12 @@ class ReleaseModels(unittest.TestCase):
         self.write("brasscribe-play-windows-x64.zip", {"BrasscribePlay/BrasscribePlay.exe": b"x"})
         self.write("brasscribe-bandroom-macos-arm64.zip", {"Brasscribe Bandroom.app/Contents/Info.plist": b"x"})
         (self.dir / "SHA256SUMS").write_text("x  y\n")
-        code, out, err = self.run_on(self.dir, require=("brasscribe-play-android-*.apk", "fretscribe-android-*.apk"))
+        code, out, err = self.run_on(self.dir, require=("brasscribe-play-android-*.apk", "fretscribe-android-*.apk",
+                                                            "brasscribe-play-android.aab", "fretscribe-android.aab"))
         self.assertEqual(code, 0, err)
         self.assertEqual(err, "")
         rows = [line for line in out.splitlines() if line.startswith("| `")]
-        self.assertEqual(len(rows), 11)  # every file, SHA256SUMS too
+        self.assertEqual(len(rows), 13)  # every file, SHA256SUMS too
         self.assertIn("beat-this-small0.onnx (sha256", out)
         self.assertIn("beat-this-small0-fp32.mlmodelc (0.0 MB weights)", out)
         self.assertIn("| `brasscribe-play-windows-x64.zip` | Play for Windows | none | ok |", out)
@@ -117,6 +120,15 @@ class ReleaseModels(unittest.TestCase):
         code, _, err = self.run_on(self.write("brasscribe-play-android-arm64-v8a.apk", files))
         self.assertEqual(code, 1)
         self.assertIn("no assets/models/NOTICE.md", err)
+
+    def test_a_bundle_without_a_model_fails_and_a_fretscribe_bundle_with_one_fails(self):
+        code, _, err = self.run_on(self.write("brasscribe-play-android.aab",
+                                              {f"base/{n}": d for n, d in apk(drop="beat-this-small0.onnx").items()}))
+        self.assertEqual(code, 1)
+        self.assertIn("no base/assets/models/beat-this-small0.onnx", err)
+        code, _, err = self.run_on(self.write("fretscribe-android.aab", {"base/assets/models/nmp-b1.onnx": b"x"}))
+        self.assertEqual(code, 1)
+        self.assertIn("should not be there", err)
 
     def test_fretscribe_with_a_model_fails(self):
         code, _, err = self.run_on(self.write("fretscribe-android-arm64-v8a.apk", {"assets/models/nmp-b1.onnx": b"x"}))
@@ -169,7 +181,7 @@ class ReleaseModels(unittest.TestCase):
         self.assertEqual(self.run_on(empty, require=("brasscribe-play-android-*.apk",))[0], 1)
 
     def test_an_app_package_with_no_rule_fails(self):
-        for name in ("app-arm64-v8a-release-unsigned.apk", "SomethingElse.ipa"):
+        for name in ("app-arm64-v8a-release-unsigned.apk", "app-release.aab", "SomethingElse.ipa"):
             with self.subTest(name):
                 code, out, err = self.run_on(self.write(name, apk()))
                 self.assertEqual(code, 1)

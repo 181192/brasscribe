@@ -113,7 +113,8 @@ jobs:
         run: >-
           .github/scripts/release-models.py
           --require 'brasscribe-play-android-arm64-v8a.apk' --require 'brasscribe-play-android-universal.apk'
-          --require 'brasscribe-play-ios-unsigned.ipa' --require 'brasscribe-play-macos-arm64.zip' dist
+          --require 'brasscribe-play-ios-unsigned.ipa' --require 'brasscribe-play-macos-arm64.zip'
+          --require 'brasscribe-play-android.aab' --require 'fretscribe-android.aab' dist
 
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS

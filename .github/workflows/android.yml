@@ -3,7 +3,8 @@ name: android
 # Brasscribe Play and Fretscribe for Android (one code base, two apps). Checks: unit tests, lint and
 # a debug build (Kotlin fallback core, stub audio tier). With `release`: the Rust core is built in
 # (and sfizz, in Brasscribe only), and the release APKs of both apps are signed, each app with its
-# own key (secrets of the `release` environment), and uploaded as dist-android.
+# own key (secrets of the `release` environment), and uploaded as dist-android, with each app's
+# Google Play bundle (.aab), signed with the same key, as dist-android-bundles.
 # The `release` environment only admits v* tags, so the signed build runs from a release tag only.
 # Heavy platform builds run only for releases (release.yml) or when started by hand;
 # pull requests and pushes to main get the fast Linux checks in ci.yml instead.
@@ -182,12 +183,46 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      # The bundles for Google Play, from the same sources and version. A Gradle run of its own: the ABI splits of the
+      # APKs are off in it (AGP builds no bundle with them on), and Play cuts the bundle per phone itself.
+      - name: Release bundles for Google Play (unsigned)
+        if: ${{ inputs.release }}
+        env:
+          FRETSCRIBE_VERSION_NAME: ${{ inputs.fretscribe_version_name }}
+          FRETSCRIBE_VERSION_CODE: ${{ inputs.fretscribe_version_code }}
+        run: |
+          ./gradlew bundleRelease --no-build-cache --stacktrace \
+            "-Pfretscribe.versionName=$FRETSCRIBE_VERSION_NAME" "-Pfretscribe.versionCode=$FRETSCRIBE_VERSION_CODE"
+          mkdir -p "$RUNNER_TEMP/unsigned-bundles"
+          for app in brasscribe fretscribe; do
+            cp "products/$app/build/outputs/bundle/release/$app-release.aab" "$RUNNER_TEMP/unsigned-bundles/$app-release-unsigned.aab"
+          done
+          # Brasscribe's bundle carries the pinned models and the band SoundFont as its APKs do; Fretscribe's neither
+          # (alphaTab's own small SoundFont is in both).
+          ../../.github/scripts/release-models.py --require 'brasscribe-*.aab' --require 'fretscribe-*.aab' "$RUNNER_TEMP"/unsigned-bundles/*.aab
+          unzip -l "$RUNNER_TEMP/unsigned-bundles/brasscribe-release-unsigned.aab" | grep -q "base/assets/sounds/brasscribe-band-mobile.sf2" \
+            || { echo "Brasscribe's bundle has no band SoundFont" >&2; exit 1; }
+          if unzip -l "$RUNNER_TEMP/unsigned-bundles/fretscribe-release-unsigned.aab" | grep -q "brasscribe-band"; then
+            echo "Fretscribe's bundle carries the band SoundFont" >&2; exit 1
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ inputs.release }}
+        with:
+          name: android-unsigned-bundles
+          path: ${{ runner.temp }}/unsigned-bundles/*.aab
+          if-no-files-found: error
+          retention-days: 1
+
   # Only this job gets the release keys: it runs in the `release` environment, whose secrets hold the
   # keystores (base64) and their passwords. A key must stay the same across releases, or the APK will
   # not install over the previous one; the certificate is checked against RELEASE_CERT_SHA256.
   # Each app has its own key: Brasscribe's (ANDROID_KEYSTORE_*, alias brasscribe), and for Fretscribe
   # one shared with other prototype apps (PROTOTYPES_KEYSTORE_*, alias prototypes, PROTOTYPES_CERT_SHA256).
   # A step gets one key only, and the last step fails the job if an APK carries the other app's.
+  # Each app's Google Play bundle (.aab) is signed with that app's key too, with jarsigner, in steps of their own:
+  # Play App Signing holds the same key, so Play's build and the GitHub/USB APKs update over each other
+  # (docs/shared/dev/release.md, Google Play).
   sign:
     name: sign the release APKs
     if: ${{ inputs.release }}
@@ -297,6 +332,82 @@ jobs:
         with:
           name: dist-android
           path: ${{ runner.temp }}/out/*.apk
+          if-no-files-found: error
+          # Signed with the release keys: kept only until release.yml attaches it to the release.
+          retention-days: 1
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-unsigned-bundles
+          path: unsigned-bundles
+
+      # jarsigner and keytool, for the bundles.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: /.github/scripts/check-aab.py
+          sparse-checkout-cone-mode: false
+          path: bundle-checks
+          persist-credentials: false
+
+      # Before any key is read: each bundle is the app its name says.
+      - name: The unsigned bundles are the apps their names say
+        working-directory: .
+        run: |
+          for app in brasscribe fretscribe; do
+            package=$(bundle-checks/.github/scripts/check-aab.py --print package "unsigned-bundles/$app-release-unsigned.aab")
+            [ "$package" = "no.kalli.$app" ] || { echo "$app-release-unsigned.aab is $package, not no.kalli.$app" >&2; exit 1; }
+          done
+          mkdir -p "$RUNNER_TEMP/bundles"
+
+      - name: Sign Brasscribe's bundle
+        working-directory: .
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "release signing secrets are missing" >&2; exit 1; }
+          ks="$RUNNER_TEMP/release.jks"
+          trap 'rm -f "$ks"' EXIT
+          echo "$KEYSTORE_B64" | base64 -d > "$ks"
+          aab="$RUNNER_TEMP/bundles/brasscribe-play-android.aab"
+          cp unsigned-bundles/brasscribe-release-unsigned.aab "$aab"
+          jarsigner -keystore "$ks" -storepass:env KEYSTORE_PASSWORD "$aab" brasscribe > /dev/null
+
+      - name: Sign Fretscribe's bundle
+        working-directory: .
+        env:
+          KEYSTORE_B64: ${{ secrets.PROTOTYPES_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.PROTOTYPES_KEYSTORE_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "Fretscribe's signing secrets are missing" >&2; exit 1; }
+          ks="$RUNNER_TEMP/prototypes.jks"
+          trap 'rm -f "$ks"' EXIT
+          echo "$KEYSTORE_B64" | base64 -d > "$ks"
+          aab="$RUNNER_TEMP/bundles/fretscribe-android.aab"
+          cp unsigned-bundles/fretscribe-release-unsigned.aab "$aab"
+          jarsigner -keystore "$ks" -storepass:env KEYSTORE_PASSWORD "$aab" prototypes > /dev/null
+
+      # No key here. Each bundle: its own app's certificate alone, every entry signed, not debuggable, and the
+      # package, version and permissions of that app's signed APK.
+      - name: Each bundle is its app, signed with its own app's certificate only
+        working-directory: .
+        run: |
+          check=bundle-checks/.github/scripts/check-aab.py
+          [ "$(find "$RUNNER_TEMP/bundles" -name '*.aab' | wc -l)" -eq 2 ] || { echo "expected two signed bundles" >&2; exit 1; }
+          "$check" --cert "$RELEASE_CERT_SHA256" --package no.kalli.brasscribe \
+            --like "$RUNNER_TEMP/out/brasscribe-play-android-arm64-v8a.apk" "$RUNNER_TEMP/bundles/brasscribe-play-android.aab"
+          "$check" --cert "$PROTOTYPES_CERT_SHA256" --package no.kalli.fretscribe \
+            --like "$RUNNER_TEMP/out/fretscribe-android-arm64-v8a.apk" "$RUNNER_TEMP/bundles/fretscribe-android.aab"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist-android-bundles
+          path: ${{ runner.temp }}/bundles/*.aab
           if-no-files-found: error
           # Signed with the release keys: kept only until release.yml attaches it to the release.
           retention-days: 1

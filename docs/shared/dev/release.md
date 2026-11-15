@@ -28,7 +28,8 @@ job checks the certificate
 against the one every earlier release used. Fretscribe's APKs are signed in the same job with a key
 of their own, shared with other prototype apps (`PROTOTYPES_KEYSTORE_B64`,
 `PROTOTYPES_KEYSTORE_PASSWORD`, alias `prototypes`), and the job fails if an APK carries the other
-app's certificate. The Mac apps are re-signed ad hoc (there is no Apple
+app's certificate. The same job signs each app's Google Play bundle (.aab) with that app's key (see
+[Google Play](#google-play-the-same-key) below). The Mac apps are re-signed ad hoc (there is no Apple
 Developer ID), and the Windows builds are not signed. The sections below are the local build, kept
 for when CI cannot be used; v0.1.0 to v0.3.0 were made that way.
 
@@ -40,6 +41,8 @@ What a release ships:
 | `brasscribe-play-android-universal.apk` | Play for Android, all CPU types |
 | `fretscribe-android-arm64-v8a.apk` | Fretscribe for Android, most devices |
 | `fretscribe-android-universal.apk` | Fretscribe for Android, all CPU types |
+| `brasscribe-play-android.aab` | Play for Android as an app bundle, for Google Play only (a phone cannot install a bundle) |
+| `fretscribe-android.aab` | Fretscribe for Android as an app bundle, for Google Play only |
 | `brasscribe-play-macos-arm64.zip` | Play for Mac (Apple silicon), ad-hoc signed |
 | `brasscribe-play-ios-unsigned.ipa` | Play for iPhone and iPad, unsigned: a tester signs it with their own Apple account |
 | `fretscribe-macos-arm64.zip` | Fretscribe for Mac (Apple silicon), ad-hoc signed |
@@ -124,6 +127,47 @@ release's APK, `aapt2 dump badging` shows the new `versionCode`/`versionName`, a
 the prototypes key (alias `prototypes`), never with Brasscribe's, and are named
 `fretscribe-android-{arm64-v8a,universal}.apk`. `.github/workflows/android.yml` has the certificate
 digest of each key and what a Fretscribe APK must not carry (the band SoundFont, the models, sfizz).
+
+### Google Play: the same key
+
+The bundles for Google Play are built in a Gradle run of their own (AGP builds no bundle while the APKs'
+ABI splits are on, so a run that names a `bundle` task turns them off):
+
+```sh
+./gradlew bundleRelease
+```
+
+This writes `products/{brasscribe,fretscribe}/build/outputs/bundle/release/{brasscribe,fretscribe}-release.aab`,
+unsigned. A bundle is signed with `jarsigner`, not `apksigner`, **with the same key as the app's APKs**
+(Brasscribe's own for Brasscribe, the prototypes key for Fretscribe), and named
+`brasscribe-play-android.aab` and `fretscribe-android.aab`:
+
+```sh
+cp products/brasscribe/build/outputs/bundle/release/brasscribe-release.aab "$OUT/brasscribe-play-android.aab"
+jarsigner -keystore "$K/brasscribe-release.jks" -storepass:file "$K/keystore-password.txt" "$OUT/brasscribe-play-android.aab" brasscribe
+../../.github/scripts/check-aab.py --cert <the app's certificate SHA-256> --package <the app's id> \
+  --like "$OUT/brasscribe-play-android-arm64-v8a.apk" "$OUT/brasscribe-play-android.aab"
+```
+
+`check-aab.py` refuses a bundle that is unsigned, signed with another key or by more than one signer, changed
+after signing, debuggable, or another app; with `--like` also one whose version or permissions differ from the
+app's APK of the same build. It prints the permissions the bundle asks for. The release job runs it on both bundles.
+
+**Do not upload Brasscribe's bundle to Play yet.** Its bundle is still `no.kalli.brasscribe`, signed with the key
+the GitHub APKs have used so far. Play's app is `app.kalli.brasscribe`, and Brasscribe moves to a new key that can be
+exported for Play App Signing; the first upload fixes an app's package name and its app signing key for good.
+Upload Brasscribe's bundle only from the first release after both have changed in this repository. Fretscribe's
+bundle has the same wait for its move to `app.kalli.fretscribe`.
+
+**Play App Signing must use this same key for each app.** Play re-signs what it delivers to phones with its
+app signing key. When the app is set up in the Play Console (Setup > App signing), choose to use your own key and
+export it from its Java keystore with Google's PEPK tool, as the Console describes (its wording changes; follow
+what it shows): Brasscribe's key for Brasscribe, the prototypes key for Fretscribe, never a key Google makes. The
+upload key is then the same key, which is what the release job signs the bundles with. Only then does a phone take Play's build as an update of an APK from a GitHub release or USB,
+and the other way round. With a key of Google's the certificates differ, and a phone refuses to update across
+them: the player has to uninstall, and loses what the app keeps on the phone. Make the choice before the first
+upload to an app. After the first upload, check under the app's Setup > App signing that the app signing key
+certificate's SHA-256 is the one in `.github/workflows/android.yml`.
 
 ## 3. Play for Mac
 
