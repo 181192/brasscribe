@@ -16,6 +16,7 @@
             <TextBlock x:Uid="PagesIntro" Style="{StaticResource LeadStyle}" Margin="0,0,0,8" />
 
             <Button x:Name="AddPagesButton" x:Uid="AddPagesButton" Style="{StaticResource CardButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    MinHeight="0"
                     Command="{x:Bind ViewModel.AddCommand}">
                 <!-- A grid, not a horizontal stack: the sentence wraps to the card's width, and the card is as tall as it. -->
                 <Grid ColumnSpacing="16">
