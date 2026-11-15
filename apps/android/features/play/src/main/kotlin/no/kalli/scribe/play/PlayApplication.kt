@@ -12,6 +12,7 @@ abstract class PlayApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        OnnxRuntimeTelemetry.switchOff(this)
         GoogleLeftovers.clear(this)
         container = AppContainer(this, product)
     }

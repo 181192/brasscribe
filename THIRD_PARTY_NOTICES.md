@@ -111,16 +111,27 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   the app's licence file, as they come in their packages. Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
   needs.
-- **ONNX Runtime sends data to Microsoft.** It is Microsoft's, and Brasscribe uses Microsoft's builds as
-  they are, with their telemetry on: in Play for Android, in Play for Windows, and in the engine's swift-f0
-  and separator adapters and, outside macOS, its basic-pitch adapter (the `onnxruntime` package from PyPI,
-  on the computer Bandroom or a checkout runs on). Its `Privacy.md` says it collects "information about you
-  and your use of the software" and sends it to Microsoft. On Android, macOS and Linux its own uploader
-  sends events about the runtime's use to Microsoft's telemetry service
-  (`mobile.events.data.microsoft.com`) with a device identifier that it keeps between runs; on Android
-  it also reads the device's id (`ANDROID_ID`), maker and model. On Windows the events go through ETW to
-  Windows' diagnostic data, as far as the PC's settings allow. A recording, or the notes written from it,
-  is not part of what it sends. Microsoft's privacy statement: https://go.microsoft.com/fwlink/?LinkID=824704.
+- **ONNX Runtime's telemetry is switched off.** Microsoft's builds of ONNX Runtime, which Brasscribe uses as they
+  are, report the runtime's use to Microsoft unless told not to (its `Privacy.md`: "information about you and your use
+  of the software"). Brasscribe tells them not to, in Play for Android, in Play for Windows and in the engine's
+  adapters (swift-f0, the separator, homr and, outside macOS, basic-pitch: the `onnxruntime` package from PyPI, on the
+  computer Bandroom or a checkout runs on):
+  - **Android, macOS and Linux:** the runtime's own uploader, which would send events to Microsoft's telemetry service
+    (`mobile.events.data.microsoft.com`) with a device identifier it keeps between runs, never starts:
+    `ORT_DISABLE_TELEMETRY` is set before the runtime loads (by Play for Android as it starts, and by the engine, its
+    evaluation and its adapter runner for every adapter), and the runtime then writes no device identifier and queues
+    no event. Play for Android also leaves out the runtime's start-up hook (`ai.onnxruntime.TelemetryInitializer`),
+    which makes the runtime's telemetry client as the app starts and would read the phone's id (`ANDROID_ID`), maker
+    and model for it, and deletes a queue of events an earlier version may have left in its cache.
+  - **Windows:** the runtime writes its events to ETW, for Windows' own diagnostic data, rather than sending them
+    itself. Play for Windows and the swift-f0 adapter switch them off (`DisableTelemetryEvents`) before every model they
+    load. The runtime offers no way to keep them off for good: when Windows' diagnostic data service turns the runtime's
+    ETW provider on while a model is loaded, the runtime turns its events back on, and Windows then collects them as its
+    diagnostic data settings allow. The separator, homr and basic-pitch adapters run their packages' own programs, which
+    do not switch them off.
+
+  A recording, or the notes written from it, is never part of what the runtime reports. Microsoft's privacy statement:
+  https://go.microsoft.com/fwlink/?LinkID=824704.
 - **Studio:** alphaTab (above); build and test tools only in development.
 
 ## Not distributed

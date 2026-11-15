@@ -9,11 +9,21 @@ public enum ExecutionTarget { Cpu, DirectMl }
 /// DirectML (any DirectX 12 GPU) is tried first and the CPU provider is the fallback; elsewhere the
 /// CPU provider is used. Which one ran is reported so the UI and manifests can say so.
 /// </summary>
+/// <remarks>
+/// Every session is made here, with ONNX Runtime's telemetry events switched off first. On Windows the runtime writes
+/// its events to ETW for Windows' diagnostic data; switched off, it writes none. Its switch is per process and does
+/// not last against Windows itself: when a Windows trace session turns the runtime's ETW provider on, the runtime
+/// turns its events back on. So it is switched off again before every session.
+/// </remarks>
 public static class OnnxSessions
 {
+    /// <summary>Switches ONNX Runtime's telemetry events off, for this process. Makes the runtime's environment.</summary>
+    public static void TelemetryOff() => OrtEnv.Instance().DisableTelemetryEvents();
+
     /// <remarks>The session keeps what it needs from its options, so they are released once it exists.</remarks>
     public static (InferenceSession Session, ExecutionTarget Target) Create(string modelPath, bool preferGpu = true, int deviceId = 0)
     {
+        TelemetryOff();
         if (preferGpu && OperatingSystem.IsWindows())
         {
             using var dml = new SessionOptions
