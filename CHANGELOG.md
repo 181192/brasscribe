@@ -2,6 +2,99 @@
 
 Every release of Brasscribe, newest first. Generated from the commit history by git-cliff (`cliff.toml`).
 
+## 0.16.0 (2026-11-15)
+
+### Breaking changes
+
+- **Android:** **Breaking:** Brasscribe and Fretscribe for Android get the names they have on Google Play ([#560](https://github.com/181192/brasscribe/pull/560))<br>The Android apps are new apps on your phone. Install this version: it goes beside the old app, not over it. Open it and pair it with Bandroom again; your scores on the computer stay. Share from the old app anything you want to keep on the phone, then remove the old app.
+
+### New features
+
+- **Android:** Share or print says which files your computer did not make, and what to do ([#506](https://github.com/181192/brasscribe/pull/506))
+- **Android:** A solo written before your computer was fully set up says so, and can be written down again ([#512](https://github.com/181192/brasscribe/pull/512))
+- **Android:** Fretscribe plays the tab's own notes, counts a bar in and ticks the beats ([#467](https://github.com/181192/brasscribe/pull/467))
+- **Android:** Turn a picture, a photo or a PDF of sheet music into a score or a tab ([#515](https://github.com/181192/brasscribe/pull/515))
+- **Android:** Share or print a Fretscribe tab: PDF, Guitar Pro, MusicXML, MIDI, text tab and playing instructions ([#523](https://github.com/181192/brasscribe/pull/523))
+- **Android:** Fix a note in a Fretscribe tab: move it to another string, keep it, leave it out or make it a ghost note ([#526](https://github.com/181192/brasscribe/pull/526))
+- **Android:** Change a Fretscribe tab's tuning or capo on the phone, keeping the sound or the shapes ([#528](https://github.com/181192/brasscribe/pull/528))
+- **Android:** Fretscribe's speed trainer and saved repeats ([#529](https://github.com/181192/brasscribe/pull/529))
+- **Android:** **Breaking:** Brasscribe and Fretscribe for Android get the names they have on Google Play ([#560](https://github.com/181192/brasscribe/pull/560))
+- **iPhone, iPad and Mac:** Fretscribe plays the tab's own notes, counts a bar in and ticks the beats ([#521](https://github.com/181192/brasscribe/pull/521))
+- **iPhone, iPad and Mac:** Turn a picture, a photo or a PDF of sheet music into a score or a tab ([#542](https://github.com/181192/brasscribe/pull/542))
+- **iPhone, iPad and Mac:** The pages of sheet music in hand are still there after the system closes the app ([#547](https://github.com/181192/brasscribe/pull/547))
+- **Bandroom:** Install the reader of sheet music from pictures when you ask for it ([#514](https://github.com/181192/brasscribe/pull/514))
+- **Engine:** Read a screenshot, photo or PDF of sheet music into a score or a tab ([#466](https://github.com/181192/brasscribe/pull/466))
+- **Site:** Each app looks like itself: Brasscribe's rehearsal marks, Fretscribe's ruled paper, and the family's pen draws its line ([#488](https://github.com/181192/brasscribe/pull/488))
+- **Site:** On the home the pen comes down from the headline onto both sheets, and their music writes itself out ([#500](https://github.com/181192/brasscribe/pull/500))
+- **Site:** Every device shown as itself, Brasscribe's seats on its cards and screens, and processor names folded away ([#503](https://github.com/181192/brasscribe/pull/503))
+- **Site:** Fretscribe's front page shows a guitar's tab, and its screens are dark on a Norwegian page in dark mode ([#473](https://github.com/181192/brasscribe/pull/473))
+- **Site:** App pages are shorter on a phone: the cards and the places are rows, and every tuning fits ([#505](https://github.com/181192/brasscribe/pull/505))
+- **Site:** Norwegian pages show no English first, the home's motion plays once a visit, and Play is pointed out when the music has written itself out ([#502](https://github.com/181192/brasscribe/pull/502))
+- **Site:** Windows shown as itself, and the home and app pages shorter on a phone ([#507](https://github.com/181192/brasscribe/pull/507))
+- **Site:** A privacy page for the Scribe apps, linked from every page's footer ([#562](https://github.com/181192/brasscribe/pull/562))
+- **Studio:** Upload a picture or PDF of sheet music and get a score or a tab ([#532](https://github.com/181192/brasscribe/pull/532))
+- **Studio:** A tab from pictures or a PDF for your own instrument and tuning ([#539](https://github.com/181192/brasscribe/pull/539))
+- **Windows:** Turn a picture or a PDF of sheet music into a score ([#545](https://github.com/181192/brasscribe/pull/545))
+- **Windows:** A score read from sheet music says so in Your scores, and each page shows a small picture ([#546](https://github.com/181192/brasscribe/pull/546))
+- **Windows:** Fretscribe turns a picture or a PDF of sheet music into a tab for your instrument ([#548](https://github.com/181192/brasscribe/pull/548))
+- A recording the computer could not write down yet is not sent again when you retry ([#510](https://github.com/181192/brasscribe/pull/510))
+
+### Fixes
+
+- **Android:** Your scores start on the first screen of a small phone ([#494](https://github.com/181192/brasscribe/pull/494))
+- **Android:** The tab keeps its room on a small phone
+- **Android:** Check the song and the tab count the same notes marked ?
+- **Android:** The tab keeps its room on a small phone ([#483](https://github.com/181192/brasscribe/pull/483))
+- **Android:** Check the song and the tab count the same notes marked ? ([#496](https://github.com/181192/brasscribe/pull/496))
+- **Android:** The score keeps a row more on a small phone with larger text ([#497](https://github.com/181192/brasscribe/pull/497))
+- **Android:** What do you play and Share or print fit a small phone ([#499](https://github.com/181192/brasscribe/pull/499))
+- **Android:** Where a part comes from is in the menu when the phone is on its side ([#501](https://github.com/181192/brasscribe/pull/501))
+- **Android:** Check the notes keeps the bar in view with three buttons, and Listen beside it on a phone on its side ([#498](https://github.com/181192/brasscribe/pull/498))
+- **Android:** What do you play? offers "I conduct or listen" on the first screen and says why Continue waits ([#509](https://github.com/181192/brasscribe/pull/509))
+- **Android:** On a small phone with larger text, where your part comes from is in the score menu, not a line of its own ([#513](https://github.com/181192/brasscribe/pull/513))
+- **Android:** Share or print says what it makes on the first screen, and its three buttons look alike ([#511](https://github.com/181192/brasscribe/pull/511))
+- **Android:** Home with a library starts the list on the first screen with larger text and on its side ([#516](https://github.com/181192/brasscribe/pull/516))
+- **Android:** A beat with a note marked ? and a note with no place shows both marks, and every screen counts the same notes ([#519](https://github.com/181192/brasscribe/pull/519))
+- **Android:** On a phone on its side Save and Cancel of Change note are in view, under the choices ([#525](https://github.com/181192/brasscribe/pull/525))
+- **Android:** On a phone the score starts at its first system, and its title and credits are in the score menu ([#522](https://github.com/181192/brasscribe/pull/522))
+- **Android:** Home's ways in by their icons say their words on a long press, and keep their chevrons where the words fit ([#527](https://github.com/181192/brasscribe/pull/527))
+- **Android:** Fretscribe no longer declares a background service it never uses ([#563](https://github.com/181192/brasscribe/pull/563))
+- **iPhone, iPad and Mac:** Fretscribe counts the notes to check as the tab draws them, on Home and in Check the song ([#520](https://github.com/181192/brasscribe/pull/520))
+- **iPhone, iPad and Mac:** Large text on an iPhone no longer runs through the buttons ([#460](https://github.com/181192/brasscribe/pull/460))
+- **iPhone, iPad and Mac:** On an iPhone SE the score's player and View menu stay on the screen ([#530](https://github.com/181192/brasscribe/pull/530))
+- **iPhone, iPad and Mac:** Home on an iPhone with scores starts the list on the first screen, also on its side and with larger text ([#543](https://github.com/181192/brasscribe/pull/543))
+- **iPhone, iPad and Mac:** A locked and a damaged PDF are told apart, in the same words as the other apps ([#552](https://github.com/181192/brasscribe/pull/552))
+- **iPhone, iPad and Mac:** A stale answer of the tab page never updates its engraving ([#557](https://github.com/181192/brasscribe/pull/557))
+- **Bandroom:** After a failed update, the panel says when phones can't use the version that runs ([#490](https://github.com/181192/brasscribe/pull/490))
+- **Bandroom for Mac:** Brasscribe no longer needs Homebrew's uv, and keeps its listening tools through app updates ([#538](https://github.com/181192/brasscribe/pull/538))
+- **Engine:** A job says whether it read a recording or pages, and gives a page back as a picture ([#533](https://github.com/181192/brasscribe/pull/533))
+- **Engine:** Recordings decode with the ffmpeg that comes with Brasscribe, not one the computer must already have ([#541](https://github.com/181192/brasscribe/pull/541))
+- **Site:** Brasscribe writes a solo on the phone, tablet or Mac itself; a band score and every tab come from Bandroom ([#493](https://github.com/181192/brasscribe/pull/493))
+- The reader's install says what stopped it, and the phone's pages can be put in order ([#531](https://github.com/181192/brasscribe/pull/531))
+- Every page of a PDF counts against the 40 on the phone and on Windows, before anything is sent ([#549](https://github.com/181192/brasscribe/pull/549))
+- ONNX Runtime no longer reports its use to Microsoft ([#564](https://github.com/181192/brasscribe/pull/564))
+
+<details><summary>Under the hood (15 changes: docs, tests, CI, build, refactoring)</summary>
+
+
+- **Android:** The tab flow tests no longer race the fixture computer ([#504](https://github.com/181192/brasscribe/pull/504))
+- **Android:** Four more of Brasscribe's screens are in its screen catalogue ([#462](https://github.com/181192/brasscribe/pull/462))
+- **Android:** Four more flow tests hold the test-only fixture computer while they act on a job at work ([#518](https://github.com/181192/brasscribe/pull/518))
+- **Android:** Home's counts of the notes to check are checked against the tab's with the computer's data ([#524](https://github.com/181192/brasscribe/pull/524))
+- **Android:** The score's portrait test waits for the notation to be painted before it looks for it ([#534](https://github.com/181192/brasscribe/pull/534))
+- **Android:** A tab probe whose page folds doubtful notes away, and the counts that leave them out ([#540](https://github.com/181192/brasscribe/pull/540))
+- **Android:** The screen catalogue holds the work under way while it checks a screen that shows it ([#551](https://github.com/181192/brasscribe/pull/551))
+- **iPhone, iPad and Mac:** The band's loudness is checked on every pull request ([#489](https://github.com/181192/brasscribe/pull/489))
+- **iPhone, iPad and Mac:** The band's phrase and dynamics are checked on every pull request ([#508](https://github.com/181192/brasscribe/pull/508))
+- **iPhone, iPad and Mac:** An iPhone screen catalogue: the smallest iPhone on every pull request, an iPhone SE every night ([#535](https://github.com/181192/brasscribe/pull/535))
+- **Deps:** Move Studio, Windows and the Apple tab to alphaTab 1.9.0 ([#537](https://github.com/181192/brasscribe/pull/537))
+- **Play:** A draft of every Play Console answer for both apps, with the store pictures ([#561](https://github.com/181192/brasscribe/pull/561))
+- **Release:** Each release also carries a signed Google Play bundle of both apps ([#558](https://github.com/181192/brasscribe/pull/558))
+- **Release:** Upload each app's bundle to Google Play's internal testing track, opt-in ([#559](https://github.com/181192/brasscribe/pull/559))
+- **Site:** Build the site and change its language back and forth in a browser on pull requests that touch it ([#536](https://github.com/181192/brasscribe/pull/536))
+
+</details>
+
 ## 0.15.0 (2026-11-14)
 
 ### New features
@@ -127,12 +220,9 @@ Every release of Brasscribe, newest first. Generated from the commit history by 
 
 ### Breaking changes
 
-- **Engine:** **Breaking:** The engine's command is scribe, and its Python packages and settings take scribe names ([#369](https://github.com/181192/brasscribe/pull/369))
-The engine's command is now `scribe` (`scribe serve`, `scribe run`, …), its Python packages are `scribe_engine`, `scribe_music` and `scribe_eval`, and its settings are `SCRIBE_…` where they were `BRASSCRIBE_…` (`SCRIBE_DATA`, `SCRIBE_MODELS`, `SCRIBE_TOKEN`, …). The old names are gone, not aliased: a variable under its old name is ignored. If you run the engine from a checkout, run `scripts/worktree-setup.sh` once and rename the variables you set. If you run it in Docker, build the image again (`scribe:cpu`) and rename the variables you pass; the image's folder is `/scribe`, so models are mounted at `/scribe/models`. Bandroom users do nothing themselves: the app replaces its engine at the first start after the update, which downloads the engine's packages again and so needs the network; until that has worked no engine runs, and Bandroom offers to try again. Every engine works out its model results again on its first job (what it had stored is not read any more), so that job takes as long as a first one.
-- **Engine:** **Breaking:** Every profile belongs to a target, which names its files, and each app offers its own target's profiles ([#380](https://github.com/181192/brasscribe/pull/380))
-/v1/profiles gives a required `target` ("brass" or "fretted") for each profile, and a job has a required `target` ("brass", "fretted" or null). In composition.json the voice and layer `brass` are `hits`; a composition saved with the layer `brass` loses the parts arranged from it when it is arranged again, since the arranger reads `hits`. The core's TalkingScore constructor takes the target that wrote the score (UniFFI `Target`, C `sc_talking_score_new(..., target, ...)` with SC_TARGET_BRASS and SC_TARGET_FRETTED, .NET `TalkingScore(xml, target, composition)`), and `scribe-core talking-score` needs `--target brass|fretted`. `scribe-core lead-sheet` and the reference's lead sheet name an arranger only when given `--creator`. A tab's MusicXML names Fretscribe in `<software>`. eval/baselines.json holds the suites under `targets.<target>.suites`. In benchmark answers a run's `target` is `ran`, a run has `targets`, and a suite result, a history entry and a listed suite have `target`. Benchmark history stored before this change is no longer listed.
-- **Wire:** **Breaking:** The pairing link and the network service take the scribe name, and app and engine say which to update when they don't match ([#377](https://github.com/181192/brasscribe/pull/377))
-the pairing link is scribe://pair and the network service is _scribe._tcp, and the engine's answers carry an interface version that every app checks. Update every app and Bandroom together. An updated app keeps its pairing; an app or an engine left on the old version can neither find nor pair with the other.
+- **Engine:** **Breaking:** The engine's command is scribe, and its Python packages and settings take scribe names ([#369](https://github.com/181192/brasscribe/pull/369))<br>The engine's command is now `scribe` (`scribe serve`, `scribe run`, …), its Python packages are `scribe_engine`, `scribe_music` and `scribe_eval`, and its settings are `SCRIBE_…` where they were `BRASSCRIBE_…` (`SCRIBE_DATA`, `SCRIBE_MODELS`, `SCRIBE_TOKEN`, …). The old names are gone, not aliased: a variable under its old name is ignored. If you run the engine from a checkout, run `scripts/worktree-setup.sh` once and rename the variables you set. If you run it in Docker, build the image again (`scribe:cpu`) and rename the variables you pass; the image's folder is `/scribe`, so models are mounted at `/scribe/models`. Bandroom users do nothing themselves: the app replaces its engine at the first start after the update, which downloads the engine's packages again and so needs the network; until that has worked no engine runs, and Bandroom offers to try again. Every engine works out its model results again on its first job (what it had stored is not read any more), so that job takes as long as a first one.
+- **Engine:** **Breaking:** Every profile belongs to a target, which names its files, and each app offers its own target's profiles ([#380](https://github.com/181192/brasscribe/pull/380))<br>/v1/profiles gives a required `target` ("brass" or "fretted") for each profile, and a job has a required `target` ("brass", "fretted" or null). In composition.json the voice and layer `brass` are `hits`; a composition saved with the layer `brass` loses the parts arranged from it when it is arranged again, since the arranger reads `hits`. The core's TalkingScore constructor takes the target that wrote the score (UniFFI `Target`, C `sc_talking_score_new(..., target, ...)` with SC_TARGET_BRASS and SC_TARGET_FRETTED, .NET `TalkingScore(xml, target, composition)`), and `scribe-core talking-score` needs `--target brass|fretted`. `scribe-core lead-sheet` and the reference's lead sheet name an arranger only when given `--creator`. A tab's MusicXML names Fretscribe in `<software>`. eval/baselines.json holds the suites under `targets.<target>.suites`. In benchmark answers a run's `target` is `ran`, a run has `targets`, and a suite result, a history entry and a listed suite have `target`. Benchmark history stored before this change is no longer listed.
+- **Wire:** **Breaking:** The pairing link and the network service take the scribe name, and app and engine say which to update when they don't match ([#377](https://github.com/181192/brasscribe/pull/377))<br>the pairing link is scribe://pair and the network service is _scribe._tcp, and the engine's answers carry an interface version that every app checks. Update every app and Bandroom together. An updated app keeps its pairing; an app or an engine left on the old version can neither find nor pair with the other.
 
 ### Fixes
 
@@ -155,12 +245,9 @@ the pairing link is scribe://pair and the network service is _scribe._tcp, and t
 
 ### Breaking changes
 
-- **Android:** **Breaking:** Brasscribe and Fretscribe need Android 16 or newer ([#358](https://github.com/181192/brasscribe/pull/358))
-Brasscribe and Fretscribe for Android need Android 16 or newer.
-- **iPhone, iPad and Mac:** **Breaking:** The Apple apps need iOS, iPadOS and macOS 26 or newer, and what only older systems needed is gone ([#359](https://github.com/181192/brasscribe/pull/359))
-Brasscribe Play needs iOS 26, iPadOS 26 or macOS 26 or newer, and Bandroom for Mac needs macOS 26 or newer.
-- **Windows:** **Breaking:** The Windows apps need Windows 11, and what only Windows 10 needed is gone ([#360](https://github.com/181192/brasscribe/pull/360))
-Brasscribe Play and Bandroom for Windows need Windows 11.
+- **Android:** **Breaking:** Brasscribe and Fretscribe need Android 16 or newer ([#358](https://github.com/181192/brasscribe/pull/358))<br>Brasscribe and Fretscribe for Android need Android 16 or newer.
+- **iPhone, iPad and Mac:** **Breaking:** The Apple apps need iOS, iPadOS and macOS 26 or newer, and what only older systems needed is gone ([#359](https://github.com/181192/brasscribe/pull/359))<br>Brasscribe Play needs iOS 26, iPadOS 26 or macOS 26 or newer, and Bandroom for Mac needs macOS 26 or newer.
+- **Windows:** **Breaking:** The Windows apps need Windows 11, and what only Windows 10 needed is gone ([#360](https://github.com/181192/brasscribe/pull/360))<br>Brasscribe Play and Bandroom for Windows need Windows 11.
 
 <details><summary>Under the hood (5 changes: docs, tests, CI, build, refactoring)</summary>
 
@@ -198,8 +285,7 @@ Brasscribe Play and Bandroom for Windows need Windows 11.
 
 ### Breaking changes
 
-- **Core:** **Breaking:** The shared core is scribe-core, with its library, bindings, command line and folders renamed to match ([#340](https://github.com/181192/brasscribe/pull/340))
-The core's command line tool and its downloads are now `scribe-core`. If you downloaded the tool, have `brasscribe-core` on your PATH or set `BRASSCRIBE_CORE_CLI` by hand: fetch `scribe-core-*` and set `SCRIBE_CORE_CLI`. If you run the engine in Docker, build the image again. Bandroom users do nothing.
+- **Core:** **Breaking:** The shared core is scribe-core, with its library, bindings, command line and folders renamed to match ([#340](https://github.com/181192/brasscribe/pull/340))<br>The core's command line tool and its downloads are now `scribe-core`. If you downloaded the tool, have `brasscribe-core` on your PATH or set `BRASSCRIBE_CORE_CLI` by hand: fetch `scribe-core-*` and set `SCRIBE_CORE_CLI`. If you run the engine in Docker, build the image again. Bandroom users do nothing.
 
 <details><summary>Under the hood (4 changes: docs, tests, CI, build, refactoring)</summary>
 
@@ -877,11 +963,9 @@ The core's command line tool and its downloads are now `scribe-core`. If you dow
 
 ### Breaking changes
 
-- **Android:** **Breaking:** Remove the built-in reference demo
-debug builds no longer offer the reference demo or the built-in
+- **Android:** **Breaking:** Remove the built-in reference demo<br>debug builds no longer offer the reference demo or the built-in
 sample engine.
-- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in reference demo
--open-demo-score and -demo-service are now
+- **iPhone, iPad and Mac:** **Breaking:** Remove the built-in reference demo<br>-open-demo-score and -demo-service are now
 -open-fixture-score and -fixture-service.
 
 ### New features
