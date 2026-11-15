@@ -53,8 +53,8 @@ class Stale(unittest.TestCase):
         self.assertEqual(keys([cache(f"pixi-{H1}", ref="refs/pull/2/merge"), cache(f"pixi-{H2}", created="2026-11-01T00:00:00Z")]), [])
 
     def test_tag_caches_go_after_a_day(self):
-        fresh = cache(f"pixi-{H1}", ref="refs/tags/v0.16.0", accessed="2026-11-15T00:00:00Z")
-        old = cache(f"pixi-{H2}", ref="refs/tags/v0.15.0", accessed="2026-11-14T00:00:00Z")
+        fresh = cache(f"pixi-{H1}", ref="refs/heads/refs/tags/v0.16.0", accessed="2026-11-15T00:00:00Z")
+        old = cache(f"pixi-{H2}", ref="refs/heads/refs/tags/v0.15.0", accessed="2026-11-14T00:00:00Z")
         self.assertEqual(keys([fresh, old]), [old["key"]])
 
 

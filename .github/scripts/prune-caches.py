@@ -22,6 +22,8 @@ from datetime import datetime, timedelta, timezone
 # A segment of a key that is a hash (hashFiles, a commit, rust-cache's hashes): eight or more hex digits.
 HASH = re.compile(r"^[0-9a-f]{8,}$")
 MAIN = "refs/heads/main"
+# A release run's caches: GitHub lists their ref as refs/heads/refs/tags/vX.Y.Z (a run called from a tag push).
+TAG = "refs/tags/"
 
 
 def family(key: str) -> str:
@@ -45,7 +47,7 @@ def stale(caches: list[dict], now: datetime) -> list[dict]:
                 out.append(cache)
             else:
                 newest[fam] = cache
-        elif ref.startswith("refs/tags/") and now - when(cache["last_accessed_at"]) > timedelta(days=1):
+        elif TAG in ref and now - when(cache["last_accessed_at"]) > timedelta(days=1):
             out.append(cache)
     return out
 
