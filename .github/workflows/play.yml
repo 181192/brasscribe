@@ -1,0 +1,108 @@
+name: play
+
+# Each app's signed bundle (.aab) from a release's GitHub assets goes to Google Play's internal testing track
+# (scripts/play-upload.sh; docs/shared/dev/release.md, Google Play). Opt-in: nothing is uploaded unless the
+# repository variable PLAY_TRACK is `internal`, the only track this workflow knows. release.yml calls it once the
+# GitHub release is published, for a stable vX.Y.Z tag. To try again for a tag (one cut since this workflow exists:
+# a run on a tag uses that tag's own workflow and scripts):
+#
+#   gh workflow run play.yml --ref vX.Y.Z -f app=fretscribe   (or brasscribe, or both; -f dry_run=true uploads nothing)
+#
+# The GitHub release is never touched here: a failure on Play leaves it as it is and says so. A version code that
+# is on Play already is refused by Play, so a retry names only the app that failed.
+on:
+  workflow_call:
+    inputs:
+      app:
+        type: string
+        default: both
+      dry_run:
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which app's bundle to upload
+        type: choice
+        options: [both, brasscribe, fretscribe]
+        default: both
+      dry_run:
+        description: Check the bundles, the notes and the key, and upload nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: play-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: ${{ matrix.app }} to Play (internal testing)
+    # Pre-releases have no section in CHANGELOG.md, and are not uploaded.
+    if: ${{ (vars.PLAY_TRACK == 'internal' || inputs.dry_run) && !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # The service account's key is a secret of the `release` environment, which only admits v* tags.
+    environment: release
+    strategy:
+      # One app's failure does not stop the other's upload.
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(inputs.app == 'both' && '["brasscribe","fretscribe"]' || format('["{0}"]', inputs.app)) }}
+    env:
+      ASSET: ${{ matrix.app == 'brasscribe' && 'brasscribe-play-android.aab' || 'fretscribe-android.aab' }}
+      # The one certificate the bundle must carry (android.yml's sign job pins the same): Brasscribe's key of
+      # app.kalli.brasscribe, and the prototypes key. A bundle signed otherwise is refused before the upload.
+      CERT: ${{ matrix.app == 'brasscribe' && '706a90189407d2a6a63486e0f496beda2d87817eeea2af79a11bb8d078d9bcfe' || '73759ffa5a9a27cc18c9f07c5418033c47481c61f3b435559e67509290c394b0' }}
+    steps:
+      - name: Started on a release tag
+        env:
+          TRACK: ${{ vars.PLAY_TRACK }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          APP: ${{ matrix.app }}
+        run: |
+          case "$APP" in brasscribe|fretscribe) ;; *) echo "app must be both, brasscribe or fretscribe, not '$APP'" >&2; exit 1 ;; esac
+          [[ "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "run this on a vX.Y.Z tag, not $GITHUB_REF" >&2; exit 1; }
+          [ "$TRACK" = internal ] || [ "$DRY_RUN" = true ] || { echo "PLAY_TRACK is '$TRACK'; only 'internal' is uploaded" >&2; exit 1; }
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: The bundle from the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$ASSET" --dir "$RUNNER_TEMP/play"
+
+      - name: Release notes from the changelog
+        env:
+          TAG: ${{ github.ref_name }}
+          APP: ${{ matrix.app }}
+        run: |
+          for lang in en-US no-NO; do
+            .github/scripts/play-notes.py --app "$APP" --version "${TAG#v}" --language "$lang" > "$RUNNER_TEMP/play/notes-$lang.txt"
+            { echo "#### $APP, $lang"; echo '```'; cat "$RUNNER_TEMP/play/notes-$lang.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload to the internal testing track
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          dry=(); [ "$DRY_RUN" != true ] || dry=(--dry-run)
+          scripts/play-upload.sh "${dry[@]}" --track internal --cert "$CERT" --notes-en "$RUNNER_TEMP/play/notes-en-US.txt" \
+            --notes-nb "$RUNNER_TEMP/play/notes-no-NO.txt" "$RUNNER_TEMP/play/$ASSET"
+
+      - name: What to do now
+        if: ${{ failure() }}
+        env:
+          TAG: ${{ github.ref_name }}
+          APP: ${{ matrix.app }}
+        run: |
+          msg="The GitHub release $TAG stands; only $APP's upload to Google Play failed, and nothing on Play changed. Once the cause above is fixed, try again with: gh workflow run play.yml --ref $TAG -f app=$APP"
+          echo "::error title=Google Play upload failed::$msg"
+          echo "$msg" >> "$GITHUB_STEP_SUMMARY"

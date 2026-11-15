@@ -3,9 +3,9 @@ name: release
 # On a semver tag (v1.2.3, v1.2.3-beta.1): the fast checks from ci.yml run first (a tag push
 # doesn't start ci.yml on its own), then each platform workflow builds its distributables
 # (artifacts named dist-*, each holding ready-to-ship files) and they are attached to a GitHub
-# release. Nothing is built if the checks fail. A store
-# upload (Play, App Store, Microsoft Store) goes in as its own job that `needs:` the matching build
-# and downloads its dist-* artifact.
+# release. Nothing is built if the checks fail. A store upload goes in as its own job after the
+# GitHub release, from its assets, so a store's failure never holds back or undoes the release: Google
+# Play's internal testing track is the `play` job (play.yml, opt-in).
 # Pushed tags do not always start it (tags pushed in bulk never do), so it can also be started by hand
 # on a tag: `gh workflow run release.yml --ref vX.Y.Z`.
 on:
@@ -158,3 +158,13 @@ jobs:
           body_path: ${{ runner.temp }}/notes.md
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: dist/*
+
+  # Google Play's internal testing track, opt-in (repository variable PLAY_TRACK=internal), once the GitHub release
+  # is out and only for a stable tag. A failure there leaves the GitHub release as it is; play.yml says how to retry.
+  play:
+    needs: github
+    if: ${{ !cancelled() && needs.github.result == 'success' && vars.PLAY_TRACK == 'internal' && !contains(github.ref_name, '-') }}
+    uses: ./.github/workflows/play.yml
+    permissions:
+      contents: read
+    secrets: inherit

@@ -86,7 +86,7 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           filters: |
-            workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**']
+            workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**', 'scripts/play-upload.sh', 'scripts/test_play_upload.py', 'CHANGELOG.md']
             python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'licences/**', 'scripts/licences.py', 'sounds/**', 'design/**', 'convert/*models*', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
             core: ['core/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
             # What the site build reads (site/inputs.txt, which site/build.py checks this against), and this file.
@@ -142,6 +142,16 @@ jobs:
       # The runner's JDK and Android SDK make and sign the made-up bundles.
       - name: The check of a Google Play bundle (check-aab.py)
         run: python3 .github/scripts/test_check_aab.py
+      # A stand-in curl answers as Google would; the runner's Android SDK makes the bundle.
+      - name: The Google Play upload and its notes (play-upload.sh, play-notes.py)
+        run: |
+          shellcheck scripts/play-upload.sh
+          python3 scripts/test_play_upload.py
+          # The notes of the latest release are within Play's limits for both apps and both languages.
+          version=$(sed -nE 's/^## ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CHANGELOG.md | head -1)
+          for app in brasscribe fretscribe; do for lang in en-US no-NO; do
+            .github/scripts/play-notes.py --app "$app" --version "$version" --language "$lang" > /dev/null
+          done; done
 
   # The licence texts the apps ship (licences/README.md): the files written from the list are current, and every
   # dependency of the builds is in the list or named as not shipped. Always run: a dependency can change in any area.
