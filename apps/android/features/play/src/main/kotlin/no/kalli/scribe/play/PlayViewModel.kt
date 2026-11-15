@@ -452,7 +452,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         restore()
         // Where the user is, and what they brought in, outlive the process (the system may end it in the background).
         viewModelScope.launch { backStack.collect { stack -> savedState[KEY_STACK] = ArrayList(stack.map { it.name }) } }
-        viewModelScope.launch { pages.collect { list -> savedState[KEY_PAGES] = ArrayList(list.map { "${it.file.path}\n${it.name}" }) } }
+        viewModelScope.launch { pages.collect { list -> savedState[KEY_PAGES] = ArrayList(list.map { "${it.file.path}\n${it.name}\n${it.pages}" }) } }
         viewModelScope.launch {
             var previous: File? = null
             source.collect { s ->
@@ -488,8 +488,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val restoredSource = savedState.get<String>(KEY_SOURCE)?.let(SavedSource::decode)
         // The pages in hand come back too: the phone may end the app while its camera takes the next one.
         pages.value = savedState.get<ArrayList<String>>(KEY_PAGES).orEmpty().mapNotNull { saved ->
-            val (path, name) = saved.split("\n", limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
-            Page(File(path), name).takeIf { it.file.isFile }
+            val parts = saved.split("\n", limit = 3).takeIf { it.size == 3 } ?: return@mapNotNull null
+            Page(File(parts[0]), parts[1], parts[2].toIntOrNull() ?: 1).takeIf { it.file.isFile }
         }
         // The process ended while the full score of a draft was being made: the draft comes back.
         val scoreId = currentSavedScoreId ?: draftBehind
@@ -872,18 +872,30 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         viewModelScope.launch {
             try {
                 val before = if (fresh) emptyList() else pages.value
-                val room = (EngineApi.MAX_PAGES - before.size).coerceAtLeast(0)
                 // In order with the clearing away at a start: a page that arrives as the app starts is copied after it, never under it.
                 var tooLarge = false
+                var locked = false
+                var damaged = false
+                // Every page of a PDF counts, as the computer counts them: past the limit, the rest are left out here.
+                var over = false
                 val (taken, leftOut) = withContext(storage) {
                     val taken = mutableListOf<Page>()
                     var leftOut = 0
-                    for (uri in uris.take(room)) {
+                    for (uri in uris) {
+                        if (before.pageCount() + taken.pageCount() >= EngineApi.MAX_PAGES) { over = true; continue }
                         try {
-                            taken += Pages.take(ctx, uri, displayName(uri, res.getString(R.string.pages_photo_name)), pagesDir)
+                            val page = Pages.take(ctx, uri, displayName(uri, res.getString(R.string.pages_photo_name)), pagesDir)
+                            if (before.pageCount() + taken.pageCount() + page.pages > EngineApi.MAX_PAGES) {
+                                page.file.delete()
+                                over = true
+                            } else {
+                                taken += page
+                            }
                         } catch (e: PageTooLargeException) {
                             // Larger than the computer reads: said now, in the words the computer's refusal has, and not sent.
                             tooLarge = true
+                        } catch (e: UnreadablePdfException) {
+                            if (e.locked) locked = true else damaged = true
                         } catch (e: Exception) {
                             android.util.Log.w(TAG, "not taken as a page", e)
                             leftOut++
@@ -897,7 +909,9 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 showPages()
                 when {
                     tooLarge -> say(R.string.error_page_too_large)
-                    uris.size > room -> say(R.string.pages_too_many, EngineApi.MAX_PAGES)
+                    locked -> say(R.string.pages_pdf_locked)
+                    damaged -> say(R.string.pages_pdf_damaged)
+                    over -> say(R.string.pages_too_many, EngineApi.MAX_PAGES)
                     leftOut > 0 -> sayText(res.getQuantityString(R.plurals.pages_left_out, leftOut, leftOut))
                 }
             } finally {
@@ -922,7 +936,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
         val file = photoFile ?: return
         photoFile = null
         if (!taken || file.length() == 0L) { file.delete(); return }
-        if (pages.value.size >= EngineApi.MAX_PAGES) { file.delete(); say(R.string.pages_too_many, EngineApi.MAX_PAGES); return }
+        if (pages.value.pageCount() >= EngineApi.MAX_PAGES) { file.delete(); say(R.string.pages_too_many, EngineApi.MAX_PAGES); return }
         busy.value = true
         viewModelScope.launch {
             try {

@@ -93,10 +93,10 @@ public sealed partial class TabFlowViewModel : ObservableObject
         if (Pages is not null)
         {
             // A picture or a PDF of printed music: read into a tab for the player's instrument.
-            Start.PagesOpened += (_, paths) =>
+            Start.PagesOpened += async (_, paths) =>
             {
-                Pages.Add(paths);
                 OpenPages();
+                await Pages.AddAsync(paths);
             };
             Pages.ComputerThere = ComputerThere;
             Settings.Connection.PropertyChanged += (_, e) =>
@@ -460,9 +460,10 @@ public sealed partial class TabFlowViewModel : ObservableObject
         Screen = TabScreen.WhatIsThis;
     }
 
-    /// <summary>Check the song for a tab's facts as given (the sample scenes).</summary>
-    public void ShowCheck(TabResult tab, IReadOnlyList<string> stages)
+    /// <summary>Check the song for a tab's facts as given (the sample scenes); <paramref name="fromPages"/>: a tab read from a page.</summary>
+    public void ShowCheck(TabResult tab, IReadOnlyList<string> stages, bool fromPages = false)
     {
+        Check.FromPages = fromPages;
         Profiles.Asking(Settings.EngineUri.ToString());
         Profiles.Answered(Settings.EngineUri.ToString(), new HashSet<string> { TabProfiles.Tab });
         Check.Show(tab, stages, ComputerThere);

@@ -43,6 +43,12 @@ public static class Pages
         }
     }
 
+    /// <summary>The HRESULT the system's PDF reader fails with for a PDF that asks for a password (ERROR_WRONG_PASSWORD).</summary>
+    public const int WrongPassword = unchecked((int)0x8007052B);
+
+    /// <summary>What a failure of the system's PDF reader means: a password asked for is locked; anything else, damaged.</summary>
+    public static PdfRead PdfFailure(Exception e) => e.HResult == WrongPassword ? PdfRead.Locked : PdfRead.Damaged;
+
     /// <summary>The codes the computer refuses pages with before a job is made ({"code", "detail"}).</summary>
     public const string NotAPage = "not_a_page";
     public const string WrongInput = "wrong_input";
@@ -76,3 +82,13 @@ public static class Pages
 
 /// <summary>Why a file chosen as a page is left out on this PC.</summary>
 public enum PageRefusal { NotAPage, TooLarge }
+
+/// <summary>What the system's PDF reader made of a file: its <see cref="Pages"/>, or why it could not open it.</summary>
+public readonly record struct PdfRead(int Pages, bool IsLocked = false)
+{
+    /// <summary>Locked with a password: the player can open it elsewhere and save it without one.</summary>
+    public static readonly PdfRead Locked = new(0, IsLocked: true);
+    /// <summary>Damaged: it cannot be opened at all.</summary>
+    public static readonly PdfRead Damaged = new(0);
+    public bool IsDamaged => Pages <= 0 && !IsLocked;
+}

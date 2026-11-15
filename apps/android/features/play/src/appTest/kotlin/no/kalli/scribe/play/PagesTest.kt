@@ -31,8 +31,17 @@ class PagesTest {
     private val from get() = File(context.cacheDir, "pages-test-from").apply { mkdirs() }
     private val dir get() = File(context.cacheDir, "pages-test")
 
+    /** The JVM has no working PdfRenderer: the tests' own reader reads their invented PDFs. */
+    private val phoneReader = Pages.readPdf
+
+    @org.junit.Before
+    fun readTestPdfs() {
+        Pages.readPdf = TestPdfs.reader
+    }
+
     @After
     fun clean() {
+        Pages.readPdf = phoneReader
         from.deleteRecursively()
         dir.deleteRecursively()
     }
@@ -61,6 +70,17 @@ class PagesTest {
         BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { BitmapFactory.decodeFile(file.path, it) }.let { it.outWidth to it.outHeight }
 
     private fun head(text: String, vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray() + text.toByteArray(Charsets.ISO_8859_1)
+
+    /** What the phone's PDF reader made of a file: a password asked for is locked, any other failure or no page damaged. */
+    @Test
+    fun aPdfTheReaderCannotOpenIsLockedOrDamaged() {
+        assertEquals(PdfRead.Pages(12), PdfRead.of(Result.success(12)))
+        assertEquals(PdfRead.Locked, PdfRead.of(Result.failure(SecurityException("password required"))))
+        assertEquals(PdfRead.Damaged, PdfRead.of(Result.failure(java.io.IOException("file not in PDF format or corrupted"))))
+        assertEquals(PdfRead.Damaged, PdfRead.of(Result.failure(IllegalStateException("anything else"))))
+        assertEquals(PdfRead.Damaged, PdfRead.of(Result.success(0)))
+        assertEquals(41, listOf(Page(File("a"), "a", 40), Page(File("b"), "b")).pageCount())
+    }
 
     @Test
     fun aFileIsToldByHowItStartsAndTheTypeItCameWith() {
@@ -99,12 +119,19 @@ class PagesTest {
             assertEquals(name, page.name)
             assertEquals(dir, page.file.parentFile)
         }
-        val pdf = "%PDF-1.7\n1 0 obj\n<<>>\nendobj\n".toByteArray()
+        val pdf = "%PDF-1.7\n1 0 obj\n<< /Type /Page >>\nendobj\n%%EOF\n".toByteArray()
         assertArrayEquals(pdf, take("Hymn.pdf", pdf).file.readBytes())
+        // A PDF counts as its pages; one locked with a password is not taken.
+        val book = "%PDF-1.7\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 12 >>\nendobj\n%%EOF\n".toByteArray()
+        assertEquals(12, take("Book.pdf", book).pages)
+        val locked = "%PDF-1.7\ntrailer\n<< /Encrypt 9 0 R >>\n%%EOF\n".toByteArray()
+        assertEquals(true, (runCatching { take("Locked.pdf", locked) }.exceptionOrNull() as? UnreadablePdfException)?.locked)
+        // A damaged one (cut short) is not taken either: left out here, as on the other apps.
+        assertEquals(false, (runCatching { take("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa".toByteArray()) }.exceptionOrNull() as? UnreadablePdfException)?.locked)
         // A screenshot that came without a name's ending gets the one of what it is.
         assertEquals("Screenshot.png", take("Screenshot", picture(8, 8, Bitmap.CompressFormat.PNG)).name)
         // Nothing but the pages is left in their folder.
-        assertEquals(5, dir.listFiles()!!.size)
+        assertEquals(6, dir.listFiles()!!.size)
     }
 
     @Test
@@ -157,7 +184,8 @@ class PagesTest {
     fun aFileLargerThanTheComputerReadsIsRefusedBeforeItIsCopied() {
         // By the size it is said to have: nothing of it is read.
         val big = File(from, "Whole book.pdf")
-        java.io.RandomAccessFile(big, "rw").use { it.write("%PDF-1.7\n".toByteArray()); it.setLength(Pages.MAX_BYTES + 1) }
+        // A whole PDF of one page, made as large as it is said to be.
+        java.io.RandomAccessFile(big, "rw").use { it.write("%PDF-1.7\n<< /Type /Page >>\n%%EOF\n".toByteArray()); it.setLength(Pages.MAX_BYTES + 1) }
         assertTrue(runCatching { Pages.take(context, Uri.fromFile(big), "Whole book.pdf", dir) }.exceptionOrNull() is PageTooLargeException)
         assertEquals(emptyList<File>(), dir.listFiles().orEmpty().toList())
         // One of exactly the size the computer reads is taken.

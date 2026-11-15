@@ -508,10 +508,10 @@
     <value>Nothing written down yet. Record a riff or open a recording.</value>
   </data>
   <data name="HomeHeading.Text" xml:space="preserve">
-    <value>Turn a recording into tab.</value>
+    <value>Turn a recording or sheet music into tab.</value>
   </data>
   <data name="HomeIntro.Text" xml:space="preserve">
-    <value>Play it, record it, or open a file. Bandroom on your computer writes down the notes.</value>
+    <value>Play it, record it, open a file, or open a picture or a PDF of the notes. Bandroom on your computer writes the tab.</value>
   </data>
   <data name="HomeSongsHeading.Text" xml:space="preserve">
     <value>YOUR SONGS</value>
@@ -648,6 +648,9 @@
   <data name="PageList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Pages, in the order they are read</value>
   </data>
+  <data name="PagesGettingReady.Text" xml:space="preserve">
+    <value>Getting the pages ready…</value>
+  </data>
   <data name="PagesHeading.Text" xml:space="preserve">
     <value>Sheet music from a picture</value>
   </data>
@@ -681,8 +684,17 @@
   <data name="Pages_Moved" xml:space="preserve">
     <value>Page {0} is now page {1}.</value>
   </data>
+  <data name="Pages_NameWithCount" xml:space="preserve">
+    <value>{0} · {1} pages</value>
+  </data>
   <data name="Pages_Page" xml:space="preserve">
     <value>Page {0}</value>
+  </data>
+  <data name="Pages_PdfDamaged" xml:space="preserve">
+    <value>A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from.</value>
+  </data>
+  <data name="Pages_PdfLocked" xml:space="preserve">
+    <value>A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password.</value>
   </data>
   <data name="Pages_Remove" xml:space="preserve">
     <value>Remove page {0}</value>
@@ -694,7 +706,7 @@
     <value>Sheet music from a picture</value>
   </data>
   <data name="Pages_TooMany" xml:space="preserve">
-    <value>At most {0} pages can be read at once. The rest were left out.</value>
+    <value>At most {0} pages can be read at once, every page of a PDF counted. The rest were left out.</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Code</value>

@@ -910,7 +910,14 @@ add("Pages_LeftOut_One", "One file is not a PNG, JPEG or WebP picture or a PDF, 
     "Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
 add("Pages_LeftOut_Many", "{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.",
     "{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
-add("Pages_TooMany", "At most {0} pages can be read at once. The rest were left out.", "Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.")
+add("Pages_TooMany", "At most {0} pages can be read at once, every page of a PDF counted. The rest were left out.",
+    "Høyst {0} sider kan leses om gangen, og hver side i en PDF teller. Resten ble ikke tatt med.")
+add("Pages_PdfLocked", "A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password.",
+    "En PDF er låst med passord, så den kan ikke leses, og ble ikke tatt med. Åpne den i en annen app, og lagre den uten passord.")
+add("Pages_PdfDamaged", "A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from.",
+    "En PDF er skadet, så den kan ikke åpnes, og ble ikke tatt med. Hent den på nytt der den kom fra.")
+prop("PagesGettingReady", "Text", "Getting the pages ready…", "Gjør sidene klare …")
+add("Pages_NameWithCount", "{0} · {1} pages", "{0} · {1} sider")
 add("Pages_KindLabel", "Sheet music", "Noter")
 add("Transcribe_Step_SendPages", "Sending the pages", "Sender sidene")
 add("Transcribe_Step_Read", "Reading the notes", "Leser notene")

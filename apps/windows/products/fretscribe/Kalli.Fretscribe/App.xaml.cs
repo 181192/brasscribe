@@ -178,7 +178,7 @@ public partial class App : Application
             settingsVm, new YourInstrumentStore(settings), practice, new TabExportViewModel(dialogs, new ShellPdfPrinter(), announcer, Strings),
             EngineFactory, announcer, Strings,
             new ScoreLibrary(Path.Combine(workDirectory, "library")), new KeptTakes(Path.Combine(workDirectory, "kept")),
-            new PagesViewModel(dialogs, announcer, Strings));
+            new PagesViewModel(dialogs, announcer, Strings, WinPdfPages.ReadAsync));
 
         Theme = new ThemeController(settingsVm, queue, forcedTheme);
         window = new MainWindow(flow, Strings);

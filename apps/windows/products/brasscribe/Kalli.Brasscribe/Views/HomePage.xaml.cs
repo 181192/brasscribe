@@ -71,8 +71,8 @@ public sealed partial class HomePage : Page, IScreenPage
         var pages = items.OfType<StorageFile>().Select(f => f.Path).Where(p => Kalli.Scribe.Capture.MediaTypes.Classify(p) == MediaKind.Page).ToList();
         if (pages.Count > 1 && Main.Pages is { } list)
         {
-            list.Add(pages);
             Main.OpenPagesCommand.Execute(null);
+            await list.AddAsync(pages);
             return;
         }
         if (items.FirstOrDefault() is StorageFile file) await ViewModel.OpenPathAsync(file.Path);

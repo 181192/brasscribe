@@ -50,6 +50,6 @@ public sealed partial class PagesPage : Page, IScreenPage
     {
         if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
         var items = await e.DataView.GetStorageItemsAsync();
-        ViewModel.Add(items.OfType<StorageFile>().Select(f => f.Path).ToList());
+        await ViewModel.AddAsync(items.OfType<StorageFile>().Select(f => f.Path).ToList());
     }
 }

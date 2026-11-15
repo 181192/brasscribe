@@ -175,10 +175,10 @@ public sealed partial class MainViewModel : ObservableObject
         Start.ScoreOpened += (_, path) => OpenScoreFile(path);
         if (Pages is not null)
         {
-            Start.PagesOpened += (_, paths) =>
+            Start.PagesOpened += async (_, paths) =>
             {
-                Pages.Add(paths);
                 OpenPages();
+                await Pages.AddAsync(paths);
             };
             Pages.ComputerThere = Settings.Connection.State == ConnectionState.Connected;
             Settings.Connection.PropertyChanged += (_, e) =>

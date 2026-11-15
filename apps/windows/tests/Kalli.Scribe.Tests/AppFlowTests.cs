@@ -106,7 +106,7 @@ public class AppFlowTests
             new SettingsViewModel(Settings(firstRun), said, strings, new FakeBrowse(() => []),
                 clients: (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token }),
             (uri, token) => new EngineClient(new HttpClient(engine), uri) { Token = token },
-            said, strings, core, library, new PagesViewModel(new NoDialogs(), said, strings));
+            said, strings, core, library, new PagesViewModel(new NoDialogs(), said, strings, TestPdfs.ReadAsync));
         return (main, said);
     }
 
@@ -154,7 +154,8 @@ public class AppFlowTests
         await File.WriteAllBytesAsync(page, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13]);
         await main.Start.OpenPathAsync(page);
         Assert.Equal(Screen.Pages, main.Screen);
-        Assert.Single(main.Pages!.Pages);
+        // Looked at off the window's thread: it joins the list when it is ready.
+        await Until(() => main.Pages!.Pages.Count == 1 && !main.Pages.IsAdding);
         Assert.True(main.Pages.ReadCommand.CanExecute(null));
 
         main.Pages.ReadCommand.Execute(null);
@@ -167,7 +168,7 @@ public class AppFlowTests
         Assert.Empty(main.Pages.Pages);
 
         noNotes = true;
-        main.Pages.Add([page]);
+        await main.Pages.AddAsync([page]);
         main.OpenPagesCommand.Execute(null);
         main.Pages.ReadCommand.Execute(null);
         await Until(() => main.Screen == Screen.Error);

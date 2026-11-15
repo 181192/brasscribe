@@ -143,9 +143,9 @@ add("Tab_InstrumentWithStrings", "{0}, {1} strings", "{0}, {1} strenger")
 add("Tab_InstrumentValue", "{0} · {1}", "{0} · {1}")
 
 # ---- Home ----
-prop("HomeHeading", "Text", "Turn a recording into tab.", "Gjør et opptak om til tab.")
-prop("HomeIntro", "Text", "Play it, record it, or open a file. Bandroom on your computer writes down the notes.",
-     "Spill det, ta det opp, eller åpne en fil. Bandroom på datamaskinen skriver ned tonene.")
+prop("HomeHeading", "Text", "Turn a recording or sheet music into tab.", "Gjør et opptak eller noter om til tab.")
+prop("HomeIntro", "Text", "Play it, record it, open a file, or open a picture or a PDF of the notes. Bandroom on your computer writes the tab.",
+     "Spill det, ta det opp, åpne en fil, eller åpne et bilde eller en PDF av notene. Bandroom på datamaskinen skriver tabben.")
 prop("RecordMicTitle", "Text", "Record", "Spill inn")
 prop("RecordMicBody", "Text", "Play it in the room, with the microphone", "Spill det i rommet, med mikrofonen")
 text_button("RecordMicButton", "Record", "Spill inn", "Record with the microphone (Ctrl+Shift+R)", "Ta opp med mikrofonen (Ctrl+Shift+R)")
@@ -693,7 +693,14 @@ add("Pages_LeftOut_One", "One file is not a PNG, JPEG or WebP picture or a PDF, 
     "Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
 add("Pages_LeftOut_Many", "{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.",
     "{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
-add("Pages_TooMany", "At most {0} pages can be read at once. The rest were left out.", "Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.")
+add("Pages_TooMany", "At most {0} pages can be read at once, every page of a PDF counted. The rest were left out.",
+    "Høyst {0} sider kan leses om gangen, og hver side i en PDF teller. Resten ble ikke tatt med.")
+add("Pages_PdfLocked", "A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password.",
+    "En PDF er låst med passord, så den kan ikke leses, og ble ikke tatt med. Åpne den i en annen app, og lagre den uten passord.")
+add("Pages_PdfDamaged", "A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from.",
+    "En PDF er skadet, så den kan ikke åpnes, og ble ikke tatt med. Hent den på nytt der den kom fra.")
+prop("PagesGettingReady", "Text", "Getting the pages ready…", "Gjør sidene klare …")
+add("Pages_NameWithCount", "{0} · {1} pages", "{0} · {1} sider")
 add("Pages_KindLabel", "Sheet music", "Noter")
 add("Screen_Pages", "Sheet music from a picture", "Noter fra et bilde")
 

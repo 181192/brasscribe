@@ -17,7 +17,7 @@
 
             <Button x:Name="AddPagesButton" x:Uid="AddPagesButton" Style="{StaticResource CardButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     MinHeight="0"
-                    Command="{x:Bind ViewModel.AddCommand}">
+                    Command="{x:Bind ViewModel.ChooseCommand}">
                 <!-- A grid, not a horizontal stack: the sentence wraps to the card's width, and the card is as tall as it. -->
                 <Grid ColumnSpacing="16">
                     <Grid.ColumnDefinitions>
@@ -62,7 +62,7 @@
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="{x:Bind Place, Mode=OneWay}" Style="{StaticResource HeadlineStyle}" />
-                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Detail, Mode=OneWay}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
                                     <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnMoveUp"
@@ -88,6 +88,11 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Files being looked at and counted, off the window's thread: Read the notes waits for them. -->
+            <StackPanel Orientation="Horizontal" Spacing="10" Visibility="{x:Bind ViewModel.IsAdding, Mode=OneWay}">
+                <ProgressRing IsActive="{x:Bind ViewModel.IsAdding, Mode=OneWay}" Width="20" Height="20" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock x:Uid="PagesGettingReady" Style="{StaticResource BodyStyle}" AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
             <TextBlock Style="{StaticResource BodyStyle}" TextWrapping="Wrap" Text="{x:Bind ViewModel.StatusText, Mode=OneWay}"
                        AutomationProperties.LiveSetting="Polite" Visibility="{x:Bind views:Shown.HasText(ViewModel.StatusText), Mode=OneWay}" />
 

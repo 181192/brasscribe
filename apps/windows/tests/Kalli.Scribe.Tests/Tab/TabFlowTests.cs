@@ -135,7 +135,7 @@ public class TabFlowTests : TempFolderTest
             new TabExportViewModel(Dialogs, null, said, strings),
             (uri, token) => new EngineClient(new HttpClient(computer), uri) { Token = token }, said, strings,
             new ScoreLibrary(Path.Combine(Dir, "library")), new KeptTakes(Path.Combine(Dir, "kept")),
-            new PagesViewModel(new NoDialogs(), said, strings));
+            new PagesViewModel(new NoDialogs(), said, strings, TestPdfs.ReadAsync));
         return (flow, computer, players);
     }
 
@@ -272,11 +272,14 @@ public class TabFlowTests : TempFolderTest
 
         await flow.Start.OpenPathAsync(page);
         Assert.Equal(TabScreen.Pages, flow.Screen);
+        await Until(() => flow.Pages!.Pages.Count == 1 && !flow.Pages.IsAdding);
         flow.Pages!.ReadCommand.Execute(null);
         await Until(() => flow.Screen == TabScreen.CheckTheSong && !flow.Check.IsReading);
 
         var sent = computer.Requests.Single(r => r.Request.RequestUri!.AbsolutePath == "/v1/jobs/pages").Body!;
-        foreach (var value in new[] { "sheet-tab", "guitar-6", "standard", "false" }) Assert.Contains($"\r\n\r\n{value}\r\n", sent);
+        // Each value under its own field, as the engine's form takes them.
+        foreach (var (field, value) in new[] { ("profile", "sheet-tab"), ("instrument", "guitar-6"), ("tuning", "standard"), ("layout", "tab"), ("render_audio", "false") })
+            Assert.Matches($"name=\"?{field}\"?\\r\\n(?:[^\\r\\n]+\\r\\n)*\\r\\n{value}\\r\\n", sent);
         Assert.DoesNotContain(computer.Requests, r => r.Request.RequestUri!.AbsolutePath == "/v1/audio");
         Assert.True(flow.LastResult!.FromPages);
         Assert.Equal("Tab_Check_Lead_Page", flow.Check.LeadText);
@@ -310,7 +313,7 @@ public class TabFlowTests : TempFolderTest
                 "home" or "home-offline" or "home-update" => TabScreen.Home,
                 "what-is-this" or "what-is-this-offline" => TabScreen.WhatIsThis,
                 "transcribing" => TabScreen.Transcribing,
-                "check-the-song" => TabScreen.CheckTheSong,
+                "check-the-song" or "check-the-song-pages" => TabScreen.CheckTheSong,
                 "tab" or "tab-full-screen" or "export" => TabScreen.Tab,
                 "pages" => TabScreen.Pages,
                 _ => TabScreen.Error,
@@ -320,6 +323,12 @@ public class TabFlowTests : TempFolderTest
             if (scene == "tab-full-screen") Assert.True(flow.TabPage.MinimalShown);
             // The computer is there and has the tab profile: Check the song offers its changes, What is this? its Continue.
             if (scene == "check-the-song") Assert.Contains(flow.Check.Rows, r => r.HasChange);
+            // Read from a page: its words, and no change to write again (there is no recording).
+            if (scene == "check-the-song-pages")
+            {
+                Assert.Equal("Tab_Check_Lead_Page", flow.Check.LeadText);
+                Assert.DoesNotContain(flow.Check.Rows, r => r.HasChange);
+            }
             if (scene == "what-is-this") Assert.Null(flow.WhatIsThis.Missing);
             if (scene == "what-is-this-offline") Assert.Equal("Tab_What_ConnectFirst", flow.WhatIsThis.Missing);
             // The computer by its name, never its address.
