@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """The pictures Google Play asks for, for both apps (docs/play-store.md says where each goes):
 
-    python3 scripts/play-store-images.py
+    gh run download <a CI run on main> -n screens-android-brasscribe-<sha> -n screens-android-fretscribe-<sha> -D DIR
+    python3 scripts/play-store-images.py DIR
 
 Writes docs/play-store/<app>/:
   icon-512.png               the store icon, 512 x 512 (Brasscribe's is its brand build's play-store-512.png)
   feature-graphic.png        1024 x 500, from the brand's own artwork
-  screenshots/<lang>-<n>-<screen>.png   phone screenshots from the Android screen catalogue
+  screenshots/<en|no>-<n>-<name>.png   phone screenshots from the Android screen catalogues in DIR (CI's
+                                        screens-android-<app> artifacts, DIR/<app>/<screen>-<light|nb>.png)
 
-Every file is a 24-bit PNG without alpha, as Play wants. A catalogue screenshot is 1080 x 2400 (2.22:1), taller
+Every file is a 24-bit PNG without alpha, as Play wants. A catalogue screenshot is about 1080 x 2400 (2.22:1), taller
 than Play's 2:1, so it is padded at the sides to 1200 x 2400 with the colour of its own left edge: nothing of the
 screen is cut. Only screens that show the public-domain Old Hundredth or an invented song are used.
 
@@ -19,36 +21,21 @@ from __future__ import annotations
 
 import struct
 import subprocess
+import sys
 import tempfile
 import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BRANDS = ROOT / "design" / "brands"
-SHOTS = ROOT / "apps" / "android" / "docs" / "screenshots"
 
-# Per app and language, in the order Play shows them: (name, catalogue file).
+# Per app, in the order Play shows them: (name, screen in the app's screen catalogue). The English screen is
+# <screen>-light.png, the Norwegian one <screen>-nb.png.
 SCREENSHOTS = {
-    "brasscribe": {
-        "en": [("first-run", "brasscribe/my-instrument/first-run-chosen-en-light.png"),
-               ("score", "brasscribe/my-instrument/score-en-light.png"),
-               ("check", "brasscribe/my-instrument/review-arranged-en-light.png"),
-               ("music-stand", "brasscribe/music-stand/en-portrait-shown.png")],
-        "no": [("first-run", "brasscribe/my-instrument/first-run-chosen-nb-light.png"),
-               ("score", "brasscribe/my-instrument/score-nb-light.png"),
-               ("check", "brasscribe/my-instrument/review-arranged-nb-light.png"),
-               ("music-stand", "brasscribe/music-stand/nb-portrait-shown.png")],
-    },
-    "fretscribe": {
-        "en": [("tab", "fretscribe/tab-light.png"),
-               ("instrument", "fretscribe/your-instrument-light.png"),
-               ("check", "fretscribe/check-the-song-light.png"),
-               ("practise", "fretscribe/practice-repeat-light.png")],
-        "no": [("tab", "fretscribe/tab-nb.png"),
-               ("instrument", "fretscribe/your-instrument-nb.png"),
-               ("check", "fretscribe/check-the-song-nb.png"),
-               ("practise", "fretscribe/practice-repeat-nb.png")],
-    },
+    "brasscribe": [("score", "score"), ("check", "check-the-notes"), ("fix-a-note", "change-note"),
+                   ("sheet-music", "pages-in-hand"), ("practise", "practice"), ("music-stand", "music-stand")],
+    "fretscribe": [("tab", "tab"), ("check", "check-the-song"), ("fix-a-note", "fix-a-note"),
+                   ("tuning", "tab-tuning-capo"), ("sound", "practice-sound"), ("speed-trainer", "practice-repeat-trainer")],
 }
 
 
@@ -160,6 +147,9 @@ def pad_to_two_to_one(src: Path, out: Path) -> None:
 
 
 def main() -> None:
+    if len(sys.argv) != 2 or not Path(sys.argv[1]).is_dir():
+        sys.exit(__doc__.split("\n\n")[1])
+    catalogue = Path(sys.argv[1])
     for app, feature in (("brasscribe", feature_brasscribe), ("fretscribe", feature_fretscribe)):
         brand = BRANDS / app
         out = ROOT / "docs" / "play-store" / app
@@ -169,9 +159,9 @@ def main() -> None:
         else:
             w, _, rows = read_png(brand / "dist" / "icons" / "android" / "play-store-512.png")
             write_png(out / "icon-512.png", w, rows)
-        for lang, shots in SCREENSHOTS[app].items():
-            for n, (name, file) in enumerate(shots, 1):
-                pad_to_two_to_one(SHOTS / file, out / "screenshots" / f"{lang}-{n}-{name}.png")
+        for lang, suffix in (("en", "light"), ("no", "nb")):
+            for n, (name, screen) in enumerate(SCREENSHOTS[app], 1):
+                pad_to_two_to_one(catalogue / app / f"{screen}-{suffix}.png", out / "screenshots" / f"{lang}-{n}-{name}.png")
         print(f"play_store_images: {out.relative_to(ROOT)}")
 
 
