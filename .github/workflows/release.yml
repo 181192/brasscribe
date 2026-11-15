@@ -1,11 +1,13 @@
 name: release
 
-# On a semver tag (v1.2.3, v1.2.3-beta.1): the fast checks from ci.yml run first (a tag push
-# doesn't start ci.yml on its own), then each platform workflow builds its distributables
-# (artifacts named dist-*, each holding ready-to-ship files) and they are attached to a GitHub
-# release. Nothing is built if the checks fail. A store upload goes in as its own job after the
-# GitHub release, from its assets, so a store's failure never holds back or undoes the release: Google
-# Play's internal testing track is the `play` job (play.yml, opt-in).
+# On a semver tag (v1.2.3, v1.2.3-beta.1): the fast checks from ci.yml (a tag push doesn't start
+# ci.yml on its own) and each platform workflow's build of its distributables (artifacts named
+# dist-*, each holding ready-to-ship files) run side by side, and when both have passed the files
+# are attached to a GitHub release. Nothing is published if a check fails; the builds don't wait
+# for the checks, so a release takes as long as its slowest build, not the checks plus it. A store
+# upload goes in as its own job after the GitHub release, from its assets, so a store's failure never
+# holds back or undoes the release: Google Play's internal testing track is the `play` job (play.yml,
+# opt-in).
 # Pushed tags do not always start it (tags pushed in bulk never do), so it can also be started by hand
 # on a tag: `gh workflow run release.yml --ref vX.Y.Z`.
 on:
@@ -37,7 +39,7 @@ jobs:
       pull-requests: read
 
   core:
-    needs: checks
+    needs: tag
     uses: ./.github/workflows/core.yml
     with:
       release: true
@@ -45,14 +47,14 @@ jobs:
   # The signing job reads the release key from the `release` environment's secrets; a called
   # workflow only gets secrets its caller passes on.
   android:
-    needs: checks
+    needs: tag
     uses: ./.github/workflows/android.yml
     with:
       release: true
     secrets: inherit
 
   apple:
-    needs: checks
+    needs: tag
     uses: ./.github/workflows/apple.yml
     with:
       release: true
@@ -60,7 +62,7 @@ jobs:
 
   # Fretscribe for Mac, iPhone and iPad on its own: when it fails, the release still goes out, without its files.
   apple-fretscribe:
-    needs: checks
+    needs: tag
     uses: ./.github/workflows/apple.yml
     with:
       release: true
@@ -68,7 +70,7 @@ jobs:
       skip_bandroom: true
 
   windows:
-    needs: checks
+    needs: tag
     uses: ./.github/workflows/windows.yml
     with:
       release: true
@@ -76,7 +78,7 @@ jobs:
 
   # Fretscribe for Windows on its own: when it fails, the release still goes out, without its zip.
   windows-fretscribe:
-    needs: checks
+    needs: tag
     uses: ./.github/workflows/windows.yml
     with:
       release: true
@@ -85,9 +87,9 @@ jobs:
 
   github:
     name: publish GitHub release
-    needs: [core, android, apple, apple-fretscribe, windows, windows-fretscribe]
+    needs: [checks, core, android, apple, apple-fretscribe, windows, windows-fretscribe]
     if: >-
-      ${{ !cancelled() && needs.core.result == 'success' && needs.android.result == 'success'
+      ${{ !cancelled() && needs.checks.result == 'success' && needs.core.result == 'success' && needs.android.result == 'success'
       && needs.apple.result == 'success' && needs.windows.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
