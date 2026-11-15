@@ -160,6 +160,15 @@ class FretscribeScreensTest : ScreenCatalogue() {
             rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
             waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
         },
+        // The computer is still downloading what a stage needs: the screen says so (the first run after an install).
+        Entry("writing-down-setting-up", steady = false) {
+            whatIsThis()
+            container.fixtureSettingUp = "beat-this"
+            rule.onNode(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton) and
+                hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-song"))).performScrollTo().performClick()
+            rule.onNodeWithTag("fs-what-continue").performScrollTo().performClick()
+            waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.settingUp }
+        },
         Entry("check-the-song", primaryInView = "fs-show-tab") { checkTheSong() },
         Entry("tab") { theTab() },
         Entry("tab-full-screen") { theTab(); rule.onNodeWithTag("fs-tab-full-screen").performClick(); waitForTag("fs-tab-focus-minimal", 5_000); rest() },

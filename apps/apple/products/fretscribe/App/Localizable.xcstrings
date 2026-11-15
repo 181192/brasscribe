@@ -4021,6 +4021,16 @@
         }
       }
     },
+    "Your computer is still setting up its listening tools. This can take a while the first time.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid."
+          }
+        }
+      }
+    },
     "Your instrument": {
       "localizations": {
         "nb": {

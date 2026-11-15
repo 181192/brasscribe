@@ -162,7 +162,16 @@ import UniformTypeIdentifiers
         let job = TranscriptionJob(source: src, profile: .brassBand, output: OutputChoice(), service: FrozenService())
         full.jobs[job.id] = job
         job.start { _ in }
-        try await window("transcribing", app: full) { TranscribeView(jobID: job.id) }
+        let settingUpLine = String(localized: "Your computer is still setting up its listening tools. This can take a while the first time.")
+        // the line is there while a step waits for the computer's setup, and not on an ordinary step
+        try await window("transcribing", app: full, shows: { nodes in
+            nodes.contains { $0.words.contains(settingUpLine) } ? "the setting-up line, which is only for a step that waits for setup" : nil
+        }) { TranscribeView(jobID: job.id) }
+        job.progress.settingUp = true
+        try await window("transcribing-setting-up", app: full, shows: { nodes in
+            nodes.contains { $0.words.contains(settingUpLine) } ? nil : "the setting-up line"
+        }) { TranscribeView(jobID: job.id) }
+        job.progress.settingUp = false
 
         let piece = try LayoutFixtures.piece()
         try await window("output", app: full) { OutputView(piece: piece) }

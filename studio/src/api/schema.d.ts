@@ -2184,6 +2184,11 @@ export interface components {
              */
             seconds?: number | null;
             /**
+             * Setting Up
+             * @description while the stage is started: the model this computer is still setting up (downloading its tools), which the stage waits for before it runs; null otherwise. An app says so, e.g. "Your computer is still setting up separator". The wait counts toward `queue_wait_s`, not toward the stage's time limit
+             */
+            setting_up?: string | null;
+            /**
              * Status
              * @enum {string}
              */

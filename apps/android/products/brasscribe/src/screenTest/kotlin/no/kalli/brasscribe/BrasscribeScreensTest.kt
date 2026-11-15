@@ -120,6 +120,13 @@ class BrasscribeScreensTest : ScreenCatalogue() {
             rule.runOnUiThread { vm.chooseProfile(Profile.ORCHESTRA_WITH_SOLOIST); vm.where.value = Where.COMPANION; vm.startTranscription() }
             waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE }
         },
+        // The computer is still downloading what a stage needs: the screen says so (the first run after an install).
+        Entry("transcribing-setting-up", steady = false) {
+            whatIsThis()
+            container.fixtureSettingUp = "separator"
+            rule.runOnUiThread { vm.chooseProfile(Profile.ORCHESTRA_WITH_SOLOIST); vm.where.value = Where.COMPANION; vm.startTranscription() }
+            waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.settingUp }
+        },
         Entry("check-the-notes", ownOrder = "the notes of the part are a list of their own, which the keyboard goes through as they are played") { checkTheNotes(); rest() },
         Entry("how-should-the-score-be") { checkTheNotes(); go(Screen.OUTPUT) },
         Entry("score") { theScore() },

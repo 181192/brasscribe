@@ -301,6 +301,7 @@ struct TranscribeView: View {
                         .accessibilityValue(i < current ? Text("Done") : i == current ? Text("Now") : Text("Next"))
                     }
                 }
+                SettingUpLine(active: job.progress.settingUp)
                 NoticeBox(systemImage: BrasscribeIcon.computer.systemName,
                           text: "\(app.whereItRuns(for: job)) " + Self.leaveLine(draft: job.service is OnDeviceBandDraftService))
                 if PageActions.followContent { cancelRow(job).layoutProbe("pageActions") }

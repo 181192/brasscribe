@@ -37,6 +37,7 @@ from typing import Callable
 from scribe_music.process_tree import kill_tree
 
 from .config import child_env
+from .envlock import EnvironmentNotInstalled, environment_ready
 from .gpulock import default_path, file_lock
 from .hashing import HashIndex, sha256_bytes
 
@@ -128,6 +129,15 @@ def environment_installed(adapters_dir: Path, name: str) -> bool:
     if uses_uv():
         return (adapters_dir / name / ".venv").is_dir()
     return (adapters_dir.parents[1] / ".pixi" / "envs" / name).is_dir()
+
+
+def pixi_environment(name: str) -> str:
+    """The pixi environment an adapter runs in, as run_adapter.py names it: its folder's name, `-cuda` for a torch
+    adapter with SCRIBE_CUDA set."""
+    a = ADAPTERS[name]
+    base = a.dir or a.name
+    cuda = os.environ.get("SCRIBE_CUDA", "").strip().lower() not in ("", "0", "false", "no", "off")
+    return base + ("-cuda" if a.accelerator == "torch" and cuda else "")
 
 
 def host_device() -> str:
@@ -269,9 +279,11 @@ class AdapterRegistry:
             yield waited
 
     def run(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None, allow_heavy: bool = True,
-            log=None, waited: Callable[[float], None] | None = None, cancel: threading.Event | None = None) -> float:
-        """Run an adapter; returns wall-clock seconds, including any wait for the GPU mutex, which is
-        also reported to `waited` (heavy adapters only). Setting `cancel` stops it (AdapterCancelled)."""
+            log=None, waited: Callable[[float], None] | None = None, cancel: threading.Event | None = None,
+            setting_up: Callable[[str | None], None] | None = None) -> float:
+        """Run an adapter; returns wall-clock seconds, including any wait for the GPU mutex or for its environment to
+        be set up, which is also reported to `waited`. `setting_up` is told the environment it waits for to be set up,
+        then None once it has it. Setting `cancel` stops it (AdapterCancelled)."""
         a = self.get(name)
         if cancel is not None and cancel.is_set():
             raise AdapterCancelled(f"{name} not started: the job was cancelled")
@@ -313,20 +325,50 @@ class AdapterRegistry:
                 raise AdapterError(stopped_from_outside(name, proc.returncode)
                                    or f"{name} failed ({proc.returncode}): {(stderr or stdout)[-2000:]}")
 
-        if a.heavy:
+        def heavy_or_not():
+            if a.heavy:
+                def blocked():
+                    if log:
+                        log(f"{name}: waiting for GPU mutex {self.gpu_lock}")
+
+                try:
+                    with self.gpu_mutex(on_blocked=blocked, cancel=cancel) as wait:
+                        if waited:
+                            waited(wait)
+                        if log and wait >= 1.0:
+                            log(f"{name}: got GPU mutex after {wait:.1f} s")
+                        call()
+                except InterruptedError:
+                    raise AdapterCancelled(f"{name} not started: the job was cancelled while it waited for the GPU") from None
+            else:
+                call()
+
+        # Its environment first, and before the GPU mutex: one still being installed (several GB the first time)
+        # holds up only the stages that need it. The wait is not counted against the adapter's time limit.
+        if uses_uv():
+            heavy_or_not()
+        else:
+            env_name = pixi_environment(name)
+
+            told = False
+
             def blocked():
+                nonlocal told
+                told = True
                 if log:
-                    log(f"{name}: waiting for GPU mutex {self.gpu_lock}")
+                    log(f"{name}: waiting for this computer to finish setting up {env_name}")
+                if setting_up:
+                    setting_up(env_name)
 
             try:
-                with self.gpu_mutex(on_blocked=blocked, cancel=cancel) as wait:
-                    if waited:
+                with environment_ready(env_name, Path(self.root).resolve().parents[1], on_blocked=blocked, cancel=cancel) as wait:
+                    if told and setting_up:
+                        setting_up(None)
+                    if waited and wait > 0:
                         waited(wait)
-                    if log and wait >= 1.0:
-                        log(f"{name}: got GPU mutex after {wait:.1f} s")
-                    call()
+                    heavy_or_not()
             except InterruptedError:
-                raise AdapterCancelled(f"{name} not started: the job was cancelled while it waited for the GPU") from None
-        else:
-            call()
+                raise AdapterCancelled(f"{name} not started: the job was cancelled while {env_name} was set up") from None
+            except EnvironmentNotInstalled as e:
+                raise AdapterError(str(e)) from None
         return time.time() - t0

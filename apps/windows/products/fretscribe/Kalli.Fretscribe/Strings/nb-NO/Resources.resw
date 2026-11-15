@@ -1563,6 +1563,9 @@
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Skriver ned tonene</value>
   </data>
+  <data name="TranscribeSettingUp.Text" xml:space="preserve">
+    <value>Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.</value>
+  </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
     <value>Slutte å skrive det ned? Opptaket blir liggende i Sangene dine i 30 dager.</value>
   </data>

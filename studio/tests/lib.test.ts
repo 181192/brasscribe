@@ -3,7 +3,7 @@ import type { Composition, Job, Note } from "../src/api/types";
 import { compositionBeats, compositionFreeTime, irregularRegions, parseBeats, summarise, tickTime } from "../src/lib/beats";
 import { diffCompositions, diffNotes } from "../src/lib/diff";
 import { energy, fft, peaks, spectrogram } from "../src/lib/dsp";
-import { fromJob, reduce, totals } from "../src/lib/events";
+import { fromJob, reduce, settingUp, totals } from "../src/lib/events";
 import { parseMidi } from "../src/lib/midi";
 import { parseMusicXml } from "../src/lib/musicxml";
 import { checkCrossing, checkRanges, pitchName, validateScore } from "../src/lib/validate";
@@ -108,6 +108,15 @@ describe("events", () => {
     expect(v.stages[0]).toMatchObject({ status: "cached", cacheHit: true, device: "mps", startedAt: 10 });
     expect(v.stages[1]).toMatchObject({ status: "ran", cacheHit: false, seconds: 12.5 });
     expect(totals(v)).toEqual({ done: 2, total: 2, cached: 1, seconds: 12.51 });
+  });
+
+  it("says which model a started stage waits for the computer to set up, until it has it", () => {
+    let v = reduce(fromJob(job), { id: 0, run: "r1", type: "stage", stage: "stems", status: "started", time: 1 });
+    expect(settingUp(v)).toEqual([]);
+    v = reduce(v, { id: 1, run: "r1", type: "stage", stage: "stems", status: "started", time: 2, setting_up: "separator" } as never);
+    expect(settingUp(v)).toEqual(["separator"]);
+    v = reduce(v, { id: 2, run: "r1", type: "stage", stage: "stems", status: "started", time: 9, setting_up: null } as never);
+    expect(settingUp(v)).toEqual([]);
   });
 
   it("ignores replayed events after a reconnect", () => {

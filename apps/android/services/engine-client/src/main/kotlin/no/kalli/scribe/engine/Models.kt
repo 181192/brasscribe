@@ -200,6 +200,8 @@ data class StageState(
     /** Of [seconds], the time spent waiting for the machine, and the time the stage itself took. */
     @SerialName("queue_wait_s") val queueWaitS: Double? = null,
     @SerialName("run_s") val runS: Double? = null,
+    /** While the stage is started: the model the computer is still setting up, which the stage waits for. */
+    @SerialName("setting_up") val settingUp: String? = null,
 )
 
 @Serializable
@@ -304,6 +306,8 @@ data class JobEvent(
     val fraction: Double? = null,
     val message: String? = null,
     val error: String? = null,
+    /** On a stage event: the model the computer is still setting up for the stage, or null once it has it. */
+    @SerialName("setting_up") val settingUp: String? = null,
 )
 
 /** What the engine makes from a recording: every profile belongs to one target, and an app is for one. */

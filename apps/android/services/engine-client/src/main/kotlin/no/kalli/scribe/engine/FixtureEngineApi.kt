@@ -43,6 +43,8 @@ class FixtureEngineApi(
      * written down, however slowly the machine it runs on gets there.
      */
     private val held: () -> Boolean = { false },
+    /** While this names a model, a started stage says the computer is setting it up, and waits until it is null. */
+    private val settingUp: () -> String? = { null },
 ) : EngineApi {
     /** The names of the pages of the last job made from pages, in the order they came: what a test of the order looks at. */
     @Volatile var pagesSent: List<String> = emptyList()
@@ -195,7 +197,12 @@ class FixtureEngineApi(
                 jobs[jobId] = job(jobId).copy(status = JobStatus.CANCELLED, finished = now())
                 send(JobEvent(id++, "job", run = jobId, time = now(), status = "cancelled")); return@flow
             }
-            send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "started"))
+            val setup = settingUp()
+            send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "started", settingUp = setup))
+            if (setup != null) {
+                while (settingUp() != null && jobId !in cancelled) delay(HELD_POLL_MS)
+                send(JobEvent(id++, "stage", run = jobId, time = now(), stage = stage, kind = kindOf(stage), status = "started"))
+            }
             delay((stageSeconds * 1000).toLong())
             while (held() && jobId !in cancelled) delay(HELD_POLL_MS)
             if (jobId in cancelled) {

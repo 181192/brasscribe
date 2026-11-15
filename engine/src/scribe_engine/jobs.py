@@ -94,6 +94,8 @@ class Job:
                 for k in ("seconds", "queue_wait_s", "run_s", "device"):
                     if k in e:
                         st[k] = e[k]
+                # set while it waits for its model to be set up, cleared by any later event of the stage
+                st["setting_up"] = e.get("setting_up")
             elif e.get("type") == "job" and e.get("status") in TERMINAL:
                 self.status = e["status"]
                 self.error = e.get("error")

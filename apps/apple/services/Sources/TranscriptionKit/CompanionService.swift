@@ -99,7 +99,16 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
     }
 
     public struct Job: Decodable, Sendable {
-        public struct Stage: Decodable, Sendable { public let name: String; public let kind: String?; public let status: String; public let seconds: Double?; public let device: String? }
+        public struct Stage: Decodable, Sendable {
+            public let name: String
+            public let kind: String?
+            public let status: String
+            public let seconds: Double?
+            public let device: String?
+            /// While the stage is started: the model the computer is still setting up, which the stage waits for.
+            public let settingUp: String?
+            enum CodingKeys: String, CodingKey { case name, kind, status, seconds, device; case settingUp = "setting_up" }
+        }
         public let id: String
         public let status: String
         public let progress: Double
@@ -176,6 +185,16 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
         public let device: String?
         public let message: String?
         public let error: String?
+        /// The model the computer is still setting up, which the stage waits for; nil once the stage has it.
+        public let settingUp: String?
+
+        enum CodingKeys: String, CodingKey { case id, type, status, stage, kind, fraction, device, message, error; case settingUp = "setting_up" }
+
+        public init(id: Int, type: String, status: String, stage: String? = nil, kind: String? = nil, fraction: Double? = nil,
+                    device: String? = nil, message: String? = nil, error: String? = nil, settingUp: String? = nil) {
+            self.id = id; self.type = type; self.status = status; self.stage = stage; self.kind = kind; self.fraction = fraction
+            self.device = device; self.message = message; self.error = error; self.settingUp = settingUp
+        }
     }
 
     func request(_ path: String, method: String = "GET", timeout: TimeInterval? = nil) -> URLRequest {
@@ -530,7 +549,8 @@ public final class CompanionService: TranscriptionService, @unchecked Sendable {
                                 if ev.type == "stage" {
                                     let f = ev.fraction ?? 0
                                     continuation.yield(.progress(.init(stage: .classify(name: ev.stage, kind: ev.kind), stageName: ev.stage,
-                                                                       fraction: f, etaSeconds: eta.update(fraction: f), device: ev.device)))
+                                                                       fraction: f, etaSeconds: eta.update(fraction: f), device: ev.device,
+                                                                       settingUp: ev.settingUp != nil)))
                                 }
                             }
                         } catch is CancellationError {
@@ -674,7 +694,8 @@ public struct SSEParser: Sendable {
             status: obj["status"] as? String ?? "",
             stage: obj["stage"] as? String, kind: obj["kind"] as? String,
             fraction: (obj["fraction"] as? NSNumber)?.doubleValue,
-            device: obj["device"] as? String, message: obj["message"] as? String, error: obj["error"] as? String)
+            device: obj["device"] as? String, message: obj["message"] as? String, error: obj["error"] as? String,
+            settingUp: obj["setting_up"] as? String)
         return [ev]
     }
 }

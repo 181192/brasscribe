@@ -10,6 +10,8 @@ export interface StageView {
   queue_wait_s?: number | null;
   run_s?: number | null;
   device?: string | null;
+  /** While it is started: the model the computer is still setting up, which the stage waits for. */
+  setting_up?: string | null;
   cacheHit: boolean;
   startedAt?: number;
 }
@@ -57,12 +59,14 @@ export function reduce(state: RunView, e: JobEvent): RunView {
     if (e.status) {
       s.status = e.status;
       s.cacheHit = CACHE.has(e.status);
-      if (e.status === "started") s.startedAt = e.time;
+      if (e.status === "started" && s.startedAt === undefined) s.startedAt = e.time; // a later "started" only updates setting_up
     }
     if (e.seconds !== undefined) s.seconds = e.seconds;
     if (e.queue_wait_s !== undefined) s.queue_wait_s = e.queue_wait_s;
     if (e.run_s !== undefined) s.run_s = e.run_s;
     if (e.device) s.device = e.device;
+    // every stage event says it afresh: set while the stage waits for its model, cleared after
+    s.setting_up = (e as { setting_up?: string | null }).setting_up ?? null;
     stages[i] = s;
     next.stages = stages;
     if (e.status === "failed" && e.error) next.log = [...state.log, `${e.stage}: ${e.error}`];
@@ -70,6 +74,11 @@ export function reduce(state: RunView, e: JobEvent): RunView {
     next.log = [...state.log.slice(-199), e.stage ? `${e.stage}: ${e.message}` : e.message];
   }
   return next;
+}
+
+/** The models the computer is still setting up that a started stage waits for. */
+export function settingUp(v: RunView): string[] {
+  return [...new Set(v.stages.filter((s) => s.status === "started" && s.setting_up).map((s) => s.setting_up as string))];
 }
 
 export function totals(v: RunView): { done: number; total: number; cached: number; seconds: number } {

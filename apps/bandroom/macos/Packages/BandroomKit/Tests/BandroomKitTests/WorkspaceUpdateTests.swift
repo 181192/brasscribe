@@ -397,6 +397,65 @@ import Testing
         #expect(models.phase == .done)
     }
 
+    /// A job holds its environment's lock shared while it uses it (run_adapter.py): Bandroom's install of that
+    /// environment waits for the job, and holds the lock while pixi runs, so a job that needs it waits for the install
+    /// rather than starting a second one. The engine is told where the locks are.
+    @MainActor @Test func anInstallAndAJobNeverRunOnTheSameEnvironmentAtOnce() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        try fm.removeItem(at: ws.appending(path: ".bandroom-setup/env-swift-f0"))
+        try fm.removeItem(at: ws.appending(path: ".bandroom-setup/env-beat-this"))
+        let config = configuration(root, workspace: ws)
+        let locks = config.source.environmentLocks
+        #expect(config.environment(base: [:])["SCRIBE_ENV_LOCKS"] == locks.path)
+        try fm.createDirectory(at: locks, withIntermediateDirectories: true)
+        // a job using swift-f0
+        let job = open(locks.appending(path: "swift-f0.lock").path, O_RDWR | O_CREAT, 0o644)
+        defer { close(job) }
+        #expect(flock(job, LOCK_SH | LOCK_NB) == 0)
+
+        let launcher = FakeLauncher()
+        let models = ModelEnvironments(launcher: launcher)
+        let run = Task { await models.install(configuration: config) }
+        try await Task.sleep(for: .milliseconds(800))
+        #expect(launcher.launched.isEmpty, "installed under a job that uses it")
+        #expect(models.phase == .installing(.init(environment: "swift-f0", index: 1, count: 2)))
+        flock(job, LOCK_UN)
+        while launcher.launched.isEmpty { try await Task.sleep(for: .milliseconds(50)) }
+        // While pixi installs it, a job that needs it cannot have it: it waits.
+        #expect(flock(job, LOCK_SH | LOCK_NB) != 0)
+        launcher.crash(launcher.nextPid, status: 0)
+        while launcher.launched.count < 2 { try await Task.sleep(for: .milliseconds(50)) }
+        #expect(flock(job, LOCK_SH | LOCK_NB) == 0)  // swift-f0's install is over
+        flock(job, LOCK_UN)
+        launcher.crash(launcher.nextPid, status: 0)
+        await run.value
+        #expect(models.phase == .done)
+        #expect(launcher.launched.map(\.arguments.last) == ["swift-f0", "beat-this"])
+    }
+
+    /// Quitting while an install waits for a job ends the wait; nothing is installed.
+    @MainActor @Test func quittingEndsAWaitForAJob() async throws {
+        let root = tempDir()
+        defer { try? fm.removeItem(at: root) }
+        let ws = try installed(from: try bundle(in: root, name: "v1", studio: "old studio"), root: root)
+        try fm.removeItem(at: ws.appending(path: ".bandroom-setup/env-separator"))
+        let config = configuration(root, workspace: ws)
+        try fm.createDirectory(at: config.source.environmentLocks, withIntermediateDirectories: true)
+        let job = open(config.source.environmentLocks.appending(path: "separator.lock").path, O_RDWR | O_CREAT, 0o644)
+        defer { close(job) }
+        flock(job, LOCK_SH)
+        let launcher = FakeLauncher()
+        let models = ModelEnvironments(launcher: launcher)
+        let run = Task { await models.install(configuration: config) }
+        try await Task.sleep(for: .milliseconds(300))
+        models.cancel()
+        await run.value
+        #expect(models.phase == .idle && launcher.launched.isEmpty)
+        #expect(config.source.pendingModelEnvironments == ["separator"])
+    }
+
     /// pixi makes an environment's folder before it has finished filling it: a folder left by an install that
     /// stopped part-way (quit, no connection, a full disk) is installed again; so is every one after a lockfile change.
     @MainActor @Test func aHalfMadeEnvironmentIsInstalledAgain() async throws {

@@ -390,6 +390,7 @@ public class AppFlowTests
     [InlineData("review-listening", Screen.Review)]
     [InlineData("what-is-this", Screen.SourceKind)]
     [InlineData("transcribing", Screen.Transcribing)]
+    [InlineData("transcribing-setting-up", Screen.Transcribing)]
     [InlineData("error", Screen.Error)]
     [InlineData("error-update", Screen.Error)]
     [InlineData("error-update-app", Screen.Error)]
@@ -453,6 +454,7 @@ public class AppFlowTests
             Assert.Equal("62%", Screens.Percent(62, "en-US"));
             Assert.Equal("62\u00A0%", Screens.Percent(62, "nb-NO"));
         }
+        if (scene == "transcribing-setting-up") Assert.True(main.Transcription.IsSettingUp);
         Assert.Contains(scene, PreviewScenes.Names);
     }
 
@@ -510,6 +512,33 @@ public class AppFlowTests
         Assert.Equal(Screen.Review, main.Screen);
         main.Review.KeepCommand.Execute(null);
         Assert.Equal(Screen.Score, main.Screen); // from the score, straight back to it
+    }
+
+    /// <summary>A stage that waits for the computer to set up its model shows the line; the line goes when the stage has it.</summary>
+    [Fact]
+    public async Task The_setting_up_line_shows_while_a_started_stage_waits_for_its_model_and_goes_after()
+    {
+        const string Stage = "id: {0}\nevent: stage\ndata: {{\"id\":{0},\"run\":\"j1\",\"type\":\"stage\",\"time\":{0},\"stage\":\"beats\",\"status\":\"started\"{1}}}\n\n";
+        string events = string.Format(Stage, 0, ",\"setting_up\":\"beat-tracker\"") + string.Format(Stage, 1, "")
+            + "id: 2\nevent: job\ndata: {\"id\":2,\"run\":\"j1\",\"type\":\"job\",\"time\":3,\"status\":\"succeeded\"}\n\n";
+        var engine = Engine(events, first: r => r.RequestUri!.AbsolutePath == "/v1/jobs/j1/events" ? FakeHandler.Sse(events) : null);
+        var (main, _) = Build(engine);
+        var seen = new List<bool>();
+        main.Transcription.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(TranscriptionViewModel.IsSettingUp)) seen.Add(main.Transcription.IsSettingUp);
+        };
+
+        await main.Start.OpenPathAsync(await Take());
+        await Until(() => main.Screen == Screen.SourceKind);
+        main.Kind.Selected = main.Kind.Options.Single(o => o.Kind == SourceKind.BrassBand);
+        main.Kind.ContinueCommand.Execute(null);
+        await Until(() => main.Screen == Screen.Review);
+
+        Assert.Equal([true, false], seen);
+        Assert.False(main.Transcription.IsSettingUp);
+        // The line is in the app's words and names no model.
+        Assert.Equal("Your computer is still setting up its listening tools. This can take a while the first time.", Strings()["TranscribeSettingUp.Text"]);
     }
 
     [Fact]

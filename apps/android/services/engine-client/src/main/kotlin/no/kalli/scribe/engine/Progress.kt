@@ -13,6 +13,8 @@ data class Progress(
     /** Estimated seconds left, null until there is something to estimate from. */
     val etaSeconds: Int? = null,
     val device: String? = null,
+    /** True while a started stage waits for the computer to set up (download) the model it needs. */
+    val settingUp: Boolean = false,
     val error: String? = null,
     val lastEventId: Int = -1,
 )
@@ -33,12 +35,12 @@ class ProgressTracker(private val stagesTotal: Int, private val clock: () -> Dou
         when (e.type) {
             "job" -> {
                 val status = runCatching { JobStatus.valueOf(e.status.orEmpty().uppercase()) }.getOrDefault(p.status)
-                p = p.copy(status = status, error = e.error ?: p.error)
+                p = p.copy(status = status, error = e.error ?: p.error, settingUp = p.settingUp && !status.terminal)
                 if (status == JobStatus.SUCCEEDED) p = p.copy(fraction = 1.0, etaSeconds = 0, stagesDone = stagesTotal)
             }
             "stage" -> {
                 p = p.copy(status = JobStatus.RUNNING, currentStage = e.stage, currentKind = e.kind ?: p.currentKind,
-                    device = e.device ?: p.device)
+                    device = e.device ?: p.device, settingUp = e.settingUp != null)
                 if (e.status == "failed") p = p.copy(error = e.error ?: e.message)
                 if (e.fraction != null) p = p.copy(fraction = e.fraction, stagesDone = (e.fraction * stagesTotal + 0.5).toInt())
             }

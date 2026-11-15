@@ -10,7 +10,7 @@ import { StemsMixer } from "../components/stems";
 import { runTitle } from "./runs";
 import { compositionBeats, compositionFreeTime, parseBeats, tickTime } from "../lib/beats";
 import { maxOf, minOf } from "../lib/extent";
-import { fromJob, reduce, totals, type RunView } from "../lib/events";
+import { fromJob, reduce, settingUp, totals, type RunView } from "../lib/events";
 import { parseMidi } from "../lib/midi";
 import { PAGE_LIMITS, readFailure, type SheetSummary } from "../lib/pages";
 import { stageTime, waitNote } from "../lib/stagetime";
@@ -103,7 +103,9 @@ export function runView(root: HTMLElement, id: string, tab?: string, _q?: URLSea
     // Essentials first: status and progress; ids, git and devices sit behind "Run details".
     clear(summary, pill(job.status),
       tot ? h("span", {}, t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })) : null,
-      tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null);
+      tot && !TERMINAL.has(job.status) ? h("progress", { class: "progress", max: tot.total, value: tot.done, "aria-label": t("run.stagesFinished") }) : null,
+      view && settingUp(view).length && !TERMINAL.has(job.status)
+        ? h("span", { role: "status" }, t("run.settingUp", { models: settingUp(view).join(", ") })) : null);
     if (tot) stagesCount.textContent = ` · ${t("run.progressShort", { done: tot.done, total: tot.total, cached: tot.cached, seconds: fmt.seconds(tot.seconds) })}`;
     if (header.firstChild !== summary) clear(header, summary, headRest, actionNote);
     const key = JSON.stringify([job.id, job.status, job.error ?? null, job.outputs ?? [], job.previous_run_id ?? null, m?.run_id ?? null, pages, sheet]);

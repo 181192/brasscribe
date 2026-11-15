@@ -164,6 +164,17 @@ public final class SheetReaderInstaller {
         }
         phase = .installing
         cancelled = false
+        // No stage reads a page, nor installs the reader's environment itself, while this runs (envlock.py).
+        var lock: EnvironmentLock?
+        if case .installed = configuration.source {
+            lock = await EnvironmentLock.exclusive(configuration.source.environmentLocks.appending(path: "\(SheetReader.adapter).lock"),
+                                                   while: { [weak self] in !(self?.cancelled ?? true) })
+            guard lock != nil else {
+                phase = cancelled ? .idle : .failed(.stopped("its environment could not be locked for the install"))
+                return
+            }
+        }
+        defer { lock?.release() }
         log?("reader: installing the reader of printed music: \(plan.executable.path) \(plan.arguments.joined(separator: " "))")
         let status: Int32
         do {
@@ -201,9 +212,10 @@ public final class SheetReaderInstaller {
 
     /// Stops an install under way (quitting, removing Brasscribe); it is not installed then, and not failed either.
     public func cancel(grace: TimeInterval = 5) {
-        guard let pid else { return }
-        self.pid = nil
+        guard isInstalling else { return }
         cancelled = true
+        guard let pid else { return }  // still waiting for its lock: that wait ends
+        self.pid = nil
         launcher.terminate(pid: pid, grace: grace)
     }
 }

@@ -149,6 +149,8 @@ data class TranscribeState(
     val steps: List<Step> = emptyList(),
     /** A band draft on the phone: its service keeps it going while the player is out of the app. */
     val draft: Boolean = false,
+    /** The computer is still setting up (downloading) what a started stage needs. */
+    val settingUp: Boolean = false,
 )
 
 /** A finished transcription. [musicXml] is what the score view renders; [jobId] is set for engine results. */
@@ -1411,7 +1413,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
             val pr = tracker.onEvent(e)
             transcribe.update {
                 it.copy(step = if (pr.currentKind != null) Step.of(pr.currentKind, p) else Step.QUEUED, fraction = pr.fraction,
-                    stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, error = pr.error)
+                    stepIndex = pr.stagesDone, stepTotal = pr.stagesTotal, etaSeconds = pr.etaSeconds, settingUp = pr.settingUp, error = pr.error)
             }
         }
         val final = engine.job(created.id)

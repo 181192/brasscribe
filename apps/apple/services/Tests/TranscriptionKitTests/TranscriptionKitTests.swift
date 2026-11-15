@@ -29,6 +29,7 @@ func goldenDir() -> URL? {
     #expect(evs.map(\.id) == [3, 4, 5])
     #expect(evs[0].fraction == 0.25 && evs[0].stage == "beats" && evs[0].device == "mps")
     #expect(evs[1].message == "hi")
+    #expect(evs.allSatisfy { $0.settingUp == nil })
     #expect(evs[2].type == "job" && evs[2].status == "succeeded")
 
     // progress must not wait for the next event
@@ -38,6 +39,13 @@ func goldenDir() -> URL? {
     let now = q.feed(line: #"data: {"id":7,"type":"stage","status":"ran","stage":"arrange","fraction":0.9}"#)
     #expect(now.map(\.id) == [7])
     #expect(q.feed(line: ": keepalive").isEmpty)
+}
+
+@Test func sseParserReadsWhatTheComputerIsSettingUp() {
+    var p = SSEParser()
+    let up = p.feed(line: #"data: {"id":1,"type":"stage","status":"started","stage":"separate","setting_up":"demucs"}"#)
+    let done = p.feed(line: #"data: {"id":2,"type":"stage","status":"started","stage":"separate","setting_up":null}"#)
+    #expect(up.first?.settingUp == "demucs" && done.first?.settingUp == nil)
 }
 
 @Test func anAppSeesOnlyItsOwnTargetsProfiles() throws {
@@ -134,6 +142,8 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var rotateAfter = "2026-08-31T10:00:00+00:00"
     /// What `odd.local` answers `GET /v1/health` and `GET /v1/devices/me` with.
     nonisolated(unsafe) static var oddAnswer = "{}"
+    /// Job j1's stage waits for a model the computer is still setting up, then has it.
+    nonisolated(unsafe) static var settingUp = false
 
     /// `"interface_version":N` as `host` says it; nothing for `older.local`.
     static func interface(_ host: String?) -> String {
@@ -224,6 +234,13 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return (413, Data(#"{"detail":"41 files: a job reads 40 pages at most","code":"too_many_pages"}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/pages"):
                 return (202, Data(#"{"id":"j1","profile":"sheet","target":"brass","input":"pages","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
+            case ("GET", "/v1/jobs/j1/events") where Self.settingUp:
+                let s = """
+                id: 0\nevent: stage\ndata: {"id":0,"run":"j1","type":"stage","time":0,"status":"started","stage":"separate","fraction":0,"setting_up":"demucs"}\n\n\
+                id: 1\nevent: stage\ndata: {"id":1,"run":"j1","type":"stage","time":1,"status":"started","stage":"separate","fraction":0.1,"setting_up":null}\n\n\
+                id: 2\nevent: job\ndata: {"id":2,"run":"j1","type":"job","time":2,"status":"succeeded"}\n\n
+                """
+                return (200, Data(s.utf8), "text/event-stream")
             case ("GET", "/v1/jobs/j1/events"):
                 let s = """
                 id: 0\nevent: stage\ndata: {"id":0,"run":"j1","type":"stage","time":0,"status":"ran","stage":"separate","fraction":0.5}\n\n\
@@ -319,6 +336,21 @@ extension URLRequest {
         #expect(try await svc.pollPairing("r1") == .approved(.init(token: "tok", deviceID: "d1", serverID: "srv-1", serverName: "Brasscribe on Studio")))
         #expect(svc.token == "tok")
         #expect(try await svc.pollPairing("gone") == .expired)
+    }
+
+    /// The step is marked as waiting for the computer's setup while the engine says so, and not after.
+    @Test func progressSaysWhileTheComputerIsSettingUp() async throws {
+        StubEngine.settingUp = true
+        defer { StubEngine.settingUp = false }
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "macos")
+        let audio = FileManager.default.temporaryDirectory.appending(path: "a.wav")
+        try Data(repeating: 1, count: 3000).write(to: audio)
+        var settingUp: [Bool] = []
+        for try await ev in svc.transcribe(.init(audioURL: audio, profile: "solo", title: "t")) {
+            if case .progress(let p) = ev { settingUp.append(p.settingUp) }
+        }
+        #expect(settingUp == [false, true, false])
     }
 
     @Test func fullJob() async throws {

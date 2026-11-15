@@ -11,7 +11,7 @@ namespace Kalli.Scribe.ViewModels;
 public static class PreviewScenes
 {
     public static readonly string[] Names =
-        ["first-run", "home", "home-offline", "home-update", "home-update-app", "what-is-this", "transcribing", "review", "review-listening",
+        ["first-run", "home", "home-offline", "home-update", "home-update-app", "what-is-this", "transcribing", "transcribing-setting-up", "review", "review-listening",
          "choose-output", "score", "part", "export", "error", "error-update", "error-update-app", "pages", "pages-unread"];
 
     /// <summary>The computer in the sample scenes.</summary>
@@ -57,10 +57,13 @@ public static class PreviewScenes
                 main.Kind.Selected = main.Kind.Options.FirstOrDefault(o => o.Kind == SourceKind.OrchestraWithSoloist);
                 main.Screen = Screen.SourceKind;
                 return true;
-            case "transcribing":
+            case "transcribing" or "transcribing-setting-up":
                 main.Kind.SetWhere(main.Settings.EngineUri);
+                // The second: the first run, a stage waiting for the computer to set up what it listens with.
+                bool settingUp = scene == "transcribing-setting-up";
                 main.Transcription.ShowProgress(SampleTitle, "orchestra-with-soloist",
-                    main.Kind.Options.First(o => o.Kind == SourceKind.OrchestraWithSoloist).Label, "Notes", 62, TimeSpan.FromMinutes(2));
+                    main.Kind.Options.First(o => o.Kind == SourceKind.OrchestraWithSoloist).Label, settingUp ? "Beats" : "Notes",
+                    settingUp ? 8 : 62, settingUp ? null : TimeSpan.FromMinutes(2), settingUp);
                 main.Screen = Screen.Transcribing;
                 return true;
             case "pages" when main.Pages is { } pages:

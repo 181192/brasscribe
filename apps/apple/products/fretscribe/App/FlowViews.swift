@@ -109,6 +109,7 @@ struct TranscribingView: View {
                         .accessibilityValue(Text(percentText(job.progress.fraction * 100)))
                     Text("\(percentText(job.progress.fraction * 100)). You can switch to another app: when the tab is ready, it is in Your songs while this device is connected to your computer.")
                         .font(Font.Scribe.callout).foregroundStyle(Color.Scribe.textMuted).fixedSize(horizontal: false, vertical: true)
+                    SettingUpLine(active: job.progress.settingUp)
                     HelperLine(systemImage: PlayIcon.computer.systemName, text: String(localized: "Bandroom on your computer is writing down the notes"))
                     Button(role: .destructive) { confirmStop = true } label: { Text("Stop") }
                         .buttonStyle(.outline)

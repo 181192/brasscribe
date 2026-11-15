@@ -2433,6 +2433,9 @@
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Making the score</value>
   </data>
+  <data name="TranscribeSettingUp.Text" xml:space="preserve">
+    <value>Your computer is still setting up its listening tools. This can take a while the first time.</value>
+  </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
     <value>Stop making this score? The recording stays in Your scores.</value>
   </data>

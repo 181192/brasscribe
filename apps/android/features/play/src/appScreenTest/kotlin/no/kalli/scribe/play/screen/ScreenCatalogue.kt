@@ -90,6 +90,7 @@ abstract class ScreenCatalogue : ScreenTest() {
      */
     private fun fromHome() {
         container.fixtureHeld = false
+        container.fixtureSettingUp = null
         waitUntil(30_000) { !vm.transcribe.value.running }
         forgetTheOtherComputer()
         rule.runOnUiThread { vm.home() }

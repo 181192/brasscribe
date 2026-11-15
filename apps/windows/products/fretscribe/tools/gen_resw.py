@@ -204,6 +204,7 @@ add("Tab_Where_Computer", "Bandroom on {0}", "Bandroom på {0}")
 add("Tab_Where_YourComputer", "Bandroom on your computer", "Bandroom på datamaskinen")
 text_button("CancelTranscriptionButton", "Cancel", "Avbryt", "Stop writing it down (asks first)", "Slutt å skrive det ned (spør først)")
 prop("TranscribeLeaveNote", "Text", "The tab is in Your songs when it is ready.", "Tabben ligger i Sangene dine når den er klar.")
+prop("TranscribeSettingUp", "Text", "Your computer is still setting up its listening tools. This can take a while the first time.", "Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.")
 add("CancelDialog_Title", "Stop writing it down?", "Slutte å skrive det ned?")
 add("CancelDialog_Content", "The recording stays in Your songs for 30 days. You can start again from it.",
     "Opptaket blir liggende i Sangene dine i 30 dager. Du kan starte på nytt fra det.")

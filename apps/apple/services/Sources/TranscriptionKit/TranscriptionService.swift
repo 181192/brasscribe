@@ -66,9 +66,12 @@ public struct TranscriptionProgress: Sendable, Equatable {
     public var etaSeconds: Double?
     /// Where the engine runs the heavy models (cuda, mps, cpu), when known.
     public var device: String?
+    /// The computer is still setting up (downloading) what the step needs; the step waits for it.
+    public var settingUp: Bool
 
-    public init(stage: StageKind, stageName: String? = nil, fraction: Double, etaSeconds: Double?, device: String? = nil) {
+    public init(stage: StageKind, stageName: String? = nil, fraction: Double, etaSeconds: Double?, device: String? = nil, settingUp: Bool = false) {
         self.stage = stage; self.stageName = stageName; self.fraction = fraction; self.etaSeconds = etaSeconds; self.device = device
+        self.settingUp = settingUp
     }
 }
 
