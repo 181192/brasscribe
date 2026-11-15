@@ -78,7 +78,7 @@ struct YourComputerSection: View {
                     .textContentType(.URL)
                     .autocorrectionDisabled()
             } label: { Text("Details for the tech person") }
-        } header: { Text("Your computer") } footer: {
+        } header: { Text("Your computer").formHeader() } footer: {
             if showPairing { Text("Do this once. This device stays paired, also when the computer restarts or gets a new address.").foregroundStyle(Color.Scribe.textMuted) }
         }
         .onAppear { if showPairing { browser.start() } }
