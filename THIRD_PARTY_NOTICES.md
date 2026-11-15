@@ -115,7 +115,8 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   are, report the runtime's use to Microsoft unless told not to (its `Privacy.md`: "information about you and your use
   of the software"). Brasscribe tells them not to, in Play for Android, in Play for Windows and in the engine's
   adapters (swift-f0, the separator, homr and, outside macOS, basic-pitch: the `onnxruntime` package from PyPI, on the
-  computer Bandroom or a checkout runs on):
+  computer Bandroom or a checkout runs on). On Android, macOS and Linux that stops all of it; on Windows the runtime
+  still writes one event as it starts, before it can be told, and Windows can turn its events back on:
   - **Android, macOS and Linux:** the runtime's own uploader, which would send events to Microsoft's telemetry service
     (`mobile.events.data.microsoft.com`) with a device identifier it keeps between runs, never starts:
     `ORT_DISABLE_TELEMETRY` is set before the runtime loads (by Play for Android as it starts, and by the engine, its
