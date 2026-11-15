@@ -26,7 +26,7 @@ class BasicPitchOutput(val frames: Int, val note: FloatArray, val onset: FloatAr
  * Pitch bends are not computed.
  */
 class BasicPitch(modelBytes: ByteArray, threads: Int = 2) : AutoCloseable {
-    private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
+    private val env: OrtEnvironment = OnnxRuntime.environment
     private val session: OrtSession = env.createSession(modelBytes, OrtSession.SessionOptions().apply {
         setIntraOpNumThreads(threads)
         addConfigEntry("session.intra_op.allow_spinning", "0")

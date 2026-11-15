@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:name=".BrasscribeApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.Play" />
+        android:theme="@style/Theme.Play">
+        <!-- ONNX Runtime's start-up hook: it makes the runtime's telemetry client as the app starts, which would
+             read the phone's id, maker and model for the events it sends to Microsoft. Not wanted: telemetry is off
+             (OnnxRuntimeTelemetry). -->
+        <provider
+            android:name="ai.onnxruntime.TelemetryInitializer"
+            android:authorities="${applicationId}.onnxruntime_telemetry_initializer"
+            tools:node="remove" />
+    </application>
 </manifest>

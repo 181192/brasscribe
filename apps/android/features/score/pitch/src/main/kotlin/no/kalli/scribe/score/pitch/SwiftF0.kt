@@ -23,7 +23,7 @@ class PitchTrack(val pitchHz: DoubleArray, val confidence: DoubleArray, val loud
  * context and 10 of lookahead, the digital-silence gate and the loudness read-out.
  */
 class SwiftF0(modelBytes: ByteArray, threads: Int = 2) : AutoCloseable {
-    private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
+    private val env: OrtEnvironment = OnnxRuntime.environment
     private val session: OrtSession = env.createSession(modelBytes, OrtSession.SessionOptions().apply {
         setIntraOpNumThreads(threads)
         addConfigEntry("session.intra_op.allow_spinning", "0")

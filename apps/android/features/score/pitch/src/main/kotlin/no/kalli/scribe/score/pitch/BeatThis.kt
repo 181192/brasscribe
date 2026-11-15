@@ -43,7 +43,7 @@ class Beats(val beats: DoubleArray, val downbeats: DoubleArray) {
  * peaks merged, downbeats moved to the nearest beat). 50 frames per second.
  */
 class BeatThis(modelBytes: ByteArray, threads: Int = 2) : AutoCloseable {
-    private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
+    private val env: OrtEnvironment = OnnxRuntime.environment
     private val session: OrtSession = env.createSession(modelBytes, OrtSession.SessionOptions().apply {
         setIntraOpNumThreads(threads)
         addConfigEntry("session.intra_op.allow_spinning", "0")

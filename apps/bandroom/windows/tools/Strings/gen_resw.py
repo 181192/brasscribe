@@ -134,8 +134,8 @@ ROWS = [
     ("Settings_Reader_Failed_Network", "The reader's files couldn't be downloaded. Check the internet connection, then try again.",
      "Filene til noteleseren ble ikke lastet ned. Sjekk internettforbindelsen, og prøv igjen."),
     ("Settings_Reader_Failed_Space", "Not enough space: the reader needs about {0} GB, and {1} GB is free.", "Ikke nok plass: noteleseren trenger omtrent {0} GB, og {1} GB er ledig."),
-    ("Settings_About", "Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which sends usage data to Microsoft through Windows’ diagnostic data, never a recording.",
-     "Brasscribe Bandroom er et ikke-kommersielt prosjekt. På denne PC-en lytter den med Microsofts ONNX Runtime, som sender bruksdata til Microsoft gjennom Windows’ diagnostikkdata, aldri et opptak."),  # (+)
+    ("Settings_About", "Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime. Bandroom switches off its usage reports to Microsoft where the runtime lets it; Windows’ diagnostic data settings can still turn them on. A recording is never part of them.",
+     "Brasscribe Bandroom er et ikke-kommersielt prosjekt. På denne PC-en lytter den med Microsofts ONNX Runtime. Bandroom slår av bruksrapportene til Microsoft der det går; innstillingene for diagnostikkdata i Windows kan likevel slå dem på. Et opptak er aldri med i dem."),  # (+)
     ("Settings_Licences", "Third-party licences", "Tredjepartslisenser"),  # (+) opens the licences file that ships with the app
     ("Appearance_Title", "Appearance", "Utseende"),  # (+) design/brands/brasscribe/system.md §10
     ("Appearance_System", "Match system", "Følg systemet"),  # (+)

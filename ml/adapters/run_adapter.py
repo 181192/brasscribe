@@ -36,6 +36,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
+# ONNX Runtime, which swift-f0, the separator, homr and (outside macOS) basic-pitch run on, sends events about its use
+# to Microsoft unless this is set when it starts: set here, so every adapter this runs inherits it. On Windows the
+# runtime does not read it; the swift-f0 scripts switch its events off themselves there.
+os.environ["ORT_DISABLE_TELEMETRY"] = "1"
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 MODELS = Path(os.environ.get("SCRIBE_MODELS") or ROOT / "models")

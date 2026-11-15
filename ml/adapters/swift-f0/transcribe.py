@@ -19,7 +19,12 @@ def write_notes(notes, dst: str) -> None:
 
 
 def main(src: str, dst: str) -> None:
+    import onnxruntime
     from swift_f0 import SwiftF0, segment_notes
+
+    # Windows: the runtime's telemetry events off (elsewhere ORT_DISABLE_TELEMETRY, set by run_adapter.py, keeps its
+    # uploader from starting at all).
+    onnxruntime.disable_telemetry_events()
 
     result = SwiftF0().detect_file(src)
     notes = segment_notes(result, pitch_hold_ms=80.0)

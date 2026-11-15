@@ -6,8 +6,12 @@ reads it to find where sustained notes really end.
 import sys
 
 import numpy as np
+import onnxruntime
 from swift_f0 import SwiftF0
 
+# Windows: the runtime's telemetry events off (elsewhere ORT_DISABLE_TELEMETRY, set by run_adapter.py, keeps its
+# uploader from starting at all).
+onnxruntime.disable_telemetry_events()
 src, dst = sys.argv[1], sys.argv[2]
 r = SwiftF0().detect_file(src)
 with open(dst, "wb") as f:  # a file, not a name: savez would add ".npz" to a name without it
