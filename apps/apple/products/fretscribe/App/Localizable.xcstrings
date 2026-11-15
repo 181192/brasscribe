@@ -281,6 +281,16 @@
         }
       }
     },
+    "%lld pages waiting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sider venter"
+          }
+        }
+      }
+    },
     "%lld percent": {
       "localizations": {
         "nb": {
@@ -307,6 +317,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld-strengs gitar"
+          }
+        }
+      }
+    },
+    "1 page waiting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 side venter"
           }
         }
       }

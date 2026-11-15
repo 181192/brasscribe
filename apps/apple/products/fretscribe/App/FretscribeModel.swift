@@ -74,7 +74,7 @@ final class FretscribeModel: PlayHost {
     var path: [Route] = []
     var jobs: [UUID: TabJob] = [:]
     /// Pages of printed music in hand, and the reading of them on the computer.
-    let pageList = PageList()
+    var pageList = PageList()
     var pageJobs: [UUID: PagesJob] = [:]
     var showSettings = false
     var showRecorder = false

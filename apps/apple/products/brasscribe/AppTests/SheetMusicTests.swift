@@ -28,9 +28,33 @@ struct SheetMusicTests {
         return url
     }
 
+    func listFolder() -> URL { FileManager.default.temporaryDirectory.appending(path: "pagelist-\(UUID().uuidString)", directoryHint: .isDirectory) }
+
+    /// The pages stay in hand with their order and page counts when the app is closed and opened again; one whose file
+    /// is gone is left out, and once they are read nothing is kept.
+    @Test func thePagesInHandSurviveTheAppBeingClosed() async throws {
+        let folder = listFolder()
+        let list = PageList(folder: folder)
+        await list.add([try file("one.png", Self.png), try pdf("two.pdf", pages: 3), try file("three.png", Self.png)])
+        list.move(2, by: -1)
+        let reopened = PageList(folder: folder)
+        #expect(reopened.pages.map(\.name) == ["one.png", "three.png", "two.pdf"])
+        #expect(reopened.pageCount == 5)
+        try FileManager.default.removeItem(at: list.pages[0].url)
+        let again = PageList(folder: folder)
+        #expect(again.pages.map(\.name) == ["three.png", "two.pdf"])
+        // a file no page names (an add cut short) is not kept either
+        try Data("%PDF-1.7".utf8).write(to: folder.appending(path: "stray.pdf"))
+        _ = PageList(folder: folder)
+        #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "stray.pdf").path))
+        again.clear()
+        #expect(PageList(folder: folder).pages.isEmpty)
+        #expect(((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []) == ["pages.json"])
+    }
+
     /// Pages are kept in the order chosen, can be moved and removed, and what is no page is left out and said.
     @Test func thePagesAreKeptInOrderAndWhatIsNoPageIsLeftOut() async throws {
-        let list = PageList()
+        let list = PageList(folder: listFolder())
         await list.add([try file("one.png", Self.png), try file("take.wav", Data("RIFF\0\0\0\0WAVEfmt ".utf8)), try pdf("two.pdf", pages: 1)])
         #expect(list.pages.map(\.name) == ["one.png", "two.pdf"])
         #expect(list.status == String(localized: "One file is not a picture or a PDF, so it was left out."))
@@ -45,8 +69,26 @@ struct SheetMusicTests {
         #expect(list.pages.isEmpty)
     }
 
+    /// An index that is cut short or unreadable deletes nothing: the pages found are kept, oldest first, and the index is
+    /// written again. A missing index does the same. The folder is left out of backups.
+    @Test func aBrokenIndexKeepsThePages() async throws {
+        let folder = listFolder()
+        let list = PageList(folder: folder)
+        await list.add([try file("one.png", Self.png), try pdf("two.pdf", pages: 2)])
+        #expect(try folder.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup == true)
+        let index = folder.appending(path: "pages.json")
+        try Data("[{\"file\":".utf8).write(to: index)
+        let kept = PageList(folder: folder)
+        #expect(kept.pages.count == 2 && kept.pageCount == 3)
+        #expect(kept.pages.allSatisfy { FileManager.default.fileExists(atPath: $0.url.path) })
+        #expect(PageList(folder: folder).pages.count == 2) // the index was written again
+        try FileManager.default.removeItem(at: index)
+        #expect(PageList(folder: folder).pages.count == 2)
+        kept.clear()
+    }
+
     @Test func noMoreThanFortyPagesAreTaken() async throws {
-        let list = PageList()
+        let list = PageList(folder: listFolder())
         let page = try file("p.png", Self.png)
         await list.add(Array(repeating: page, count: Pages.maxPages + 2))
         #expect(list.pages.count == Pages.maxPages)
@@ -56,7 +98,7 @@ struct SheetMusicTests {
     /// Every page of a PDF counts: a 60-page PDF is stopped on the device, before anything is sent, and a PDF that
     /// cannot be opened is left out with why.
     @Test func everyPageOfAPDFCountsBeforeAnythingIsSent() async throws {
-        let list = PageList()
+        let list = PageList(folder: listFolder())
         await list.add([try pdf("hymns.pdf", pages: 60)])
         #expect(list.pages.isEmpty)
         #expect(list.status == String(localized: "At most 40 pages can be read at once, every page of a PDF counted. The rest were left out."))
@@ -97,7 +139,7 @@ struct SheetMusicTests {
     /// A picture or a PDF opened or shared goes to the pages, not to "What is this?".
     @Test func aPictureOpenedGoesToThePages() async throws {
         let app = AppModel()
-        app.pageList.clear()
+        app.pageList = PageList(folder: listFolder())
         await app.accept(url: try file("Hymn.png", Self.png))
         #expect(app.path == [.pages])
         #expect(app.pageList.pages.map(\.name) == ["Hymn.png"])

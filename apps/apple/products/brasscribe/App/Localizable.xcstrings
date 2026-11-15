@@ -321,6 +321,16 @@
         }
       }
     },
+    "%lld pages waiting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sider venter"
+          }
+        }
+      }
+    },
     "%lld percent": {
       "localizations": {
         "nb": {
@@ -407,6 +417,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 tone å sjekke"
+          }
+        }
+      }
+    },
+    "1 page waiting": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 side venter"
           }
         }
       }

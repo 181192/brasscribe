@@ -79,7 +79,10 @@ HEIC) goes as an upright JPEG, its longest side at most 3000 pixels (`Transcript
 50 MB, and pages past 40, are left out on the device and said. The computer's refusals (`not_a_page`,
 `page_too_large`, `too_many_pages`, `reader_missing`, `wrong_input`) and the fixed words a read that failed ends with
 (`engine/src/scribe_engine/sheet.py`) are said in the app's words; package tests hold both lists to the engine's. The
-pages in hand live in the app's temporary folder: they are not kept once the system closes the app.
+pages in hand are kept in the app's support folder with their order (`pages.json`), so they are still there after the
+system closed the app, until they are read or removed; Home's Open sheet music says how many are waiting. The folder
+is left out of the device's backups (they are working copies the player can choose again). A missing or unreadable
+index deletes nothing: the pages found are kept, oldest first.
 
 ## iPhone and iPad (test build)
 

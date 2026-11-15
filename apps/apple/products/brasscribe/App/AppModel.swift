@@ -45,7 +45,7 @@ final class AppModel: PlayHost {
     var path: [Route] = []
     var jobs: [UUID: TranscriptionJob] = [:]
     /// Pages of printed music in hand, and the reading of them on the computer.
-    let pageList = PageList()
+    var pageList = PageList()
     var pageJobs: [UUID: PagesJob] = [:]
     var showSettings = false
     var showFirstRun = false
