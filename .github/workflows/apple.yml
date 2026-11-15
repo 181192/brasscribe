@@ -41,6 +41,11 @@ on:
       iphone_tests:
         type: boolean
         default: false
+      # Set by ci.yml when a pull request cannot change the bokmål iPhone screens: the iPhone screen catalogue runs in
+      # English alone. Unset (false), it runs in both languages; the nightly runs bokmål on that phone every night.
+      iphone_catalogue_en_only:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       iphone_tests:
@@ -280,10 +285,13 @@ jobs:
       # phone of the newest iOS, upright at the default text size and at XXL in light and dark, and on its side, in
       # English and bokmål, with the catalogue's checks; the pictures are kept as an artefact. The iPhone SE's half runs
       # at night (job play-iphone). scripts/iphone-catalogue.sh waits for the simulator started above.
+      # Bokmål only when the change reaches what can change those screens (ci.yml, filter apple_play_nb); else it
+      # runs at night (job play-iphone).
       - name: iPhone screen catalogue
         timeout-minutes: 20
         env:
           DEST: ${{ steps.sim.outputs.dest }}
+          CATALOGUE_LANGUAGES: ${{ inputs.iphone_catalogue_en_only && 'en' || 'en nb' }}
         run: make test-iphone-catalogue CATALOGUE_DEST="$DEST"
 
       - uses: actions/upload-artifact@v7
@@ -382,6 +390,22 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: play-iphone-se-screenshots
+          path: apps/apple/build/catalogue/iphone
+          if-no-files-found: ignore
+
+      # The smallest iPhone's catalogue in bokmål, which a pull request runs only when it reaches what can change it
+      # (ci.yml, filter apple_play_nb): a bokmål word too long for that screen shows here by the next morning.
+      - name: iPhone screen catalogue in bokmål on the smallest iPhone
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        env:
+          CATALOGUE_LANGUAGES: nb
+        run: make test-iphone-catalogue CATALOGUE_DEST="$(scripts/smallest-iphone.sh)"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: play-iphone-nb-screenshots
           path: apps/apple/build/catalogue/iphone
           if-no-files-found: ignore
 
