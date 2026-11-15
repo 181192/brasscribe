@@ -34,6 +34,10 @@ object PageFiles {
     /** A PDF by how it starts, with nothing to read in it. */
     fun pdf(): ByteArray = "%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n".toByteArray()
 
+    /** A PDF whose page tree says it has [pages] pages. */
+    fun pdf(pages: Int): ByteArray =
+        "%PDF-1.7\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Count $pages >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n".toByteArray()
+
     /** A picture the computer does not read and the phone does: the smallest GIF there is. */
     fun gif(): ByteArray = "47494638396101000100800000000000ffffff21f90401000000002c00000000010001000002024401003b".chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 

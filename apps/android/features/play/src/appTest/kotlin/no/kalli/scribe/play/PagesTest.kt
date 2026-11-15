@@ -62,6 +62,17 @@ class PagesTest {
 
     private fun head(text: String, vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray() + text.toByteArray(Charsets.ISO_8859_1)
 
+    /** A PDF's pages, as its text says them: the page tree's count, else the pages named one by one; none for a locked one. */
+    @Test
+    fun aPdfsPagesAreCountedFromItsText() {
+        assertEquals(60, Pages.countInText("1 0 obj << /Type /Pages /Kids [] /Count 60 >>".toByteArray()))
+        assertEquals(7, Pages.countInText("<< /Count 7 /Type /Pages >> << /Type /Pages /Count 3 >>".toByteArray()))
+        assertEquals(2, Pages.countInText("<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>".toByteArray()))
+        assertEquals(1, Pages.countInText("%PDF-1.7\n".toByteArray()))
+        assertEquals(null, Pages.countInText("trailer << /Root 1 0 R /Encrypt 5 0 R >>".toByteArray()))
+        assertEquals(41, listOf(Page(File("a"), "a", 40), Page(File("b"), "b")).pageCount())
+    }
+
     @Test
     fun aFileIsToldByHowItStartsAndTheTypeItCameWith() {
         assertEquals(Pages.Kind.PDF, Pages.kindOf("%PDF-1.7\n%".toByteArray(), null))
@@ -101,10 +112,15 @@ class PagesTest {
         }
         val pdf = "%PDF-1.7\n1 0 obj\n<<>>\nendobj\n".toByteArray()
         assertArrayEquals(pdf, take("Hymn.pdf", pdf).file.readBytes())
+        // A PDF counts as its pages; one locked with a password is not taken.
+        val book = "%PDF-1.7\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 12 >>\nendobj\n".toByteArray()
+        assertEquals(12, take("Book.pdf", book).pages)
+        val locked = "%PDF-1.7\ntrailer\n<< /Encrypt 9 0 R >>\n".toByteArray()
+        assertTrue(runCatching { take("Locked.pdf", locked) }.exceptionOrNull() is UnreadablePdfException)
         // A screenshot that came without a name's ending gets the one of what it is.
         assertEquals("Screenshot.png", take("Screenshot", picture(8, 8, Bitmap.CompressFormat.PNG)).name)
         // Nothing but the pages is left in their folder.
-        assertEquals(5, dir.listFiles()!!.size)
+        assertEquals(6, dir.listFiles()!!.size)
     }
 
     @Test

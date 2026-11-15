@@ -11,8 +11,18 @@ import java.io.File
 import java.io.InputStream
 import java.util.UUID
 
-/** One page of printed music in hand: [file] is the app's own copy, as it is sent; [name] is what it is called. */
-data class Page(val file: File, val name: String)
+/**
+ * One page of printed music in hand: [file] is the app's own copy, as it is sent; [name] is what it is called; [pages]
+ * is how many pages it holds (a PDF's every page counts against [no.kalli.scribe.engine.EngineApi.MAX_PAGES], as the
+ * computer counts them).
+ */
+data class Page(val file: File, val name: String, val pages: Int = 1)
+
+/** The pages in [this] list, every page of a PDF counted. */
+fun List<Page>.pageCount(): Int = sumOf { it.pages }
+
+/** A PDF brought in as pages that the phone cannot open: locked with a password, or damaged. */
+class UnreadablePdfException(name: String) : Exception("$name is a PDF that cannot be opened")
 
 /** A file brought in as a page is larger than the computer reads as one ([Pages.MAX_BYTES]). */
 class PageTooLargeException(name: String) : Exception("$name is larger than a page can be")
@@ -41,6 +51,36 @@ object Pages {
 
     /** The largest file the computer reads as a page: a larger one is refused here, before it is copied or sent. */
     const val MAX_BYTES = no.kalli.scribe.engine.EngineApi.MAX_PAGE_BYTES
+
+    /**
+     * How many pages the PDF [file] has, or null when it cannot be opened: locked with a password. The phone's own
+     * reader counts them; where it cannot (a damaged file, or a test without it) they are counted from the file's text
+     * ([countInText]), and a PDF that says nothing is taken as one page, which the computer then reads or refuses.
+     */
+    fun pdfPages(file: File): Int? {
+        val read = runCatching {
+            android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
+                android.graphics.pdf.PdfRenderer(descriptor).use { it.pageCount }
+            }
+        }
+        if (read.exceptionOrNull() is SecurityException) return null
+        read.getOrNull()?.takeIf { it > 0 }?.let { return it }
+        return countInText(file.readBytes())
+    }
+
+    /**
+     * The pages a PDF's text says it has: the largest page count of a page tree ("/Type /Pages … /Count 12"), else the
+     * pages it names one by one; 1 when it says neither. Null for a PDF locked with a password ("/Encrypt"), whose pages
+     * the computer cannot read either.
+     */
+    fun countInText(pdf: ByteArray): Int? {
+        val text = String(pdf, Charsets.ISO_8859_1)
+        if (text.contains("/Encrypt")) return null
+        val tree = Regex("""/Type\s*/Pages\b[^>]*?/Count\s+(\d+)|/Count\s+(\d+)[^>]*?/Type\s*/Pages\b""").findAll(text)
+            .mapNotNull { m -> (m.groupValues[1].ifEmpty { m.groupValues[2] }).toIntOrNull() }.maxOrNull()
+        val named = Regex("""/Type\s*/Page\b(?!s)""").findAll(text).count()
+        return (tree ?: named).coerceAtLeast(1)
+    }
 
     /** How much of a file says what it is. */
     const val HEAD_BYTES = 16
@@ -136,10 +176,12 @@ object Pages {
     private fun page(original: File, name: String, kind: Kind, stem: File): Page {
         fun titled(extension: String) = "${name.substringBeforeLast('.').ifBlank { name }}.$extension"
         if (kind == Kind.PDF || (kind.asItIs && fitsAsItIs(original))) {
+            // A PDF counts as its pages; one the phone cannot open is no page it can send.
+            val count = if (kind == Kind.PDF) pdfPages(original) ?: throw UnreadablePdfException(name) else 1
             val to = File(stem.parentFile, "${stem.name}.${kind.extension}")
             check(original.renameTo(to)) { "the page could not be kept" }
             // The name it came with, when that says what it is; else with the kind it was found to be.
-            return Page(to, if (name.substringAfterLast('.', "").lowercase() in EXTENSIONS.getValue(kind)) name else titled(kind.extension))
+            return Page(to, if (name.substringAfterLast('.', "").lowercase() in EXTENSIONS.getValue(kind)) name else titled(kind.extension), count)
         }
         val to = File(stem.parentFile, "${stem.name}.${Kind.JPEG.extension}")
         try {

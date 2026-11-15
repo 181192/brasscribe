@@ -137,6 +137,11 @@ class PagesFlowTest : ScreenTest() {
         assertTrue(readEnabled())
         checkAccessibility()
 
+        // Every page of a PDF counts: a 60-page book is left out on the phone and said, before anything is sent.
+        chosen(PageFiles.handedOver("Whole book.pdf", PageFiles.pdf(60)))
+        assertEquals(listOf("Hymn 1.png", "Hymn 2.pdf", "Hymn 3.png"), names())
+        assertTrue(shown(), shows(R.string.pages_too_many, no.kalli.scribe.engine.EngineApi.MAX_PAGES))
+
         // One is taken out, and another added after the rest: a picture the computer does not read goes as a JPEG.
         rule.onNodeWithTag("pages-remove-1").performScrollTo().performClick()
         waitUntil(5_000) { vm.pages.value.size == 2 }
@@ -436,7 +441,8 @@ class PagesFlowTest : ScreenTest() {
         rule.runOnUiThread { first.addPages(listOf(png("A.png"), png("B.png"), png("C.png"))) }
         waitUntil(20_000) { first.pages.value.size == 3 && !first.busy.value }
         rule.runOnUiThread { first.movePage(first.pages.value[2], up = true); first.movePage(first.pages.value[1], up = true) }
-        waitUntil(5_000) { state.get<ArrayList<String>>("pages")?.map { it.substringAfter('\n') } == listOf("C.png", "A.png", "B.png") }
+        // Each page by its file, its name and how many pages it holds.
+        waitUntil(5_000) { state.get<ArrayList<String>>("pages")?.map { it.substringAfter('\n') } == listOf("C.png\n1", "A.png\n1", "B.png\n1") }
 
         // What a new process is given back is what was saved: the pages by their files, in the order they were left in.
         val saved = androidx.lifecycle.SavedStateHandle(mapOf("stack" to arrayListOf(Screen.HOME.name, Screen.PAGES.name), "pages" to ArrayList(state.get<ArrayList<String>>("pages")!!)))
@@ -455,7 +461,7 @@ class PagesFlowTest : ScreenTest() {
         // What a new process is given back: the pages by their files, and the screen they are on.
         val state = androidx.lifecycle.SavedStateHandle(mapOf(
             "stack" to arrayListOf(Screen.HOME.name, Screen.PAGES.name, Screen.TRANSCRIBE.name),
-            "pages" to arrayListOf("${vm.pages.value.single().file.path}\nKept.png", "${rule.activity.cacheDir}/pages/gone.png\nGone.png"),
+            "pages" to arrayListOf("${vm.pages.value.single().file.path}\nKept.png\n1", "${rule.activity.cacheDir}/pages/gone.png\nGone.png\n1"),
         ))
         lateinit var restored: PlayViewModel
         rule.runOnUiThread { restored = PlayViewModel(rule.activity.application, state) }

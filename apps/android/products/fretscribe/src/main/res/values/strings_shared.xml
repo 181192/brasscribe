@@ -350,7 +350,8 @@
     <string name="pages_add_first">Add a page first.</string>
     <string name="pages_needs_computer">Reading sheet music needs Bandroom on your computer.</string>
     <string name="pages_where_desc">Bandroom reads the pages there</string>
-    <string name="pages_too_many">At most %1$d pages can be read at once. The rest were left out.</string>
+    <string name="pages_too_many">At most %1$d pages can be read at once, every page of a PDF counted. The rest were left out.</string>
+    <string name="pages_pdf_unreadable">A PDF that is locked with a password can\'t be read, so it was left out.</string>
     <string name="pages_photo_name">Sheet music</string>
     <string name="pages_camera_needed">The camera must be allowed to take a photo of a page. You can also choose a picture you already have.</string>
     <string name="pages_no_camera">No camera app could be opened.</string>
