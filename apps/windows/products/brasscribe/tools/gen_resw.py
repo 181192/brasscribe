@@ -274,9 +274,9 @@ prop("SettingsAboutHeading", "Text", "About", "Om")
 prop("LicencesButton", "Content", "Third-party licences", "Tredjepartslisenser")
 prop("AboutText", "Text",
      "Brasscribe Play is a non-commercial project. Notation and sound: alphaTab (MPL-2.0). The display face is Instrument Serif (SIL OFL 1.1). "
-     "Listening on this PC uses Microsoft's ONNX Runtime (MIT). Brasscribe Play switches off its usage reports to Microsoft; Windows' diagnostic data settings can turn them back on. The recording is never part of them.",
+     "Listening on this PC uses Microsoft's ONNX Runtime (MIT), which reports its use to Microsoft through Windows' diagnostic data: one report as it starts, then Brasscribe Play switches the reports off, though Windows can turn them back on. The recording is never part of them.",
      "Brasscribe Play er et ikke-kommersielt prosjekt. Noter og lyd: alphaTab (MPL-2.0). Overskriftsskriften er Instrument Serif (SIL OFL 1.1). "
-     "Lyttingen på denne PC-en bruker Microsofts ONNX Runtime (MIT). Brasscribe Play slår av bruksrapportene den sender til Microsoft; innstillingene for diagnostikkdata i Windows kan slå dem på igjen. Opptaket er aldri med i dem.")
+     "Lyttingen på denne PC-en bruker Microsofts ONNX Runtime (MIT), som rapporterer bruken sin til Microsoft gjennom diagnostikkdataene i Windows: én rapport når den starter, så slår Brasscribe Play rapportene av, men Windows kan slå dem på igjen. Opptaket er aldri med i dem.")
 name("ErrorSteps", "What to do", "Hva du kan gjøre")
 name("LineupQuartetChoice", "Quartet", "Kvartett")
 prop("LineupQuartetTitle", "Text", "Quartet", "Kvartett")

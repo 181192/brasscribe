@@ -180,7 +180,7 @@ h21 = "<span class=\"secno\">10</span> Etikk og lisenser"
 li1 = "<strong>Modellisenser.</strong> Basic Pitch har Apache-2.0; SwiftF0 og Beat This! har MIT. Det er ikke oppgitt noen lisens for vektene til BS-RoFormer SW; de lastes ned av brukerens datamaskin fra utgiveren og videredistribueres ikke av prosjektet."
 li2 = "<strong>Lisensene til datasettene</strong> står i {{ref table:tabdata}}. IDMT-SMT-Guitar er lisensiert for ikke-kommersiell bruk uten bearbeidelser; settet brukes bare til evaluering, og ingenting som er avledet av det, distribueres."
 li3 = "<strong>Personvern.</strong> Ingen opptak, og ingen tabulatur avledet av et opptak, sendes til en tjener."
-li4 = "<strong>Telemetri.</strong> ONNX Runtime, Microsoft-biblioteket som kjører modeller i deler av motoren, rapporterer sin egen bruk til Microsoft hvis den ikke blir bedt om å la være. Motoren slår dette av: på macOS og Linux starter opplasteren aldri; på Windows er hendelsene slått av der motoren laster den selv, og innstillingene for diagnostikkdata i Windows kan slå dem på igjen. <code>THIRD_PARTY_NOTICES.md</code> har detaljene."
+li4 = "<strong>Telemetri.</strong> ONNX Runtime, Microsoft-biblioteket som kjører modeller i deler av motoren, rapporterer sin egen bruk til Microsoft hvis den ikke blir bedt om å la være. Motoren slår dette av: på macOS og Linux starter opplasteren aldri; på Windows skriver den én hendelse til diagnostikkdataene i Windows når den starter, så slås hendelsene av, men Windows kan slå dem på igjen. <code>THIRD_PARTY_NOTICES.md</code> har detaljene."
 
 [acknowledgements]
 h21 = "Takk"

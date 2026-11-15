@@ -38,7 +38,8 @@ from typing import Iterator
 
 # ONNX Runtime, which swift-f0, the separator, homr and (outside macOS) basic-pitch run on, sends events about its use
 # to Microsoft unless this is set when it starts: set here, so every adapter this runs inherits it. On Windows the
-# runtime does not read it; the swift-f0 scripts switch its events off themselves there.
+# runtime does not read it; there the swift-f0 scripts switch its events off themselves, and the other adapters that
+# load it run through ort_events_off.py (ort_events_off below).
 os.environ["ORT_DISABLE_TELEMETRY"] = "1"
 
 HERE = Path(__file__).resolve().parent
@@ -86,6 +87,15 @@ def env_cmd(project: str, cmd: list[str]) -> list[str]:
         env = project + ("-cuda" if project in TORCH and cuda() else "")
         return ["pixi", "run", "--manifest-path", str(ROOT / "pixi.toml"), "--frozen", "-e", env, *cmd]
     return ["uv", "run", "--frozen", "--project", str(HERE / project), *cmd]
+
+
+WINDOWS = os.name == "nt"
+
+
+def ort_events_off(cmd: list[str]) -> list[str]:
+    """On Windows, cmd started through ort_events_off.py, which switches ONNX Runtime's telemetry events off in the
+    command's own process before it runs (the runtime there does not read ORT_DISABLE_TELEMETRY). Elsewhere cmd."""
+    return ["python", str(HERE / "ort_events_off.py"), *cmd] if WINDOWS else cmd
 
 
 def run(project: str, cmd: list[str], quiet_stderr: bool = True) -> None:
@@ -139,7 +149,7 @@ def basic_pitch(src: Path, dst: Path) -> None:
     serial = os.environ.get("BASIC_PITCH_SERIALIZATION") or (None if sys.platform == "darwin" else "onnx")
     with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as dec:
         src = readable(src, dec)
-        run("basic-pitch", ["basic-pitch", tmp, str(src), *(["--model-serialization", serial] if serial else [])])
+        run("basic-pitch", ort_events_off(["basic-pitch", tmp, str(src), *(["--model-serialization", serial] if serial else [])]))
         mids = list(Path(tmp).glob("*.mid"))
         if not mids:
             raise SystemExit("basic-pitch wrote no MIDI")
@@ -173,9 +183,10 @@ def muscriptor(src: Path, dst: Path) -> None:
 
 def separator(src: Path, dst: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp, staging(dst) as out:
-        run("separator", ["audio-separator", str(readable(src, tmp)), "-m",
-                          os.environ.get("SEPARATOR_MODEL", "BS-Roformer-SW.ckpt"), "--output_dir", str(out),
-                          "--output_format", "WAV", "--model_file_dir", str(MODELS / "separator")])
+        run("separator", ort_events_off(["audio-separator", str(readable(src, tmp)), "-m",
+                                         os.environ.get("SEPARATOR_MODEL", "BS-Roformer-SW.ckpt"), "--output_dir",
+                                         str(out), "--output_format", "WAV", "--model_file_dir",
+                                         str(MODELS / "separator")]))
 
 
 def _sha256(path: Path) -> str:
@@ -352,7 +363,7 @@ def homr(src: Path, dst: Path) -> None:
             raise SystemExit(ready.returncode)
         copies = sorted(Path(tmp).glob("page-*"))
         try:
-            run("homr", ["homr", "--gpu", "no", "--no-title", *map(str, copies)])
+            run("homr", ort_events_off(["homr", "--gpu", "no", "--no-title", *map(str, copies)]))
         except subprocess.CalledProcessError:
             copies = []
         read = copies[0].with_suffix(".musicxml") if copies else None

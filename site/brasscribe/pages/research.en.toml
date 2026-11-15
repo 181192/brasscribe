@@ -238,7 +238,7 @@ li1 = "<strong>Model licences.</strong> MuScriptor's weights are licensed CC BY-
 li2 = "<strong>Dataset licences</strong> are given in {{ref table:data}}. The repository contains small data derived from ChoraleBricks (CC BY 4.0) and one test file derived from 30 s of a URMP track."
 li3 = "<strong>Copyright.</strong> No copyrighted music is published on this page or distributed with the apps; the built-in example is a public-domain hymn tune."
 li4 = "<strong>Privacy.</strong> No recording, and no score derived from one, is sent to a server."
-li5 = "<strong>Telemetry.</strong> ONNX Runtime, the Microsoft library that executes the models in the Android and Windows apps and in parts of the engine, reports its own usage to Microsoft unless told not to. Brasscribe switches this off: on Android, macOS and Linux its uploader never starts; on Windows its events are switched off, though Windows' diagnostic data settings can turn them back on. <code>THIRD_PARTY_NOTICES.md</code> gives the details."
+li5 = "<strong>Telemetry.</strong> ONNX Runtime, the Microsoft library that executes the models in the Android and Windows apps and in parts of the engine, reports its own usage to Microsoft unless told not to. Brasscribe switches this off: on Android, macOS and Linux its uploader never starts; on Windows it writes one event to Windows' diagnostic data as it starts, then its events are switched off in the app and in the engine, though Windows can turn them back on. <code>THIRD_PARTY_NOTICES.md</code> gives the details."
 
 [acknowledgements]
 h21 = "Acknowledgements"

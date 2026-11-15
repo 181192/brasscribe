@@ -62,3 +62,69 @@ def test_the_runtime_started_by_the_runner_starts_no_uploader(tmp_path, python):
     # The runner's variable reaches what it runs: in the same process here, inherited by its adapters.
     run(python, f"{LOAD_RUNNER}; import onnxruntime", tmp_path / "runner")
     assert uploader_state(tmp_path / "runner") == []
+
+
+# Windows: the runtime does not read the variable; its events are switched off by a call in the process that runs it.
+
+def load_runner():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("run_adapter_windows", RUNNER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.mark.parametrize("adapter", ["basic-pitch", "separator"])
+def test_on_windows_the_adapters_programs_start_with_events_off(tmp_path, monkeypatch, adapter):
+    """basic-pitch and the separator run their packages' own programs: on Windows through ort_events_off.py."""
+    runner = load_runner()
+    monkeypatch.setattr(runner, "WINDOWS", True)
+    ran = []
+    monkeypatch.setattr(runner, "run", lambda project, cmd, quiet_stderr=True: ran.append(cmd))
+    monkeypatch.setattr(runner, "readable", lambda src, tmp: src)
+    src = tmp_path / "in.wav"
+    src.write_bytes(b"")
+    try:
+        runner.ADAPTERS[adapter](src, tmp_path / "out")
+    except SystemExit:
+        pass  # no model ran, so no output: only the command matters here
+    assert ran and ran[0][:2] == ["python", str(RUNNER.parent / "ort_events_off.py")]
+
+
+def test_homr_runs_its_program_through_the_launcher():
+    """homr fetches its weights and prepares the pages before it runs; the command it runs is the one wrapped."""
+    import inspect
+
+    runner = load_runner()
+    assert 'run("homr", ort_events_off(["homr"' in inspect.getsource(runner.homr)
+
+
+def test_elsewhere_the_commands_are_as_they_were():
+    runner = load_runner()
+    runner.WINDOWS = False
+    assert runner.ort_events_off(["homr", "x"]) == ["homr", "x"]
+
+
+def test_the_launcher_switches_events_off_before_the_program_runs(monkeypatch):
+    import importlib.util
+    import types
+
+    order = []
+    fake = types.ModuleType("onnxruntime")
+    fake.disable_telemetry_events = lambda: order.append("off")
+    monkeypatch.setitem(sys.modules, "onnxruntime", fake)
+    spec = importlib.util.spec_from_file_location("ort_events_off", RUNNER.parent / "ort_events_off.py")
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+
+    class Entry:
+        def load(self):
+            return lambda: order.append(("ran", list(sys.argv))) or 0
+
+    monkeypatch.setattr(launcher, "entry_points", lambda group, name: [Entry()] if name == "homr" else [])
+    monkeypatch.setattr(sys, "argv", ["x"])
+    assert launcher.main(["homr", "--gpu", "no"]) == 0
+    assert order == ["off", ("ran", ["homr", "--gpu", "no"])]
+    with pytest.raises(SystemExit):
+        launcher.main(["nothing-here"])
