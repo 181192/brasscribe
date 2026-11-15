@@ -1,0 +1,44 @@
+title = "Privacy: the Scribe apps"
+description = "What Brasscribe, Fretscribe and Bandroom do with your music: it stays on your phone and your own computer. No account, no analytics, no ads, and nothing sent to us."
+
+[hero]
+title = "Privacy"
+lead = "Brasscribe and Fretscribe write down the music you play. What you play stays with you: on your phone, tablet or computer, and on your own Mac or PC when Bandroom writes it."
+
+[never]
+title = "What the apps never do."
+account = "<strong>No account.</strong> You never sign up or log in."
+tracking = "<strong>No analytics, no crash reports, no ads.</strong> The apps do not follow what you do in them, and send no usage data to anyone."
+server = "<strong>Nothing is sent to us.</strong> We run no server, and the apps never contact one of ours."
+
+[music]
+title = "Where your music goes."
+stays = "Your recordings, the photos and PDFs of printed music you open, and the scores and tabs written from them are kept in the app, on your phone, tablet or computer."
+bandroom = "When Bandroom writes a score or a tab, your phone sends the recording or the page to Bandroom on your own Mac or PC, and Bandroom sends the score or tab back. Bandroom keeps it on that computer. None of it goes to the internet, to us or to anyone else."
+network = "The phone and your computer talk over your own network, at the address you gave or the one your computer announces there, with a code you pair them with. That connection is not encrypted: use it on a network you trust, such as your home's or your band room's Wi-Fi, not public Wi-Fi."
+asks = "The apps ask for the microphone only when you record, and for the camera only when you take a picture of a page or read the pairing code. They open only the files you choose."
+
+[internet]
+title = "What does go to the internet."
+downloads = "<strong>Bandroom's downloads.</strong> When you set it up, Bandroom downloads what it needs to listen from Hugging Face and GitHub, and the reader of printed music if you ask for it. As with any download, those services see your computer's internet address. No music, recording or score goes to them. For the band writer Bandroom uses an access key from your own Hugging Face account, so Hugging Face knows the download is yours; the key stays in your computer's Keychain or Credential Manager."
+get = "<strong>Get Bandroom</strong> opens the download page on GitHub in your browser."
+
+[backup]
+title = "Your phone's own backup."
+android = "On Android, your phone's own backup to your Google account, if you have it on, can include the scores you saved and the apps' settings, as it does for other apps. Your recordings, the pairing with your computer and its address are left out."
+apple = "On an iPhone or iPad, your iCloud or computer backup includes the app's data, as it does for other apps. Both backups are yours, in your own account; we never see them."
+
+[remove]
+title = "Removing everything."
+app = "<strong>On a phone, tablet or computer:</strong> remove the app, and everything it keeps goes with it."
+mac = "<strong>Bandroom on a Mac:</strong> choose <strong>Remove Brasscribe from this Mac…</strong> in its menu. It deletes what Bandroom keeps, its settings and the access key, and moves the app to the Bin. <strong>Also delete the downloads</strong> is ticked: leave it ticked to delete the downloads too, or untick it to keep them for a reinstall. Scores on your phones stay there."
+windows = "<strong>Bandroom on Windows:</strong> <strong>Remove Brasscribe from this PC…</strong> in its menu opens Windows Settings at <strong>Apps › Installed apps</strong>. Uninstall Bandroom there: that removes the app and its data folder. Then delete the rest by hand: the folder <strong>Brasscribe</strong> in your local app data (type <code>%LOCALAPPDATA%</code> in File Explorer), if it is still there; the band writer's download, the folders whose names start with <code>models--MuScriptor</code> in <code>.cache\\huggingface\\hub</code> in your user folder; and, if you gave Bandroom a Hugging Face key, the entry <strong>Brasscribe/HuggingFace</strong> under <strong>Windows Credentials</strong> in Credential Manager. Scores on your phones stay there."
+backup = "<strong>Backups:</strong> a copy in your Google or Apple backup is deleted there, in your account."
+
+[site]
+title = "This website."
+text = "This website sets no cookies, has no analytics and loads nothing from other sites. Your browser remembers the language you chose and when a demo last played, and keeps that to itself. GitHub, which hosts the site, sees your internet address, as with any website you visit."
+
+[contact]
+title = "Questions."
+text = "Ask on <a href=\"https://github.com/181192/brasscribe/issues\">the project's page on GitHub</a>. The apps are open source: <a href=\"https://github.com/181192/brasscribe\">all of their code is there to read</a>."

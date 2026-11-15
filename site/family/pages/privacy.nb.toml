@@ -1,0 +1,44 @@
+title = "Personvern: Scribe-appene"
+description = "Hva Brasscribe, Fretscribe og Bandroom gjør med musikken din: den blir på telefonen og din egen datamaskin. Ingen konto, ingen analyse, ingen reklame, og ingenting sendes til oss."
+
+[hero]
+title = "Personvern"
+lead = "Brasscribe og Fretscribe skriver ned musikken du spiller. Det du spiller, blir hos deg: på telefonen, nettbrettet eller datamaskinen, og på din egen Mac eller PC når Bandroom skriver det."
+
+[never]
+title = "Dette gjør appene aldri."
+account = "<strong>Ingen konto.</strong> Du registrerer deg aldri og logger aldri inn."
+tracking = "<strong>Ingen analyse, ingen krasjrapporter, ingen reklame.</strong> Appene følger ikke med på hva du gjør i dem, og sender ingen bruksdata til noen."
+server = "<strong>Ingenting sendes til oss.</strong> Vi har ingen tjener, og appene kontakter aldri en av våre."
+
+[music]
+title = "Hvor musikken din går."
+stays = "Opptakene dine, bildene og PDF-ene av noter du åpner, og partiturene og tabbene som skrives fra dem, ligger i appen, på telefonen, nettbrettet eller datamaskinen."
+bandroom = "Når Bandroom skriver et partitur eller en tab, sender telefonen opptaket eller siden til Bandroom på din egen Mac eller PC, og Bandroom sender partituret eller tabben tilbake. Bandroom tar vare på det på den datamaskinen. Ingenting av det går ut på internett, til oss eller til noen andre."
+network = "Telefonen og datamaskinen snakker sammen over ditt eget nettverk, på adressen du ga, eller den datamaskinen melder der, med en kode du kobler dem sammen med. Den forbindelsen er ikke kryptert: bruk den på et nettverk du stoler på, som Wi-Fi-en hjemme eller i øvingslokalet, ikke på offentlig Wi-Fi."
+asks = "Appene ber om mikrofonen bare når du tar opp, og om kameraet bare når du tar bilde av en side eller leser koblingskoden. De åpner bare filene du velger."
+
+[internet]
+title = "Dette går ut på internett."
+downloads = "<strong>Det Bandroom laster ned.</strong> Når du setter det opp, laster Bandroom ned det det trenger for å lytte, fra Hugging Face og GitHub, og noteleseren hvis du ber om den. Som ved enhver nedlasting ser disse tjenestene internettadressen til datamaskinen din. Ingen musikk, opptak eller partitur går til dem. Til bandskriveren bruker Bandroom en tilgangsnøkkel fra din egen Hugging Face-konto, så Hugging Face vet at nedlastingen er din; nøkkelen blir i nøkkelringen eller Legitimasjonsbehandling på datamaskinen."
+get = "<strong>Last ned Bandroom</strong> åpner nedlastingssiden på GitHub i nettleseren."
+
+[backup]
+title = "Telefonens egen sikkerhetskopi."
+android = "På Android kan telefonens egen sikkerhetskopi til Google-kontoen din, hvis du har den på, ta med partiturene du har lagret og innstillingene i appene, slik den gjør for andre apper. Opptakene, koblingen til datamaskinen og adressen dens er holdt utenfor."
+apple = "På iPhone og iPad tar sikkerhetskopien i iCloud eller på datamaskinen med seg appens data, slik den gjør for andre apper. Begge sikkerhetskopiene er dine, i din egen konto; vi ser dem aldri."
+
+[remove]
+title = "Slik sletter du alt."
+app = "<strong>På telefon, nettbrett eller datamaskin:</strong> fjern appen, så går alt den tar vare på, med den."
+mac = "<strong>Bandroom på Mac:</strong> velg <strong>Fjern Brasscribe fra denne Macen …</strong> i menyen. Det sletter det Bandroom tar vare på, innstillingene og tilgangsnøkkelen, og legger appen i papirkurven. <strong>Slett også nedlastingene</strong> er krysset av: la det stå for å slette nedlastingene også, eller fjern krysset for å beholde dem til en ny installasjon. Partiturene på telefonene blir der."
+windows = "<strong>Bandroom på Windows:</strong> <strong>Fjern Brasscribe fra denne PC-en …</strong> i menyen åpner Windows-innstillingene på <strong>Apper › Installerte apper</strong>. Avinstaller Bandroom der: det fjerner appen og datamappen dens. Slett så resten selv: mappen <strong>Brasscribe</strong> i den lokale appdataen din (skriv <code>%LOCALAPPDATA%</code> i Filutforsker), hvis den fortsatt er der; nedlastingen til bandskriveren, mappene som begynner med <code>models--MuScriptor</code> i <code>.cache\\huggingface\\hub</code> i brukermappen din; og, hvis du ga Bandroom en Hugging Face-nøkkel, oppføringen <strong>Brasscribe/HuggingFace</strong> under <strong>Windows-legitimasjon</strong> i Legitimasjonsbehandling. Partiturene på telefonene blir der."
+backup = "<strong>Sikkerhetskopier:</strong> en kopi i sikkerhetskopien hos Google eller Apple slettes der, i kontoen din."
+
+[site]
+title = "Dette nettstedet."
+text = "Dette nettstedet setter ingen informasjonskapsler, har ingen analyse og henter ingenting fra andre nettsteder. Nettleseren husker språket du valgte og når en demo sist ble spilt, og beholder det for seg selv. GitHub, som drifter nettstedet, ser internettadressen din, som med alle nettsteder du besøker."
+
+[contact]
+title = "Spørsmål."
+text = "Spør på <a href=\"https://github.com/181192/brasscribe/issues\">prosjektets side på GitHub</a>. Appene har åpen kildekode: <a href=\"https://github.com/181192/brasscribe\">all koden deres ligger der</a>."
