@@ -135,7 +135,7 @@ public class TabFlowTests : TempFolderTest
             new TabExportViewModel(Dialogs, null, said, strings),
             (uri, token) => new EngineClient(new HttpClient(computer), uri) { Token = token }, said, strings,
             new ScoreLibrary(Path.Combine(Dir, "library")), new KeptTakes(Path.Combine(Dir, "kept")),
-            new PagesViewModel(new NoDialogs(), said, strings));
+            new PagesViewModel(new NoDialogs(), said, strings, TestPdfs.ReadAsync));
         return (flow, computer, players);
     }
 
@@ -272,6 +272,7 @@ public class TabFlowTests : TempFolderTest
 
         await flow.Start.OpenPathAsync(page);
         Assert.Equal(TabScreen.Pages, flow.Screen);
+        await Until(() => flow.Pages!.Pages.Count == 1 && !flow.Pages.IsAdding);
         flow.Pages!.ReadCommand.Execute(null);
         await Until(() => flow.Screen == TabScreen.CheckTheSong && !flow.Check.IsReading);
 

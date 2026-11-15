@@ -40,17 +40,17 @@ public sealed partial class PagesViewModel : ObservableObject
     private readonly IFileDialogs _dialogs;
     private readonly IAnnouncer _announcer;
     private readonly IStrings _s;
-    private readonly Func<string, int?> _pdfPages;
+    private readonly Func<string, Task<PdfRead>> _readPdf;
 
     /// <summary>The pages in hand, with the file dialog that adds them and the words they are said in.</summary>
     /// <param name="dialogs">Where pages are chosen.</param>
     /// <param name="announcer">What is said to a screen reader.</param>
     /// <param name="strings">The app's words.</param>
-    /// <param name="pdfPages">How many pages a PDF has, or null when it cannot be opened (locked with a password): the
-    /// system's PDF reader on Windows; by default what the PDF's text says (<see cref="Engine.Pages.PdfPagesInText"/>).</param>
-    public PagesViewModel(IFileDialogs dialogs, IAnnouncer announcer, IStrings strings, Func<string, int?>? pdfPages = null)
+    /// <param name="readPdf">The system's PDF reader (WinPdfPages): how many pages a PDF has, or that it is locked or
+    /// damaged. Nothing else is trusted to count; tests put their own reader in its place.</param>
+    public PagesViewModel(IFileDialogs dialogs, IAnnouncer announcer, IStrings strings, Func<string, Task<PdfRead>> readPdf)
     {
-        _pdfPages = pdfPages ?? Engine.Pages.PdfPagesInText;
+        _readPdf = readPdf;
         _dialogs = dialogs;
         _announcer = announcer;
         _s = strings;
@@ -86,39 +86,53 @@ public sealed partial class PagesViewModel : ObservableObject
     public event EventHandler<IReadOnlyList<string>>? ReadRequested;
 
     [RelayCommand]
-    private async Task AddAsync() => Add(await _dialogs.PickOpenManyAsync(Engine.Pages.Extensions));
+    private async Task ChooseAsync() => await AddAsync(await _dialogs.PickOpenManyAsync(Engine.Pages.Extensions));
 
-    /// <summary>Files chosen, dropped or opened, in their order.</summary>
-    public void Add(IReadOnlyList<string> paths)
+    /// <summary>
+    /// Files chosen, dropped or opened, in their order. Each is looked at and, a PDF, counted off the window's thread,
+    /// and joins the list as it is ready, so the window stays live with large PDFs. A file that is no page, one too
+    /// large, a PDF locked or damaged, and pages past <see cref="Engine.Pages.MaxPages"/> (a PDF's every page counted)
+    /// are left out and said.
+    /// </summary>
+    public async Task AddAsync(IReadOnlyList<string> paths)
     {
-        int notPages = 0, tooLarge = 0, locked = 0, over = 0;
-        foreach (var path in paths)
+        int notPages = 0, tooLarge = 0, locked = 0, damaged = 0, over = 0;
+        IsAdding = true;
+        try
         {
-            if (PageCount >= Engine.Pages.MaxPages) { over++; continue; }
-            switch (Engine.Pages.Check(path))
+            foreach (var path in paths)
             {
-                case PageRefusal.NotAPage: notPages++; break;
-                case PageRefusal.TooLarge: tooLarge++; break;
-                default:
-                    // Every page of a PDF counts, as the computer counts them; one that cannot be opened is left out.
-                    int? count = Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase) || Engine.Pages.FormatOf(Head(path)) == "pdf"
-                        ? _pdfPages(path) : 1;
-                    if (count is not { } n) locked++;
-                    else if (PageCount + n > Engine.Pages.MaxPages) over++;
-                    else Pages.Add(new PageItem(path, n));
-                    break;
+                if (PageCount >= Engine.Pages.MaxPages) { over++; continue; }
+                var (refusal, pdf) = await Task.Run(() => (Engine.Pages.Check(path), Engine.Pages.FormatOf(Head(path)) == "pdf"));
+                switch (refusal)
+                {
+                    case PageRefusal.NotAPage: notPages++; continue;
+                    case PageRefusal.TooLarge: tooLarge++; continue;
+                }
+                // Every page of a PDF counts, as the computer counts them; one the reader cannot open is left out.
+                var read = pdf ? await Task.Run(() => _readPdf(path)) : new PdfRead(1);
+                if (read.IsLocked) locked++;
+                else if (read.IsDamaged) damaged++;
+                else if (PageCount + read.Pages > Engine.Pages.MaxPages) over++;
+                else Pages.Add(new PageItem(path, read.Pages));
             }
+        }
+        finally
+        {
+            IsAdding = false;
         }
         var said = new List<string>();
         if (notPages == 1) said.Add(_s["Pages_LeftOut_One"]);
         if (notPages > 1) said.Add(_s.Format("Pages_LeftOut_Many", notPages));
         if (tooLarge > 0) said.Add(_s["Error_Pages_PageTooLarge"]);
         if (locked > 0) said.Add(_s["Pages_PdfLocked"]);
+        if (damaged > 0) said.Add(_s["Pages_PdfDamaged"]);
         if (over > 0) said.Add(_s.Format("Pages_TooMany", Engine.Pages.MaxPages));
         StatusText = said.Count > 0 ? string.Join(" ", said) : null;
         if (StatusText is { } text) _announcer.Announce(text, AnnouncementKind.Important);
     }
 
+    /// <summary>A file's first bytes, which say what it is.</summary>
     private static byte[] Head(string path)
     {
         try
@@ -129,6 +143,14 @@ public sealed partial class PagesViewModel : ObservableObject
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return []; }
     }
+
+    /// <summary>Pages already looked at and counted (the sample scenes), added as they are.</summary>
+    public void Put(string path, int pages) => Pages.Add(new PageItem(path, pages));
+
+    /// <summary>Files are being looked at and counted: Read the notes waits for them.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ReadCommand))]
+    public partial bool IsAdding { get; set; }
 
     [RelayCommand]
     private void MoveUp(PageItem page) => Move(page, -1);
@@ -163,7 +185,7 @@ public sealed partial class PagesViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRead))]
     private void Read() => ReadRequested?.Invoke(this, Pages.Select(p => p.Path).ToList());
 
-    private bool CanRead() => Pages.Count > 0 && ComputerThere;
+    private bool CanRead() => Pages.Count > 0 && ComputerThere && !IsAdding;
 
     private void Say(string text)
     {

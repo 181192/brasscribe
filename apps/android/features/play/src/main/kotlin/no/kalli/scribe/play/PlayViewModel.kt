@@ -874,7 +874,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 val before = if (fresh) emptyList() else pages.value
                 // In order with the clearing away at a start: a page that arrives as the app starts is copied after it, never under it.
                 var tooLarge = false
-                var unreadable = false
+                var locked = false
+                var damaged = false
                 // Every page of a PDF counts, as the computer counts them: past the limit, the rest are left out here.
                 var over = false
                 val (taken, leftOut) = withContext(storage) {
@@ -894,7 +895,7 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                             // Larger than the computer reads: said now, in the words the computer's refusal has, and not sent.
                             tooLarge = true
                         } catch (e: UnreadablePdfException) {
-                            unreadable = true
+                            if (e.locked) locked = true else damaged = true
                         } catch (e: Exception) {
                             android.util.Log.w(TAG, "not taken as a page", e)
                             leftOut++
@@ -908,7 +909,8 @@ class PlayViewModel(app: Application, private val savedState: SavedStateHandle) 
                 showPages()
                 when {
                     tooLarge -> say(R.string.error_page_too_large)
-                    unreadable -> say(R.string.pages_pdf_unreadable)
+                    locked -> say(R.string.pages_pdf_locked)
+                    damaged -> say(R.string.pages_pdf_damaged)
                     over -> say(R.string.pages_too_many, EngineApi.MAX_PAGES)
                     leftOut > 0 -> sayText(res.getQuantityString(R.plurals.pages_left_out, leftOut, leftOut))
                 }

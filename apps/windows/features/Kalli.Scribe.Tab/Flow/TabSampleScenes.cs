@@ -64,7 +64,8 @@ public static class TabSampleScenes
             case "pages" when flow.Pages is { } pages:
                 // Three pages in hand: two invented pictures and a one-page PDF, which the scene never sends.
                 pages.Clear();
-                pages.Add(SamplePages.Write(SampleTitle, 3));
+                // Counted as they are: two pictures, and a PDF of one page.
+                foreach (var path in SamplePages.Write(SampleTitle, 3)) pages.Put(path, 1);
                 flow.Screen = TabScreen.Pages;
                 return true;
             case "pages-unread" when flow.Pages is not null:

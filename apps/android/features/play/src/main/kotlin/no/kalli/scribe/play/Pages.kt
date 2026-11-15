@@ -21,8 +21,27 @@ data class Page(val file: File, val name: String, val pages: Int = 1)
 /** The pages in [this] list, every page of a PDF counted. */
 fun List<Page>.pageCount(): Int = sumOf { it.pages }
 
-/** A PDF brought in as pages that the phone cannot open: locked with a password, or damaged. */
-class UnreadablePdfException(name: String) : Exception("$name is a PDF that cannot be opened")
+/**
+ * A PDF brought in as pages that the phone cannot open: [locked] with a password (the player can open it elsewhere and
+ * save it without one), or damaged.
+ */
+class UnreadablePdfException(name: String, val locked: Boolean) :
+    Exception(if (locked) "$name is a PDF locked with a password" else "$name is a damaged PDF")
+
+/** What the phone's PDF reader made of a file: its [pages], or why it could not open it. */
+sealed interface PdfRead {
+    data class Pages(val count: Int) : PdfRead
+    data object Locked : PdfRead
+    data object Damaged : PdfRead
+
+    companion object {
+        /** What the reader's attempt came to: a password asked for is locked, any other failure or no page is damaged. */
+        fun of(attempt: Result<Int>): PdfRead = attempt.fold(
+            onSuccess = { n -> if (n > 0) Pages(n) else Damaged },
+            onFailure = { e -> if (e is SecurityException) Locked else Damaged },
+        )
+    }
+}
 
 /** A file brought in as a page is larger than the computer reads as one ([Pages.MAX_BYTES]). */
 class PageTooLargeException(name: String) : Exception("$name is larger than a page can be")
@@ -53,34 +72,16 @@ object Pages {
     const val MAX_BYTES = no.kalli.scribe.engine.EngineApi.MAX_PAGE_BYTES
 
     /**
-     * How many pages the PDF [file] has, or null when it cannot be opened: locked with a password, or damaged (as on
-     * the other apps, it is left out here, not sent for the computer to refuse). The phone's own reader counts them; a
-     * test without that reader counts them from the file's text ([countInText]).
+     * How many pages the PDF at a file has, read by the phone's own PDF reader: locked when it asks for a password,
+     * damaged when it fails for any other reason. Nothing else is trusted to count, so a file the reader cannot open is
+     * left out here, as on the other apps. A test without that reader puts its own in its place.
      */
-    fun pdfPages(file: File): Int? {
-        val read = runCatching {
+    var readPdf: (File) -> PdfRead = { file ->
+        PdfRead.of(runCatching {
             android.os.ParcelFileDescriptor.open(file, android.os.ParcelFileDescriptor.MODE_READ_ONLY).use { descriptor ->
                 android.graphics.pdf.PdfRenderer(descriptor).use { it.pageCount }
             }
-        }
-        // Locked (SecurityException) or damaged (IOException): the phone's reader could not open it.
-        if (read.exceptionOrNull() is SecurityException || read.exceptionOrNull() is java.io.IOException) return null
-        read.getOrNull()?.let { return it.takeIf { n -> n > 0 } }
-        return countInText(file.readBytes())
-    }
-
-    /**
-     * The pages a PDF's text says it has: the largest page count of a page tree ("/Type /Pages … /Count 12"), else the
-     * pages it names one by one. Null for a PDF locked with a password ("/Encrypt"), and for one that is cut short (no
-     * "%%EOF") or names no page at all: a damaged file.
-     */
-    fun countInText(pdf: ByteArray): Int? {
-        val text = String(pdf, Charsets.ISO_8859_1)
-        if (text.contains("/Encrypt") || !text.contains("%%EOF")) return null
-        val tree = Regex("""/Type\s*/Pages\b[^>]*?/Count\s+(\d+)|/Count\s+(\d+)[^>]*?/Type\s*/Pages\b""").findAll(text)
-            .mapNotNull { m -> (m.groupValues[1].ifEmpty { m.groupValues[2] }).toIntOrNull() }.maxOrNull()
-        val named = Regex("""/Type\s*/Page\b(?!s)""").findAll(text).count()
-        return (tree ?: named).takeIf { it > 0 }
+        })
     }
 
     /** How much of a file says what it is. */
@@ -178,7 +179,11 @@ object Pages {
         fun titled(extension: String) = "${name.substringBeforeLast('.').ifBlank { name }}.$extension"
         if (kind == Kind.PDF || (kind.asItIs && fitsAsItIs(original))) {
             // A PDF counts as its pages; one the phone cannot open is no page it can send.
-            val count = if (kind == Kind.PDF) pdfPages(original) ?: throw UnreadablePdfException(name) else 1
+            val count = if (kind != Kind.PDF) 1 else when (val read = readPdf(original)) {
+                is PdfRead.Pages -> read.count
+                PdfRead.Locked -> throw UnreadablePdfException(name, locked = true)
+                PdfRead.Damaged -> throw UnreadablePdfException(name, locked = false)
+            }
             val to = File(stem.parentFile, "${stem.name}.${kind.extension}")
             check(original.renameTo(to)) { "the page could not be kept" }
             // The name it came with, when that says what it is; else with the kind it was found to be.

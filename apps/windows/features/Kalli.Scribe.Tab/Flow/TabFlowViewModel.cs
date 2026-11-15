@@ -93,10 +93,10 @@ public sealed partial class TabFlowViewModel : ObservableObject
         if (Pages is not null)
         {
             // A picture or a PDF of printed music: read into a tab for the player's instrument.
-            Start.PagesOpened += (_, paths) =>
+            Start.PagesOpened += async (_, paths) =>
             {
-                Pages.Add(paths);
                 OpenPages();
+                await Pages.AddAsync(paths);
             };
             Pages.ComputerThere = ComputerThere;
             Settings.Connection.PropertyChanged += (_, e) =>

@@ -1083,6 +1083,9 @@
   <data name="PageList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Sidene, i den rekkefølgen de leses</value>
   </data>
+  <data name="PagesGettingReady.Text" xml:space="preserve">
+    <value>Gjør sidene klare …</value>
+  </data>
   <data name="PagesHeading.Text" xml:space="preserve">
     <value>Noter fra et bilde</value>
   </data>
@@ -1122,8 +1125,11 @@
   <data name="Pages_Page" xml:space="preserve">
     <value>Side {0}</value>
   </data>
+  <data name="Pages_PdfDamaged" xml:space="preserve">
+    <value>En PDF er skadet, så den kan ikke åpnes, og ble ikke tatt med. Hent den på nytt der den kom fra.</value>
+  </data>
   <data name="Pages_PdfLocked" xml:space="preserve">
-    <value>En PDF som er låst med passord eller er skadet, kan ikke leses, og ble ikke tatt med.</value>
+    <value>En PDF er låst med passord, så den kan ikke leses, og ble ikke tatt med. Åpne den i en annen app, og lagre den uten passord.</value>
   </data>
   <data name="Pages_Remove" xml:space="preserve">
     <value>Fjern side {0}</value>

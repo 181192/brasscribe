@@ -201,7 +201,7 @@ public partial class App : Application
             settingsVm,
             EngineFactory, announcer, Strings, core,
             new ScoreLibrary(System.IO.Path.Combine(workDirectory, "library")),
-            new PagesViewModel(dialogs, announcer, Strings, WinPdfPages.Count))
+            new PagesViewModel(dialogs, announcer, Strings, WinPdfPages.ReadAsync))
         {
             LayerCacheRoot = System.IO.Path.Combine(workDirectory, "layers"),
         };

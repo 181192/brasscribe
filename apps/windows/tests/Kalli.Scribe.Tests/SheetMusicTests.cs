@@ -126,10 +126,10 @@ public class SheetMusicTests
     {
         var said = new Said();
         string one = File("one.png", Png), two = File("two.pdf", SamplePages.Pdf()), song = File("take.wav", "RIFF\0\0\0\0WAVEfmt "u8.ToArray());
-        var vm = new PagesViewModel(new Picks([one, song, two]), said, Strings());
+        var vm = new PagesViewModel(new Picks([one, song, two]), said, Strings(), TestPdfs.ReadAsync);
         Assert.False(vm.ReadCommand.CanExecute(null));
 
-        await vm.AddCommand.ExecuteAsync(null);
+        await vm.ChooseCommand.ExecuteAsync(null);
 
         Assert.Equal(["one.png", "two.pdf"], vm.Pages.Select(p => p.Name));
         Assert.StartsWith("One file is not a PNG, JPEG or WebP picture or a PDF", vm.StatusText);
@@ -155,7 +155,7 @@ public class SheetMusicTests
         Assert.Equal(["one.png"], vm.Pages.Select(p => p.Name));
         Assert.Equal("Page 1 is removed.", said.Lines.Last());
 
-        vm.Add(Enumerable.Repeat(one, Pages.MaxPages + 1).ToList());
+        await vm.AddAsync(Enumerable.Repeat(one, Pages.MaxPages + 1).ToList());
         Assert.Equal(Pages.MaxPages, vm.Pages.Count);
         Assert.Equal("At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.", vm.StatusText);
     }
@@ -210,39 +210,41 @@ public class SheetMusicTests
     /// <summary>Every page of a PDF counts against the 40: a 60-page book is left out before anything is sent, and a PDF
     /// locked with a password is left out with why.</summary>
     [Fact]
-    public void Every_page_of_a_pdf_counts_before_anything_is_sent()
+    public async Task Every_page_of_a_pdf_counts_before_anything_is_sent()
     {
         var said = new Said();
-        var vm = new PagesViewModel(new Picks([]), said, Strings());
-        vm.Add([File("Whole book.pdf", PdfOf(60))]);
+        var vm = new PagesViewModel(new Picks([]), said, Strings(), TestPdfs.ReadAsync);
+        await vm.AddAsync([File("Whole book.pdf", PdfOf(60))]);
         Assert.Empty(vm.Pages);
         Assert.Equal("At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.", vm.StatusText);
 
-        vm.Add([File("Hymns.pdf", PdfOf(30)), File("p.png", Png), File("More.pdf", PdfOf(10))]);
+        await vm.AddAsync([File("Hymns.pdf", PdfOf(30)), File("p.png", Png), File("More.pdf", PdfOf(10))]);
         Assert.Equal(["Hymns.pdf", "p.png"], vm.Pages.Select(p => p.Name));
         Assert.Equal(31, vm.PageCount);
         Assert.Equal("Hymns.pdf · 30 pages", vm.Pages[0].Detail);
         Assert.Equal("p.png", vm.Pages[1].Detail);
 
-        vm.Add([File("Locked.pdf", "%PDF-1.7\ntrailer\n<< /Root 1 0 R /Encrypt 5 0 R >>\n%%EOF\n"u8.ToArray())]);
-        Assert.Equal("A PDF that is locked with a password, or damaged, can't be read, so it was left out.", vm.StatusText);
+        await vm.AddAsync([File("Locked.pdf", "%PDF-1.7\ntrailer\n<< /Root 1 0 R /Encrypt 5 0 R >>\n%%EOF\n"u8.ToArray())]);
+        Assert.Equal("A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password.", vm.StatusText);
         Assert.Equal(2, vm.Pages.Count);
-        // A damaged one (cut short) is left out on the PC as well, with the same words: the computer could not read it either.
-        vm.Add([File("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa"u8.ToArray())]);
-        Assert.Equal("A PDF that is locked with a password, or damaged, can't be read, so it was left out.", vm.StatusText);
+        // A damaged one (cut short) is left out on the PC as well, with its own words: the computer could not read it either.
+        await vm.AddAsync([File("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa"u8.ToArray())]);
+        Assert.Equal("A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from.", vm.StatusText);
         Assert.Equal(2, vm.Pages.Count);
     }
 
+    /// <summary>
+    /// What a failure of the system's PDF reader means: the HRESULT it gives for a PDF that asks for a password is
+    /// locked; any other failure (whatever exception type it comes as) is damaged, and none escapes.
+    /// </summary>
     [Fact]
-    public void A_pdfs_pages_are_counted_from_its_text()
+    public void A_pdf_the_reader_cannot_open_is_locked_or_damaged()
     {
-        Assert.Equal(60, Pages.PdfPagesInText(File("a.pdf", PdfOf(60))));
-        Assert.Equal(2, Pages.PdfPagesInText(File("b.pdf", "<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>\n%%EOF"u8.ToArray())));
-        Assert.Equal(1, Pages.PdfPagesInText(File("d.pdf", SamplePages.Pdf())));
-        Assert.Null(Pages.PdfPagesInText(File("e.pdf", "trailer << /Encrypt 5 0 R >>\n%%EOF"u8.ToArray())));
-        // Damaged: cut short, or naming no page.
-        Assert.Null(Pages.PdfPagesInText(File("c.pdf", "%PDF-1.7\n%%EOF\n"u8.ToArray())));
-        Assert.Null(Pages.PdfPagesInText(File("f.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pages /Count 3"u8.ToArray())));
+        Assert.Equal(PdfRead.Locked, Pages.PdfFailure(new System.Runtime.InteropServices.COMException("password", Pages.WrongPassword)));
+        Assert.Equal(PdfRead.Locked, Pages.PdfFailure(new Exception("password") { HResult = Pages.WrongPassword }));
+        Assert.Equal(PdfRead.Damaged, Pages.PdfFailure(new System.Runtime.InteropServices.COMException("not a PDF", unchecked((int)0x80004005))));
+        Assert.Equal(PdfRead.Damaged, Pages.PdfFailure(new InvalidOperationException()));
+        Assert.True(PdfRead.Damaged.IsDamaged && !PdfRead.Locked.IsDamaged && !new PdfRead(3).IsDamaged);
     }
 
     [Fact]

@@ -45,8 +45,17 @@ class PagesFlowTest : ScreenTest() {
     /** The fixture computer's pace before a test made it slow. */
     private var pace = 0.0
 
+    /** The JVM has no working PdfRenderer: the tests' own reader reads their invented PDFs. */
+    private val phoneReader = Pages.readPdf
+
+    @org.junit.Before
+    fun readTestPdfs() {
+        Pages.readPdf = TestPdfs.reader
+    }
+
     @After
     fun clean() {
+        Pages.readPdf = phoneReader
         rule.runOnUiThread { vm.cancelTranscription(); vm.pages.value.toList().forEach(vm::removePage); vm.home() }
         container.fixtureSource = null
         if (pace > 0) container.fixtureStageSeconds = pace
@@ -145,7 +154,10 @@ class PagesFlowTest : ScreenTest() {
         // A damaged PDF is left out on the phone too, with why: the computer could not read it either.
         chosen(PageFiles.handedOver("Torn.pdf", PageFiles.damagedPdf()))
         assertEquals(listOf("Hymn 1.png", "Hymn 2.pdf", "Hymn 3.png"), names())
-        assertTrue(shown(), shows(R.string.pages_pdf_unreadable))
+        assertTrue(shown(), shows(R.string.pages_pdf_damaged))
+        // A locked one says so, and how to send it.
+        chosen(PageFiles.handedOver("Locked.pdf", "%PDF-1.7\ntrailer\n<< /Encrypt 5 0 R >>\n%%EOF\n".toByteArray()))
+        assertTrue(shown(), shows(R.string.pages_pdf_locked))
 
         // One is taken out, and another added after the rest: a picture the computer does not read goes as a JPEG.
         rule.onNodeWithTag("pages-remove-1").performScrollTo().performClick()

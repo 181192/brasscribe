@@ -31,8 +31,17 @@ class PagesTest {
     private val from get() = File(context.cacheDir, "pages-test-from").apply { mkdirs() }
     private val dir get() = File(context.cacheDir, "pages-test")
 
+    /** The JVM has no working PdfRenderer: the tests' own reader reads their invented PDFs. */
+    private val phoneReader = Pages.readPdf
+
+    @org.junit.Before
+    fun readTestPdfs() {
+        Pages.readPdf = TestPdfs.reader
+    }
+
     @After
     fun clean() {
+        Pages.readPdf = phoneReader
         from.deleteRecursively()
         dir.deleteRecursively()
     }
@@ -62,16 +71,14 @@ class PagesTest {
 
     private fun head(text: String, vararg bytes: Int): ByteArray = bytes.map { it.toByte() }.toByteArray() + text.toByteArray(Charsets.ISO_8859_1)
 
-    /** A PDF's pages, as its text says them: the page tree's count, else the pages named one by one; none for a locked one. */
+    /** What the phone's PDF reader made of a file: a password asked for is locked, any other failure or no page damaged. */
     @Test
-    fun aPdfsPagesAreCountedFromItsText() {
-        assertEquals(60, Pages.countInText("1 0 obj << /Type /Pages /Kids [] /Count 60 >>\n%%EOF".toByteArray()))
-        assertEquals(7, Pages.countInText("<< /Count 7 /Type /Pages >> << /Type /Pages /Count 3 >>\n%%EOF".toByteArray()))
-        assertEquals(2, Pages.countInText("<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>\n%%EOF".toByteArray()))
-        // Damaged: cut short, or naming no page.
-        assertEquals(null, Pages.countInText("1 0 obj << /Type /Pages /Count 60 >>".toByteArray()))
-        assertEquals(null, Pages.countInText("%PDF-1.7\n%%EOF\n".toByteArray()))
-        assertEquals(null, Pages.countInText("trailer << /Root 1 0 R /Encrypt 5 0 R >>\n%%EOF".toByteArray()))
+    fun aPdfTheReaderCannotOpenIsLockedOrDamaged() {
+        assertEquals(PdfRead.Pages(12), PdfRead.of(Result.success(12)))
+        assertEquals(PdfRead.Locked, PdfRead.of(Result.failure(SecurityException("password required"))))
+        assertEquals(PdfRead.Damaged, PdfRead.of(Result.failure(java.io.IOException("file not in PDF format or corrupted"))))
+        assertEquals(PdfRead.Damaged, PdfRead.of(Result.failure(IllegalStateException("anything else"))))
+        assertEquals(PdfRead.Damaged, PdfRead.of(Result.success(0)))
         assertEquals(41, listOf(Page(File("a"), "a", 40), Page(File("b"), "b")).pageCount())
     }
 
@@ -118,9 +125,9 @@ class PagesTest {
         val book = "%PDF-1.7\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 12 >>\nendobj\n%%EOF\n".toByteArray()
         assertEquals(12, take("Book.pdf", book).pages)
         val locked = "%PDF-1.7\ntrailer\n<< /Encrypt 9 0 R >>\n%%EOF\n".toByteArray()
-        assertTrue(runCatching { take("Locked.pdf", locked) }.exceptionOrNull() is UnreadablePdfException)
+        assertEquals(true, (runCatching { take("Locked.pdf", locked) }.exceptionOrNull() as? UnreadablePdfException)?.locked)
         // A damaged one (cut short) is not taken either: left out here, as on the other apps.
-        assertTrue(runCatching { take("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa".toByteArray()) }.exceptionOrNull() is UnreadablePdfException)
+        assertEquals(false, (runCatching { take("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa".toByteArray()) }.exceptionOrNull() as? UnreadablePdfException)?.locked)
         // A screenshot that came without a name's ending gets the one of what it is.
         assertEquals("Screenshot.png", take("Screenshot", picture(8, 8, Bitmap.CompressFormat.PNG)).name)
         // Nothing but the pages is left in their folder.
