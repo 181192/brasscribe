@@ -371,7 +371,7 @@ fails when that stops working).
 and writes the screenshots and each screen's tree into `build/catalogue/iphone/`. The phones are its own, made for the
 run under names of their own and deleted after (`scripts/iphone-catalogue.sh`), so it never uses a simulator another run
 is using; `CATALOGUE_DEST=<destination>` runs one given simulator instead. CI runs the smallest phone on every pull
-request (`apple.yml`, job `play`, artefact `play-iphone-screenshots`) and the SE every night (job `play-iphone`,
+request (`apple.yml`, job `play-iphone-catalogue`, artefact `play-iphone-screenshots`) and the SE every night (job `play-iphone`,
 artefact `play-iphone-se-screenshots`): a fresh simulator's first start on a hosted runner takes minutes and can hang,
 so a job starts one, with a time limit (`scripts/boot-simulator.sh`). A new screen gets an entry here as well as in
 the Mac's catalogue. A known finding goes in `known`, with why.

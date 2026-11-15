@@ -5,8 +5,9 @@ name: apple
 # (`release-fretscribe-mac`, `release-fretscribe-ios`), uploaded as dist-macos-fretscribe and dist-ios-fretscribe.
 
 # Brasscribe Play for macOS, iOS and iPadOS, and Bandroom for Mac. Checks: Play's Swift package tests, the
-# macOS app's unit tests and a build of the iPhone simulator app with its tests (job `play`) and its Mac screen
-# catalogue (job `play-screens`); BandroomKit's tests and Bandroom's screen catalogue (job `bandroom`). With
+# macOS app's unit tests and the tab feature on the iPhone simulator (job `play`), a build of the iPhone simulator
+# app with its tests and its iPhone screen catalogue (job `play-iphone-catalogue`), and its Mac screen catalogue
+# (job `play-screens`); BandroomKit's tests and Bandroom's screen catalogue (job `bandroom`). With
 # `iphone_tests`, only the iPhone simulator app's unit and UI tests (job `play-iphone`): nightly.yml runs them
 # every night, since they take longer than everything else here together. With `release`: Release builds of Play
 # for Mac and of Bandroom for Mac (which installs and runs the engine), both re-signed ad hoc, uploaded as
@@ -78,8 +79,13 @@ env:
   XCODE_VERSION: "26.6"
 
 jobs:
+  # Play's checks on Apple platforms, in two jobs side by side (each about half of what one job took): `play`, the
+  # Swift packages, the macOS app's unit tests and the tab feature on the iPhone simulator; `play-iphone-catalogue`, the iPhone
+  # simulator app's build with its tests and the iPhone screen catalogue. Each starts its simulator while it builds or
+  # runs the Mac's tests, since a fresh simulator's first start on a hosted runner takes two to three minutes. Two
+  # jobs, not more: a run's macOS jobs share the account's five macOS runners, and a sixth waits for one.
   play:
-    name: Play (packages, macOS app, iPhone simulator build)
+    name: Play (packages, macOS app, tab on iPhone)
     if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play && !inputs.noise_play && !inputs.noise_bandroom }}
     # Newest GA macOS image (macos-latest points here too).
     runs-on: macos-26
@@ -99,9 +105,8 @@ jobs:
           xcodebuild -version
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
+      # The core's Mac slice, cached apart from play-iphone-catalogue's simulator slice; both saved from main only.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
@@ -122,8 +127,11 @@ jobs:
         if: steps.verovio.outputs.cache-hit != 'true'
         run: make verovio
 
-      # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built.
-      - name: Build ScribeFFI.xcframework
+      # UniFFI bindings are committed (core.yml checks they are current); only the libraries are built. The packages
+      # and the Mac app need the Mac's slice alone.
+      - name: Build ScribeFFI.xcframework (macOS)
+        env:
+          CORE_SLICES: macos
         run: scripts/build-core.sh
 
       # The on-device models (the pack pinned in convert/on-device-models.json), so the apps under test
@@ -154,48 +162,35 @@ jobs:
           "$RUNNER_TEMP/phrases/bin/python" sounds/phrases.py -o data/sounds/phrases
 
       # Tests that need data/golden (SCRIBE_FIXTURES) skip themselves when it is absent.
-      - name: Test (packages, macOS app)
-        run: make package-test test-mac-app
+      # Nothing else runs beside them: the level tests measure the sound as it plays.
+      - name: Test (packages)
+        run: make package-test
 
-      # The iPhone simulator app and both its test bundles are built, and not run (job play-iphone runs them at
-      # night): the Mac build does not compile the sources and branches that are only for iOS, and a test that
-      # no longer compiles for iOS would otherwise first show at night.
-      # The iPhone is the newest "iPhone NN Pro" on the newest iOS runtime, by id (scripts/newest-iphone.sh).
-      - name: Build the iPhone simulator app and its tests
+      # The tab feature's simulator, the smallest iPhone, starts while the Mac app's tests run (no sound is measured
+      # there). scripts/boot-simulator.sh waits for it below and erases and starts it again if it hung.
+      - name: Start the iPhone simulator
+        id: sim
         run: |
-          dest=$(scripts/newest-iphone.sh)
-          make build-for-testing-ios IPHONE_DEST="$dest"
+          dest=$(scripts/smallest-iphone.sh)
+          echo "dest=$dest" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "${dest##*id=}"
+
+      - name: Test (macOS app)
+        run: make test-mac-app
 
       # The tab feature's tests on the iPhone simulator as well: its page is a web view, and WebKit on iOS draws and
-      # loads differently from the Mac's. One simulator in this job, the smallest iPhone, for these tests and the
-      # catalogue after them: a fresh simulator's first start on a hosted runner takes minutes, and two or three
-      # starting at once can hang in it. It is started and waited for first (scripts/boot-simulator.sh, which erases
-      # and starts it again when it hangs): xcodebuild begins the tests as soon as it can install them, while the
-      # simulator's own services (media, WebKit) are still starting, and a test that waits for one of them then fails.
+      # loads differently from the Mac's. The simulator is waited for first: xcodebuild begins the tests as soon as it
+      # can install them, while the simulator's own services (media, WebKit) are still starting, and a test that waits
+      # for one of them then fails.
       - name: Test the tab feature on the iPhone simulator
         timeout-minutes: 25
         working-directory: apps/apple/features/tab
+        env:
+          DEST: ${{ steps.sim.outputs.dest }}
         run: |
           make -C ../.. alphatab
-          dest=$(../../scripts/smallest-iphone.sh)
-          ../../scripts/boot-simulator.sh "${dest##*id=}"
-          xcodebuild -scheme TabKit -destination "$dest" -derivedDataPath ../../build/DerivedData-tab test -quiet
-
-      # The iPhone screen catalogue (PhoneScreensTests, README "Screen catalogue (iPhone)"): every screen on the smallest
-      # phone of the newest iOS (scripts/smallest-iphone.sh), upright at the default text size and at XXL in light and
-      # dark, and on its side, in English and bokmål, with the catalogue's checks; the pictures are kept as an artefact.
-      # The iPhone SE's half runs at night (job play-iphone).
-      - name: iPhone screen catalogue
-        timeout-minutes: 20
-        run: make test-iphone-catalogue CATALOGUE_DEST="$(scripts/smallest-iphone.sh)"
-
-      - uses: actions/upload-artifact@v7
-        if: ${{ always() }}
-        with:
-          name: play-iphone-screenshots
-          path: apps/apple/build/catalogue/iphone
-          if-no-files-found: ignore
-          retention-days: 14
+          ../../scripts/boot-simulator.sh "${DEST##*id=}"
+          xcodebuild -scheme TabKit -destination "$DEST" -derivedDataPath ../../build/DerivedData-tab test -quiet
 
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
@@ -208,8 +203,107 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  play-iphone-catalogue:
+    name: Play (iPhone simulator build, iPhone screen catalogue)
+    if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play && !inputs.noise_play && !inputs.noise_bandroom }}
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # DEVELOPER_DIR as well as xcode-select: the Makefile and the Rust iOS builds read it.
+      - name: Select Xcode ${{ env.XCODE_VERSION }}
+        run: |
+          dev="/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer"
+          test -d "$dev" || { echo "Xcode $XCODE_VERSION is not on this image" >&2; ls -d /Applications/Xcode_* >&2; exit 1; }
+          sudo xcode-select -s "$dev"
+          echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
+          xcodebuild -version
+
+      # The catalogue's phone, the smallest iPhone of the newest iOS, starts while everything below is built.
+      - name: Start the iPhone simulator
+        id: sim
+        run: |
+          dest=$(scripts/smallest-iphone.sh)
+          echo "dest=$dest" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "${dest##*id=}"
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          targets: aarch64-apple-ios-sim
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: core
+          shared-key: apple-play-ios-sim
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - run: brew install xcodegen
+
+      # Verovio is a pinned upstream commit: rebuild only when the build script changes.
+      - name: Cache Verovio.xcframework
+        id: verovio
+        uses: actions/cache@v6
+        with:
+          path: apps/apple/Frameworks
+          key: verovio-${{ runner.os }}-${{ runner.arch }}-xcode${{ env.XCODE_VERSION }}-all-${{ hashFiles('apps/apple/scripts/build-verovio.sh') }}
+
+      - name: Build Verovio.xcframework
+        if: steps.verovio.outputs.cache-hit != 'true'
+        run: make verovio
+
+      - name: Build ScribeFFI.xcframework (iPhone simulator)
+        env:
+          CORE_SLICES: ios-sim
+        run: scripts/build-core.sh
+
+      # The app is built as it is with them in a release (models and the band SoundFonts bundled).
+      - name: On-device models
+        uses: ./.github/actions/on-device-models
+
+      - name: Fetch the band SoundFonts
+        uses: ./.github/actions/band-sounds
+        with:
+          files: brasscribe-band-16bit.sf2 brasscribe-band-mobile.sf2
+
+      # The iPhone simulator app and both its test bundles are built (job play-iphone runs the tests at night): the
+      # Mac build does not compile the sources and branches that are only for iOS, and a test that no longer compiles
+      # for iOS would otherwise first show at night. Built for the catalogue's phone, which the catalogue then runs.
+      - name: Build the iPhone simulator app and its tests
+        env:
+          DEST: ${{ steps.sim.outputs.dest }}
+        run: make build-for-testing-ios IPHONE_DEST="$DEST"
+
+      # The iPhone screen catalogue (PhoneScreensTests, README "Screen catalogue (iPhone)"): every screen on the smallest
+      # phone of the newest iOS, upright at the default text size and at XXL in light and dark, and on its side, in
+      # English and bokmål, with the catalogue's checks; the pictures are kept as an artefact. The iPhone SE's half runs
+      # at night (job play-iphone). scripts/iphone-catalogue.sh waits for the simulator started above.
+      - name: iPhone screen catalogue
+        timeout-minutes: 20
+        env:
+          DEST: ${{ steps.sim.outputs.dest }}
+        run: make test-iphone-catalogue CATALOGUE_DEST="$DEST"
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ always() }}
+        with:
+          name: play-iphone-screenshots
+          path: apps/apple/build/catalogue/iphone
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: apple-play-iphone-test-results
+          path: apps/apple/build/DerivedData/Logs/Test/*.xcresult
+          if-no-files-found: ignore
+          retention-days: 7
+
   # The iPhone simulator app's unit and UI tests: the longest check of the Apple apps (about a quarter of an hour
-  # with its build), so not on pull requests, which build the app and these tests without running them (job play).
+  # with its build), so not on pull requests, which build the app and these tests without running them (job play-iphone-catalogue).
   # nightly.yml runs this every night and keeps one issue open while it fails; `gh workflow run apple.yml -f
   # iphone_tests=true --ref <branch>` runs it on a branch. A test that fails is tried once more, and fails the
   # job when it fails again: the simulator on a hosted runner is slow to start, and a night's result should be
@@ -236,10 +330,11 @@ jobs:
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
+      # The simulator slice, as job play-iphone-catalogue saves it from main.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
-          shared-key: apple-play
+          shared-key: apple-play-ios-sim
           save-if: false
 
       - run: brew install xcodegen
@@ -276,7 +371,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: make test-iphone-small TEST_ARGS="-retry-tests-on-failure -test-iterations 2"
 
-      # The iPhone screen catalogue on an iPhone SE, the half pull requests leave out (job play runs the smallest
+      # The iPhone screen catalogue on an iPhone SE, the half pull requests leave out (job play-iphone-catalogue runs the smallest
       # iPhone): every screen upright at the default text size and at XXL, in English and bokmål.
       - name: iPhone screen catalogue on an iPhone SE
         if: ${{ !cancelled() }}
