@@ -16,6 +16,7 @@
   let barBoxes = new Map(); // bar index -> {x, y, w, h}
   let marks = []; // what the app marks: [{staff, bar, tick, notes: [{string, fret, pitchClass, doubt}]}]
   let markStaff = 0; // the staff the marks and the cursor stand on
+  let token = null; // the app's name for the page last shown; every answer carries it, so the app knows which page an answer is for
   let attribution = null; // {x, y, w, h}: where alphaTab's own "alphaTab.net" mark can be; nothing of ours is drawn over it
   let placed = []; // [{mark: index into marks, beat, doubtful: [Note]}]
   const MARK_SPACE = ' '; // the blank text of a marked beat: alphaTab keeps a band above the staff for it
@@ -270,6 +271,8 @@
   // Tells the app of the engraving. alphaTab says it has finished before every bar has its bounds: until the page has
   // its bars, this looks again on the next frames, for about a second.
   function publish(tries) {
+    // Engraving the page shown before (new settings are applied to it first) is not an answer for the page now shown.
+    if (api.score !== score) return;
     const m = measure();
     if ((!m || m.bars.length === 0) && tries < 60) { requestAnimationFrame(() => publish(tries + 1)); return; }
     if (!m) { post({ kind: 'error', message: 'the page has no bounds' }); return; }
@@ -282,7 +285,7 @@
       return;
     }
     document.getElementById('page').style.height = m.height + 'px';
-    post({ kind: 'rendered', height: m.height, width: el.clientWidth, bars: m.bars, lines: m.lines, marks: m.marks, ms: Math.round(performance.now() - started),
+    post({ kind: 'rendered', token, height: m.height, width: el.clientWidth, bars: m.bars, lines: m.lines, marks: m.marks, ms: Math.round(performance.now() - started),
       fonts: [...document.fonts].map((f) => f.family + ':' + f.status) });
   }
 
@@ -294,6 +297,7 @@
       doubtful = new Set(opts.doubtful || []);
       marks = opts.marks || [];
       markStaff = opts.markStaff || 0;
+      token = opts.token || null;
       markText = opts.markText || MARK_TEXT_SPACES; // (opts.markText: the starting height, for the tests)
       if (!api) {
         api = new at.AlphaTabApi(el, settings(opts));
