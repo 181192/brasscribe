@@ -11,6 +11,7 @@ import no.kalli.scribe.play.Appearance
 import no.kalli.scribe.test.Slow
 import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.experimental.categories.Category
@@ -27,7 +28,8 @@ import org.junit.experimental.categories.Category
 abstract class ScreenCatalogue : ScreenTest() {
     /**
      * A screen: its [name] in the screenshots, and how to get to it from Home. [steady] is false for a screen
-     * that shows a moment of something under way (its screenshot would differ from run to run, so none is kept).
+     * that shows a moment of something under way (its screenshot would differ from run to run, so none is kept); the
+     * fixture computer holds its work where it is while such a screen is checked, so it cannot move on meanwhile.
      * [ownOrder] says why the keyboard does not go through this screen in the order it is read, for the few
      * where that is so (the keyboard's order is then not compared; it must still reach everything). [cutAtLargeText] are
      * texts known to be cut off at 200 %, and [notReached] controls the keyboard is known not to reach, each with the
@@ -72,6 +74,11 @@ abstract class ScreenCatalogue : ScreenTest() {
      * About shows the app's version, which every release changes. The catalogue shows a fixed one in its place,
      * so a release leaves the pictures of About as they were. ([leaveClean] puts the app's own back.)
      */
+    @After
+    fun letTheComputerGo() {
+        container.fixtureHeld = false
+    }
+
     @Before
     fun showAFixedVersion() {
         container.shownVersion = FIXED_VERSION
@@ -82,6 +89,7 @@ abstract class ScreenCatalogue : ScreenTest() {
      * down leaves that work running, and its result would otherwise arrive on the next screen and take it away.
      */
     private fun fromHome() {
+        container.fixtureHeld = false
         waitUntil(30_000) { !vm.transcribe.value.running }
         forgetTheOtherComputer()
         rule.runOnUiThread { vm.home() }
@@ -95,6 +103,9 @@ abstract class ScreenCatalogue : ScreenTest() {
             try {
                 fromHome()
                 beforeEach()
+                // (A screen of something under way stays at that moment while it is checked: on a slow machine the
+                // work would otherwise finish during the checks and the next screen be checked in its place.)
+                container.fixtureHeld = !screen.steady
                 screen.open()
                 // (A moment of something under way is looked at as it is: time that passes would end it.)
                 if (screen.steady) settle() else rule.waitForIdle()
@@ -201,6 +212,9 @@ abstract class ScreenCatalogue : ScreenTest() {
             try {
                 fromHome()
                 beforeEach()
+                // (A screen of something under way stays at that moment while it is checked: on a slow machine the
+                // work would otherwise finish during the checks and the next screen be checked in its place.)
+                container.fixtureHeld = !screen.steady
                 screen.open()
                 settle()
                 val all = tabThrough()
