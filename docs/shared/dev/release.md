@@ -169,6 +169,39 @@ them: the player has to uninstall, and loses what the app keeps on the phone. Ma
 upload to an app. After the first upload, check under the app's Setup > App signing that the app signing key
 certificate's SHA-256 is the one in `.github/workflows/android.yml`.
 
+### Google Play: the internal testing track
+
+`.github/workflows/play.yml` uploads each app's signed bundle from a published GitHub release to Play's internal
+testing track (`scripts/play-upload.sh`, Android Publisher API v3, with curl, openssl and Python's standard
+library). It is opt-in: it runs only while the repository variable `PLAY_TRACK` is `internal`, and `internal` is
+the only track it accepts. The release workflow calls it after the GitHub release, for stable tags only, with the
+service account's JSON key from the `release` environment's secret `PLAY_SERVICE_ACCOUNT_JSON`.
+
+For each app it reads the package from the bundle. It then opens an edit, uploads the bundle and gives the internal
+track a completed release of that version code, with notes in en-US and no-NO, and commits the edit. The notes
+come from the version's section of `CHANGELOG.md` (`.github/scripts/play-notes.py`): that app's Android items,
+without links, cut to Play's 500 characters. The changelog is in English, so the no-NO notes say so. If any step
+fails, the edit is deleted and nothing on Play changes. The GitHub release stays as it is, and the job prints the
+command that tries again for the app that failed (Play refuses a version code it already has, so a retry names
+the app). A Play failure turns the release run red; the GitHub release itself is already out.
+
+```sh
+gh workflow run play.yml --ref vX.Y.Z -f app=fretscribe            # that tag's Fretscribe bundle again (or brasscribe, both)
+gh workflow run play.yml --ref vX.Y.Z -f dry_run=true              # check the bundles, notes and key; upload nothing
+```
+
+A run on a tag uses that tag's workflow and scripts, so this works for tags cut after `play.yml` was added.
+Pre-release tags (`vX.Y.Z-beta.N`) are not uploaded: they have no section in the changelog.
+
+The private key is kept only in shell variables and goes to openssl through a pipe: it is never written to disk or
+printed. The access token and the signed request are masked in the log. Locally, `scripts/play-upload.sh --dry-run`
+needs no network.
+
+**Each app's first release is made by hand.** Play refuses a completed release through the API for an app that
+has never had one ("Only releases with status draft may be created on draft app"). So the first internal testing
+release of each app is created and rolled out in the Play Console, with that release's bundle from GitHub; that is
+also where Play App Signing gets the app's own key, as above. The workflow uploads from the next release on: set `PLAY_TRACK` to `internal` only once both apps have had that first release.
+
 ## 3. Play for Mac
 
 ```sh
