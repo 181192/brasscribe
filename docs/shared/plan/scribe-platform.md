@@ -115,7 +115,7 @@ For a product `<p>` on the same core:
 - A release builds only that app's clients. Its notes list the changes that reach it: its own product code, plus the shared layers it is built from.
 - CI on a pull request runs the checks of the layers the change touches and of the products built from them. A change in one product's screens runs that product only. This part does not wait for the tags (see the order below).
 - App and engine must match. The engine's health answer carries one whole number, its interface version. An app is built for one number. When they differ, the app says in plain words which of the two to update, and does nothing else.
-- Android: each app keeps its application id and its signing key for ever (`no.kalli.brasscribe` with Brasscribe's key, `no.kalli.fretscribe` with the prototypes key). Fretscribe's first release under its own tag takes a version name and version code above the last ones it had under the shared tag.
+- Android: each app keeps its application id and its signing key for ever from its move to the ids it has on Google Play (`app.kalli.brasscribe` with Brasscribe's new key, `app.kalli.fretscribe` with the prototypes key). The earlier `no.kalli.*` ids were registered in another console and cannot be used on Play; Brasscribe's old key could not be exported for Play App Signing. Fretscribe's first release under its own tag takes a version name and version code above the last ones it had under the shared tag.
 - iPhone and iPad: an unsigned `.ipa` for each app that has an Apple client. A tester signs it with their own Apple ID; a free signature lasts seven days.
 
 ## Devices

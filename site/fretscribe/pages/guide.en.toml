@@ -28,7 +28,7 @@ shot1 = "Bandroom on your computer, in Settings: Not connected. Open Bandroom on
 [download]
 h21 = "Download"
 p1 = "Download the file for your device from the <a href=\"{{releases}}\">latest release on GitHub</a>. The links below always get the newest version, and the <a href=\"@/download/\">download page</a> has them per device."
-li1 = "<strong>Android:</strong> needs Android 16 or newer. Allow installs from your browser or file manager, then open the file you downloaded. It updates an earlier version in place, and your songs stay."
+li1 = "<strong>Android:</strong> needs Android 16 or newer. Allow installs from your browser or file manager, then open the file you downloaded. It updates an earlier version in place, and your songs stay. Once, the app moved to a new name on the phone: if an older Fretscribe stays beside the new one, the new one starts afresh. Pair it with Bandroom again (your songs on the computer stay), share from the old app any tab you want on the phone, then remove the old app."
 li2 = "<strong>Mac:</strong> needs macOS 26 or newer. Your Mac will warn you the first time. Unzip, move the app to Applications and open it once. macOS stops it; open <strong>System Settings › Privacy &amp; Security</strong>, choose <strong>Open Anyway</strong> and confirm."
 li3 = "<strong>Windows:</strong> needs Windows 11. Fretscribe for Windows is an early version. Windows will warn you the first time. Unzip the folder anywhere and start the <code>.exe</code> inside. If Windows SmartScreen stops it, choose <strong>More info</strong>, then <strong>Run anyway</strong>."
 h31 = "iPhone and iPad (test version)"
