@@ -65,11 +65,13 @@ class PagesTest {
     /** A PDF's pages, as its text says them: the page tree's count, else the pages named one by one; none for a locked one. */
     @Test
     fun aPdfsPagesAreCountedFromItsText() {
-        assertEquals(60, Pages.countInText("1 0 obj << /Type /Pages /Kids [] /Count 60 >>".toByteArray()))
-        assertEquals(7, Pages.countInText("<< /Count 7 /Type /Pages >> << /Type /Pages /Count 3 >>".toByteArray()))
-        assertEquals(2, Pages.countInText("<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>".toByteArray()))
-        assertEquals(1, Pages.countInText("%PDF-1.7\n".toByteArray()))
-        assertEquals(null, Pages.countInText("trailer << /Root 1 0 R /Encrypt 5 0 R >>".toByteArray()))
+        assertEquals(60, Pages.countInText("1 0 obj << /Type /Pages /Kids [] /Count 60 >>\n%%EOF".toByteArray()))
+        assertEquals(7, Pages.countInText("<< /Count 7 /Type /Pages >> << /Type /Pages /Count 3 >>\n%%EOF".toByteArray()))
+        assertEquals(2, Pages.countInText("<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>\n%%EOF".toByteArray()))
+        // Damaged: cut short, or naming no page.
+        assertEquals(null, Pages.countInText("1 0 obj << /Type /Pages /Count 60 >>".toByteArray()))
+        assertEquals(null, Pages.countInText("%PDF-1.7\n%%EOF\n".toByteArray()))
+        assertEquals(null, Pages.countInText("trailer << /Root 1 0 R /Encrypt 5 0 R >>\n%%EOF".toByteArray()))
         assertEquals(41, listOf(Page(File("a"), "a", 40), Page(File("b"), "b")).pageCount())
     }
 
@@ -110,13 +112,15 @@ class PagesTest {
             assertEquals(name, page.name)
             assertEquals(dir, page.file.parentFile)
         }
-        val pdf = "%PDF-1.7\n1 0 obj\n<<>>\nendobj\n".toByteArray()
+        val pdf = "%PDF-1.7\n1 0 obj\n<< /Type /Page >>\nendobj\n%%EOF\n".toByteArray()
         assertArrayEquals(pdf, take("Hymn.pdf", pdf).file.readBytes())
         // A PDF counts as its pages; one locked with a password is not taken.
-        val book = "%PDF-1.7\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 12 >>\nendobj\n".toByteArray()
+        val book = "%PDF-1.7\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 12 >>\nendobj\n%%EOF\n".toByteArray()
         assertEquals(12, take("Book.pdf", book).pages)
-        val locked = "%PDF-1.7\ntrailer\n<< /Encrypt 9 0 R >>\n".toByteArray()
+        val locked = "%PDF-1.7\ntrailer\n<< /Encrypt 9 0 R >>\n%%EOF\n".toByteArray()
         assertTrue(runCatching { take("Locked.pdf", locked) }.exceptionOrNull() is UnreadablePdfException)
+        // A damaged one (cut short) is not taken either: left out here, as on the other apps.
+        assertTrue(runCatching { take("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa".toByteArray()) }.exceptionOrNull() is UnreadablePdfException)
         // A screenshot that came without a name's ending gets the one of what it is.
         assertEquals("Screenshot.png", take("Screenshot", picture(8, 8, Bitmap.CompressFormat.PNG)).name)
         // Nothing but the pages is left in their folder.
@@ -173,7 +177,8 @@ class PagesTest {
     fun aFileLargerThanTheComputerReadsIsRefusedBeforeItIsCopied() {
         // By the size it is said to have: nothing of it is read.
         val big = File(from, "Whole book.pdf")
-        java.io.RandomAccessFile(big, "rw").use { it.write("%PDF-1.7\n".toByteArray()); it.setLength(Pages.MAX_BYTES + 1) }
+        // A whole PDF of one page, made as large as it is said to be.
+        java.io.RandomAccessFile(big, "rw").use { it.write("%PDF-1.7\n<< /Type /Page >>\n%%EOF\n".toByteArray()); it.setLength(Pages.MAX_BYTES + 1) }
         assertTrue(runCatching { Pages.take(context, Uri.fromFile(big), "Whole book.pdf", dir) }.exceptionOrNull() is PageTooLargeException)
         assertEquals(emptyList<File>(), dir.listFiles().orEmpty().toList())
         // One of exactly the size the computer reads is taken.

@@ -463,7 +463,7 @@
     <string name="pages_needs_computer">Bandroom på datamaskinen må til for å lese noter.</string>
     <string name="pages_where_desc">Bandroom leser sidene der</string>
     <string name="pages_too_many">Høyst %1$d sider kan leses om gangen, og hver side i en PDF teller. Resten ble ikke tatt med.</string>
-    <string name="pages_pdf_unreadable">En PDF som er låst med passord, kan ikke leses, og ble ikke tatt med.</string>
+    <string name="pages_pdf_unreadable">En PDF som er låst med passord eller er skadet, kan ikke leses, og ble ikke tatt med.</string>
     <string name="pages_photo_name">Noter</string>
     <string name="pages_camera_needed">Kameraet må få brukes for å ta bilde av en side. Du kan også velge et bilde du allerede har.</string>
     <string name="pages_no_camera">Ingen kamera-app kunne åpnes.</string>

@@ -1123,7 +1123,7 @@
     <value>Side {0}</value>
   </data>
   <data name="Pages_PdfLocked" xml:space="preserve">
-    <value>En PDF som er låst med passord, kan ikke leses, og ble ikke tatt med.</value>
+    <value>En PDF som er låst med passord eller er skadet, kan ikke leses, og ble ikke tatt med.</value>
   </data>
   <data name="Pages_Remove" xml:space="preserve">
     <value>Fjern side {0}</value>

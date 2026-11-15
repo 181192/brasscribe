@@ -688,7 +688,7 @@
     <value>Page {0}</value>
   </data>
   <data name="Pages_PdfLocked" xml:space="preserve">
-    <value>A PDF that is locked with a password can't be read, so it was left out.</value>
+    <value>A PDF that is locked with a password, or damaged, can't be read, so it was left out.</value>
   </data>
   <data name="Pages_Remove" xml:space="preserve">
     <value>Remove page {0}</value>

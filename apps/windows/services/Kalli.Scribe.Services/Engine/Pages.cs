@@ -45,20 +45,22 @@ public static class Pages
 
     /// <summary>
     /// The pages a PDF's text says it has: the largest page count of a page tree ("/Type /Pages … /Count 12"), else the
-    /// pages it names one by one; 1 when it says neither (a page tree kept compressed). Null for a PDF locked with a
-    /// password ("/Encrypt"), whose pages the computer cannot read either.
+    /// pages it names one by one. Null for a PDF locked with a password ("/Encrypt"), and for one that is cut short (no
+    /// "%%EOF") or names no page at all: a damaged file, left out here as on the other apps. Off Windows only: the apps
+    /// count with the system's PDF reader, which also reads a page tree kept compressed.
     /// </summary>
     public static int? PdfPagesInText(string path)
     {
         string text;
         try { text = System.Text.Encoding.Latin1.GetString(File.ReadAllBytes(path)); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
-        if (text.Contains("/Encrypt", StringComparison.Ordinal)) return null;
+        if (text.Contains("/Encrypt", StringComparison.Ordinal) || !text.Contains("%%EOF", StringComparison.Ordinal)) return null;
         int? tree = System.Text.RegularExpressions.Regex.Matches(text, @"/Type\s*/Pages\b[^>]*?/Count\s+(\d+)|/Count\s+(\d+)[^>]*?/Type\s*/Pages\b")
             .Select(m => int.TryParse(m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value, out int n) ? n : 0)
             .DefaultIfEmpty(0).Max() is var most && most > 0 ? most : null;
         int named = System.Text.RegularExpressions.Regex.Matches(text, @"/Type\s*/Page\b(?!s)").Count;
-        return Math.Max(1, tree ?? named);
+        int count = tree ?? named;
+        return count > 0 ? count : null;
     }
 
     /// <summary>The codes the computer refuses pages with before a job is made ({"code", "detail"}).</summary>

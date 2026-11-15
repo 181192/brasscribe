@@ -125,7 +125,7 @@ public class SheetMusicTests
     public async Task Pages_are_kept_in_order_moved_removed_and_what_is_no_page_is_left_out()
     {
         var said = new Said();
-        string one = File("one.png", Png), two = File("two.pdf", "%PDF-1.7"u8.ToArray()), song = File("take.wav", "RIFF\0\0\0\0WAVEfmt "u8.ToArray());
+        string one = File("one.png", Png), two = File("two.pdf", SamplePages.Pdf()), song = File("take.wav", "RIFF\0\0\0\0WAVEfmt "u8.ToArray());
         var vm = new PagesViewModel(new Picks([one, song, two]), said, Strings());
         Assert.False(vm.ReadCommand.CanExecute(null));
 
@@ -224,8 +224,12 @@ public class SheetMusicTests
         Assert.Equal("Hymns.pdf · 30 pages", vm.Pages[0].Detail);
         Assert.Equal("p.png", vm.Pages[1].Detail);
 
-        vm.Add([File("Locked.pdf", "%PDF-1.7\ntrailer\n<< /Root 1 0 R /Encrypt 5 0 R >>\n"u8.ToArray())]);
-        Assert.Equal("A PDF that is locked with a password can't be read, so it was left out.", vm.StatusText);
+        vm.Add([File("Locked.pdf", "%PDF-1.7\ntrailer\n<< /Root 1 0 R /Encrypt 5 0 R >>\n%%EOF\n"u8.ToArray())]);
+        Assert.Equal("A PDF that is locked with a password, or damaged, can't be read, so it was left out.", vm.StatusText);
+        Assert.Equal(2, vm.Pages.Count);
+        // A damaged one (cut short) is left out on the PC as well, with the same words: the computer could not read it either.
+        vm.Add([File("Torn.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pa"u8.ToArray())]);
+        Assert.Equal("A PDF that is locked with a password, or damaged, can't be read, so it was left out.", vm.StatusText);
         Assert.Equal(2, vm.Pages.Count);
     }
 
@@ -233,10 +237,12 @@ public class SheetMusicTests
     public void A_pdfs_pages_are_counted_from_its_text()
     {
         Assert.Equal(60, Pages.PdfPagesInText(File("a.pdf", PdfOf(60))));
-        Assert.Equal(2, Pages.PdfPagesInText(File("b.pdf", "<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>"u8.ToArray())));
-        Assert.Equal(1, Pages.PdfPagesInText(File("c.pdf", "%PDF-1.7\n"u8.ToArray())));
+        Assert.Equal(2, Pages.PdfPagesInText(File("b.pdf", "<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>\n%%EOF"u8.ToArray())));
         Assert.Equal(1, Pages.PdfPagesInText(File("d.pdf", SamplePages.Pdf())));
-        Assert.Null(Pages.PdfPagesInText(File("e.pdf", "trailer << /Encrypt 5 0 R >>"u8.ToArray())));
+        Assert.Null(Pages.PdfPagesInText(File("e.pdf", "trailer << /Encrypt 5 0 R >>\n%%EOF"u8.ToArray())));
+        // Damaged: cut short, or naming no page.
+        Assert.Null(Pages.PdfPagesInText(File("c.pdf", "%PDF-1.7\n%%EOF\n"u8.ToArray())));
+        Assert.Null(Pages.PdfPagesInText(File("f.pdf", "%PDF-1.7\n1 0 obj\n<< /Type /Pages /Count 3"u8.ToArray())));
     }
 
     [Fact]

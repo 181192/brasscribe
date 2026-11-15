@@ -53,9 +53,9 @@ object Pages {
     const val MAX_BYTES = no.kalli.scribe.engine.EngineApi.MAX_PAGE_BYTES
 
     /**
-     * How many pages the PDF [file] has, or null when it cannot be opened: locked with a password. The phone's own
-     * reader counts them; where it cannot (a damaged file, or a test without it) they are counted from the file's text
-     * ([countInText]), and a PDF that says nothing is taken as one page, which the computer then reads or refuses.
+     * How many pages the PDF [file] has, or null when it cannot be opened: locked with a password, or damaged (as on
+     * the other apps, it is left out here, not sent for the computer to refuse). The phone's own reader counts them; a
+     * test without that reader counts them from the file's text ([countInText]).
      */
     fun pdfPages(file: File): Int? {
         val read = runCatching {
@@ -63,23 +63,24 @@ object Pages {
                 android.graphics.pdf.PdfRenderer(descriptor).use { it.pageCount }
             }
         }
-        if (read.exceptionOrNull() is SecurityException) return null
-        read.getOrNull()?.takeIf { it > 0 }?.let { return it }
+        // Locked (SecurityException) or damaged (IOException): the phone's reader could not open it.
+        if (read.exceptionOrNull() is SecurityException || read.exceptionOrNull() is java.io.IOException) return null
+        read.getOrNull()?.let { return it.takeIf { n -> n > 0 } }
         return countInText(file.readBytes())
     }
 
     /**
      * The pages a PDF's text says it has: the largest page count of a page tree ("/Type /Pages … /Count 12"), else the
-     * pages it names one by one; 1 when it says neither. Null for a PDF locked with a password ("/Encrypt"), whose pages
-     * the computer cannot read either.
+     * pages it names one by one. Null for a PDF locked with a password ("/Encrypt"), and for one that is cut short (no
+     * "%%EOF") or names no page at all: a damaged file.
      */
     fun countInText(pdf: ByteArray): Int? {
         val text = String(pdf, Charsets.ISO_8859_1)
-        if (text.contains("/Encrypt")) return null
+        if (text.contains("/Encrypt") || !text.contains("%%EOF")) return null
         val tree = Regex("""/Type\s*/Pages\b[^>]*?/Count\s+(\d+)|/Count\s+(\d+)[^>]*?/Type\s*/Pages\b""").findAll(text)
             .mapNotNull { m -> (m.groupValues[1].ifEmpty { m.groupValues[2] }).toIntOrNull() }.maxOrNull()
         val named = Regex("""/Type\s*/Page\b(?!s)""").findAll(text).count()
-        return (tree ?: named).coerceAtLeast(1)
+        return (tree ?: named).takeIf { it > 0 }
     }
 
     /** How much of a file says what it is. */

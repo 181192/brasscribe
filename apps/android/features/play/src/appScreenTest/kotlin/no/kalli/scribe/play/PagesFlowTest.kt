@@ -142,6 +142,11 @@ class PagesFlowTest : ScreenTest() {
         assertEquals(listOf("Hymn 1.png", "Hymn 2.pdf", "Hymn 3.png"), names())
         assertTrue(shown(), shows(R.string.pages_too_many, no.kalli.scribe.engine.EngineApi.MAX_PAGES))
 
+        // A damaged PDF is left out on the phone too, with why: the computer could not read it either.
+        chosen(PageFiles.handedOver("Torn.pdf", PageFiles.damagedPdf()))
+        assertEquals(listOf("Hymn 1.png", "Hymn 2.pdf", "Hymn 3.png"), names())
+        assertTrue(shown(), shows(R.string.pages_pdf_unreadable))
+
         // One is taken out, and another added after the rest: a picture the computer does not read goes as a JPEG.
         rule.onNodeWithTag("pages-remove-1").performScrollTo().performClick()
         waitUntil(5_000) { vm.pages.value.size == 2 }
