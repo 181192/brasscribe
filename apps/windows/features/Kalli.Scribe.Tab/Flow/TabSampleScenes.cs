@@ -14,7 +14,7 @@ public static class TabSampleScenes
 {
     public static readonly string[] Names =
         ["first-run", "your-instrument", "home", "home-offline", "home-update", "what-is-this", "what-is-this-offline", "transcribing",
-         "check-the-song", "tab", "tab-full-screen", "export", "error", "error-update", "pages", "pages-unread"];
+         "check-the-song", "tab", "tab-full-screen", "export", "error", "error-update", "pages", "pages-unread", "check-the-song-pages"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = Wire.ServerNamePrefix + "Studio PC";
@@ -86,12 +86,12 @@ public static class TabSampleScenes
         var composition = File.Exists(Path.Combine(fixture, "composition.json")) ? CompositionJson.Parse(Read("composition.json")) : null;
         switch (scene)
         {
-            case "check-the-song":
+            case "check-the-song" or "check-the-song-pages":
                 var stages = File.Exists(Path.Combine(fixture, "job.json"))
                     ? [.. System.Text.Json.JsonDocument.Parse(Read("job.json")).RootElement.GetProperty("stages").EnumerateArray()
                         .Select(s => s.GetProperty("name").GetString() ?? "")]
                     : new List<string>();
-                flow.ShowCheck(tab, stages);
+                flow.ShowCheck(tab, stages, fromPages: scene == "check-the-song-pages");
                 return true;
             // Share or print opens on the tab (the app opens its dialog).
             case "tab" or "export":

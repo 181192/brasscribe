@@ -62,7 +62,7 @@
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="{x:Bind Place, Mode=OneWay}" Style="{StaticResource HeadlineStyle}" />
-                                    <TextBlock Text="{x:Bind Name}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Detail, Mode=OneWay}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
                                     <Button Style="{StaticResource IconButtonStyle}" Tag="{x:Bind}" Click="OnMoveUp"
