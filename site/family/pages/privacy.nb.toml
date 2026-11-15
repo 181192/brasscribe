@@ -1,0 +1,40 @@
+title = "Personvern: Scribe-appene"
+description = "Hva Brasscribe, Fretscribe og Bandroom gjør med musikken din: den blir på telefonen og din egen datamaskin. Ingen konto, ingen analyse, ingen reklame, og ingenting sendes til oss."
+
+[hero]
+title = "Personvern"
+lead = "Brasscribe og Fretscribe skriver ned musikken du spiller. Det du spiller, blir hos deg: på telefonen, nettbrettet eller datamaskinen, og på din egen Mac eller PC når Bandroom skriver det."
+
+[never]
+title = "Dette gjør appene aldri."
+account = "<strong>Ingen konto.</strong> Du registrerer deg aldri og logger aldri inn."
+tracking = "<strong>Ingen analyse, ingen krasjrapporter, ingen reklame.</strong> Appene følger ikke med på hva du gjør i dem."
+server = "<strong>Ingenting sendes til oss.</strong> Vi har ingen tjener, og appene kontakter aldri en av våre."
+
+[music]
+title = "Hvor musikken din går."
+stays = "Opptakene dine, bildene og PDF-ene av noter du åpner, og partiturene og tabbene som skrives fra dem, ligger i appen, på telefonen, nettbrettet eller datamaskinen."
+bandroom = "Når Bandroom skriver et partitur eller en tab, sender telefonen opptaket eller siden til Bandroom på din egen Mac eller PC, og Bandroom sender partituret eller tabben tilbake. Bandroom tar vare på det på den datamaskinen. Ingenting av det går ut på internett, til oss eller til noen andre."
+network = "Telefonen og datamaskinen snakker sammen over ditt eget nettverk, på adressen du ga, eller den datamaskinen melder der, med en kode du kobler dem sammen med. Den forbindelsen er ikke kryptert: bruk den på et nettverk du stoler på, som Wi-Fi-en hjemme eller i øvingslokalet."
+asks = "Appene ber om mikrofonen bare når du tar opp, og om kameraet bare når du tar bilde av en side eller leser koblingskoden. De åpner bare filene du velger."
+
+[internet]
+title = "Dette går ut på internett."
+downloads = "<strong>Det Bandroom laster ned.</strong> Når du setter det opp, laster Bandroom ned det det trenger for å lytte, og noteleseren hvis du ber om den. Det er bare nedlastinger: ingenting av musikken din sendes. Til bandskriveren bruker det en tilgangsnøkkel fra din egen Hugging Face-konto, som blir i nøkkelringen eller Legitimasjonsbehandling på datamaskinen."
+onnx = "<strong>Microsofts ONNX Runtime.</strong> Brasscribe for Android og for Windows, og Bandroom på datamaskinen, kjører lyttemodellene sine med ONNX Runtime, som Microsoft lager. Slik Microsoft bygger den, sender den data om sin egen bruk til Microsoft, med en identifikator for enheten; på Android leser den også enhetens ID, produsent og modell. Den sender aldri et opptak, et bilde eller et partitur. Fretscribe på telefon og Brasscribe på iPhone, iPad og Mac har den ikke. <a href=\"https://go.microsoft.com/fwlink/?LinkID=824704\">Microsofts personvernerklæring</a>."
+get = "<strong>Last ned Bandroom</strong> åpner nedlastingssiden på GitHub i nettleseren."
+
+[backup]
+title = "Telefonens egen sikkerhetskopi."
+android = "På Android kan telefonen, hvis sikkerhetskopi til Google er på, kopiere partiturene og innstillingene i appene til din egen Google-konto, slik den gjør for andre apper. Opptakene og koblingen til datamaskinen er holdt utenfor."
+apple = "På iPhone og iPad tar sikkerhetskopien i iCloud eller på datamaskinen med seg appens data, slik den gjør for andre apper. Begge sikkerhetskopiene er dine, i din egen konto; vi ser dem aldri."
+
+[remove]
+title = "Slik sletter du alt."
+app = "<strong>På telefon, nettbrett eller datamaskin:</strong> fjern appen, så går alt den tar vare på, med den."
+bandroom = "<strong>Bandroom:</strong> velg <strong>Fjern Brasscribe fra denne Macen …</strong> (eller <strong>… denne PC-en …</strong>) i menyen. Det sletter det det tar vare på, og tilgangsnøkkelen; kryss av for <strong>Slett også nedlastingene</strong> for å slette dem også. Partiturene på telefonene blir der."
+backup = "<strong>Sikkerhetskopier:</strong> en kopi i sikkerhetskopien hos Google eller Apple slettes der, i kontoen din."
+
+[contact]
+title = "Spørsmål."
+text = "Spør på <a href=\"https://github.com/181192/brasscribe/issues\">prosjektets side på GitHub</a>. Appene har åpen kildekode: <a href=\"https://github.com/181192/brasscribe\">all koden deres ligger der</a>."

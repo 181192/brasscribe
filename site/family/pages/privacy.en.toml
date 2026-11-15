@@ -1,0 +1,40 @@
+title = "Privacy: the Scribe apps"
+description = "What Brasscribe, Fretscribe and Bandroom do with your music: it stays on your phone and your own computer. No account, no analytics, no ads, and nothing sent to us."
+
+[hero]
+title = "Privacy"
+lead = "Brasscribe and Fretscribe write down the music you play. What you play stays with you: on your phone, tablet or computer, and on your own Mac or PC when Bandroom writes it."
+
+[never]
+title = "What the apps never do."
+account = "<strong>No account.</strong> You never sign up or log in."
+tracking = "<strong>No analytics, no crash reports, no ads.</strong> The apps do not follow what you do in them."
+server = "<strong>Nothing is sent to us.</strong> We run no server, and the apps never contact one of ours."
+
+[music]
+title = "Where your music goes."
+stays = "Your recordings, the photos and PDFs of printed music you open, and the scores and tabs written from them are kept in the app, on your phone, tablet or computer."
+bandroom = "When Bandroom writes a score or a tab, your phone sends the recording or the page to Bandroom on your own Mac or PC, and Bandroom sends the score or tab back. Bandroom keeps it on that computer. None of it goes to the internet, to us or to anyone else."
+network = "The phone and your computer talk over your own network, at the address you gave or the one your computer announces there, with a code you pair them with. That connection is not encrypted: use it on a network you trust, such as your home's or your band room's Wi-Fi."
+asks = "The apps ask for the microphone only when you record, and for the camera only when you take a picture of a page or read the pairing code. They open only the files you choose."
+
+[internet]
+title = "What does go to the internet."
+downloads = "<strong>Bandroom's downloads.</strong> When you set it up, Bandroom downloads what it needs to listen, and the reader of printed music if you ask for it. These are downloads only: none of your music is sent. For the band writer it uses an access key from your own Hugging Face account, which stays in your computer's Keychain or Credential Manager."
+onnx = "<strong>Microsoft's ONNX Runtime.</strong> Brasscribe for Android and for Windows, and Bandroom on your computer, run their listening models with ONNX Runtime, which Microsoft makes. As Microsoft builds it, it sends data about its own use to Microsoft, with an identifier of the device; on Android it also reads the device's id, maker and model. It never sends a recording, a picture or a score. Fretscribe on a phone and Brasscribe on iPhone, iPad and Mac do not have it. <a href=\"https://go.microsoft.com/fwlink/?LinkID=824704\">Microsoft's privacy statement</a>."
+get = "<strong>Get Bandroom</strong> opens the download page on GitHub in your browser."
+
+[backup]
+title = "Your phone's own backup."
+android = "On Android, if backup to Google is on, the phone can copy the apps' scores and settings into your own Google account, as it does for other apps. Your recordings and the pairing with your computer are left out."
+apple = "On an iPhone or iPad, your iCloud or computer backup includes the app's data, as it does for other apps. Both backups are yours, in your own account; we never see them."
+
+[remove]
+title = "Removing everything."
+app = "<strong>On a phone, tablet or computer:</strong> remove the app, and everything it keeps goes with it."
+bandroom = "<strong>Bandroom:</strong> choose <strong>Remove Brasscribe from this Mac…</strong> (or <strong>…this PC…</strong>) in its menu. It deletes what it keeps and the access key; tick <strong>Also delete the downloads</strong> to delete those too. Scores on your phones stay there."
+backup = "<strong>Backups:</strong> a copy in your Google or Apple backup is deleted there, in your account."
+
+[contact]
+title = "Questions."
+text = "Ask on <a href=\"https://github.com/181192/brasscribe/issues\">the project's page on GitHub</a>. The apps are open source: <a href=\"https://github.com/181192/brasscribe\">all of their code is there to read</a>."

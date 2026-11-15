@@ -10,6 +10,7 @@ noscript = "På engelsk: den norske versjonen trenger JavaScript."
 
 [footer]
 source = "Kildekode"
+privacy = "Personvern"
 
 [nav]
 label = "Sidene til denne appen"

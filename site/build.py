@@ -442,7 +442,7 @@ class Page:
         links = "".join(f'<a href="@{q.id}/"{here(q)}>{q.data["name"]}</a>' for q in site.products.values())
         foot = f"""<footer class="site-footer">
   <div class="wrap">
-    <p class="footer-line"><a class="family-mark" href="@family/">{site.mark}<span data-t="bar.all"></span></a>{links}<a href="@family/bandroom/"{' class="here"' if self.name == "bandroom" else ""}>Bandroom</a><a href="{site.source}" data-t="footer.source"></a></p>
+    <p class="footer-line"><a class="family-mark" href="@family/">{site.mark}<span data-t="bar.all"></span></a>{links}<a href="@family/bandroom/"{' class="here"' if self.name == "bandroom" else ""}>Bandroom</a><a href="{site.source}" data-t="footer.source"></a><a href="@family/privacy/"{' class="here"' if self.name == "privacy" else ""} data-t="footer.privacy"></a></p>
     <p class="footer-note" data-t="{"footer.note" if self.whole else self.meta.get("footer", "footer.note")}"></p>
   </div>
 </footer>"""

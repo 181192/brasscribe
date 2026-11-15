@@ -223,3 +223,6 @@ html.starting .line-hero:not(.drawn) .pen-words::after { clip-path: inset(0 100%
   html.js .pen-heading:not(.drawn)::after { clip-path: none; }
   html.js .line-hero:not(.drawn) .pen-words::after { clip-path: none; }
 }
+
+/* The privacy page: plain text at a reading width. */
+.privacy-page section .wrap > p, .privacy-page .pen-list { max-width: 44em; }

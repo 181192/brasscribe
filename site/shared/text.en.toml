@@ -10,6 +10,7 @@ noscript = "In English: the Norwegian version needs JavaScript."
 
 [footer]
 source = "Source"
+privacy = "Privacy"
 
 [nav]
 label = "This app's pages"
