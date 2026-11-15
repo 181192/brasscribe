@@ -316,7 +316,10 @@ fun TabScreen(vm: PlayViewModel) {
     val clock = remember(s, r.composition) { s?.let { TabClock.of(it.index, it.tab, r.composition) } }
     val recording = source?.file
     LaunchedEffect(practice, song, s, clock, recording) {
-        if (s != null) practice.open(song, r.jobId, clock, recording, vm.savedScores.value.mapNotNull { it.jobId }.toSet(), tabSoundOf(context, s))
+        // The saved repeats are the song's in Your songs, also once it is written again (a new job), and also for a song
+        // that has no job on a computer.
+        if (s != null) practice.open(song, r.jobId, clock, recording, vm.savedScores.value.mapNotNull { it.jobId }.toSet(), tabSoundOf(context, s),
+            keep = vm.practiceScoreId ?: r.jobId, kept = vm.savedScores.value.map { it.id }.toSet())
     }
     // Leaving the tab, or the app, stops the sound; the song stays where it was.
     DisposableEffect(practice) { onDispose { practice.endSlowly(); practice.leave() } }

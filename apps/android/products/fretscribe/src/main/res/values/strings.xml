@@ -422,6 +422,20 @@
         <item quantity="other">The %1$d notes you moved go back to where Fretscribe wrote them: in another tuning or capo their places are found again. Your other fixes stay.</item>
     </plurals>
     <string name="fs_tuning_on_phone">Written on this phone, from the notes of the tab. The octave and what was recorded are changed in Check the song, with your computer.</string>
+
+    <!-- The speed trainer and the saved repeats, in Repeat bars -->
+    <string name="fs_trainer">Speed trainer</string>
+    <plurals name="fs_trainer_tip">
+        <item quantity="one">Starts at %1$d%% and goes %3$d%% faster after every time through, up to %2$d%%.</item>
+        <item quantity="other">Starts at %1$d%% and goes %3$d%% faster after every %4$d times through, up to %2$d%%.</item>
+    </plurals>
+    <string name="fs_trainer_from">Start at</string>
+    <string name="fs_trainer_to">Up to</string>
+    <string name="fs_trainer_every">Times through at each speed</string>
+    <string name="fs_trainer_less">%1$s: less</string>
+    <string name="fs_trainer_more">%1$s: more</string>
+    <string name="fs_practice_repeat_save">Save this repeat</string>
+    <string name="fs_practice_repeat_forget">Forget this repeat</string>
     <!-- Under a page of a tab's PDF with a doubtful note. -->
     <string name="export_marks_note">“?” means Fretscribe wasn\'t sure about a note. A boxed “?” means very unsure.</string>
     <!-- Printed music from a picture or a PDF: the pages, sending them, and what can go wrong. -->
