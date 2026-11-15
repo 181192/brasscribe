@@ -43,7 +43,8 @@ the window, leads to the pages screen (`Views/PagesPage.xaml`, `PagesViewModel`)
 each shown small and moved or removed, and Read the notes sends them to `POST /v1/jobs/pages` (profile `sheet`, no
 audio rendered); the score opens as it is written, without the band's questions, and Your scores marks it "From sheet
 music", also while it is only on the computer (`Job.Input`). PNG, JPEG, WebP and PDF are sent as they are, told by their first bytes
-(`Engine/Pages.cs`); any other picture, a file over 50 MB and pages past 40 are left out on the PC and said. The
+(`Engine/Pages.cs`); any other picture, a file over 50 MB and pages past 40 (every page of a PDF counted, by the system's PDF reader:
+`WinPdfPages`) are left out on the PC and said, as is a PDF locked with a password. The
 engine's refusals and the fixed words of a read that failed are said in the app's words (`EngineErrors`), and the
 tests hold both lists to the engine's files. Fretscribe has the same pages screen and reads them with `sheet-tab` for the
 player's instrument, tuning and reading; Check the song then says it was read on the page and offers no change, and the

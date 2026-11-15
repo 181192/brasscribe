@@ -157,7 +157,7 @@ public class SheetMusicTests
 
         vm.Add(Enumerable.Repeat(one, Pages.MaxPages + 1).ToList());
         Assert.Equal(Pages.MaxPages, vm.Pages.Count);
-        Assert.Equal("At most 40 pages can be read at once. The rest were left out.", vm.StatusText);
+        Assert.Equal("At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.", vm.StatusText);
     }
 
     /// <summary>A page whose file name has a "%" or a "#" is read, shown small and sent as it is (no URI escaping is lost).</summary>
@@ -202,6 +202,41 @@ public class SheetMusicTests
         Assert.Contains("/Count 1", pdf);
         int xref = int.Parse(pdf[(pdf.LastIndexOf("startxref\n", StringComparison.Ordinal) + 10)..].Split('\n')[0]);
         Assert.StartsWith("xref", pdf[xref..]);
+    }
+
+    private static byte[] PdfOf(int pages) => System.Text.Encoding.ASCII.GetBytes(
+        $"%PDF-1.7\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count {pages} >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n");
+
+    /// <summary>Every page of a PDF counts against the 40: a 60-page book is left out before anything is sent, and a PDF
+    /// locked with a password is left out with why.</summary>
+    [Fact]
+    public void Every_page_of_a_pdf_counts_before_anything_is_sent()
+    {
+        var said = new Said();
+        var vm = new PagesViewModel(new Picks([]), said, Strings());
+        vm.Add([File("Whole book.pdf", PdfOf(60))]);
+        Assert.Empty(vm.Pages);
+        Assert.Equal("At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.", vm.StatusText);
+
+        vm.Add([File("Hymns.pdf", PdfOf(30)), File("p.png", Png), File("More.pdf", PdfOf(10))]);
+        Assert.Equal(["Hymns.pdf", "p.png"], vm.Pages.Select(p => p.Name));
+        Assert.Equal(31, vm.PageCount);
+        Assert.Equal("Hymns.pdf · 30 pages", vm.Pages[0].Detail);
+        Assert.Equal("p.png", vm.Pages[1].Detail);
+
+        vm.Add([File("Locked.pdf", "%PDF-1.7\ntrailer\n<< /Root 1 0 R /Encrypt 5 0 R >>\n"u8.ToArray())]);
+        Assert.Equal("A PDF that is locked with a password can't be read, so it was left out.", vm.StatusText);
+        Assert.Equal(2, vm.Pages.Count);
+    }
+
+    [Fact]
+    public void A_pdfs_pages_are_counted_from_its_text()
+    {
+        Assert.Equal(60, Pages.PdfPagesInText(File("a.pdf", PdfOf(60))));
+        Assert.Equal(2, Pages.PdfPagesInText(File("b.pdf", "<< /Type /Page >> << /Type/Page /Parent 1 0 R >> << /Type /Pages >>"u8.ToArray())));
+        Assert.Equal(1, Pages.PdfPagesInText(File("c.pdf", "%PDF-1.7\n"u8.ToArray())));
+        Assert.Equal(1, Pages.PdfPagesInText(File("d.pdf", SamplePages.Pdf())));
+        Assert.Null(Pages.PdfPagesInText(File("e.pdf", "trailer << /Encrypt 5 0 R >>"u8.ToArray())));
     }
 
     [Fact]

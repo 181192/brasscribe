@@ -910,7 +910,10 @@ add("Pages_LeftOut_One", "One file is not a PNG, JPEG or WebP picture or a PDF, 
     "Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
 add("Pages_LeftOut_Many", "{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.",
     "{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
-add("Pages_TooMany", "At most {0} pages can be read at once. The rest were left out.", "Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.")
+add("Pages_TooMany", "At most {0} pages can be read at once, every page of a PDF counted. The rest were left out.",
+    "Høyst {0} sider kan leses om gangen, og hver side i en PDF teller. Resten ble ikke tatt med.")
+add("Pages_PdfLocked", "A PDF that is locked with a password can't be read, so it was left out.", "En PDF som er låst med passord, kan ikke leses, og ble ikke tatt med.")
+add("Pages_NameWithCount", "{0} · {1} pages", "{0} · {1} sider")
 add("Pages_KindLabel", "Sheet music", "Noter")
 add("Transcribe_Step_SendPages", "Sending the pages", "Sender sidene")
 add("Transcribe_Step_Read", "Reading the notes", "Leser notene")

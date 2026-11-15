@@ -381,3 +381,25 @@ public sealed class MediaPlayerOriginal : IOriginalPlayer, IDisposable
 
     public void Dispose() => _player.Dispose();
 }
+
+/// <summary>How many pages a PDF has, by the system's PDF reader; null for one it cannot open (locked with a password, or
+/// damaged). Read on a worker thread: the file is opened, its page count read, and nothing is drawn.</summary>
+public static class WinPdfPages
+{
+    public static int? Count(string path)
+    {
+        try
+        {
+            return Task.Run(async () =>
+            {
+                var file = await Windows.Storage.StorageFile.GetFileFromPathAsync(path);
+                var doc = await Windows.Data.Pdf.PdfDocument.LoadFromFileAsync(file);
+                return (int?)doc.PageCount;
+            }).GetAwaiter().GetResult() is { } n && n > 0 ? n : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException or ArgumentException)
+        {
+            return null;
+        }
+    }
+}

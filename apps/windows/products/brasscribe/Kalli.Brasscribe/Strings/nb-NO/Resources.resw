@@ -1116,8 +1116,14 @@
   <data name="Pages_Moved" xml:space="preserve">
     <value>Side {0} er nå side {1}.</value>
   </data>
+  <data name="Pages_NameWithCount" xml:space="preserve">
+    <value>{0} · {1} sider</value>
+  </data>
   <data name="Pages_Page" xml:space="preserve">
     <value>Side {0}</value>
+  </data>
+  <data name="Pages_PdfLocked" xml:space="preserve">
+    <value>En PDF som er låst med passord, kan ikke leses, og ble ikke tatt med.</value>
   </data>
   <data name="Pages_Remove" xml:space="preserve">
     <value>Fjern side {0}</value>
@@ -1129,7 +1135,7 @@
     <value>Noter fra et bilde</value>
   </data>
   <data name="Pages_TooMany" xml:space="preserve">
-    <value>Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.</value>
+    <value>Høyst {0} sider kan leses om gangen, og hver side i en PDF teller. Resten ble ikke tatt med.</value>
   </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Kode</value>
