@@ -238,7 +238,7 @@ li1 = "<strong>Modellisenser.</strong> Vektene til MuScriptor har lisensen CC BY
 li2 = "<strong>Lisensene til datasettene</strong> står i {{ref table:data}}. Repositoriet inneholder små data avledet av ChoraleBricks (CC BY 4.0) og én testfil avledet av 30 s av et URMP-spor."
 li3 = "<strong>Opphavsrett.</strong> Ingen opphavsrettslig beskyttet musikk er publisert på denne siden eller distribuert med appene; det innebygde eksempelet er en salmemelodi i det fri."
 li4 = "<strong>Personvern.</strong> Ingen opptak, og ingen noter avledet av et opptak, sendes til en tjener."
-li5 = "<strong>Telemetri.</strong> ONNX Runtime, Microsoft-biblioteket som kjører modellene i appene for Android og Windows og i deler av motoren, rapporterer sin egen bruk til Microsoft hvis den ikke blir bedt om å la være. Brasscribe slår dette av: på Android, macOS og Linux starter opplasteren aldri; på Windows skriver den én hendelse til diagnostikkdataene i Windows når den starter, og flere hendelser slås av i appen og der motoren laster den selv; Windows kan slå dem på igjen. <code>THIRD_PARTY_NOTICES.md</code> har detaljene."
+li5 = "<strong>Telemetri.</strong> ONNX Runtime, Microsoft-biblioteket som kjører modellene i appene for Android og Windows og i deler av motoren, rapporterer sin egen bruk til Microsoft hvis den ikke blir bedt om å la være. Brasscribe slår dette av: på Android, macOS og Linux starter opplasteren aldri; på Windows skriver den én hendelse til diagnostikkdataene i Windows når den starter, så slås hendelsene av i appen og i motoren, men Windows kan slå dem på igjen. <code>THIRD_PARTY_NOTICES.md</code> har detaljene."
 
 [acknowledgements]
 h21 = "Takk"

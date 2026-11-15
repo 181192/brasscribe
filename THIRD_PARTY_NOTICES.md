@@ -127,13 +127,15 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
     itself; what Windows then collects and sends follows the PC's diagnostic data settings. Each program that loads
     the runtime writes one event as the runtime starts (`ProcessInfo`: the runtime's version, whether a debugger is
     attached, whether it is the redistributable build, the calling framework's name and the names of any Windows
-    services in the process), before anything can switch events off. Play for Windows and the swift-f0 adapter then
-    switch them off (`DisableTelemetryEvents`) before every model they load, and the runtime writes no more. The
-    runtime has no lasting switch: when Windows' diagnostic data service turns the runtime's ETW provider on while a
-    model is loaded, the runtime turns its events back on until they are next switched off. The separator, homr and
-    basic-pitch adapters run their packages' own programs, which do not switch them off. No newer ONNX Runtime for
-    Windows removes the start-up event: the DirectML build Play for Windows ships ends at 1.24.4, and Microsoft's
-    Windows builds up to 1.32.0 (NuGet and PyPI) keep writing to ETW and do not read `ORT_DISABLE_TELEMETRY`.
+    services in the process), before anything can switch events off. Then every program switches them off before it
+    loads a model (`DisableTelemetryEvents`): Play for Windows before every session, the swift-f0 adapter itself, and
+    the separator, homr and basic-pitch adapters through the runner's launcher (`ml/adapters/ort_events_off.py`), which
+    makes the call in their programs' process before they start; and the runtime writes no more. The runtime has no
+    lasting switch: when Windows' diagnostic data service turns the runtime's ETW provider on while it is loaded, the
+    runtime turns its events back on (in Play for Windows, until its next session switches them off again). No newer
+    ONNX Runtime for Windows removes the start-up event: the DirectML build Play for Windows ships ends at 1.24.4, and
+    Microsoft's Windows builds up to 1.32.0 (NuGet and PyPI) keep writing to ETW and do not read
+    `ORT_DISABLE_TELEMETRY`.
 
   A recording, or the notes written from it, is never part of what the runtime reports. Microsoft's privacy statement:
   https://go.microsoft.com/fwlink/?LinkID=824704.

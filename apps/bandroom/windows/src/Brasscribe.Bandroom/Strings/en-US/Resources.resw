@@ -330,7 +330,7 @@
     <value>Not enough space: the reader needs about {0} GB, and {1} GB is free.</value>
   </data>
   <data name="Settings_About" xml:space="preserve">
-    <value>Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which reports its use to Microsoft through Windows’ diagnostic data: one report each time it starts, and more where Bandroom cannot switch them off or Windows turns them back on. A recording is never part of them.</value>
+    <value>Brasscribe Bandroom is a non-commercial project. On this PC it listens with Microsoft’s ONNX Runtime, which reports its use to Microsoft through Windows’ diagnostic data: one report each time it starts, then Bandroom switches the reports off, though Windows can turn them back on. A recording is never part of them.</value>
   </data>
   <data name="Settings_Licences" xml:space="preserve">
     <value>Third-party licences</value>

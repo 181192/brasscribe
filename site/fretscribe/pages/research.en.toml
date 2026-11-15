@@ -180,7 +180,7 @@ h21 = "<span class=\"secno\">10</span> Ethics and licence statement"
 li1 = "<strong>Model licences.</strong> Basic Pitch is Apache-2.0; SwiftF0 and Beat This! are MIT. No licence is stated for the BS-RoFormer SW weights; they are downloaded by the user's computer from their publisher and are not redistributed by the project."
 li2 = "<strong>Dataset licences</strong> are given in {{ref table:tabdata}}. IDMT-SMT-Guitar is licensed for non-commercial use without derivatives; it is used for evaluation only and nothing derived from it is distributed."
 li3 = "<strong>Privacy.</strong> No recording, and no tablature derived from one, is sent to a server."
-li4 = "<strong>Telemetry.</strong> ONNX Runtime, the Microsoft library that executes models in parts of the engine, reports its own usage to Microsoft unless told not to. The engine switches this off: on macOS and Linux its uploader never starts; on Windows it writes one event to Windows' diagnostic data as it starts, and further events are switched off only where the engine loads it itself; Windows can turn them back on. <code>THIRD_PARTY_NOTICES.md</code> gives the details."
+li4 = "<strong>Telemetry.</strong> ONNX Runtime, the Microsoft library that executes models in parts of the engine, reports its own usage to Microsoft unless told not to. The engine switches this off: on macOS and Linux its uploader never starts; on Windows it writes one event to Windows' diagnostic data as it starts, then its events are switched off, though Windows can turn them back on. <code>THIRD_PARTY_NOTICES.md</code> gives the details."
 
 [acknowledgements]
 h21 = "Acknowledgements"

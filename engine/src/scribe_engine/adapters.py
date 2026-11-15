@@ -212,9 +212,11 @@ class AdapterRegistry:
             for rel in a.scripts:
                 p = self.dir(name) / rel
                 parts.append(f"{rel}:{sha256_bytes(p.read_bytes()) if p.exists() else '-'}")
-            runner = self.root / "run_adapter.py"
-            if runner.exists():
-                parts.append(f"run_adapter.py:{sha256_bytes(runner.read_bytes())}")
+            # the runner, and the launcher it starts some adapters' programs through on Windows (ort_events_off.py)
+            for name in ("run_adapter.py", "ort_events_off.py"):
+                runner = self.root / name
+                if runner.exists():
+                    parts.append(f"{name}:{sha256_bytes(runner.read_bytes())}")
             parts.extend(f"{k}={v}" for k, v in a.env)
             self._fingerprints[name] = sha256_bytes("\n".join(parts).encode())
         return self._fingerprints[name]
