@@ -1196,10 +1196,10 @@ extension CompanionTests {
         let lockedCtx = try #require(CGContext(locked as CFURL, mediaBox: &box2,
                                                 [kCGPDFContextUserPassword: "secret", kCGPDFContextOwnerPassword: "secret"] as CFDictionary))
         lockedCtx.beginPDFPage(nil); lockedCtx.endPDFPage(); lockedCtx.closePDF()
-        #expect(throws: Pages.Refusal.unreadablePDF("locked.pdf")) { try Pages.prepare(locked, into: dir.appending(path: "out")) }
+        #expect(throws: Pages.Refusal.lockedPDF("locked.pdf")) { try Pages.prepare(locked, into: dir.appending(path: "out")) }
         let broken = dir.appending(path: "broken.pdf")
         try Data("%PDF-1.7 and then nothing".utf8).write(to: broken)
-        #expect(throws: Pages.Refusal.unreadablePDF("broken.pdf")) { try Pages.prepare(broken, into: dir.appending(path: "out")) }
+        #expect(throws: Pages.Refusal.damagedPDF("broken.pdf")) { try Pages.prepare(broken, into: dir.appending(path: "out")) }
     }
 
     @Test func aFileThatIsNoPageOrTooLargeIsRefusedBeforeItIsCopied() throws {

@@ -32,8 +32,17 @@ public enum Pages {
         case notAPage(String)
         /// Over `maxPageBytes`.
         case tooLarge(String)
-        /// A PDF this device cannot open: locked with a password, or damaged.
-        case unreadablePDF(String)
+        /// A PDF locked with a password: the player can open it elsewhere and save it without one.
+        case lockedPDF(String)
+        /// A PDF this device cannot open at all: damaged.
+        case damagedPDF(String)
+    }
+
+    /// What this device's PDF reader made of a file: its pages, or why it could not open it.
+    public enum PDFRead: Equatable, Sendable {
+        case pages(Int)
+        case locked
+        case damaged
     }
 
     /// A page as it is sent, and how many pages it holds: a PDF's every page counts against `maxPages`, as the engine
@@ -43,10 +52,12 @@ public enum Pages {
         public let pages: Int
     }
 
-    /// The pages in a PDF, or nil when it cannot be opened (locked or damaged).
-    public static func pdfPages(_ url: URL) -> Int? {
-        guard let doc = CGPDFDocument(url as CFURL), !doc.isEncrypted || doc.isUnlocked, doc.numberOfPages > 0 else { return nil }
-        return doc.numberOfPages
+    /// The pages in a PDF, or why it can't be opened: locked when it asks for a password (one encrypted with an empty
+    /// password opens), damaged when it can't be read at all or has no page.
+    public static func readPDF(_ url: URL) -> PDFRead {
+        guard let doc = CGPDFDocument(url as CFURL) else { return .damaged }
+        if doc.isEncrypted && !doc.isUnlocked && !doc.unlockWithPassword("") { return .locked }
+        return doc.numberOfPages > 0 ? .pages(doc.numberOfPages) : .damaged
     }
 
     /// A page as it is sent, in `folder`: a PNG, JPEG, WebP or PDF is copied as it is; any other picture the system
@@ -64,8 +75,11 @@ public enum Pages {
         if let format = format(of: head) {
             var count = 1
             if format == .pdf {
-                guard let n = pdfPages(url) else { throw Refusal.unreadablePDF(name) }
-                count = n
+                switch readPDF(url) {
+                case .pages(let n): count = n
+                case .locked: throw Refusal.lockedPDF(name)
+                case .damaged: throw Refusal.damagedPDF(name)
+                }
             }
             let dst = folder.appending(path: "\(UUID().uuidString).\(format == .jpeg ? "jpg" : format.rawValue)")
             try FileManager.default.copyItem(at: url, to: dst)
