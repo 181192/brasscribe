@@ -8,7 +8,7 @@ lead = "Brasscribe and Fretscribe write down the music you play. What you play s
 [never]
 title = "What the apps never do."
 account = "<strong>No account.</strong> You never sign up or log in."
-tracking = "<strong>No analytics, no crash reports, no ads.</strong> The apps do not follow what you do in them."
+tracking = "<strong>No analytics, no crash reports, no ads.</strong> The apps do not follow what you do in them, and send no usage data to anyone."
 server = "<strong>Nothing is sent to us.</strong> We run no server, and the apps never contact one of ours."
 
 [music]
@@ -20,13 +20,12 @@ asks = "The apps ask for the microphone only when you record, and for the camera
 
 [internet]
 title = "What does go to the internet."
-downloads = "<strong>Bandroom's downloads.</strong> When you set it up, Bandroom downloads what it needs to listen, and the reader of printed music if you ask for it. These are downloads only: none of your music is sent. For the band writer it uses an access key from your own Hugging Face account, which stays in your computer's Keychain or Credential Manager."
-onnx = "<strong>Microsoft's ONNX Runtime.</strong> Brasscribe for Android and for Windows, and Bandroom on your computer, run their listening models with ONNX Runtime, which Microsoft makes. As Microsoft builds it, it sends data about its own use to Microsoft, with an identifier of the device; on Android it also reads the device's id, maker and model. It never sends a recording, a picture or a score. Fretscribe on a phone and Brasscribe on iPhone, iPad and Mac do not have it. <a href=\"https://go.microsoft.com/fwlink/?LinkID=824704\">Microsoft's privacy statement</a>."
+downloads = "<strong>Bandroom's downloads.</strong> When you set it up, Bandroom downloads what it needs to listen from Hugging Face and GitHub, and the reader of printed music if you ask for it. As with any download, those services see your computer's internet address. No music, recording or score goes to them. For the band writer Bandroom uses an access key from your own Hugging Face account, so Hugging Face knows the download is yours; the key stays in your computer's Keychain or Credential Manager."
 get = "<strong>Get Bandroom</strong> opens the download page on GitHub in your browser."
 
 [backup]
 title = "Your phone's own backup."
-android = "On Android, if backup to Google is on, the phone can copy the apps' scores and settings into your own Google account, as it does for other apps. Your recordings and the pairing with your computer are left out."
+android = "On Android, your phone's own backup to your Google account, if you have it on, can include the scores you saved and the apps' settings, as it does for other apps. Your recordings, the pairing with your computer and its address are left out."
 apple = "On an iPhone or iPad, your iCloud or computer backup includes the app's data, as it does for other apps. Both backups are yours, in your own account; we never see them."
 
 [remove]

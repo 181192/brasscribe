@@ -8,7 +8,7 @@ lead = "Brasscribe og Fretscribe skriver ned musikken du spiller. Det du spiller
 [never]
 title = "Dette gjør appene aldri."
 account = "<strong>Ingen konto.</strong> Du registrerer deg aldri og logger aldri inn."
-tracking = "<strong>Ingen analyse, ingen krasjrapporter, ingen reklame.</strong> Appene følger ikke med på hva du gjør i dem."
+tracking = "<strong>Ingen analyse, ingen krasjrapporter, ingen reklame.</strong> Appene følger ikke med på hva du gjør i dem, og sender ingen bruksdata til noen."
 server = "<strong>Ingenting sendes til oss.</strong> Vi har ingen tjener, og appene kontakter aldri en av våre."
 
 [music]
@@ -20,13 +20,12 @@ asks = "Appene ber om mikrofonen bare når du tar opp, og om kameraet bare når 
 
 [internet]
 title = "Dette går ut på internett."
-downloads = "<strong>Det Bandroom laster ned.</strong> Når du setter det opp, laster Bandroom ned det det trenger for å lytte, og noteleseren hvis du ber om den. Det er bare nedlastinger: ingenting av musikken din sendes. Til bandskriveren bruker det en tilgangsnøkkel fra din egen Hugging Face-konto, som blir i nøkkelringen eller Legitimasjonsbehandling på datamaskinen."
-onnx = "<strong>Microsofts ONNX Runtime.</strong> Brasscribe for Android og for Windows, og Bandroom på datamaskinen, kjører lyttemodellene sine med ONNX Runtime, som Microsoft lager. Slik Microsoft bygger den, sender den data om sin egen bruk til Microsoft, med en identifikator for enheten; på Android leser den også enhetens ID, produsent og modell. Den sender aldri et opptak, et bilde eller et partitur. Fretscribe på telefon og Brasscribe på iPhone, iPad og Mac har den ikke. <a href=\"https://go.microsoft.com/fwlink/?LinkID=824704\">Microsofts personvernerklæring</a>."
+downloads = "<strong>Det Bandroom laster ned.</strong> Når du setter det opp, laster Bandroom ned det det trenger for å lytte, fra Hugging Face og GitHub, og noteleseren hvis du ber om den. Som ved enhver nedlasting ser disse tjenestene internettadressen til datamaskinen din. Ingen musikk, opptak eller partitur går til dem. Til bandskriveren bruker Bandroom en tilgangsnøkkel fra din egen Hugging Face-konto, så Hugging Face vet at nedlastingen er din; nøkkelen blir i nøkkelringen eller Legitimasjonsbehandling på datamaskinen."
 get = "<strong>Last ned Bandroom</strong> åpner nedlastingssiden på GitHub i nettleseren."
 
 [backup]
 title = "Telefonens egen sikkerhetskopi."
-android = "På Android kan telefonen, hvis sikkerhetskopi til Google er på, kopiere partiturene og innstillingene i appene til din egen Google-konto, slik den gjør for andre apper. Opptakene og koblingen til datamaskinen er holdt utenfor."
+android = "På Android kan telefonens egen sikkerhetskopi til Google-kontoen din, hvis du har den på, ta med partiturene du har lagret og innstillingene i appene, slik den gjør for andre apper. Opptakene, koblingen til datamaskinen og adressen dens er holdt utenfor."
 apple = "På iPhone og iPad tar sikkerhetskopien i iCloud eller på datamaskinen med seg appens data, slik den gjør for andre apper. Begge sikkerhetskopiene er dine, i din egen konto; vi ser dem aldri."
 
 [remove]
