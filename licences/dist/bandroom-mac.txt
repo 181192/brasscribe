@@ -33,7 +33,7 @@ Licence: MPL-2.0
 
 Copyright (c) 2025, Daniel Kuschny and Contributors. All rights reserved.
 
-Unmodified package. The source is at the address above.
+Unmodified package. The source is at the address above. From 1.9.0 alphaTab draws a small "alphaTab.net" mark above the first system of a score of more than 10 bars or 2 tracks, and asks that it stays visible: nothing in the apps hides or covers it.
 
 ========================================
 

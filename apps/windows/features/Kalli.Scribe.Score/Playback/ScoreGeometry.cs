@@ -77,6 +77,30 @@ public static class ScoreGeometry
         return boxes;
     }
 
+    /// <summary>Width of alphaTab's "alphaTab.net" mark in layout units at scale 1, with a margin.</summary>
+    private const double AttributionWidth = 78;
+
+    /// <summary>
+    /// Where alphaTab 1.9 draws its "♪ alphaTab.net" mark, which must stay visible: right-aligned to the last bar of the
+    /// first system, above the top staff, at some height in the band above that staff (it rests on whatever alphaTab
+    /// placed there, which an overlay of ours is not part of). The box takes in that whole band, so an overlay that keeps
+    /// out of it never covers the mark. Null when the score is too short to carry the mark (more than 10 bars or more
+    /// than 2 tracks do).
+    /// </summary>
+    public static Box? AttributionArea(Score score, BoundsLookup bounds, int tracksShown, double scale)
+    {
+        if (score.MasterBars.Count <= 10 && tracksShown <= 2) return null;
+        if (bounds.StaffSystems.Count == 0) return null;
+        var system = bounds.StaffSystems[0];
+        if (system.Bars.Count == 0) return null;
+        var last = system.Bars[system.Bars.Count - 1];
+        double top = system.VisualBounds.Y;
+        double staffTop = last.Bars.Count > 0 ? last.Bars[0].RealBounds.Y : top;
+        double right = last.RealBounds.X + last.RealBounds.W;
+        double width = AttributionWidth * scale;
+        return new Box(right - width, top, width, Math.Max(0, staffTop - top));
+    }
+
     /// <summary>Playback cursor at a MIDI tick: a line at the beat and the bar it is in.</summary>
     public static (Box Beat, Box Bar)? Cursor(MidiTickLookup lookup, BoundsLookup bounds, IEnumerable<int> tracks, double tick)
     {

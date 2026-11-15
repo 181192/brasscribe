@@ -76,6 +76,12 @@ public static class ScoreOverlay
 
         /// <summary>The selected note and the staff it is on (usability review 3, P2-A).</summary>
         public (Box Note, Box Staff)? Selection { get; init; }
+
+        /// <summary>
+        /// Where alphaTab draws its "alphaTab.net" mark (<see cref="ScoreGeometry.AttributionArea"/>). Nothing planned here
+        /// is drawn over it: shapes are cut around it and text and marks stand above it.
+        /// </summary>
+        public Box? Attribution { get; init; }
     }
 
     public static IReadOnlyList<OverlayItem> Build(Input input)
@@ -134,7 +140,41 @@ public static class ScoreOverlay
             var kind = head.Level == Certainty.VeryUncertain ? OverlayKind.VeryUncertainMark : OverlayKind.UncertainMark;
             items.Add(new(kind, new Box(cx - size / 2, bottom - size, size, size), "?"));
         }
-        return items;
+        return input.Attribution is { } mark ? KeepClear(items, mark) : items;
+    }
+
+    /// <summary>
+    /// alphaTab's "alphaTab.net" mark must stay visible, so nothing is drawn over its area: a shape (tint, outline,
+    /// bracket, line) is cut around it, and a mark or a label that would stand on it is lifted to just above it, which
+    /// is above the system line and so clear of the mark.
+    /// </summary>
+    public static List<OverlayItem> KeepClear(IEnumerable<OverlayItem> items, Box hole)
+    {
+        var kept = new List<OverlayItem>();
+        foreach (var item in items)
+        {
+            if (!Overlaps(item.Box, hole)) { kept.Add(item); continue; }
+            if (item.Kind is OverlayKind.UncertainMark or OverlayKind.VeryUncertainMark or OverlayKind.LoopLabel or OverlayKind.AdlibText)
+                kept.Add(item with { Box = item.Box with { Y = hole.Y - item.Box.H - 2 } });
+            else
+                foreach (var piece in Without(item.Box, hole)) kept.Add(item with { Box = piece });
+        }
+        return kept;
+    }
+
+    /// <summary>What is left of a box when a hole is cut out of it: up to four boxes around the hole.</summary>
+    internal static IEnumerable<Box> Without(Box box, Box hole)
+    {
+        double right = box.X + box.W, bottom = box.Y + box.H, holeRight = hole.X + hole.W, holeBottom = hole.Y + hole.H;
+        // A line has no width or no height; its pieces keep that.
+        bool Keep(Box b) => (b.W > 0.5 || box.W == 0) && (b.H > 0.5 || box.H == 0);
+        var pieces = new List<Box>();
+        if (box.Y < hole.Y) pieces.Add(new Box(box.X, box.Y, box.W, hole.Y - box.Y));
+        if (bottom > holeBottom) pieces.Add(new Box(box.X, holeBottom, box.W, bottom - holeBottom));
+        double y0 = Math.Max(box.Y, hole.Y), y1 = Math.Min(bottom, holeBottom);
+        if (box.X < hole.X) pieces.Add(new Box(box.X, y0, hole.X - box.X, y1 - y0));
+        if (right > holeRight) pieces.Add(new Box(holeRight, y0, right - holeRight, y1 - y0));
+        return pieces.Where(Keep);
     }
 
     /// <summary>
@@ -142,12 +182,12 @@ public static class ScoreOverlay
     /// outside the repeated bars and never in contrast themes. Drawn over the ad lib tint, the opaque
     /// cursor tint replaces it in that bar.
     /// </summary>
-    public static IReadOnlyList<OverlayItem> Cursor(Box? beat, Box? bar, IReadOnlyList<Box> loop, bool highContrast)
+    public static IReadOnlyList<OverlayItem> Cursor(Box? beat, Box? bar, IReadOnlyList<Box> loop, bool highContrast, Box? attribution = null)
     {
         var items = new List<OverlayItem>(2);
         if (bar is { } b && !highContrast && !loop.Any(l => Overlaps(l, b))) items.Add(new(OverlayKind.CursorTint, b));
         if (beat is { } line) items.Add(new(OverlayKind.CursorLine, line with { W = CursorWidth }));
-        return items;
+        return attribution is { } mark ? KeepClear(items, mark) : items;
     }
 
     /// <summary>The selected note as a tint column over the staff's height and a caret below it.</summary>

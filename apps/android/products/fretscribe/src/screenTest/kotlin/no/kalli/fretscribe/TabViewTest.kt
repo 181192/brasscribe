@@ -726,6 +726,38 @@ class TabViewTest : TabScreenTest() {
         shotOf("tab-long-song-end")
     }
 
+    @Test
+    fun theEngravedPageIsAsTallAsItsMusic() {
+        // alphaTab 1.9.0's Android view lays the page out one system short: its render surface takes the top of the
+        // last system as the page's height, so the last system is cut off. This waits for alphaTab's own signal that
+        // the engraving is finished, then fails on the height itself.
+        val xml = asset("bass-line-marks/tab.musicxml")
+        val index = TabIndex.parse(xml)
+        lateinit var tab: TabView
+        var finished = false
+        rule.runOnUiThread {
+            tab = TabView(rule.activity, TabView.BASE_SCALE, tabPalette(ScribeLightColors, own(ScribeLightColors)), true)
+            tab.view.api.postRenderFinished.on { finished = true }
+            rule.activity.setContentView(FrameLayout(rule.activity).apply {
+                addView(androidx.compose.ui.platform.ComposeView(rule.activity).apply { setContent { } }, 1, 1)
+                addView(tab.view)
+            })
+            tab.show(xml, TabLayout.TAB, index, TabMarks.of(index, null))
+        }
+        waitUntil(30_000) { finished }
+        // alphaTab hands its surface the pieces of the page after that signal: give them a moment to arrive.
+        settle()
+        rule.runOnUiThread {
+            val density = rule.activity.resources.displayMetrics.density
+            val systems = tab.view.api.boundsLookup!!.staffSystems
+            assertTrue("the music has more than one system", systems.length.toInt() > 1)
+            val last = systems[systems.length.toInt() - 1].visualBounds
+            val music = Math.ceil((last.y + last.h) * density).toInt()
+            val page = tab.view.findViewById<android.view.View>(net.alphatab.R.id.renderSurface).height
+            assertTrue("the page ($page px) reaches the end of the music ($music px)", page >= music)
+        }
+    }
+
     /** The ink of the first numeral 0 of [tab]'s first bar, as a box in pixels, with the size its font was set at. */
     private fun firstZero(tab: TabView): Pair<Rect, Float> {
         waitUntil(30_000) { tab.engraving.value != null }

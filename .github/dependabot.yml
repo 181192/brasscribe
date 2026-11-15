@@ -38,6 +38,11 @@ updates:
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
     ignore:
+      # alphaTab's 1.9 release notes say a later release moves from MPL-2.0 to a licence with an attribution clause.
+      # 1.9.x is the last line read and confirmed MPL-2.0; read the licence of a newer release first
+      # (scripts/licences.py asks for it), then raise this.
+      - dependency-name: "@coderline/alphatab"
+        versions: [">=1.10.0"]
       # openapi-typescript (gen:api) needs TypeScript 5; move with it.
       - dependency-name: typescript
         update-types: [version-update:semver-major]
@@ -52,6 +57,18 @@ updates:
       minor-and-patch: { update-types: [minor, patch] }
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
+    ignore:
+      # alphaSkia is alphaTab's drawing backend and follows alphaTab's own dependency (alphaTab 1.9 needs
+      # 3.5). Nothing published supports 4.0, so leave the major to alphaTab's releases.
+      - dependency-name: "net.alphatab:alphaSkia*"
+        update-types: [version-update:semver-major]
+      # alphaTab's 1.9 release notes say a later release moves from MPL-2.0 to a licence with an attribution clause.
+      # 1.9.x is the last line read and confirmed MPL-2.0; read the licence of a newer release first
+      # (scripts/licences.py asks for it), then raise this.
+      # Android stays on alphaTab 1.8.4 while 1.9.0's Android view lays the page out one system short
+      # (apps/android/README.md, Known limits); 1.9.0 and later are left until that is fixed upstream.
+      - dependency-name: "net.alphatab:alphaTab"
+        versions: [">=1.9.0"]
 
   - package-ecosystem: nuget
     directories: [/apps/windows, /apps/bandroom/windows, /core/dotnet]
@@ -61,6 +78,15 @@ updates:
       security: { applies-to: security-updates, patterns: ["*"] }
     commit-message: { prefix: build, include: scope }
     ignore:
+      # alphaSkia is alphaTab's drawing backend and follows alphaTab's own dependency (alphaTab 1.9 needs
+      # 3.5). Nothing published supports 4.0, so leave the major to alphaTab's releases.
+      - dependency-name: "AlphaSkia*"
+        update-types: [version-update:semver-major]
+      # alphaTab's 1.9 release notes say a later release moves from MPL-2.0 to a licence with an attribution clause.
+      # 1.9.x is the last line read and confirmed MPL-2.0; read the licence of a newer release first
+      # (scripts/licences.py asks for it), then raise this.
+      - dependency-name: "AlphaTab"
+        versions: [">=1.10.0"]
       # Play for Windows needs Microsoft.ML.OnnxRuntime.DirectML, whose last release is 1.24.4; the
       # managed API, the native runtime and DirectML share one version (Directory.Packages.props).
       # Raise all three together once a newer DirectML build exists.

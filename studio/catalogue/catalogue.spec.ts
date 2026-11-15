@@ -5,7 +5,7 @@
 import { expect, test } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
+import { attribution, axe, clipped, keyboard, reflow, textSpacing, type Finding } from "./checks";
 import { isKnown, stale } from "./known";
 import { openView, stableScreenshot, steady } from "./open";
 import { VARIANTS, VIEWS } from "./views";
@@ -24,7 +24,7 @@ for (const variant of VARIANTS) {
         await stableScreenshot(page, join(shots, `${view.name}--${variant.name}.png`));
       }
       expect(opened.problems, "errors and requests without a fixture").toEqual([]);
-      const findings: Finding[] = [...await axe(page), ...await clipped(page)];
+      const findings: Finding[] = [...await axe(page), ...await clipped(page), ...await attribution(page)];
       if (variant.reflow) findings.push(...await reflow(page));
       if (variant.keyboard) findings.push(...await keyboard(page, view.walkFrom));
       if (variant.spacing) findings.push(...await textSpacing(page));

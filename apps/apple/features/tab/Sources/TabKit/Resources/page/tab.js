@@ -16,9 +16,19 @@
   let barBoxes = new Map(); // bar index -> {x, y, w, h}
   let marks = []; // what the app marks: [{staff, bar, tick, notes: [{string, fret, pitchClass, doubt}]}]
   let markStaff = 0; // the staff the marks and the cursor stand on
+  let token = null; // the app's name for the page last shown; every answer carries it, so the app knows which page an answer is for
+  let attribution = null; // {x, y, w, h}: where alphaTab's own "alphaTab.net" mark can be; nothing of ours is drawn over it
   let placed = []; // [{mark: index into marks, beat, doubtful: [Note]}]
   const MARK_SPACE = ' '; // the blank text of a marked beat: alphaTab keeps a band above the staff for it
   const MARK_LINE_SPACES = 1.4; // a mark's height in tab line spaces
+  // The height of the blank text that keeps the band for a mark. A little more than the mark: alphaTab 1.9 rests its own
+  // "alphaTab.net" mark above that text. How tall alphaTab takes a line of text to be depends on the font it finds, so the
+  // page measures where the mark was drawn and, while a mark of the app's stands under it, makes the text taller and
+  // engraves again (publish).
+  const MARK_TEXT_SPACES = 1.6;
+  const MARK_TEXT_STEP = 0.4; // what the text grows by while a mark is still under alphaTab's own
+  const MARK_TEXT_MAX = 4.4;
+  let markText = MARK_TEXT_SPACES;
 
   window.onerror = (msg, src, line) => post({ kind: 'error', message: String(msg) + ' (' + src + ':' + line + ')' });
 
@@ -26,6 +36,15 @@
     const e = at.NotationElement;
     return [e.ScoreTitle, e.ScoreSubTitle, e.ScoreArtist, e.ScoreAlbum, e.ScoreWords, e.ScoreMusic,
       e.ScoreWordsAndMusic, e.ScoreCopyright, e.TrackNames, e.GuitarTuning, e.EffectTempo];
+  }
+
+  // The blank text of a marked beat, at the height markText says (in tab line spaces).
+  function markFont(s) {
+    const r = s.display.resources;
+    const text = r.elementFonts.get(at.NotationElement.EffectText);
+    if (!text) return;
+    const family = text.families ? text.families[0] : text.family;
+    r.elementFonts.set(at.NotationElement.EffectText, new at.model.Font(family, markText * lineSpacing(s), text.style, text.weight));
   }
 
   function settings(opts) {
@@ -39,10 +58,12 @@
     s.display.layoutMode = at.LayoutMode.Page;
     s.display.scale = opts.scale || 1;
     s.display.stretchForce = 0.6;
-    s.display.justifyLastSystem = false;
+    s.display.lastSystemFillThreshold = 1;
     s.player.playerMode = at.PlayerMode.Disabled;
     s.player.enableCursor = false;
-    s.player.enableUserInteraction = false;
+    s.player.enableSeekToClick = false;
+    s.player.enablePlaybackRangeSelection = false;
+    s.player.resetPlaybackRangeOnClick = false;
     s.player.scrollMode = at.ScrollMode.Off;
     s.notation.rhythmMode = at.TabRhythmMode.ShowWithBars;
     for (const e of hidden()) s.notation.elements.set(e, false);
@@ -51,11 +72,7 @@
     // as a mark, the band is the room the marks need, on the lines that have marks and on no others. The band is lifted
     // by a bar number, so a mark stands above the bar's number.
     try {
-      const text = r.elementFonts.get(at.NotationElement.EffectText);
-      if (text) {
-        const family = text.families ? text.families[0] : text.family;
-        r.elementFonts.set(at.NotationElement.EffectText, new at.model.Font(family, MARK_LINE_SPACES * lineSpacing(s), text.style, text.weight));
-      }
+      markFont(s);
       s.display.effectBandPaddingBottom = s.display.effectBandPaddingBottom + r.barNumberFont.size;
     } catch (e) { /* an alphaTab without these keeps its own band */ }
     applyPalette(s, opts.palette);
@@ -178,10 +195,50 @@
     return out;
   }
 
+  // alphaTab 1.9 draws "♪ alphaTab.net" in a score of more than 10 bars, and asks that it stays visible: right-aligned to the
+  // last bar of the first system, above everything alphaTab placed over the top staff (the app's marks are in that band as
+  // blank text, so it rests above them). It is at a height alphaTab does not report, so the zone is the band above the staff.
+  function attributionZone(lookup) {
+    if (score.masterBars.length <= 10 && api.tracks.length <= 2) return null;
+    const sys = lookup.staffSystems[0];
+    if (!sys || sys.bars.length === 0) return null;
+    const last = sys.bars[sys.bars.length - 1];
+    const top = sys.visualBounds.y;
+    const staffTop = last.bars.length > 0 ? last.bars[0].realBounds.y : top;
+    const w = 78 * (api.settings.display.scale || 1);
+    return { x: last.realBounds.x + last.realBounds.w - w, y: top, w, h: Math.max(0, staffTop - top) };
+  }
+
+  // Where alphaTab drew its "alphaTab.net" mark, in the page's pixels: the curved outlines of the one path that holds it (the
+  // staff lines it rests on are straight). Null when it is not in the engraving.
+  function drawnAttribution() {
+    const origin = el.getBoundingClientRect();
+    for (const path of el.querySelectorAll('svg path')) {
+      const d = path.getAttribute('d') || '';
+      if (!/[Cc]/.test(d) || path.getBBox().width < 40) continue;
+      const probe = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      probe.setAttribute('d', d.split(/(?=M)/).filter((part) => /[Cc]/.test(part)).join(''));
+      path.parentNode.appendChild(probe);
+      const r = probe.getBoundingClientRect();
+      probe.remove();
+      if (r.width > 0 && r.height > 0) return { x: r.left - origin.left - 1, y: r.top - origin.top - 1, w: r.width + 2, h: r.height + 2 }; // (a pixel of margin)
+    }
+    return null;
+  }
+
+  // The vertical extent [top, top + height] of a cursor box at x..x+w, kept out of the attribution's zone.
+  function clearOfAttribution(x, w, top, height) {
+    const z = attribution;
+    if (!z || x >= z.x + z.w || x + w <= z.x || top >= z.y + z.h || top + height <= z.y) return { top, height };
+    const below = z.y + z.h;
+    return { top: below, height: Math.max(0, top + height - below) };
+  }
+
   function measure() {
     beats = new Map(); barBoxes = new Map();
     const lookup = api.boundsLookup;
     if (!lookup) return null;
+    attribution = drawnAttribution() || attributionZone(lookup);
     const bars = [];
     for (const sys of lookup.staffSystems) for (const mb of sys.bars) {
       const v = mb.visualBounds;
@@ -214,11 +271,21 @@
   // Tells the app of the engraving. alphaTab says it has finished before every bar has its bounds: until the page has
   // its bars, this looks again on the next frames, for about a second.
   function publish(tries) {
+    // Engraving the page shown before (new settings are applied to it first) is not an answer for the page now shown.
+    if (api.score !== score) return;
     const m = measure();
     if ((!m || m.bars.length === 0) && tries < 60) { requestAnimationFrame(() => publish(tries + 1)); return; }
     if (!m) { post({ kind: 'error', message: 'the page has no bounds' }); return; }
+    // A mark of the app's under alphaTab's own: the text that keeps its band grows, and the page is engraved again.
+    const z = attribution;
+    if (z && markText < MARK_TEXT_MAX && m.marks.some((b) => b.x - b.w / 2 < z.x + z.w && z.x < b.x + b.w / 2 && b.top < z.y + z.h && z.y < b.bottom)) {
+      markText += MARK_TEXT_STEP;
+      markFont(api.settings);
+      setTimeout(() => { api.updateSettings(); api.renderScore(score, [0]); }, 0);
+      return;
+    }
     document.getElementById('page').style.height = m.height + 'px';
-    post({ kind: 'rendered', height: m.height, width: el.clientWidth, bars: m.bars, lines: m.lines, marks: m.marks, ms: Math.round(performance.now() - started),
+    post({ kind: 'rendered', token, height: m.height, width: el.clientWidth, bars: m.bars, lines: m.lines, marks: m.marks, ms: Math.round(performance.now() - started),
       fonts: [...document.fonts].map((f) => f.family + ':' + f.status) });
   }
 
@@ -230,6 +297,8 @@
       doubtful = new Set(opts.doubtful || []);
       marks = opts.marks || [];
       markStaff = opts.markStaff || 0;
+      token = opts.token || null;
+      markText = opts.markText || MARK_TEXT_SPACES; // (opts.markText: the starting height, for the tests)
       if (!api) {
         api = new at.AlphaTabApi(el, settings(opts));
         api.error.on((e) => post({ kind: 'error', message: String(e && e.message || e) }));
@@ -237,12 +306,15 @@
       } else {
         // every call is a new page: its size and colours too, as its staves (below)
         api.settings.display.scale = opts.scale || 1;
+        markFont(api.settings);
         applyPalette(api.settings, opts.palette);
         api.updateSettings();
       }
       started = performance.now();
       const bytes = Uint8Array.from(atob(song), (c) => c.charCodeAt(0));
       score = at.importer.ScoreLoader.loadScoreFromBytes(bytes, api.settings);
+      // alphaTab 1.9 numbers only the first bar of each system; the marks stand above the numbers, so every bar has one.
+      for (const config of [score.stylesheet.scoreConfig, score.stylesheet.tabConfig, score.stylesheet.slashConfig, score.stylesheet.numberedConfig]) config.barNumber = at.model.BarNumberDisplay.AllBars;
       for (const st of score.tracks[0].staves) {
         const tabStaff = st.isStringed;
         st.showTablature = tabStaff;
@@ -270,8 +342,10 @@
       if (!box || !stops || stops.length === 0) return null;
       let stop = stops[0];
       for (const s of stops) if (s.tick <= tick) stop = s;
-      cursor.style.cssText = 'display:block;left:' + stop.x + 'px;top:' + box.y + 'px;height:' + box.h + 'px;background:' + palette.cursor;
-      beatWash.style.cssText = 'display:block;left:' + (stop.x - stop.w / 2) + 'px;top:' + box.y + 'px;width:' + stop.w + 'px;height:' + box.h + 'px;background:' + (palette.cursorTint || 'transparent');
+      const line = clearOfAttribution(stop.x, 2, box.y, box.h);
+      const wash = clearOfAttribution(stop.x - stop.w / 2, stop.w, box.y, box.h);
+      cursor.style.cssText = 'display:block;left:' + stop.x + 'px;top:' + line.top + 'px;height:' + line.height + 'px;background:' + palette.cursor;
+      beatWash.style.cssText = 'display:block;left:' + (stop.x - stop.w / 2) + 'px;top:' + wash.top + 'px;width:' + stop.w + 'px;height:' + wash.height + 'px;background:' + (palette.cursorTint || 'transparent');
       return { x: stop.x, y: box.y, h: box.h };
     },
   };

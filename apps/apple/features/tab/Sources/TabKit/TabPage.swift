@@ -212,9 +212,13 @@ public final class TabPage: NSObject {
         defer { endTurn() }
         struct Options: Encodable {
             let scale: Double; let palette: TabPalette; let staff: String; let doubtful: [String]; let marks: [TabMarkSpot]; let markStaff: Int
+            let token: String
         }
+        // Every answer of the page says which show it is for: one still on its way from the page shown before is not this one's.
+        let showID = UUID().uuidString
         let opts = String(decoding: try JSONEncoder().encode(Options(scale: scale, palette: palette, staff: staff, doubtful: doubtful,
-                                                                     marks: marks, markStaff: markStaff)), as: UTF8.self)
+                                                                     marks: marks, markStaff: markStaff, token: showID)), as: UTF8.self)
+        shown = showID
         return try await withCheckedThrowingContinuation { c in
             replace(with: c)
             webView.evaluateJavaScript("tab.show('\(musicXML.base64EncodedString())', \(opts)); 0") { _, error in
@@ -255,6 +259,9 @@ public final class TabPage: NSObject {
         waiting = c
     }
 
+    /// The show the page is on, as the page names it in its answers.
+    private var shown: String?
+
     private func finish(_ result: Result<TabEngraving, Error>) {
         let c = waiting
         waiting = nil
@@ -290,6 +297,7 @@ public final class TabPage: NSObject {
                                  milliseconds: m["ms"] as? Int ?? 0, resources: assets.requested, fonts: m["fonts"] as? [String] ?? [])
             engraving = e
             onEngraving?(e)
+            if let answered = m["token"] as? String, let shown, answered != shown { return }
             finish(.success(e))
         default:
             break

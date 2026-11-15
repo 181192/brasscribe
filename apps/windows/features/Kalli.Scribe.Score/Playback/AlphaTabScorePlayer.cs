@@ -137,7 +137,18 @@ public sealed class AlphaTabScorePlayer : IScorePlayer
         var prepared = AlphaTabMusicXml.Prepare(musicXml);
         var score = ScoreLoader.LoadScoreFromBytes(new Uint8Array(prepared.MusicXml), settings);
         AlphaTabMusicXml.ApplyTrills(score, prepared.Trills);
+        NumberEveryBar(score);
         return score;
+    }
+
+    /// <summary>alphaTab 1.9 numbers only the first bar of each system; a player finds a bar by its number, so every bar has one.</summary>
+    private static void NumberEveryBar(Score score)
+    {
+        var all = BarNumberDisplay.AllBars;
+        score.Stylesheet.ScoreConfig.BarNumber = all;
+        score.Stylesheet.TabConfig.BarNumber = all;
+        score.Stylesheet.SlashConfig.BarNumber = all;
+        score.Stylesheet.NumberedConfig.BarNumber = all;
     }
 
     public void LoadSoundFont(byte[] soundFont, bool append = false)

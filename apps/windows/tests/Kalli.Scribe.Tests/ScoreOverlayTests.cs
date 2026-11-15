@@ -244,6 +244,90 @@ public class ScoreOverlayTests(ITestOutputHelper log)
         log.WriteLine($"previews in {dir}");
     }
 
+    private static bool Covers(Box a, Box b) =>
+        a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H;
+
+    /// <summary>
+    /// alphaTab's "alphaTab.net" mark must stay visible. Whatever the loop, the cursor, the groups and the "?" marks are,
+    /// nothing planned is drawn over its area.
+    /// </summary>
+    [Fact]
+    public void Nothing_is_drawn_over_the_attribution()
+    {
+        var area = new Box(300, 10, 78, 40);
+        // A loop over the whole first line, a bar tint and a cursor inside the area, "?" marks in and beside it, a group
+        // bracket across it, and an ad lib region over it.
+        var loopBox = new Box(0, 10, 378, 130);
+        var heads = new List<UncertainHead>
+        {
+            new(new Box(320, 60, 10, 8), Certainty.Uncertain, 50),
+            new(new Box(340, 62, 10, 8), Certainty.VeryUncertain, 50),
+            new(new Box(100, 60, 10, 8), Certainty.Uncertain, 50),
+        };
+        var input = new ScoreOverlay.Input(heads, [loopBox], "Repeat bars 1–4", [new AdlibRegion([new Box(250, 10, 128, 130)], "ad lib.")],
+            new Box(330, 10, 3, 130), new Box(250, 10, 128, 130), false)
+        {
+            Groups = [new Box(310, 20, 60, 100)],
+            Selection = (new Box(335, 55, 10, 8), new Box(300, 50, 78, 40)),
+            Attribution = area,
+        };
+        var items = ScoreOverlay.Build(input).Concat(ScoreOverlay.Cursor(new Box(330, 10, 3, 130), new Box(250, 10, 128, 130), [], false, area)).ToList();
+        Assert.NotEmpty(items);
+        Assert.DoesNotContain(items, i => Covers(i.Box, area));
+        // Marks and labels are kept (lifted), not dropped; the "?" of the head beside the area stays where it was.
+        Assert.Equal(3, items.Count(i => i.Kind is OverlayKind.UncertainMark or OverlayKind.VeryUncertainMark));
+        Assert.Equal(1, items.Count(i => i.Kind == OverlayKind.LoopLabel));
+        // Cutting leaves the rest of a bracket: the loop's right edge (x 375) is cut above the area's bottom, not removed.
+        Assert.Equal(2, items.Count(i => i.Kind == OverlayKind.LoopEdge));
+        Assert.Contains(items, i => i.Kind == OverlayKind.LoopEdge && i.Box.X > 370 && i.Box.Y >= area.Y + area.H);
+    }
+
+    /// <summary>An overlay that is clear of the area is left exactly as it was.</summary>
+    [Fact]
+    public void Overlays_clear_of_the_attribution_are_unchanged()
+    {
+        var plain = ScoreOverlay.Build(Input([new(Head, Certainty.Uncertain, 50)], loop: [new Box(0, 40, 90, 80)]));
+        var kept = ScoreOverlay.Build(Input([new(Head, Certainty.Uncertain, 50)], loop: [new Box(0, 40, 90, 80)]) with { Attribution = new Box(300, 10, 78, 40) });
+        Assert.Equal(plain, kept);
+    }
+
+    /// <summary>The area follows the first system's last bar and the notation scale; short scores have none.</summary>
+    [SkippableFact]
+    public void The_attribution_area_is_at_the_end_of_the_first_system()
+    {
+        var path = TestPaths.RepoFile("apps/fixtures/old-hundredth/brass-band.musicxml");
+        Skip.If(path is null, TestPaths.Missing("apps/fixtures/old-hundredth/brass-band.musicxml"));
+        using var player = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        player.LoadScore(File.ReadAllBytes(path!));
+        var score = player.Score!;
+        Assert.True(score.MasterBars.Count > 10);
+        var all = player.Tracks.Select(t => t.Index).ToList();
+        foreach (double scale in new[] { 1.0, 1.5 })
+        {
+            var result = new ScoreRenderService("skia", scale, pageLayout: true).Render(score, all, 100000);
+            var bounds = result.Bounds!;
+            var area = ScoreGeometry.AttributionArea(score, bounds, all.Count, scale);
+            Assert.NotNull(area);
+            var system = bounds.StaffSystems[0];
+            var lastBar = system.Bars[^1];
+            Assert.Equal(lastBar.RealBounds.X + lastBar.RealBounds.W, area!.Value.X + area.Value.W, 3);
+            Assert.Equal(78 * scale, area.Value.W, 3);
+            Assert.Equal(system.VisualBounds.Y, area.Value.Y, 3);
+            Assert.True(area.Value.H > 0, "the band above the top staff has room for the mark");
+            ScoreRenderService.Release(result);
+        }
+        // Ten bars on two parts or fewer carry no mark.
+        var shortXml = File.ReadAllText(TestPaths.Fixture("two-parts.musicxml"));
+        using var small = new AlphaTabScorePlayer(new BufferedSynthOutput());
+        small.LoadScore(System.Text.Encoding.UTF8.GetBytes(shortXml));
+        if (small.Score!.MasterBars.Count <= 10)
+        {
+            var r = new ScoreRenderService("skia", 1.0, pageLayout: true).Render(small.Score, small.Tracks.Select(t => t.Index).Take(2).ToList(), 100000);
+            Assert.Null(ScoreGeometry.AttributionArea(small.Score, r.Bounds!, 2, 1.0));
+            ScoreRenderService.Release(r);
+        }
+    }
+
     private static void Write(string dir, string name, byte[] png)
     {
         Assert.Equal(new byte[] { 0x89, 0x50, 0x4E, 0x47 }, png[..4]);

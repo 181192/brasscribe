@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
-export type Finding = { check: "axe" | "clipped" | "reach" | "order" | "hidden-focus" | "obscured" | "reflow" | "spacing"; what: string };
+export type Finding = { check: "axe" | "clipped" | "reach" | "order" | "hidden-focus" | "obscured" | "reflow" | "spacing" | "attribution"; what: string };
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -264,4 +264,42 @@ export async function textSpacing(page: Page): Promise<Finding[]> {
   await page.addStyleTag({ content: "* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }" });
   await page.waitForTimeout(100);
   return [...await reflow(page, "spacing"), ...await clipped(page, "spacing")];
+}
+
+/**
+ * alphaTab 1.9 draws "♪ alphaTab.net" in the engraving of a long score and asks that it stays visible: nothing of ours
+ * may cover it. The mark is the curved outlines of the one path that holds it (the staff lines it rests on are
+ * straight), so its box is read from those; each overlay (the "?" marks, alphaTab's cursor and selection) is checked
+ * against that box. A view with no mark has nothing to check.
+ */
+export async function attribution(page: Page): Promise<Finding[]> {
+  return page.evaluate(() => {
+    const surfaces = [...document.querySelectorAll(".score-surface svg, .at-surface svg")];
+    const mark: { left: number; top: number; right: number; bottom: number }[] = [];
+    for (const svg of surfaces) {
+      for (const path of svg.querySelectorAll("path")) {
+        const d = path.getAttribute("d") ?? "";
+        if (!/[Cc]/.test(d) || (path as SVGGraphicsElement).getBBox().width < 40) continue;
+        const probe = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        probe.setAttribute("d", d.split(/(?=M)/).filter((part) => /[Cc]/.test(part)).join(""));
+        probe.setAttribute("transform", path.getAttribute("transform") ?? "");
+        path.parentNode!.appendChild(probe);
+        const r = probe.getBoundingClientRect();
+        probe.remove();
+        if (r.width > 0 && r.height > 0) mark.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+      }
+    }
+    const overlays = [...document.querySelectorAll(".score-marks > *, .at-cursors *, .at-selection *")];
+    const found: { check: "attribution"; what: string }[] = [];
+    for (const el of overlays) {
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0 || getComputedStyle(el).visibility === "hidden") continue;
+      for (const m of mark) {
+        if (r.left < m.right && m.left < r.right && r.top < m.bottom && m.top < r.bottom) {
+          found.push({ check: "attribution", what: `${el.localName}${[...el.classList].map((c) => `.${c}`).join("")} covers alphaTab's mark` });
+        }
+      }
+    }
+    return found;
+  });
 }
