@@ -15,9 +15,9 @@ const origin = "http://tab-page.test";
 type Box = { left: number; top: number; right: number; bottom: number };
 const meets = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
 
-// (A start of 1.0 line spaces is a blank text too short for a mark, as a font that alphaTab takes for a short line would make it:
+// (A start of 1.0 (0.4 at scale 1.5) line spaces is a blank text too short for a mark, as a font that alphaTab takes for a short line would make it:
 // the page finds alphaTab's mark over the app's and grows the text until it is not.)
-for (const [scale, markText] of [[1, undefined], [1.5, undefined], [1, 1.0], [1.5, 1.0]] as const) test(`nothing of the tab page's or the app's is drawn over alphaTab's mark (scale ${scale}, text ${markText ?? "as shipped"})`, async ({ page }) => {
+for (const [scale, markText] of [[1, undefined], [1.5, undefined], [1, 1.0], [1.5, 0.4]] as const) test(`nothing of the tab page's or the app's is drawn over alphaTab's mark (scale ${scale}, text ${markText ?? "as shipped"})`, async ({ page }) => {
   await page.route(`${origin}/**`, (route) => {
     const path = new URL(route.request().url()).pathname;
     const file = path.startsWith("/alphatab/") ? join(alphatab, path.slice("/alphatab/".length)) : join(pageDir, path === "/" ? "index.html" : path.slice(1));
@@ -32,9 +32,12 @@ for (const [scale, markText] of [[1, undefined], [1.5, undefined], [1, 1.0], [1.
   await page.setViewportSize({ width: 390, height: 600 });
   await page.goto(`${origin}/index.html`);
   const song = readFileSync(join(repo, "apps/fixtures/bass-line-marks/tab.musicxml")).toString("base64");
-  // Marks on the notes at the far right of the first system (the fourth bar of the bass line, counted from 0: 3).
-  // (A tick is counted from the bar's start; strings from the top line.)
-  const marks = [{ tick: 0, string: 3, fret: 0 }, { tick: 960, string: 4, fret: 3 }].map((m) => ({ staff: 0, bar: 3, tick: m.tick, notes: [{ string: m.string, fret: m.fret, pitchClass: null, doubt: true }] }));
+  // Marks on the notes of the last bar of the first system: the fourth bar of the bass line (counted from 0: 3) when a line holds
+  // four, the second (1) at scale 1.5. A tick is counted from the bar's start, strings from the top line; a spot with no note
+  // in that bar is left out by the page, so both orders of the bar's two notes are given.
+  const bar = scale === 1 ? 3 : 1;
+  const spots = [{ tick: 0, string: 3, fret: 0 }, { tick: 960, string: 4, fret: 3 }, { tick: 0, string: 4, fret: 3 }, { tick: 960, string: 3, fret: 0 }];
+  const marks = spots.map((m) => ({ staff: 0, bar, tick: m.tick, notes: [{ string: m.string, fret: m.fret, pitchClass: null, doubt: true }] }));
   const palette = { ink: "#000000", string: "#555555", uncertain: "#0000ff", cursor: "#cc0000", cursorTint: "rgba(204,0,0,0.3)" };
   await page.evaluate(([s, p, m, sc, mt]) => (window as unknown as { tab: { show: (s: string, o: unknown) => void } }).tab.show(s as string, { scale: sc, palette: p, staff: "tab", doubtful: [], marks: m, markStaff: 0, markText: mt }), [song, palette, marks, scale, markText]);
   await expect.poll(() => rendered !== null, { timeout: 20_000 }).toBe(true);
