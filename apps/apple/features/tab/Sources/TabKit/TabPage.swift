@@ -295,9 +295,10 @@ public final class TabPage: NSObject {
             }
             let e = TabEngraving(height: m["height"] as? Double ?? 0, width: m["width"] as? Double ?? 0, bars: bars, lines: lines, marks: marks,
                                  milliseconds: m["ms"] as? Int ?? 0, resources: assets.requested, fonts: m["fonts"] as? [String] ?? [])
+            // An answer for a page shown before this one is not this page's: it changes nothing here.
+            if let answered = m["token"] as? String, let shown, answered != shown { return }
             engraving = e
             onEngraving?(e)
-            if let answered = m["token"] as? String, let shown, answered != shown { return }
             finish(.success(e))
         default:
             break
