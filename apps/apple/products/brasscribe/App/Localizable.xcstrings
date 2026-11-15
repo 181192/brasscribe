@@ -521,12 +521,22 @@
         }
       }
     },
-    "A PDF that is locked with a password, or damaged, can't be read, so it was left out.": {
+    "A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password.": {
       "localizations": {
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "En PDF som er låst med passord eller er skadet, kan ikke leses, og ble ikke tatt med."
+            "value": "En PDF er låst med passord, så den kan ikke leses, og ble ikke tatt med. Åpne den i en annen app, og lagre den uten passord."
+          }
+        }
+      }
+    },
+    "A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En PDF er skadet, så den kan ikke åpnes, og ble ikke tatt med. Hent den på nytt der den kom fra."
           }
         }
       }

@@ -67,7 +67,8 @@ final class PageList {
             guard let reader = try? FileHandle(forReadingFrom: url) else { return nil }
             defer { try? reader.close() }
             guard let head = try? reader.read(upToCount: 12), let format = Pages.format(of: head) else { return nil }
-            let count = format == .pdf ? Pages.pdfPages(url) ?? 1 : 1
+            var count = 1
+            if format == .pdf, case .pages(let n) = Pages.readPDF(url) { count = n }
             return Page(url: url, name: String(localized: "Sheet music"), count: count)
         }
     }
@@ -95,7 +96,7 @@ final class PageList {
     /// ready, so the screen stays live with forty large photos. A file that is no page, a PDF that cannot be opened, or
     /// one too large is left out and said; pages past `Pages.maxPages` (a PDF's every page counted) are left out.
     func add(_ urls: [URL]) async {
-        var notPages = 0, tooLarge = 0, locked = 0, over = 0
+        var notPages = 0, tooLarge = 0, locked = 0, damaged = 0, over = 0
         adding += 1
         defer { adding -= 1 }
         for url in urls {
@@ -114,13 +115,15 @@ final class PageList {
                 pages.append(Page(url: page.url, name: url.lastPathComponent, count: page.pages))
             case .failure(Pages.Refusal.tooLarge):
                 tooLarge += 1
-            case .failure(Pages.Refusal.unreadablePDF):
+            case .failure(Pages.Refusal.lockedPDF):
                 locked += 1
+            case .failure(Pages.Refusal.damagedPDF):
+                damaged += 1
             case .failure:
                 notPages += 1
             }
         }
-        status = PagesWords.added(notPages: notPages, tooLarge: tooLarge, locked: locked, over: over)
+        status = PagesWords.added(notPages: notPages, tooLarge: tooLarge, locked: locked, damaged: damaged, over: over)
         if let status { AccessibilityNotifier.announce(status) }
     }
 
@@ -222,11 +225,13 @@ enum PagesWords {
     }
 
     /// What was left out of the pages just added, or nil when nothing was.
-    static func added(notPages: Int = 0, tooLarge: Int = 0, locked: Int = 0, over: Int = 0) -> String? {
+    static func added(notPages: Int = 0, tooLarge: Int = 0, locked: Int = 0, damaged: Int = 0, over: Int = 0) -> String? {
         var said: [String] = []
         if notPages == 1 { said.append(String(localized: "One file is not a picture or a PDF, so it was left out.")) }
         if notPages > 1 { said.append(String(localized: "\(notPages) files are not pictures or PDFs, so they were left out.")) }
-        if locked > 0 { said.append(String(localized: "A PDF that is locked with a password, or damaged, can't be read, so it was left out.")) }
+        // Told apart, as on the other apps: the player can unlock the first, not the second.
+        if locked > 0 { said.append(String(localized: "A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password.")) }
+        if damaged > 0 { said.append(String(localized: "A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from.")) }
         if tooLarge > 0 { said.append(words(Pages.Refused.pageTooLarge)) }
         if over > 0 { said.append(String(localized: "At most 40 pages can be read at once, every page of a PDF counted. The rest were left out.")) }
         return said.isEmpty ? nil : said.joined(separator: " ")

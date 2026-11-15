@@ -76,7 +76,8 @@ before Read the notes sends them to `POST /v1/jobs/pages` (Brasscribe Play: prof
 opened without the lineup questions; Fretscribe: `sheet-tab` for the player's instrument, then Check the song, with no
 recording to practise with). PNG, JPEG, WebP and PDF go as they are; any other picture the system opens (an iPhone's
 HEIC) goes as an upright JPEG, its longest side at most 3000 pixels (`TranscriptionKit/Pages.swift`). A file over
-50 MB, and pages past 40, are left out on the device and said. The computer's refusals (`not_a_page`,
+50 MB, pages past 40 (every page of a PDF counted), and a PDF locked with a password or damaged (each with its own
+words, as on the other apps) are left out on the device and said. The computer's refusals (`not_a_page`,
 `page_too_large`, `too_many_pages`, `reader_missing`, `wrong_input`) and the fixed words a read that failed ends with
 (`engine/src/scribe_engine/sheet.py`) are said in the app's words; package tests hold both lists to the engine's. The
 pages in hand are kept in the app's support folder with their order (`pages.json`), so they are still there after the

@@ -106,7 +106,15 @@ struct SheetMusicTests {
         #expect(list.pages.map(\.name) == ["first.pdf", "p.png"])
         #expect(list.pageCount == 31)
         await list.add([try file("broken.pdf", Data("%PDF-1.7 and then nothing".utf8))])
-        #expect(list.status == String(localized: "A PDF that is locked with a password, or damaged, can't be read, so it was left out."))
+        #expect(list.status == String(localized: "A PDF is damaged, so it can't be opened and was left out. Get it again from where it came from."))
+        // A locked one has its own words: the player can save it without the password.
+        let locked = try file("locked.pdf", Data())
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let ctx = try #require(CGContext(locked as CFURL, mediaBox: &box,
+                                         [kCGPDFContextUserPassword: "secret", kCGPDFContextOwnerPassword: "secret"] as CFDictionary))
+        ctx.beginPDFPage(nil); ctx.endPDFPage(); ctx.closePDF()
+        await list.add([locked])
+        #expect(list.status == String(localized: "A PDF is locked with a password, so it can't be read and was left out. Open it in another app and save it without the password."))
         list.clear()
     }
 
