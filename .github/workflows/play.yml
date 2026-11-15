@@ -92,9 +92,10 @@ jobs:
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           DRY_RUN: ${{ inputs.dry_run }}
+          APP: ${{ matrix.app }}
         run: |
           dry=(); [ "$DRY_RUN" != true ] || dry=(--dry-run)
-          scripts/play-upload.sh "${dry[@]}" --track internal --cert "$CERT" --notes-en "$RUNNER_TEMP/play/notes-en-US.txt" \
+          scripts/play-upload.sh "${dry[@]}" --track internal --package "app.kalli.$APP" --cert "$CERT" --notes-en "$RUNNER_TEMP/play/notes-en-US.txt" \
             --notes-nb "$RUNNER_TEMP/play/notes-no-NO.txt" "$RUNNER_TEMP/play/$ASSET"
 
       - name: What to do now

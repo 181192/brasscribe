@@ -4,7 +4,7 @@
     .github/scripts/play-notes.py --app brasscribe|fretscribe --version X.Y.Z --language en-US|no-NO [--changelog FILE]
 
 Prints plain text of at most 500 characters (Play's limit per language): the new features and fixes of that version
-that are about the Android app (scope Android, or no scope) and do not name the other app, without links or pull
+and breaking changes that are about the Android app (scope Android, or no scope) and do not name the other app, without links or pull
 request numbers. The changelog is written in English, so the no-NO text says so in its first line. Exit 1 when the
 version has no section in the changelog.
 """
@@ -20,7 +20,7 @@ LIMIT = 500
 HEADS = {"en-US": "", "no-NO": "Nytt i denne versjonen (på engelsk):\n"}
 NOTHING = {"en-US": "Small improvements and fixes.", "no-NO": "Små forbedringer og rettelser."}
 OTHER = {"brasscribe": re.compile(r"\bFretscribe\b"), "fretscribe": re.compile(r"\b(Brasscribe|Play for Android|band)\b", re.I)}
-GROUPS = ("New features", "Fixes")
+GROUPS = ("Breaking changes", "New features", "Fixes")
 
 
 def section(changelog: str, version: str) -> str:
@@ -47,7 +47,11 @@ def items(text: str, app: str) -> list[str]:
         item = re.sub(r"\s*\(\[#\d+\]\([^)]*\)\)", "", item)  # ([#123](url))
         item = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", item)  # [text](url) -> text
         item = item.replace("**", "").replace("`", "").strip()
-        if item and not OTHER[app].search(item):
+        # A breaking change's description follows its line after a <br> (cliff.toml); in Play's plain text, a newline.
+        item = re.sub(r"\s*<br\s*/?>\s*", "\n", item)
+        item = re.sub(r"^Breaking:\s*", "", item)
+        # A breaking change is listed again under its own group: once is enough.
+        if item and not OTHER[app].search(item) and not any(o.split("\n")[0] == item.split("\n")[0] for o in out):
             out.append(item)
     return out
 
