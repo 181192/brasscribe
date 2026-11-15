@@ -493,7 +493,8 @@ jobs:
       # The tests on their own: the screen tests wait by the clock on the wall for what the app does on its other
       # threads, and lint beside them on a two-core runner would take that time from them.
       # Every module's tests when what the apps share changed; else only the changed app's (its own and the shared
-      # flow's tests, which each app runs).
+      # flow's tests, which each app runs). The device tests (androidTest) are not run here, but compiled with the
+      # debug builds, so a change that breaks them shows on its pull request.
       - name: What to check
         id: tasks
         env:
@@ -503,7 +504,7 @@ jobs:
           apps=$(jq -r '.[]' <<<"$APPS")
           tests=testDebugUnitTest builds=
           [ "$SHARED" = true ] || tests=$(for a in $apps; do printf ':products:%s:testDebugUnitTest ' "$a"; done)
-          for a in $apps; do builds+=":products:$a:lintDebug :products:$a:assembleDebug "; done
+          for a in $apps; do builds+=":products:$a:lintDebug :products:$a:assembleDebug :products:$a:compileDebugAndroidTestKotlin "; done
           echo "tests=$tests" >> "$GITHUB_OUTPUT"
           echo "builds=$builds" >> "$GITHUB_OUTPUT"
 
@@ -512,7 +513,7 @@ jobs:
           TASKS: ${{ steps.tasks.outputs.tests }}
         run: ./gradlew $TASKS -Pscribe.withoutCatalogues --stacktrace
 
-      - name: Lint and the debug builds
+      - name: Lint, the debug builds and the device tests' compile
         env:
           TASKS: ${{ steps.tasks.outputs.builds }}
         run: ./gradlew $TASKS --stacktrace

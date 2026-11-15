@@ -84,7 +84,7 @@ jobs:
 
       - name: Unit tests, lint and debug APK
         if: ${{ !inputs.release }}
-        run: ./gradlew testDebugUnitTest :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug --stacktrace
+        run: ./gradlew testDebugUnitTest :products:brasscribe:lintDebug :products:fretscribe:lintDebug assembleDebug compileDebugAndroidTestKotlin --stacktrace
 
       - uses: actions/upload-artifact@v7
         if: ${{ !inputs.release && failure() }}
