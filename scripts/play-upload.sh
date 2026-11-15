@@ -1,17 +1,24 @@
 #!/usr/bin/env bash
 # Uploads one app's signed bundle (.aab) to Google Play's internal testing track (docs/shared/dev/release.md):
 #
-#   scripts/play-upload.sh [--dry-run] --track internal --notes-en FILE --notes-nb FILE app.aab
+#   scripts/play-upload.sh [--dry-run] --track internal --cert SHA256 --notes-en FILE --notes-nb FILE app.aab
 #
 # The service account's JSON key comes from the environment, PLAY_SERVICE_ACCOUNT_JSON (its contents, not a path).
-# The package is read from the bundle. Steps (Android Publisher API v3): sign a JWT (RS256) for the service account
+# The package is read from the bundle, and the bundle must be signed with --cert alone (check-aab.py), so a wrong or
+# replaced file is refused before anything reaches Play. Steps (Android Publisher API v3): sign a JWT (RS256) for the service account
 # and trade it for an access token with the androidpublisher scope; open an edit; upload the bundle; give the internal
 # track a completed release of that version code with the notes in en-US and no-NO; commit the edit. On any failure
 # after the edit is open, the edit is deleted, so nothing half-done is left for the next run. Only `internal` is
 # accepted. --dry-run checks the bundle, the notes and the key's fields, prints what it would do and calls nothing.
 #
-# The private key is kept in shell variables only: openssl reads it from a pipe, it is never written to a file or
-# printed, and in GitHub Actions the access token and the signed JWT are masked. Needs curl, openssl and python3.
+# The private key is kept in shell variables only: the variable is taken out of the environment before any other
+# program starts, openssl reads the key from a pipe, it is never written to a file or printed, and in GitHub Actions
+# the key's lines, the signed JWT and the access token are masked. It refuses to run with xtrace on (bash -x would
+# print the key). Needs curl, openssl and python3.
+case $- in *x*) echo "play-upload: refusing to run with xtrace on (set -x or bash -x): it would print the key" >&2; exit 2 ;; esac
+# Out of the environment first: no program this script starts inherits the key.
+account=${PLAY_SERVICE_ACCOUNT_JSON:-}
+unset PLAY_SERVICE_ACCOUNT_JSON
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API="https://androidpublisher.googleapis.com"
@@ -19,13 +26,15 @@ SCOPE="https://www.googleapis.com/auth/androidpublisher"
 NOTES_LIMIT=500
 
 die() { echo "play-upload: $*" >&2; exit 1; }
+mask() { [ -z "${GITHUB_ACTIONS:-}" ] || echo "::add-mask::$1"; }
 usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
-dry=false track="" notes_en="" notes_nb="" aab=""
+dry=false track="" cert="" notes_en="" notes_nb="" aab=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry=true ;;
     --track) track=${2:-}; shift ;;
+    --cert) cert=${2:-}; shift ;;
     --notes-en) notes_en=${2:-}; shift ;;
     --notes-nb) notes_nb=${2:-}; shift ;;
     -h|--help) usage ;;
@@ -34,7 +43,7 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[[ -n $aab && -n $track && -n $notes_en && -n $notes_nb ]] || usage
+[[ -n $aab && -n $track && -n $cert && -n $notes_en && -n $notes_nb ]] || usage
 [ "$track" = internal ] || die "only the internal testing track is allowed, not '$track'"
 [ -f "$aab" ] || die "no bundle at $aab"
 for f in "$notes_en" "$notes_nb"; do
@@ -47,11 +56,13 @@ package=$("$ROOT/.github/scripts/check-aab.py" --print package "$aab") || die "c
 code=$("$ROOT/.github/scripts/check-aab.py" --print versionCode "$aab") || die "cannot read the version code of $aab"
 [[ $package =~ ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$ ]] || die "'$package' is not a package name"
 [[ $code =~ ^[0-9]+$ ]] || die "'$code' is not a version code"
+"$ROOT/.github/scripts/check-aab.py" --cert "$cert" --package "$package" "$aab" >/dev/null \
+  || die "$(basename "$aab") is not signed with the given certificate alone; nothing was uploaded"
 
 # The service account's fields. The key goes from python straight into a shell variable.
-[ -n "${PLAY_SERVICE_ACCOUNT_JSON:-}" ] || die "PLAY_SERVICE_ACCOUNT_JSON is not set"
+[ -n "$account" ] || die "PLAY_SERVICE_ACCOUNT_JSON is not set"
 field() {
-  printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" | python3 -c '
+  printf '%s' "$account" | python3 -c '
 import json, sys
 try:
     v = json.load(sys.stdin).get(sys.argv[1], "")
@@ -64,6 +75,11 @@ token_uri=$(field token_uri) || die "cannot read the service account key"
 key=$(field private_key) || die "cannot read the service account key"
 [[ -n $email && -n $key ]] || die "the service account key has no client_email or private_key"
 [[ $key == "-----BEGIN PRIVATE KEY-----"* ]] || die "the service account's private_key is not a PEM private key"
+unset account
+# GitHub masks the secret as a whole; its lines are masked too, should one ever be printed on its own.
+while IFS= read -r line; do
+  [[ -z $line || $line == -----* ]] || mask "$line"
+done < <(printf "%s\n" "$key")
 token_uri=${token_uri:-https://oauth2.googleapis.com/token}
 [[ $token_uri == https://* ]] || die "the service account's token_uri is not https"
 
@@ -73,7 +89,6 @@ if $dry; then
   exit 0
 fi
 
-mask() { [ -z "${GITHUB_ACTIONS:-}" ] || echo "::add-mask::$1"; }
 b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 
 # JWT (RS256), valid ten minutes.

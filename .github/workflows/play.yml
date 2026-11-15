@@ -54,6 +54,9 @@ jobs:
         app: ${{ fromJSON(inputs.app == 'both' && '["brasscribe","fretscribe"]' || format('["{0}"]', inputs.app)) }}
     env:
       ASSET: ${{ matrix.app == 'brasscribe' && 'brasscribe-play-android.aab' || 'fretscribe-android.aab' }}
+      # The one certificate the bundle must carry (android.yml's sign job pins the same): Brasscribe's key of
+      # app.kalli.brasscribe, and the prototypes key. A bundle signed otherwise is refused before the upload.
+      CERT: ${{ matrix.app == 'brasscribe' && '706a90189407d2a6a63486e0f496beda2d87817eeea2af79a11bb8d078d9bcfe' || '73759ffa5a9a27cc18c9f07c5418033c47481c61f3b435559e67509290c394b0' }}
     steps:
       - name: Started on a release tag
         env:
@@ -91,7 +94,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           dry=(); [ "$DRY_RUN" != true ] || dry=(--dry-run)
-          scripts/play-upload.sh "${dry[@]}" --track internal --notes-en "$RUNNER_TEMP/play/notes-en-US.txt" \
+          scripts/play-upload.sh "${dry[@]}" --track internal --cert "$CERT" --notes-en "$RUNNER_TEMP/play/notes-en-US.txt" \
             --notes-nb "$RUNNER_TEMP/play/notes-no-NO.txt" "$RUNNER_TEMP/play/$ASSET"
 
       - name: What to do now

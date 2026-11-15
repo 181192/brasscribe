@@ -200,7 +200,9 @@ needs no network.
 **Each app's first release is made by hand.** Play refuses a completed release through the API for an app that
 has never had one ("Only releases with status draft may be created on draft app"). So the first internal testing
 release of each app is created and rolled out in the Play Console, with that release's bundle from GitHub; that is
-also where Play App Signing gets the app's own key, as above. The workflow uploads from the next release on: set `PLAY_TRACK` to `internal` only once both apps have had that first release.
+also where Play App Signing gets the app's own key, as above. Brasscribe's first upload waits for the release
+that moves it to `app.kalli.brasscribe` and its new key: a bundle from before carries the old id and key, and the
+first upload fixes both for good. The workflow checks each bundle's certificate against the app's before uploading. The workflow uploads from the next release on: set `PLAY_TRACK` to `internal` only once both apps have had that first release.
 
 ## 3. Play for Mac
 

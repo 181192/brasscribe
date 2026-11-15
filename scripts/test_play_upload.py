@@ -8,8 +8,10 @@ writes (needs the Android SDK's build tools and a platform, ANDROID_HOME). The r
 
 import base64
 import importlib.util
+import shutil
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -58,6 +60,8 @@ step = ("token" if url.endswith("/token") else "delete" if m == "DELETE" else "c
         else "upload" if "/bundles" in url else "track" if "/tracks/" in url else "edit" if url.endswith("/edits") else "?")
 call["step"] = step
 with open(os.environ["FAKE_LOG"], "a") as log: log.write(json.dumps(call) + "\n")
+if "PLAY_SERVICE_ACCOUNT_JSON" in os.environ:
+    with open(os.environ["LEAK_LOG"], "a") as leaks: leaks.write("curl\n")
 if step == os.environ.get("FAKE_FAIL"):
     body, status = '{"error": {"code": 403, "message": "The caller does not have permission"}}', 403
 else:
@@ -76,6 +80,12 @@ class PlayUpload(unittest.TestCase):
         bin_.mkdir()
         (bin_ / "curl").write_text(FAKE_CURL)
         (bin_ / "curl").chmod(0o755)
+        # openssl and python3 as they are, but each notes it in LEAK_LOG when it was started with the key in its
+        # environment (so does the stand-in curl).
+        for tool in ("openssl", "python3"):
+            (bin_ / tool).write_text(f'#!/bin/sh\n[ -z "${{PLAY_SERVICE_ACCOUNT_JSON+x}}" ] || echo {tool} >> "$LEAK_LOG"\n'
+                                     f'exec "{shutil.which(tool)}" "$@"\n')
+            (bin_ / tool).chmod(0o755)
         cls.path = f"{bin_}{os.pathsep}{os.environ['PATH']}"
         # A throwaway service account key, made for this run only.
         pem = subprocess.run(["openssl", "genpkey", "-algorithm", "RSA", "-pkeyopt", "rsa_keygen_bits:2048"],
@@ -86,6 +96,9 @@ class PlayUpload(unittest.TestCase):
                                   "private_key": pem, "token_uri": "https://oauth2.example.com/token"})
         cls.pem = pem
         cls.aab = cls.bundle(cls.tmp)
+        cls.cert = cls.sign(cls.aab, cls.tmp, "release")
+        (cls.tmp / "o").mkdir()
+        cls.other = cls.sign(cls.aab.with_name("other.aab"), cls.tmp, "other", source=cls.bundle(cls.tmp / "o"))
         cls.en = cls.tmp / "notes-en.txt"
         cls.nb = cls.tmp / "notes-nb.txt"
         cls.en.write_text("• The answers in dialogs are 48 dp tall\n")
@@ -112,14 +125,39 @@ class PlayUpload(unittest.TestCase):
             z.writestr("base/dex/classes.dex", b"dex")
         return aab
 
-    def run_upload(self, *args: str, fail: str = "", code: str = "7", account: str | None = None):
+    @staticmethod
+    def sign(aab: Path, tmp: Path, alias: str, source: Path | None = None) -> str:
+        """Signs the bundle with a throwaway key made for the run; returns the certificate's SHA-256."""
+        if source:
+            shutil.copy(source, aab)
+        ks, password = tmp / f"{alias}.jks", "throwaway"
+        subprocess.run(["keytool", "-genkeypair", "-keystore", str(ks), "-storepass", password, "-alias", alias,
+                        "-keyalg", "RSA", "-keysize", "2048", "-dname", f"CN={alias}", "-validity", "2", "-noprompt"],
+                       check=True, capture_output=True)
+        subprocess.run(["jarsigner", "-keystore", str(ks), "-storepass:env", "KS_PASS", str(aab), alias],
+                       check=True, capture_output=True, env={**os.environ, "KS_PASS": password})
+        out = subprocess.run(["keytool", "-list", "-v", "-keystore", str(ks), "-storepass", password, "-alias", alias],
+                             check=True, capture_output=True, text=True).stdout
+        return re.search(r"SHA256:\s*([0-9A-F:]+)", out).group(1)
+
+    def args(self, *extra: str, aab: Path | None = None, cert: str | None = None) -> list[str]:
+        return ["--track", "internal", "--cert", cert or self.cert, "--notes-en", str(self.en), "--notes-nb", str(self.nb),
+                *extra, str(aab or self.aab)]
+
+    def run_upload(self, *args: str, fail: str = "", code: str = "7", account: str | None = None, xtrace: bool = False,
+                   actions: bool = False):
         log = Path(tempfile.mkstemp(dir=self.tmp)[1])
         work = Path(tempfile.mkdtemp(dir=self.tmp))
+        self.leaks = Path(tempfile.mkstemp(dir=self.tmp)[1])
         env = {**os.environ, "PATH": self.path, "FAKE_LOG": str(log), "FAKE_FAIL": fail, "FAKE_CODE": code,
-               "PLAY_SERVICE_ACCOUNT_JSON": self.account if account is None else account, "TMPDIR": str(work)}
+               "PLAY_SERVICE_ACCOUNT_JSON": self.account if account is None else account, "TMPDIR": str(work),
+               "LEAK_LOG": str(self.leaks)}
         env.pop("GITHUB_ACTIONS", None)
-        argv = list(args) or ["--track", "internal", "--notes-en", str(self.en), "--notes-nb", str(self.nb), str(self.aab)]
-        r = subprocess.run(["bash", str(SCRIPT), *argv], env=env, capture_output=True, text=True, cwd=work)
+        if actions:
+            env["GITHUB_ACTIONS"] = "true"
+        argv = list(args) or self.args()
+        r = subprocess.run(["bash", *(["-x"] if xtrace else []), str(SCRIPT), *argv], env=env, capture_output=True,
+                           text=True, cwd=work)
         calls = [json.loads(line) for line in log.read_text().splitlines()]
         return r, calls, work
 
@@ -204,12 +242,12 @@ class PlayUpload(unittest.TestCase):
     def test_only_the_internal_track(self):
         for track in ("production", "beta", "alpha", ""):
             with self.subTest(track):
-                r, calls, _ = self.run_upload("--track", track, "--notes-en", str(self.en), "--notes-nb", str(self.nb), str(self.aab))
+                r, calls, _ = self.run_upload("--track", track, "--cert", self.cert, "--notes-en", str(self.en), "--notes-nb", str(self.nb), str(self.aab))
                 self.assertNotEqual(r.returncode, 0)
                 self.assertEqual(calls, [])
 
     def test_a_dry_run_calls_nothing(self):
-        r, calls, _ = self.run_upload("--dry-run", "--track", "internal", "--notes-en", str(self.en), "--notes-nb", str(self.nb), str(self.aab))
+        r, calls, _ = self.run_upload(*self.args("--dry-run"))
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(calls, [])
         self.assertIn("app.example.tune, version code 7", r.stdout)
@@ -217,7 +255,7 @@ class PlayUpload(unittest.TestCase):
     def test_notes_too_long_or_a_bad_key_stop_before_any_call(self):
         long = self.tmp / "long.txt"
         long.write_text("x" * 501)
-        r, calls, _ = self.run_upload("--track", "internal", "--notes-en", str(long), "--notes-nb", str(self.nb), str(self.aab))
+        r, calls, _ = self.run_upload("--track", "internal", "--cert", self.cert, "--notes-en", str(long), "--notes-nb", str(self.nb), str(self.aab))
         self.assertNotEqual(r.returncode, 0)
         self.assertEqual(calls, [])
         for account in ("", "not json", json.dumps({"client_email": "x@example.com", "private_key": "nope"})):
@@ -226,15 +264,37 @@ class PlayUpload(unittest.TestCase):
                 self.assertNotEqual(r.returncode, 0)
                 self.assertEqual(calls, [])
 
-    def test_in_actions_the_token_and_the_jwt_are_masked(self):
-        log = Path(tempfile.mkstemp(dir=self.tmp)[1])
-        env = {**os.environ, "PATH": self.path, "FAKE_LOG": str(log), "PLAY_SERVICE_ACCOUNT_JSON": self.account,
-               "GITHUB_ACTIONS": "true"}
-        r = subprocess.run(["bash", str(SCRIPT), "--track", "internal", "--notes-en", str(self.en), "--notes-nb",
-                            str(self.nb), str(self.aab)], env=env, capture_output=True, text=True)
+    def test_in_actions_the_key_lines_the_token_and_the_jwt_are_masked(self):
+        r, _, _ = self.run_upload(actions=True)
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("::add-mask::ya29.stand-in-token", r.stdout)
-        self.assertEqual(r.stdout.count("::add-mask::"), 2)
+        masks = [line[len("::add-mask::"):] for line in r.stdout.splitlines() if line.startswith("::add-mask::")]
+        key_lines = [line for line in self.pem.splitlines() if line and not line.startswith("-----")]
+        self.assertEqual(masks[:len(key_lines)], key_lines)
+        self.assertIn("ya29.stand-in-token", masks)
+        self.assertEqual(len(masks), len(key_lines) + 2)
+
+    def test_no_program_the_script_starts_has_the_key_in_its_environment(self):
+        r, calls, _ = self.run_upload()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(calls)
+        self.assertEqual(self.leaks.read_text(), "")
+        # The guard itself works: a child started with the key in its environment is noted.
+        subprocess.run([str(self.tmp / "bin" / "python3"), "-c", "pass"], check=True,
+                       env={**os.environ, "PLAY_SERVICE_ACCOUNT_JSON": "x", "LEAK_LOG": str(self.leaks)})
+        self.assertEqual(self.leaks.read_text(), "python3\n")
+
+    def test_it_refuses_to_run_with_xtrace(self):
+        r, calls, _ = self.run_upload(xtrace=True)
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("xtrace", r.stderr)
+        self.assertNotIn(self.pem.splitlines()[1], r.stderr)
+        self.assertEqual(calls, [])
+
+    def test_a_bundle_signed_with_another_key_is_refused_before_any_call(self):
+        r, calls, _ = self.run_upload(*self.args(aab=self.aab.with_name("other.aab")))
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("not signed with the given certificate", r.stderr)
+        self.assertEqual(calls, [])
 
 
 CHANGELOG = """# Changelog
