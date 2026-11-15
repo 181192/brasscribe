@@ -4,10 +4,15 @@
 
     <!-- Media3's player asks for this for playing with the screen off; the recording only plays while the tab is on screen. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove" />
+    <!-- Fretscribe writes nothing down on the phone (OnPhone.None), so it has no draft service, and no
+         mediaProcessing foreground service for Google Play to ask about. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" tools:node="remove" />
 
     <application
         android:name=".FretscribeApplication"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.Play" />
+        android:theme="@style/Theme.Play">
+        <service android:name="no.kalli.scribe.play.DraftService" tools:node="remove" />
+    </application>
 </manifest>
