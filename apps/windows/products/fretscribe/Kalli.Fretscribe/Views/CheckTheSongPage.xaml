@@ -18,7 +18,7 @@
             </StackPanel>
             <InfoBar Severity="Informational" IsClosable="False" IsOpen="{x:Bind ViewModel.HasMissing, Mode=OneWay}"
                      Message="{x:Bind ViewModel.MissingText, Mode=OneWay}" />
-            <TextBlock x:Uid="CheckLead" Style="{StaticResource LeadStyle}" TextWrapping="Wrap"
+            <TextBlock Text="{x:Bind ViewModel.LeadText, Mode=OneWay}" Style="{StaticResource LeadStyle}" TextWrapping="Wrap"
                        Visibility="{x:Bind ViewModel.ShowsLead, Mode=OneWay}" />
             <!-- Above the rows, so it is seen: why the buttons are not there. -->
             <InfoBar Severity="Informational" IsClosable="False" IsOpen="{x:Bind ViewModel.HasNoChange, Mode=OneWay}"

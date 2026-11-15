@@ -20,8 +20,11 @@ public static class TabProfiles
     /// <summary><see cref="Tab"/> with a bass, under the id older apps sent: jobs made by them still carry it.</summary>
     public const string BassTab = "bass-tab";
 
+    /// <summary>Pages of printed music, read into a tab for one fretted instrument (engine: sheet.py).</summary>
+    public const string SheetTab = "sheet-tab";
+
     /// <summary>The profile <paramref name="id"/> names writes a tab.</summary>
-    public static bool WritesTab(string? id) => id is Tab or BassTab;
+    public static bool WritesTab(string? id) => id is Tab or BassTab or SheetTab;
 }
 
 /// <summary>

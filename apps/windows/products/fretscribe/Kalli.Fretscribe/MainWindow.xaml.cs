@@ -123,6 +123,7 @@ public sealed partial class MainWindow : Window
         TabScreen.CheckTheSong => typeof(CheckTheSongPage),
         TabScreen.Tab => typeof(TabScreenPage),
         TabScreen.Error => typeof(ErrorPage),
+        TabScreen.Pages => typeof(PagesPage),
         _ => typeof(HomePage),
     };
 
@@ -145,7 +146,7 @@ public sealed partial class MainWindow : Window
     {
         string? back = ViewModel.Screen switch
         {
-            TabScreen.WhatIsThis or TabScreen.Error or TabScreen.CheckTheSong => _s["Back_Home"],
+            TabScreen.WhatIsThis or TabScreen.Error or TabScreen.CheckTheSong or TabScreen.Pages => _s["Back_Home"],
             TabScreen.Transcribing => ViewModel.Transcription.IsRunning ? null : _s["Back_Home"],
             TabScreen.Tab => ViewModel.LastResult is not null ? _s["Back_CheckTheSong"] : _s["Back_Home"],
             TabScreen.YourInstrument when ViewModel.Settings.FirstRunDone => _s["Back"],

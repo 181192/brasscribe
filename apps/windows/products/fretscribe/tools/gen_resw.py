@@ -242,8 +242,17 @@ for key, en, nb in [("Upload", "Getting the recording ready", "Gjør opptaket kl
 prop("CheckHeading", "Text", "Check the song", "Sjekk sangen")
 prop("CheckReading", "Text", "Reading what Fretscribe heard…", "Leser det Fretscribe hørte …")
 name("CheckReadingProgress", "Reading what Fretscribe heard", "Leser det Fretscribe hørte")
-prop("CheckLead", "Text", "This is what Fretscribe heard. If something here is wrong, the frets are wrong too.",
-     "Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også.")
+add("Tab_Check_Lead", "This is what Fretscribe heard. If something here is wrong, the frets are wrong too.",
+    "Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også.")
+add("Tab_Check_Lead_Page", "This is what Fretscribe read on the page. If something here is wrong, the frets are wrong too.",
+    "Dette er det Fretscribe leste på siden. Er noe feil her, blir båndene feil også.")
+add("Tab_Check_Missing_Page", "What Fretscribe read on the page can't be shown right now. {0}", "Det Fretscribe leste på siden, kan ikke vises akkurat nå. {0}")
+add("Tab_Check_Octave_Down_Page", "Written one octave lower than on the page.", "Skrevet én oktav lavere enn på siden.")
+add("Tab_Check_Octave_TwoDown_Page", "Written two octaves lower than on the page.", "Skrevet to oktaver lavere enn på siden.")
+add("Tab_Check_Octave_Up_Page", "Written one octave higher than on the page.", "Skrevet én oktav høyere enn på siden.")
+add("Tab_Check_Octave_AsHeard_Page", "Written as it is on the page, as you chose.", "Skrevet slik det står på siden, slik du valgte.")
+add("Tab_Check_Octave_Notes_Page", "{0} notes are written an octave lower than on the page.", "{0} toner er skrevet en oktav lavere enn på siden.")
+add("Tab_Check_Octave_Notes_Page_One", "{0} note is written an octave lower than on the page.", "{0} tone er skrevet en oktav lavere enn på siden.")
 prop("CheckLater", "Text", "You can change this later.", "Du kan endre dette senere.")
 text_button("ShowTabButton", "Show the tab", "Vis tabben", "Open the tab to read and practise it", "Åpne tabben for å lese og øve på den")
 add("Tab_Check_Missing", "What Fretscribe heard can't be shown right now. {0}", "Det Fretscribe hørte kan ikke vises akkurat nå. {0}")
@@ -652,6 +661,41 @@ add("Error_Pages_DiskFull", "Your computer's disk is full. Free some space on it
 add("Error_Pages_NotRead", "Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.",
     "Noe gikk galt mens Bandroom på datamaskinen leste sidene. Prøv et skarpere og rettere bilde, eller en skanning.")
 add("Library_FromPages", "From sheet music", "Fra noter")
+
+# ---- sheet music from a picture: the pages screen and Home's way in (Views/PagesPage.xaml) ----
+name("SheetMusicButton", "Open sheet music", "Åpne noter")
+help_("SheetMusicButton", "Pictures or a PDF of printed music, read by your computer into a tab", "Bilder eller en PDF av trykte noter, som datamaskinen leser til tab")
+prop("SheetMusicTitle", "Text", "Open sheet music", "Åpne noter")
+prop("SheetMusicBody", "Text", "A picture or a PDF of the notes", "Et bilde eller en PDF av notene")
+add("Pages_Title", "Sheet music from a picture", "Noter fra et bilde")
+prop("PagesHeading", "Text", "Sheet music from a picture", "Noter fra et bilde")
+prop("PagesIntro", "Text", "Bandroom on your computer reads the printed notes and writes them as a tab for your instrument.",
+     "Bandroom på datamaskinen leser de trykte notene og skriver dem som tab for instrumentet ditt.")
+name("AddPagesButton", "Add pictures or a PDF", "Legg til bilder eller en PDF")
+help_("AddPagesButton", "PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.",
+      "PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.")
+prop("AddPagesTitle", "Text", "Add pictures or a PDF", "Legg til bilder eller en PDF")
+prop("AddPagesBody", "Text", "PNG, JPEG or WebP pictures, or PDFs. Several pages become one piece, in the order you set.",
+     "PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.")
+prop("PagesListHeading", "Text", "Pages, in the order they are read", "Sidene, i den rekkefølgen de leses")
+name("PageList", "Pages, in the order they are read", "Sidene, i den rekkefølgen de leses")
+prop("PagesOrderHint", "Text", "The pages are read in this order. Move a page to change it.", "Sidene leses i denne rekkefølgen. Flytt en side for å endre den.")
+prop("PagesNeedsComputer", "Text", "Reading sheet music needs Bandroom on your computer.", "Bandroom på datamaskinen må til for å lese noter.")
+text_button("ReadPagesButton", "Read the notes", "Les notene", "Send the pages to your computer, which reads them into a tab for your instrument",
+            "Send sidene til datamaskinen, som leser dem til tab for instrumentet ditt")
+add("Pages_Page", "Page {0}", "Side {0}")
+add("Pages_MoveUp", "Move page {0} up", "Flytt side {0} opp")
+add("Pages_MoveDown", "Move page {0} down", "Flytt side {0} ned")
+add("Pages_Remove", "Remove page {0}", "Fjern side {0}")
+add("Pages_Moved", "Page {0} is now page {1}.", "Side {0} er nå side {1}.")
+add("Pages_Removed", "Page {0} is removed.", "Side {0} er fjernet.")
+add("Pages_LeftOut_One", "One file is not a PNG, JPEG or WebP picture or a PDF, so it was left out. Save a photo from a phone as JPEG first.",
+    "Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
+add("Pages_LeftOut_Many", "{0} files are not PNG, JPEG or WebP pictures or PDFs, so they were left out. Save a photo from a phone as JPEG first.",
+    "{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.")
+add("Pages_TooMany", "At most {0} pages can be read at once. The rest were left out.", "Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.")
+add("Pages_KindLabel", "Sheet music", "Noter")
+add("Screen_Pages", "Sheet music from a picture", "Noter fra et bilde")
 
 out = Path(sys.argv[1])
 for idx, lang in ((0, "en-US"), (1, "nb-NO")):

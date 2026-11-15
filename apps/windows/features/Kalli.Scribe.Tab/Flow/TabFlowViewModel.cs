@@ -8,7 +8,7 @@ using Kalli.Scribe.ViewModels;
 namespace Kalli.Scribe.Tab;
 
 /// <summary>The screens of a tab app, in the order a player meets them.</summary>
-public enum TabScreen { FirstRun, YourInstrument, Home, WhatIsThis, Transcribing, CheckTheSong, Tab, Error }
+public enum TabScreen { FirstRun, YourInstrument, Home, WhatIsThis, Transcribing, CheckTheSong, Tab, Error, Pages }
 
 /// <summary>
 /// The flow of an app that writes tab: the first run and Your instrument, then Home (record, open a recording, the
@@ -31,8 +31,9 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     public TabFlowViewModel(Target target, StartViewModel start, TranscriptionViewModel transcription, SettingsViewModel settings,
         YourInstrumentStore instruments, PracticeModel practice, TabExportViewModel export, Func<Uri, string?, IEngineClient> engineFactory,
-        IAnnouncer announcer, IStrings strings, ScoreLibrary? library = null, KeptTakes? kept = null)
+        IAnnouncer announcer, IStrings strings, ScoreLibrary? library = null, KeptTakes? kept = null, PagesViewModel? pages = null)
     {
+        Pages = pages;
         Kept = kept;
         Export = export;
         Target = target;
@@ -89,6 +90,21 @@ public sealed partial class TabFlowViewModel : ObservableObject
             _announcer.Announce(Start.ErrorText, AnnouncementKind.Important);
         };
         WhatIsThis.Chosen += async (_, source) => await WriteDownAsync(source, audioId: null);
+        if (Pages is not null)
+        {
+            // A picture or a PDF of printed music: read into a tab for the player's instrument.
+            Start.PagesOpened += (_, paths) =>
+            {
+                Pages.Add(paths);
+                OpenPages();
+            };
+            Pages.ComputerThere = ComputerThere;
+            Settings.Connection.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ConnectionMonitor.State)) Pages.ComputerThere = ComputerThere;
+            };
+            Pages.ReadRequested += async (_, paths) => await ReadPagesAsync(paths);
+        }
         Check.WriteAgain += async (_, options) =>
         {
             if (_source is not { } source || _result is not { } result) return;
@@ -98,6 +114,21 @@ public sealed partial class TabFlowViewModel : ObservableObject
         Check.ShowTab += async (_, _) => await ShowTabAsync();
         Transcription.Completed += (_, r) =>
         {
+            if (r.FromPages)
+            {
+                // Read from pages: there is no recording to keep or to practise with, and Check the song says so.
+                _readingPages = false;
+                Pages?.Clear();
+                _result = r;
+                _source = r.Source;
+                _libraryId = null;
+                LibraryView.Keep(() => _libraryId = LibraryView.Store?.AddMade(r.Source.DisplayName, r.MusicXml, r.Composition,
+                    1, 0, 0, r.JobId, r.Evidence, fromPages: true).Id);
+                Check.FromPages = true;
+                _ = OpenCheckAsync(r.JobId);
+                return;
+            }
+            Check.FromPages = false;
             // A kept take has its tab now: it is the tab's row from here on.
             if (Kept?.Of(r.Source) is { } take) KeepSafe(() => Kept.Remove(take.Id));
             _result = r;
@@ -109,6 +140,13 @@ public sealed partial class TabFlowViewModel : ObservableObject
         };
         Transcription.FailedWith += (_, failure) =>
         {
+            if (_readingPages && failure == TranscriptionFailure.Failed)
+            {
+                // The pages stay in hand, to be changed or sent again.
+                Error.ShowPages(Transcription.ErrorText ?? _s["Error_PagesFailed_Reason"], Transcription.ErrorDetail);
+                Screen = TabScreen.Error;
+                return;
+            }
             // The recording is kept in Your songs, to be written down later.
             KeepTake();
             Error.Show(failure switch
@@ -128,10 +166,15 @@ public sealed partial class TabFlowViewModel : ObservableObject
         };
         Error.Retry += async (_, _) =>
         {
+            if (_readingPages && Pages is { HasPages: true })
+            {
+                await ReadPagesAsync(Pages.Pages.Select(p => p.Path).ToList());
+                return;
+            }
             if (_source is { } source) await WriteDownAsync(source, _result?.AudioId);
             else Screen = TabScreen.Home;
         };
-        Error.Alternative += (_, _) => Screen = TabScreen.Home;
+        Error.Alternative += (_, _) => Screen = _readingPages && Pages is not null ? TabScreen.Pages : TabScreen.Home;
         TabPage.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(TabPageViewModel.Title)) OnPropertyChanged(nameof(Title));
@@ -214,6 +257,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
     {
         TabScreen.Tab => TabPage.Title,
         TabScreen.WhatIsThis or TabScreen.Transcribing or TabScreen.CheckTheSong => _source is { } s ? Path.GetFileNameWithoutExtension(s.DisplayName) : "",
+        TabScreen.Pages => _s["Pages_Title"],
         _ => "",
     };
 
@@ -285,9 +329,43 @@ public sealed partial class TabFlowViewModel : ObservableObject
         Profiles.Answered(computer, listed);
     }
 
+    /// <summary>The app's words (the sample scenes say a failure as the app would).</summary>
+    public IStrings Strings => _s;
+
+    /// <summary>Sheet music from a picture: the pages in hand, before they are read. Null where the app has no pages screen.</summary>
+    public PagesViewModel? Pages { get; }
+
+    /// <summary>The run on the transcribing screen reads pages (its failure goes back to them).</summary>
+    private bool _readingPages;
+
+    /// <summary>"Open sheet music" on Home: the pages screen, with the pages in hand.</summary>
+    [RelayCommand]
+    private void OpenPages()
+    {
+        if (Pages is null || Transcription.IsRunning) return;
+        Pages.ComputerThere = ComputerThere;
+        Screen = TabScreen.Pages;
+    }
+
+    /// <summary>The pages, read on the computer into a tab for the player's instrument; cancelled, back to them.</summary>
+    private async Task ReadPagesAsync(IReadOnlyList<string> paths)
+    {
+        if (paths.Count == 0) return;
+        _readingPages = true;
+        _result = null;
+        _source = null;
+        Screen = TabScreen.Transcribing;
+        var job = Instrument.Stored.JobOptions();
+        var options = new Dictionary<string, string> { ["instrument"] = job.Instrument, ["tuning"] = job.Tuning, ["layout"] = job.Layout };
+        await Transcription.RunPagesAsync(paths, Path.GetFileNameWithoutExtension(paths[0]), _s["Pages_KindLabel"], TabProfiles.SheetTab, options);
+        if (!Transcription.IsRunning && _result is null && Screen == TabScreen.Transcribing && Transcription.ErrorText is null)
+            Screen = TabScreen.Pages; // cancelled: back to the pages, kept
+    }
+
     /// <summary>Writes the recording down on the computer, for the player's instrument and this song's answers.</summary>
     private async Task WriteDownAsync(SourceAudio source, string? audioId)
     {
+        _readingPages = false;
         _source = source;
         var options = TabSong.Options(Instrument.Stored, _answers.Of(source));
         string profile = TabSong.Profile(options.Instrument, Profiles.Listed) ?? TabProfiles.Tab;
@@ -339,12 +417,14 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     /// <summary>The tab of the song in hand.</summary>
     private Task ShowTabAsync() => _result is { } r
-        ? OpenTabAsync(r.MusicXml, r.Composition, r.JobId, Path.GetFileNameWithoutExtension(r.Source.DisplayName), r.Source.WavPath, r.Outputs)
+        ? OpenTabAsync(r.MusicXml, r.Composition, r.JobId, r.FromPages ? r.Source.DisplayName : Path.GetFileNameWithoutExtension(r.Source.DisplayName),
+            r.FromPages ? null : r.Source.WavPath, r.Outputs, fromPages: r.FromPages)
         : Task.CompletedTask;
 
     /// <summary>Shows a tab: read at once from its page, with the computer's data for its marks and its beats when it gives them.</summary>
+    /// <param name="fromPages">Read from pages: the job's input is the pages, so practice is given no job to fetch a recording by.</param>
     private async Task OpenTabAsync(string musicXml, Composition? composition, string? job, string title, string? recording,
-        IReadOnlyCollection<string>? outputs = null)
+        IReadOnlyCollection<string>? outputs = null, bool fromPages = false)
     {
         int opening = ++_opening;
         _shown = (musicXml, job, outputs);
@@ -367,7 +447,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
         }
         if (opening != _opening) return;
         var songs = LibraryView.Store?.Entries.Select(e => e.JobId).OfType<string>().ToHashSet();
-        await TabPage.ShowAsync(sheet, composition, job ?? _libraryId ?? title, job, recording, songs);
+        await TabPage.ShowAsync(sheet, composition, job ?? _libraryId ?? title, fromPages ? null : job, recording, songs);
     }
 
     /// <summary>What is this? for <paramref name="source"/>, with the computer's profiles as given (the sample scenes).</summary>
@@ -425,8 +505,9 @@ public sealed partial class TabFlowViewModel : ObservableObject
                 var (job, composition, xml, evidence) = await LibraryView.DownloadAsync(jobId);
                 _result = null;
                 _source = null;
-                _libraryId = LibraryView.Store?.AddMade(job.Title ?? item.Title, xml, composition, 1, 0, 0, jobId, evidence).Id;
-                await OpenTabAsync(xml, composition, jobId, job.Title ?? item.Title, null, job.Outputs);
+                bool pages = job.Input == "pages";
+                _libraryId = LibraryView.Store?.AddMade(job.Title ?? item.Title, xml, composition, 1, 0, 0, jobId, evidence, fromPages: pages).Id;
+                await OpenTabAsync(xml, composition, jobId, job.Title ?? item.Title, null, job.Outputs, fromPages: pages);
             }
             catch (EngineException e) when (e.Interface is { } answer)
             {
@@ -448,7 +529,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
             _result = null;
             _source = null;
             _libraryId = entry.Id;
-            await OpenTabAsync(xml, composition, entry.JobId, entry.Title, null);
+            await OpenTabAsync(xml, composition, entry.JobId, entry.Title, null, fromPages: entry.FromPages);
         }
         catch (Exception e) when (e is IOException or FormatException or System.Xml.XmlException or UnauthorizedAccessException
                                    or System.Text.Json.JsonException)
@@ -516,6 +597,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
         {
             facts.Kind is { } kind ? KindName(kind) : _s["Tab_Song"],
         };
+        if (e.FromPages) parts.Insert(0, _s["Library_FromPages"]);
         if (facts.Tuning is { } t) parts.Add(YourInstrumentViewModel.TuningName(t, _s));
         if (facts.ToCheck > 0) parts.Add(_s.Format(facts.ToCheck == 1 ? "Tab_ToCheck_One" : "Tab_ToCheck", facts.ToCheck));
         parts.Add(when);
@@ -532,6 +614,8 @@ public sealed partial class TabFlowViewModel : ObservableObject
         Screen = Screen switch
         {
             TabScreen.WhatIsThis => TabScreen.Home,
+            TabScreen.Pages => TabScreen.Home,
+            TabScreen.Transcribing when _readingPages => TabScreen.Pages,
             TabScreen.Transcribing => _result is not null ? TabScreen.CheckTheSong : TabScreen.WhatIsThis,
             TabScreen.CheckTheSong => TabScreen.Home,
             TabScreen.Tab when TabPage.IsFullScreen => LeaveFullScreen(),
@@ -550,6 +634,7 @@ public sealed partial class TabFlowViewModel : ObservableObject
 
     /// <summary>Back works everywhere but Home and the first run, and while the notes are written down (Cancel is the way out then).</summary>
     private bool CanGoBack() => Screen is TabScreen.WhatIsThis or TabScreen.CheckTheSong or TabScreen.Tab or TabScreen.Error or TabScreen.YourInstrument
+                                or TabScreen.Pages
                                 || Screen == TabScreen.Transcribing && !Transcription.IsRunning;
 
     /// <summary>For tests: the last song written down.</summary>

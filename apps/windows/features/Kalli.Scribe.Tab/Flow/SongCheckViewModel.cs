@@ -44,6 +44,20 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
     /// <summary>The facts are there: the lead line above the rows says what they are.</summary>
     public bool ShowsLead => !IsReading && MissingText is null;
 
+    /// <summary>
+    /// The tab was read from pages of printed music, not heard: the words say read on the page, and no row offers a change
+    /// (writing it again would need the recording there is none of).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LeadText))]
+    public partial bool FromPages { get; set; }
+
+    /// <summary>"This is what Fretscribe heard. …", or read on the page.</summary>
+    public string LeadText => strings[FromPages ? "Tab_Check_Lead_Page" : "Tab_Check_Lead"];
+
+    /// <summary>A heard key, or its words for a page ("…than it was heard" → "…than on the page").</summary>
+    private string Said(string key) => strings[FromPages ? key + "_Page" : key];
+
     public ObservableCollection<SongCheckRow> Rows { get; } = [];
 
     /// <summary>Why no row offers its change (the computer is away, or too old for this instrument); null when they do.</summary>
@@ -77,7 +91,7 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
     public void Missing(string why)
     {
         IsReading = false;
-        MissingText = strings.Format("Tab_Check_Missing", why);
+        MissingText = strings.Format(FromPages ? "Tab_Check_Missing_Page" : "Tab_Check_Missing", why);
     }
 
     /// <summary>The facts of the tab, and the stages of the job that made it.</summary>
@@ -97,7 +111,7 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
         var made = SongCheck.KindOf(tab.Preset);
         bool asking = computerThere && profiles.Answer is not { Asking: false };
         bool tooOld = computerThere && !asking && TabSong.Profile(made, profiles.Listed) is null;
-        bool canChange = computerThere && !asking && !tooOld;
+        bool canChange = computerThere && !asking && !tooOld && !FromPages;
         Rows.Clear();
         bool offers = false;
         foreach (var row in SongCheck.Rows(tab))
@@ -106,7 +120,7 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
             offers |= change is not null;
             Rows.Add(Words(row, canChange ? change : null));
         }
-        NoChangeText = offers && !canChange && !asking
+        NoChangeText = offers && !canChange && !asking && !FromPages
             ? tooOld ? strings[made is { } k && Instruments.Of(k) is { } i ? $"Tab_TooOld_{i}" : "Tab_TooOld_Bass"] : strings["Tab_Check_Connect"]
             : null;
         ShowsLater = offers && canChange;
@@ -157,13 +171,13 @@ public sealed partial class SongCheckViewModel(IStrings strings, ComputerProfile
             SongRow.Added a => ("added", strings["Tab_Check_Added_Title"], Count("Tab_Check_Added", a.Count), ""),
             SongRow.Octave o => ("octave", strings["Tab_Check_Octave"], o switch
             {
-                { Chosen: true, Shift: 0 } => strings["Tab_Check_Octave_AsHeard"],
+                { Chosen: true, Shift: 0 } => Said("Tab_Check_Octave_AsHeard"),
                 { Chosen: true, Shift: < 0 } => strings["Tab_Check_Octave_ChosenDown"],
                 { Chosen: true } => strings["Tab_Check_Octave_ChosenUp"],
-                { Shift: <= -24 } => strings["Tab_Check_Octave_TwoDown"],
-                { Shift: < 0 } => strings["Tab_Check_Octave_Down"],
-                { Shift: > 0 } => strings["Tab_Check_Octave_Up"],
-                _ => Count("Tab_Check_Octave_Notes", o.NotesMoved),
+                { Shift: <= -24 } => Said("Tab_Check_Octave_TwoDown"),
+                { Shift: < 0 } => Said("Tab_Check_Octave_Down"),
+                { Shift: > 0 } => Said("Tab_Check_Octave_Up"),
+                _ => Count(FromPages ? "Tab_Check_Octave_Notes_Page" : "Tab_Check_Octave_Notes", o.NotesMoved),
             }, ""),
             SongRow.ReferencePitch r => ("reference", strings["Tab_Check_Reference"],
                 strings.Format(r.Cents > 0 ? "Tab_Check_Reference_Sharp" : "Tab_Check_Reference_Flat", Math.Abs(r.Cents))

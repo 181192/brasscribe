@@ -42,6 +42,18 @@
   <data name="AboutText.Text" xml:space="preserve">
     <value>Fretscribe er et ikke-kommersielt prosjekt. Tab og noter: alphaTab (MPL-2.0). Skriftene er Atkinson Hyperlegible Next (SIL OFL 1.1) og Fretscribe Tab (SIL OFL 1.1).</value>
   </data>
+  <data name="AddPagesBody.Text" xml:space="preserve">
+    <value>PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>PNG-, JPEG- eller WebP-bilder, eller PDF-er. Flere sider blir ett stykke, i den rekkefølgen du setter.</value>
+  </data>
+  <data name="AddPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Legg til bilder eller en PDF</value>
+  </data>
+  <data name="AddPagesTitle.Text" xml:space="preserve">
+    <value>Legg til bilder eller en PDF</value>
+  </data>
   <data name="AppWindowTitle" xml:space="preserve">
     <value>Fretscribe</value>
   </data>
@@ -116,9 +128,6 @@
   </data>
   <data name="CheckLater.Text" xml:space="preserve">
     <value>Du kan endre dette senere.</value>
-  </data>
-  <data name="CheckLead.Text" xml:space="preserve">
-    <value>Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også.</value>
   </data>
   <data name="CheckReading.Text" xml:space="preserve">
     <value>Leser det Fretscribe hørte …</value>
@@ -636,6 +645,57 @@
   <data name="Notice_Problem" xml:space="preserve">
     <value>Noe gikk galt, men sangene dine er trygge. Hvis det skjer igjen, start Fretscribe på nytt.</value>
   </data>
+  <data name="PageList.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Sidene, i den rekkefølgen de leses</value>
+  </data>
+  <data name="PagesHeading.Text" xml:space="preserve">
+    <value>Noter fra et bilde</value>
+  </data>
+  <data name="PagesIntro.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen leser de trykte notene og skriver dem som tab for instrumentet ditt.</value>
+  </data>
+  <data name="PagesListHeading.Text" xml:space="preserve">
+    <value>Sidene, i den rekkefølgen de leses</value>
+  </data>
+  <data name="PagesNeedsComputer.Text" xml:space="preserve">
+    <value>Bandroom på datamaskinen må til for å lese noter.</value>
+  </data>
+  <data name="PagesOrderHint.Text" xml:space="preserve">
+    <value>Sidene leses i denne rekkefølgen. Flytt en side for å endre den.</value>
+  </data>
+  <data name="Pages_KindLabel" xml:space="preserve">
+    <value>Noter</value>
+  </data>
+  <data name="Pages_LeftOut_Many" xml:space="preserve">
+    <value>{0} filer er verken PNG-, JPEG- eller WebP-bilder eller PDF-er, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.</value>
+  </data>
+  <data name="Pages_LeftOut_One" xml:space="preserve">
+    <value>Én fil er verken et PNG-, JPEG- eller WebP-bilde eller en PDF, og ble ikke tatt med. Lagre et bilde fra en telefon som JPEG først.</value>
+  </data>
+  <data name="Pages_MoveDown" xml:space="preserve">
+    <value>Flytt side {0} ned</value>
+  </data>
+  <data name="Pages_MoveUp" xml:space="preserve">
+    <value>Flytt side {0} opp</value>
+  </data>
+  <data name="Pages_Moved" xml:space="preserve">
+    <value>Side {0} er nå side {1}.</value>
+  </data>
+  <data name="Pages_Page" xml:space="preserve">
+    <value>Side {0}</value>
+  </data>
+  <data name="Pages_Remove" xml:space="preserve">
+    <value>Fjern side {0}</value>
+  </data>
+  <data name="Pages_Removed" xml:space="preserve">
+    <value>Side {0} er fjernet.</value>
+  </data>
+  <data name="Pages_Title" xml:space="preserve">
+    <value>Noter fra et bilde</value>
+  </data>
+  <data name="Pages_TooMany" xml:space="preserve">
+    <value>Høyst {0} sider kan leses om gangen. Resten ble ikke tatt med.</value>
+  </data>
   <data name="PairingCodeBox.Header" xml:space="preserve">
     <value>Kode</value>
   </data>
@@ -650,6 +710,12 @@
   </data>
   <data name="PreviousBarButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Forrige takt</value>
+  </data>
+  <data name="ReadPagesButton.Content" xml:space="preserve">
+    <value>Les notene</value>
+  </data>
+  <data name="ReadPagesButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Send sidene til datamaskinen, som leser dem til tab for instrumentet ditt</value>
   </data>
   <data name="ReadsBox.Header" xml:space="preserve">
     <value>Du leser</value>
@@ -707,6 +773,9 @@
   </data>
   <data name="Screen_Home" xml:space="preserve">
     <value>Hjem</value>
+  </data>
+  <data name="Screen_Pages" xml:space="preserve">
+    <value>Noter fra et bilde</value>
   </data>
   <data name="Screen_Tab" xml:space="preserve">
     <value>Tab</value>
@@ -827,6 +896,18 @@
   </data>
   <data name="ShareButtonLabel.Text" xml:space="preserve">
     <value>Del eller skriv ut</value>
+  </data>
+  <data name="SheetMusicBody.Text" xml:space="preserve">
+    <value>Et bilde eller en PDF av notene</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve">
+    <value>Bilder eller en PDF av trykte noter, som datamaskinen leser til tab</value>
+  </data>
+  <data name="SheetMusicButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Åpne noter</value>
+  </data>
+  <data name="SheetMusicTitle.Text" xml:space="preserve">
+    <value>Åpne noter</value>
   </data>
   <data name="ShowTabButton.Content" xml:space="preserve">
     <value>Vis tabben</value>
@@ -1008,6 +1089,12 @@
   <data name="Tab_Check_KeyTempo_Value" xml:space="preserve">
     <value>{0} · ♩ = {1} · {2}/{3}</value>
   </data>
+  <data name="Tab_Check_Lead" xml:space="preserve">
+    <value>Dette er det Fretscribe hørte. Er noe feil her, blir båndene feil også.</value>
+  </data>
+  <data name="Tab_Check_Lead_Page" xml:space="preserve">
+    <value>Dette er det Fretscribe leste på siden. Er noe feil her, blir båndene feil også.</value>
+  </data>
   <data name="Tab_Check_LeftOut" xml:space="preserve">
     <value>{0} toner er utelatt. De kan ikke spilles sammen med resten.</value>
   </data>
@@ -1025,6 +1112,9 @@
   </data>
   <data name="Tab_Check_Missing" xml:space="preserve">
     <value>Det Fretscribe hørte kan ikke vises akkurat nå. {0}</value>
+  </data>
+  <data name="Tab_Check_Missing_Page" xml:space="preserve">
+    <value>Det Fretscribe leste på siden, kan ikke vises akkurat nå. {0}</value>
   </data>
   <data name="Tab_Check_NoComputer" xml:space="preserve">
     <value>Den ble skrevet på datamaskinen, som ikke er tilkoblet.</value>
@@ -1047,6 +1137,9 @@
   <data name="Tab_Check_Octave_AsHeard" xml:space="preserve">
     <value>Skrevet slik det ble hørt, slik du valgte.</value>
   </data>
+  <data name="Tab_Check_Octave_AsHeard_Page" xml:space="preserve">
+    <value>Skrevet slik det står på siden, slik du valgte.</value>
+  </data>
   <data name="Tab_Check_Octave_Auto" xml:space="preserve">
     <value>La Fretscribe velge</value>
   </data>
@@ -1059,17 +1152,32 @@
   <data name="Tab_Check_Octave_Down" xml:space="preserve">
     <value>Skrevet én oktav lavere enn det ble hørt.</value>
   </data>
+  <data name="Tab_Check_Octave_Down_Page" xml:space="preserve">
+    <value>Skrevet én oktav lavere enn på siden.</value>
+  </data>
   <data name="Tab_Check_Octave_Notes" xml:space="preserve">
     <value>{0} toner er skrevet en oktav lavere enn de ble hørt.</value>
   </data>
   <data name="Tab_Check_Octave_Notes_One" xml:space="preserve">
     <value>{0} tone er skrevet en oktav lavere enn den ble hørt.</value>
   </data>
+  <data name="Tab_Check_Octave_Notes_Page" xml:space="preserve">
+    <value>{0} toner er skrevet en oktav lavere enn på siden.</value>
+  </data>
+  <data name="Tab_Check_Octave_Notes_Page_One" xml:space="preserve">
+    <value>{0} tone er skrevet en oktav lavere enn på siden.</value>
+  </data>
   <data name="Tab_Check_Octave_TwoDown" xml:space="preserve">
     <value>Skrevet to oktaver lavere enn det ble hørt.</value>
   </data>
+  <data name="Tab_Check_Octave_TwoDown_Page" xml:space="preserve">
+    <value>Skrevet to oktaver lavere enn på siden.</value>
+  </data>
   <data name="Tab_Check_Octave_Up" xml:space="preserve">
     <value>Skrevet én oktav høyere enn det ble hørt.</value>
+  </data>
+  <data name="Tab_Check_Octave_Up_Page" xml:space="preserve">
+    <value>Skrevet én oktav høyere enn på siden.</value>
   </data>
   <data name="Tab_Check_Reference" xml:space="preserve">
     <value>Kammertone</value>

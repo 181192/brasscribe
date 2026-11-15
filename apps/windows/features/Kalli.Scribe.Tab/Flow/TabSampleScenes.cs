@@ -14,7 +14,7 @@ public static class TabSampleScenes
 {
     public static readonly string[] Names =
         ["first-run", "your-instrument", "home", "home-offline", "home-update", "what-is-this", "what-is-this-offline", "transcribing",
-         "check-the-song", "tab", "tab-full-screen", "export", "error", "error-update"];
+         "check-the-song", "tab", "tab-full-screen", "export", "error", "error-update", "pages", "pages-unread"];
 
     /// <summary>The computer in the sample scenes.</summary>
     public const string SampleServer = Wire.ServerNamePrefix + "Studio PC";
@@ -59,6 +59,17 @@ public static class TabSampleScenes
             case "error":
                 flow.Transcription.ShowProgress(SampleTitle, TabProfiles.Tab, "", "Ready", 0, null);
                 flow.Error.Show(ErrorKind.ComputerUnreachable, "The engine at http://127.0.0.1:8765/ could not be reached.");
+                flow.Screen = TabScreen.Error;
+                return true;
+            case "pages" when flow.Pages is { } pages:
+                // Three pages in hand: two invented pictures and a one-page PDF, which the scene never sends.
+                pages.Clear();
+                pages.Add(SamplePages.Write(SampleTitle, 3));
+                flow.Screen = TabScreen.Pages;
+                return true;
+            case "pages-unread" when flow.Pages is not null:
+                flow.Transcription.ShowProgress(SampleTitle, TabProfiles.SheetTab, "", "Read", 40, null);
+                flow.Error.ShowPages(flow.Strings["Error_Pages_OnlyTab"], "read: StageFailed: read: no staff of notes was found on the page: a tab staff is not read");
                 flow.Screen = TabScreen.Error;
                 return true;
             case "error-update":
