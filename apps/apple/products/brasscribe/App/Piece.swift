@@ -31,6 +31,8 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
     /// A quick draft made on this device without the computer (a brass band recording); the computer
     /// can make the full score from the kept recording.
     var draft: Bool? = nil
+    /// Read by the computer from pages of printed music (a picture, a photo, a PDF), not heard in a recording.
+    var fromPages: Bool? = nil
 
     var isDraft: Bool { draft == true }
 
@@ -89,11 +91,13 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
 
     /// Store a finished transcription with its source media.
     static func create(title: String, profile: SourceProfile?, result: TranscriptionResult,
-                       original: URL?, video: URL?, fixtureDirectory: URL?, output: OutputChoice? = nil, draft: Bool = false) throws -> Piece {
+                       original: URL?, video: URL?, fixtureDirectory: URL?, output: OutputChoice? = nil, draft: Bool = false,
+                       fromPages: Bool = false) throws -> Piece {
         var p = Piece(id: UUID(), title: title, created: Date(), profile: profile, originalFile: nil, videoFile: nil,
                       remoteJobID: result.jobID, remoteArtifacts: Array(result.available), fixtureDirectory: fixtureDirectory?.path,
                       output: output)
         if draft { p.draft = true }
+        if fromPages { p.fromPages = true }
         let fm = FileManager.default
         try fm.createDirectory(at: p.folder, withIntermediateDirectories: true)
         try result.musicXML.write(to: p.scoreURL)
@@ -213,6 +217,7 @@ struct Piece: Identifiable, Hashable, Codable, Sendable {
         var bits: [String] = []
         if let lineup = madeLineup(nil) { bits.append(lineup.shortTitle) }
         else if let profile { bits.append(profile.shortTitle) }
+        if fromPages == true { bits.append(String(localized: "From sheet music")) }
         if isDraft { bits.append(String(localized: "Draft")) }
         if let bars { bits.append(String(localized: "\(bars) bars")) }
         bits.append(ScoreTitles.day(created))

@@ -112,15 +112,24 @@ struct HomeView: View {
                               subtitle: String(localized: "Sound from another app on this Mac")) { model.showCapture = true }
                         .accessibilityIdentifier("capture")
                     #endif
+                    WayInCard(icon: PlayIcon.file.systemName, title: String(localized: "Open sheet music"),
+                              subtitle: String(localized: "A picture, a photo or a PDF of the notes")) { model.openPages() }
+                        .accessibilityIdentifier("sheetMusic")
                 }
             }
         } else {
             VStack(spacing: Space.s4) {
                 openButton.buttonStyle(.primaryWide)
-                WayInRow(icon: PlayIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
-                         subtitle: String(localized: "Play a riff or a whole song")) { model.showRecorder = true }
-                    .accessibilityIdentifier("record")
-                    .card(padding: 0)
+                VStack(spacing: 0) {
+                    WayInRow(icon: PlayIcon.recordMic.systemName, title: String(localized: "Record with the microphone"),
+                             subtitle: String(localized: "Play a riff or a whole song")) { model.showRecorder = true }
+                        .accessibilityIdentifier("record")
+                    Divider().overlay(Color.Scribe.border)
+                    WayInRow(icon: PlayIcon.file.systemName, title: String(localized: "Open sheet music"),
+                             subtitle: String(localized: "A picture, a photo or a PDF of the notes")) { model.openPages() }
+                        .accessibilityIdentifier("sheetMusic")
+                }
+                .card(padding: 0)
             }
         }
     }

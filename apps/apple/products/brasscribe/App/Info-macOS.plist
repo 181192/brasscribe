@@ -98,7 +98,7 @@
 		<string>_scribe._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Brasscribe Play scans the code your computer shows, to connect to it.</string>
+	<string>Brasscribe Play scans the code your computer shows, to connect to it, and takes photos of sheet music for your computer to read.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Kristoffer-Andre Kalliainen. MIT or Apache-2.0.</string>
 	<key>NSLocalNetworkUsageDescription</key>

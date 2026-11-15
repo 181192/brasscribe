@@ -19,6 +19,8 @@ struct TabSong: Identifiable, Hashable, Codable {
     var noPlace: Int
     /// The recording it was made from, when the app was given it (a new recording, an opened file).
     var recording: URL?
+    /// Read by the computer from pages of printed music: there is no recording to practise with.
+    var fromPages: Bool? = nil
 
     var folder: URL { Self.root.appending(path: id.uuidString, directoryHint: .isDirectory) }
     var musicXMLURL: URL { folder.appending(path: "tab.musicxml") }
@@ -46,7 +48,7 @@ struct TabSong: Identifiable, Hashable, Codable {
     }
 
     /// A new song from a finished job: its MusicXML, and its tab data when there is one.
-    static func create(title: String, jobID: String?, musicXML: Data, tab: Data?, recording: URL?) throws -> TabSong {
+    static func create(title: String, jobID: String?, musicXML: Data, tab: Data?, recording: URL?, fromPages: Bool = false) throws -> TabSong {
         let data = tab.flatMap { try? JSONDecoder().decode(TabData.self, from: $0) }
         // The tab's own two numbers: what it marks "?" and what it puts under a "!".
         let marks = SongMarks.of(musicXML: musicXML, tab: data)
@@ -56,6 +58,7 @@ struct TabSong: Identifiable, Hashable, Codable {
         try musicXML.write(to: song.musicXMLURL)
         if let tab { try tab.write(to: song.tabURL) }
         song.recording = recording
+        if fromPages { song.fromPages = true }
         try song.save()
         return song
     }

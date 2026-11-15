@@ -305,6 +305,16 @@ struct RootView: View {
                     case .output(let p): OutputView(piece: p)
                     case .score(let p): ScoreScreen(piece: p)
                     case .problem(let p): ProblemView(problem: p)
+                    case .pages:
+                        PagesView(list: app.pageList,
+                                  lead: String(localized: "Bandroom on your computer reads the printed notes and writes them as a score you can play from. Nothing is arranged: the parts stay as they are on the page."),
+                                  computerThere: app.computerThere) { app.readPages() }
+                    case .readingPages(let id):
+                        if let job = app.pageJobs[id] {
+                            ReadingPagesView(job: job, otherWords: ErrorWords.plain, layingOut: String(localized: "Laying out the score"),
+                                             tryAgain: { app.pageJobs[id] = nil; app.path = [.pages]; app.readPages() },
+                                             changePages: { app.pageJobs[id] = nil; app.path = [.pages] })
+                        }
                     }
                 }
         }

@@ -67,7 +67,8 @@ struct TabScreen: View {
     private var palette: TabPalette { TabColours.palette(in: environment) }
     private var fontScale: Double { Double(bodySize) / 17 }
     private var scale: Double { TabSize.scale(percent: zoom, fontScale: fontScale, width: Double(width)) }
-    private var canFetch: Bool { song.jobID != nil && !model.useFixtureService && model.computerThere }
+    /// A tab read from pages has no recording to get: it plays its own notes.
+    private var canFetch: Bool { song.jobID != nil && song.fromPages != true && !model.useFixtureService && model.computerThere }
 
     var body: some View {
         content
@@ -160,7 +161,8 @@ struct TabScreen: View {
             sheet = read
             clock = TabClock.of(read.index, tab: read.data, saved: nil)
         }
-        practice.open(song: song.id.uuidString, job: song.jobID, clock: clock, inHand: song.recording,
+        // a tab read from pages has no recording: its job's input is the pages, which nothing here plays
+        practice.open(song: song.id.uuidString, job: song.fromPages == true ? nil : song.jobID, clock: clock, inHand: song.recording,
                       songs: Set(model.local.compactMap(\.jobID)), tab: sheet.map { read in
                           TabSoundSource(index: read.index, program: EngineTabSoundPlayer.program(
                               family: read.preset?.kind.rawValue, lowest: read.index.pieces.map(\.pitch).min()))

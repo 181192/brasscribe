@@ -1,4 +1,6 @@
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 import Testing
 import ScoreKit
 @testable import TranscriptionKit
@@ -153,7 +155,7 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
             return
         }
         let path = request.url!.path
-        if request.httpMethod == "POST", path == "/v1/jobs/upload" { Self.uploads.append(request.bodyStreamData) }
+        if request.httpMethod == "POST", path == "/v1/jobs/upload" || path == "/v1/jobs/pages" { Self.uploads.append(request.bodyStreamData) }
         if request.httpMethod == "DELETE", path == "/v1/jobs/j9" {
             // answered a moment later, like a real computer: a request cancelled on the way never gets an answer
             let url = request.url!
@@ -218,6 +220,10 @@ final class StubEngine: URLProtocol, @unchecked Sendable {
                 return (200, Data(#"{"id":"j9","profile":"solo","status":"running","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("POST", "/v1/jobs/upload"):
                 return (200, Data(#"{"id":"j1","profile":"solo","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
+            case ("POST", "/v1/jobs/pages") where Self.uploads.last?.contains("\r\n\r\nrefuse me\r\n") == true:
+                return (413, Data(#"{"detail":"41 files: a job reads 40 pages at most","code":"too_many_pages"}"#.utf8), "application/json")
+            case ("POST", "/v1/jobs/pages"):
+                return (202, Data(#"{"id":"j1","profile":"sheet","target":"brass","input":"pages","status":"queued","progress":0,"stages":[],"outputs":[],"created":0}"#.utf8), "application/json")
             case ("GET", "/v1/jobs/j1/events"):
                 let s = """
                 id: 0\nevent: stage\ndata: {"id":0,"run":"j1","type":"stage","time":0,"status":"ran","stage":"separate","fraction":0.5}\n\n\
@@ -1052,4 +1058,162 @@ func theAppsInfoCarriesTheEnginesNames(product: String, own: String) throws {
     let fixture = dir.appending(path: "apps/fixtures/bass-line-marks")
     #expect(FixtureService(directory: fixture, stepDelay: 0, outputName: "tab").file(of: .musicXML)?.lastPathComponent == "tab.musicxml")
     #expect(FixtureService(directory: fixture, stepDelay: 0, outputName: "tab").file(of: .tab)?.lastPathComponent == "tab.json")
+}
+
+// MARK: pages of printed music
+
+/// In the companion's suite: its tests share the stub engine's record of requests, so they run one at a time.
+extension CompanionTests {
+    func folder() -> URL { FileManager.default.temporaryDirectory.appending(path: "pages-\(UUID().uuidString)") }
+
+    static let png = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13])
+
+    /// The pages go to the pages endpoint as `files`, in the order given, with the profile and the tab's options.
+    @Test func pagesAreSentInOrderToThePagesEndpoint() async throws {
+        StubEngine.requests = []
+        StubEngine.uploads = []
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "ios")
+        let dir = folder()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let first = dir.appending(path: "b.png"), second = dir.appending(path: "a.pdf")
+        try (Self.png + Data("first page".utf8)).write(to: first)
+        try Data("%PDF-1.7 second page".utf8).write(to: second)
+        var done: TranscriptionResult?
+        for try await ev in svc.transcribe(.init(pages: [first, second], profile: "sheet-tab", title: "Hymn",
+                                                 fields: [EngineField("instrument", "ukulele"), EngineField("tuning", "high-g")])) {
+            if case .finished(let r) = ev { done = r }
+        }
+        #expect(done?.jobID == "j1")
+        let body = try #require(StubEngine.uploads.first)
+        #expect(StubEngine.requests.contains { $0.url?.path == "/v1/jobs/pages" })
+        #expect(!StubEngine.requests.contains { $0.url?.path == "/v1/jobs/upload" })
+        let one = try #require(body.range(of: "first page")), two = try #require(body.range(of: "second page"))
+        #expect(one.lowerBound < two.lowerBound)
+        #expect(body.components(separatedBy: "name=\"files\"").count == 3)
+        #expect(body.contains("filename=\"page-001.png\"") && body.contains("filename=\"page-002.pdf\""))
+        for value in ["sheet-tab", "Hymn", "ukulele", "high-g"] { #expect(body.contains("\r\n\r\n\(value)\r\n"), "\(value)") }
+    }
+
+    /// A refusal keeps the computer's code, which the apps say in their own words.
+    @Test func aRefusalOfPagesKeepsItsCode() async throws {
+        StubEngine.uploads = []
+        let svc = service()
+        try await svc.pair(code: "123456", deviceName: "test", platform: "ios")
+        let page = folder().appending(path: "p.png")
+        try FileManager.default.createDirectory(at: page.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Self.png.write(to: page)
+        var failed: Error?
+        do { for try await _ in svc.transcribe(.init(pages: [page], profile: "sheet", title: "refuse me")) {} } catch { failed = error }
+        let e = try #require(failed as? TranscriptionError)
+        #expect(e.pagesRefused == .tooManyPages)
+        #expect(TranscriptionError.http(415, #"{"detail":"IMG_1.HEIC is a HEIC pic"#).pagesRefused == nil)
+        #expect(TranscriptionError.http(415, #"{"code":"not_a_page","detail":"IMG_1.HEIC is a HEIC pic"#).pagesRefused == .notAPage)
+        #expect(TranscriptionError.http(503, #"{"code":"reader_missing","detail":"install it"}"#).pagesRefused == .readerMissing)
+        #expect(TranscriptionError.http(422, #"{"code":"invalid_options"}"#).pagesRefused == nil)
+    }
+
+    @Test func aJobSaysWhatItRead() throws {
+        let job = try JSONDecoder().decode(CompanionService.Job.self, from: Data(#"{"id":"j","status":"succeeded","progress":1,"stages":[],"outputs":[],"input":"pages"}"#.utf8))
+        #expect(job.readPages)
+        let take = try JSONDecoder().decode(CompanionService.Job.self, from: Data(#"{"id":"j","status":"succeeded","progress":1,"stages":[],"outputs":[],"input":"audio"}"#.utf8))
+        #expect(!take.readPages)
+        #expect(StageKind.classify(name: "read", kind: "read") == .reading)
+    }
+
+    @Test func aFailedReadIsToldByTheEnginesWords() {
+        #expect(Pages.Failure.of("read: StageFailed: read: no notes were found on the page") == .noMusic)
+        #expect(Pages.Failure.of("read: StageFailed: read: no notes were found on the page\nTraceback (most recent call last):\n  File") == .noMusic)
+        #expect(Pages.Failure.of("read: StageFailed: read: there are more than 40 pages") == .tooManyPages)
+        #expect(Pages.Failure.of("read: StageFailed: read: the computer's disk is full: free some space on it and try again") == .diskFull)
+        #expect(Pages.Failure.of("beats: ValueError: no downbeat") == nil)
+        #expect(TranscriptionError.jobFailed("read: StageFailed: read: a page is too large to read").pagesFailure == .pageTooLarge)
+    }
+
+    /// Every way the engine says pages were not read, and every code it refuses them with, is one the apps know.
+    @Test(.enabled(if: enginesWireIsRead)) func theReadersWordsAndCodesAreTheEngines() throws {
+        let root = try #require(repository())
+        let sheet = try String(contentsOf: root.appending(path: "engine/src/scribe_engine/sheet.py"), encoding: .utf8)
+        let pages = try String(contentsOf: root.appending(path: "engine/src/scribe_engine/pages.py"), encoding: .utf8)
+        let said = sheet.matches(of: try Regex(#"(?m)^(?:NO_MUSIC|NOT_READ|ONLY_TAB) = "([^"]+)"|^ {4}"\w+": f?"([^"]+)",$"#)).map { m in
+            String((m.output[1].substring ?? m.output[2].substring)!).replacingOccurrences(of: "{pages.MAX_PAGES}", with: String(Pages.maxPages))
+        }
+        #expect(Set(said) == Set(Pages.Failure.allCases.map(\.engineWords)))
+        let codes = (sheet + pages).matches(of: try Regex(#"(?m)^(?:NOT_A_PAGE|WRONG_INPUT|PAGE_TOO_LARGE|TOO_MANY_PAGES|READER_MISSING) = "(\w+)"$"#))
+            .map { String($0.output[1].substring!) }
+        #expect(Set(codes) == Set(Pages.Refused.allCases.map(\.rawValue)))
+        #expect(pages.contains("MAX_PAGES = \(Pages.maxPages) "))
+        #expect(pages.contains("MAX_PAGE_BYTES = 50 * 1024 * 1024"))
+    }
+
+    @Test func aPageTheEngineReadsIsSentAsItIs() throws {
+        let src = folder().appending(path: "scan.png")
+        try FileManager.default.createDirectory(at: src.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Self.png.write(to: src)
+        let out = try Pages.prepare(src, into: folder()).url
+        #expect(out.pathExtension == "png")
+        #expect(try Data(contentsOf: out) == Self.png)
+        #expect(Pages.format(of: Data("%PDF-1.4".utf8)) == .pdf)
+        #expect(Pages.format(of: Data("RIFF\0\0\0\0WEBPVP8 ".utf8)) == .webp)
+        #expect(Pages.format(of: Data("RIFF\0\0\0\0WAVEfmt ".utf8)) == nil)
+    }
+
+    /// Another picture (here a TIFF taken on its side) becomes an upright JPEG no larger than `maxSide`.
+    @Test func anotherPictureBecomesAnUprightJPEG() throws {
+        let dir = folder()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let src = dir.appending(path: "IMG_0001.tiff")
+        let ctx = try #require(CGContext(data: nil, width: 4000, height: 1000, bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: 4000, height: 1000))
+        let dest = try #require(CGImageDestinationCreateWithURL(src as CFURL, UTType.tiff.identifier as CFString, 1, nil))
+        // orientation 6: the camera was turned a quarter; shown upright the picture is 1000 wide and 4000 high
+        let picture = try #require(ctx.makeImage())
+        CGImageDestinationAddImage(dest, picture, [kCGImagePropertyOrientation: 6] as CFDictionary)
+        #expect(CGImageDestinationFinalize(dest))
+        let out = try Pages.prepare(src, into: dir).url
+        #expect(Pages.format(of: try Data(contentsOf: out)) == .jpeg)
+        let made = try #require(CGImageSourceCreateWithURL(out as CFURL, nil))
+        let props = try #require(CGImageSourceCopyPropertiesAtIndex(made, 0, nil) as? [CFString: Any])
+        let w = props[kCGImagePropertyPixelWidth] as? Int ?? 0, h = props[kCGImagePropertyPixelHeight] as? Int ?? 0
+        #expect(h == Pages.maxSide && w == 750)
+        #expect((props[kCGImagePropertyOrientation] as? Int ?? 1) == 1)
+    }
+
+    /// A PDF counts as its pages; one that cannot be opened (locked, damaged) is refused before it is copied.
+    @Test func aPDFCountsAsItsPagesAndALockedOrBrokenOneIsRefused() throws {
+        let dir = folder()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let pdf = dir.appending(path: "hymns.pdf")
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let ctx = try #require(CGContext(pdf as CFURL, mediaBox: &box, nil))
+        for _ in 0..<3 { ctx.beginPDFPage(nil); ctx.endPDFPage() }
+        ctx.closePDF()
+        #expect(try Pages.prepare(pdf, into: dir.appending(path: "out")).pages == 3)
+        let locked = dir.appending(path: "locked.pdf")
+        var box2 = box
+        let lockedCtx = try #require(CGContext(locked as CFURL, mediaBox: &box2,
+                                                [kCGPDFContextUserPassword: "secret", kCGPDFContextOwnerPassword: "secret"] as CFDictionary))
+        lockedCtx.beginPDFPage(nil); lockedCtx.endPDFPage(); lockedCtx.closePDF()
+        #expect(throws: Pages.Refusal.unreadablePDF("locked.pdf")) { try Pages.prepare(locked, into: dir.appending(path: "out")) }
+        let broken = dir.appending(path: "broken.pdf")
+        try Data("%PDF-1.7 and then nothing".utf8).write(to: broken)
+        #expect(throws: Pages.Refusal.unreadablePDF("broken.pdf")) { try Pages.prepare(broken, into: dir.appending(path: "out")) }
+    }
+
+    @Test func aFileThatIsNoPageOrTooLargeIsRefusedBeforeItIsCopied() throws {
+        let dir = folder()
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let song = dir.appending(path: "take.wav")
+        try Data("RIFF\0\0\0\0WAVEfmt ".utf8).write(to: song)
+        #expect(throws: Pages.Refusal.notAPage("take.wav")) { try Pages.prepare(song, into: dir.appending(path: "out")) }
+        let big = dir.appending(path: "big.pdf")
+        FileManager.default.createFile(atPath: big.path, contents: Data("%PDF-1.7".utf8))
+        let h = try FileHandle(forWritingTo: big)
+        try h.truncate(atOffset: UInt64(Pages.maxPageBytes + 1))
+        try h.close()
+        #expect(throws: Pages.Refusal.tooLarge("big.pdf")) { try Pages.prepare(big, into: dir.appending(path: "out")) }
+        #expect(((try? FileManager.default.contentsOfDirectory(atPath: dir.appending(path: "out").path)) ?? []).isEmpty)
+    }
 }

@@ -35,7 +35,8 @@ struct ScoreEntry: Identifiable, Hashable {
             let date = Date(timeIntervalSince1970: j.created ?? 0)
             let profile = j.profile.flatMap(SourceProfile.init(rawValue:))
             let when = date.formatted(.relative(presentation: .named, unitsStyle: .wide)).capitalizedFirst
-            let summary = ([profile?.shortTitle, when, String(localized: "On your computer")] as [String?]).compactMap { $0 }.joined(separator: " · ")
+            let from = j.readPages ? String(localized: "From sheet music") : profile?.shortTitle
+            let summary = ([from, when, String(localized: "On your computer")] as [String?]).compactMap { $0 }.joined(separator: " · ")
             remote.append(ScoreEntry(id: "job:\(j.id)", title: ScoreTitles.display(j.title ?? "", made: date), date: date, profile: profile,
                                      location: .computer(jobID: j.id), summary: summary))
         }
