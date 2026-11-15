@@ -37,24 +37,38 @@ final class PageList {
 
     /// Where an app keeps its pages: in its own support folder, so two apps on one Mac keep theirs apart.
     static var appFolder: URL {
-        // unit tests keep their pages out of the player's
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
-            return FileManager.default.temporaryDirectory.appending(path: "PlayTests/Pages", directoryHint: .isDirectory)
-        }
-        return URL.applicationSupportDirectory.appending(path: Bundle.main.bundleIdentifier ?? "Play", directoryHint: .isDirectory)
+        URL.applicationSupportDirectory.appending(path: Bundle.main.bundleIdentifier ?? "Play", directoryHint: .isDirectory)
             .appending(path: "Pages", directoryHint: .isDirectory)
     }
 
-    /// The pages kept in `folder`, in their order. A page whose file is gone is left out, and a file no page names
-    /// (left by an add that was cut short) is deleted.
+    /// The pages kept in `folder`, in their order. A page whose file is gone is left out. When the index was read, a
+    /// file it does not name (left by an add that was cut short) is deleted; when it is missing or can't be read, no
+    /// file is deleted: the pages found are kept, oldest first, under a plain name, and the index is written again.
     init(folder: URL = PageList.appFolder) {
         self.folder = folder
-        let kept = (try? Data(contentsOf: folder.appending(path: Self.index))).flatMap { try? JSONDecoder().decode([Kept].self, from: $0) } ?? []
-        let found = kept.filter { FileManager.default.fileExists(atPath: folder.appending(path: $0.file).path) }
-        pages = found.map { Page(url: folder.appending(path: $0.file), name: $0.name, count: $0.count) }
-        let named = Set(found.map(\.file) + [Self.index])
-        for file in (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [] where !named.contains(file) {
-            try? FileManager.default.removeItem(at: folder.appending(path: file))
+        let fm = FileManager.default
+        let files = ((try? fm.contentsOfDirectory(atPath: folder.path)) ?? []).filter { $0 != Self.index }
+        let indexURL = folder.appending(path: Self.index)
+        if let data = try? Data(contentsOf: indexURL), let kept = try? JSONDecoder().decode([Kept].self, from: data) {
+            let found = kept.filter { fm.fileExists(atPath: folder.appending(path: $0.file).path) }
+            pages = found.map { Page(url: folder.appending(path: $0.file), name: $0.name, count: $0.count) }
+            let named = Set(found.map(\.file))
+            for file in files where !named.contains(file) { try? fm.removeItem(at: folder.appending(path: file)) }
+        } else if !files.isEmpty {
+            pages = Self.rebuilt(files.map { folder.appending(path: $0) })
+            save()
+        }
+    }
+
+    /// Pages from their files alone, when the index is gone: those that are a page the engine reads, oldest first.
+    private static func rebuilt(_ urls: [URL]) -> [Page] {
+        func made(_ url: URL) -> Date { (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast }
+        return urls.sorted { made($0) < made($1) }.compactMap { url in
+            guard let reader = try? FileHandle(forReadingFrom: url) else { return nil }
+            defer { try? reader.close() }
+            guard let head = try? reader.read(upToCount: 12), let format = Pages.format(of: head) else { return nil }
+            let count = format == .pdf ? Pages.pdfPages(url) ?? 1 : 1
+            return Page(url: url, name: String(localized: "Sheet music"), count: count)
         }
     }
 
@@ -64,8 +78,17 @@ final class PageList {
 
     private func save() {
         let kept = pages.map { Kept(file: $0.url.lastPathComponent, name: $0.name, count: $0.count) }
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        Self.makeFolder(folder)
         try? JSONEncoder().encode(kept).write(to: folder.appending(path: Self.index), options: .atomic)
+    }
+
+    /// The folder, left out of the device's backups: the pages are working copies the player can choose again.
+    private static func makeFolder(_ folder: URL) {
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        var url = folder
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? url.setResourceValues(values)
     }
 
     /// Files chosen or shared, in their order. Each is made ready off the main thread and joins the list as it is
@@ -186,6 +209,15 @@ enum PagesWords {
         case .readerFilesMissing: String(localized: "Your computer couldn't download the files its reader of printed music needs. Check its internet connection, then send the pages again.")
         case .diskFull: String(localized: "Your computer's disk is full. Free some space on it, then send the pages again.")
         case .notRead: String(localized: "Something went wrong while Bandroom on your computer was reading the pages. Try a sharper, straighter picture, or a scan.")
+        }
+    }
+
+    /// "3 pages waiting" on Home's way in, when pages are kept from before; nil when there are none.
+    static func waiting(_ count: Int) -> String? {
+        switch count {
+        case 0: nil
+        case 1: String(localized: "1 page waiting")
+        default: String(localized: "\(count) pages waiting")
         }
     }
 

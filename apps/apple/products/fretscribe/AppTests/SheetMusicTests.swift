@@ -19,6 +19,7 @@ struct SheetMusicTests {
     /// A picture opened or shared goes to the pages; a MusicXML file is still refused, with where pictures go.
     @Test func aPictureOpenedGoesToThePages() async throws {
         let model = FretscribeModel(defaults: UserDefaults(suiteName: "fs-sheet-\(UUID().uuidString)")!)
+        model.pageList = PageList(folder: FileManager.default.temporaryDirectory.appending(path: "fs-pages-\(UUID().uuidString)"))
         let dir = FileManager.default.temporaryDirectory.appending(path: "fs-sheet-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let page = dir.appending(path: "Riff.pdf")

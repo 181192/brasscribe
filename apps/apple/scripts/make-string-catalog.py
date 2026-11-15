@@ -639,6 +639,8 @@ NB = {
     "Which app should connect to your computer?": "Hvilken app skal kobles til datamaskinen?",
     "The pairing link is for any of them. Each app connects on its own.": "Tilkoblingslenken gjelder alle. Hver app kobler seg til for seg.",
     # Sheet music from a picture, a photo or a PDF (features/play/PagesViews.swift)
+    "1 page waiting": "1 side venter",
+    "%lld pages waiting": "%lld sider venter",
     "%lld files are not pictures or PDFs, so they were left out.": "%lld filer er verken bilder eller PDF-er, og ble ikke tatt med.",
     "Pages, in the order they are read": "Sidene, i den rekkefølgen de leses",
     "A picture, a photo or a PDF of the notes": "Et bilde, et foto eller en PDF av notene",

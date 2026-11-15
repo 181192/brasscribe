@@ -113,7 +113,7 @@ struct HomeView: View {
                         .accessibilityIdentifier("capture")
                     #endif
                     WayInCard(icon: PlayIcon.file.systemName, title: String(localized: "Open sheet music"),
-                              subtitle: String(localized: "A picture, a photo or a PDF of the notes")) { model.openPages() }
+                              subtitle: PagesWords.waiting(model.pageList.pageCount) ?? String(localized: "A picture, a photo or a PDF of the notes")) { model.openPages() }
                         .accessibilityIdentifier("sheetMusic")
                 }
             }
@@ -126,7 +126,7 @@ struct HomeView: View {
                         .accessibilityIdentifier("record")
                     Divider().overlay(Color.Scribe.border)
                     WayInRow(icon: PlayIcon.file.systemName, title: String(localized: "Open sheet music"),
-                             subtitle: String(localized: "A picture, a photo or a PDF of the notes")) { model.openPages() }
+                             subtitle: PagesWords.waiting(model.pageList.pageCount) ?? String(localized: "A picture, a photo or a PDF of the notes")) { model.openPages() }
                         .accessibilityIdentifier("sheetMusic")
                 }
                 .card(padding: 0)

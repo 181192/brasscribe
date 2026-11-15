@@ -69,6 +69,24 @@ struct SheetMusicTests {
         #expect(list.pages.isEmpty)
     }
 
+    /// An index that is cut short or unreadable deletes nothing: the pages found are kept, oldest first, and the index is
+    /// written again. A missing index does the same. The folder is left out of backups.
+    @Test func aBrokenIndexKeepsThePages() async throws {
+        let folder = listFolder()
+        let list = PageList(folder: folder)
+        await list.add([try file("one.png", Self.png), try pdf("two.pdf", pages: 2)])
+        #expect(try folder.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup == true)
+        let index = folder.appending(path: "pages.json")
+        try Data("[{\"file\":".utf8).write(to: index)
+        let kept = PageList(folder: folder)
+        #expect(kept.pages.count == 2 && kept.pageCount == 3)
+        #expect(kept.pages.allSatisfy { FileManager.default.fileExists(atPath: $0.url.path) })
+        #expect(PageList(folder: folder).pages.count == 2) // the index was written again
+        try FileManager.default.removeItem(at: index)
+        #expect(PageList(folder: folder).pages.count == 2)
+        kept.clear()
+    }
+
     @Test func noMoreThanFortyPagesAreTaken() async throws {
         let list = PageList(folder: listFolder())
         let page = try file("p.png", Self.png)
@@ -121,7 +139,7 @@ struct SheetMusicTests {
     /// A picture or a PDF opened or shared goes to the pages, not to "What is this?".
     @Test func aPictureOpenedGoesToThePages() async throws {
         let app = AppModel()
-        app.pageList.clear()
+        app.pageList = PageList(folder: listFolder())
         await app.accept(url: try file("Hymn.png", Self.png))
         #expect(app.path == [.pages])
         #expect(app.pageList.pages.map(\.name) == ["Hymn.png"])

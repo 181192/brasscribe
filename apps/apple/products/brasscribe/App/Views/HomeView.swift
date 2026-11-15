@@ -127,6 +127,7 @@ struct HomeView: View {
                 .buttonStyle(.plain)
                 .card(padding: 0)
                 .accessibilityLabel(Text("Open sheet music"))
+                .accessibilityValue(Text(PagesWords.waiting(app.pageList.pageCount) ?? ""))
                 .accessibilityIdentifier("sheetMusic")
             }
             .fixedSize(horizontal: false, vertical: true)
@@ -139,8 +140,10 @@ struct HomeView: View {
                              subtitle: phoneLibrary ? nil : String(localized: "Play your part in the room")) { app.showRecorder = true }
                         .accessibilityIdentifier("record")
                     Divider().overlay(Color.Scribe.border)
+                    // pages kept from before are said, so they are found
                     WayInRow(icon: BrasscribeIcon.file.systemName, title: String(localized: "Open sheet music"),
-                             subtitle: phoneLibrary ? nil : String(localized: "A picture, a photo or a PDF of the notes")) { app.openPages() }
+                             subtitle: PagesWords.waiting(app.pageList.pageCount)
+                                ?? (phoneLibrary ? nil : String(localized: "A picture, a photo or a PDF of the notes"))) { app.openPages() }
                         .accessibilityIdentifier("sheetMusic")
                 }
                 .card(padding: 0)
@@ -185,7 +188,7 @@ struct HomeView: View {
                     .layoutProbe("wayIn-capture")
                 #endif
                 WayInCard(icon: BrasscribeIcon.file.systemName, title: String(localized: "Open sheet music"),
-                          subtitle: String(localized: "A picture, a photo or a PDF of the notes")) { app.openPages() }
+                          subtitle: PagesWords.waiting(app.pageList.pageCount) ?? String(localized: "A picture, a photo or a PDF of the notes")) { app.openPages() }
                     .accessibilityIdentifier("sheetMusic")
                     .layoutProbe("wayIn-sheetMusic")
             }
