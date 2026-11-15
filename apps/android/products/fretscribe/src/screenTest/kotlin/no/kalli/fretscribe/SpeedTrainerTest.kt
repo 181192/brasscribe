@@ -51,7 +51,10 @@ class SpeedTrainerTest : TabScreenTest() {
         rule.onNodeWithTag("fs-practice-trainer-to").performScrollTo().assertContentDescriptionEquals("Up to 100%")
         rule.onNodeWithTag("fs-practice-trainer-every").performScrollTo().assertContentDescriptionEquals("Times through at each speed 2")
         rule.onNodeWithTag("fs-practice-trainer-every-down").performScrollTo().assertContentDescriptionEquals("Times through at each speed: less").performClick()
-        rule.onNodeWithTag("fs-practice-trainer").assertTextContains("Starts at 60% and goes 5% faster after every 1 times through, up to 100%.")
+        rule.onNodeWithTag("fs-practice-trainer").assertTextContains("Starts at 60% and goes 5% faster after every time through, up to 100%.")
+        rule.onNodeWithTag("fs-practice-trainer-every-up").performScrollTo().performClick()
+        rule.onNodeWithTag("fs-practice-trainer").assertTextContains("Starts at 60% and goes 5% faster after every 2 times through, up to 100%.")
+        rule.onNodeWithTag("fs-practice-trainer-every-down").performScrollTo().performClick()
         checkAccessibility()
         shot("speed-trainer")
         // One bar, the first: the recording made for the test is two seconds long.
@@ -108,5 +111,95 @@ class SpeedTrainerTest : TabScreenTest() {
         rule.onNodeWithTag("fs-practice-repeat-forget").performScrollTo().performClick()
         waitUntil(5_000) { !there("fs-practice-saved-0-3") }
         assertEquals(listOf(RepeatBars(1, 3)), practice.savedRepeats)
+    }
+
+    /**
+     * Plays the first bar over and over with the trainer from 60 % up to 100 %, one step every time through, and
+     * follows the speed: each step is exactly 5 %, and each speed is held for one time through the bar at that speed
+     * (about its length over the speed), so a turn counted twice (a step held for no time) or missed (held for two)
+     * fails. The pass lengths are the app's own time, which goes as fast as the wall's.
+     */
+    private fun eachTimeThroughIsOneStep(what: String) {
+        rule.runOnUiThread {
+            practice.repeat(RepeatBars(0, 0))
+            practice.train(SpeedTrainer(60, 100, every = 1))
+        }
+        assertEquals(60, practice.speed)
+        val bar = practice.repeatSeconds()!!
+        rule.onNodeWithTag("fs-practice-play").performClick()
+        val changes = ArrayList<Pair<Int, Long>>()
+        var last = practice.speed
+        val started = System.nanoTime()
+        waitUntil(90_000) {
+            if (practice.speed != last) { last = practice.speed; changes += last to System.nanoTime() }
+            practice.speed >= 100 || !practice.playing
+        }
+        rule.runOnUiThread { practice.pause() }
+        assertEquals("$what: the speeds", (65..100 step 5).toList(), changes.map { it.first })
+        var from = started
+        var speedBefore = 60
+        for ((speed, at) in changes) {
+            val held = (at - from) / 1e9
+            val pass = (bar.endInclusive - bar.start) / (speedBefore / 100.0)
+            assertTrue("$what: $speedBefore % held ${"%.2f".format(held)} s for a pass of ${"%.2f".format(pass)} s", held > 0.5 * pass && held < 1.6 * pass + 0.3)
+            from = at
+            speedBefore = speed
+        }
+        assertNull("$what: the trainer ends at its last speed", practice.trainer)
+    }
+
+    @Test
+    fun eachTimeThroughTheRecordingIsExactlyOneStep() {
+        computer("bass-line-marks")
+        showTheTab()
+        waitForTag("fs-practice-play", 20_000)
+        waitUntil(20_000) { practice.recording == no.kalli.scribe.tab.RecordingState.HERE }
+        eachTimeThroughIsOneStep("the recording")
+    }
+
+    @Test
+    fun eachTimeThroughTheTabsOwnSoundIsExactlyOneStep() {
+        computer("bass-line-marks")
+        showTheTab()
+        waitForTag("fs-practice-play", 20_000)
+        // The song opened again without its recording on the phone: the tab's own sound plays it.
+        rule.runOnUiThread { vm.home() }
+        waitUntil(10_000) { vm.scores.value.isNotEmpty() }
+        settle()
+        java.io.File(rule.activity.noBackupFilesDir, "recordings").deleteRecursively()
+        rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
+        engraved()
+        waitUntil(20_000) { practice.recording != no.kalli.scribe.tab.RecordingState.LOOKING && practice.tabSound }
+        assertEquals(no.kalli.scribe.tab.PracticeSound.TAB, practice.hears)
+        eachTimeThroughIsOneStep("the tab's own sound")
+    }
+
+    /** Saved repeats are the song's in Your songs: written again (a new job), the song still has them where its bars are. */
+    @Test
+    fun aSavedRepeatStaysWhenTheSongIsWrittenAgain() {
+        computer("bass-line-marks")
+        showTheTab()
+        waitForTag("fs-practice-play", 20_000)
+        waitUntil(10_000) { vm.practiceScoreId != null }
+        rule.runOnUiThread { practice.saveRepeat(RepeatBars(1, 2)) }
+        assertEquals(listOf(RepeatBars(1, 2)), practice.savedRepeats)
+        val job = vm.result.value!!.jobId
+        // Check the song, a tap from the tab's header; another tuning writes the song again.
+        rule.runOnUiThread { vm.back() }
+        waitForTag("fs-check-change-tuning", 20_000)
+        rule.onNodeWithTag("fs-check-change-tuning").performScrollTo().performClick()
+        waitUntil(60_000) { vm.result.value?.jobId != job }
+        waitForTag("fs-show-tab", 30_000)
+        rule.onNodeWithTag("fs-show-tab").performScrollTo().performClick()
+        engraved()
+        waitUntil(10_000) { practice.savedRepeats == listOf(RepeatBars(1, 2)) }
+        // And on the phone, as a new process would read it.
+        rule.runOnUiThread { practice.forgetAllButThePhone() }
+        rule.runOnUiThread { vm.home() }
+        waitUntil(10_000) { vm.scores.value.isNotEmpty() }
+        settle()
+        rule.runOnUiThread { vm.openEntry(vm.scores.value.first()) }
+        engraved()
+        waitUntil(10_000) { practice.savedRepeats == listOf(RepeatBars(1, 2)) }
     }
 }

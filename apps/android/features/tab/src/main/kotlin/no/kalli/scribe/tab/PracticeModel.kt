@@ -183,20 +183,20 @@ data class SpeedTrainer(val from: Int, val to: Int, val step: Int = PracticeSpee
 }
 
 /**
- * The repeats the player saved for each song, kept on the phone by the id of the song's job as the places are
- * ([PracticePlaces]): one small file to a song, a repeat to a line.
+ * The repeats the player saved for each song, kept on the phone by the song in Your songs (or its job, for a song
+ * that is not there): one small file to a song, a repeat to a line.
  */
 class SavedRepeats(private val dir: File) {
-    private fun named(job: String): File? = PracticeRecordings.fileName(job)?.let { File(dir, it) }
+    private fun named(song: String): File? = PracticeRecordings.fileName(song)?.let { File(dir, it) }
 
-    fun read(job: String): List<RepeatBars> = named(job)?.takeIf { it.isFile }?.let { runCatching { it.readLines() }.getOrNull() }.orEmpty().mapNotNull { line ->
+    fun read(song: String): List<RepeatBars> = named(song)?.takeIf { it.isFile }?.let { runCatching { it.readLines() }.getOrNull() }.orEmpty().mapNotNull { line ->
         val (first, last) = line.trim().split(' ').mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 } ?: return@mapNotNull null
         if (first in 0..last) RepeatBars(first, last) else null
     }
 
-    /** Keeps [repeats] for [job]'s song: written whole, then put in the place of what was there; none takes the file away. */
-    fun save(job: String, repeats: List<RepeatBars>) {
-        val to = named(job) ?: return
+    /** Keeps [repeats] for [song]: written whole, then put in the place of what was there; none takes the file away. */
+    fun save(song: String, repeats: List<RepeatBars>) {
+        val to = named(song) ?: return
         runCatching {
             if (repeats.isEmpty()) { to.delete(); return }
             dir.mkdirs()
@@ -206,9 +206,9 @@ class SavedRepeats(private val dir: File) {
         }.onFailure { android.util.Log.w(TAG, "the saved repeats could not be kept", it) }
     }
 
-    /** Drops the repeats of every song but [jobs]. */
-    fun prune(jobs: Set<String>) {
-        val kept = jobs.mapNotNull { PracticeRecordings.fileName(it) }.toSet()
+    /** Drops the repeats of every song but [songs]. */
+    fun prune(songs: Set<String>) {
+        val kept = songs.mapNotNull { PracticeRecordings.fileName(it) }.toSet()
         dir.listFiles()?.filter { it.name !in kept }?.forEach { it.delete() }
     }
 
@@ -226,11 +226,11 @@ data class PracticePlace(val at: Double, val speed: Int, val repeat: RepeatBars?
  * still in Your songs is next opened on the tab, when the places of the songs no longer there are pruned.
  */
 class PracticePlaces(private val dir: File) {
-    private fun named(job: String): File? = PracticeRecordings.fileName(job)?.let { File(dir, it) }
+    private fun named(song: String): File? = PracticeRecordings.fileName(song)?.let { File(dir, it) }
 
     /** Where [job]'s song was left; null when it was never practised, or what is kept can't be read. */
-    fun read(job: String): PracticePlace? {
-        val words = named(job)?.takeIf { it.isFile }?.let { runCatching { it.readText() }.getOrNull() }?.trim()?.split(' ') ?: return null
+    fun read(song: String): PracticePlace? {
+        val words = named(song)?.takeIf { it.isFile }?.let { runCatching { it.readText() }.getOrNull() }?.trim()?.split(' ') ?: return null
         val at = words.getOrNull(0)?.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 } ?: return null
         val speed = words.getOrNull(1)?.toIntOrNull() ?: return null
         val first = words.getOrNull(2)?.toIntOrNull()
@@ -273,6 +273,9 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     private val repeats_ = SavedRepeats.of(app)
     /** The saved repeats of the songs opened while the app runs, also of a song that has no job to keep them by. */
     private val keptRepeats = HashMap<String, List<RepeatBars>>()
+    /** What the repeats on screen are kept by ([open]'s keep, else the song), and the key on the phone. */
+    private var repeatsOf: String? = null
+    private var keep: String? = null
     /** The places are written one at a time, in order: an older one never lands after a newer one. */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val writing = Dispatchers.IO.limitedParallelism(1)
@@ -362,10 +365,14 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
     /**
      * The song on screen: [song] names it, [job] is its job on the computer (the recording is kept and fetched
      * by it), [clock] follows the recording in its tab, and [inHand] is the recording's file when the phone
-     * sent it. [songs]: the jobs of Your songs, when the list is known; the recordings of the others go.
+     * sent it. [songs]: the jobs of Your songs, when the list is known; the recordings of the others go. The saved
+     * repeats are kept by [keep] (the song in Your songs, which stays the same when the song is written again; else its
+     * job), and of the songs [kept] only.
      */
-    fun open(song: String, job: String?, clock: TabClock?, inHand: File?, songs: Set<String>? = null, tab: TabSoundSource? = null) {
+    fun open(song: String, job: String?, clock: TabClock?, inHand: File?, songs: Set<String>? = null, tab: TabSoundSource? = null,
+             keep: String? = job, kept: Set<String>? = songs) {
         this.clock = clock
+        val repeatsOf = keep ?: song
         if (song != this.song) {
             remember()
             release()
@@ -380,9 +387,13 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
             unread = was == null
             take(was ?: PracticePlace(0.0, PracticeSpeed.FULL, null))
             trainer = null
-            savedRepeats = keptRepeats[song].orEmpty()
+        }
+        if (repeatsOf != this.repeatsOf) {
+            this.repeatsOf = repeatsOf
+            savedRepeats = keptRepeats[repeatsOf].orEmpty().filter(::fits)
         }
         this.job = job
+        this.keep = keep
         repeat = repeat?.takeIf { fits(it) }
         voice(tab, clock)
         if (player != null || fetching?.isActive == true) { stretch(); return }
@@ -390,18 +401,21 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         val look = ++looking
         val since = changes
         val ask = unread
-        val unsaved = song !in keptRepeats
+        val unsaved = repeatsOf !in keptRepeats
         recording = RecordingState.LOOKING
         viewModelScope.launch {
             val (found, kept) = withContext(Dispatchers.IO) {
                 if (job != null && songs != null && job in songs) {
                     store.prune(songs)
                     // In order with the writes of the places: a prune never runs beside a write.
-                    withContext(writing) { places.prune(songs); repeats_.prune(songs) }
+                    withContext(writing) { places.prune(songs) }
                 }
+                if (keep != null && kept != null && keep in kept) withContext(writing) { repeats_.prune(kept) }
                 // The repeats saved for the song, when they are not in memory yet.
-                if (job != null && unsaved) withContext(writing) { repeats_.read(job) }.let { read ->
-                    withContext(Dispatchers.Main) { if (this@PracticeModel.song == song && song !in keptRepeats) { keptRepeats[song] = read; savedRepeats = read.filter(::fits) } }
+                if (keep != null && unsaved) withContext(writing) { repeats_.read(keep) }.let { read ->
+                    withContext(Dispatchers.Main) {
+                        if (this@PracticeModel.repeatsOf == repeatsOf && repeatsOf !in keptRepeats) { keptRepeats[repeatsOf] = read; savedRepeats = read.filter(::fits) }
+                    }
                 }
                 val found = if (job == null) file else file?.let { store.keep(job, it) } ?: store.find(job)
                 found to job?.takeIf { ask }?.let(places::read)
@@ -735,11 +749,15 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
 
     private fun write(repeats: List<RepeatBars>) {
         savedRepeats = repeats.distinct().sortedWith(compareBy<RepeatBars> { it.first }.thenBy { it.last })
-        song?.let { keptRepeats[it] = savedRepeats }
-        val job = job ?: return
+        repeatsOf?.let { keptRepeats[it] = savedRepeats }
+        val keep = keep ?: return
         val all = savedRepeats
-        viewModelScope.launch(writing) { repeats_.save(job, all) }
+        viewModelScope.launch(writing) { repeats_.save(keep, all) }
     }
+
+    /** The seconds of the recording the bars being repeated take; for the tests. */
+    @VisibleForTesting
+    fun repeatSeconds(): ClosedFloatingPointRange<Double>? = repeat?.let { r -> clock?.span(r) }
 
     /** Keeps [bars] among the song's saved repeats, to start again with one tap. */
     fun saveRepeat(bars: RepeatBars) { if (fits(bars)) write(savedRepeats + bars) }
@@ -883,6 +901,8 @@ class PracticeModel(app: Application, private val saved: SavedStateHandle) : And
         left.clear()
         keptRepeats.clear()
         savedRepeats = emptyList()
+        repeatsOf = null
+        keep = null
         saved.keys().forEach { saved.remove<Any>(it) }
         song = null
         job = null

@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -465,7 +466,7 @@ private fun RepeatDialog(practice: PracticeModel, measures: List<TabMeasure>, re
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.fs_trainer), style = MaterialTheme.typography.bodyLarge, color = c.text)
-                        Text(stringResource(R.string.fs_trainer_tip, trainFrom, trainTo, PracticeSpeed.STEP, trainEvery), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+                        Text(pluralStringResource(R.plurals.fs_trainer_tip, trainEvery, trainFrom, trainTo, PracticeSpeed.STEP, trainEvery), style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                     }
                     Switch(checked = training, onCheckedChange = null, colors = SwitchDefaults.colors(
                         checkedTrackColor = c.primary, checkedThumbColor = c.onPrimary, uncheckedTrackColor = c.surfaceRaised, uncheckedThumbColor = c.borderStrong, uncheckedBorderColor = c.borderStrong))
