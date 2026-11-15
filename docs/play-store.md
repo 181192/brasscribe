@@ -251,16 +251,107 @@ Deleting data: there is no account, so Play's account-deletion requirement does 
 ### Permissions and declarations
 
 Play asks for a declaration, with a short video, for each foreground service type an app targeting Android 14 or
-newer uses. Both apps declare (`features/play/src/main/AndroidManifest.xml`):
+newer uses. The types are in `features/play/src/main/AndroidManifest.xml`; each is for one feature:
 
-| Foreground service type | Why (draft for the declaration) |
-|---|---|
-| `microphone` | Recording a rehearsal or a solo continues when the screen turns off or the player switches app. |
-| `mediaProjection` | "Record what's playing": recording the sound another app on the phone plays, which the player starts and sees in the notification. |
-| `dataSync` | Sending a long recording to the player's own computer continues in the background. |
-| `mediaProcessing` | Writing a solo down on the phone continues in the background. Brasscribe only: Fretscribe has no listening on the phone, so the type and its service leave Fretscribe's manifest (a pull request of its own), and Fretscribe's declaration has three types. |
+| Type | Service | The feature | Needed? |
+|---|---|---|---|
+| `microphone` | `CaptureService` | Recording with the microphone goes on with the screen off or in another app: a rehearsal is recorded with the phone on the stand or in a pocket. | Yes. Without it Android stops the microphone when the screen turns off, and a rehearsal take is cut. Both apps. |
+| `mediaProjection` | `CaptureService` | "Record what's playing": recording the sound another app on the phone plays, started by the player and shown in the notification. | Yes. Android lets an app capture another app's sound only from a foreground service of this type. Both apps. |
+| `dataSync` | `ComputerJobService` | Sending the recording to the player's own computer, and following the job there, goes on when the player leaves the app; a notification says when the score or tab is ready. | Yes for now: without it, leaving the app mid-send stops the upload of a long take, and nothing says when the score is ready. **SJEKK:** Play points apps that move data at Android's user-initiated data transfer jobs instead of `dataSync`; moving to one is a change to the send-and-follow flow, not a small one, and is not proposed here. Both apps. |
+| `mediaProcessing` | `DraftService` | Brasscribe only: a band draft made on the phone goes on when the player leaves the app. | Yes in Brasscribe (`DraftServiceDeclaredTest` keeps it there). Fretscribe writes nothing down on the phone, and its manifest no longer declares the service or its permission (`NoDraftServiceTest`), so Fretscribe declares three types. |
 
-**SJEKK:** each declaration needs a video link (an unlisted video showing the feature). None exists yet.
+None can be dropped from Brasscribe without losing a feature.
+
+**Android's time limit.** From Android 15, `dataSync` and `mediaProcessing` foreground services get six hours in
+any 24; after that the system calls the service's `onTimeout` and refuses new starts of that type until time is
+free. Both services handle it: `ComputerJobService.onTimeout` lets go of the jobs (they go on on the computer, and
+are listed in Your scores once done) and stops, and `DraftService.onTimeout` stops, so the draft goes on only while
+the app is in front. A start the system refuses is caught in both (`startForeground` in a `runCatching`): the
+recording is still sent, and the draft still made, while the app is in front; `DraftService` also tells the view
+model it was refused. No code change is needed. (`microphone` and `mediaProjection` have no such limit.)
+
+#### The Console's description, per type
+
+Paste-ready for each type's description box (the form also asks what happens if the task is put off or
+interrupted; the second sentence answers that):
+
+- **microphone:** "The app records a rehearsal or a player's practice with the microphone, started by the user
+  and shown in a notification, so a recording goes on with the screen off or while the user is in another app. If
+  it were interrupted, the user's recording would be cut short and the take lost."
+- **mediaProjection:** "The user can record the sound another app on the phone is playing (Record what's
+  playing), to have it written down as sheet music or tab. Android allows capturing another app's audio only from a
+  foreground service of this type; the user starts it, confirms the system's prompt, and sees a notification while
+  it runs. If it were interrupted, the recording would stop."
+- **dataSync:** "After the user chooses to have a recording written down on their own computer (our free desktop
+  app, Bandroom, on the same local network), the app sends the recording there and follows the job until the score
+  is ready, then says so in a notification. It runs only while a recording is being sent or a job followed. If it
+  were put off, a long recording would not be sent while the user is in another app."
+- **mediaProcessing (Brasscribe only):** "The user can have a quick draft of a band recording made on the phone
+  itself, with on-device models; this takes a few minutes, and the service keeps it going if the user leaves the
+  app, with a notification. If it were interrupted, the draft would stop and could be made again with the app open."
+
+#### The videos
+
+Each type needs a video link: an unlisted video of about 30 s. They can be recorded in one sitting on the phone,
+with Bandroom running and paired on a computer on the same Wi-Fi. The music is only the public-domain *Old
+Hundredth* (Brasscribe) or the invented bass line (Fretscribe): render each to a sound file once with MuseScore,
+on the computer, and copy it to the phone:
+
+```sh
+M="/Applications/MuseScore 4.app/Contents/MacOS/mscore"    # MuseScore's command line; on Windows, MuseScore4.exe
+"$M" -o old-hundredth.wav apps/fixtures/old-hundredth/brass-band.musicxml
+"$M" -o bass-line.wav apps/fixtures/bass-line/tab.musicxml
+adb push old-hundredth.wav bass-line.wav /sdcard/Music/
+```
+
+Videos 2 to 4 can be recorded with the phone's own screen recorder. Video 1 cannot, as the screen goes off in the
+middle: film the phone with another phone or camera (the recorder stops or records black while the screen is off).
+
+**Brasscribe**
+
+1. `microphone` (about 30 s, filmed with another camera):
+   1. Open Brasscribe. On Home, tap **Record with the microphone**; allow the microphone if asked.
+   2. Pull down the notification shade to show "Recording with the microphone"; note the time on the record screen.
+   3. Press the power button: the screen goes off. Play or sing near the phone for 10 s.
+   4. Wake and unlock the phone: the record screen is still recording, its time has gone on by about 10 s.
+   5. Tap **Stop recording**: the take is kept and Brasscribe asks what it is.
+2. `mediaProjection` (about 30 s, screen recorder):
+   1. In the Files app (or a music player), start playing `old-hundredth.wav` from Music.
+   2. Open Brasscribe. On Home, tap **Record what's playing**.
+   3. Android asks whether Brasscribe may record what plays on the phone: allow it.
+   4. Pull down the shade to show "Recording what's playing on this phone". Switch to the Files app for a few
+      seconds: the music goes on, the notification stays.
+   5. Back in Brasscribe, tap **Stop recording**: the take is kept.
+3. `dataSync` (about 40 s, screen recorder):
+   1. Open Brasscribe, paired with Bandroom (Home shows the computer as connected).
+   2. Open `old-hundredth.wav`, choose **Brass band**, choose **On your computer**, and tap **Continue**.
+   3. While it sends the recording to the computer, press Home.
+   4. Pull down the shade: "Your computer is making the score".
+   5. Wait for "Your score is ready", and tap it: the score opens.
+4. `mediaProcessing` (about 30 s, screen recorder):
+   1. Open Brasscribe and open `old-hundredth.wav`; choose **Brass band**.
+   2. Choose **On this phone: a quick draft**, and tap **Continue**.
+   3. While the draft is being made, press Home; pull down the shade to show "Making a band draft".
+   4. Go back to Brasscribe when it is done: the draft is there.
+
+**Fretscribe** (no `mediaProcessing`; there is no "On your computer" choice, as Fretscribe always writes the tab
+on the computer)
+
+1. `microphone` (about 30 s, filmed with another camera): as Brasscribe's, in Fretscribe: **Record with the
+   microphone**, the notification "Recording with the microphone", screen off for 10 s while playing a riff, unlock,
+   still recording, **Stop recording**; Fretscribe asks what it is.
+2. `mediaProjection` (about 30 s, screen recorder): as Brasscribe's, with `bass-line.wav` playing in the Files app:
+   **Record what's playing**, allow, "Recording what's playing on this phone", switch away and back, **Stop
+   recording**.
+3. `dataSync` (about 40 s, screen recorder):
+   1. Open Fretscribe, paired with Bandroom (Home shows the computer as connected).
+   2. Open `bass-line.wav`, choose **Just my instrument**, and tap **Continue**.
+   3. While it sends the recording to the computer, press Home.
+   4. Pull down the shade: "Bandroom on your computer is writing down the notes".
+   5. Wait for "Your tab is ready", and tap it: the tab opens.
+
+**SJEKK:** the MuseScore command was not run here; check that the two files sound right before filming. The
+screens between the steps (the instrument, Check the song) may ask a question first; answer it and go on.
 
 Other permissions (no declaration form, but the listing should not surprise): `RECORD_AUDIO`, `CAMERA` (a photo of
 printed music, and scanning Bandroom's pairing code), `POST_NOTIFICATIONS`, `INTERNET`, `ACCESS_NETWORK_STATE`,
