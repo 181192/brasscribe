@@ -139,6 +139,9 @@ jobs:
         run: .github/scripts/test-version-only.sh
       - name: The models each release file must carry (release-models.py)
         run: python3 .github/scripts/test_release_models.py
+      # The runner's JDK and Android SDK make and sign the made-up bundles.
+      - name: The check of a Google Play bundle (check-aab.py)
+        run: python3 .github/scripts/test_check_aab.py
 
   # The licence texts the apps ship (licences/README.md): the files written from the list are current, and every
   # dependency of the builds is in the list or named as not shipped. Always run: a dependency can change in any area.

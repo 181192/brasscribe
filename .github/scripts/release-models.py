@@ -6,13 +6,13 @@
     .github/scripts/release-models.py --require 'brasscribe-play-android-*.apk' dist/   # and that one is there
 
 Prints a Markdown table with a row for every file: the models found in it and whether that is what the app must
-carry (also into $GITHUB_STEP_SUMMARY when set). Exit 1 when an enforced rule fails, when an APK or IPA has no rule
+carry (also into $GITHUB_STEP_SUMMARY when set). Exit 1 when an enforced rule fails, when an APK, app bundle or IPA has no rule
 (a file this script does not know cannot be vouched for), or when no file matches a --require pattern. The expected files and their sha256 and size
 come from the pin, convert/on-device-models.json; RULES below says which pinned files go into which artifact and
 where. ONNX files are bundled as they are, so their bytes are checked against the pin; Core ML packages are
 compiled into .mlmodelc folders by the build, so only that the compiled weights are there and not empty. NOTICE.md
 must be convert/on-device-models-NOTICE.md, byte for byte.
-Standard library only; an APK, an IPA and the Mac zip are all zip files.
+Standard library only; an APK, an app bundle (.aab), an IPA and the Mac zip are all zip files.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from pathlib import Path
 
 PIN = Path(__file__).resolve().parents[2] / "convert" / "on-device-models.json"
 NOTICE = PIN.with_name("on-device-models-NOTICE.md")
-UNKNOWN_FAILS = (".apk", ".ipa")  # an app package with no rule fails
+UNKNOWN_FAILS = (".apk", ".aab", ".ipa")  # an app package with no rule fails
 MODEL_SUFFIXES = (".onnx", ".mlmodelc", ".mlpackage", ".tflite")
 
 
@@ -52,6 +52,9 @@ APPLE = ("swift-f0-window-fp32.mlpackage.zip", "nmp-b1-fp32.mlpackage.zip", "bea
 RULES = (
     Rule("brasscribe-*.apk", "Play for Android", "assets/models/", onnx=ANDROID, notice=True),
     Rule("fretscribe-*.apk", "Fretscribe for Android", none=".onnx"),
+    # The bundles for Google Play: the same apps, the base module's files under base/.
+    Rule("brasscribe-*.aab", "Play for Android (Google Play bundle)", "base/assets/models/", onnx=ANDROID, notice=True),
+    Rule("fretscribe-*.aab", "Fretscribe for Android (Google Play bundle)", none=".onnx"),
     # The Apple apps' build compiles the packages into the bundle (apps/apple/scripts/stage-models.sh).
     Rule("brasscribe-play-ios*.ipa", "Play for iPhone and iPad", "Payload/BrasscribePlay.app/Models/",
          coreml=APPLE, notice=True),

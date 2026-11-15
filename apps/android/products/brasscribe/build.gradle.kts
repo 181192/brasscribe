@@ -107,7 +107,10 @@ android {
     // alphaSkia dominate the native size, so shipping both ABIs in one file would double it.
     splits {
         abi {
-            isEnable = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+            // Not for the Play bundle (bundleRelease): Play splits it per device itself, and AGP refuses a bundle
+            // while ABI splits are on, so the bundle is built in a Gradle run of its own.
+            val requested = gradle.startParameter.taskNames
+            isEnable = requested.any { it.contains("Release", ignoreCase = true) } && requested.none { it.contains("bundle", ignoreCase = true) }
             reset()
             include("arm64-v8a", "x86_64")
             isUniversalApk = true
