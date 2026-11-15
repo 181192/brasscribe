@@ -10,7 +10,8 @@ Fails (exit 1) unless the bundle
   and the other way round; a bundle that is unsigned or signed with any other key is refused here;
 - is the app --package, not debuggable, with --version-name and --version-code when given;
 - with --like: has the package, versionName, versionCode and permissions of that APK (the same app from the
-  same build), so the bundle asks for no permission the APK does not.
+  same build), so the bundle asks for no permission the APK does not, and for each ABI the APK carries, the same
+  native libraries (a bundle without the Rust core would run on the slower fallback, unnoticed).
 Prints the package, version, SDK range and the permissions it asks for (also into $GITHUB_STEP_SUMMARY when set).
 
 Needs jarsigner and keytool (a JDK; JAVA_HOME/bin is searched too), and for --like the build tools' aapt2
@@ -203,6 +204,17 @@ def norm(sha: str) -> str:
     return sha.replace(":", "").lower()
 
 
+def native_libs(archive: Path, prefix: str) -> dict[str, set[str]]:
+    """The native libraries under <prefix>lib/, by ABI."""
+    libs: dict[str, set[str]] = {}
+    with zipfile.ZipFile(archive) as z:
+        for name in z.namelist():
+            parts = name[len(prefix):].split("/") if name.startswith(prefix + "lib/") else []
+            if len(parts) == 3 and parts[2].endswith(".so"):
+                libs.setdefault(parts[1], set()).add(parts[2])
+    return libs
+
+
 def apk_facts(apk: Path) -> Facts:
     a = aapt2()
     badging = run(a, "dump", "badging", str(apk))
@@ -243,9 +255,16 @@ def check(aab: Path, cert: str, package: str, version_name: str | None, version_
             raise Refused(f"asks for other permissions than {like.name}: "
                           f"{'only in the bundle: ' + ', '.join(more) if more else ''}"
                           f"{'; ' if more and fewer else ''}{'only in the APK: ' + ', '.join(fewer) if fewer else ''}")
+        apk_libs, aab_libs = native_libs(like, ""), native_libs(aab, "base/")
+        for abi in sorted(apk_libs):
+            if aab_libs.get(abi, set()) != apk_libs[abi]:
+                more, fewer = sorted(aab_libs.get(abi, set()) - apk_libs[abi]), sorted(apk_libs[abi] - aab_libs.get(abi, set()))
+                raise Refused(f"has other native libraries for {abi} than {like.name}: "
+                              f"{'only in the bundle: ' + ', '.join(more) if more else ''}"
+                              f"{'; ' if more and fewer else ''}{'only in the APK: ' + ', '.join(fewer) if fewer else ''}")
     certs = signers(aab)
     if len(certs) != 1:
-        raise Refused(f"has {len(certs)} signers, not one: {', '.join(certs)}")
+        raise Refused(f"has {len(certs)} signer certificates, not one: {', '.join(certs)}")
     if certs[0] != norm(cert):
         raise Refused(f"is signed with certificate {certs[0]}, not {norm(cert)}")
     return f

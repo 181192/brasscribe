@@ -66,7 +66,7 @@ class CheckAab(unittest.TestCase):
                         str(d / "AndroidManifest.xml"), "-I", self.android_jar], check=True, capture_output=True)
         return out
 
-    def bundle(self, *signers: str, **manifest) -> Path:
+    def bundle(self, *signers: str, libs=("libscribe_ffi.so", "libscribe_audio.so"), **manifest) -> Path:
         linked = self.link(manifest_xml(**manifest), proto=True)
         aab = linked.with_name("app.aab")
         with zipfile.ZipFile(linked) as src, zipfile.ZipFile(aab, "w", zipfile.ZIP_DEFLATED) as z:
@@ -74,14 +74,20 @@ class CheckAab(unittest.TestCase):
             z.writestr("base/manifest/AndroidManifest.xml", src.read("AndroidManifest.xml"))
             z.writestr("base/resources.pb", src.read("resources.pb"))
             z.writestr("base/dex/classes.dex", b"dex")
+            for lib in libs:
+                z.writestr(f"base/lib/arm64-v8a/{lib}", b"so")
         for alias in signers:
             subprocess.run([check_aab.java_tool("jarsigner"), "-keystore", str(self.keys[alias][0]), "-storepass:env",
                             "AAB_TEST_PASSWORD", str(aab), alias], check=True, capture_output=True,
                            env={**os.environ, "AAB_TEST_PASSWORD": PASSWORD})
         return aab
 
-    def apk(self, **manifest) -> Path:
-        return self.link(manifest_xml(**manifest), proto=False)
+    def apk(self, libs=("libscribe_ffi.so", "libscribe_audio.so"), **manifest) -> Path:
+        apk = self.link(manifest_xml(**manifest), proto=False)
+        with zipfile.ZipFile(apk, "a") as z:
+            for lib in libs:
+                z.writestr(f"lib/arm64-v8a/{lib}", b"so")
+        return apk
 
     def run_check(self, aab: Path, *extra: str, cert: str | None = None) -> tuple[int, str]:
         err = io.StringIO()
@@ -116,7 +122,7 @@ class CheckAab(unittest.TestCase):
     def test_a_bundle_with_a_second_signer_is_refused(self):
         code, err = self.run_check(self.bundle("release", "other"))
         self.assertEqual(code, 1)
-        self.assertIn("2 signers", err)
+        self.assertIn("2 signer certificates", err)
 
     def test_a_bundle_changed_after_signing_is_refused(self):
         aab = self.bundle("release")
@@ -174,6 +180,12 @@ class CheckAab(unittest.TestCase):
     def test_without_a_certificate_nothing_is_checked(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             check_aab.main(["--package", "app.example.tune", str(self.bundle("release"))])
+
+    def test_like_an_apk_with_other_native_libraries_is_refused(self):
+        code, err = self.run_check(self.bundle("release", libs=("libscribe_audio.so",)), "--like", str(self.apk()))
+        self.assertEqual(code, 1)
+        self.assertIn("other native libraries for arm64-v8a", err)
+        self.assertIn("only in the APK: libscribe_ffi.so", err)
 
     def test_a_zip_that_is_not_a_bundle_is_refused(self):
         code, err = self.run_check(self.apk())

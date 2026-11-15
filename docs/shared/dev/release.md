@@ -153,6 +153,12 @@ jarsigner -keystore "$K/brasscribe-release.jks" -storepass:file "$K/keystore-pas
 after signing, debuggable, or another app; with `--like` also one whose version or permissions differ from the
 app's APK of the same build. It prints the permissions the bundle asks for. The release job runs it on both bundles.
 
+**Do not upload Brasscribe's bundle to Play yet.** Its bundle is still `no.kalli.brasscribe`, signed with the key
+the GitHub APKs have used so far. Play's app is `app.kalli.brasscribe`, and Brasscribe moves to a new key that can be
+exported for Play App Signing; the first upload fixes an app's package name and its app signing key for good.
+Upload Brasscribe's bundle only from the first release after both have changed in this repository. Fretscribe's
+bundle has the same wait for its move to `app.kalli.fretscribe`.
+
 **Play App Signing must use this same key for each app.** Play re-signs what it delivers to phones with its
 app signing key. When the app is set up in the Play Console (Setup > App signing), choose to use your own key and
 export it from its Java keystore with Google's PEPK tool, as the Console describes (its wording changes; follow
