@@ -124,11 +124,16 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
     which makes the runtime's telemetry client as the app starts and would read the phone's id (`ANDROID_ID`), maker
     and model for it, and deletes a queue of events an earlier version may have left in its cache.
   - **Windows:** the runtime writes its events to ETW, for Windows' own diagnostic data, rather than sending them
-    itself. Play for Windows and the swift-f0 adapter switch them off (`DisableTelemetryEvents`) before every model they
-    load. The runtime offers no way to keep them off for good: when Windows' diagnostic data service turns the runtime's
-    ETW provider on while a model is loaded, the runtime turns its events back on, and Windows then collects them as its
-    diagnostic data settings allow. The separator, homr and basic-pitch adapters run their packages' own programs, which
-    do not switch them off.
+    itself; what Windows then collects and sends follows the PC's diagnostic data settings. Each program that loads
+    the runtime writes one event as the runtime starts (`ProcessInfo`: the runtime's version, whether a debugger is
+    attached, whether it is the redistributable build, the calling framework's name and the names of any Windows
+    services in the process), before anything can switch events off. Play for Windows and the swift-f0 adapter then
+    switch them off (`DisableTelemetryEvents`) before every model they load, and the runtime writes no more. The
+    runtime has no lasting switch: when Windows' diagnostic data service turns the runtime's ETW provider on while a
+    model is loaded, the runtime turns its events back on until they are next switched off. The separator, homr and
+    basic-pitch adapters run their packages' own programs, which do not switch them off. No newer ONNX Runtime for
+    Windows removes the start-up event: the DirectML build Play for Windows ships ends at 1.24.4, and Microsoft's
+    Windows builds up to 1.32.0 (NuGet and PyPI) keep writing to ETW and do not read `ORT_DISABLE_TELEMETRY`.
 
   A recording, or the notes written from it, is never part of what the runtime reports. Microsoft's privacy statement:
   https://go.microsoft.com/fwlink/?LinkID=824704.
