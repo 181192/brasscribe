@@ -141,7 +141,7 @@ class PlayUpload(unittest.TestCase):
         return re.search(r"SHA256:\s*([0-9A-F:]+)", out).group(1)
 
     def args(self, *extra: str, aab: Path | None = None, cert: str | None = None) -> list[str]:
-        return ["--track", "internal", "--cert", cert or self.cert, "--notes-en", str(self.en), "--notes-nb", str(self.nb),
+        return ["--track", "internal", "--package", "app.example.tune", "--cert", cert or self.cert, "--notes-en", str(self.en), "--notes-nb", str(self.nb),
                 *extra, str(aab or self.aab)]
 
     def run_upload(self, *args: str, fail: str = "", code: str = "7", account: str | None = None, xtrace: bool = False,
@@ -242,7 +242,7 @@ class PlayUpload(unittest.TestCase):
     def test_only_the_internal_track(self):
         for track in ("production", "beta", "alpha", ""):
             with self.subTest(track):
-                r, calls, _ = self.run_upload("--track", track, "--cert", self.cert, "--notes-en", str(self.en), "--notes-nb", str(self.nb), str(self.aab))
+                r, calls, _ = self.run_upload("--track", track, "--package", "app.example.tune", "--cert", self.cert, "--notes-en", str(self.en), "--notes-nb", str(self.nb), str(self.aab))
                 self.assertNotEqual(r.returncode, 0)
                 self.assertEqual(calls, [])
 
@@ -255,7 +255,7 @@ class PlayUpload(unittest.TestCase):
     def test_notes_too_long_or_a_bad_key_stop_before_any_call(self):
         long = self.tmp / "long.txt"
         long.write_text("x" * 501)
-        r, calls, _ = self.run_upload("--track", "internal", "--cert", self.cert, "--notes-en", str(long), "--notes-nb", str(self.nb), str(self.aab))
+        r, calls, _ = self.run_upload("--track", "internal", "--package", "app.example.tune", "--cert", self.cert, "--notes-en", str(long), "--notes-nb", str(self.nb), str(self.aab))
         self.assertNotEqual(r.returncode, 0)
         self.assertEqual(calls, [])
         for account in ("", "not json", json.dumps({"client_email": "x@example.com", "private_key": "nope"})):
@@ -288,6 +288,14 @@ class PlayUpload(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertIn("xtrace", r.stderr)
         self.assertNotIn(self.pem.splitlines()[1], r.stderr)
+        self.assertEqual(calls, [])
+
+    def test_a_bundle_of_another_package_is_refused_before_any_call(self):
+        argv = self.args()
+        argv[argv.index("--package") + 1] = "app.example.other"
+        r, calls, _ = self.run_upload(*argv)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("is app.example.tune, not app.example.other", r.stderr)
         self.assertEqual(calls, [])
 
     def test_a_bundle_signed_with_another_key_is_refused_before_any_call(self):
@@ -332,6 +340,14 @@ class PlayNotes(unittest.TestCase):
         self.assertEqual(play_notes.notes(CHANGELOG, "1.3.0", "fretscribe", "en-US"),
                          "• The tuner shows the nearest note\n• Fretscribe shows the capo on the tab\n"
                          "• Every app opens its licences from About")
+
+    def test_a_breaking_change_comes_first_with_its_description_on_a_line_of_its_own(self):
+        changelog = ("## 2.0.0\n\n### Breaking changes\n\n- **Android:** **Breaking:** The apps get new names "
+                     "([#9](https://github.com/x/y/pull/9))<br>Install this version beside the old one.\n\n"
+                     "### New features\n\n- **Android:** **Breaking:** The apps get new names "
+                     "([#9](https://github.com/x/y/pull/9))\n- **Android:** A tuner\n")
+        self.assertEqual(play_notes.notes(changelog, "2.0.0", "brasscribe", "en-US"),
+                         "• The apps get new names\nInstall this version beside the old one.\n• A tuner")
 
     def test_nb_no_says_the_notes_are_in_english(self):
         self.assertTrue(play_notes.notes(CHANGELOG, "1.3.0", "brasscribe", "no-NO").startswith("Nytt i denne versjonen (på engelsk):\n• "))

@@ -52,7 +52,8 @@ body = """
 {% for commit in breaking | sort(attribute="scope") %}
 {{ self::commit_line(commit=commit) }}
 {%- if commit.breaking_description and commit.breaking_description != commit.message %}
-  {{ commit.breaking_description | trim }}
+{#- On the bullet's own line after a break: `trim` strips every line's indent, so a line of its own would run on. #}
+{{- "<br>" ~ commit.breaking_description | trim }}
 {%- endif %}
 {%- endfor %}
 {% endif -%}

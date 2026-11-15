@@ -157,7 +157,7 @@ jobs:
           for a in arm64-v8a universal; do
             apk="products/fretscribe/build/outputs/apk/release/fretscribe-$a-release-unsigned.apk"
             fail() { echo "$apk: $1" >&2; exit 1; }
-            badge "$apk" | grep -q "^package: name='no.kalli.fretscribe' " || fail "is not no.kalli.fretscribe"
+            badge "$apk" | grep -q "^package: name='app.kalli.fretscribe' " || fail "is not app.kalli.fretscribe"
             if badge "$apk" | grep -qE "^(application-debuggable|testOnly)"; then fail "is debuggable or test-only"; fi
             for v in Name Code; do
               given=FRETSCRIBE_VERSION_$(tr '[:lower:]' '[:upper:]' <<<"$v")
@@ -216,8 +216,9 @@ jobs:
 
   # Only this job gets the release keys: it runs in the `release` environment, whose secrets hold the
   # keystores (base64) and their passwords. A key must stay the same across releases, or the APK will
-  # not install over the previous one; the certificate is checked against RELEASE_CERT_SHA256.
-  # Each app has its own key: Brasscribe's (ANDROID_KEYSTORE_*, alias brasscribe), and for Fretscribe
+  # not install over the previous one; the certificate is checked against BRASSCRIBE_CERT_SHA256.
+  # Each app has its own key: Brasscribe's (BRASSCRIBE_KEYSTORE_*, alias brasscribe; the key of app.kalli.brasscribe,
+  # also Play's app signing key), and for Fretscribe
   # one shared with other prototype apps (PROTOTYPES_KEYSTORE_*, alias prototypes, PROTOTYPES_CERT_SHA256).
   # A step gets one key only, and the last step fails the job if an APK carries the other app's.
   # Each app's Google Play bundle (.aab) is signed with that app's key too, with jarsigner, in steps of their own:
@@ -230,7 +231,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment: release
     env:
-      RELEASE_CERT_SHA256: 008dc03426b4036e04e334ee542a394e26d66b95423ac146257abdf70b960233
+      BRASSCRIBE_CERT_SHA256: 706a90189407d2a6a63486e0f496beda2d87817eeea2af79a11bb8d078d9bcfe
       PROTOTYPES_CERT_SHA256: 73759ffa5a9a27cc18c9f07c5418033c47481c61f3b435559e67509290c394b0
     steps:
       - uses: actions/download-artifact@v8
@@ -249,7 +250,7 @@ jobs:
           BT="$ANDROID_HOME/build-tools/35.0.0"
           [ "$(ls unsigned | wc -l)" -eq 4 ] || { echo "expected four unsigned APKs:" >&2; ls unsigned >&2; exit 1; }
           for a in arm64-v8a universal; do
-            for app in "app-$a=no.kalli.brasscribe" "fretscribe-$a=no.kalli.fretscribe"; do
+            for app in "app-$a=app.kalli.brasscribe" "fretscribe-$a=app.kalli.fretscribe"; do
               apk="unsigned/${app%%=*}-release-unsigned.apk"
               "$BT/aapt2" dump badging "$apk" | grep -q "^package: name='${app#*=}' " \
                 || { echo "$apk is not ${app#*=}" >&2; exit 1; }
@@ -259,8 +260,8 @@ jobs:
       - name: Align and sign
         working-directory: .
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYSTORE_B64: ${{ secrets.BRASSCRIBE_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.BRASSCRIBE_KEYSTORE_PASSWORD }}
         run: |
           [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "release signing secrets are missing" >&2; exit 1; }
           BT="$ANDROID_HOME/build-tools/35.0.0"
@@ -273,7 +274,7 @@ jobs:
             "$BT/zipalign" -f -p 4 "unsigned/app-$a-release-unsigned.apk" "$RUNNER_TEMP/aligned.apk"
             "$BT/apksigner" sign --ks "$ks" --ks-key-alias brasscribe --ks-pass env:KEYSTORE_PASSWORD \
               --out "$out" "$RUNNER_TEMP/aligned.apk"
-            "$BT/apksigner" verify --print-certs "$out" | grep -q "SHA-256 digest: $RELEASE_CERT_SHA256" \
+            "$BT/apksigner" verify --print-certs "$out" | grep -q "SHA-256 digest: $BRASSCRIBE_CERT_SHA256" \
               || { echo "$out is not signed with the release certificate" >&2; exit 1; }
           done
           rm -f "$RUNNER_TEMP/aligned.apk" "$RUNNER_TEMP"/out/*.idsig
@@ -307,7 +308,7 @@ jobs:
           BT="$ANDROID_HOME/build-tools/35.0.0"
           [ "$(ls "$RUNNER_TEMP/out" | wc -l)" -eq 4 ] || { echo "expected four signed APKs:" >&2; ls "$RUNNER_TEMP/out" >&2; exit 1; }
           for a in arm64-v8a universal; do
-            for app in "brasscribe-play-android-$a=no.kalli.brasscribe=$RELEASE_CERT_SHA256" "fretscribe-android-$a=no.kalli.fretscribe=$PROTOTYPES_CERT_SHA256"; do
+            for app in "brasscribe-play-android-$a=app.kalli.brasscribe=$BRASSCRIBE_CERT_SHA256" "fretscribe-android-$a=app.kalli.fretscribe=$PROTOTYPES_CERT_SHA256"; do
               IFS== read -r name package cert <<<"$app"
               apk="$RUNNER_TEMP/out/$name.apk"
               "$BT/aapt2" dump badging "$apk" | grep -q "^package: name='$package' " || { echo "$name.apk is not $package" >&2; exit 1; }
@@ -360,15 +361,15 @@ jobs:
         run: |
           for app in brasscribe fretscribe; do
             package=$(bundle-checks/.github/scripts/check-aab.py --print package "unsigned-bundles/$app-release-unsigned.aab")
-            [ "$package" = "no.kalli.$app" ] || { echo "$app-release-unsigned.aab is $package, not no.kalli.$app" >&2; exit 1; }
+            [ "$package" = "app.kalli.$app" ] || { echo "$app-release-unsigned.aab is $package, not app.kalli.$app" >&2; exit 1; }
           done
           mkdir -p "$RUNNER_TEMP/bundles"
 
       - name: Sign Brasscribe's bundle
         working-directory: .
         env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEYSTORE_B64: ${{ secrets.BRASSCRIBE_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.BRASSCRIBE_KEYSTORE_PASSWORD }}
         run: |
           [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASSWORD" ] || { echo "release signing secrets are missing" >&2; exit 1; }
           ks="$RUNNER_TEMP/release.jks"
@@ -399,9 +400,9 @@ jobs:
         run: |
           check=bundle-checks/.github/scripts/check-aab.py
           [ "$(find "$RUNNER_TEMP/bundles" -name '*.aab' | wc -l)" -eq 2 ] || { echo "expected two signed bundles" >&2; exit 1; }
-          "$check" --cert "$RELEASE_CERT_SHA256" --package no.kalli.brasscribe \
+          "$check" --cert "$BRASSCRIBE_CERT_SHA256" --package app.kalli.brasscribe \
             --like "$RUNNER_TEMP/out/brasscribe-play-android-arm64-v8a.apk" "$RUNNER_TEMP/bundles/brasscribe-play-android.aab"
-          "$check" --cert "$PROTOTYPES_CERT_SHA256" --package no.kalli.fretscribe \
+          "$check" --cert "$PROTOTYPES_CERT_SHA256" --package app.kalli.fretscribe \
             --like "$RUNNER_TEMP/out/fretscribe-android-arm64-v8a.apk" "$RUNNER_TEMP/bundles/fretscribe-android.aab"
 
       - uses: actions/upload-artifact@v7

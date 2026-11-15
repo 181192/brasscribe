@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Uploads one app's signed bundle (.aab) to Google Play's internal testing track (docs/shared/dev/release.md):
 #
-#   scripts/play-upload.sh [--dry-run] --track internal --cert SHA256 --notes-en FILE --notes-nb FILE app.aab
+#   scripts/play-upload.sh [--dry-run] --track internal --package ID --cert SHA256 --notes-en FILE --notes-nb FILE app.aab
 #
 # The service account's JSON key comes from the environment, PLAY_SERVICE_ACCOUNT_JSON (its contents, not a path).
-# The package is read from the bundle, and the bundle must be signed with --cert alone (check-aab.py), so a wrong or
-# replaced file is refused before anything reaches Play. Steps (Android Publisher API v3): sign a JWT (RS256) for the service account
+# The bundle must be the app --package and be signed with --cert alone (check-aab.py), so a wrong, old or replaced
+# file is refused before anything reaches Play. Steps (Android Publisher API v3): sign a JWT (RS256) for the service account
 # and trade it for an access token with the androidpublisher scope; open an edit; upload the bundle; give the internal
 # track a completed release of that version code with the notes in en-US and no-NO; commit the edit. On any failure
 # after the edit is open, the edit is deleted, so nothing half-done is left for the next run. Only `internal` is
@@ -29,12 +29,13 @@ die() { echo "play-upload: $*" >&2; exit 1; }
 mask() { [ -z "${GITHUB_ACTIONS:-}" ] || echo "::add-mask::$1"; }
 usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2; }
 
-dry=false track="" cert="" notes_en="" notes_nb="" aab=""
+dry=false track="" package_want="" cert="" notes_en="" notes_nb="" aab=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry=true ;;
     --track) track=${2:-}; shift ;;
     --cert) cert=${2:-}; shift ;;
+    --package) package_want=${2:-}; shift ;;
     --notes-en) notes_en=${2:-}; shift ;;
     --notes-nb) notes_nb=${2:-}; shift ;;
     -h|--help) usage ;;
@@ -43,7 +44,7 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[[ -n $aab && -n $track && -n $cert && -n $notes_en && -n $notes_nb ]] || usage
+[[ -n $aab && -n $track && -n $package_want && -n $cert && -n $notes_en && -n $notes_nb ]] || usage
 [ "$track" = internal ] || die "only the internal testing track is allowed, not '$track'"
 [ -f "$aab" ] || die "no bundle at $aab"
 for f in "$notes_en" "$notes_nb"; do
@@ -56,6 +57,7 @@ package=$("$ROOT/.github/scripts/check-aab.py" --print package "$aab") || die "c
 code=$("$ROOT/.github/scripts/check-aab.py" --print versionCode "$aab") || die "cannot read the version code of $aab"
 [[ $package =~ ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$ ]] || die "'$package' is not a package name"
 [[ $code =~ ^[0-9]+$ ]] || die "'$code' is not a version code"
+[ "$package" = "$package_want" ] || die "$(basename "$aab") is $package, not $package_want; nothing was uploaded"
 "$ROOT/.github/scripts/check-aab.py" --cert "$cert" --package "$package" "$aab" >/dev/null \
   || die "$(basename "$aab") is not signed with the given certificate alone; nothing was uploaded"
 

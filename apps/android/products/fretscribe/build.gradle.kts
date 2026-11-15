@@ -27,7 +27,8 @@ android {
     ndkVersion = "28.2.13676358"
 
     defaultConfig {
-        applicationId = "no.kalli.fretscribe"
+        // The id on phones and on Google Play. The code's packages (namespace) stay no.kalli.*.
+        applicationId = "app.kalli.fretscribe"
         minSdk = 36
         targetSdk = 37
         versionCode = 21

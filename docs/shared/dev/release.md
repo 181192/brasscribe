@@ -22,10 +22,10 @@ contributors named). Pull requests are squash-merged, so each pull request's tit
 the notes: write them for the people who use the apps. If a tag push does not start the workflow, start it on the tag:
 `gh workflow run release.yml --ref vX.Y.Z`.
 
-The Android APKs are signed in CI with the release key, held in the secrets of the `release`
-environment (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`), which only `v*` tags may use; the
-job checks the certificate
-against the one every earlier release used. Fretscribe's APKs are signed in the same job with a key
+The Android APKs are signed in CI with Brasscribe's key, held in the secrets of the `release`
+environment (`BRASSCRIBE_KEYSTORE_B64`, `BRASSCRIBE_KEYSTORE_PASSWORD`, alias `brasscribe`), which only `v*` tags
+may use; the job checks the certificate against the one every release since the move to `app.kalli.brasscribe`
+used. (The `ANDROID_KEYSTORE_*` secrets hold the key of the old id, `no.kalli.brasscribe`, and are no longer used.) Fretscribe's APKs are signed in the same job with a key
 of their own, shared with other prototype apps (`PROTOTYPES_KEYSTORE_B64`,
 `PROTOTYPES_KEYSTORE_PASSWORD`, alias `prototypes`), and the job fails if an APK carries the other
 app's certificate. The same job signs each app's Google Play bundle (.aab) with that app's key (see
@@ -101,16 +101,16 @@ This writes `products/brasscribe/build/outputs/apk/release/brasscribe-{arm64-v8a
 (one APK per ABI plus a universal one; the x86_64 one is not shipped). A release build stops when the
 on-device models in `models/converted` are missing or not the pinned ones (`verifyModelAssets`; fetch them as in §1;
 `-Pbrasscribe.allowNoModels` builds one without them, for a try-out only; refused when `CI` is set). Signing is not in Gradle. It is
-done by hand with the build tools and the key in `~/.brasscribe/release-keys`
-(`brasscribe-release.jks`, alias `brasscribe`, and `keystore-password.txt`). **Every release must use
-this key**, or it will not install over the previous one. Keep a backup of both files. Never print the
-password, and pass it as `file:`, not `pass:`, so it stays out of the process list.
+done by hand with the build tools and the owner's copy of Brasscribe's key (`$K` below: `brasscribe.jks`, a PKCS12
+keystore with alias `brasscribe`, and its password in `keystore-password.txt`). **Every release must use
+this key**, or it will not install over the previous one, and Play's app signing key is this key too. Keep a backup
+of both files. Never print the password, and pass it as `file:`, not `pass:`, so it stays out of the process list.
 
 ```sh
-BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1); K=~/.brasscribe/release-keys
+BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1); K=<the folder with the key>
 for a in arm64-v8a universal; do
   "$BT/zipalign" -f -p 4 "products/brasscribe/build/outputs/apk/release/brasscribe-$a-release-unsigned.apk" "$S/tmp.apk"
-  "$BT/apksigner" sign --ks "$K/brasscribe-release.jks" --ks-pass "file:$K/keystore-password.txt" \
+  "$BT/apksigner" sign --ks "$K/brasscribe.jks" --ks-pass "file:$K/keystore-password.txt" \
     --out "$OUT/brasscribe-play-android-$a.apk" "$S/tmp.apk"
   "$BT/apksigner" verify "$OUT/brasscribe-play-android-$a.apk"
 done
@@ -144,7 +144,7 @@ unsigned. A bundle is signed with `jarsigner`, not `apksigner`, **with the same 
 
 ```sh
 cp products/brasscribe/build/outputs/bundle/release/brasscribe-release.aab "$OUT/brasscribe-play-android.aab"
-jarsigner -keystore "$K/brasscribe-release.jks" -storepass:file "$K/keystore-password.txt" "$OUT/brasscribe-play-android.aab" brasscribe
+jarsigner -keystore "$K/brasscribe.jks" -storepass:file "$K/keystore-password.txt" "$OUT/brasscribe-play-android.aab" brasscribe
 ../../.github/scripts/check-aab.py --cert <the app's certificate SHA-256> --package <the app's id> \
   --like "$OUT/brasscribe-play-android-arm64-v8a.apk" "$OUT/brasscribe-play-android.aab"
 ```
@@ -153,11 +153,10 @@ jarsigner -keystore "$K/brasscribe-release.jks" -storepass:file "$K/keystore-pas
 after signing, debuggable, or another app; with `--like` also one whose version or permissions differ from the
 app's APK of the same build. It prints the permissions the bundle asks for. The release job runs it on both bundles.
 
-**Do not upload Brasscribe's bundle to Play yet.** Its bundle is still `no.kalli.brasscribe`, signed with the key
-the GitHub APKs have used so far. Play's app is `app.kalli.brasscribe`, and Brasscribe moves to a new key that can be
-exported for Play App Signing; the first upload fixes an app's package name and its app signing key for good.
-Upload Brasscribe's bundle only from the first release after both have changed in this repository. Fretscribe's
-bundle has the same wait for its move to `app.kalli.fretscribe`.
+The apps' ids are `app.kalli.brasscribe` and `app.kalli.fretscribe`, on phones and on Play. Releases before the move
+were `no.kalli.brasscribe` (with an older Brasscribe key) and `no.kalli.fretscribe`: to a phone those are other apps,
+so the first release on the new ids is a fresh install beside the old app, not an update of it. The first upload
+fixes an app's package name and its app signing key on Play for good.
 
 **Play App Signing must use this same key for each app.** Play re-signs what it delivers to phones with its
 app signing key. When the app is set up in the Play Console (Setup > App signing), choose to use your own key and
@@ -200,9 +199,9 @@ needs no network.
 **Each app's first release is made by hand.** Play refuses a completed release through the API for an app that
 has never had one ("Only releases with status draft may be created on draft app"). So the first internal testing
 release of each app is created and rolled out in the Play Console, with that release's bundle from GitHub; that is
-also where Play App Signing gets the app's own key, as above. Brasscribe's first upload waits for the release
-that moves it to `app.kalli.brasscribe` and its new key: a bundle from before carries the old id and key, and the
-first upload fixes both for good. The workflow checks each bundle's certificate against the app's before uploading. The workflow uploads from the next release on: set `PLAY_TRACK` to `internal` only once both apps have had that first release.
+also where Play App Signing gets the app's own key, as above. Only a bundle from a release on the
+`app.kalli.*` ids will do: one from before carries the old id (and, for Brasscribe, the old key), and the first upload
+fixes both for good. The workflow checks each bundle's package and certificate against the app's before uploading. The workflow uploads from the next release on: set `PLAY_TRACK` to `internal` only once both apps have had that first release.
 
 ## 3. Play for Mac
 
@@ -344,9 +343,11 @@ Hugging Face key). See `gh release view v0.2.0` for the shape.
 - **The phone.** It carries the **debug**-signed app, so it gets the debug APK
   (`adb install -r products/brasscribe/build/outputs/apk/debug/brasscribe-debug.apk`; Fretscribe's is
   `products/fretscribe/build/outputs/apk/debug/fretscribe-debug.apk`). A release APK would need an
-  uninstall first. **Never uninstall the app**: that deletes the user's scores. The apps' ids are `no.kalli.brasscribe`
-  and `no.kalli.fretscribe`: a phone that still has an app under its old id (`no.brasscribe.play`, `no.fretscribe.play`)
-  gets the new one installed beside it, not over it, and the old one keeps its scores until it is uninstalled.
+  uninstall first. **Never uninstall the app**: that deletes the user's scores. The apps' ids are `app.kalli.brasscribe`
+  and `app.kalli.fretscribe`: a phone that still has an app under an old id (`no.kalli.brasscribe`, `no.kalli.fretscribe`,
+  or the older `no.brasscribe.play`, `no.fretscribe.play`) gets the new one installed beside it, not over it, and the
+  old one keeps its scores until it is uninstalled. The first install on a new id is a fresh install: nothing
+  carries over from the old app, so check the new one by hand (first run, pairing) rather than as an upgrade.
 
 ## 8. The site
 
