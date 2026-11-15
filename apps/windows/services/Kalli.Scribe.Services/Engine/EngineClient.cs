@@ -256,7 +256,8 @@ public sealed class EngineClient : IEngineClient
         var form = new MultipartFormDataContent { HeaderEncodingSelector = (_, _) => System.Text.Encoding.UTF8 };
         form.Add(new StringContent(profile), "profile");
         if (title is { Length: > 0 }) form.Add(new StringContent(title), "title");
-        form.Add(new StringContent("true"), "render_audio");
+        // The score is read from its notes: no audio of it is played, so none is rendered.
+        form.Add(new StringContent("false"), "render_audio");
         foreach (var (name, value) in options ?? new Dictionary<string, string>()) form.Add(new StringContent(value), name);
         var opened = new List<Stream>();
         try

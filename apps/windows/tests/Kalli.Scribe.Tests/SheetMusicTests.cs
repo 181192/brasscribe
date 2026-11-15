@@ -112,6 +112,8 @@ public class SheetMusicTests
         Assert.Contains("page-001.png", body);
         Assert.Contains("page-002.pdf", body);
         Assert.Matches("name=\"?profile\"?\\r\\n(.*\\r\\n)*\\r\\nsheet\\r\\n", body);
+        // No audio of a score read from its notes is played: none is rendered.
+        Assert.Matches("name=\"?render_audio\"?\\r\\n(.*\\r\\n)*\\r\\nfalse\\r\\n", body);
 
         refuse = true;
         var e = await Assert.ThrowsAsync<EngineException>(() => c.CreateJobFromPagesAsync([first], "sheet", null));
@@ -156,6 +158,50 @@ public class SheetMusicTests
         vm.Add(Enumerable.Repeat(one, Pages.MaxPages + 1).ToList());
         Assert.Equal(Pages.MaxPages, vm.Pages.Count);
         Assert.Equal("At most 40 pages can be read at once. The rest were left out.", vm.StatusText);
+    }
+
+    /// <summary>A page whose file name has a "%" or a "#" is read, shown small and sent as it is (no URI escaping is lost).</summary>
+    [Theory]
+    [InlineData("Hymn #2 100%.png")]
+    [InlineData("a%23b #c.pdf")]
+    public async Task A_page_with_a_percent_or_hash_in_its_name_is_shown_and_sent(string name)
+    {
+        string path = File(name, name.EndsWith(".pdf") ? SamplePages.Pdf() : SamplePages.Png());
+        Assert.Null(Pages.Check(path));
+        var page = new PageItem(path);
+        Assert.Equal(path, page.FileUri.LocalPath);
+        Assert.True(page.FileUri.IsFile);
+        Assert.Empty(page.FileUri.Fragment);
+        var h = new FakeHandler((r, _) => FakeHandler.Json("""{"id":"j1","profile":"sheet","target":"brass","input":"pages","status":"queued","created":1,"stages":[]}""", HttpStatusCode.Accepted))
+        { Health = FakeHandler.CurrentHealth };
+        await new EngineClient(new HttpClient(h), new Uri("http://engine.local:8765")).CreateJobFromPagesAsync([path], "sheet", null);
+        var body = h.Requests.Single().Body!;
+        Assert.Contains($"filename=\"page-001{Path.GetExtension(name)}\"", body);
+        Assert.Contains(name.EndsWith(".pdf") ? "%PDF-1.4" : "IHDR", body);
+    }
+
+    /// <summary>The scenes' pages are a real picture and a real PDF, so the catalogue shows their small pictures.</summary>
+    [Fact]
+    public void The_sample_pages_are_a_real_picture_and_a_real_pdf()
+    {
+        var paths = SamplePages.Write("Sample", 3);
+        Assert.Equal([".png", ".png", ".pdf"], paths.Select(Path.GetExtension));
+        Assert.All(paths, p => Assert.Null(Pages.Check(p)));
+        // The PNG: its header says 240 by 320, and its pixels unpack to that many rows.
+        byte[] png = SamplePages.Png();
+        Assert.Equal("IHDR", System.Text.Encoding.ASCII.GetString(png, 12, 4));
+        Assert.Equal(240, System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(16)));
+        int idat = png.AsSpan().IndexOf("IDAT"u8);
+        int length = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(png.AsSpan(idat - 4));
+        using var z = new System.IO.Compression.ZLibStream(new MemoryStream(png, idat + 4, length), System.IO.Compression.CompressionMode.Decompress);
+        using var raw = new MemoryStream();
+        z.CopyTo(raw);
+        Assert.Equal(320 * 241, raw.Length);
+        // The PDF: one page, and its cross-reference table is where startxref says.
+        string pdf = System.Text.Encoding.ASCII.GetString(SamplePages.Pdf());
+        Assert.Contains("/Count 1", pdf);
+        int xref = int.Parse(pdf[(pdf.LastIndexOf("startxref\n", StringComparison.Ordinal) + 10)..].Split('\n')[0]);
+        Assert.StartsWith("xref", pdf[xref..]);
     }
 
     [Fact]

@@ -15,17 +15,23 @@
                        AutomationProperties.HeadingLevel="Level1" IsTabStop="True" />
             <TextBlock x:Uid="PagesIntro" Style="{StaticResource LeadStyle}" Margin="0,0,0,8" />
 
-            <Button x:Name="AddPagesButton" x:Uid="AddPagesButton" Style="{StaticResource CardButtonStyle}" HorizontalAlignment="Stretch"
+            <Button x:Name="AddPagesButton" x:Uid="AddPagesButton" Style="{StaticResource CardButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    MinHeight="0"
                     Command="{x:Bind ViewModel.AddCommand}">
-                <StackPanel Orientation="Horizontal" Spacing="16">
-                    <Border Style="{StaticResource IconWellStyle}">
+                <!-- A grid, not a horizontal stack: the sentence wraps to the card's width, and the card is as tall as it. -->
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource IconWellStyle}" VerticalAlignment="Center">
                         <FontIcon Glyph="{StaticResource BcIconImportFile}" FontSize="16" />
                     </Border>
-                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                         <TextBlock x:Uid="AddPagesTitle" Style="{StaticResource HeadlineStyle}" />
                         <TextBlock x:Uid="AddPagesBody" Style="{StaticResource MutedStyle}" TextWrapping="Wrap" />
                     </StackPanel>
-                </StackPanel>
+                </Grid>
             </Button>
 
             <TextBlock x:Uid="PagesListHeading" Style="{StaticResource LabelStyle}" Margin="0,12,0,0"
@@ -42,8 +48,18 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <FontIcon Glyph="{StaticResource BcIconFile}" FontSize="20" VerticalAlignment="Center"
-                                          Foreground="{ThemeResource ScribeTextMutedBrush}" />
+                                <!-- A small picture of the page, read small (never decoded whole); a PDF shows its icon. -->
+                                <Border Width="44" Height="56" Background="White" CornerRadius="4" VerticalAlignment="Center">
+                                    <Grid>
+                                        <Image Stretch="Uniform" Visibility="{x:Bind IsPicture}" AutomationProperties.AccessibilityView="Raw">
+                                            <Image.Source>
+                                                <BitmapImage UriSource="{x:Bind FileUri}" DecodePixelHeight="112" DecodePixelType="Logical" />
+                                            </Image.Source>
+                                        </Image>
+                                        <FontIcon Glyph="{StaticResource BcIconFile}" FontSize="20" Foreground="Black"
+                                                  Visibility="{x:Bind IsPdf}" AutomationProperties.AccessibilityView="Raw" />
+                                    </Grid>
+                                </Border>
                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="{x:Bind Place, Mode=OneWay}" Style="{StaticResource HeadlineStyle}" />
                                     <TextBlock Text="{x:Bind Name}" Style="{StaticResource MutedStyle}" TextTrimming="CharacterEllipsis" />

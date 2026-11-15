@@ -20,14 +20,6 @@ public static class PreviewScenes
     /// <summary>The piece in the sample scenes: the public-domain fixture in apps/fixtures/old-hundredth.</summary>
     public const string SampleTitle = "Old Hundredth";
 
-    /// <summary>A made-up page for the pages scene: a file that starts as a PNG does.</summary>
-    private static string SamplePage(int n)
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"{SampleTitle} page {n}.png");
-        File.WriteAllBytes(path, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13]);
-        return path;
-    }
-
     /// <summary>Shows <paramref name="scene"/>. Returns false for an unknown name or a score scene without a score.</summary>
     public static bool Show(MainViewModel main, string scene, string? scorePath)
     {
@@ -72,9 +64,9 @@ public static class PreviewScenes
                 main.Screen = Screen.Transcribing;
                 return true;
             case "pages" when main.Pages is { } pages:
-                // Three pages in hand: made-up pictures, which the scene never sends.
+                // Three pages in hand: two invented pictures and a one-page PDF, which the scene never sends.
                 pages.Clear();
-                pages.Add([.. Enumerable.Range(1, 3).Select(SamplePage)]);
+                pages.Add(SamplePages.Write(SampleTitle, 3));
                 main.Screen = Screen.Pages;
                 return true;
             case "pages-unread" when main.Pages is not null:

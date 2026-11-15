@@ -18,7 +18,8 @@ public sealed record LibraryEntry(
     string? JobId = null,
     string? EvidencePath = null,
     string? Lineup = null,
-    string? MyPart = null)
+    string? MyPart = null,
+    bool FromPages = false)
 {
     /// <summary>
     /// The file was there when "Your scores" was read. An opened file on a drive that is not connected stays listed, and
@@ -67,7 +68,7 @@ public sealed class ScoreLibrary
     /// <summary>Stores a score Brasscribe made; the same job replaces its earlier entry.</summary>
     /// <remarks><paramref name="lineup"/> is the engine's name of the lineup it was arranged for (full, minimal, quartet).</remarks>
     public LibraryEntry AddMade(string title, string musicXml, Composition? composition, int parts, int bars, int notesToCheck, string? jobId,
-        Engine.Evidence? evidence = null, string? lineup = null)
+        Engine.Evidence? evidence = null, string? lineup = null, bool fromPages = false)
     {
         string id = jobId is { Length: > 0 } ? Safe(jobId) : Guid.NewGuid().ToString("N")[..12];
         string dir = Path.Combine(_root, id);
@@ -86,7 +87,8 @@ public sealed class ScoreLibrary
             evidencePath = Path.Combine(dir, "evidence.json");
             File.WriteAllText(evidencePath, Engine.Evidence.Serialize(evidence));
         }
-        return Put(new LibraryEntry(id, title, xmlPath, compPath, DateTimeOffset.Now, parts, bars, notesToCheck, jobId, evidencePath, lineup));
+        return Put(new LibraryEntry(id, title, xmlPath, compPath, DateTimeOffset.Now, parts, bars, notesToCheck, jobId, evidencePath, lineup,
+            FromPages: fromPages));
     }
 
     /// <summary>Confidence and what each transcriber heard, when the score came with it.</summary>

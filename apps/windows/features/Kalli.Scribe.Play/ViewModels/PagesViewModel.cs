@@ -12,6 +12,10 @@ public sealed partial class PageItem(string path) : ObservableObject
     public string Path { get; } = path;
     public string Name { get; } = System.IO.Path.GetFileName(path);
     public bool IsPdf => System.IO.Path.GetExtension(Path).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+    /// <summary>A picture (not a PDF): its row shows a small version of it, so pages are told apart by sight.</summary>
+    public bool IsPicture => !IsPdf;
+    /// <summary>The file, for the row's small picture.</summary>
+    public Uri FileUri => new(Path);
 
     /// <summary>"Page 2".</summary>
     [ObservableProperty] public partial string Place { get; set; } = "";

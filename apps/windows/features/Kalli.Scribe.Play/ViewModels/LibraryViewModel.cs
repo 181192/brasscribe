@@ -214,7 +214,10 @@ public sealed partial class LibraryViewModel : ObservableObject
             if (j.AudioId is { } audio && !seenAudio.Add(audio)) continue;
             if (downloaded.Contains(j.Id)) continue;
             var when = DateTimeOffset.FromUnixTimeMilliseconds((long)(j.Created * 1000)).ToLocalTime();
-            rows.Add((when, new LibraryItem("job:" + j.Id, ScoreTitles.Display(j.Title, when, _s), _s.Format("Library_OnComputer", WhenText(when)), true, j.Id)));
+            // A score read from pages of printed music says so, as Apple's and Android's lists do.
+            string where = _s.Format("Library_OnComputer", WhenText(when));
+            rows.Add((when, new LibraryItem("job:" + j.Id, ScoreTitles.Display(j.Title, when, _s),
+                j.Input == "pages" ? _s["Library_FromPages"] + " · " + where : where, true, j.Id)));
         }
         if (MoreRows is { } more) rows.AddRange(more());
         MarkDuplicateTimes(rows);

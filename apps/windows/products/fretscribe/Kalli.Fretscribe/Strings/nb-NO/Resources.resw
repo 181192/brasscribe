@@ -582,6 +582,9 @@
   <data name="Library_Deleted" xml:space="preserve">
     <value>Slettet {0}</value>
   </data>
+  <data name="Library_FromPages" xml:space="preserve">
+    <value>Fra noter</value>
+  </data>
   <data name="Library_OnComputer" xml:space="preserve">
     <value>{0} · På datamaskinen din</value>
   </data>
