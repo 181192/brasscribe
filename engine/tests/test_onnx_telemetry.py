@@ -92,12 +92,27 @@ def test_on_windows_the_adapters_programs_start_with_events_off(tmp_path, monkey
     assert ran and ran[0][:2] == ["python", str(RUNNER.parent / "ort_events_off.py")]
 
 
-def test_homr_runs_its_program_through_the_launcher():
-    """homr fetches its weights and prepares the pages before it runs; the command it runs is the one wrapped."""
-    import inspect
-
+def test_on_windows_homr_starts_its_program_with_events_off(tmp_path, monkeypatch):
+    """homr makes its pages ready first (prepare.py), then runs its program: that command goes through the launcher."""
     runner = load_runner()
-    assert 'run("homr", ort_events_off(["homr"' in inspect.getsource(runner.homr)
+    monkeypatch.setattr(runner, "WINDOWS", True)
+    monkeypatch.setattr(runner, "homr_setup", lambda: None)
+    ran = []
+    monkeypatch.setattr(runner, "run", lambda project, cmd, quiet_stderr=True: ran.append(cmd))
+
+    def prepare(cmd, **kwargs):  # writes one ready page where prepare.py would
+        out = Path(cmd[cmd.index(str(RUNNER.parent / "homr" / "prepare.py")) + 1])
+        (out / "page-1.png").write_bytes(b"")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(runner.subprocess, "run", prepare)
+    page = tmp_path / "page.png"
+    page.write_bytes(b"")
+    with pytest.raises(SystemExit):  # no model ran, so no score: only the command matters here
+        runner.homr(page, tmp_path / "out.musicxml")
+    assert len(ran) == 1
+    assert ran[0][:2] == ["python", str(RUNNER.parent / "ort_events_off.py")]
+    assert ran[0][2:5] == ["homr", "--gpu", "no"]
 
 
 def test_elsewhere_the_commands_are_as_they_were():
@@ -128,3 +143,24 @@ def test_the_launcher_switches_events_off_before_the_program_runs(monkeypatch):
     assert order == ["off", ("ran", ["homr", "--gpu", "no"])]
     with pytest.raises(SystemExit):
         launcher.main(["nothing-here"])
+
+
+LAUNCH = """
+import importlib.util, sys, types
+fake = types.ModuleType("onnxruntime"); fake.disable_telemetry_events = lambda: None; sys.modules["onnxruntime"] = fake
+spec = importlib.util.spec_from_file_location("ort_events_off", {launcher!r})
+launcher = importlib.util.module_from_spec(spec); spec.loader.exec_module(launcher)
+class Entry:
+    def load(self):
+        return lambda: {result}
+launcher.entry_points = lambda group, name: [Entry()]
+sys.exit(launcher.main(["program"]))
+"""
+
+
+@pytest.mark.parametrize(("result", "status"), [("None", 0), ("0", 0), ("3", 3), ("'it failed'", 1), ("True", 1)])
+def test_the_launcher_exits_as_the_program_would(result, status):
+    """What the program's entry point returns is the exit status, as with its own console script: None or 0 is
+    success, a number its status, anything else (a message) is printed and is status 1."""
+    code = LAUNCH.format(launcher=str(RUNNER.parent / "ort_events_off.py"), result=result)
+    assert subprocess.run([sys.executable, "-c", code], capture_output=True).returncode == status

@@ -14,7 +14,9 @@ import sys
 from importlib.metadata import entry_points
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str]) -> object:
+    """Runs the command; returns what its entry point returns, for sys.exit, as a console script's wrapper does
+    (None or 0 is success, another number its exit status, anything else printed and status 1)."""
     name, args = argv[0], argv[1:]
     try:
         import onnxruntime
@@ -26,8 +28,7 @@ def main(argv: list[str]) -> int:
     if not found:
         raise SystemExit(f"ort_events_off.py: no command {name!r} in this environment")
     sys.argv = [name, *args]
-    result = next(iter(found)).load()()
-    return result if isinstance(result, int) else 0
+    return next(iter(found)).load()()
 
 
 if __name__ == "__main__":
