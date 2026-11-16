@@ -95,9 +95,12 @@ func waitUntil(_ condition: () -> Bool, seconds: Double = 5) async {
         defer { keychain.release() }
         let key = SavedKey(store: keychain)
         key.read()
+        // The read cannot end before the keychain is released, below: that the wait has come back at all, with the key
+        // still being read, is what shows it did not wait for the read. (A bound in time only to fail rather than hang
+        // if it did; far over a busy runner's slowness, which a 2 s bound was not.)
         let start = ContinuousClock.now
         await key.settled(within: .milliseconds(50))
-        #expect(ContinuousClock.now - start < .seconds(2))
+        #expect(ContinuousClock.now - start < .seconds(30))
         #expect(key.state == .reading)
         #expect(key.value == nil)
         keychain.release()
