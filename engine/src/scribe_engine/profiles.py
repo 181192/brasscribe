@@ -150,9 +150,12 @@ def _whole(value, what: str) -> int:
 def within_recording(beat: dict | None, length_s: float | None) -> dict | None:
     """A correction (as beat_correction gives it) held to a recording `length_s` long: a bar that starts, or a
     hold that starts, after the recording ends is refused; a hold that runs past the end is cut at the end.
-    Unchanged when the length is not known."""
-    if not beat or length_s is None:
+    A correction with a time in it is refused when the length is not known (None): it cannot be checked."""
+    if not beat or not ("first_downbeat_s" in beat or beat.get("holds")):
         return beat
+    if length_s is None:
+        raise OptionError("beat: the engine cannot read how long the recording is, so a time in it cannot be "
+                          "checked; correct the level alone, or send the recording again", BEAT_INVALID_CODE)
     if beat.get("first_downbeat_s", 0) >= length_s:
         raise OptionError(f"beat: first_downbeat_s is after the end of the recording ({length_s:.1f} s)", BEAT_INVALID_CODE)
     holds = []

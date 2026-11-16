@@ -230,8 +230,9 @@ the job's `beat_hints.level`. The correction replaces the old job's whole correc
 comes from the cache: the new job costs the arranging and the export. A correction never listens again: should
 the cache have been cleared, it fails at once, whatever `allow_heavy` says. Only a job that succeeded can be
 corrected (409 `job_not_finished`). A correction that does not fit, puts a bar or a hold after the end of the
-recording, or changes nothing answers 422 `{code: "beat_invalid", detail}`, with `detail` naming what to change;
-a hold that runs past the end is cut at the end.
+recording (or has a time in a recording whose length the engine cannot read), or changes nothing answers 422
+`{code: "beat_invalid", detail}`, with `detail` naming what to change; a hold that runs past the end is cut at
+the end.
 
 Every finished job also carries `beat_hints`: what the engine itself suspects about the beat (a tempo out of
 range, notes too fast or slow for the beat, a slow beat divided in three, long stretches without a new note,

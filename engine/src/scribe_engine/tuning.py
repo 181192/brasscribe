@@ -20,7 +20,7 @@ from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
-from scribe_music.programs import ffmpeg
+from scribe_music.programs import ffmpeg, ffprobe
 
 from .hashing import source_fingerprint
 
@@ -114,7 +114,7 @@ def duration_s(path: Path) -> float | None:
     except (RuntimeError, sf.LibsndfileError):
         pass
     try:
-        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+        out = subprocess.run([ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
                              capture_output=True, text=True, timeout=30, check=True).stdout.strip()
         return float(out)
     except (OSError, subprocess.SubprocessError, ValueError):
