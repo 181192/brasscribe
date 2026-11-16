@@ -30,7 +30,9 @@ How it works: [kalli.no/brasscribe/research](https://kalli.no/brasscribe/researc
 
 ## Download
 
-The [latest release](https://github.com/181192/brasscribe/releases/latest) has:
+Each app is released on its own, and each has a page that always holds its newest files:
+[Brasscribe Play](https://github.com/181192/brasscribe/releases/tag/brasscribe-latest), [Fretscribe](https://github.com/181192/brasscribe/releases/tag/fretscribe-latest), [Bandroom](https://github.com/181192/brasscribe/releases/tag/bandroom-latest) and
+[scribe-core](https://github.com/181192/brasscribe/releases/tag/scribe-core-latest). They have:
 
 - Play for Android (`brasscribe-play-android-arm64-v8a.apk` for most devices, `-universal.apk` for all).
 - Fretscribe for Android, an early version (`fretscribe-android-arm64-v8a.apk` for most devices,

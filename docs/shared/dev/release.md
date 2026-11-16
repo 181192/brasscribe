@@ -1,31 +1,64 @@
 # Cutting a release
 
-Releases are built by CI. `main` takes changes only through pull requests, so a release takes two
-steps, both in `scripts/release.sh` (on an up-to-date `main`):
+Releases are built by CI, one product at a time. Each product has its own version, tags and changelog:
+
+| Product | Tag | What its release holds |
+|---|---|---|
+| `brasscribe` | `brasscribe-vX.Y.Z` | Brasscribe Play for Android, Mac, iPhone and iPad, and Windows |
+| `fretscribe` | `fretscribe-vX.Y.Z` | Fretscribe for Android, Mac, iPhone and iPad, and Windows |
+| `bandroom` | `bandroom-vX.Y.Z` | Bandroom for Mac and for Windows, with the engine inside (the engine has no version of its own) |
+| `scribe-core` | `scribe-core-vX.Y.Z` | the `scribe-core` command-line tool, per system |
+
+`main` takes changes only through pull requests, so a release takes two steps, both in `scripts/release.sh`
+(on an up-to-date `main`):
 
 ```sh
-scripts/release.sh --preview          # the notes the next release would get
-scripts/release.sh X.Y.Z              # bump every app version, CHANGELOG.md, open the release pull request
-scripts/release.sh --tag X.Y.Z        # once it is merged and pulled: tag the release commit and push the tag
+scripts/release.sh --preview PRODUCT      # the notes the product's next release would get
+scripts/release.sh PRODUCT X.Y.Z          # bump its versions, add to changelogs/PRODUCT.md, open the release pull request
+scripts/release.sh --tag PRODUCT X.Y.Z    # once it is merged and pulled: tag the release commit and push the tag
 ```
 
-The script bumps every app version and the build number (the list of files is in the script), and
-regenerates `CHANGELOG.md` with git-cliff (`cliff.toml`). Pick the version from the preview: a
-`feat` since the last release means a minor bump, only fixes a patch bump. Pre-releases
-(`vX.Y.Z-beta.N`) are tagged by hand on `main`; the script makes only `X.Y.Z`. If a run stops
-halfway, `git switch main`, delete the local `release/vX.Y.Z` branch, and start again.
+The script bumps the product's version and build number (the files are in the script's `product` table) and adds the
+release to the product's changelog with git-cliff (`cliff.toml`). The notes list the changes that reach the
+product: its own code and the shared layers it is built from (the paths are in the same table). Pick the version
+from the preview: a `feat` since the product's last release means a minor bump, only fixes a patch bump.
+Pre-releases (`PRODUCT-vX.Y.Z-beta.N`) are tagged by hand on `main`; the script makes only `X.Y.Z`. If a run stops
+halfway, `git switch main`, delete the local `release/PRODUCT-vX.Y.Z` branch, and start again.
 
-The pushed tag starts `.github/workflows/release.yml`: the checks and a build per platform side by side, then, when all
-have passed, a GitHub release with the files, `SHA256SUMS` and notes generated from the commits since the previous
-release (new features and fixes sorted and labelled by scope, the rest folded away, first-time
+A product's first release under its own tag takes a version above 0.16.0, the last release of everything together
+(`v0.16.0`), and its notes count from there. Android needs it: an app installs only over a lower `versionCode`, and
+both apps had 22 in that release. `CHANGELOG.md` is the history up to that release; `changelogs/PRODUCT.md` goes on
+from it. App and engine must still match (the interface version): a change that raises the number is released for
+Bandroom and for every app it breaks, one release each.
+
+The script runs in the main checkout (a worktree cannot be on `main`). The pushed tag starts
+`.github/workflows/release.yml`: the checks and the product's builds side by side, then, when all have passed, a
+GitHub release named after the product with its files, `SHA256SUMS` and notes generated from the commits since the
+product's previous release (new features and fixes sorted and labelled by scope, the rest folded away, first-time
 contributors named). Pull requests are squash-merged, so each pull request's title is one entry in
-the notes: write them for the people who use the apps. If a tag push does not start the workflow, start it on the tag:
-`gh workflow run release.yml --ref vX.Y.Z`.
+the notes: write them for the people who use the apps. If a tag push does not start the workflow, start it on the
+tag: `gh workflow run release.yml --ref PRODUCT-vX.Y.Z`.
+
+After a full release the workflow puts the same files in the release `PRODUCT-latest` (`scripts/latest-release.sh`),
+so a link never names a version: a product's page is `releases/tag/PRODUCT-latest` and a file is
+`releases/download/PRODUCT-latest/<file>`. That release is changed in place, never deleted, and only a product's
+highest full release is put there (a pre-release, or a run started again for an older tag, leaves it alone). The
+site, the READMEs and the apps' own update links all use these two addresses. The repository's one "latest" release
+(`releases/latest`) is Bandroom's highest full release, by the same rule: apps from before the products had releases of their own send people there
+for Bandroom, and every release's notes name the newest of each app.
+
+Once, before the first release of each product: `scripts/latest-release.sh --seed v0.16.0` makes the four
+`PRODUCT-latest` releases from the files of the last release of everything together, so the links work from the day
+they are merged.
+
+The file names are part of the links: `scripts/release.sh --files PRODUCT` lists a product's, and the workflow
+publishes exactly those (a file that was not built stops the release before anything is published).
 
 The Android APKs are signed in CI with Brasscribe's key, held in the secrets of the `release`
-environment (`BRASSCRIBE_KEYSTORE_B64`, `BRASSCRIBE_KEYSTORE_PASSWORD`, alias `brasscribe`), which only `v*` tags
-may use; the job checks the certificate against the one every release since the move to `app.kalli.brasscribe`
-used. (The `ANDROID_KEYSTORE_*` secrets hold the key of the old id, `no.kalli.brasscribe`, and are no longer used.) Fretscribe's APKs are signed in the same job with a key
+environment (`BRASSCRIBE_KEYSTORE_B64`, `BRASSCRIBE_KEYSTORE_PASSWORD`, alias `brasscribe`), which only the apps'
+release tags may use (its deployment tag rule is the repository owner's to set: `brasscribe-v*` and
+`fretscribe-v*`); the job checks the certificate against the one every release since the move to
+`app.kalli.brasscribe` used. (The `ANDROID_KEYSTORE_*` secrets hold the key of the old id, `no.kalli.brasscribe`, and are no longer used.) Fretscribe's APKs are signed in the same job with a key
 of their own, shared with other prototype apps (`PROTOTYPES_KEYSTORE_B64`,
 `PROTOTYPES_KEYSTORE_PASSWORD`, alias `prototypes`), and the job fails if an APK carries the other
 app's certificate. The same job signs each app's Google Play bundle (.aab) with that app's key (see
@@ -33,7 +66,7 @@ app's certificate. The same job signs each app's Google Play bundle (.aab) with 
 Developer ID), and the Windows builds are not signed. The sections below are the local build, kept
 for when CI cannot be used; v0.1.0 to v0.3.0 were made that way.
 
-What a release ships:
+What the releases ship, each file in its product's release:
 
 | Asset | What |
 |---|---|
@@ -78,15 +111,15 @@ python3 sounds/tools/band_sounds.py verify # the pinned band pack is in data/sou
 python3 convert/models_pack.py fetch       # the pinned on-device models are in models/converted (§9b)
 ```
 
-Bump the version in its own commit and push it to main **before** building, because Bandroom's
-workspace stamp records the commit it was built from:
+Bump the product's version in its own commit and push it to main **before** building, because Bandroom's
+workspace stamp records the commit it was built from. Each product's version is in its own files:
 
-- `apps/android/products/brasscribe/build.gradle.kts` and `apps/android/products/fretscribe/build.gradle.kts`: `versionCode` + 1, `versionName` (the ones in `defaultConfig`; Fretscribe has its own only when a build is given `-Pfretscribe.versionName` and `-Pfretscribe.versionCode`)
-- `apps/apple/project.yml` and `apps/bandroom/macos/project.yml`: `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION`
-- `apps/windows/Directory.Build.props` and `apps/bandroom/windows/Directory.Build.props`: `<Version>`
-- Leave the core's Cargo version alone: the fixtures embed `scribe-core 0.1.0` in their MusicXML.
+- Brasscribe Play: `apps/android/products/brasscribe/build.gradle.kts` (`versionCode` + 1, `versionName`, the ones in `defaultConfig`), `apps/apple/products/brasscribe/project.yml` (`MARKETING_VERSION`, `CURRENT_PROJECT_VERSION` + 1), `apps/windows/products/brasscribe/Kalli.Brasscribe/Kalli.Brasscribe.csproj` (`<Version>`)
+- Fretscribe: the same three under `products/fretscribe`
+- Bandroom: `apps/bandroom/macos/project.yml` and `apps/bandroom/windows/Directory.Build.props`
+- scribe-core: none. Leave the core's Cargo version alone: the fixtures embed `scribe-core 0.1.0` in their MusicXML. Its tag is its version.
 
-Commit as `chore(release): X.Y.Z` and merge it through a pull request (`scripts/release.sh X.Y.Z` does this part).
+Commit as `chore(release): PRODUCT X.Y.Z` and merge it through a pull request (`scripts/release.sh PRODUCT X.Y.Z` does this part).
 
 Recommended before building: tier 2 (`make check-all`, [verify.md](verify.md)) and, once per release, the
 full macOS UI suite in the VM: `MAC_VM_FULL=1 scripts/mac-vm.sh test-ui` ([macos-vm.md](macos-vm.md)).
@@ -170,27 +203,28 @@ certificate's SHA-256 is the one in `.github/workflows/android.yml`.
 
 ### Google Play: the internal testing track
 
-`.github/workflows/play.yml` uploads each app's signed bundle from a published GitHub release to Play's internal
+`.github/workflows/play.yml` uploads an app's signed bundle from its published GitHub release to Play's internal
 testing track (`scripts/play-upload.sh`, Android Publisher API v3, with curl, openssl and Python's standard
 library). It is opt-in: it runs only while the repository variable `PLAY_TRACK` is `internal`, and `internal` is
-the only track it accepts. The release workflow calls it after the GitHub release, for stable tags only, with the
-service account's JSON key from the `release` environment's secret `PLAY_SERVICE_ACCOUNT_JSON`.
+the only track it accepts. The release workflow calls it after the GitHub release, for a full release of Brasscribe
+or Fretscribe only (the tag says which app), with the service account's JSON key from the `release` environment's
+secret `PLAY_SERVICE_ACCOUNT_JSON`.
 
-For each app it reads the package from the bundle. It then opens an edit, uploads the bundle and gives the internal
+It reads the package from the bundle. It then opens an edit, uploads the bundle and gives the internal
 track a completed release of that version code, with notes in en-US and no-NO, and commits the edit. The notes
-come from the version's section of `CHANGELOG.md` (`.github/scripts/play-notes.py`): that app's Android items,
+come from the version's section of the app's changelog, `changelogs/PRODUCT.md` (`.github/scripts/play-notes.py`): its Android items,
 without links, cut to Play's 500 characters. The changelog is in English, so the no-NO notes say so. If any step
 fails, the edit is deleted and nothing on Play changes. The GitHub release stays as it is, and the job prints the
-command that tries again for the app that failed (Play refuses a version code it already has, so a retry names
-the app). A Play failure turns the release run red; the GitHub release itself is already out.
+command that tries again (Play refuses a version code it already has). A Play failure turns the release run red; the GitHub release itself is already out.
 
 ```sh
-gh workflow run play.yml --ref vX.Y.Z -f app=fretscribe            # that tag's Fretscribe bundle again (or brasscribe, both)
-gh workflow run play.yml --ref vX.Y.Z -f dry_run=true              # check the bundles, notes and key; upload nothing
+gh workflow run play.yml --ref fretscribe-vX.Y.Z                   # that release's Fretscribe bundle again
+gh workflow run play.yml --ref brasscribe-vX.Y.Z -f dry_run=true    # check the bundle, notes and key; upload nothing
 ```
 
-A run on a tag uses that tag's workflow and scripts, so this works for tags cut after `play.yml` was added.
-Pre-release tags (`vX.Y.Z-beta.N`) are not uploaded: they have no section in the changelog.
+A run on a tag uses that tag's workflow and scripts, so this works for the apps' own tags (`brasscribe-v*`,
+`fretscribe-v*`), not for the `v*` tags of the releases of everything together. Pre-release tags
+(`PRODUCT-vX.Y.Z-beta.N`) are not uploaded: they have no section in the changelog.
 
 The private key is kept only in shell variables and goes to openssl through a pipe: it is never written to disk or
 printed. The access token and the signed request are masked in the log. Locally, `scripts/play-upload.sh --dry-run`
@@ -323,8 +357,8 @@ Just before publishing, check that `git rev-parse origin/main` is still the comm
 has moved, pass the built commit's **full** 40-character SHA as the target (a short SHA fails):
 
 ```sh
-gh release create vX.Y.Z "$OUT"/* --target main --title "vX.Y.Z" --notes-file notes.md
-gh release view vX.Y.Z --json assets     # every asset "uploaded", digests matching SHA256SUMS
+gh release create PRODUCT-vX.Y.Z "$OUT"/* --target main --latest=false --title "<Product> X.Y.Z" --notes-file notes.md
+gh release view PRODUCT-vX.Y.Z --json assets     # every asset "uploaded", digests matching SHA256SUMS
 ```
 
 This creates the tag on GitHub. Don't push tags or dispatch workflows yourself. Release notes follow
@@ -353,8 +387,9 @@ Hugging Face key). See `gh release view v0.2.0` for the shape.
 
 `.github/workflows/pages.yml` builds `site/` and deploys it with GitHub Pages (source: GitHub
 Actions, at kalli.no/brasscribe) on every push to main that touches the site; start it by hand with
-`gh workflow run pages.yml`. The site and the READMEs never name a version: they link to
-`releases/latest` and to `releases/latest/download/<file>`, so a release needs no text changes there.
+`gh workflow run pages.yml`. The site and the READMEs never name a version: they link to a product's
+`PRODUCT-latest` release (`releases/tag/PRODUCT-latest`, `releases/download/PRODUCT-latest/<file>`), so a release
+needs no text changes there.
 Keep the asset file names stable (no version in them) for those links to keep working.
 `site/build.sh` fails if a pinned release link or version number creeps back in.
 
@@ -370,7 +405,7 @@ pinned in `sounds/band-sounds.json` ([sounds/README.md](../../../sounds/README.m
 2. `python3 sounds/tools/band_sounds.py pin --version sounds-YYYY.MM.DD` rewrites the pin and
    `SHA256SUMS` (`--dir DIR` for a pack built elsewhere).
 3. `gh release create sounds-YYYY.MM.DD --prerelease data/sounds/band/brasscribe-band-16bit.sf2 data/sounds/band/brasscribe-band-mobile.sf2 data/sounds/band/SHA256SUMS`.
-   A `sounds-*` tag starts no workflow (only `v*` tags do).
+   A `sounds-*` tag starts no workflow (only the products' release tags do).
 4. Commit the pin, with the sources and licences in [sounds/LICENSES.md](../../../sounds/LICENSES.md).
    Every checkout then runs `pixi run fetch-sounds` (or `band_sounds.py fetch`) to get the new pack.
 
@@ -392,7 +427,7 @@ release builds of Play for Mac, iPhone and iPad stop without them:
    The pack's `NOTICE.md` is not pinned: the apps bundle the repository's file, not the release's copy.
    A Core ML package is a folder, so it is packed as a `.zip` that depends only on the folder's files.
 3. `gh release create models-YYYY.MM.DD --prerelease models/pack/*`. A `models-*` tag starts no
-   workflow (only `v*` tags do).
+   workflow (only the products' release tags do).
 4. Commit the pin. A checkout runs `python3 convert/models_pack.py fetch` to get the pack, and
    `verify` to check `models/converted` against the pin.
 
