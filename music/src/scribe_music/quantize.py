@@ -55,21 +55,77 @@ class BeatMap:
         return np.where(x > self.b[-1], self.t[-1] + (x - self.b[-1]) * tail, out)
 
 
-def choose_level(beat_times: np.ndarray, onsets: np.ndarray) -> np.ndarray:
-    """Double the beat grid when the tracker locked onto half notes.
+# Where an onset off the beat can sit, and how near it must be to count as sitting there.
+OFFBEAT_SLOTS = np.array([1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4])
+OFFBEAT_NEAR = 0.07
+
+
+def offbeat_counts(beat_times: np.ndarray, onsets: np.ndarray) -> tuple[int, int, int]:
+    """Onsets on the first third of a beat, on the second third, and on its half or quarters."""
+    at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
+    nearest = np.abs(at[:, None] - OFFBEAT_SLOTS[None, :])
+    slot = np.argmin(nearest, axis=1)
+    slot = np.where(nearest[np.arange(len(at)), slot] <= OFFBEAT_NEAR, slot, -1)
+    return int(np.sum(slot == 1)), int(np.sum(slot == 3)), int(np.sum((slot == 0) | (slot == 2) | (slot == 4)))
+
+
+# A beat is split in three when THREE_SHARE of the onsets off the beat sit on its thirds, there are
+# THREE_ONSETS of them or more, and neither third has under THREE_BOTH of the thirds (a shuffle uses only the
+# second). On the brass ensembles (URMP, ChoraleBricks; two trackers, 36 beat tracks) the two tracks that count
+# a bar of three as one beat have 0.64 there, and no other track is above 0.30.
+# The same onsets are what a slow tune in 12/8 gives, where the beat is right and is written with triplets or
+# in compound time: 20 of GuitarSet's takes and Slakh's Track00001 are above THREE_SHARE under SLOW_BPM. So
+# the rule is off unless the caller asks for it (choose_level's `three`), and is asked for where a slow beat
+# in three has so far always been a bar counted in one: a brass ensemble's take.
+THREE_SHARE = 0.6
+THREE_ONSETS = 12
+THREE_BOTH = 0.25
+SLOW_BPM = 90  # a tracked tempo under this may be a slower level than the written beat
+
+
+def in_three(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
+    """The onsets divide the beats of `beat_times` in three (THREE_*)."""
+    first, second, twos = offbeat_counts(beat_times, onsets)
+    thirds = first + second
+    return (thirds + twos >= THREE_ONSETS and thirds / (thirds + twos) >= THREE_SHARE
+            and min(first, second) >= THREE_BOTH * thirds)
+
+
+def split(beat_times: np.ndarray, k: int) -> np.ndarray:
+    """Every beat interval divided in `k` equal parts (2 or 3)."""
+    t = np.asarray(beat_times, dtype=float)
+    if k == 2:
+        return np.sort(np.concatenate([t, (t[:-1] + t[1:]) / 2]))
+    return np.sort(np.concatenate([t] + [t[:-1] + (t[1:] - t[:-1]) * j / k for j in range(1, k)]))
+
+
+def level_factor(tracked: np.ndarray, chosen: np.ndarray) -> int:
+    """How many beats of `chosen` (choose_level's answer) there are to one of `tracked`: 1, 2 or 3."""
+    return (len(chosen) - 1) // max(1, len(tracked) - 1)
+
+
+def choose_level(beat_times: np.ndarray, onsets: np.ndarray, three: bool = False) -> np.ndarray:
+    """Split the beat grid in two (or, with `three`, in three) when the tracker locked onto a slower level.
 
     Beat trackers often pick the slower metrical level on slow material. When
     the detected tempo is slow and notes are dense relative to the beat, the
     notated beat is almost always twice as fast. Tuned on URMP brass and
     ChoraleBricks: fixes 4 of 6 half-level tracks without false doubles.
+
+    A tracker can also count a quick bar of three as one beat (a 6/4 hymn tune in two, a fast 3/4 in
+    one). Then the onsets sit on the thirds of the tracked beat (in_three), and with `three` each beat
+    is split in three instead (see THREE_SHARE for why it is the caller's choice).
     """
     bpm = 60 / np.median(np.diff(beat_times))
+    if bpm >= SLOW_BPM:
+        return beat_times
+    if three and in_three(beat_times, onsets):
+        return split(beat_times, 3)
     on = np.unique(np.round(np.sort(onsets), 2))
     ioi = np.diff(BeatMap(beat_times).to_beats(on))
     ioi = ioi[ioi > 0.08]
-    if len(ioi) and bpm < 90 and np.median(ioi) <= 0.3:
-        mids = (beat_times[:-1] + beat_times[1:]) / 2
-        return np.sort(np.concatenate([beat_times, mids]))
+    if len(ioi) and np.median(ioi) <= 0.3:
+        return split(beat_times, 2)
     return beat_times
 
 
@@ -222,17 +278,18 @@ def snap(x: float, grids: dict[int, int], default: int = 4) -> int:
 
 
 def quantize(notes: list[dict], beat_times: np.ndarray, monophonic: bool = False, auto_level: bool = True,
-             coarse: list[tuple[float, float]] | None = None, dense: bool = False) -> list[QNote]:
+             coarse: list[tuple[float, float]] | None = None, dense: bool = False, three: bool = False) -> list[QNote]:
     """Notes on the beat grid. `dense` lets beats whose grid would lose onsets choose a finer one
     (choose_grids_dense). On a monophonic line (the solo) a note that still lands on a taken slot then moves to
     the next free slot of its beat's grid, at half its confidence, instead of being dropped. Without `monophonic`
     it is for one instrument that plays chords (a tab): the grids are chosen for its distinct onsets
     (distinct_onsets), so two strums are not written on one slot while a grid could hold both. The tab
-    profiles do not ask for it yet (docs/shared/research/18-quality-revisit.md, §2)."""
+    profiles do not ask for it yet (docs/shared/research/18-quality-revisit.md, §2). `three`: the level rule may
+    split a slow beat in three (choose_level)."""
     if not notes:
         return []
     if auto_level:
-        beat_times = choose_level(np.asarray(beat_times, dtype=float), np.array([n["onset"] for n in notes]))
+        beat_times = choose_level(np.asarray(beat_times, dtype=float), np.array([n["onset"] for n in notes]), three)
     bm = BeatMap(beat_times)
     on = bm.to_beats(np.array([n["onset"] for n in notes]))
     off = bm.to_beats(np.array([n["offset"] for n in notes]))

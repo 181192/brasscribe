@@ -431,3 +431,124 @@ def fallback_beats(tracked: np.ndarray, onsets: np.ndarray) -> tuple[np.ndarray,
     first, last = (float(on[0]), float(on[-1])) if len(on) else (anchor, anchor)
     k = np.arange(int(np.floor((first - anchor) / period)) - 1, int(np.ceil((last - anchor) / period)) + 3)
     return anchor + k * period, k % 4 + 1
+
+
+# ---------------------------------------------------------------- a player's correction of the beat
+
+# The levels a player can choose. as-tracked: the tracker's own beats, with no level chosen from the notes;
+# double, triple: every beat split in two or three; half, third: every second or third beat kept.
+LEVELS = ("as-tracked", "double", "half", "triple", "third")
+LEVEL_SPLITS = {"double": 2, "triple": 3}
+LEVEL_KEEPS = {"half": 2, "third": 3}
+HOLD_EDGE_S = 0.05  # a beat this close to a hold's start or end is the note's own, not one inside it
+GIVEN = ("level", "bars", "downbeat", "holds")  # Correction.given
+
+
+@dataclass(frozen=True)
+class Hold:
+    """A held note (a fermata): the tracker went on counting through it. From `start_s` to `end_s` the music
+    has `beats` written beats, so of the tracked beats inside all but the first `beats` - 1 are taken out.
+
+    The written length is the player's to give. A guess is worse than no hold: with two beats for every
+    hold of ChoraleBricks (9 of its 18 are two long) fewer notes land on their written position than with
+    the tracked beats (0.475 against 0.490), where the right lengths reach 0.591."""
+    start_s: float
+    end_s: float
+    beats: int
+
+
+@dataclass(frozen=True)
+class Correction:
+    """What a player says about the beat. Every field left out keeps what the engine would do itself."""
+    level: str | None = None  # one of LEVELS; None: the level is chosen from the notes, as without a correction
+    phase: int = 0  # half, third: which of the first two or three tracked beats is kept
+    beats_per_bar: int | None = None  # on the corrected level
+    first_downbeat_s: float | None = None  # a time a bar starts at: the nearest beat is a downbeat
+    holds: tuple[Hold, ...] = ()
+
+    def __post_init__(self):
+        if self.level is not None and self.level not in LEVELS:
+            raise ValueError(f"level must be one of {', '.join(LEVELS)}")
+        keep = LEVEL_KEEPS.get(self.level, 1)
+        if not 0 <= self.phase < keep:
+            raise ValueError("phase is 0 or 1 with half, 0 to 2 with third, and 0 otherwise")
+        if self.beats_per_bar is not None and not 1 <= self.beats_per_bar <= 12:
+            raise ValueError("beats_per_bar is 1 to 12")
+        for h in self.holds:
+            if not h.end_s > h.start_s >= 0:
+                raise ValueError("a hold ends after it starts")
+            if h.beats < 1:
+                raise ValueError("a hold is written one beat long or more")
+
+    @property
+    def given(self) -> tuple[str, ...]:
+        """What the player has said, for the code that would otherwise decide it: `level` (no level is chosen
+        from the notes), `bars` (the bar's length is the player's), `downbeat` (where a bar starts is), `holds`."""
+        return tuple(name for name, said in (("level", self.level is not None), ("bars", self.beats_per_bar is not None),
+                                             ("downbeat", self.first_downbeat_s is not None), ("holds", bool(self.holds)))
+                     if said)
+
+
+def tracked_bars(positions: np.ndarray) -> tuple[int, int]:
+    """(beats per bar, index of the first downbeat) as the tracker's bar positions give them: the commonest
+    distance between beats labelled 1, and the first of those. (1, 0) when fewer than two are labelled."""
+    downs = np.where(np.asarray(positions).astype(int) == 1)[0]
+    if len(downs) < 2:
+        return 1, int(downs[0]) if len(downs) else 0
+    return int(Counter(np.diff(downs)).most_common(1)[0][0]), int(downs[0])
+
+
+def correct(beats: np.ndarray, c: Correction) -> np.ndarray:
+    """A beat table (rows of time and position in the bar, 1 = downbeat) with a player's correction applied:
+    the level, then the holds, then the bars. The result is in the same form, with every bar the same length
+    from the first downbeat on, which is all the arrangers read of the positions.
+
+    A correction that changes neither the level, the beats nor the bars returns the table as it was. With a
+    level and no bar length the tracked bar keeps its length in time: doubled beats give twice the beats to
+    the bar, halved ones half (when that is a whole number).
+    """
+    from .quantize import split
+
+    b = np.asarray(beats, dtype=float).reshape(-1, 2) if np.size(beats) else np.zeros((0, 2))
+    if len(b) < 2:
+        return b
+    times = b[:, 0]
+    per_bar, first = tracked_bars(b[:, 1])
+    changed = False
+    if c.level in LEVEL_SPLITS:
+        k = LEVEL_SPLITS[c.level]
+        times, per_bar, first, changed = split(times, k), per_bar * k, first * k, True
+    elif c.level in LEVEL_KEEPS:
+        k = LEVEL_KEEPS[c.level]
+        if len(times[c.phase::k]) < 2:
+            raise ValueError(f"too few beats tracked to keep every {'second' if k == 2 else 'third'} one")
+        times, changed = times[c.phase::k], True
+        per_bar = per_bar // k if per_bar % k == 0 else per_bar
+        first = max(0, -((c.phase - first) // k))  # the first kept beat at or after the tracked downbeat
+    keep = np.ones(len(times), bool)
+    for h in c.holds:
+        inside = np.where((times > h.start_s + HOLD_EDGE_S) & (times < h.end_s - HOLD_EDGE_S) & keep)[0]
+        surplus = len(inside) - (h.beats - 1)
+        if surplus > 0:
+            keep[inside[-surplus:]] = False
+    if not keep.all():
+        if keep.sum() < 2:
+            raise ValueError("the holds leave fewer than two beats")
+        first = int(np.sum(keep[:first])) if first < len(keep) else 0  # the downbeat itself gone: the next beat
+        times, changed = times[keep], True
+    if c.beats_per_bar is not None:
+        per_bar, changed = c.beats_per_bar, True
+    if c.first_downbeat_s is not None:
+        first, changed = int(np.argmin(np.abs(times - c.first_downbeat_s))), True
+    if not changed:
+        return b
+    positions = (np.arange(len(times)) - first) % per_bar + 1
+    return np.column_stack([times, positions])
+
+
+def write_beats(path, beats: np.ndarray) -> None:
+    """A beat table as the beat tracker's adapter writes it: a line per beat, the time in seconds, a tab, and
+    the position in the bar."""
+    with open(path, "w") as f:
+        for t, pos in np.asarray(beats, dtype=float).reshape(-1, 2):
+            f.write(f"{float(t)!r}\t{int(pos)}\n")

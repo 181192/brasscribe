@@ -184,7 +184,7 @@ def test_a_song_is_separated_and_its_bass_stem_transcribed_as_in_pop_rock():
     assert "transcribe.bass.swift-f0" not in [s.name for s in pop.stages]
     assert tab.stage("beats").params == {}  # the adapter's own beat model, not the device's small one
     assert profiles.build("bass-tab", Path("bass.wav"), params={"recording": "instrument"}).stage("beats").params == {}
-    assert set(tab.outputs) == {"tab.json", "composition.json", "tab.musicxml", "tab.txt", "tab-instructions.en.txt",
+    assert set(tab.outputs) == {"beat-hints.json", "tab.json", "composition.json", "tab.musicxml", "tab.txt", "tab-instructions.en.txt",
                                 "tab-instructions.nb.txt", "tab.pdf", "tab.mid"}
     assert set(bass_tab.TEXT_OUTPUTS) <= set(tab.stage("arrange").outputs)
 
@@ -1047,7 +1047,7 @@ def test_a_job_runs_to_a_tab_the_api_serves(settings, audio, monkeypatch):
         job = _wait(c, r.json()["id"])
         assert job["status"] == "succeeded", job["error"]
         assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.bass.basic-pitch", "transcribe.bass.swift-f0", "notes", "arrange", "export"]
-        assert job["outputs"] == ["composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml",
+        assert job["outputs"] == ["beat-hints.json", "composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml",
                                   "tab.txt"]
         for name in bass_tab.TEXT_OUTPUTS:  # served as the other outputs are, as text
             text = c.get(f"/v1/jobs/{job['id']}/artifacts/{name}")
@@ -1248,7 +1248,7 @@ def test_a_job_renders_the_tab_as_pdf_and_midi_and_serves_them(settings, audio, 
         job = c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "bass-tab", "recording": "instrument"}).json()
         job = _wait(c, job["id"], timeout=300)
         assert job["status"] == "succeeded", job["error"]
-        assert job["outputs"] == ["composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.mid",
+        assert job["outputs"] == ["beat-hints.json", "composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.mid",
                                   "tab.musicxml", "tab.pdf", "tab.txt"]
         for name in bass_tab.TEXT_OUTPUTS:
             text = c.get(f"/v1/jobs/{job['id']}/artifacts/{name}")

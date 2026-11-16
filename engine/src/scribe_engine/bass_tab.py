@@ -47,7 +47,7 @@ from typing import Callable
 import numpy as np
 
 from . import stages as S
-from . import targets, tuning
+from . import beat_hints, targets, tuning
 from .adapters import kill_tree
 from .config import REPO_ROOT, child_env
 from .dag import SOURCE, Input, Pipeline, Stage, StageContext, StageFailed
@@ -378,7 +378,7 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
 
 # A bar of two tracked beats whose onsets divide the beat in three is a real two (6/8 counted in two). Each
 # onset off the beat counts for the subdivision it is nearest to (a quarter, a third, a half, two thirds, three
-# quarters) when it lies within COMPOUND_NEAR of it; counted for every subdivision in reach instead, a third heard
+# quarters) when it lies within scribe_music.quantize.OFFBEAT_NEAR of it; counted for every subdivision in reach instead, a third heard
 # 10 ms early was also a quarter, and straight 6/8 at 100 BPM was lost in four takes of five. Of the onsets
 # counted, COMPOUND_SHARE or more are on a third, and there are at least COMPOUND_ONSETS of them. The share
 # rests on three numbers: the highest of GuitarSet's two-beat-bar takes, all in 4/4 (0.802 on players 00 to 02,
@@ -392,23 +392,16 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
 # A 6/8 tune played mostly long-short is read as a shuffle (two simple beats, written two bars to the bar of
 # four): the two cannot be told apart by where the onsets fall.
 COMPOUND_SHARE = 0.92
-COMPOUND_NEAR = 0.07
 COMPOUND_ONSETS = 12
 COMPOUND_BOTH = 0.25
-COMPOUND_SLOTS = np.array([1 / 4, 1 / 3, 1 / 2, 2 / 3, 3 / 4])  # where an onset off the beat can sit
 
 
 def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
     """The onsets divide the beats of `beat_times` in three (COMPOUND_*)."""
-    from scribe_music.quantize import BeatMap
+    from scribe_music.quantize import offbeat_counts
 
-    at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
-    nearest = np.abs(at[:, None] - COMPOUND_SLOTS[None, :])
-    slot = np.argmin(nearest, axis=1)
-    slot = np.where(nearest[np.arange(len(at)), slot] <= COMPOUND_NEAR, slot, -1)
-    first, second = int(np.sum(slot == 1)), int(np.sum(slot == 3))
+    first, second, twos = offbeat_counts(beat_times, onsets)
     thirds = first + second
-    twos = int(np.sum((slot == 0) | (slot == 2) | (slot == 4)))
     return (thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
             and min(first, second) >= COMPOUND_BOTH * thirds)
 
@@ -427,14 +420,17 @@ def bar_beats(tracked: int, beat_times: np.ndarray | None = None, onsets: np.nda
     return 4 if tracked in (1, 2, 8) else tracked
 
 
-def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", second: list[dict] | None = None) -> dict:
+def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", second: list[dict] | None = None,
+                     given: tuple[str, ...] = ()) -> dict:
     """The bass line of transcribed notes ({pitch, onset, offset} in seconds) on the beat grid.
 
     As the bass voice of the song arrangers: the bottom line, quantized as one voice on the level
     the onsets choose, tick 0 on the downbeat at or before the first note, durations as written.
     There is no pitch window, so a line that was heard too high is all there for the octave check.
     `octave` (OCTAVES): auto runs the check, a number is the player's choice. `octave_shift` is what
-    every pitch was moved by, and `octave_source` says who decided: auto or chosen."""
+    every pitch was moved by, and `octave_source` says who decided: auto or chosen.
+    `given`: what a player has said about `beats` (scribe_music.beats.Correction.given): with level they are
+    the written beats as they are, with bars the bar is as long as they say."""
     from scribe_eval.lead_sheet import line
     from scribe_music.durations import apply_written
     from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
@@ -462,11 +458,12 @@ def transcribed_line(raw: list[dict], beats: np.ndarray, octave: str = "auto", s
     beats_per_bar = int(Counter(np.diff(downs)).most_common(1)[0][0])
     first_down = int(downs[0])
     onsets = np.array([n["onset"] for n in bottom])
-    times = choose_level(beats[:, 0], onsets)
+    times = beats[:, 0] if "level" in given else choose_level(beats[:, 0], onsets)
     if len(times) != len(beats):
         beats_per_bar *= 2
         first_down *= 2
-    beats_per_bar = bar_beats(beats_per_bar, times, onsets)
+    if "bars" not in given:
+        beats_per_bar = bar_beats(beats_per_bar, times, onsets)
     earliest = float(BeatMap(times).to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar
@@ -535,9 +532,11 @@ def octave_shift(pitches: list[int], confirmed: float | None = None) -> int:
 def notes_stage(ctx: StageContext) -> None:
     try:
         doc = transcribed_line(load_transcription(ctx.inputs["bass"]), np.loadtxt(ctx.inputs["beats"], ndmin=2),
-                               ctx.params.get("octave", "auto"), load_transcription(ctx.inputs["second"]))
+                               ctx.params.get("octave", "auto"), load_transcription(ctx.inputs["second"]),
+                               tuple(ctx.params.get("beats_given", ())))
     except ValueError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
+    beat_hints.write(ctx.out, doc, ctx.inputs["beats"], ctx.inputs.get("beats_tracked"), ctx.inputs.get("beats_alternative"))
     doc["reference_pitch"] = reference_pitch(ctx.inputs["audio"], bool(ctx.params.get("whole_recording")))
     ctx.log(f"{len(doc['notes'])} notes, {doc['meter']['beats']}/{doc['meter']['beat_unit']}, "
             f"{doc['key']['name']}, {doc['tempo_bpm']} BPM")
@@ -627,7 +626,8 @@ TEXT_LANGS = ("en", "nb")  # the languages the playing instructions are written 
 TEXT_OUTPUTS = (TEXT_TAB, *(instructions_file(lang) for lang in TEXT_LANGS))
 # What the arrange stage of a tab profile writes, and where a run's outputs come from.
 ARRANGED = ("composition.json", TAB_JSON, TAB_XML, *TEXT_OUTPUTS)
-OUTPUTS = {**{name: ("arrange", name) for name in ARRANGED}, **{name: ("export", name) for name in targets.FRETTED.rendered}}
+OUTPUTS = {**{name: ("arrange", name) for name in ARRANGED}, **{name: ("export", name) for name in targets.FRETTED.rendered},
+           beat_hints.FILE: ("notes", beat_hints.FILE)}
 
 
 def export_text(tab: dict, title: str, out: Path, text: Callable[[dict, str, str | None], str] = tab_text) -> None:
@@ -740,7 +740,7 @@ def build(title: str, params: dict) -> Pipeline:
     whole = opts["recording"] == "instrument"
     # The adapter's own beat model (final0), as pop-rock: it runs on the computer, on a whole song, and the two
     # profiles share its cache entry. small0 is for what the apps also make on the device.
-    st = [P._beats()]
+    st, written_on, reader = P.beat_stages(params)
     if whole:
         bass = Input(SOURCE)
     else:
@@ -757,12 +757,13 @@ def build(title: str, params: dict) -> Pipeline:
                     adapter="swift-f0", params={"output": "bass-sw.mid"}, outputs=("bass-sw.mid",),
                     derive=tuning.derive if whole else None))
     # Only what differs from the defaults, so a job that chooses neither keeps its cache entry.
-    heard = {**({"whole_recording": True} if whole else {}), **({"octave": opts["octave"]} if opts["octave"] != "auto" else {})}
-    st.append(Stage("notes", "notes", {"beats": Input("beats", "mix.beats"), "audio": Input(SOURCE),
+    heard = {**({"whole_recording": True} if whole else {}), **({"octave": opts["octave"]} if opts["octave"] != "auto" else {}),
+             **reader["params"]}
+    st.append(Stage("notes", "notes", {"beats": written_on, **reader["inputs"], "audio": Input(SOURCE),
                                        "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid"),
                                        "second": Input("transcribe.bass.swift-f0", "bass-sw.mid")},
                     notes_stage, params=heard,
-                    code=(S.MUSIC_SRC, S.EVAL_SRC, THIS, tuning.THIS), outputs=("bass-notes.json",)))
+                    code=(S.MUSIC_SRC, S.EVAL_SRC, THIS, tuning.THIS, beat_hints.THIS), outputs=("bass-notes.json", beat_hints.FILE)))
     fingering = {"instrument": opts["instrument"], "tuning": opts["tuning"], "capo": opts["capo"], "style": opts["style"]}
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "bass-notes.json")}, arrange_stage,
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
@@ -770,4 +771,4 @@ def build(title: str, params: dict) -> Pipeline:
                     code=(THIS, core_cli_path()), outputs=ARRANGED))
     st.append(Stage("export", "export", {"score": Input("arrange")}, export_stage,
                     params={"musescore": musescore_fingerprint()}, code=(THIS,), outputs=("export.json",)))
-    return Pipeline(PROFILE, "tab", st, dict(OUTPUTS), opts)
+    return Pipeline(PROFILE, "tab", st, dict(OUTPUTS), P.with_beat(opts, params))

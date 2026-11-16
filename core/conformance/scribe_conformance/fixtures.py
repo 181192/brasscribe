@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from music21 import duration as m21duration
 
-from scribe_music.quantize import choose_level, fill_gaps, quantize
+from scribe_music.quantize import choose_level, fill_gaps, in_three, quantize
 from scribe_music.spelling import key_of, spell
 
 from .cases import REPO
@@ -63,6 +63,28 @@ def quantize_cases(rng) -> list[dict]:
                       "level": choose_level(beats, on).tolist(),
                       "quantized": [[x.pitch, x.start, x.end] for x in q],
                       "filled": [[x.pitch, x.start, x.end] for x in g]})
+    return cases
+
+
+def level_cases() -> list[dict]:
+    """Beat grids from 40 to 130 BPM under onsets on the beat, its halves, quarters and thirds in varying
+    shares, with timing jitter: the level chosen with and without the split in three."""
+    rng = np.random.default_rng(20261113)
+    cases = []
+    for k in range(120):
+        spb = float(rng.uniform(0.46, 1.5))
+        nb = int(rng.integers(6, 60))
+        beats = np.cumsum(spb * rng.uniform(0.95, 1.05, size=nb)) + rng.uniform(0, 1)
+        thirds, both = float(rng.choice([0.0, 0.3, 0.55, 0.65, 0.8, 1.0])), bool(k % 5)
+        on = []
+        for a, b in zip(beats, beats[1:]):
+            on.append(a)
+            if rng.random() < 0.85:
+                fracs = ([1 / 3, 2 / 3] if both else [2 / 3]) if rng.random() < thirds else [[0.5], [0.25, 0.5, 0.75], [0.25], [0.75]][int(rng.integers(0, 4))]
+                on += [a + (b - a) * f for f in fracs if rng.random() < 0.9]
+        on = np.sort(np.array(on) + rng.normal(0, 0.012 * spb, size=len(on)))
+        cases.append({"beats": beats.tolist(), "onsets": on.tolist(), "in_three": bool(in_three(beats, on)),
+                      "level": choose_level(beats, on).tolist(), "level_three": choose_level(beats, on, True).tolist()})
     return cases
 
 
@@ -549,7 +571,7 @@ def main() -> None:
                 (OUT_BRASS, "voice_satb", voice_satb_cases(rng)), (OUT_BRASS, "seats", seat_cases()),
                 (OUT_BRASS, "part_sources", part_sources_cases()), (OUT, "quantize_dense", quantize_dense_cases()),
                 (OUT, "quantize_chords", quantize_chords_cases()),
-                (OUT, "onsets", onsets_cases())]
+                (OUT, "onsets", onsets_cases()), (OUT, "level", level_cases())]
     # The trill cases that also went through the difficulty levels: that half is the brass-band target's.
     trills = trills_cases()
     difficulty = [{"parts": c.pop("parts"), "difficulty": c.pop("difficulty")} for c in trills if "difficulty" in c]

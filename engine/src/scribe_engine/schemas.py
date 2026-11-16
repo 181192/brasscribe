@@ -24,6 +24,11 @@ Recording = Literal["song", "instrument"]
 Octave = Literal["auto", "0", "-12", "+12"]
 TabLayout = Literal["tab", "tab-and-notation", "notation"]
 TabChords = Literal["heard", "completed"]
+# A player's correction of the beat (profiles.beat_correction) and the engine's own hints (beat_hints.py).
+BeatSource = Literal["tracked", "alternative"]
+BeatLevel = Literal["as-tracked", "double", "half", "triple", "third"]
+BeatHintCode = Literal["tempo_guessed", "tempo_slow", "tempo_fast", "notes_fast", "notes_slow", "in_three", "held_notes",
+                       "uneven_bars", "downbeat_unsure", "trackers_disagree"]
 StageStatus = Literal["pending", "started", "cached", "imported", "ran", "failed", "skipped"]
 
 
@@ -282,6 +287,73 @@ class MissingOutput(BaseModel):
                                      "with its own words for `reason` shows those instead")
 
 
+class BeatHold(BaseModel):
+    """A held note (a fermata) the beat tracker counted through."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    start_s: float = Field(ge=0, description="where the held note starts, in seconds from the start of the recording")
+    end_s: float = Field(gt=0, description="where the next note starts")
+    beats: int = Field(ge=1, le=16, description="how many beats long the held note is written. Of the tracked beats "
+                                                "between start_s and end_s all but the first beats - 1 are taken out")
+
+
+class BeatCorrection(BaseModel):
+    """What a player says about the beat of a finished job. Every field left out keeps what the engine does on
+    its own. Applied in this order: source, level, holds, then the bar (beats_per_bar, first_downbeat_s)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: BeatSource | None = Field(None, description="which beat tracker's beats the score is written on. tracked "
+                                      "(the default): the engine's own; alternative: a second tracker's, on an engine "
+                                      "that has one (Job.beat_sources says; refused with beat_source_unavailable otherwise)")
+    level: BeatLevel | None = Field(None, description="the level of the beat. double, triple: every tracked beat is "
+                                    "split in two or three; half, third: every second or third one is kept; "
+                                    "as-tracked: the tracker's beats as they are. Left out, the engine chooses "
+                                    "the level from the notes, as it does without a correction")
+    phase: int | None = Field(None, ge=0, le=2, description="with half or third: which of the first two (0, 1) or three "
+                                                            "(0 to 2) tracked beats is kept; default 0")
+    beats_per_bar: int | None = Field(None, ge=2, le=12, description="beats in a bar, counted on the corrected level; "
+                                      "needs level")
+    first_downbeat_s: float | None = Field(None, ge=0, description="a time in the recording where a bar starts: the "
+                                           "beat nearest to it is a first beat")
+    holds: list[BeatHold] | None = Field(None, max_length=64, description="held notes; they must not overlap; "
+                                         "needs level")
+
+
+class BeatHint(BaseModel):
+    """One thing the engine suspects about the beat. A suspicion to ask the player about, never a finding."""
+
+    code: BeatHintCode = Field(description="tempo_guessed: under two beats were tracked, the grid is a guess; "
+                               "tempo_slow, tempo_fast: the written beat is under 50 or over 220 a minute; notes_fast, "
+                               "notes_slow: most notes are a quarter of a beat apart or less, or two beats or more; "
+                               "in_three: the notes divide a slow beat in three; held_notes: long stretches without a "
+                               "new note; uneven_bars: bars with far more notes than the rest; downbeat_unsure: "
+                               "another beat of the bar carries more than the first; trackers_disagree: the two "
+                               "beat trackers put their beats in different places")
+    level: BeatLevel | None = Field(None, description="tempo_*, notes_*, in_three: the level to send in a correction "
+                                    "to follow the hint, counted from the tracked beats as a correction's level is; "
+                                    "null when no level says it")
+    spans: list[list[float]] | None = Field(None, description="held_notes: [start_s, end_s] of each stretch, at most "
+                                            "12, in order of time; each is a hold a correction could mark")
+    bars: list[int] | None = Field(None, description="uneven_bars: the bars' numbers, from 1")
+    first_downbeat_s: float | None = Field(None, description="downbeat_unsure: the time of a beat that may start a bar")
+    score: float | None = Field(None, description="what was measured: the tempo (tempo_*), the typical distance "
+                                "between notes in beats (notes_*), the other beat's weight against the first's "
+                                "(downbeat_unsure), the share of beats both trackers have (trackers_disagree)")
+
+
+class BeatHints(BaseModel):
+    tempo_bpm: float | None = Field(description="the written beat's tempo; null when the score has no beat grid")
+    beats_per_bar: int
+    level: BeatLevel = Field(description="the level the score is written on, against the tracked beats: the "
+                             "correction's when the job has one with a level, else the one the engine chose from "
+                             "the notes (as-tracked, double or triple). A correction that counts beats (holds, "
+                             "beats_per_bar) sends this level, and phase, to count them on the beats the player sees")
+    phase: int = Field(0, description="with level half or third: the phase the correction chose")
+    hints: list[BeatHint] = Field(description="empty when nothing looks wrong")
+
+
 class Job(BaseModel):
     id: str
     profile: str
@@ -311,6 +383,14 @@ class Job(BaseModel):
                                "set up on the computer when the job was taken (`band-writer`: a solo line written "
                                "from two listeners, not three, so a little less sure). Made again (rerunJob) once it "
                                "is set up, the job uses it")
+    beat: BeatCorrection | None = Field(None, description="the beat correction the job was made with (rerunJob); null "
+                                        "for the beats as the engine tracked and read them")
+    beat_sources: list[BeatSource] = Field(default_factory=lambda: ["tracked"], description="the beats a correction of "
+                                           "this job can choose between: alternative is among them only on an engine "
+                                           "with a second beat tracker")
+    beat_hints: BeatHints | None = Field(None, description="what the engine suspects about the beat of the finished "
+                                         "score, so an app can offer a correction unasked; null until the score is "
+                                         "written, and for a run made before the engine wrote them")
 
 
 class Artifact(BaseModel):
@@ -597,9 +677,23 @@ class SuiteHistoryEntry(BaseModel):
     device: str | None = None
 
 
+class Refusal(BaseModel):
+    """A request the engine refused, with a code an app can act on and words for the player."""
+
+    code: str = Field(description="what kind of refusal, e.g. beat_invalid, beat_source_unavailable, job_not_finished")
+    detail: str = Field(description="what does not fit, in words an app can show")
+    audio_id: str | None = Field(None, description="with a job a model waits for: the recording, kept, to ask "
+                                 "again with")
+
+
 class RerunRequest(BaseModel):
-    allow_heavy: bool = True
+    allow_heavy: bool = Field(True, description="allow heavy models to run on cache misses. Never with `beat`: a "
+                                                "correction fails at once instead of listening again, should the "
+                                                "cached model outputs be gone")
     cold: list[str] = Field(default_factory=list, description="stages or kinds to run even on a cache hit, or 'all'")
+    beat: BeatCorrection | None = Field(None, description="write the score again on corrected beats: no model runs "
+                                        "again, only the stages that read the beats and the ones after them. Left "
+                                        "out, the new job keeps the old one's correction; null or {} takes it away")
 
 
 class RunUpdate(BaseModel):

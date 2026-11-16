@@ -27,7 +27,10 @@ from scribe_music.quantize import TICKS_PER_BEAT, quantize
 from .score import LOOSE_TOL, load_notes, to_arrays
 
 
-def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats", beats_override: np.ndarray | None = None) -> dict:
+def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats", beats_override: np.ndarray | None = None,
+             three: bool = False, auto_level: bool = True) -> dict:
+    """`three`: the level rule may split a slow beat in three (quantize.choose_level).
+    `auto_level` False: the beats are the written beats as they are (a player has chosen the level)."""
     ref = load_notes(song / "reference.json")
     beats = beats_override if beats_override is not None else np.loadtxt(song / beats_file)[:, 0]
 
@@ -41,7 +44,7 @@ def evaluate(song: Path, source: str | None, beats_file: str = "beat-this.beats"
         pairs = [(ref[i], est[j]) for i, j in m]
 
     pairs = [(r, e) for r, e in pairs if "quarter" in r]  # a few performed notes have no score counterpart
-    q = quantize([e for _, e in pairs], beats)
+    q = quantize([e for _, e in pairs], beats, auto_level=auto_level, three=three)
     # (onset, pitch, offset): parts in unison on one onset keep their own lengths
     by_onset = {(round(x.onset_s, 6), x.pitch, round(x.offset_s, 6)): x for x in q}
     est_q = [by_onset[(round(e["onset"], 6), e["pitch"], round(e["offset"], 6))] for _, e in pairs]

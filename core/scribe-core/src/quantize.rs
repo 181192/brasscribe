@@ -73,24 +73,103 @@ impl BeatMap {
     }
 }
 
+/// Where an onset off the beat can sit, and how near it must be to count as sitting there.
+const OFFBEAT_SLOTS: [f64; 5] = [1.0 / 4.0, 1.0 / 3.0, 1.0 / 2.0, 2.0 / 3.0, 3.0 / 4.0];
+const OFFBEAT_NEAR: f64 = 0.07;
+// A beat is split in three when THREE_SHARE of the onsets off the beat sit on its thirds, there are
+// THREE_ONSETS of them or more, and neither third has under THREE_BOTH of the thirds (see the reference).
+const THREE_SHARE: f64 = 0.6;
+const THREE_ONSETS: usize = 12;
+const THREE_BOTH: f64 = 0.25;
+/// A tracked tempo under this may be a slower level than the written beat.
+const SLOW_BPM: f64 = 90.0;
+
+/// The onsets rounded to 10 ms, in order, each once (`np.unique(np.round(np.sort(onsets), 2))`).
+fn rounded_onsets(onsets: &[f64]) -> Vec<f64> {
+    let mut on: Vec<f64> = onsets.iter().map(|&x| py::np_round(x, 2)).collect();
+    on.sort_by(py::fcmp);
+    on.dedup();
+    on
+}
+
+/// Onsets on the first third of a beat, on the second third, and on its half or quarters.
+pub fn offbeat_counts(beat_times: &[f64], onsets: &[f64]) -> (usize, usize, usize) {
+    let bm = BeatMap::new(beat_times).expect("two beats");
+    let (mut first, mut second, mut twos) = (0, 0, 0);
+    for x in rounded_onsets(onsets) {
+        let at = bm.to_beats(x).rem_euclid(1.0);
+        // The nearest slot, the first of two equally near (np.argmin).
+        let (mut slot, mut near) = (0, f64::INFINITY);
+        for (i, s) in OFFBEAT_SLOTS.iter().enumerate() {
+            let d = (at - s).abs();
+            if d < near {
+                (slot, near) = (i, d);
+            }
+        }
+        if near <= OFFBEAT_NEAR {
+            match slot {
+                1 => first += 1,
+                3 => second += 1,
+                _ => twos += 1,
+            }
+        }
+    }
+    (first, second, twos)
+}
+
+/// The onsets divide the beats in three.
+pub fn in_three(beat_times: &[f64], onsets: &[f64]) -> bool {
+    let (first, second, twos) = offbeat_counts(beat_times, onsets);
+    let thirds = first + second;
+    thirds + twos >= THREE_ONSETS
+        && thirds as f64 / (thirds + twos) as f64 >= THREE_SHARE
+        && first.min(second) as f64 >= THREE_BOTH * thirds as f64
+}
+
+/// Every beat interval divided in `k` equal parts (2 or 3).
+pub fn split(beat_times: &[f64], k: usize) -> Vec<f64> {
+    let mut out = beat_times.to_vec();
+    if k == 2 {
+        out.extend(beat_times.windows(2).map(|w| (w[0] + w[1]) / 2.0));
+    } else {
+        for j in 1..k {
+            out.extend(beat_times.windows(2).map(|w| w[0] + (w[1] - w[0]) * j as f64 / k as f64));
+        }
+    }
+    out.sort_by(py::fcmp);
+    out
+}
+
+/// How many beats of `chosen` (the level rule's answer) there are to one of `tracked`: 1, 2 or 3.
+pub fn level_factor(tracked: &[f64], chosen: &[f64]) -> i64 {
+    ((chosen.len() - 1) / (tracked.len() - 1).max(1)) as i64
+}
+
 /// Double the beat grid when the tracker locked onto half notes.
 ///
 /// When the detected tempo is slow and notes are dense relative to the beat,
 /// the notated beat is almost always twice as fast.
 pub fn choose_level(beat_times: &[f64], onsets: &[f64]) -> Vec<f64> {
+    choose_level_three(beat_times, onsets, false)
+}
+
+/// `choose_level`, and with `three` a slow beat that the onsets divide in three is split in three
+/// instead: a bar of three that the tracker counted in one. It is the caller's choice, as a slow tune
+/// in 12/8 gives the same onsets (see the reference).
+pub fn choose_level_three(beat_times: &[f64], onsets: &[f64], three: bool) -> Vec<f64> {
     let diffs: Vec<f64> = beat_times.windows(2).map(|w| w[1] - w[0]).collect();
     let bpm = 60.0 / py::median(&diffs);
-    let mut on: Vec<f64> = onsets.iter().map(|&x| py::np_round(x, 2)).collect();
-    on.sort_by(py::fcmp);
-    on.dedup();
+    if bpm >= SLOW_BPM {
+        return beat_times.to_vec();
+    }
+    if three && in_three(beat_times, onsets) {
+        return split(beat_times, 3);
+    }
     let bm = BeatMap::new(beat_times).expect("two beats");
-    let ob: Vec<f64> = on.iter().map(|&x| bm.to_beats(x)).collect();
+    let ob: Vec<f64> = rounded_onsets(onsets).iter().map(|&x| bm.to_beats(x)).collect();
     let ioi: Vec<f64> = ob.windows(2).map(|w| w[1] - w[0]).filter(|&d| d > 0.08).collect();
-    if !ioi.is_empty() && bpm < 90.0 && py::median(&ioi) <= 0.3 {
-        let mut out = beat_times.to_vec();
-        out.extend(beat_times.windows(2).map(|w| (w[0] + w[1]) / 2.0));
-        out.sort_by(py::fcmp);
-        return out;
+    if !ioi.is_empty() && py::median(&ioi) <= 0.3 {
+        return split(beat_times, 2);
     }
     beat_times.to_vec()
 }
