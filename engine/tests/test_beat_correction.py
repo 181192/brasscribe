@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from scribe_engine import bass_tab, beat_hints, profiles, tuning
+from scribe_engine import api, bass_tab, beat_hints, profiles, tuning
 from scribe_engine import stages as S
 
 
@@ -100,6 +100,33 @@ def test_the_alternative_source_is_refused_on_an_engine_with_one_tracker(monkeyp
     monkeypatch.setattr(profiles, "ALTERNATIVE_BEATS", "swift-f0")
     assert profiles.beat_sources() == ("tracked", "alternative")
     assert profiles.beat_correction({"beat": {"source": "alternative"}}) == {"source": "alternative"}
+
+
+def test_a_time_in_a_recording_of_unknown_length_is_refused_and_a_level_alone_is_not():
+    with pytest.raises(profiles.OptionError) as refused:
+        profiles.within_recording({"first_downbeat_s": 1.0}, None)
+    assert refused.value.code == "beat_invalid" and "cannot read how long" in str(refused.value)
+    with pytest.raises(profiles.OptionError):
+        profiles.within_recording({"level": "double", "holds": [{"start_s": 1.0, "end_s": 2.0, "beats": 1}]}, None)
+    assert profiles.within_recording({"level": "half"}, None) == {"level": "half"}
+
+
+def test_the_length_of_a_recording_libsndfile_cannot_read_comes_from_the_environments_ffprobe(tmp_path):
+    import subprocess
+    import sys
+
+    import soundfile as sf
+    from scribe_music.programs import ffmpeg, ffprobe
+
+    if Path(ffprobe()).parent != Path(sys.prefix) / ("Library/bin" if sys.platform == "win32" else "bin"):
+        pytest.skip("no ffprobe in this Python's environment")  # test_ffmpeg_from_environment says where it must be
+    wav, m4a = tmp_path / "take.wav", tmp_path / "take.m4a"
+    sf.write(wav, np.zeros(44100 * 2, dtype="float32"), 44100)
+    subprocess.run([ffmpeg(), "-loglevel", "error", "-i", str(wav), "-c:a", "aac", str(m4a)], check=True)
+    assert tuning.duration_s(wav) == pytest.approx(2.0)
+    assert tuning.duration_s(m4a) == pytest.approx(2.0, abs=0.1)
+    (tmp_path / "noise.m4a").write_bytes(b"not audio")
+    assert tuning.duration_s(tmp_path / "noise.m4a") is None
 
 
 def test_every_refusal_has_its_own_words():
@@ -240,6 +267,7 @@ def tab_client(settings, audio, monkeypatch):
     monkeypatch.setattr(S, "beats_alternative", alternative)
     monkeypatch.setattr(tuning, "transcribe", transcribe)
     monkeypatch.setattr(S, "transcribe", transcribe)
+    monkeypatch.setattr(api, "recording_seconds", lambda path: 30.0)  # the fake take's bytes have no length
     with TestClient(create_app(settings)) as c:
         c.ran = ran
         c.audio_id = c.post("/v1/audio", files={"file": ("my_take.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
@@ -390,6 +418,13 @@ def test_a_correction_past_the_end_or_that_changes_nothing_is_refused(tab_client
     c = tab_client
     monkeypatch.setattr(api, "recording_seconds", lambda path: 20.0)
     first = _tab_job(c)
+    # A recording whose length cannot be read: a time in it is refused, the level alone is taken.
+    monkeypatch.setattr(api, "recording_seconds", lambda path: None)
+    for beat in ({"first_downbeat_s": 1.0}, {"level": "double", "holds": [{"start_s": 1.0, "end_s": 2.0, "beats": 1}]}):
+        r = c.post(f"/v1/jobs/{first['id']}/rerun", json={"beat": beat})
+        assert (r.status_code, r.json()["code"]) == (422, "beat_invalid") and "cannot read how long" in r.json()["detail"]
+    assert c.post(f"/v1/jobs/{first['id']}/rerun", json={"beat": {"level": "double"}}).status_code == 202
+    monkeypatch.setattr(api, "recording_seconds", lambda path: 20.0)
     before = len(c.get("/v1/jobs").json())
     for beat, says in (({"first_downbeat_s": 9999}, "after the end of the recording"),
                        ({"first_downbeat_s": 1e308}, "after the end of the recording"),
@@ -474,6 +509,7 @@ def test_a_band_score_is_written_again_on_corrected_beats(settings, audio, monke
     monkeypatch.setattr(S, "beats", lambda ctx: (ran.append("beats"), np.savetxt(ctx.out / "mix.beats", _beats(33), fmt=["%.3f", "%d"])))
     for module in (S, tuning):
         monkeypatch.setattr(module, "transcribe", lambda ctx: (ran.append(ctx.stage.name), _write_midi(ctx.out / ctx.params["output"], HYMN + HYMN_BASS)))
+    monkeypatch.setattr(api, "recording_seconds", lambda path: 30.0)
     with TestClient(create_app(settings)) as c:
         audio_id = c.post("/v1/audio", files={"file": ("hymn.wav", audio.read_bytes(), "audio/wav")}).json()["audio_id"]
         first = _wait(c, c.post("/v1/jobs", json={"audio_id": audio_id, "profile": "brass-band", "render_audio": False}).json()["id"])
