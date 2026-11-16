@@ -416,6 +416,7 @@ NB = {
     "You can start again from the recording.": "Du kan begynne på nytt fra opptaket.",
     "You get the solo part, plus the accompaniment arranged for brass band.": "Du får solostemmen, og akkompagnementet arrangert for brassband.",
     "Your answer decides how Brasscribe listens. It never guesses.": "Svaret ditt avgjør hvordan Brasscribe lytter. Den gjetter aldri.",
+    "Your computer is still setting up its listening tools. This can take a while the first time.": "Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.",
     "Your part (%lld)": "Din stemme (%lld)",
     "Your part is muted with “Mute my part”, so you can play along. “Only this” plays one part alone.": "Stemmen din dempes med «Demp stemmen min», så du kan spille med. «Bare denne» spiller én stemme alene.",
     "Zoom %@": "Zoom %@",

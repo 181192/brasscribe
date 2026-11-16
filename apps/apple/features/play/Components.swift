@@ -309,6 +309,19 @@ struct HelperLine: View {
     }
 }
 
+/// Said while the computer is still setting up what a step needs, so a wait that looks stuck is not taken for one.
+/// Shown only while `active`; it does not name what is being set up.
+struct SettingUpLine: View {
+    let active: Bool
+    var body: some View {
+        if active {
+            HelperLine(systemImage: PlayIcon.computer.systemName,
+                       text: String(localized: "Your computer is still setting up its listening tools. This can take a while the first time."))
+                .accessibilityIdentifier("setting-up")
+        }
+    }
+}
+
 /// Where a flow page's actions go. On the Mac they follow the content, trailing in its column
 /// (design/brands/brasscribe/system.md §2: "Bottom right of the content, after Cancel"), so a tall window never leaves
 /// them far below it. On iPhone and iPad they sit in a band at the bottom of the screen.

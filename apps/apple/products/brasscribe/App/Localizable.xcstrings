@@ -6427,6 +6427,16 @@
         }
       }
     },
+    "Your computer is still setting up its listening tools. This can take a while the first time.": {
+      "localizations": {
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid."
+          }
+        }
+      }
+    },
     "Your computer isn't set up for full-band scores yet. Open Bandroom there and follow what it says, then send the recording again.": {
       "localizations": {
         "nb": {

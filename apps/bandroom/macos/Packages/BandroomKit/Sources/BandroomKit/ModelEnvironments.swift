@@ -61,6 +61,17 @@ public final class ModelEnvironments {
         var trouble: InstallTrouble?
         for (i, name) in pending.enumerated() {
             phase = .installing(Step(environment: name, index: i + 1, count: pending.count))
+            // Jobs that use it first finish; one that needs it from now on waits for this install.
+            guard let lock = await EnvironmentLock.exclusive(source.environmentLocks.appending(path: "\(name).lock"),
+                                                             while: { [weak self] in !(self?.cancelled ?? true) }) else {
+                if cancelled { phase = .idle; return }
+                log?("models: \(name) could not be locked for its install")
+                failed.append(name)
+                continue
+            }
+            defer { lock.release() }
+            // A stage that needed it meanwhile may have installed it itself (the engine's envlock.py).
+            if source.isInstalled(name) { continue }
             let status: Int32
             let plan: LaunchPlan
             do {
@@ -100,14 +111,42 @@ public final class ModelEnvironments {
     /// Stops an install under way (an update replacing the workspace, quitting); what it was installing has no
     /// marker and is installed again next time.
     public func cancel(grace: TimeInterval = 5) {
-        guard let pid else { return }
-        self.pid = nil
+        guard isInstalling else { return }
         cancelled = true
+        guard let pid else { return }  // still waiting for its lock: that wait ends
+        self.pid = nil
         launcher.terminate(pid: pid, grace: grace)
     }
 
     /// Shows a state without installing anything: for the screen catalogue.
     public func show(_ phase: Phase) {
         self.phase = phase
+    }
+}
+
+/// An exclusive `flock` on an environment's lock file (`EngineSource.environmentLocks`), the one the engine holds
+/// shared while a stage uses the environment, or exclusively while it installs it (envlock.py). The kernel drops it
+/// when Bandroom ends.
+final class EnvironmentLock: @unchecked Sendable {
+    private let fd: Int32
+
+    private init(fd: Int32) { self.fd = fd }
+
+    /// Waits until no job holds it and takes it; nil when `going` turns false first, or the file cannot be opened.
+    static func exclusive(_ file: URL, while going: @MainActor () -> Bool) async -> EnvironmentLock? {
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let fd = open(file.path, O_RDWR | O_CREAT | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { return nil }
+        while await going() {
+            if flock(fd, LOCK_EX | LOCK_NB) == 0 { return EnvironmentLock(fd: fd) }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        close(fd)
+        return nil
+    }
+
+    func release() {
+        flock(fd, LOCK_UN)
+        close(fd)
     }
 }

@@ -215,6 +215,9 @@ class AppContainer(private val context: Context, val product: Product) {
     /** Tests only: the fixture computer's jobs stay in the stage they are at until this is false again. */
     @Volatile @set:androidx.annotation.VisibleForTesting var fixtureHeld: Boolean = false
 
+    /** Tests only: while this names a model, the fixture computer's started stage says it is setting that model up. */
+    @Volatile @set:androidx.annotation.VisibleForTesting var fixtureSettingUp: String? = null
+
     private var cachedEngine: Pair<String, EngineApi>? = null
 
     /**
@@ -229,7 +232,7 @@ class AppContainer(private val context: Context, val product: Product) {
         val key = if (usingFixture) "fixture" else "${settings.url}|${network?.networkHandle}"
         val api = cachedEngine?.takeIf { it.first == key }?.second ?: run {
             dropEngine()
-            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = fixtureStageSeconds, held = { fixtureHeld })
+            val created: EngineApi = if (usingFixture) FixtureEngineApi(fixtureSource!!, stageSeconds = fixtureStageSeconds, held = { fixtureHeld }, settingUp = { fixtureSettingUp })
             else KtorEngineApi(settings.url, httpEngine(network))
             cachedEngine = key to created
             created

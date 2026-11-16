@@ -312,7 +312,7 @@ public class TabFlowTests : TempFolderTest
                 "your-instrument" => TabScreen.YourInstrument,
                 "home" or "home-offline" or "home-update" => TabScreen.Home,
                 "what-is-this" or "what-is-this-offline" => TabScreen.WhatIsThis,
-                "transcribing" => TabScreen.Transcribing,
+                "transcribing" or "transcribing-setting-up" => TabScreen.Transcribing,
                 "check-the-song" or "check-the-song-pages" => TabScreen.CheckTheSong,
                 "tab" or "tab-full-screen" or "export" => TabScreen.Tab,
                 "pages" => TabScreen.Pages,
@@ -332,6 +332,7 @@ public class TabFlowTests : TempFolderTest
             if (scene == "what-is-this") Assert.Null(flow.WhatIsThis.Missing);
             if (scene == "what-is-this-offline") Assert.Equal("Tab_What_ConnectFirst", flow.WhatIsThis.Missing);
             // The computer by its name, never its address.
+            if (scene == "transcribing-setting-up") Assert.True(flow.Transcription.IsSettingUp);
             if (scene == "transcribing") Assert.Equal("Tab_Where_Computer(Studio PC)", flow.WhereText);
             // The scenes never talk to a computer.
             Assert.Empty(computer.Requests);

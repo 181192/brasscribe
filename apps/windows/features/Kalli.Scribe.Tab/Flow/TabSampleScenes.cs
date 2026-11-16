@@ -13,7 +13,7 @@ namespace Kalli.Scribe.Tab;
 public static class TabSampleScenes
 {
     public static readonly string[] Names =
-        ["first-run", "your-instrument", "home", "home-offline", "home-update", "what-is-this", "what-is-this-offline", "transcribing",
+        ["first-run", "your-instrument", "home", "home-offline", "home-update", "what-is-this", "what-is-this-offline", "transcribing", "transcribing-setting-up",
          "check-the-song", "tab", "tab-full-screen", "export", "error", "error-update", "pages", "pages-unread", "check-the-song-pages"];
 
     /// <summary>The computer in the sample scenes.</summary>
@@ -52,8 +52,11 @@ public static class TabSampleScenes
                 // An answer chosen, as the player has it before Continue.
                 flow.WhatIsThis.ChooseCommand.Execute(flow.WhatIsThis.Choices.FirstOrDefault(c => c.Recording == Recording.Song));
                 return true;
-            case "transcribing":
-                flow.Transcription.ShowProgress(SampleTitle, TabProfiles.Tab, flow.RecordingLabel(Recording.Song), "Notes", 62, TimeSpan.FromMinutes(2));
+            case "transcribing" or "transcribing-setting-up":
+                // The second: the first run, a stage waiting for the computer to set up what it listens with.
+                bool settingUp = scene == "transcribing-setting-up";
+                flow.Transcription.ShowProgress(SampleTitle, TabProfiles.Tab, flow.RecordingLabel(Recording.Song), settingUp ? "Beats" : "Notes",
+                    settingUp ? 8 : 62, settingUp ? null : TimeSpan.FromMinutes(2), settingUp);
                 flow.Screen = TabScreen.Transcribing;
                 return true;
             case "error":

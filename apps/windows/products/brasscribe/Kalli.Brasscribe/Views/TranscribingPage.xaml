@@ -24,6 +24,9 @@
                 <TextBlock Style="{StaticResource MutedStyle}" Text="{x:Bind ViewModel.PercentText, Mode=OneWay}" />
                 <TextBlock Style="{StaticResource MutedStyle}" HorizontalAlignment="Right" Text="{x:Bind ViewModel.EtaText, Mode=OneWay}" />
             </Grid>
+            <!-- Said while a started stage waits for the computer to set up its model (the first time). -->
+            <TextBlock x:Uid="TranscribeSettingUp" Style="{StaticResource MutedStyle}" TextWrapping="Wrap"
+                       Visibility="{x:Bind ViewModel.IsSettingUp, Mode=OneWay}" AutomationProperties.LiveSetting="Polite" />
 
             <!-- Every step, done / now / to come, each with its state in its accessible name. -->
             <ItemsControl ItemsSource="{x:Bind ViewModel.Steps}" Margin="0,24,0,0" IsTabStop="False">

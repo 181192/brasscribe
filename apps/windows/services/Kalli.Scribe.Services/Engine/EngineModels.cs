@@ -56,8 +56,12 @@ public sealed record ArrangementOptions(string Lineup = "full", string Difficult
     public static readonly ArrangementOptions Default = new();
 }
 
+/// <summary>
+/// One stage of a job. <c>SettingUp</c>, while it is started: the model the computer is still setting up, which the
+/// stage waits for.
+/// </summary>
 public sealed record StageState(string Name, string Status, string? Device = null, string? Kind = null, double? Seconds = null,
-    double? QueueWaitS = null, double? RunS = null);
+    double? QueueWaitS = null, double? RunS = null, string? SettingUp = null);
 
 /// <summary>
 /// A file a succeeded job should have had and has not (its PDF, its MIDI). <c>Reason</c> is one of the engine's words
@@ -176,7 +180,8 @@ public sealed record JobEvent(
     double? RunS = null,
     double? Fraction = null,
     string? Message = null,
-    string? Error = null);
+    string? Error = null,
+    string? SettingUp = null);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(Health))]

@@ -145,6 +145,7 @@
     <string name="step_waiting">gjenstår</string>
     <string name="transcribe_leave">%1$s. Hold Brasscribe åpen til partituret er klart.</string>
     <string name="transcribe_leave_computer">%1$s. Du kan bytte til en annen app: Brasscribe sier fra når partituret er klart, eller litt etter hvis telefonen sover.</string>
+    <string name="transcribe_setting_up">Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.</string>
     <string name="transcribe_leave_computer_quiet">%1$s. Du kan bytte til en annen app: når partituret er klart, ligger det i Partiturene dine så lenge telefonen er koblet til datamaskinen.</string>
     <string name="transcribe_leave_draft">%1$s. Du kan bytte til en annen app: utkastet lages videre, og det er på skjermen når du kommer tilbake.</string>
     <string name="transcribe_cancel_title">Slutte å lage dette partituret?</string>

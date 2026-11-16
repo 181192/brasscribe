@@ -34,7 +34,12 @@ pairs phones and tablets with it, so Play can make full-band scores. The design 
   (`ModelEnvironments`, `EngineSource.adapterEnvironments`), with their progress in the panel, so no job has to
   install one. Each that runs to its end gets a marker beside the environments (`…/envs/.bandroom-setup/env-<name>`)
   holding the SHA-256 of the `pixi.lock` it was installed from, as on Windows: one that stopped part-way, or was
-  installed for another lockfile, is installed again at the next launch. One that fails does not hold up the
+  installed for another lockfile, is installed again at the next launch. A stage and an install never run on the same environment at once:
+  Bandroom holds `…/envs/.bandroom-setup/locks/<name>.lock` while it installs one (and while it installs the
+  reader), and the engine holds it shared while a stage uses it (`SCRIBE_ENV_LOCKS`, `envlock.py`), waiting for
+  it before the GPU mutex. A stage that needs an environment still being installed waits for that install; one
+  that needs one not installed at all installs it itself, alone, and marks it. An install waits for the stages
+  using its environment. One that fails does not hold up the
   others: the panel (and the setup window) names it, with its own words for no connection and a full disk, and
   Try again. Every environment installs from wheels and conda packages, so a Mac needs neither Apple's developer
   tools nor `git` (`pixi.toml` says how for the separator and beat-this). Bandroom needs no `uv`. `ffmpeg`

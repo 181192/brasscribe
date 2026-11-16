@@ -636,6 +636,7 @@ struct ReadingPagesView: View {
                         .tint(Color.Scribe.brand)
                         .accessibilityLabel(Text(stage))
                         .accessibilityValue(Text(percentText(job.progress.fraction * 100)))
+                    SettingUpLine(active: job.progress.settingUp)
                     HelperLine(systemImage: PlayIcon.computer.systemName, text: String(localized: "Bandroom on your computer reads the pages. You can switch to another app while it does."))
                     Button(role: .destructive) { confirmStop = true } label: { Text("Stop") }
                         .buttonStyle(.outline)

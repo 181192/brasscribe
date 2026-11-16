@@ -137,9 +137,13 @@ class StageContext:
         self.executor.not_for_reuse(self.stage.name)
 
     def adapter(self, name: str, src: Path, dst: Path, env: dict[str, str] | None = None) -> float:
+        def setting_up(model: str | None) -> None:
+            self.executor.emit({"type": "stage", "stage": self.stage.name, "kind": self.stage.kind, "status": "started",
+                                "setting_up": model})
+
         return self.executor.adapters.run(name, src, dst, env=env, allow_heavy=self.executor.allow_heavy, log=self.log,
                                           waited=lambda s: self.executor.add_wait(self.stage.name, s),
-                                          cancel=self.executor.cancel)
+                                          cancel=self.executor.cancel, setting_up=setting_up)
 
 
 class Executor:

@@ -85,6 +85,10 @@ public enum EngineSource: Equatable, Sendable {
         lockHash.map { marker(environment) == $0 } ?? false
     }
 
+    /// The lock files the adapter runner waits on (`SCRIBE_ENV_LOCKS`, `<name>.lock`): Bandroom holds one
+    /// exclusively while it installs that environment, and a job holds it shared while it uses it.
+    var environmentLocks: URL { setupMarkers.appending(path: "locks", directoryHint: .isDirectory) }
+
     /// Records that `pixi install` of `environment` ran to its end for this workspace's lockfile.
     public func markInstalled(_ environment: String) throws {
         guard let hash = lockHash else { return }
@@ -182,6 +186,8 @@ public struct EngineConfiguration: Equatable, Sendable {
             // written into the app, nothing is lost with an app update, and no other tool has to be on this Mac.
             env["SCRIBE_ADAPTERS"] = source.adaptersFolder.path
             env["SCRIBE_ADAPTER_RUNNER"] = "pixi"
+            // a job that needs an environment Bandroom is still installing waits for it (`ModelEnvironments`)
+            env["SCRIBE_ENV_LOCKS"] = source.environmentLocks.path
             // The installed workspace has no core/ to build; a checkout uses its own build.
             if let coreCLI { env["SCRIBE_CORE_CLI"] = coreCLI.path }
             env["PIXI_CACHE_DIR"] = paths.pixiCache.path

@@ -148,6 +148,7 @@
          follows in the background (Fretscribe has none today; the words are its own all the same). -->
     <string name="transcribe_leave">%1$s. Keep Fretscribe open until the tab is ready.</string>
     <string name="transcribe_leave_computer">%1$s. You can switch to another app: Fretscribe tells you when the tab is ready, or soon after if the phone is asleep.</string>
+    <string name="transcribe_setting_up">Your computer is still setting up its listening tools. This can take a while the first time.</string>
     <string name="transcribe_leave_computer_quiet">%1$s. You can switch to another app: when the tab is ready, it is in Your songs while your phone is connected to your computer.</string>
     <string name="notif_job_channel">Tabs on your computer</string>
     <string name="notif_job_working">Bandroom on your computer is writing down the notes</string>

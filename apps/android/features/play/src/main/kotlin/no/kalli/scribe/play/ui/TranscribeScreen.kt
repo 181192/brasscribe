@@ -206,6 +206,8 @@ fun TranscribeScreen(vm: PlayViewModel) {
         }
         InfoNote(stringResource(leave, s.where), Modifier.semantics { testTag = "transcribe-leave" },
             icon = if (onPhone) DesignR.drawable.ic_bc_info else DesignR.drawable.ic_bc_computer)
+        if (s.settingUp) InfoNote(stringResource(R.string.transcribe_setting_up), Modifier.semantics { testTag = "transcribe-setting-up" },
+            icon = DesignR.drawable.ic_bc_computer)
         Column(verticalArrangement = Arrangement.spacedBy(ScribeSpace.s4)) {
             steps.forEachIndexed { i, step ->
                 StepRow(stringResource(step.text), done = i < current, now = i == current)

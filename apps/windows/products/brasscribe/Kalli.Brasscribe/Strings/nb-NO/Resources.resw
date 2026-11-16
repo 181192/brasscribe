@@ -2433,6 +2433,9 @@
   <data name="TranscribeProgress.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Lager partituret</value>
   </data>
+  <data name="TranscribeSettingUp.Text" xml:space="preserve">
+    <value>Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.</value>
+  </data>
   <data name="Transcribe_CancelConfirm" xml:space="preserve">
     <value>Slutte å lage dette partituret? Opptaket blir liggende i Partiturene dine.</value>
   </data>

@@ -113,6 +113,7 @@ prop("ContinueButton", "Content", "Continue", "Fortsett"); help_("ContinueButton
 name("TranscribeProgress", "Making the score", "Lager partituret")
 prop("CancelTranscriptionButton", "Content", "Cancel", "Avbryt"); help_("CancelTranscriptionButton", "Stop making this score (asks first)", "Slutt å lage dette partituret (spør først)")
 prop("TranscribeLeaveNote", "Text", "Brasscribe will tell you when the score is ready.", "Brasscribe sier fra når partituret er klart.")
+prop("TranscribeSettingUp", "Text", "Your computer is still setting up its listening tools. This can take a while the first time.", "Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.")
 
 # ---- check the notes ----
 prop("LegendUncertain", "Text", "Uncertain", "Usikker")

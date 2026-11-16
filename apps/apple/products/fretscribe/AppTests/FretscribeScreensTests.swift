@@ -151,7 +151,15 @@ import UniformTypeIdentifiers
                          service: FixtureService(directory: Self.fixture("bass-line"), stepDelay: 0, outputName: "tab"))
         job.progress = TranscriptionProgress(stage: .transcribing, fraction: 0.42, etaSeconds: nil)
         full.jobs[job.id] = job
-        try await window("transcribing", model: full) { TranscribingView(jobID: job.id) }
+        let settingUpLine = String(localized: "Your computer is still setting up its listening tools. This can take a while the first time.")
+        try await window("transcribing", model: full, shows: { nodes in
+            nodes.contains { $0.words.contains(settingUpLine) } ? "the setting-up line, which is only for a step that waits for setup" : nil
+        }) { TranscribingView(jobID: job.id) }
+        job.progress.settingUp = true
+        try await window("transcribing-setting-up", model: full, shows: { nodes in
+            nodes.contains { $0.words.contains(settingUpLine) } ? nil : "the setting-up line"
+        }) { TranscribingView(jobID: job.id) }
+        job.progress.settingUp = false
         try await window("check-the-song", model: full) { CheckTheSongView(song: bass) }
         try await window("tab", model: full, shows: { nodes in
             // the tab's summary is there once the page is engraved

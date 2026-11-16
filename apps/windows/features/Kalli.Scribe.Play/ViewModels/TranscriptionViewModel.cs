@@ -84,6 +84,24 @@ public sealed partial class TranscriptionViewModel : ObservableObject
 
     [ObservableProperty] public partial string PercentText { get; set; } = "";
 
+    /// <summary>
+    /// True while a started stage waits for the computer to finish setting up the model it needs (a download, the first
+    /// time). The screen then says so; the model is not named.
+    /// </summary>
+    [ObservableProperty] public partial bool IsSettingUp { get; set; }
+
+    /// <summary>The stages that are started and waiting for the computer to set up their model.</summary>
+    private readonly HashSet<string> _settingUp = [];
+
+    private void NoteSettingUp(JobEvent ev)
+    {
+        if (ev.Stage is not { } stage) return;
+        if (ev.Status == "started" && ev.SettingUp is not null) _settingUp.Add(stage);
+        else _settingUp.Remove(stage);
+        bool now = _settingUp.Count > 0;
+        _ui.Post(() => IsSettingUp = now);
+    }
+
     /// <summary>True while "Stop making this score?" is asked.</summary>
     [ObservableProperty] public partial bool IsConfirmingCancel { get; set; }
 
@@ -142,8 +160,9 @@ public sealed partial class TranscriptionViewModel : ObservableObject
     }
 
     /// <summary>Shows a run at one step without an engine (the screenshot scenes).</summary>
-    public void ShowProgress(string title, string profile, string kindLabel, string step, double percent, TimeSpan? left)
+    public void ShowProgress(string title, string profile, string kindLabel, string step, double percent, TimeSpan? left, bool settingUp = false)
     {
+        IsSettingUp = settingUp;
         Title = title;
         ResetSteps(profile, kindLabel);
         SetStep(step);
@@ -205,6 +224,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         Failure = TranscriptionFailure.None;
         IsConfirmingCancel = false;
         ResetSteps(profile, kindLabel);
+        _settingUp.Clear();
+        IsSettingUp = false;
         Percent = 0;
         Title = source.DisplayName;
         StageText = _s["Transcribe_Stage_Upload"];
@@ -295,6 +316,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         finally
         {
             IsRunning = false;
+            _settingUp.Clear();
+            IsSettingUp = false;
             _jobId = null;
         }
     }
@@ -311,6 +334,7 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         {
             if (ev.Type == "stage")
             {
+                NoteSettingUp(ev);
                 if (ev.Stage is { } stage && ev.Status == "started")
                 {
                     StageText = StageName(stage);
@@ -368,6 +392,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         Failure = TranscriptionFailure.None;
         IsConfirmingCancel = false;
         ResetSteps(profile, kindLabel);
+        _settingUp.Clear();
+        IsSettingUp = false;
         Percent = 0;
         Title = title;
         StageText = _s["Transcribe_Stage_SendPages"];
@@ -424,6 +450,8 @@ public sealed partial class TranscriptionViewModel : ObservableObject
         finally
         {
             IsRunning = false;
+            _settingUp.Clear();
+            IsSettingUp = false;
             _jobId = null;
         }
     }

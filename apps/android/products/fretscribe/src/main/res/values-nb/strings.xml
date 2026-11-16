@@ -128,6 +128,7 @@
     <string name="stage_export">Setter opp tabben</string>
     <string name="transcribe_leave">%1$s. Hold Fretscribe åpen til tabben er klar.</string>
     <string name="transcribe_leave_computer">%1$s. Du kan bytte til en annen app: Fretscribe sier fra når tabben er klar, eller litt etter hvis telefonen sover.</string>
+    <string name="transcribe_setting_up">Datamaskinen gjør fortsatt klar lytteverktøyene sine. Første gang kan det ta litt tid.</string>
     <string name="transcribe_leave_computer_quiet">%1$s. Du kan bytte til en annen app: når tabben er klar, ligger den i Sangene dine så lenge telefonen er koblet til datamaskinen.</string>
     <string name="notif_job_channel">Tabber på datamaskinen</string>
     <string name="notif_job_working">Bandroom på datamaskinen skriver ned tonene</string>

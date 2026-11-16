@@ -275,6 +275,10 @@ class StageState(BaseModel):
     queue_wait_s: float | None = Field(None, description="of `seconds`, time spent waiting for the machine-wide GPU mutex")
     run_s: float | None = Field(None, description="of `seconds`, time the stage itself took (seconds - queue_wait_s)")
     device: str | None = None
+    setting_up: str | None = Field(None, description="while the stage is started: the model this computer is still "
+                                   "setting up (downloading its tools), which the stage waits for before it runs; "
+                                   "null otherwise. An app says so, e.g. \"Your computer is still setting up separator\". "
+                                   "The wait counts toward `queue_wait_s`, not toward the stage's time limit")
 
 
 class MissingOutput(BaseModel):
