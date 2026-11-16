@@ -16,7 +16,7 @@
     <PropertyGroup>
       <_ScribeNetRuntimeDir>@(_ScribeNetRuntimePack->'%(PackageDirectory)')</_ScribeNetRuntimeDir>
       <_ScribeWindowsMlVersion>%(_ScribeWindowsMl.NuGetPackageVersion)</_ScribeWindowsMlVersion>
-      <_ScribeWindowsMlDir Condition="'$(_ScribeWindowsMlVersion)' != ''">$(NuGetPackageRoot)microsoft.windows.ai.machinelearning\$(_ScribeWindowsMlVersion)</_ScribeWindowsMlDir>
+      <_ScribeWindowsMlDir Condition="'$(_ScribeWindowsMlVersion)' != ''">$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))microsoft.windows.ai.machinelearning\$(_ScribeWindowsMlVersion)</_ScribeWindowsMlDir>
     </PropertyGroup>
     <ItemGroup>
       <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\license.txt" Name="WindowsAppSDK-license.txt" />
