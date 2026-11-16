@@ -69,3 +69,42 @@ def test_a_published_notice_file_follows_the_version_the_build_names(monkeypatch
             u["version_is"] = '^onnxruntime = "([^"]+)"'
     (_, path), = licences.upstream_files("brasscribe-android", m)
     assert path.name == "onnxruntime-9.9.9-ThirdPartyNotices.txt"
+
+
+def assets(tmp_path, app, *packages):
+    """A restore's project.assets.json that resolved these packages (and a project of the app's own)."""
+    libraries = {f"{p}/1.0.0": {"type": "package"} for p in packages} | {"Kalli.Scribe.Services/1.0.0": {"type": "project"}}
+    path = tmp_path / app / "project.assets.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"libraries": libraries}), encoding="utf-8-sig")  # NuGet writes it with a BOM
+    return path
+
+
+def test_a_package_that_comes_along_with_another_is_checked_for_the_app_that_takes_it(monkeypatch, tmp_path):
+    monkeypatch.setattr(licences, "NUGET_RESTORED", {
+        # Windows ML and WebView2 come with the Windows App SDK; System.Text.Brand.New with nothing listed
+        "brasscribe-windows": assets(tmp_path, "play", "Microsoft.WindowsAppSDK", "Microsoft.WindowsAppSDK.WinUI",
+                                     "Microsoft.Windows.AI.MachineLearning", "Microsoft.Web.WebView2",
+                                     "Microsoft.Windows.SDK.BuildTools.MSIX", "System.Text.Brand.New"),
+        # DirectML's own package is listed for Play for Windows only
+        "fretscribe-windows": assets(tmp_path, "fretscribe", "Microsoft.WindowsAppSDK", "Microsoft.AI.DirectML"),
+        "bandroom-windows": tmp_path / "not-restored" / "project.assets.json",
+    })
+    found = "\n".join(licences.problems(["brasscribe-windows", "fretscribe-windows"]))
+    assert "System.Text.Brand.New (taken by brasscribe-windows" in found
+    assert "Microsoft.AI.DirectML (taken by fretscribe-windows" in found and "add fretscribe-windows to the apps of directml" in found
+    for covered in ("Microsoft.WindowsAppSDK.WinUI", "Microsoft.Windows.AI.MachineLearning", "Microsoft.Web.WebView2",
+                    "Microsoft.Windows.SDK.BuildTools.MSIX", "Kalli.Scribe.Services"):
+        assert covered not in found
+    # Without --restored the restores are not read; an app named whose restore is not there is said, not skipped.
+    assert "System.Text.Brand.New" not in "\n".join(licences.problems())
+    assert "restore bandroom-windows first" in "\n".join(licences.problems(["bandroom-windows"]))
+
+
+def test_check_takes_restored_apps_and_nothing_else(monkeypatch):
+    seen = []
+    monkeypatch.setattr(licences, "problems", lambda restored=None: seen.append(restored) or [])
+    assert licences.main(["licences.py", "check"]) == 0
+    assert licences.main(["licences.py", "check", "--restored", "brasscribe-windows", "bandroom-windows"]) == 0
+    assert licences.main(["licences.py", "check", "brasscribe-windows"]) == 2
+    assert seen == [None, ["brasscribe-windows", "bandroom-windows"]]

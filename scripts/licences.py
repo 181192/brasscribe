@@ -4,6 +4,9 @@
     scripts/licences.py build        write licences/dist/<app>.txt for every app
     scripts/licences.py check        fail when a written file is not what the list gives, or the list
                                      no longer matches what the apps are built from
+    scripts/licences.py check --restored <app>...
+                                     also every NuGet package a restore of these Windows apps took, the
+                                     packages they bring included (each app's obj/project.assets.json)
     scripts/licences.py sync-cargo   read the Rust crates and their licences from cargo into
                                      licences/cargo.json (needs cargo; after a change of core/Cargo.lock)
 
@@ -13,7 +16,9 @@ bundle their file from licences/dist and show it from About (licences/README.md)
 
 `check` reads the dependency lists the builds use (the Gradle version catalogue, the NuGet package
 versions, Studio's package.json, core/Cargo.lock): a dependency that is neither a component here nor
-listed as not shipped fails it, so a new library cannot ship without its licence. It needs Python's
+listed as not shipped fails it, so a new library cannot ship without its licence. With `--restored`, run
+after a restore (the Windows jobs do), it also reads what NuGet resolved for each app named, so a package
+that comes along with another one is checked too, against the components of that app. It needs Python's
 standard library only.
 """
 
@@ -35,6 +40,12 @@ RULE = "=" * 40  # a line of its own between parts; the apps draw it as a divide
 GRADLE_CATALOGUE = ROOT / "apps/android/gradle/libs.versions.toml"
 NUGET_VERSIONS = [ROOT / "apps/windows/Directory.Packages.props", ROOT / "apps/bandroom/windows/Directory.Packages.props"]
 NPM_PACKAGE = ROOT / "studio/package.json"
+# What a restore of each Windows app resolved: every package it takes, those its packages bring included.
+NUGET_RESTORED = {
+    "brasscribe-windows": ROOT / "apps/windows/products/brasscribe/Kalli.Brasscribe/obj/project.assets.json",
+    "fretscribe-windows": ROOT / "apps/windows/products/fretscribe/Kalli.Fretscribe/obj/project.assets.json",
+    "bandroom-windows": ROOT / "apps/bandroom/windows/src/Brasscribe.Bandroom/obj/project.assets.json",
+}
 CARGO_LOCK = ROOT / "core/Cargo.lock"
 
 # The licence a crate is used under when it offers a choice, and the text that goes with each.
@@ -163,6 +174,36 @@ def nuget_packages() -> dict[str, str]:
     return {p: " and ".join(files) for p, files in found.items()}
 
 
+def restored_packages(app: str) -> list[str]:
+    """Every package a restore of the Windows app took (NuGet's own list of what it resolved)."""
+    assets = json.loads(NUGET_RESTORED[app].read_text(encoding="utf-8-sig"))
+    return sorted({key.split("/")[0] for key, lib in assets["libraries"].items() if lib.get("type") == "package"})
+
+
+def restored_problems(apps: list[str], m: dict) -> list[str]:
+    """A package one of these apps takes that no component of that app covers, nor not_shipped."""
+    found = []
+    for app in apps:
+        if app not in NUGET_RESTORED:
+            found.append(f"{app} is not a Windows app with a restore to read ({', '.join(NUGET_RESTORED)})")
+            continue
+        if not NUGET_RESTORED[app].exists():
+            path = NUGET_RESTORED[app]
+            found.append(f"{path.relative_to(ROOT) if path.is_relative_to(ROOT) else path} is missing: restore {app} first")
+            continue
+        ours = [p for c in m["components"] if app in c["apps"] for p in c.get("covers", {}).get("nuget", [])]
+        patterns = ours + m["not_shipped"].get("nuget", [])
+        for name in restored_packages(app):
+            if not any(fnmatch.fnmatchcase(name, p) for p in patterns):
+                elsewhere = [c["id"] for c in m["components"]
+                             if any(fnmatch.fnmatchcase(name, p) for p in c.get("covers", {}).get("nuget", []))]
+                found.append(f"{name} (taken by {app}, with another package) is not in licences/components.json for {app}: "
+                             + (f"add {app} to the apps of {', '.join(elsewhere)}" if elsewhere else
+                                "add it to the component it belongs to (covers.nuget) with its licence, "
+                                "or to not_shipped.nuget when the app does not ship it"))
+    return found
+
+
 def npm_packages() -> dict[str, str]:
     where = str(NPM_PACKAGE.relative_to(ROOT))
     return {n: where for n in json.loads(NPM_PACKAGE.read_text(encoding="utf-8")).get("dependencies", {})}
@@ -179,9 +220,9 @@ def uncovered(kind: str, names: dict[str, str], m: dict) -> dict[str, str]:
     return {n: where for n, where in names.items() if not any(fnmatch.fnmatchcase(n, p) for p in patterns)}
 
 
-def problems() -> list[str]:
+def problems(restored: list[str] | None = None) -> list[str]:
     m, cargo = manifest(), crates()
-    found = []
+    found = restored_problems(restored, m) if restored else []
     for path, text in build().items():
         if not path.exists() or path.read_text(encoding="utf-8") != text:
             found.append(f"{path.relative_to(ROOT)} is not what licences/components.json gives: run scripts/licences.py build")
@@ -268,7 +309,11 @@ def main(argv: list[str]) -> int:
             print(path.relative_to(ROOT))
         return 0
     if command == "check":
-        found = problems()
+        restored = argv[3:] if argv[2:3] == ["--restored"] else None
+        if argv[2:] and not restored:
+            print(__doc__, file=sys.stderr)
+            return 2
+        found = problems(restored)
         for p in found:
             print(f"licences: {p}", file=sys.stderr)
         return 1 if found else 0
