@@ -14,7 +14,7 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from music21 import articulations, chord, clef, dynamics, expressions, instrument, interval, key, meter, note, pitch, spanner, stream, tempo
+from music21 import articulations, chord, clef, duration, dynamics, expressions, instrument, interval, key, meter, note, pitch, spanner, stream, tempo
 from music21 import bar as m21bar
 
 from .instruments import Instrument as BandInstrument
@@ -401,7 +401,7 @@ def _dash_free_barlines(score: stream.Score, spans: list[FreeSpan], pickup_ticks
                 m.rightBarline = m21bar.Barline("dashed")
 
 
-def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str,
+def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: str, beat_unit: int = 4,
                 pickup_ticks: int = 0, low_confidence: float = 0.6, key_fifths: int | None = None,
                 very_below: float = 0.4,
                 key_changes: list[tuple[int, int]] | None = None,
@@ -437,7 +437,7 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
         fifths = key_fifths
 
     # Every part must span the same whole bars; MuseScore mis-handles ragged part lengths.
-    bar = beats_per_bar * TICKS_PER_BEAT
+    bar = beats_per_bar * TICKS_PER_BEAT * 4 // beat_unit  # ticks are quarter notes
     last = max((q.end for p in parts for q in p.notes), default=0) - pickup_ticks
     total = -(-max(last, bar) // bar) * bar
     for pi, p in enumerate(parts):
@@ -451,13 +451,15 @@ def build_score(parts: list[PartSpec], beats_per_bar: int, bpm: float, title: st
             for tick, f in key_changes or []:
                 if tick - pickup_ticks > 0:
                     part.insert((tick - pickup_ticks) / TICKS_PER_BEAT, key.KeySignature(f))
-        part.insert(0, meter.TimeSignature(f"{beats_per_bar}/4"))
+        part.insert(0, meter.TimeSignature(f"{beats_per_bar}/{beat_unit}"))
         spans = free_spans or []
         opens_free = any(sp.start - pickup_ticks == 0 for sp in spans)
         if pi == 0 and tempo_note:
             part.insert(0, expressions.TextExpression(tempo_note))
         if pi == 0 and not opens_free:
-            part.insert(0, tempo.MetronomeMark(number=round(bpm)))
+            # In 6/8, 9/8 and 12/8 the beat is a dotted quarter: the mark counts it, not the quarters.
+            part.insert(0, tempo.MetronomeMark(number=round(bpm / 1.5), referent=duration.Duration(1.5))
+                        if beat_unit == 8 and beats_per_bar % 3 == 0 else tempo.MetronomeMark(number=round(bpm)))
         _mark_free_spans(part, spans, pickup_ticks, total, bpm, with_tempo=pi == 0)
         if pi == 0:  # system text: on the top staff of the score; parts.split_parts copies it to every part
             for tick, label in rehearsal or []:
@@ -723,12 +725,12 @@ def build_band_score(arrangement, comp) -> stream.Score:
         dyn = [(d.tick, d.mark) for d in getattr(comp, "dynamics", []) if d.layer == layer]
         specs.append(PartSpec(part.name, notes, clef=part.instrument.clef, instrument=part.instrument,
                               abbreviation=part.abbreviation, dynamics=dyn))
-    meter0 = comp.meters[0].beats if comp.meters else 4
+    meter0, unit0 = (comp.meters[0].beats, comp.meters[0].beat_unit) if comp.meters else (4, 4)
     fifths = comp.keys[0].fifths if comp.keys else None
     changes = [(k.tick, k.fifths) for k in comp.keys[1:]]
     spans = [FreeSpan(r.start, r.end, r.tempo_bpm, r.label) for r in comp.free_regions]
     model = CalibrationModel.load()
-    return build_score(specs, beats_per_bar=meter0, bpm=comp.bpm, title=comp.title, low_confidence=1 - model.mark_risk,
+    return build_score(specs, beats_per_bar=meter0, beat_unit=unit0, bpm=comp.bpm, title=comp.title, low_confidence=1 - model.mark_risk,
                        very_below=1 - model.very_risk, key_fifths=fifths, key_changes=changes,
                        rehearsal=[(x.tick, x.label) for x in getattr(comp, "sections", [])],
                        free_spans=spans, tempo_note=TEMPO_ESTIMATED if getattr(comp, "tempo_estimated", False) else None,

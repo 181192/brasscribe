@@ -91,6 +91,80 @@ def in_three(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
             and min(first, second) >= THREE_BOTH * thirds)
 
 
+# A beat whose onsets divide it in three is a compound beat (a dotted quarter of 6/8, 9/8, 12/8). Each onset off
+# the beat counts for the subdivision it is nearest to (a quarter, a third, a half, two thirds, three quarters)
+# when it lies within OFFBEAT_NEAR of it; counted for every subdivision in reach instead, a third heard 10 ms early
+# was also a quarter, and straight 6/8 at 100 BPM was lost in four takes of five. Of the onsets counted,
+# COMPOUND_SHARE or more are on a third, and there are at least COMPOUND_ONSETS of them. The share rests on three
+# numbers: the highest of GuitarSet's two-beat-bar takes, all in 4/4 (0.802 on players 00 to 02, 0.819 on 03 to
+# 05); one Slakh bass line tracked in two and played in triplets throughout, written in four (0.903); and three
+# eighths to the beat, rendered (0.98). It costs recall on fast, loose 6/8: at 132 BPM with 15 ms of jitter on
+# every onset, 0.99 of the draws are called compound with a share of 0.8 and 0.30 with 0.92.
+# Swing and shuffles divide the beat in three too, but play its second third only (long-short): of the onsets
+# on a third, COMPOUND_BOTH or more lie on each of the two. GuitarSet's jazz takes put at most 0.10 of them on
+# the first third as the tab profile reads their notes, and at most 0.16 as the bass line reads them; a rendered
+# 12/8 shuffle puts 0.02 there, three eighths to the beat 0.5, and a jig's long-short-then-three-eighths a third.
+# A 6/8 tune played mostly long-short is read as a shuffle: the two cannot be told apart by where the onsets fall.
+COMPOUND_SHARE = 0.92
+COMPOUND_ONSETS = 12
+COMPOUND_BOTH = 0.25
+
+
+def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
+    """The onsets divide the beats of `beat_times` in three, as a compound beat's eighths do (COMPOUND_*)."""
+    first, second, twos = offbeat_counts(beat_times, onsets)
+    thirds = first + second
+    return (thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
+            and min(first, second) >= COMPOUND_BOTH * thirds)
+
+
+# The arrangers' own test for a beat of three eighths, made to hear a band. compound's nearest-slot count loses a
+# played third to the sixteenth beside it (a twelfth of a beat away): at a 6/8 march's 112 a minute, with 20 ms of
+# timing spread, a fair share of the eighths land nearer a sixteenth, and 3 of 20 invented marches passed. Here an
+# onset within OFFBEAT_NEAR of a third counts as a third first; only the rest are matched to the half and the
+# sixteenths. Of the onsets so counted, EIGHTHS_SHARE or more are on a third, and COMPOUND_ONSETS and COMPOUND_BOTH
+# hold as for compound (so a tune played mostly long-short is still read as a shuffle). On invented quartets (20
+# performances each, 8 ms of tracker spread) a 6/8 march at 112 passes in 15 of 20 at 20 ms of timing spread (of the
+# 16 that are not mostly long-short) and 12/8 and 9/8 at 100 in 19 and 16; slow ones in all their even ones at 30 ms.
+# The highest of the brass and chamber sets in simple time, at the tracked and the doubled level, is 0.85 with the
+# second tracker (a fast 3/4 it counts in bars) and 0.77 with Beat This!, the engine's.
+EIGHTHS_SHARE = 0.87
+
+
+def eighths_counts(beat_times: np.ndarray, onsets: np.ndarray) -> tuple[int, int, int]:
+    """Onsets on the first third of a beat, on the second third, and on its half or quarters: each within
+    OFFBEAT_NEAR, a third before anything else."""
+    at = BeatMap(beat_times).to_beats(np.unique(np.round(np.sort(onsets), 2))) % 1.0
+    first = np.abs(at - 1 / 3) <= OFFBEAT_NEAR
+    second = (np.abs(at - 2 / 3) <= OFFBEAT_NEAR) & ~first
+    rest = np.min(np.abs(at[:, None] - OFFBEAT_SLOTS[[0, 2, 4]][None, :]), axis=1) <= OFFBEAT_NEAR
+    return int(first.sum()), int(second.sum()), int(np.sum(rest & ~first & ~second))
+
+
+def writes_compound(beat_times: np.ndarray, onsets: np.ndarray, beats_per_bar: int) -> bool:
+    """The tracked beat is written as a dotted quarter, in 6/8, 9/8 or 12/8: the onsets divide it in three as
+    eighths do (eighths_counts, EIGHTHS_SHARE; at any tempo), and the tracker counts two or more of them to the bar.
+    Neither the level rule's doubling nor its split then applies: doubled, the beat would be a dotted eighth; split,
+    x/4. A beat in three that the tracker calls a bar of its own, or whose thirds are less clear (a 6/4 hymn tune
+    counted in two), is left to choose_level."""
+    t = np.asarray(beat_times, dtype=float)
+    if len(t) < 2 or beats_per_bar < 2:
+        return False
+    first, second, twos = eighths_counts(t, onsets)
+    thirds = first + second
+    return (thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= EIGHTHS_SHARE
+            and min(first, second) >= COMPOUND_BOTH * thirds)
+
+
+def quarter_grid(beat_times: np.ndarray, first_down: int) -> np.ndarray:
+    """The tempo map of compound beats (`beat_times`, each a dotted quarter) on quarter notes, starting at the
+    bar that starts on beat `first_down` (which may lie before the first beat): an eighth is then half a beat of
+    the grid, as in any simple metre, and the notes keep their written values. Index 0 is that downbeat."""
+    t = np.asarray(beat_times, dtype=float)
+    last = int(np.floor(1.5 * (len(t) - 1 - first_down) + 1e-9))
+    return BeatMap(t).to_seconds(first_down + np.arange(last + 1) / 1.5)
+
+
 def split(beat_times: np.ndarray, k: int) -> np.ndarray:
     """Every beat interval divided in `k` equal parts (2 or 3)."""
     t = np.asarray(beat_times, dtype=float)

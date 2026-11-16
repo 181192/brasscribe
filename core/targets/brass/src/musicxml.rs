@@ -54,6 +54,7 @@ pub fn band_score(arr: &Arrangement, comp: &Composition) -> ScoreSpec {
     ScoreSpec {
         parts,
         beats_per_bar: comp.meters.first().map(|m| m.beats).unwrap_or(4),
+        beat_unit: comp.meters.first().map(|m| m.beat_unit).unwrap_or(4),
         bpm: comp.bpm(),
         title: comp.title.clone(),
         creator: CREATOR.to_string(),

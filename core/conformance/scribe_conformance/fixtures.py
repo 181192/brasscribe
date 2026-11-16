@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 from music21 import duration as m21duration
 
-from scribe_music.quantize import choose_level, fill_gaps, in_three, quantize
+from scribe_music.quantize import choose_level, compound, fill_gaps, in_three, quantize, quarter_grid, writes_compound
 from scribe_music.spelling import key_of, spell
 
 from .cases import REPO
@@ -68,7 +68,8 @@ def quantize_cases(rng) -> list[dict]:
 
 def level_cases() -> list[dict]:
     """Beat grids from 40 to 130 BPM under onsets on the beat, its halves, quarters and thirds in varying
-    shares, with timing jitter: the level chosen with and without the split in three."""
+    shares, with timing jitter: the level chosen with and without the split in three, whether the beat is
+    compound, and its quarter-note grid from a bar starting a beat before, on or after the first."""
     rng = np.random.default_rng(20261113)
     cases = []
     for k in range(120):
@@ -84,7 +85,10 @@ def level_cases() -> list[dict]:
                 on += [a + (b - a) * f for f in fracs if rng.random() < 0.9]
         on = np.sort(np.array(on) + rng.normal(0, 0.012 * spb, size=len(on)))
         cases.append({"beats": beats.tolist(), "onsets": on.tolist(), "in_three": bool(in_three(beats, on)),
-                      "level": choose_level(beats, on).tolist(), "level_three": choose_level(beats, on, True).tolist()})
+                      "level": choose_level(beats, on).tolist(), "level_three": choose_level(beats, on, True).tolist(),
+                      "compound": bool(compound(beats, on)), "writes_compound": bool(writes_compound(beats, on, 2)),
+                      "first_down": k % 3 - 1,
+                      "quarter_grid": quarter_grid(beats, k % 3 - 1).tolist()})
     return cases
 
 

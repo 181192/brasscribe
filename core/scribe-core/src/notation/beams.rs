@@ -52,6 +52,23 @@ pub struct BeamSequence {
 }
 
 impl BeamSequence {
+    /// The beam groups of a time signature: `for_quarters` for x/4; for 6/8, 9/8 and 12/8 a group per dotted
+    /// quarter, as the reference's time signature beams them ({3/8+3/8}); any other x/8 one group to the bar.
+    pub fn for_meter(numerator: i64, unit: i64) -> BeamSequence {
+        if unit != 8 {
+            return BeamSequence::for_quarters(numerator);
+        }
+        let bar = Rat::new(numerator, 2);
+        let lens = if numerator % 3 == 0 { vec![Rat::new(3, 2); (numerator / 3) as usize] } else { vec![bar] };
+        let mut spans = Vec::new();
+        let mut pos = Rat::ZERO;
+        for l in lens {
+            spans.push((pos, pos + l));
+            pos = pos + l;
+        }
+        BeamSequence { levels: vec![spans], bar }
+    }
+
     pub fn for_quarters(numerator: i64) -> BeamSequence {
         let q = Rat::int(1);
         let bar = Rat::int(numerator);

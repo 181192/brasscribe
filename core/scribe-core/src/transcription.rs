@@ -23,7 +23,7 @@ use crate::durations::{apply_written_with, contour_offsets, Contour, WriteOption
 use crate::dynamics::{layer_dynamics, Bar};
 use crate::energy::{gate, mono_of, Audio, Envelope, GATE_DB};
 use crate::freetime::{clip_to_regions, mark_fermatas, plan_free_time, unstable_runs, FreeTimePlan};
-use crate::harmony::{harmony_slots, slots_to_notes};
+use crate::harmony::slots_to_notes;
 use crate::keys::{key_plan, CHANGE_PENALTY};
 use crate::lines::{line, MIN_DUR};
 use crate::midi::{MidiFile, RawNote};
@@ -122,20 +122,27 @@ fn to_notes(qnotes: &[QNote], pickup: i64, source: &str) -> Vec<Note> {
         .collect()
 }
 
-/// Metrical level and bar origin shared by the song entry points: fix the level
-/// once from all onsets, then put tick 0 on the downbeat at or before the earliest note.
-fn grid(beats: &Beats, onsets: &[f64]) -> Result<(Vec<f64>, i64, i64), String> {
+/// Metrical level and bar origin of a whole song: fix the level once from all onsets, then put tick 0 on the
+/// downbeat at or before the earliest note. A beat of three eighths is written as it is (the reference's
+/// song_composition): tracked beats the onsets divide in three, two or more to the bar, keep their level and are put
+/// on a quarter-note grid from that downbeat. The last value says so.
+fn song_grid(beats: &Beats, onsets: &[f64]) -> Result<(Vec<f64>, i64, i64, bool), String> {
     let mut bpb = beats.beats_per_bar()?;
     let mut first_down = beats.first_downbeat();
-    let times = choose_level(&beats.times, onsets);
-    if times.len() != beats.times.len() {
-        bpb *= 2;
-        first_down *= 2;
-    }
+    let mut compound = crate::quantize::writes_compound(&beats.times, onsets, bpb);
+    let mut times = if compound { beats.times.clone() } else { choose_level(&beats.times, onsets) };
+    let factor = crate::quantize::level_factor(&beats.times, &times);
+    bpb *= factor;
+    first_down *= factor;
+    compound = compound || crate::quantize::writes_compound(&times, onsets, bpb);
     let min_on = onsets.iter().cloned().fold(f64::INFINITY, f64::min);
     let earliest = BeatMap::new(&times)?.to_beats(min_on);
-    let first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
-    Ok((times, bpb, first_down))
+    let mut first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
+    if compound {
+        times = crate::quantize::quarter_grid(&times, first_down);
+        first_down = 0;
+    }
+    Ok((times, bpb, first_down, compound))
 }
 
 /// The bar line at or before beat `earliest` (the first note), stepping back from the downbeat
@@ -349,7 +356,9 @@ pub fn transcribe_layers(
     } else {
         first_down = down.iter().position(|&d| d).unwrap_or(0) as i64;
     }
-    let mut times = choose_level(&raw_times, &onsets);
+    // A beat of three eighths (6/8, 9/8, 12/8) is written as it is, on a quarter-note grid below.
+    let compound = crate::quantize::writes_compound(&raw_times, &onsets, bpb);
+    let mut times = if compound { raw_times.clone() } else { choose_level(&raw_times, &onsets) };
     let mut doubled = times.len() != raw_times.len();
     if doubled {
         bpb *= 2;
@@ -394,6 +403,14 @@ pub fn transcribe_layers(
     let earliest = BeatMap::new(&times)?.to_beats(min_on);
     first_down = downbeat_at_or_before(first_down, bpb, earliest)?;
     check_bar_beats(bpb)?;
+    // 6/8 (9/8, 12/8) on a quarter-note grid from that downbeat; with free time the grid stays as planned.
+    let compound = compound && coarse.is_none_or(|c| c.is_empty());
+    if compound {
+        times = crate::quantize::quarter_grid(&times, first_down);
+        first_down = 0;
+    }
+    // A bar in quarter notes (ticks are quarters): 1.5 a beat in compound time.
+    let bar_q = if compound { 1.5 * bpb as f64 } else { bpb as f64 };
     let pickup = first_down * TICKS_PER_BEAT;
     let half = TICKS_PER_BEAT / 2;
 
@@ -504,7 +521,7 @@ pub fn transcribe_layers(
     };
     let tonal: Vec<&Note> = solo.iter().chain(bass.iter()).chain(lines.iter()).collect();
     let fifths = tonal_key(&tonal);
-    let bar_ticks = bpb * TICKS_PER_BEAT;
+    let bar_ticks = (bar_q * TICKS_PER_BEAT as f64) as i64;
     let keys = if opts.single_key {
         vec![KeySig { tick: 0, fifths, mode: "major".into() }]
     } else {
@@ -523,7 +540,7 @@ pub fn transcribe_layers(
             voice("hits", VoiceRole::Harmony, hits, "orchestra hits", "hits"),
             voice("drums", VoiceRole::Rhythm, drums, "drum kit", "drums"),
         ],
-        meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
+        meters: vec![if compound { Meter { tick: 0, beats: 3 * bpb, beat_unit: 8 } } else { Meter { tick: 0, beats: bpb, beat_unit: 4 } }],
         keys,
         beat_times: times,
         first_downbeat: first_down,
@@ -538,7 +555,7 @@ pub fn transcribe_layers(
     // Dynamics per layer from its own loudness, per bar.
     let bm = BeatMap::new(&comp.beat_times)?;
     let n_bars = py::floordiv(comp.end_tick(), bar_ticks) + 1;
-    let edges: Vec<f64> = (0..=n_bars).map(|k| bm.to_seconds((k * bpb + first_down) as f64)).collect();
+    let edges: Vec<f64> = (0..=n_bars).map(|k| bm.to_seconds(k as f64 * bar_q + first_down as f64)).collect();
     let bars: Vec<Bar> = (0..n_bars as usize).map(|k| (k as i64 * bar_ticks, edges[k], edges[k + 1])).collect();
     let envs: Vec<(&str, Envelope)> = [("solo", &layers.solo_audio), ("orchestra", &layers.orchestra_audio), ("bass", &layers.bass_audio), ("drums", &layers.drums_audio)]
         .into_iter()
@@ -606,7 +623,7 @@ pub fn transcribe_song(inp: &SongInputs, beats: &Beats, title: &str, melody_wind
     let bass_all = inp.bass.pitched();
     let harm_all: Vec<Vec<RawNote>> = inp.harmony.iter().map(|m| m.pitched()).collect();
     let all_onsets: Vec<f64> = mel_all.iter().chain(bass_all.iter()).chain(harm_all.iter().flatten()).map(|n| n.onset).collect();
-    let (times, bpb, first_down) = grid(beats, &all_onsets)?;
+    let (times, bpb, first_down, compound) = song_grid(beats, &all_onsets)?;
     let pickup = first_down * TICKS_PER_BEAT;
     let half = TICKS_PER_BEAT / 2;
 
@@ -623,7 +640,9 @@ pub fn transcribe_song(inp: &SongInputs, beats: &Beats, title: &str, melody_wind
         check_notes(v)?;
     }
     let end = melody.iter().chain(bass.iter()).chain(acc_q.iter()).map(|n| n.end()).max().ok_or("no notes")?;
-    let harm = slots_to_notes(&harmony_slots(&acc_q, end, 4, 0.35), 0.8);
+    // The harmony moves with the beat: a dotted quarter in 6/8, a quarter otherwise.
+    let slot = if compound { TICKS_PER_BEAT * 3 / 2 } else { TICKS_PER_BEAT };
+    let harm = slots_to_notes(&crate::harmony::harmony_slots_beat(&acc_q, end, 4, 0.35, slot), 0.8);
 
     let plain = |id: &str, role, notes: Vec<Note>| Voice { id: id.into(), role, notes, instrument_hint: None, layer: None };
     let tonal: Vec<&Note> = melody.iter().chain(bass.iter()).chain(harm.iter()).collect();
@@ -631,7 +650,7 @@ pub fn transcribe_song(inp: &SongInputs, beats: &Beats, title: &str, melody_wind
     let comp = Composition {
         title: title.into(),
         voices: vec![plain("melody", VoiceRole::Melody, melody.clone()), plain("bass", VoiceRole::Bass, bass.clone()), plain("harmony", VoiceRole::Harmony, harm.clone())],
-        meters: vec![Meter { tick: 0, beats: bpb, beat_unit: 4 }],
+        meters: vec![if compound { Meter { tick: 0, beats: 3 * bpb, beat_unit: 8 } } else { Meter { tick: 0, beats: bpb, beat_unit: 4 } }],
         keys: vec![KeySig { tick: 0, fifths, mode: "major".into() }],
         beat_times: times,
         first_downbeat: first_down,
@@ -664,6 +683,7 @@ pub fn lead_sheet(melody: &MidiFile, support: Option<&MidiFile>, bass: &MidiFile
     let spec = ScoreSpec {
         parts: vec![PartSpec::concert("Melody", mel, "treble"), PartSpec::concert("Bass", bas, "bass")],
         beats_per_bar: bpb,
+        beat_unit: 4,
         bpm,
         title: title.into(),
         creator: creator.into(),

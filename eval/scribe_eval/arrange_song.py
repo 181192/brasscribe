@@ -21,7 +21,8 @@ from scribe_music.instruments import CLEF_READINGS, KITS, LEADS, SEAT_IDS, check
 from scribe_music.harmony import harmony_slots, slots_to_notes
 from scribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
 from scribe_music.beats import GIVEN
-from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, level_factor, quantize
+from scribe_music.quantize import (TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, level_factor, quantize, quarter_grid,
+                                   writes_compound)
 from scribe_music.spelling import key_of
 from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
@@ -55,14 +56,23 @@ def song_composition(beats: Path, melody: Path, melody_support: Path | None, bas
     all_onsets = np.array([n["onset"] for f in [melody, bass_mid, *harmony] for n in load_notes(f)])
     if not len(all_onsets):
         raise SystemExit("no notes in the melody, bass or harmony: nothing to arrange")
-    times = b[:, 0] if "level" in given else choose_level(b[:, 0], all_onsets, three)
+    # A beat of three eighths (6/8, 9/8, 12/8) is written as it is, on a quarter-note grid below.
+    compound_beat = writes_compound(b[:, 0], all_onsets, int(beats_per_bar))
+    times = b[:, 0] if "level" in given or compound_beat else choose_level(b[:, 0], all_onsets, three)
     factor = level_factor(b[:, 0], times)
     beats_per_bar *= factor
     first_down *= factor
+    # A beat the level rule doubled or split can be the dotted quarter (a 6/8 bar counted in one, doubled).
+    compound_beat = compound_beat or writes_compound(times, all_onsets, int(beats_per_bar))
     # Tick 0 is the downbeat at or before the earliest note, so nothing precedes bar 1.
     earliest = float(BeatMap(times).to_beats(np.array([all_onsets.min()]))[0])
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar
+    meter = Meter(0, int(beats_per_bar))
+    if compound_beat:
+        # 6/8 (9/8, 12/8) on a quarter-note grid from that downbeat: the eighths are written as eighths, not as
+        # triplets under a quarter, and the bar as three eighths to the beat.
+        times, first_down, meter = quarter_grid(times, first_down), 0, Meter(0, 3 * int(beats_per_bar), 8)
     pickup = first_down * TICKS_PER_BEAT
 
     sources = {"mus": load_notes(melody)}
@@ -80,11 +90,13 @@ def song_composition(beats: Path, melody: Path, melody_support: Path | None, bas
     if not (melody or bass or acc_q):  # every note outside the parts' ranges
         raise SystemExit("no notes in the melody, bass or harmony ranges: nothing to arrange")
     end = max(n.end for n in melody + bass + acc_q)
-    harm = slots_to_notes(harmony_slots(acc_q, end), confidence=0.8)
+    # The harmony moves with the beat: a dotted quarter in 6/8, a quarter otherwise.
+    harm = slots_to_notes(harmony_slots(acc_q, end, beat=TICKS_PER_BEAT * 3 // 2 if compound_beat else TICKS_PER_BEAT),
+                          confidence=0.8)
 
     comp = Composition(title, [Voice("melody", VoiceRole.MELODY, melody), Voice("bass", VoiceRole.BASS, bass),
                                     Voice("harmony", VoiceRole.HARMONY, harm)],
-                       [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down)
+                       [meter], [KeySig(0, 0)], list(map(float, times)), first_down)
     tonal = melody + bass + harm
     _, fifths = key_of([n.start / TICKS_PER_BEAT for n in tonal], [n.dur / TICKS_PER_BEAT for n in tonal], [n.pitch for n in tonal])
     comp.keys = [KeySig(0, fifths)]
