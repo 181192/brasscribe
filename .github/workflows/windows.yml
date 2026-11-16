@@ -163,7 +163,7 @@ jobs:
           RUNS: ${{ matrix.shard.runs }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          $part = if ($env:RUNS) { @("-Runs", $env:RUNS) } else { @() }
+          $part = @{}; if ($env:RUNS) { $part.Runs = $env:RUNS }
           ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:SCRIBE_FFI_PATH @part
           $status = $LASTEXITCODE
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
@@ -361,7 +361,7 @@ jobs:
           RUNS: ${{ matrix.shard.runs }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          $part = if ($env:RUNS) { @("-Runs", $env:RUNS) } else { @() }
+          $part = @{}; if ($env:RUNS) { $part.Runs = $env:RUNS }
           ./tools/Screenshots/catalogue.ps1 -Product fretscribe -Exe "${{ steps.exe.outputs.path }}" -Out $out @part
           $status = $LASTEXITCODE
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
