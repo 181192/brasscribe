@@ -3,7 +3,7 @@
 For every piece of a brass ensemble set (reference notes with notated positions, Beat This! beats) a player who
 knows the score corrects the beat, and the share of notes on their written position is measured again:
 
-  tracked   the beats as tracked, the level chosen from the notes as the engine does
+  tracked   the beats as tracked, the level chosen as a brass ensemble's take is arranged (the split in three)
   level     the best level a player can choose (none, as-tracked, double, triple, half or third with its phase)
   holds     every held note the tracker counted through marked, with its written length, on the engine's level
   both      the best level, then the holds on it
@@ -67,7 +67,7 @@ def position(song: Path, beats_file: Path, beat: dict | None) -> float | None:
         return None
     if len(table) < MIN_BEATS:
         return None
-    return evaluate(song, None, beats_override=table[:, 0], auto_level="level" not in given)["position_acc"]
+    return evaluate(song, None, beats_override=table[:, 0], three=True, auto_level="level" not in given)["position_acc"]
 
 
 def engine_level(song: Path, beats_file: Path) -> dict:
@@ -77,7 +77,7 @@ def engine_level(song: Path, beats_file: Path) -> dict:
 
     times = np.loadtxt(beats_file, ndmin=2)[:, 0]
     onsets = np.array([r["onset"] for r in load_notes(song / "reference.json") if "quarter" in r])
-    return {"level": chosen_level(times, choose_level(times, onsets))}
+    return {"level": chosen_level(times, choose_level(times, onsets, three=True))}
 
 
 def holds(song: Path, times: np.ndarray) -> list[dict]:

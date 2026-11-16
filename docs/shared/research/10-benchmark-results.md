@@ -259,6 +259,11 @@ writes a missing one the same way.
 
 Quartet from recordings (MuScriptor with Basic Pitch support, `mus` against `mus-retuned`): melody kept 0.848 → 0.841,
 alto pitch-class recall 0.534 → 0.537, tenor 0.426 → 0.439, bass kept 0.922 → 0.922, parallels per 100 5.5 → 5.1.
+With a slow beat that the notes divide in three split in three, as the brass-band profile now arranges a brass
+ensemble's take (`choose_level(..., three=True)`), `mus-retuned` goes to melody kept 0.854, alto 0.565, tenor 0.454,
+bass kept 0.934, parallels per 100 4.6. One piece changes, the 6/4 chorale the tracker counts in two (Vulpius, Die
+helle Sonn): melody 0.81 → 0.94, alto 0.41 → 0.69, tenor 0.39 → 0.55, bass 0.85 → 0.97, parallels 8.7 → 4.1.
+The other nine are unchanged.
 
 ## Notation: spelling, durations, melody line
 

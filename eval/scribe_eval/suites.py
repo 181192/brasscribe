@@ -329,7 +329,8 @@ def _quartet_audio(data: Path, mode: str) -> dict[str, float]:
             mids = [s / main] + ([s / support] if support else [])
             if not all(m.exists() for m in mids) or not (s / "beat-this.beats").exists():
                 raise SkipSuite(f"no cached {main} / beat-this.beats for {s.name}")
-            comp = song_composition(s / "beat-this.beats", s / main, s / support if support else None, s / main, mids, s.name)
+            comp = song_composition(s / "beat-this.beats", s / main, s / support if support else None, s / main, mids, s.name,
+                                    three=label == "mus-retuned")  # as the profile arranges a brass ensemble's take
             rows.append(audio_quartet_row(comp, arrange(comp, QUARTET), s / "reference.json"))
         for k in rows[0]:
             out[f"{label}.{k}"] = _mean(rows, k)

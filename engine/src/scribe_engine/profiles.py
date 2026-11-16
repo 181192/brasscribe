@@ -476,6 +476,9 @@ def brass_band(title: str, params: dict) -> Pipeline:
         st = [*beats, _transcribe("mix", "muscriptor", "mus", mix, None),
               _transcribe("mix", "basic-pitch", "bp", mix, None, retune=True)]
         notes, support = Input("transcribe.mix.muscriptor", "mix-mus.mid"), {"melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid")}
+        # A slow beat that a brass ensemble's notes divide in three is a bar counted in one (a 6/4 hymn tune in
+        # two): split in three. Not in the draft, which is the reference for the device's.
+        reader = {**reader, "params": {**reader["params"], "three": True}}
     else:
         # Not retuned: the draft is the reference for the device's, and the device does not retune.
         st = [*beats, _transcribe("mix", "basic-pitch", "bp", mix, None)]
