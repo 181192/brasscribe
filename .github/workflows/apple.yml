@@ -85,12 +85,13 @@ env:
 
 jobs:
   # Play's checks on Apple platforms, in two jobs side by side (each about half of what one job took): `play`, the
-  # Swift packages, the macOS app's unit tests and the tab feature on the iPhone simulator; `play-iphone-catalogue`, the iPhone
-  # simulator app's build with its tests and the iPhone screen catalogue. Each starts its simulator while it builds or
-  # runs the Mac's tests, since a fresh simulator's first start on a hosted runner takes two to three minutes. Two
-  # jobs, not more: a run's macOS jobs share the account's five macOS runners, and a sixth waits for one.
+  # Swift packages and the macOS app's unit tests; `play-iphone-catalogue`, the iPhone simulator app's build with its
+  # tests and the iPhone screen catalogue, its simulator started while it builds (a fresh simulator's first start on
+  # a hosted runner takes two to three minutes, and beside the Mac app's tests it made them take twice as long). The
+  # tab feature's iPhone tests run in job fretscribe, which runs for every change to features/tab. Two jobs, not more:
+  # a run's macOS jobs share the account's five macOS runners, and a sixth waits for one.
   play:
-    name: Play (packages, macOS app, tab on iPhone)
+    name: Play (packages, macOS app)
     if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_play && !inputs.noise_play && !inputs.noise_bandroom }}
     # Newest GA macOS image (macos-latest points here too).
     runs-on: macos-26
@@ -171,42 +172,15 @@ jobs:
       - name: Test (packages)
         run: make package-test
 
-      # The tab feature's simulator, the smallest iPhone, starts while the Mac app's tests run (no sound is measured
-      # there). scripts/boot-simulator.sh waits for it below and erases and starts it again if it hung.
-      # Only asks it to start (boot-simulator.sh waits for it later, with its own limit); a hang here fails fast.
-      - name: Start the iPhone simulator
-        id: sim
-        timeout-minutes: 5
-        run: |
-          dest=$(scripts/smallest-iphone.sh)
-          echo "dest=$dest" >> "$GITHUB_OUTPUT"
-          xcrun simctl boot "${dest##*id=}"
-
       - name: Test (macOS app)
         run: make test-mac-app
-
-      # The tab feature's tests on the iPhone simulator as well: its page is a web view, and WebKit on iOS draws and
-      # loads differently from the Mac's. The simulator is waited for first: xcodebuild begins the tests as soon as it
-      # can install them, while the simulator's own services (media, WebKit) are still starting, and a test that waits
-      # for one of them then fails.
-      - name: Test the tab feature on the iPhone simulator
-        timeout-minutes: 25
-        working-directory: apps/apple/features/tab
-        env:
-          DEST: ${{ steps.sim.outputs.dest }}
-        run: |
-          make -C ../.. alphatab
-          ../../scripts/boot-simulator.sh "${DEST##*id=}"
-          xcodebuild -scheme TabKit -destination "$DEST" -derivedDataPath ../../build/DerivedData-tab test -quiet
 
       # The result bundles (failures, crash logs of the test host), for a failure that does not show in the log.
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: apple-play-test-results
-          path: |
-            apps/apple/build/DerivedData/Logs/Test/*.xcresult
-            apps/apple/build/DerivedData-tab/Logs/Test/*.xcresult
+          path: apps/apple/build/DerivedData/Logs/Test/*.xcresult
           if-no-files-found: ignore
           retention-days: 7
 
@@ -546,7 +520,7 @@ jobs:
   # in light, dark, increased contrast and bokmål, with its checks), and the iPhone simulator app with its tests, built
   # and not run. It needs no Verovio, no core and no band sounds; alphaTab is fetched when the project is generated.
   fretscribe:
-    name: Fretscribe (macOS app, screen catalogue, iPhone simulator build)
+    name: Fretscribe (macOS app, screen catalogue, iPhone simulator build, tab on iPhone)
     if: ${{ !inputs.release && !inputs.iphone_tests && !inputs.skip_fretscribe && !inputs.noise_play && !inputs.noise_bandroom }}
     runs-on: macos-26
     timeout-minutes: 60
@@ -571,12 +545,39 @@ jobs:
       - name: Screen catalogue
         run: scripts/screenshots.sh record fretscribe
 
+      # The tab feature's simulator, the smallest iPhone, starts while the iPhone app is built: after the Mac's tests
+      # and catalogue, which a simulator starting beside them slows down.
+      # Only asks it to start (boot-simulator.sh waits for it below, with its own limit); a hang here fails fast.
+      - name: Start the iPhone simulator
+        id: sim
+        timeout-minutes: 5
+        run: |
+          dest=$(scripts/smallest-iphone.sh)
+          echo "dest=$dest" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "${dest##*id=}"
+
       # The Mac build does not compile what is only for iOS: a test that no longer builds there would otherwise first
       # show in a release.
       - name: Build the iPhone simulator app and its tests
         run: |
           dest=$(scripts/newest-iphone.sh)
           make build-for-testing-fretscribe-ios IPHONE_DEST="$dest"
+
+      # The tab feature's tests (TabKit, which both apps use) on the iPhone simulator as well: its page is a web view,
+      # and WebKit on iOS draws and loads differently from the Mac's. Here and not in Play's jobs: this job runs for
+      # every change to features/tab, and TabKit reads nothing outside it. The simulator is waited for first: xcodebuild
+      # begins the tests as soon as it can install them, while the simulator's own services (media, WebKit) are still
+      # starting, and a test that waits for one of them then fails.
+      - name: Test the tab feature on the iPhone simulator
+        timeout-minutes: 25
+        working-directory: apps/apple/features/tab
+        env:
+          DEST: ${{ steps.sim.outputs.dest }}
+        run: |
+          make -C ../.. alphatab
+          ../../scripts/boot-simulator.sh "${DEST##*id=}"
+          xcodebuild -scheme TabKit -destination "$DEST" -derivedDataPath ../../build/DerivedData-tab test -quiet
+
 
       - name: What the screenshots were taken with
         if: ${{ always() && github.event_name != 'pull_request' }}
@@ -602,7 +603,9 @@ jobs:
         if: failure()
         with:
           name: apple-fretscribe-test-results
-          path: apps/apple/build/DerivedData-fs/Logs/Test/*.xcresult
+          path: |
+            apps/apple/build/DerivedData-fs/Logs/Test/*.xcresult
+            apps/apple/build/DerivedData-tab/Logs/Test/*.xcresult
           if-no-files-found: ignore
           retention-days: 7
 
