@@ -2,6 +2,7 @@ package no.kalli.scribe.engine
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /*
  * Wire types of the scribe engine companion API (engine/openapi.json, version 0.1.0).
@@ -234,6 +235,12 @@ data class Job(
     /** What the job was made without because it was not set up on the computer then ("band-writer"): made again
      *  once it is, the job uses it. */
     val without: List<String> = emptyList(),
+    /** The beat correction the job was made with, as the engine sent it; null for the beats as tracked. */
+    val beat: JsonObject? = null,
+    /** The beats a correction of this job can choose between: "tracked", and "alternative" on an engine with two trackers. */
+    @SerialName("beat_sources") val beatSources: List<String> = listOf("tracked"),
+    /** What the engine suspects about the beat of the finished score, as it sent it; null until the score is written. */
+    @SerialName("beat_hints") val beatHints: JsonObject? = null,
 ) {
     /** A solo written from two listeners, not three, because the computer's band writer was not set up. */
     val withoutTheBandWriter: Boolean get() = "band-writer" in without

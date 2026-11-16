@@ -20,7 +20,8 @@ from scribe_music.arranger import arrange, arrange_composition
 from scribe_music.instruments import CLEF_READINGS, KITS, LEADS, SEAT_IDS, check_reads, lead_lineup, lineup_by_name
 from scribe_music.harmony import harmony_slots, slots_to_notes
 from scribe_music.musicxml import band_sounds, build_band_score, composition_kit, write_musicxml
-from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, quantize
+from scribe_music.beats import GIVEN
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, fill_gaps, level_factor, quantize
 from scribe_music.spelling import key_of
 from scribe_music.score_model import Composition, KeySig, Meter, Note, Voice, VoiceRole
 
@@ -34,8 +35,13 @@ def to_notes(qnotes, pickup: int, source: str) -> list[Note]:
 
 
 def song_composition(beats: Path, melody: Path, melody_support: Path | None, bass_mid: Path, harmony: list[Path],
-                     title: str, melody_window: tuple[int, int] = (52, 88)) -> Composition:
-    """Melody, bass and harmony voices of a transcribed song on its beat grid (tick 0 = first downbeat)."""
+                     title: str, melody_window: tuple[int, int] = (52, 88), three: bool = False,
+                     given: tuple[str, ...] = ()) -> Composition:
+    """Melody, bass and harmony voices of a transcribed song on its beat grid (tick 0 = first downbeat).
+
+    `three`: a slow beat that the notes divide in three is a bar counted in one, and is split in three
+    (quantize.choose_level). `given`: what a player has said about the beats in `beats`
+    (scribe_music.beats.Correction.given); with `level` among it they are the written beats as they are."""
     b = np.loadtxt(beats, ndmin=2)
     if len(b) < 2:
         raise SystemExit(f"only {len(b)} beat(s) tracked in {beats.name}; the recording is too short to notate")
@@ -49,10 +55,10 @@ def song_composition(beats: Path, melody: Path, melody_support: Path | None, bas
     all_onsets = np.array([n["onset"] for f in [melody, bass_mid, *harmony] for n in load_notes(f)])
     if not len(all_onsets):
         raise SystemExit("no notes in the melody, bass or harmony: nothing to arrange")
-    times = choose_level(b[:, 0], all_onsets)
-    if len(times) != len(b):
-        beats_per_bar *= 2
-        first_down *= 2
+    times = b[:, 0] if "level" in given else choose_level(b[:, 0], all_onsets, three)
+    factor = level_factor(b[:, 0], times)
+    beats_per_bar *= factor
+    first_down *= factor
     # Tick 0 is the downbeat at or before the earliest note, so nothing precedes bar 1.
     earliest = float(BeatMap(times).to_beats(np.array([all_onsets.min()]))[0])
     while first_down > earliest + 1e-6:
@@ -102,6 +108,10 @@ def main() -> None:
     ap.add_argument("--lead", choices=LEADS, default="lineup", help="who plays the tune: the lineup's lead, or the seat's part")
     ap.add_argument("--kit", choices=list(KITS), default="band",
                     help="the drum kit the Percussion part plays: band, or pop for a pop or rock take")
+    ap.add_argument("--three", action="store_true",
+                    help="split a slow beat in three when the notes divide it in three (a bar of three counted in one)")
+    ap.add_argument("--beats-given", nargs="*", choices=GIVEN, default=[],
+                    help="what a player has said about the beats: with level, they are the written beats as they are")
     args = ap.parse_args()
     if args.lead == "seat" and not args.seat:
         ap.error("--lead seat needs --seat")
@@ -113,7 +123,7 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
 
     comp = song_composition(args.beats, args.melody, args.melody_support, args.bass, args.harmony, args.title,
-                            tune.instrument.pro if tune else (52, 88))
+                            tune.instrument.pro if tune else (52, 88), three=args.three, given=tuple(args.beats_given))
     if args.lineup != "minimal" or args.seat or args.kit != "band":
         comp.arrangement = {"lineup": args.lineup, "difficulty": "faithful", "transpose_semitones": 0}
     if args.seat:

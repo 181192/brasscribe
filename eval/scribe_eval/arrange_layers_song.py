@@ -23,7 +23,7 @@ from scribe_music.arranger import FOOTER_LANGS, Arrangement, arrange_layers, com
 from scribe_music import musescore
 from scribe_music.energy import Envelope, gate
 from scribe_music.durations import SEPARATED_STEM, Contour, apply_written, contour_offsets
-from scribe_music.beats import clean_beats_gated, downbeat_rate, fallback_beats, labels_on, solo_meter
+from scribe_music.beats import GIVEN, clean_beats_gated, downbeat_rate, fallback_beats, labels_on, solo_meter
 from scribe_music.confidence import Model as CalibrationModel
 from scribe_music.confidence import features as confidence_features
 from scribe_music.confidence import p_correct, review_groups
@@ -100,6 +100,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--no-free-time", action="store_true", help="keep the beat grid through free-time passages")
     ap.add_argument("--no-gate", action="store_true", help="keep layer notes where the layer's audio is silent")
     ap.add_argument("--no-beat-cleanup", action="store_true", help="use the tracked beats as they are")
+    ap.add_argument("--beats-given", nargs="*", choices=GIVEN, default=[],
+                    help="what a player has said about the beats (scribe_music.beats.Correction.given): they are not "
+                         "cleaned up; with level no level is chosen from the notes, with bars no meter is inferred, "
+                         "with downbeat an inferred meter starts its bars where the player's do, with holds no "
+                         "passage is written in free time")
     ap.add_argument("--single-key", action="store_true", help="one key signature for the whole piece")
     ap.add_argument("--lineup", choices=["band", "full", "minimal", "quartet"], default="band",
                     help="band (= full): the 18-part contest band; minimal: the 8-part minimal band; "
@@ -177,7 +182,8 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     beats_per_bar = Counter(gaps).most_common(1)[0][0] if len(gaps) else 1
     down = pos == 1
     raw_times = b[:, 0]
-    if not args.no_beat_cleanup:
+    given = set(args.beats_given)
+    if not args.no_beat_cleanup and not given:
         # Restore missed and remove inserted beats (outside free time); the bar phase follows
         # the majority of the tracker's downbeat labels.
         cb = clean_beats_gated(raw_times, down, int(beats_per_bar), skip=unstable_runs(raw_times), onsets=onsets)
@@ -186,12 +192,12 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         first_down = cb.phase(int(beats_per_bar))
     else:
         first_down = int(np.argmax(down))
-    times = choose_level(raw_times, onsets)
+    times = raw_times if "level" in given else choose_level(raw_times, onsets)
     doubled = len(times) != len(raw_times)
     if doubled:
         beats_per_bar *= 2
         first_down *= 2
-    if Counter(gaps).most_common(1)[0][0] < 2 if len(gaps) else True:
+    if "bars" not in given and (Counter(gaps).most_common(1)[0][0] < 2 if len(gaps) else True):
         # The tracker's downbeat labels give no bars (small0 on one instrument labels most beats as
         # downbeats): infer the meter and bar phase on the final grid from the labels' periodicity and
         # the solo's note accents, unless the evidence is too weak (then the grid's own bars stay).
@@ -201,13 +207,16 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
                            np.array([n["onset"] for n in solo_notes]), np.array([n["offset"] - n["onset"] for n in solo_notes]))
         if not meter.from_labels:
             times, beats_per_bar, first_down = meter.times, meter.beats_per_bar, meter.first_downbeat
+            if "downbeat" in given:  # the inferred bar, starting where the player's does
+                first_down = int(np.argmin(np.abs(times - b[int(np.argmax(pos == 1)), 0]))) % beats_per_bar
             down = (np.arange(len(times)) - first_down) % beats_per_bar == 0
             doubled = False  # the labels are replaced by the inferred bars
             print(f"meter inferred: {beats_per_bar} beats per bar, downbeat labels on {downbeat_rate(pos == 1):.0%} of beats")
         else:
             print(f"meter kept ({beats_per_bar} beats per bar): too little evidence to infer one")
     plan = None
-    if not args.no_free_time:
+    # A long beat left by a player's hold is not free time: with holds the grid is written as it is.
+    if not args.no_free_time and "holds" not in given:
         plan = plan_free_time(times, onsets, int(beats_per_bar), first_down, None if doubled else down,
                               tempo=args.free_tempo, tempo_onsets=np.array([n["onset"] for n in pitched(L / "solo-sw.mid")]))
         times, first_down = plan.beat_times, plan.first_downbeat

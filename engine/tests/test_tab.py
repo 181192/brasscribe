@@ -326,7 +326,7 @@ def test_bass_tab_is_as_it_was():
     assert p.params == {"instrument": "bass-4", "tuning": "standard", "capo": 0, "style": "as-played", "recording": "song",
                         "octave": "auto", "layout": "tab"}
     assert p.stage("notes").params == {} and p.stage("notes").run is bass_tab.notes_stage
-    assert p.stage("notes").outputs == ("bass-notes.json",)
+    assert p.stage("notes").outputs == ("bass-notes.json", "beat-hints.json")
     assert p.stage("arrange").params == {"title": "T", "layout": "tab", "fingering": {"instrument": "bass-4", "tuning": "standard",
                                                                                      "capo": 0, "style": "as-played"}}
     assert tab.THIS not in p.stage("notes").code + p.stage("arrange").code + p.stage("export").code  # this module is not in its keys
@@ -343,7 +343,7 @@ def test_a_guitar_in_a_song_is_read_from_the_separators_guitar_stem():
         stage = p.stage(name)
         assert (stage.inputs["audio"].stage, stage.inputs["audio"].file, stage.derive) == ("stems", "guitar.wav", None)
     assert p.stage("notes").params == {"instrument": "guitar-6"} and p.stage("notes").run is tab.notes_stage
-    assert (p.pipeline, set(p.outputs)) == ("tab", {"composition.json", "tab.json", "tab.musicxml", "tab.txt", "tab-instructions.en.txt",
+    assert (p.pipeline, set(p.outputs)) == ("tab", {"beat-hints.json", "composition.json", "tab.json", "tab.musicxml", "tab.txt", "tab-instructions.en.txt",
                                                     "tab-instructions.nb.txt", "tab.pdf", "tab.mid"})
     assert set(bass_tab.TEXT_OUTPUTS) <= set(p.stage("arrange").outputs)
     assert p.stage("export").run is bass_tab.export_stage and set(p.stage("export").params) == {"musescore"}
@@ -970,7 +970,7 @@ def test_a_guitar_job_runs_to_a_tab_and_a_bass_job_of_either_profile_shares_its_
         assert job["status"] == "succeeded", job["error"]
         assert [s["name"] for s in job["stages"]] == ["beats", "transcribe.guitar.basic-pitch", "transcribe.guitar.swift-f0", "notes",
                                                       "arrange", "export"]
-        assert job["outputs"] == ["composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml",
+        assert job["outputs"] == ["beat-hints.json", "composition.json", "tab-instructions.en.txt", "tab-instructions.nb.txt", "tab.json", "tab.musicxml",
                                   "tab.txt"]
         for name in bass_tab.TEXT_OUTPUTS:  # served as the other outputs are, as text
             text = c.get(f"/v1/jobs/{job['id']}/artifacts/{name}")

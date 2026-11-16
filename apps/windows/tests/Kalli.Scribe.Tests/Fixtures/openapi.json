@@ -115,6 +115,295 @@
         "title": "AudioRef",
         "type": "object"
       },
+      "BeatCorrection": {
+        "additionalProperties": false,
+        "description": "What a player says about the beat of a finished job. Every field left out keeps what the engine does on\nits own. Applied in this order: source, level, holds, then the bar (beats_per_bar, first_downbeat_s).",
+        "properties": {
+          "beats_per_bar": {
+            "anyOf": [
+              {
+                "maximum": 12.0,
+                "minimum": 2.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "beats in a bar, counted on the corrected level; needs level",
+            "title": "Beats Per Bar"
+          },
+          "first_downbeat_s": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a time in the recording where a bar starts: the beat nearest to it is a first beat",
+            "title": "First Downbeat S"
+          },
+          "holds": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BeatHold"
+                },
+                "maxItems": 64,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "held notes; they must not overlap; needs level",
+            "title": "Holds"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "enum": [
+                  "as-tracked",
+                  "double",
+                  "half",
+                  "triple",
+                  "third"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the level of the beat. double, triple: every tracked beat is split in two or three; half, third: every second or third one is kept; as-tracked: the tracker's beats as they are. Left out, the engine chooses the level from the notes, as it does without a correction",
+            "title": "Level"
+          },
+          "phase": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "with half or third: which of the first two (0, 1) or three (0 to 2) tracked beats is kept; default 0",
+            "title": "Phase"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "tracked",
+                  "alternative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "which beat tracker's beats the score is written on. tracked (the default): the engine's own; alternative: a second tracker's, on an engine that has one (Job.beat_sources says; refused with beat_source_unavailable otherwise)",
+            "title": "Source"
+          }
+        },
+        "title": "BeatCorrection",
+        "type": "object"
+      },
+      "BeatHint": {
+        "description": "One thing the engine suspects about the beat. A suspicion to ask the player about, never a finding.",
+        "properties": {
+          "bars": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "uneven_bars: the bars' numbers, from 1",
+            "title": "Bars"
+          },
+          "code": {
+            "description": "tempo_guessed: under two beats were tracked, the grid is a guess; tempo_slow, tempo_fast: the written beat is under 50 or over 220 a minute; notes_fast, notes_slow: most notes are a quarter of a beat apart or less, or two beats or more; in_three: the notes divide a slow beat in three; held_notes: long stretches without a new note; uneven_bars: bars with far more notes than the rest; downbeat_unsure: another beat of the bar carries more than the first; trackers_disagree: the two beat trackers put their beats in different places",
+            "enum": [
+              "tempo_guessed",
+              "tempo_slow",
+              "tempo_fast",
+              "notes_fast",
+              "notes_slow",
+              "in_three",
+              "held_notes",
+              "uneven_bars",
+              "downbeat_unsure",
+              "trackers_disagree"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "first_downbeat_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "downbeat_unsure: the time of a beat that may start a bar",
+            "title": "First Downbeat S"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "enum": [
+                  "as-tracked",
+                  "double",
+                  "half",
+                  "triple",
+                  "third"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "tempo_*, notes_*, in_three: the level to send in a correction to follow the hint, counted from the tracked beats as a correction's level is; null when no level says it",
+            "title": "Level"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "what was measured: the tempo (tempo_*), the typical distance between notes in beats (notes_*), the other beat's weight against the first's (downbeat_unsure), the share of beats both trackers have (trackers_disagree)",
+            "title": "Score"
+          },
+          "spans": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "held_notes: [start_s, end_s] of each stretch, at most 12, in order of time; each is a hold a correction could mark",
+            "title": "Spans"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "BeatHint",
+        "type": "object"
+      },
+      "BeatHints": {
+        "properties": {
+          "beats_per_bar": {
+            "title": "Beats Per Bar",
+            "type": "integer"
+          },
+          "hints": {
+            "description": "empty when nothing looks wrong",
+            "items": {
+              "$ref": "#/components/schemas/BeatHint"
+            },
+            "title": "Hints",
+            "type": "array"
+          },
+          "level": {
+            "description": "the level the score is written on, against the tracked beats: the correction's when the job has one with a level, else the one the engine chose from the notes (as-tracked, double or triple). A correction that counts beats (holds, beats_per_bar) sends this level, and phase, to count them on the beats the player sees",
+            "enum": [
+              "as-tracked",
+              "double",
+              "half",
+              "triple",
+              "third"
+            ],
+            "title": "Level",
+            "type": "string"
+          },
+          "phase": {
+            "default": 0,
+            "description": "with level half or third: the phase the correction chose",
+            "title": "Phase",
+            "type": "integer"
+          },
+          "tempo_bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the written beat's tempo; null when the score has no beat grid",
+            "title": "Tempo Bpm"
+          }
+        },
+        "required": [
+          "tempo_bpm",
+          "beats_per_bar",
+          "level",
+          "hints"
+        ],
+        "title": "BeatHints",
+        "type": "object"
+      },
+      "BeatHold": {
+        "additionalProperties": false,
+        "description": "A held note (a fermata) the beat tracker counted through.",
+        "properties": {
+          "beats": {
+            "description": "how many beats long the held note is written. Of the tracked beats between start_s and end_s all but the first beats - 1 are taken out",
+            "maximum": 16.0,
+            "minimum": 1.0,
+            "title": "Beats",
+            "type": "integer"
+          },
+          "end_s": {
+            "description": "where the next note starts",
+            "exclusiveMinimum": 0.0,
+            "title": "End S",
+            "type": "number"
+          },
+          "start_s": {
+            "description": "where the held note starts, in seconds from the start of the recording",
+            "minimum": 0.0,
+            "title": "Start S",
+            "type": "number"
+          }
+        },
+        "required": [
+          "start_s",
+          "end_s",
+          "beats"
+        ],
+        "title": "BeatHold",
+        "type": "object"
+      },
       "BenchRun": {
         "properties": {
           "created": {
@@ -1303,6 +1592,40 @@
               }
             ],
             "title": "Audio Id"
+          },
+          "beat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BeatCorrection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "the beat correction the job was made with (rerunJob); null for the beats as the engine tracked and read them"
+          },
+          "beat_hints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BeatHints"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "what the engine suspects about the beat of the finished score, so an app can offer a correction unasked; null until the score is written, and for a run made before the engine wrote them"
+          },
+          "beat_sources": {
+            "description": "the beats a correction of this job can choose between: alternative is among them only on an engine with a second beat tracker",
+            "items": {
+              "enum": [
+                "tracked",
+                "alternative"
+              ],
+              "type": "string"
+            },
+            "title": "Beat Sources",
+            "type": "array"
           },
           "created": {
             "title": "Created",
@@ -2597,12 +2920,57 @@
         "title": "ReferencePitch",
         "type": "object"
       },
+      "Refusal": {
+        "description": "A request the engine refused, with a code an app can act on and words for the player.",
+        "properties": {
+          "audio_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "with a job a model waits for: the recording, kept, to ask again with",
+            "title": "Audio Id"
+          },
+          "code": {
+            "description": "what kind of refusal, e.g. beat_invalid, beat_source_unavailable, job_not_finished",
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "description": "what does not fit, in words an app can show",
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "detail"
+        ],
+        "title": "Refusal",
+        "type": "object"
+      },
       "RerunRequest": {
         "properties": {
           "allow_heavy": {
             "default": true,
+            "description": "allow heavy models to run on cache misses. Never with `beat`: a correction fails at once instead of listening again, should the cached model outputs be gone",
             "title": "Allow Heavy",
             "type": "boolean"
+          },
+          "beat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BeatCorrection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "write the score again on corrected beats: no model runs again, only the stages that read the beats and the ones after them. Left out, the new job keeps the old one's correction; null or {} takes it away"
           },
           "cold": {
             "description": "stages or kinds to run even on a cache hit, or 'all'",
@@ -5817,7 +6185,7 @@
     },
     "/v1/jobs/{job_id}/rerun": {
       "post": {
-        "description": "Run a job again from its manifest (same input, profile, title and parameters).",
+        "description": "Run a job again from its manifest (same input, profile, title and parameters), or, with `beat`, write\nits score again on corrected beats. Stages whose inputs and parameters are unchanged come from the\ncache, so a correction runs no model: it costs the arranging and the export, and it fails rather than\nlisten again when the cache is gone. Only a job that succeeded can be corrected (409 job_not_finished).\nA correction that does not fit, starts after the recording ends or changes nothing is refused with 422\n{code, detail}: beat_invalid, or beat_source_unavailable; `detail` says what does not fit.",
         "operationId": "rerunJob",
         "parameters": [
           {
@@ -5874,15 +6242,25 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refusal"
+                }
+              }
+            },
+            "description": "not taken: the input is gone (`input_missing`, `input_not_allowed`), a correction of a job that has not succeeded (`job_not_finished`), or a model waits for setup"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/Refusal"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "a beat correction refused: `beat_invalid` (does not fit, or changes nothing) or `beat_source_unavailable`; `detail` says which part"
           }
         },
         "summary": "Rerun Job",

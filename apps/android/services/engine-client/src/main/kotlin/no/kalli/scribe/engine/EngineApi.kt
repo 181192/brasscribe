@@ -25,7 +25,11 @@ enum class Refusal(val code: String) {
     /** Anything else wrong with the options. */
     INVALID_OPTIONS("invalid_options"),
     /** A tab was asked of a computer whose Brasscribe cannot write tab: the Rust core's command line is not installed with it. */
-    CORE_MISSING("core_missing");
+    CORE_MISSING("core_missing"),
+    /** A correction of the beat that does not fit: a level, bar or held note the engine cannot read. */
+    BEAT_INVALID("beat_invalid"),
+    /** The second beat tracker's beats were asked of an engine that has one tracker. */
+    BEAT_SOURCE_UNAVAILABLE("beat_source_unavailable");
 
     companion object {
         fun of(code: String?): Refusal? = entries.firstOrNull { it.code == code }

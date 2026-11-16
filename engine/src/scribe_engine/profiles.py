@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import stages as S
-from . import targets, tuning
+from . import beat_hints, targets, tuning
 from .dag import SOURCE, Input, Pipeline, Stage
 from .stages import EVAL_SRC, SYMBOLIC_CODE, THIS
 
@@ -88,8 +88,10 @@ SEAT_NO_TUNE_CODE = "seat_no_tune"  # lead=seat where the seat's part cannot car
 READS_NOT_OFFERED_CODE = "reads_not_offered"  # a clef the seat is not offered in
 INVALID_OPTIONS_CODE = "invalid_options"  # anything else wrong with the options
 CORE_MISSING_CODE = "core_missing"  # a tab profile on an engine without the Rust core's command line
+BEAT_INVALID_CODE = "beat_invalid"  # a beat correction the engine cannot read or apply
+BEAT_SOURCE_UNAVAILABLE_CODE = "beat_source_unavailable"  # the second beat tracker's beats, on an engine without one
 OPTION_ERROR_CODES = (QUARTET_NEEDS_GROUP_CODE, PERCUSSION_SOLO_CODE, SEAT_NO_TUNE_CODE, READS_NOT_OFFERED_CODE,
-                      INVALID_OPTIONS_CODE, CORE_MISSING_CODE)
+                      INVALID_OPTIONS_CODE, CORE_MISSING_CODE, BEAT_INVALID_CODE, BEAT_SOURCE_UNAVAILABLE_CODE)
 
 
 def option_error_code(e: ValueError) -> str:
@@ -108,7 +110,177 @@ def option_error_message(code: str) -> str:
         READS_NOT_OFFERED_CODE: "the seat's part is not offered in that clef",
         CORE_MISSING_CODE: "this engine cannot write tab: scribe-core is not installed with it (build it with "
                            "`cargo build --release -p scribe-cli` in core/)",
+        BEAT_INVALID_CODE: "the beat correction does not fit: level is one of as-tracked, double, half, triple, third "
+                           "(phase 0 or 1 with half, 0 to 2 with third), beats_per_bar is 2 to 12, first_downbeat_s "
+                           "is a time in the recording, holds are {start_s, end_s, beats} that do not overlap, and "
+                           "beats_per_bar and holds come with a level",
+        BEAT_SOURCE_UNAVAILABLE_CODE: "this engine has one beat tracker: there are no alternative beats to write on",
     }.get(code, "these job options don't fit together; the engine's log says which one")
+
+
+# ---------------------------------------------------------------- the beat, as a player corrects it
+
+BEAT_SOURCES = ("tracked", "alternative")
+# The adapter of a second beat tracker, whose beats a correction can choose instead (source: alternative).
+# None: the engine has one tracker, every job has one beats stage, and the source is refused.
+ALTERNATIVE_BEATS: str | None = None
+BEAT_FIELDS = ("source", "level", "phase", "beats_per_bar", "first_downbeat_s", "holds")
+MAX_HOLDS = 64
+MAX_HOLD_BEATS = 16
+MIN_BEATS_PER_BAR = 2
+
+
+def beat_sources() -> tuple[str, ...]:
+    """The beats a correction can choose between on this engine."""
+    return BEAT_SOURCES if ALTERNATIVE_BEATS else BEAT_SOURCES[:1]
+
+
+def _number(value, what: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value or value in (float("inf"), float("-inf")):
+        raise OptionError(f"beat: {what} is a number", BEAT_INVALID_CODE)
+    return float(value)
+
+
+def _whole(value, what: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise OptionError(f"beat: {what} is a whole number", BEAT_INVALID_CODE)
+    return value
+
+
+def within_recording(beat: dict | None, length_s: float | None) -> dict | None:
+    """A correction (as beat_correction gives it) held to a recording `length_s` long: a bar that starts, or a
+    hold that starts, after the recording ends is refused; a hold that runs past the end is cut at the end.
+    Unchanged when the length is not known."""
+    if not beat or length_s is None:
+        return beat
+    if beat.get("first_downbeat_s", 0) >= length_s:
+        raise OptionError(f"beat: first_downbeat_s is after the end of the recording ({length_s:.1f} s)", BEAT_INVALID_CODE)
+    holds = []
+    for h in beat.get("holds", ()):
+        if h["start_s"] >= length_s:
+            raise OptionError(f"beat: a hold starts at {h['start_s']:g} s, after the end of the recording "
+                              f"({length_s:.1f} s)", BEAT_INVALID_CODE)
+        holds.append({**h, "end_s": min(h["end_s"], round(length_s, 3))})
+    return {**beat, "holds": holds} if holds else beat
+
+
+def beat_correction(params: dict) -> dict | None:
+    """The job's beat correction (`beat` in its parameters) as it is stored and keyed: only what the player
+    said, holds in order of time. None for a job without one, and for one that says nothing.
+
+      source            tracked (default) or alternative: which tracker's beats the score is written on
+      level             as-tracked, double, half, triple, third; left out, the level is chosen from the notes
+      phase             with half or third: which of the first two or three tracked beats is kept (default 0)
+      beats_per_bar     2 to 12, on the corrected level
+      first_downbeat_s  a time in the recording where a bar starts
+      holds             [{start_s, end_s, beats}]: a held note from start_s to end_s is written `beats` beats long
+
+    beats_per_bar and holds count beats, so they come with a level: the one the score is written on (a job's
+    beat_hints name it) or another.
+
+    Refuses (OptionError) what does not fit, and the alternative source on an engine with one tracker."""
+    from scribe_music.beats import LEVEL_KEEPS, LEVELS, Correction, Hold
+
+    beat = params.get("beat")
+    if beat is None:
+        return None
+    if not isinstance(beat, dict) or set(beat) - set(BEAT_FIELDS):
+        raise OptionError(f"beat takes {', '.join(BEAT_FIELDS)} only", BEAT_INVALID_CODE)
+    beat = {k: v for k, v in beat.items() if v is not None}
+    out: dict = {}
+    source = beat.get("source", "tracked")
+    if source not in BEAT_SOURCES:
+        raise OptionError(f"beat: source must be one of {', '.join(BEAT_SOURCES)}", BEAT_INVALID_CODE)
+    if source not in beat_sources():
+        raise OptionError(f"beat: this engine has no {source} beats", BEAT_SOURCE_UNAVAILABLE_CODE)
+    if source != "tracked":
+        out["source"] = source
+    if "level" in beat:
+        if beat["level"] not in LEVELS:
+            raise OptionError(f"beat: level must be one of {', '.join(LEVELS)}", BEAT_INVALID_CODE)
+        out["level"] = beat["level"]
+    phase = _whole(beat.get("phase", 0), "phase")
+    if not 0 <= phase < LEVEL_KEEPS.get(out.get("level"), 1):
+        raise OptionError("beat: phase is 0 or 1 with half, 0 to 2 with third, and 0 otherwise", BEAT_INVALID_CODE)
+    if phase:
+        out["phase"] = phase
+    if "beats_per_bar" in beat:
+        out["beats_per_bar"] = _whole(beat["beats_per_bar"], "beats_per_bar")
+        if not MIN_BEATS_PER_BAR <= out["beats_per_bar"] <= 12:
+            raise OptionError(f"beat: beats_per_bar is {MIN_BEATS_PER_BAR} to 12", BEAT_INVALID_CODE)
+    if "first_downbeat_s" in beat:
+        out["first_downbeat_s"] = _number(beat["first_downbeat_s"], "first_downbeat_s")
+        if out["first_downbeat_s"] < 0:
+            raise OptionError("beat: first_downbeat_s is a time in the recording, 0 or later", BEAT_INVALID_CODE)
+    holds = beat.get("holds", [])
+    if not isinstance(holds, (list, tuple)) or len(holds) > MAX_HOLDS:
+        raise OptionError(f"beat: holds is a list of at most {MAX_HOLDS}", BEAT_INVALID_CODE)
+    rows = []
+    for h in holds:
+        if not isinstance(h, dict) or set(h) != {"start_s", "end_s", "beats"}:
+            raise OptionError("beat: a hold is {start_s, end_s, beats}", BEAT_INVALID_CODE)
+        row = {"start_s": _number(h["start_s"], "a hold's start_s"), "end_s": _number(h["end_s"], "a hold's end_s"),
+               "beats": _whole(h["beats"], "a hold's beats")}
+        if not 0 <= row["start_s"] < row["end_s"] or not 1 <= row["beats"] <= MAX_HOLD_BEATS:
+            raise OptionError(f"beat: a hold ends after it starts and is written 1 to {MAX_HOLD_BEATS} beats long",
+                              BEAT_INVALID_CODE)
+        rows.append(row)
+    rows.sort(key=lambda r: (r["start_s"], r["end_s"]))
+    if any(a["end_s"] > b["start_s"] for a, b in zip(rows, rows[1:])):
+        raise OptionError("beat: holds do not overlap", BEAT_INVALID_CODE)
+    if rows:
+        out["holds"] = rows
+    if ("holds" in out or "beats_per_bar" in out) and "level" not in out:
+        # Left to the engine, the level is chosen after the correction, and a count of beats would be read on
+        # one level and written on another.
+        raise OptionError("beat: holds and beats_per_bar count beats of a level: give level too (the one the "
+                          "score is written on is in the job's beat_hints)", BEAT_INVALID_CODE)
+    try:  # the reference's own checks, so the two cannot drift apart
+        Correction(out.get("level"), out.get("phase", 0), out.get("beats_per_bar"), out.get("first_downbeat_s"),
+                   tuple(Hold(**r) for r in rows))
+    except ValueError as e:
+        raise OptionError(f"beat: {e}", BEAT_INVALID_CODE) from e
+    return out or None
+
+
+def beat_stages(params: dict, model: str | None = None) -> tuple[list[Stage], Input, dict]:
+    """The stages that give a job its beats, the file the notes are written on, and what the stage that reads
+    it is told.
+
+    Beat This! on the recording; a second tracker beside it when the engine has one (ALTERNATIVE_BEATS); and,
+    with a correction, one more stage that applies it to the chosen tracker's beats. The correction is a
+    parameter of that stage alone: every model stage keeps its cache entry, so a corrected score is written
+    again from the notes that were heard, in seconds.
+
+    The third value is merged into the reading stage's parameters and inputs by `beat_reader`: `given` (what the
+    player said, scribe_music.beats.Correction.given) and, with two trackers, both trackers' own beats for
+    the hints."""
+    from scribe_music.beats import Correction
+
+    st = [_beats(model)]
+    beat = beat_correction(params)
+    reader: dict = {"params": {}, "inputs": {}}
+    if ALTERNATIVE_BEATS:
+        st.append(Stage("beats.alternative", "beats", {"audio": Input(SOURCE)}, S.beats_alternative,
+                        adapter=ALTERNATIVE_BEATS, outputs=("mix.beats",)))
+        reader["inputs"] = {"beats_tracked": Input("beats", "mix.beats"), "beats_alternative": Input("beats.alternative", "mix.beats")}
+    if beat is None:
+        return st, Input("beats", "mix.beats"), reader
+    said = {k: v for k, v in beat.items() if k != "source"}
+    st.append(Stage("beats.corrected", "beats", {"beats": Input("beats.alternative" if "source" in beat else "beats", "mix.beats")},
+                    S.correct_beats, params={"beat": said}, code=(S.MUSIC_SRC / "beats.py", S.MUSIC_SRC / "quantize.py", THIS),
+                    outputs=("mix.beats",)))
+    given = Correction(said.get("level"), said.get("phase", 0), said.get("beats_per_bar"), said.get("first_downbeat_s"),
+                       tuple(S.hold(h) for h in said.get("holds", ()))).given
+    if given:
+        reader["params"] = {"beats_given": list(given)}
+    return st, Input("beats.corrected", "mix.beats"), reader
+
+
+def with_beat(opts: dict, params: dict) -> dict:
+    """A tab job's options with its beat correction: what its manifest records, and a rerun starts from."""
+    beat = beat_correction(params)
+    return {**opts, "beat": beat} if beat else opts
 
 
 def arrangement_options(params: dict) -> dict:
@@ -161,6 +333,7 @@ def job_options(profile: str, params: dict) -> dict:
             except bass_tab.CoreCliMissing as e:
                 raise OptionError(str(e), CORE_MISSING_CODE) from e
         return opts
+    beat_correction(params)
     if tab.is_tab(profile):
         opts = tab.job_options(profile, params)
         try:  # before any model runs: the last stage needs the core
@@ -183,14 +356,14 @@ def job_options(profile: str, params: dict) -> dict:
     return opts
 
 
-def _arrange_params(title: str, params: dict, lineup: str = "full", kit: str = "band") -> dict:
+def _arrange_params(title: str, params: dict, lineup: str = "full", kit: str = "band", reader: dict | None = None) -> dict:
     """lineup: the profile's lineup when the job does not choose one. kit: the drum kit the Percussion part
     plays (scribe_music.instruments.KITS); set by the profile, not a job option, and passed only when it is
-    not the band kit, so the other profiles keep their cache keys."""
+    not the band kit, so the other profiles keep their cache keys. reader: beat_stages' third value."""
     opts = arrangement_options({**params, "lineup": params.get("lineup") or lineup})
     if kit != "band":
         opts["kit"] = kit
-    return {"title": title, "arrangement": opts} if opts else {"title": title}
+    return {"title": title, **({"arrangement": opts} if opts else {}), **((reader or {}).get("params") or {})}
 
 
 def _beats(model: str | None = None) -> Stage:
@@ -226,7 +399,7 @@ def _export(arrange: str, audio: bool) -> Stage:
 
 
 # What every band profile's arrange stage writes.
-ARRANGED = ("composition.json", targets.BRASS.musicxml)
+ARRANGED = ("composition.json", targets.BRASS.musicxml, beat_hints.FILE)
 
 
 def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
@@ -236,6 +409,7 @@ def _outputs(arrange: str) -> dict[str, tuple[str, str]]:
         band.musicxml: (arrange, band.musicxml),
         **{name: ("export", name) for name in (*band.rendered, band.file("mp3"))},
         "separation-check.json": (arrange, "separation-check.json"),
+        beat_hints.FILE: (arrange, beat_hints.FILE),
         "parts/": (arrange, "parts/"),  # a trailing slash copies every file under that directory
         "parts-pdf/": ("export", "parts/"),  # part PDFs and BRF land next to the part MusicXML
         band.file("brf"): ("export", band.file("brf")),
@@ -257,8 +431,9 @@ LAYER_TOOLS = {
 
 
 def layered(title: str, params: dict) -> Pipeline:
+    beats, written_on, reader = beat_stages(params)
     st = [
-        _beats(),
+        *beats,
         Stage("stems", "stems", {"audio": Input(SOURCE)}, S.stems_mega53, adapter="mega53",
               outputs=("*.flac", "trumpet.flac", "bass.flac", "drums.flac"), reuse_subdir="stems"),
         Stage("layers", "layers", {"audio": Input(SOURCE), "trumpet": Input("stems", "trumpet.flac"),
@@ -266,7 +441,7 @@ def layered(title: str, params: dict) -> Pipeline:
               S.layers, code=(EVAL_SRC / "layers.py", THIS),
               outputs=("solo.wav", "bass.wav", "drums.wav", "orchestra.wav"), reuse_subdir="layers"),
     ]
-    arrange_inputs = {"beats": Input("beats", "mix.beats")}
+    arrange_inputs = {"beats": written_on, **reader["inputs"]}
     for layer, tools in LAYER_TOOLS.items():
         for tool, suffix in tools:
             s = _transcribe(layer, tool, suffix, Input("layers", f"{layer}.wav"), "layers")
@@ -280,7 +455,7 @@ def layered(title: str, params: dict) -> Pipeline:
     # Layer audio: energy gate, separation check, dynamics and rehearsal marks read it.
     for layer in LAYER_TOOLS:
         arrange_inputs[f"{layer}.wav"] = Input("layers", f"{layer}.wav")
-    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params),
+    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params, reader=reader),
                     code=SYMBOLIC_CODE, outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("orchestra-with-soloist", "layered", st, _outputs("arrange"), params)
@@ -295,17 +470,19 @@ def brass_band(title: str, params: dict) -> Pipeline:
     Beat This! small0 gives the beats, as on the device.
     """
     mix = Input(SOURCE)
-    if params.get("muscriptor", True):
-        st = [_beats(), _transcribe("mix", "muscriptor", "mus", mix, None),
+    full = params.get("muscriptor", True)
+    beats, written_on, reader = beat_stages(params, None if full else "small0")
+    if full:
+        st = [*beats, _transcribe("mix", "muscriptor", "mus", mix, None),
               _transcribe("mix", "basic-pitch", "bp", mix, None, retune=True)]
         notes, support = Input("transcribe.mix.muscriptor", "mix-mus.mid"), {"melody_support": Input("transcribe.mix.basic-pitch", "mix-bp.mid")}
     else:
         # Not retuned: the draft is the reference for the device's, and the device does not retune.
-        st = [_beats("small0"), _transcribe("mix", "basic-pitch", "bp", mix, None)]
+        st = [*beats, _transcribe("mix", "basic-pitch", "bp", mix, None)]
         notes, support = Input("transcribe.mix.basic-pitch", "mix-bp.mid"), {}
     st.append(Stage("arrange", "arrange", {
-        "beats": Input("beats", "mix.beats"), "melody": notes, **support, "bass": notes, "harmony0": notes},
-        S.arrange_band, params=_arrange_params(title, params), code=SYMBOLIC_CODE, outputs=ARRANGED))
+        "beats": written_on, **reader["inputs"], "melody": notes, **support, "bass": notes, "harmony0": notes},
+        S.arrange_band, params=_arrange_params(title, params, reader=reader), code=SYMBOLIC_CODE, outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("brass-band", "A", st, _outputs("arrange"), params)
 
@@ -332,9 +509,9 @@ def solo(title: str, params: dict) -> Pipeline:
     # final0 got the metre right more often (URMP 0.24 -> 0.29, ChoraleBricks 0.43 -> 0.60) and written positions
     # were level, but no difference was significant (sign test p >= 0.12, ChoraleBricks' metre on 15 parts the
     # closest). Measure again on a larger set before letting the computer use final0.
-    st = [_beats("small0")]
+    st, written_on, reader = beat_stages(params, "small0")
     tools = [("swift-f0", "sw"), ("basic-pitch", "bp")] + ([("muscriptor", "mus")] if params.get("muscriptor", True) else [])
-    arrange_inputs = {"beats": Input("beats", "mix.beats")}
+    arrange_inputs = {"beats": written_on, **reader["inputs"]}
     for tool, suffix in tools:
         s = _transcribe("solo", tool, suffix, mix, "layers")
         st.append(s)
@@ -347,7 +524,7 @@ def solo(title: str, params: dict) -> Pipeline:
     # A solo take with a seat is written on the seat's part: the tune is always the player's.
     if params.get("seat"):
         params = {**params, "lead": "seat"}
-    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params, "minimal"),
+    st.append(Stage("arrange", "arrange", arrange_inputs, S.arrange_layered, params=_arrange_params(title, params, "minimal", reader=reader),
                     code=SYMBOLIC_CODE, outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("solo", "layered-solo", st, _outputs("arrange"), params)
@@ -358,8 +535,9 @@ SW_STEMS = ("vocals", "other", "guitar", "piano", "bass", "drums")
 
 def pop_rock(title: str, params: dict) -> Pipeline:
     melody_stem = params.get("melody_stem", "vocals")
-    st = [_beats(), Stage("stems", "stems", {"audio": Input(SOURCE)}, S.stems_sw, adapter="separator",
-                          outputs=tuple(f"{s}.wav" for s in SW_STEMS))]
+    st, written_on, reader = beat_stages(params)
+    st.append(Stage("stems", "stems", {"audio": Input(SOURCE)}, S.stems_sw, adapter="separator",
+                    outputs=tuple(f"{s}.wav" for s in SW_STEMS)))
     for stem in ("vocals", "other", "guitar", "piano"):
         st.append(_transcribe(stem, "muscriptor", "mus", Input("stems", f"{stem}.wav"), None))
     st.append(_transcribe(melody_stem, "basic-pitch", "bp", Input("stems", f"{melody_stem}.wav"), None))
@@ -367,10 +545,10 @@ def pop_rock(title: str, params: dict) -> Pipeline:
     harmony = {f"harmony{i}": Input(f"transcribe.{s}.muscriptor", f"{s}-mus.mid")
                for i, s in enumerate(x for x in ("vocals", "other", "guitar", "piano") if x != melody_stem)}
     st.append(Stage("arrange", "arrange", {
-        "beats": Input("beats", "mix.beats"), "melody": Input(f"transcribe.{melody_stem}.muscriptor", f"{melody_stem}-mus.mid"),
+        "beats": written_on, **reader["inputs"], "melody": Input(f"transcribe.{melody_stem}.muscriptor", f"{melody_stem}-mus.mid"),
         "melody_support": Input(f"transcribe.{melody_stem}.basic-pitch", f"{melody_stem}-bp.mid"),
         "bass": Input("transcribe.bass.basic-pitch", "bass-bp.mid"), **harmony},
-        S.arrange_band, params=_arrange_params(title, params, kit="pop"), code=SYMBOLIC_CODE,
+        S.arrange_band, params=_arrange_params(title, params, kit="pop", reader=reader), code=SYMBOLIC_CODE,
         outputs=ARRANGED))
     st.append(_export("arrange", params.get("audio", True)))
     return Pipeline("pop-rock", "B", st, _outputs("arrange"), params)

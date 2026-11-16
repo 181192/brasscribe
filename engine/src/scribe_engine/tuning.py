@@ -104,6 +104,23 @@ def _decoded(path: Path, tmp: str, mono: bool = False) -> Path:
         return wav
 
 
+def duration_s(path: Path) -> float | None:
+    """The recording's length in seconds, from its header (ffprobe for what libsndfile cannot read); None when
+    neither can tell."""
+    import soundfile as sf
+
+    try:
+        return float(sf.info(str(path)).duration)
+    except (RuntimeError, sf.LibsndfileError):
+        pass
+    try:
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+                             capture_output=True, text=True, timeout=30, check=True).stdout.strip()
+        return float(out)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+
 def read_audio(path: Path) -> tuple[np.ndarray, int]:
     """Samples (frames x channels, float32) and rate; formats libsndfile cannot read are decoded by ffmpeg."""
     import soundfile as sf

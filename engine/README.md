@@ -204,6 +204,43 @@ and counts each refusal in `setup_refusals`, which is how Bandroom knows to ask 
 it, and a `solo` job is taken without it: it then runs as the apps do on the device (`muscriptor: false`). The job says so in `without` (`band-writer`), and made again
 (`rerunJob`, or a new job from the same recording) once the band writer is set up, it uses it.
 
+### Correcting the beat
+
+The beat grid is what most often puts a note in the wrong place, and a player can say what is wrong with it.
+`POST /v1/jobs/{id}/rerun` with a `beat` writes a finished job's score again on corrected beats:
+
+```json
+{"beat": {"level": "double", "beats_per_bar": 3, "first_downbeat_s": 1.1,
+          "holds": [{"start_s": 19.1, "end_s": 21.7, "beats": 3}]},
+ "allow_heavy": false}
+```
+
+- `level`: `double` or `triple` splits every tracked beat, `half` or `third` keeps every second or third
+  (`phase` says which), `as-tracked` takes the tracker's beats as they are. Left out, the engine chooses
+  the level from the notes as it does without a correction.
+- `beats_per_bar`, `first_downbeat_s`: the bar's length and a time where a bar starts.
+- `holds`: held notes (fermatas) the tracker counted through, each with how many beats it is written.
+- `source`: `alternative` writes on a second beat tracker's beats, on an engine that has one
+  (`profiles.ALTERNATIVE_BEATS`; none is set, and the source is then refused with `beat_source_unavailable`).
+
+`beats_per_bar` and `holds` count beats, so they come with a `level`; the one the score is written on is in
+the job's `beat_hints.level`. The correction replaces the old job's whole correction; `{"beat": {}}` (or
+`null`) takes it away, and a rerun without `beat` keeps it. It is applied by one stage of its own
+(`beats.corrected`), between the tracker and the stage that puts the notes on the beats, so every model stage
+comes from the cache: the new job costs the arranging and the export. A correction never listens again: should
+the cache have been cleared, it fails at once, whatever `allow_heavy` says. Only a job that succeeded can be
+corrected (409 `job_not_finished`). A correction that does not fit, puts a bar or a hold after the end of the
+recording, or changes nothing answers 422 `{code: "beat_invalid", detail}`, with `detail` naming what to change;
+a hold that runs past the end is cut at the end.
+
+Every finished job also carries `beat_hints`: what the engine itself suspects about the beat (a tempo out of
+range, notes too fast or slow for the beat, a slow beat divided in three, long stretches without a new note,
+a bar that seems to start on another beat, two trackers that disagree), as codes with the correction each
+suggests (`beat_hints.py`). They are questions to ask the player, never changes the engine makes.
+
+`scribe bench quant-chorales` and `quant-urmp` measure what an informed player's correction recovers,
+through the same option and stage (`eval/scribe_eval/beat_correction_bench.py`).
+
 ## Configuration
 
 | Variable | Default | Purpose |

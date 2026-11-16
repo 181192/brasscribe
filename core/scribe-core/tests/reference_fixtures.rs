@@ -101,6 +101,25 @@ fn spelling_and_key_match_reference() {
 }
 
 #[test]
+fn level_matches_reference() {
+    use scribe_core::quantize::{choose_level_three, in_three, level_factor};
+    let (mut threes, mut twos) = (0, 0);
+    for (i, c) in load("level").iter().enumerate() {
+        let (beats, on) = (f64s(&c["beats"]), f64s(&c["onsets"]));
+        assert_eq!(in_three(&beats, &on), c["in_three"].as_bool().unwrap(), "in three, case {i}");
+        assert_eq!(choose_level(&beats, &on), f64s(&c["level"]), "level case {i}");
+        let level = choose_level_three(&beats, &on, true);
+        assert_eq!(level, f64s(&c["level_three"]), "level in three, case {i}");
+        match level_factor(&beats, &level) {
+            3 => threes += 1,
+            2 => twos += 1,
+            f => assert_eq!(f, 1, "case {i}"),
+        }
+    }
+    assert!(threes >= 10 && twos >= 10, "the cases cover both splits: {threes} in three, {twos} in two");
+}
+
+#[test]
 fn quantize_matches_reference() {
     for (i, c) in load("quantize").iter().enumerate() {
         let beats = f64s(&c["beats"]);

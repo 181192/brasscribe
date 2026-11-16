@@ -85,7 +85,12 @@ public sealed record Job(
     IReadOnlyList<MissingOutput>? Missing = null,
     IReadOnlyList<string>? Without = null,
     // What the job read: "audio" (a recording) or "pages" (pictures or a PDF of printed music).
-    string Input = "audio")
+    string Input = "audio",
+    // The beat as a player corrected it, the beats a correction can choose between, and what the engine suspects
+    // about the beat: kept as the engine sent them until the app has a correction of its own to offer.
+    JsonElement? Beat = null,
+    IReadOnlyList<string>? BeatSources = null,
+    JsonElement? BeatHints = null)
 {
 
     [JsonIgnore]

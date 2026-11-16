@@ -352,6 +352,11 @@ def test_a_picture_becomes_a_score_with_parts_and_a_talking_score(client):
     assert (job["input"], done["input"]) == ("pages", "pages")
     assert {j["id"]: j["input"] for j in client.get("/v1/jobs").json()}[job["id"]] == "pages"
     assert client.post(f"/v1/jobs/{job['id']}/rerun").status_code == 202
+    # A page has no beat to correct: a correction is refused, and starts nothing.
+    before = len(client.get("/v1/jobs").json())
+    r = client.post(f"/v1/jobs/{job['id']}/rerun", json={"beat": {"level": "double"}})
+    assert (r.status_code, r.json()["code"]) == (422, "beat_invalid")
+    assert len(client.get("/v1/jobs").json()) == before
 
 
 @needs_core

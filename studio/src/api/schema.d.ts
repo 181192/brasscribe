@@ -508,7 +508,12 @@ export interface paths {
         put?: never;
         /**
          * Rerun Job
-         * @description Run a job again from its manifest (same input, profile, title and parameters).
+         * @description Run a job again from its manifest (same input, profile, title and parameters), or, with `beat`, write
+         *     its score again on corrected beats. Stages whose inputs and parameters are unchanged come from the
+         *     cache, so a correction runs no model: it costs the arranging and the export, and it fails rather than
+         *     listen again when the cache is gone. Only a job that succeeded can be corrected (409 job_not_finished).
+         *     A correction that does not fit, starts after the recording ends or changes nothing is refused with 422
+         *     {code, detail}: beat_invalid, or beat_source_unavailable; `detail` says what does not fit.
          */
         post: operations["rerunJob"];
         delete?: never;
@@ -1034,6 +1039,128 @@ export interface components {
             /** Sha256 */
             sha256: string;
         };
+        /**
+         * BeatCorrection
+         * @description What a player says about the beat of a finished job. Every field left out keeps what the engine does on
+         *     its own. Applied in this order: source, level, holds, then the bar (beats_per_bar, first_downbeat_s).
+         */
+        BeatCorrection: {
+            /**
+             * Beats Per Bar
+             * @description beats in a bar, counted on the corrected level; needs level
+             */
+            beats_per_bar?: number | null;
+            /**
+             * First Downbeat S
+             * @description a time in the recording where a bar starts: the beat nearest to it is a first beat
+             */
+            first_downbeat_s?: number | null;
+            /**
+             * Holds
+             * @description held notes; they must not overlap; needs level
+             */
+            holds?: components["schemas"]["BeatHold"][] | null;
+            /**
+             * Level
+             * @description the level of the beat. double, triple: every tracked beat is split in two or three; half, third: every second or third one is kept; as-tracked: the tracker's beats as they are. Left out, the engine chooses the level from the notes, as it does without a correction
+             */
+            level?: ("as-tracked" | "double" | "half" | "triple" | "third") | null;
+            /**
+             * Phase
+             * @description with half or third: which of the first two (0, 1) or three (0 to 2) tracked beats is kept; default 0
+             */
+            phase?: number | null;
+            /**
+             * Source
+             * @description which beat tracker's beats the score is written on. tracked (the default): the engine's own; alternative: a second tracker's, on an engine that has one (Job.beat_sources says; refused with beat_source_unavailable otherwise)
+             */
+            source?: ("tracked" | "alternative") | null;
+        };
+        /**
+         * BeatHint
+         * @description One thing the engine suspects about the beat. A suspicion to ask the player about, never a finding.
+         */
+        BeatHint: {
+            /**
+             * Bars
+             * @description uneven_bars: the bars' numbers, from 1
+             */
+            bars?: number[] | null;
+            /**
+             * Code
+             * @description tempo_guessed: under two beats were tracked, the grid is a guess; tempo_slow, tempo_fast: the written beat is under 50 or over 220 a minute; notes_fast, notes_slow: most notes are a quarter of a beat apart or less, or two beats or more; in_three: the notes divide a slow beat in three; held_notes: long stretches without a new note; uneven_bars: bars with far more notes than the rest; downbeat_unsure: another beat of the bar carries more than the first; trackers_disagree: the two beat trackers put their beats in different places
+             * @enum {string}
+             */
+            code: "tempo_guessed" | "tempo_slow" | "tempo_fast" | "notes_fast" | "notes_slow" | "in_three" | "held_notes" | "uneven_bars" | "downbeat_unsure" | "trackers_disagree";
+            /**
+             * First Downbeat S
+             * @description downbeat_unsure: the time of a beat that may start a bar
+             */
+            first_downbeat_s?: number | null;
+            /**
+             * Level
+             * @description tempo_*, notes_*, in_three: the level to send in a correction to follow the hint, counted from the tracked beats as a correction's level is; null when no level says it
+             */
+            level?: ("as-tracked" | "double" | "half" | "triple" | "third") | null;
+            /**
+             * Score
+             * @description what was measured: the tempo (tempo_*), the typical distance between notes in beats (notes_*), the other beat's weight against the first's (downbeat_unsure), the share of beats both trackers have (trackers_disagree)
+             */
+            score?: number | null;
+            /**
+             * Spans
+             * @description held_notes: [start_s, end_s] of each stretch, at most 12, in order of time; each is a hold a correction could mark
+             */
+            spans?: number[][] | null;
+        };
+        /** BeatHints */
+        BeatHints: {
+            /** Beats Per Bar */
+            beats_per_bar: number;
+            /**
+             * Hints
+             * @description empty when nothing looks wrong
+             */
+            hints: components["schemas"]["BeatHint"][];
+            /**
+             * Level
+             * @description the level the score is written on, against the tracked beats: the correction's when the job has one with a level, else the one the engine chose from the notes (as-tracked, double or triple). A correction that counts beats (holds, beats_per_bar) sends this level, and phase, to count them on the beats the player sees
+             * @enum {string}
+             */
+            level: "as-tracked" | "double" | "half" | "triple" | "third";
+            /**
+             * Phase
+             * @description with level half or third: the phase the correction chose
+             * @default 0
+             */
+            phase: number;
+            /**
+             * Tempo Bpm
+             * @description the written beat's tempo; null when the score has no beat grid
+             */
+            tempo_bpm: number | null;
+        };
+        /**
+         * BeatHold
+         * @description A held note (a fermata) the beat tracker counted through.
+         */
+        BeatHold: {
+            /**
+             * Beats
+             * @description how many beats long the held note is written. Of the tracked beats between start_s and end_s all but the first beats - 1 are taken out
+             */
+            beats: number;
+            /**
+             * End S
+             * @description where the next note starts
+             */
+            end_s: number;
+            /**
+             * Start S
+             * @description where the held note starts, in seconds from the start of the recording
+             */
+            start_s: number;
+        };
         /** BenchRun */
         BenchRun: {
             /** Created */
@@ -1486,6 +1613,15 @@ export interface components {
         Job: {
             /** Audio Id */
             audio_id?: string | null;
+            /** @description the beat correction the job was made with (rerunJob); null for the beats as the engine tracked and read them */
+            beat?: components["schemas"]["BeatCorrection"] | null;
+            /** @description what the engine suspects about the beat of the finished score, so an app can offer a correction unasked; null until the score is written, and for a run made before the engine wrote them */
+            beat_hints?: components["schemas"]["BeatHints"] | null;
+            /**
+             * Beat Sources
+             * @description the beats a correction of this job can choose between: alternative is among them only on an engine with a second beat tracker
+             */
+            beat_sources?: ("tracked" | "alternative")[];
             /** Created */
             created: number;
             /**
@@ -2044,13 +2180,37 @@ export interface components {
              */
             retuned: boolean;
         };
+        /**
+         * Refusal
+         * @description A request the engine refused, with a code an app can act on and words for the player.
+         */
+        Refusal: {
+            /**
+             * Audio Id
+             * @description with a job a model waits for: the recording, kept, to ask again with
+             */
+            audio_id?: string | null;
+            /**
+             * Code
+             * @description what kind of refusal, e.g. beat_invalid, beat_source_unavailable, job_not_finished
+             */
+            code: string;
+            /**
+             * Detail
+             * @description what does not fit, in words an app can show
+             */
+            detail: string;
+        };
         /** RerunRequest */
         RerunRequest: {
             /**
              * Allow Heavy
+             * @description allow heavy models to run on cache misses. Never with `beat`: a correction fails at once instead of listening again, should the cached model outputs be gone
              * @default true
              */
             allow_heavy: boolean;
+            /** @description write the score again on corrected beats: no model runs again, only the stages that read the beats and the ones after them. Left out, the new job keeps the old one's correction; null or {} takes it away */
+            beat?: components["schemas"]["BeatCorrection"] | null;
             /**
              * Cold
              * @description stages or kinds to run even on a cache hit, or 'all'
@@ -3799,13 +3959,22 @@ export interface operations {
                     "application/json": components["schemas"]["Job"];
                 };
             };
-            /** @description Validation Error */
+            /** @description not taken: the input is gone (`input_missing`, `input_not_allowed`), a correction of a job that has not succeeded (`job_not_finished`), or a model waits for setup */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Refusal"];
+                };
+            };
+            /** @description a beat correction refused: `beat_invalid` (does not fit, or changes nothing) or `beat_source_unavailable`; `detail` says which part */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["Refusal"];
                 };
             };
         };

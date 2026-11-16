@@ -43,7 +43,7 @@ from typing import Callable
 
 import numpy as np
 
-from . import bass_tab, targets, tuning
+from . import bass_tab, beat_hints, targets, tuning
 from . import stages as S
 from .bass_tab import DOUBT, LAYOUTS, MAX_CAPO, OCTAVES, RECORDINGS, STYLES
 from .dag import SOURCE, Input, Pipeline, Stage, StageContext, StageFailed
@@ -515,10 +515,13 @@ def rings_on(notes: list[dict]) -> list[dict]:
 
 
 def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: str = "auto",
-                 second: list[dict] | None = None, clean: bool = True, chords: str = "heard") -> dict:
+                 second: list[dict] | None = None, clean: bool = True, chords: str = "heard",
+                 given: tuple[str, ...] = ()) -> dict:
     """The notes of a chordal instrument on the beat grid: every note heard, not one line.
 
-    `clean` False is Basic Pitch straight to the grid, which the benchmark measures the rules against."""
+    `clean` False is Basic Pitch straight to the grid, which the benchmark measures the rules against.
+    `given`: what a player has said about `beats` (scribe_music.beats.Correction.given): with level they are
+    the written beats as they are, with bars the bar is as long as they say."""
     from scribe_music.durations import apply_written
     from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
     from scribe_music.spelling import key_of
@@ -559,11 +562,12 @@ def played_notes(raw: list[dict], beats: np.ndarray, instrument: str, octave: st
     onsets = np.array([n["onset"] for n in notes])
     beats_per_bar = int(Counter(np.diff(downs)).most_common(1)[0][0])
     first_down = int(downs[0])
-    times = choose_level(beats[:, 0], onsets)
+    times = beats[:, 0] if "level" in given else choose_level(beats[:, 0], onsets)
     if len(times) != len(beats):
         beats_per_bar *= 2
         first_down *= 2
-    beats_per_bar = bass_tab.bar_beats(beats_per_bar, times, onsets)
+    if "bars" not in given:
+        beats_per_bar = bass_tab.bar_beats(beats_per_bar, times, onsets)
     bm = BeatMap(times)
     earliest = float(bm.to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:
@@ -604,9 +608,10 @@ def notes_stage(ctx: StageContext) -> None:
     try:
         doc = played_notes(bass_tab.load_transcription(ctx.inputs["heard"]), np.loadtxt(ctx.inputs["beats"], ndmin=2),
                            instrument, ctx.params.get("octave", "auto"), bass_tab.load_transcription(ctx.inputs["second"]),
-                           chords=ctx.params.get("chords", "heard"))
+                           chords=ctx.params.get("chords", "heard"), given=tuple(ctx.params.get("beats_given", ())))
     except ValueError as e:
         raise StageFailed(ctx.stage.name, str(e)) from e
+    beat_hints.write(ctx.out, doc, ctx.inputs["beats"], ctx.inputs.get("beats_tracked"), ctx.inputs.get("beats_alternative"))
     doc["reference_pitch"] = bass_tab.reference_pitch(ctx.inputs["audio"], bool(ctx.params.get("whole_recording")))
     doubtful = sum(n["confidence"] < DOUBT for n in doc["notes"])
     ctx.log(f"{len(doc['notes'])} notes, {doc['meter']['beats']}/{doc['meter']['beat_unit']}, {doc['key']['name']}, "
@@ -838,7 +843,7 @@ def build(title: str, params: dict) -> Pipeline:
         return Pipeline(PROFILE, bass.pipeline, bass.stages, bass.outputs, bass.params)
     heard = HEARD[opts["instrument"]]
     whole = opts["recording"] == "instrument"
-    st = [P._beats()]
+    st, written_on, reader = P.beat_stages(params)
     if whole:
         audio = Input(SOURCE)
     else:
@@ -859,12 +864,12 @@ def build(title: str, params: dict) -> Pipeline:
                     derive=tuning.derive if whole else None))
     listened = {"instrument": opts["instrument"], **({"whole_recording": True} if whole else {}),
                 **({"octave": opts["octave"]} if opts["octave"] != "auto" else {}),
-                **({"chords": opts["chords"]} if opts["chords"] != "heard" else {})}
-    st.append(Stage("notes", "notes", {"beats": Input("beats", "mix.beats"), "audio": Input(SOURCE),
+                **({"chords": opts["chords"]} if opts["chords"] != "heard" else {}), **reader["params"]}
+    st.append(Stage("notes", "notes", {"beats": written_on, **reader["inputs"], "audio": Input(SOURCE),
                                        "heard": Input(f"transcribe.{kind}.basic-pitch", f"{kind}-bp.mid"),
                                        "second": Input(f"transcribe.{kind}.swift-f0", f"{kind}-sw.mid")},
                     notes_stage, params=listened,
-                    code=(S.MUSIC_SRC, THIS, bass_tab.THIS, tuning.THIS), outputs=("tab-notes.json",)))
+                    code=(S.MUSIC_SRC, THIS, bass_tab.THIS, tuning.THIS, beat_hints.THIS), outputs=("tab-notes.json", beat_hints.FILE)))
     fingering = {"instrument": opts["instrument"], "tuning": opts["tuning"], "capo": opts["capo"], "style": opts["style"]}
     st.append(Stage("arrange", "arrange", {"notes": Input("notes", "tab-notes.json")}, arrange_stage,
                     params={"title": title, "fingering": fingering, "layout": opts["layout"]},
@@ -872,4 +877,4 @@ def build(title: str, params: dict) -> Pipeline:
                     outputs=bass_tab.ARRANGED))
     st.append(Stage("export", "export", {"score": Input("arrange")}, bass_tab.export_stage,
                     params={"musescore": bass_tab.musescore_fingerprint()}, code=(bass_tab.THIS,), outputs=("export.json",)))
-    return Pipeline(PROFILE, "tab", st, dict(bass_tab.OUTPUTS), opts)
+    return Pipeline(PROFILE, "tab", st, dict(bass_tab.OUTPUTS), P.with_beat(opts, params))

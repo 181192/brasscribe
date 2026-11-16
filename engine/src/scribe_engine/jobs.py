@@ -243,6 +243,34 @@ class JobManager:
         """The adapters a job was refused for that still wait for setup: what the desktop program is to offer."""
         return sorted(a for a in self.asked_for if waits_for_setup(a))
 
+    def beat_hints(self, job: Job) -> dict | None:
+        """What the engine suspects about the beat of the job's score (beat_hints.py), from its outputs; None
+        until it has one, and for a file this engine cannot read."""
+        from . import beat_hints
+
+        if job.status != "succeeded":
+            return None
+        try:
+            found = json.loads((self.run_dir(job.id) / "outputs" / beat_hints.FILE).read_text())
+        except (OSError, ValueError):
+            return None
+        known = [h for h in found.get("hints", []) if isinstance(h, dict) and h.get("code") in beat_hints.CODES]
+        if not isinstance(found.get("beats_per_bar"), int):
+            return None
+        # The level the score is written on: the player's when the job has one, else the one the engine chose.
+        said = (job.params.get("beat") or {}) if isinstance(job.params.get("beat"), dict) else {}
+        level = said.get("level") or found.get("level")
+        level = level if level in beat_hints.LEVELS else "as-tracked"
+        # A hint's level as a correction names it: counted from the tracked beat, not the written one. A hint
+        # that no level says keeps its code and loses the suggestion.
+        hints = []
+        for h in known:
+            if h.get("level") in beat_hints.LEVELS:
+                h = {**h, "level": beat_hints.level_to_send(level, h["level"])}
+            hints.append(h)
+        return {"tempo_bpm": found.get("tempo_bpm"), "beats_per_bar": found["beats_per_bar"], "level": level,
+                "phase": said.get("phase", 0) if said.get("level") else 0, "hints": hints}
+
     def counts(self) -> tuple[int, int]:
         """(running, queued) among the jobs this engine process runs; a cancelled queued job is not counted."""
         with self.lock:

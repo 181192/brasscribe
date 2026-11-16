@@ -34,10 +34,13 @@ from typing import Literal
 
 import anyio
 
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from .tuning import duration_s as recording_seconds
 from . import __version__, bass_tab, build_info, history, inspection, pages, profiles, runner, sheet, tab, targets, wire
 from .companion import DeviceRegistry, PairingWindow, PairRequests, ServerIdentity, iso, pairing_uri
 from . import schemas as m
@@ -215,7 +218,8 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
                      progress=round(done / len(stages), 4) if stages else 0.0, previous_run_id=job.previous_run_id,
                      device_name=job.device_name, target=getattr(target_of(job), "id", None), input=input_of(job),
                      stages=[m.StageState(**s) for s in stages], outputs=outputs_of(job), missing=missing_of(job),
-                     without=[SETUP_NAMES.get(a, a) for a in job.without])
+                     without=[SETUP_NAMES.get(a, a) for a in job.without],
+                     beat=_beat_of(job), beat_sources=list(profiles.beat_sources()), beat_hints=jobs.beat_hints(job))
 
     def input_of(job: Job) -> str:
         """What the job read: its profile says, and for a run kept from a profile the engine no longer lists, the
@@ -238,6 +242,15 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         code = f"{SETUP_NAMES[e.adapters[0]].replace('-', '_')}_not_set_up"
         print(f"job refused ({code})", file=sys.stderr, flush=True)
         return JSONResponse({"code": code, "detail": SETUP_MESSAGES[e.adapters[0]], "audio_id": audio_id}, status_code=409)
+
+    def _beat_of(job: Job) -> m.BeatCorrection | None:
+        """The job's correction; none for a manifest whose `beat` this engine cannot read (it shows no worse than
+        a job without one, and rerunJob refuses it by name)."""
+        try:
+            beat = profiles.beat_correction(job.params)
+            return m.BeatCorrection(**beat) if beat else None
+        except ValueError:
+            return None
 
     def target_of(job: Job) -> targets.Target | None:
         return targets.of_run(job.profile, jobs.run_dir(job.id) / "outputs")
@@ -558,22 +571,81 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             return needs_setup(e, body.audio_id)
         return job_model(job)
 
+    def beat_refusal(code: str, detail: str) -> JSONResponse:
+        """A refused correction, with what in it does not fit: an app can tell the player what to change."""
+        return JSONResponse({"code": code, "detail": detail}, status_code=422)
+
+    @app.exception_handler(RequestValidationError)
+    async def refused_by_schema(request: Request, exc: RequestValidationError):
+        """A correction the request schema refuses is answered like one the engine refuses: 422 {code, detail},
+        in the engine's own words where it has them. Every other request keeps FastAPI's answer."""
+        errors = exc.errors()
+        if (request.url.path.endswith("/rerun") and errors
+                and all(tuple(e.get("loc", ()))[:2] == ("body", "beat") for e in errors)):
+            sent = exc.body.get("beat") if isinstance(exc.body, dict) else None
+            try:
+                profiles.beat_correction({"beat": sent})
+                detail = "beat: " + "; ".join(f"{'.'.join(map(str, e['loc'][2:])) or 'beat'}: {e['msg']}" for e in errors)
+            except profiles.OptionError as e:
+                detail = str(e)
+            return beat_refusal(profiles.BEAT_INVALID_CODE, detail)
+        return await request_validation_exception_handler(request, exc)
+
     @app.post("/v1/jobs/{job_id}/rerun", response_model=m.Job, status_code=202, operation_id="rerunJob", tags=["jobs"],
-              dependencies=[Depends(auth)])
+              dependencies=[Depends(auth)],
+              responses={409: {"model": m.Refusal, "description": "not taken: the input is gone (`input_missing`, "
+                                                                   "`input_not_allowed`), a correction of a job that has "
+                                                                   "not succeeded (`job_not_finished`), or a model waits "
+                                                                   "for setup"},
+                         422: {"model": m.Refusal, "description": "a beat correction refused: `beat_invalid` (does not "
+                                                                   "fit, or changes nothing) or `beat_source_unavailable`; "
+                                                                   "`detail` says which part"}})
     def rerun_job(job_id: str, request: Request, body: m.RerunRequest | None = None) -> m.Job:
-        """Run a job again from its manifest (same input, profile, title and parameters)."""
+        """Run a job again from its manifest (same input, profile, title and parameters), or, with `beat`, write
+        its score again on corrected beats. Stages whose inputs and parameters are unchanged come from the
+        cache, so a correction runs no model: it costs the arranging and the export, and it fails rather than
+        listen again when the cache is gone. Only a job that succeeded can be corrected (409 job_not_finished).
+        A correction that does not fit, starts after the recording ends or changes nothing is refused with 422
+        {code, detail}: beat_invalid, or beat_source_unavailable; `detail` says what does not fit."""
         old = job_or_404(job_id)
         body = body or m.RerunRequest()
         if not old.audio_path.exists():
             shown = shown_path(old.audio_path) if is_device(request) else old.audio_path
-            raise HTTPException(409, f"input {shown} no longer exists")
+            return JSONResponse({"code": "input_missing", "detail": f"input {shown} no longer exists"}, status_code=409)
         if not input_allowed(old.audio_path, anywhere=not is_device(request)):
-            raise HTTPException(409, "the input is not an audio file in the engine's audio folders "
-                                     "(uploads, captures, eval)")
+            return JSONResponse({"code": "input_not_allowed", "detail": "the input is not an audio file in the engine's "
+                                 "audio folders (uploads, captures, eval)"}, status_code=409)
+        correcting = "beat" in body.model_fields_set
+        if correcting and old.status != "succeeded":
+            # A correction rewrites a finished score from what was heard; before then there is nothing to rewrite
+            # and the model stages are not in the cache.
+            return JSONResponse({"code": "job_not_finished", "detail": f"the job is {old.status}: a beat can be "
+                                 "corrected once its score is written"}, status_code=409)
+        params = dict(old.params)
+        if correcting:
+            # The whole correction is replaced: an app sends what the player has said so far (Job.beat), changed.
+            params.pop("beat", None)
+            if body.beat is not None:
+                params["beat"] = body.beat.model_dump(exclude_none=True)
+        try:
+            beat = profiles.beat_correction(params)
+            if correcting:
+                if beat and sheet.is_sheet(old.profile):
+                    raise profiles.OptionError("beat: a job that reads pages has no beat", profiles.BEAT_INVALID_CODE)
+                beat = profiles.within_recording(beat, recording_seconds(old.audio_path))
+                if beat == profiles.beat_correction(old.params):
+                    raise profiles.OptionError("beat: the job is already written on this beat; nothing would change",
+                                               profiles.BEAT_INVALID_CODE)
+        except profiles.OptionError as e:
+            print(f"beat correction refused ({e.code}): {e}", file=sys.stderr, flush=True)
+            return beat_refusal(e.code, str(e))
+        params.pop("beat", None)
+        if beat:
+            params["beat"] = beat
         try:
             job = jobs.submit(old.audio_path, old.profile, audio_id=old.audio_id, title=old.title,
-                              params=asked_afresh(old.profile, old.params, old.without),
-                              allow_heavy=body.allow_heavy, cold=set(body.cold), previous_run_id=old.id,
+                              params=asked_afresh(old.profile, params, old.without),
+                              allow_heavy=body.allow_heavy and not correcting, cold=set(body.cold), previous_run_id=old.id,
                               device_name=old.device_name)
         except NeedsSetup as e:
             return needs_setup(e, old.audio_id)

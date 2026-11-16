@@ -51,6 +51,35 @@ def beats(ctx: StageContext) -> None:
     ctx.adapter("beat-this", ctx.inputs["audio"], ctx.out / "mix.beats", env={"BEAT_THIS_MODEL": model} if model else None)
 
 
+def beats_alternative(ctx: StageContext) -> None:
+    """A second beat tracker on the recording (profiles.ALTERNATIVE_BEATS), in the first one's file format."""
+    ctx.adapter(ctx.stage.adapter, ctx.inputs["audio"], ctx.out / "mix.beats")
+
+
+def hold(row: dict):
+    from scribe_music.beats import Hold
+
+    return Hold(float(row["start_s"]), float(row["end_s"]), int(row["beats"]))
+
+
+def correct_beats(ctx: StageContext) -> None:
+    """A player's correction applied to the tracked beats (scribe_music.beats.correct): the level, the holds,
+    the bars. Writes the beats the score is then written on, in the tracker's file format."""
+    import numpy as np
+    from scribe_music.beats import Correction, correct, write_beats
+
+    said = ctx.params["beat"]
+    src = ctx.inputs["beats"]
+    tracked = np.loadtxt(src, ndmin=2) if src.read_text().strip() else np.zeros((0, 2))
+    try:
+        fixed = correct(tracked, Correction(said.get("level"), said.get("phase", 0), said.get("beats_per_bar"),
+                                            said.get("first_downbeat_s"), tuple(hold(h) for h in said.get("holds", ()))))
+    except ValueError as e:
+        raise StageFailed(ctx.stage.name, str(e)) from e
+    write_beats(ctx.out / "mix.beats", fixed)
+    ctx.log(f"{len(tracked)} tracked beats, {len(fixed)} after the correction ({', '.join(said)})")
+
+
 def stems_mega53(ctx: StageContext) -> None:
     ctx.adapter("mega53", ctx.inputs["audio"], ctx.out)
 
@@ -112,6 +141,24 @@ def _supported(module: str) -> str:
     return _HELP[module]
 
 
+def _beat_flags(ctx: StageContext) -> list[str]:
+    """--beats-given and --three, from the parameters profiles.beat_stages gives the stage that reads the beats."""
+    given = ctx.params.get("beats_given")
+    return (["--beats-given", *given] if given else []) + (["--three"] if ctx.params.get("three") else [])
+
+
+def _beat_hints(ctx: StageContext) -> None:
+    """beat-hints.json beside the Composition the arranger wrote (beat_hints.py)."""
+    from . import beat_hints
+
+    if not (ctx.out / "composition.json").exists():
+        return  # the stage fails on its missing output
+    found = beat_hints.write(ctx.out, json.loads((ctx.out / "composition.json").read_text()), ctx.inputs["beats"],
+                             ctx.inputs.get("beats_tracked"), ctx.inputs.get("beats_alternative"))
+    if found["hints"]:
+        ctx.log("the beat may be wrong: " + ", ".join(h["code"] for h in found["hints"]))
+
+
 def _arrangement_flags(ctx: StageContext, module: str) -> list[str]:
     """--lineup / --difficulty / --key / --transpose for the job's non-default options.
 
@@ -144,8 +191,9 @@ def arrange_layered(ctx: StageContext) -> None:
         lang = ["--lang", ctx.params["lang"]] if ctx.params.get("lang") else []
         _python(ctx, "scribe_eval.arrange_layers_song", "--layers", str(view), "--beats", str(ctx.inputs["beats"]),
                 "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render", *lang,
-                *_arrangement_flags(ctx, "scribe_eval.arrange_layers_song"))
+                *_arrangement_flags(ctx, "scribe_eval.arrange_layers_song"), *_beat_flags(ctx))
     _stable_musicxml(ctx)
+    _beat_hints(ctx)
 
 
 def arrange_band(ctx: StageContext) -> None:
@@ -156,8 +204,9 @@ def arrange_band(ctx: StageContext) -> None:
             "--harmony", *harmony, "--out", str(ctx.out), f"--title={ctx.params['title']}", "--no-render"]
     if "melody_support" in i:
         args[4:4] = ["--melody-support", str(i["melody_support"])]
-    _python(ctx, "scribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "scribe_eval.arrange_song"))
+    _python(ctx, "scribe_eval.arrange_song", *args, *_arrangement_flags(ctx, "scribe_eval.arrange_song"), *_beat_flags(ctx))
     _stable_musicxml(ctx)
+    _beat_hints(ctx)
 
 
 def export(ctx: StageContext) -> None:
