@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Is the change from BASE to HEAD only a release's version? Exit 0 when every changed file is CHANGELOG.md or one
+# Is the change from BASE to HEAD only a release's version? Exit 0 when every changed file is a changelog or one
 # of the files scripts/release.sh writes the version into, and every changed line in those is a version line; 1
 # otherwise (and when nothing changed). ci.yml starts no platform job for such a pull request.
 #
@@ -13,10 +13,10 @@ files="$(git diff --name-only --no-renames "$base" "$head")"
 [ -n "$files" ] || exit 1
 while IFS= read -r file; do
   case "$file" in
-    CHANGELOG.md) continue ;;
+    CHANGELOG.md | changelogs/*.md) continue ;;
     apps/android/products/brasscribe/build.gradle.kts | apps/android/products/fretscribe/build.gradle.kts) line='^[+-] *(versionCode = [0-9]+|versionName = "[0-9A-Za-z.+-]+")$' ;;
     apps/apple/products/brasscribe/project.yml | apps/apple/products/fretscribe/project.yml | apps/bandroom/macos/project.yml) line='^[+-] *(MARKETING_VERSION|CURRENT_PROJECT_VERSION): "[0-9A-Za-z.+-]+"$' ;;
-    apps/windows/Directory.Build.props | apps/bandroom/windows/Directory.Build.props) line='^[+-] *<Version>[0-9A-Za-z.+-]+</Version>$' ;;
+    apps/windows/products/brasscribe/Kalli.Brasscribe/Kalli.Brasscribe.csproj | apps/windows/products/fretscribe/Kalli.Fretscribe/Kalli.Fretscribe.csproj | apps/bandroom/windows/Directory.Build.props) line='^[+-] *<Version>[0-9A-Za-z.+-]+</Version>$' ;;
     *) exit 1 ;;
   esac
   # The changed lines: what follows the first hunk header, so no line of the file can pass for a file header. Read
