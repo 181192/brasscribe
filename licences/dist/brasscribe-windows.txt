@@ -219,7 +219,7 @@ DirectML (with ONNX Runtime)
 https://www.nuget.org/packages/Microsoft.AI.DirectML
 Licence: Microsoft software licence terms
 
-Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package; its terms are in the package at the address above.
+Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package. Microsoft's terms and its third-party notices for it are the files DirectML-license.txt and DirectML-ThirdPartyNotices.txt beside this one, as they come in the package.
 
 ========================================
 
@@ -227,7 +227,7 @@ WebView2 SDK (with the Windows App SDK)
 https://www.nuget.org/packages/Microsoft.Web.WebView2
 Licence: BSD-3-Clause
 
-Copyright (C) Microsoft Corporation. All rights reserved.
+Copyright (C) Microsoft Corporation. All rights reserved. Microsoft's third-party notices for it are the file WebView2-NOTICE.txt beside this one, as it comes in the package.
 
 ========================================
 

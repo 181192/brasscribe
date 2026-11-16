@@ -114,6 +114,16 @@ def test_a_component_an_app_no_longer_takes_is_reported_for_that_app(monkeypatch
     assert "alphatab is listed" not in found
 
 
+def test_a_restore_without_the_windows_app_sdk_is_not_the_apps(monkeypatch, tmp_path):
+    monkeypatch.setattr(licences, "NUGET_RESTORED", {
+        "brasscribe-windows": assets(tmp_path, "empty"),
+        "fretscribe-windows": assets(tmp_path, "other", "NAudio.Core"),
+    })
+    found = "\n".join(licences.problems(["brasscribe-windows", "fretscribe-windows"]))
+    assert "the restore of brasscribe-windows took no Windows App SDK package (0 packages)" in found
+    assert "the restore of fretscribe-windows took no Windows App SDK package (1 packages)" in found
+
+
 def test_check_takes_restored_apps_and_nothing_else(monkeypatch):
     seen = []
     monkeypatch.setattr(licences, "problems", lambda restored=None: seen.append(restored) or [])

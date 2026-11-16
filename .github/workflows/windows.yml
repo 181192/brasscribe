@@ -226,7 +226,10 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
           dotnet publish products/brasscribe/Kalli.Brasscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
-          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "WebView2-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+            if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
+          }
+          foreach ($f in @("DirectML-license.txt", "DirectML-ThirdPartyNotices.txt")) {
             if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
           }
           if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
@@ -376,7 +379,7 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/Fretscribe"
           dotnet publish products/fretscribe/Kalli.Fretscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -o $out
           if (-not (Test-Path "$out/Fretscribe.exe")) { throw "Fretscribe.exe was not published" }
-          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "WebView2-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
             if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
           }
           # No core, no band sounds, and no ONNX Runtime but its managed library (Windows ML, which brought one, is
@@ -392,13 +395,13 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path $out -DestinationPath "$env:RUNNER_TEMP/out/fretscribe-windows-x64.zip"
 
-      # Every Visual C++ runtime DLL that a binary in the download imports must be in the download.
       # As in the checks above: every package the published app took has its licence listed.
       - name: Every package the app takes has its licence listed
         if: ${{ inputs.release }}
         working-directory: .
         run: python scripts/licences.py check --restored fretscribe-windows
 
+      # Every Visual C++ runtime DLL that a binary in the download imports must be in the download.
       - name: The download needs no Visual C++ runtime installed
         if: ${{ inputs.release }}
         shell: bash
@@ -464,7 +467,7 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
-          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "WebView2-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
             if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
           }
           # No Windows ML: the Windows App SDK's parts Bandroom uses, not its Windows ML (Directory.Packages.props).
@@ -497,12 +500,12 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP/out" | Out-Null
           Compress-Archive -Path "$env:RUNNER_TEMP/publish/BrasscribeBandroom" -DestinationPath "$env:RUNNER_TEMP/out/brasscribe-bandroom-windows-x64.zip"
 
-      # Every Visual C++ runtime DLL that a binary in the download imports must be in the download.
       # As in the checks above: every package the published app took has its licence listed.
       - name: Every package the app takes has its licence listed
         working-directory: .
         run: python scripts/licences.py check --restored bandroom-windows
 
+      # Every Visual C++ runtime DLL that a binary in the download imports must be in the download.
       - name: The download needs no Visual C++ runtime installed
         shell: bash
         working-directory: .

@@ -193,9 +193,15 @@ def restored_problems(apps: list[str], m: dict) -> list[str]:
             path = NUGET_RESTORED[app]
             found.append(f"{path.relative_to(ROOT) if path.is_relative_to(ROOT) else path} is missing: restore {app} first")
             continue
+        taken = restored_packages(app)
+        # Every Windows app takes the Windows App SDK: a restore without it (none at all, or another project's) is not
+        # one of the app's, and would pass for want of packages to check.
+        if not any(fnmatch.fnmatchcase(name, "Microsoft.WindowsAppSDK*") for name in taken):
+            found.append(f"the restore of {app} took no Windows App SDK package ({len(taken)} packages): it is not the app's own")
+            continue
         ours = [p for c in m["components"] if app in c["apps"] for p in c.get("covers", {}).get("nuget", [])]
         patterns = ours + m["not_shipped"].get("nuget", [])
-        for name in restored_packages(app):
+        for name in taken:
             if not any(fnmatch.fnmatchcase(name, p) for p in patterns):
                 elsewhere = [c["id"] for c in m["components"]
                              if any(fnmatch.fnmatchcase(name, p) for p in c.get("covers", {}).get("nuget", []))]
@@ -203,7 +209,6 @@ def restored_problems(apps: list[str], m: dict) -> list[str]:
                              + (f"add {app} to the apps of {', '.join(elsewhere)}" if elsewhere else
                                 "add it to the component it belongs to (covers.nuget) with its licence, "
                                 "or to not_shipped.nuget when the app does not ship it"))
-        taken = restored_packages(app)
         for c in m["components"]:
             covers = c.get("covers", {})
             if app in c["apps"] and set(covers) == {"nuget"} and not any(

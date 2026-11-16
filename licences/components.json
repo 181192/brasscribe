@@ -494,7 +494,7 @@
       "url": "https://www.nuget.org/packages/Microsoft.AI.DirectML",
       "licence": "Microsoft software licence terms",
       "texts": [],
-      "notice": ["Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package; its terms are in the package at the address above."],
+      "notice": ["Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package. Microsoft's terms and its third-party notices for it are the files DirectML-license.txt and DirectML-ThirdPartyNotices.txt beside this one, as they come in the package."],
       "apps": ["brasscribe-windows"],
       "covers": {"nuget": ["Microsoft.ML.OnnxRuntime.DirectML", "Microsoft.AI.DirectML"]}
     },
@@ -504,7 +504,7 @@
       "url": "https://www.nuget.org/packages/Microsoft.Web.WebView2",
       "licence": "BSD-3-Clause",
       "texts": ["BSD-3-Clause"],
-      "notice": ["Copyright (C) Microsoft Corporation. All rights reserved."],
+      "notice": ["Copyright (C) Microsoft Corporation. All rights reserved. Microsoft's third-party notices for it are the file WebView2-NOTICE.txt beside this one, as it comes in the package."],
       "apps": ["@windows-play", "bandroom-windows"],
       "covers": {"nuget": ["Microsoft.Web.WebView2"]}
     },
