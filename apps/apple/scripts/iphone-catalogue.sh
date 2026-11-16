@@ -7,6 +7,9 @@
 #                                               smallest iPhone of the newest iOS and an iPhone SE, run at once
 #   scripts/iphone-catalogue.sh <destination>   that one simulator (CI, where the job has one), shut down after
 #
+# CATALOGUE_LANGUAGES picks the languages (default "en nb"): a pull request that cannot change the bokmål screens
+# runs English alone (.github/workflows/ci.yml, filter apple_play_nb).
+#
 # Its own phones have names of their own (catalogue-smallest-<pid>, catalogue-shortest-<pid>), so a run never starts,
 # stops or tests on a simulator another run is using.
 set -euo pipefail
@@ -39,7 +42,7 @@ for sim in "${sims[@]}"; do scripts/boot-simulator.sh "$sim"; done
 args=()
 for d in "${dests[@]}"; do args+=(-destination "$d"); done
 rm -rf "$out"
-for lang in en nb; do
+for lang in ${CATALOGUE_LANGUAGES:-en nb}; do
   TEST_RUNNER_CATALOGUE_OUT=$out TEST_RUNNER_CATALOGUE_LANGUAGE=$lang \
     $XCB -scheme BrasscribePlay-iOS "${args[@]}" -maximum-concurrent-test-simulator-destinations 2 -testLanguage "$lang" \
     -only-testing:BrasscribePlayTests_iOS/PhoneScreensTests test-without-building
