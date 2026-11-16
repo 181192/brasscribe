@@ -27,6 +27,43 @@ public static class Wire
     public const int InterfaceVersion = 1;
 }
 
+/// <summary>
+/// Where the update is when the app and the engine have different interface versions: straight to the file to
+/// download where this PC can use it, else the page of the desktop program's newest release. Each product is
+/// released on its own, and its newest files are always in its release PRODUCT-latest, so no address names a version.
+/// </summary>
+public static class Downloads
+{
+    /// <summary>The repository's releases: every address below starts here.</summary>
+    public const string Releases = "https://github.com/181192/brasscribe/releases";
+
+    /// <summary>The page of the desktop program's newest release, for a computer other than this PC.</summary>
+    public static readonly Uri LatestRelease = new($"{Releases}/tag/bandroom-latest");
+
+    /// <summary>
+    /// The running app's product in the releases and its own file there; each app says them once, at its start.
+    /// Null in code that runs outside an app, which then gets the page.
+    /// </summary>
+    public static string? AppProduct { get; set; }
+    public static string? AppFile { get; set; }
+
+    /// <summary>The desktop program's file for this kind of PC, for an engine that runs on this one; said by the app as well.</summary>
+    public static string? DesktopFile { get; set; }
+
+    /// <summary>
+    /// The app's own file when the app is the one to update; the desktop program for Windows when the engine is and runs on
+    /// this PC; else the page (the computer may be a Mac, and its update is fetched there).
+    /// </summary>
+    public static Uri For(InterfaceAnswer answer, bool engineOnThisPc) => answer switch
+    {
+        InterfaceAnswer.UpdateApp when AppProduct is { } product && AppFile is { } file => File(product, file),
+        InterfaceAnswer.UpdateBandroom when engineOnThisPc && DesktopFile is { } file => File("bandroom", file),
+        _ => LatestRelease,
+    };
+
+    private static Uri File(string product, string name) => new($"{Releases}/download/{product}-latest/{name}");
+}
+
 /// <summary>What the engine's interface version means for this app.</summary>
 public enum InterfaceAnswer
 {

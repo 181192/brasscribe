@@ -44,6 +44,19 @@ SHOT_WIDTH = {"phone": 600, "tablet": 720, "desktop": 1440, "mac": 1440}
 BLOCKS = {"shot", "figure", "downloads", "chart", "pipeline", "references", "figuretables"}  # macros that draw something; the others give a word or an address
 
 
+# The product a release file belongs to, from the start of its name: each product has its own releases, and
+# PRODUCT-latest holds its newest files (scripts/release.sh has every product's files).
+RELEASE_PRODUCTS = (("brasscribe-bandroom-", "bandroom"), ("brasscribe-play-", "brasscribe"), ("fretscribe-", "fretscribe"),
+                    ("scribe-core-", "scribe-core"))
+
+
+def release_product(name: str) -> str:
+    for start, product in RELEASE_PRODUCTS:
+        if name.startswith(start):
+            return product
+    raise SystemExit(f"site: {name} is not a file of any product's release (site/build.py, RELEASE_PRODUCTS)")
+
+
 def load(path: Path):
     spec = importlib.util.spec_from_file_location(f"site_{path.parent.name}_{path.stem}", path)
     module = importlib.util.module_from_spec(spec)
@@ -231,7 +244,14 @@ class Page:
         return "\n".join(lines)
 
     def file(self, name: str) -> str:
-        return f"{self.product.releases}/download/{name}"
+        # Every product's release has checksums of its own: a page links to its product's.
+        product = self.product.id if name == "SHA256SUMS" and not self.product.family else release_product(name)
+        return f"{self.product.releases}/download/{product}-latest/{name}"
+
+    def releases(self) -> str:
+        """The page of the product's newest release; the list of every release for a page of no one product."""
+        base = self.product.releases
+        return base if self.product.family else f"{base}/tag/{self.product.id}-latest"
 
     def downloads_table(self) -> str:
         rows = "".join(
@@ -265,7 +285,7 @@ class Page:
         if name == "file":
             return self.file(bare[0])
         if name == "releases":
-            return self.product.releases
+            return self.releases()
         if name == "say":
             return self.say(bare[0])
         if name == "data" and (len(bare) == 1 or bare[1] in research.FORMATS):  # a named measurement: site/research.py

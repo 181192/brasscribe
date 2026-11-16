@@ -88,8 +88,12 @@ jobs:
         if: github.event_name == 'pull_request'
         with:
           filters: |
-            workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**', 'scripts/play-upload.sh', 'scripts/test_play_upload.py', 'CHANGELOG.md']
-            python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'licences/**', 'scripts/licences.py', 'sounds/**', 'design/**', 'convert/*models*', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*']
+            workflows: ['.github/workflows/**', '.github/actions/**', '.github/scripts/**', 'scripts/play-upload.sh', 'scripts/test_play_upload.py', 'CHANGELOG.md', 'changelogs/**']
+            python: ['engine/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/android/services/engine-client/openapi.json', 'apps/windows/tests/Kalli.Scribe.Tests/Fixtures/openapi.json', 'music/**', 'eval/**', 'qa/**', 'licences/**', 'scripts/licences.py', 'sounds/**', 'design/**', 'convert/*models*', 'pixi.toml', 'pixi.lock', '.pixi-version', '.github/actions/pixi/**', 'apps/bandroom/macos/scripts/*pixi*',
+                     'scripts/release.sh', '.github/workflows/android.yml', '.github/workflows/apple.yml', '.github/workflows/windows.yml',
+                     'apps/android/products/*/src/main/kotlin/**', 'apps/android/features/play/src/main/kotlin/no/kalli/scribe/play/ui/GetBandroom.kt',
+                     'apps/apple/products/*/App/*Model.swift', 'apps/windows/products/*/*/Product.cs',
+                     'apps/bandroom/macos/Packages/BandroomKit/Sources/BandroomKit/Wire.swift', 'apps/bandroom/windows/src/Brasscribe.Bandroom.Core/Engine/Wire.cs']
             core: ['core/**', 'docs/shared/accessibility/talking-score-vectors.json', 'apps/windows/**', 'apps/bandroom/windows/**']
             # What the site build reads (site/inputs.txt, which site/build.py checks this against), and this file.
             site: ['site/**', 'eval/baselines.json', 'convert/reports/**', 'design/brands/*/dist/**', 'design/brands/*/brand/**', 'core/targets/fretted/src/tab.rs', 'README.md', '**/README.md', '.github/workflows/ci.yml']
@@ -153,11 +157,15 @@ jobs:
         run: |
           shellcheck scripts/play-upload.sh
           python3 scripts/test_play_upload.py
-          # The notes of the latest release are within Play's limits for both apps and both languages.
-          version=$(sed -nE 's/^## ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CHANGELOG.md | head -1)
-          for app in brasscribe fretscribe; do for lang in en-US no-NO; do
-            .github/scripts/play-notes.py --app "$app" --version "$version" --language "$lang" > /dev/null
-          done; done
+          # The notes of each app's latest release are within Play's limits in both languages: from the app's own
+          # changelog, or before its first release of its own, from CHANGELOG.md.
+          for app in brasscribe fretscribe; do
+            log=changelogs/$app.md; [ -f "$log" ] || log=CHANGELOG.md
+            version=$(sed -nE 's/^## ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "$log" | head -1)
+            for lang in en-US no-NO; do
+              .github/scripts/play-notes.py --app "$app" --version "$version" --language "$lang" --changelog "$log" > /dev/null
+            done
+          done
 
   # The licence texts the apps ship (licences/README.md): the files written from the list are current, and every
   # dependency of the builds is in the list or named as not shipped. Always run: a dependency can change in any area.

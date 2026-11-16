@@ -50,6 +50,7 @@ NB = {
     "Difficulty": "Vanskelighetsgrad",
     "Done": "Ferdig",
     "Double-tap to move playback here.": "Dobbelttrykk for å flytte avspillingen hit.",
+    "Download the latest version": "Last ned den nyeste versjonen",
     "Easier": "Enklere",
     "Engraving the score": "Setter partituret",
     "Engraving the score…": "Setter partituret …",

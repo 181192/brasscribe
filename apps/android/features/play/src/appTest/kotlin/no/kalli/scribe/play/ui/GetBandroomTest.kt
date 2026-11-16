@@ -27,7 +27,7 @@ class GetBandroomTest : ScreenTest() {
     private fun opensTheLatestRelease(screen: Screen) {
         rule.runOnUiThread { vm.home(); vm.navigate(screen) }
         rule.waitForIdle()
-        assertEquals("https://github.com/181192/brasscribe/releases/latest", BANDROOM_DOWNLOAD)
+        assertEquals("https://github.com/181192/brasscribe/releases/tag/bandroom-latest", BANDROOM_DOWNLOAD)
         rule.onNodeWithTag("bandroom-address", useUnmergedTree = true).performScrollTo().assertTextEquals(BANDROOM_DOWNLOAD)
         assertTrue(shown(), shown().contains(text(R.string.bandroom_get_title)))
         // Releases have a Mac build for Apple silicon only, and one for Windows.
