@@ -235,6 +235,7 @@ public sealed class SupervisorTests : IDisposable
         Assert.Equal("Kari's PC", spec.Environment["SCRIBE_COMPUTER_NAME"]);
         Assert.Equal("secret-admin-token-0123456789abcdef", spec.Environment["SCRIBE_ADMIN_TOKEN"]);
         Assert.Equal("pixi", spec.Environment["SCRIBE_ADAPTER_RUNNER"]);
+        Assert.Equal(Path.Combine(_dir, "bandroom", "setup", "locks"), spec.Environment["SCRIBE_ENV_LOCKS"]);
         Assert.Equal("1", spec.Environment["SCRIBE_CUDA"]);
         Assert.Equal(Path.Combine(_dir, "cache", "pixi"), spec.Environment["PIXI_CACHE_DIR"]);
         Assert.DoesNotContain("SCRIBE_TOKEN", spec.Environment.Keys);

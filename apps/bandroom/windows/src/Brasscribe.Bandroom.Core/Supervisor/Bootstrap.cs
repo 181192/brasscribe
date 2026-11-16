@@ -302,6 +302,9 @@ public sealed class Bootstrapper
     {
         if (!HasInstalledEngine) throw new SheetReaderException(SheetReaderFailure.NotSetUp);
         string hash = InstalledLockHash;
+        // No stage reads a page, nor installs the reader's environment itself, while this runs.
+        using var held = await EnvironmentLock.HoldAsync(
+            Path.Combine(_paths.EnvironmentLocks, SheetReader.Environment + ".lock"), ct).ConfigureAwait(false);
         var install = InstallSpec(SheetReader.Environment);
         _log.Write($"bandroom: installing the reader of printed music: {install.FileName} {string.Join(' ', install.Arguments)}");
         // Why a step failed is the last thing its output says about it: a full disk, no connection, or neither.
@@ -387,6 +390,11 @@ public sealed class Bootstrapper
                 }
                 else
                 {
+                    // An adapter's environment: the stages using it finish first, and one that needs it from now on
+                    // waits for this install. A stage may have installed it itself meanwhile (marker).
+                    using var held = item == "default" ? null
+                        : await EnvironmentLock.HoldAsync(Path.Combine(_paths.EnvironmentLocks, item + ".lock"), ct).ConfigureAwait(false);
+                    if (held is not null && MarkerMatches("env-" + item, hash)) { step++; continue; }
                     var spec = InstallSpec(item);
                     _log.Write($"bandroom: setting up {item}: {spec.FileName} {string.Join(' ', spec.Arguments)}");
                     PixiRefusal? refusal = null;
