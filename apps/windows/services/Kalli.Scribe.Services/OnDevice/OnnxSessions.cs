@@ -20,6 +20,9 @@ public static class OnnxSessions
     /// <summary>Switches ONNX Runtime's telemetry events off, for this process. Makes the runtime's environment.</summary>
     public static void TelemetryOff() => OrtEnv.Instance().DisableTelemetryEvents();
 
+    /// <summary>Why the last session that asked for DirectML did not get it (null when it did, or none asked).</summary>
+    public static string? DirectMlUnavailable { get; private set; }
+
     /// <remarks>The session keeps what it needs from its options, so they are released once it exists.</remarks>
     public static (InferenceSession Session, ExecutionTarget Target) Create(string modelPath, bool preferGpu = true, int deviceId = 0)
     {
@@ -36,11 +39,14 @@ public static class OnnxSessions
             try
             {
                 dml.AppendExecutionProvider_DML(deviceId);
-                return (new InferenceSession(modelPath, dml), ExecutionTarget.DirectMl);
+                var session = new InferenceSession(modelPath, dml);
+                DirectMlUnavailable = null;
+                return (session, ExecutionTarget.DirectMl);
             }
             catch (Exception e) when (e is OnnxRuntimeException or EntryPointNotFoundException or DllNotFoundException or NotSupportedException)
             {
                 // No DirectML here: the CPU provider below.
+                DirectMlUnavailable = $"{e.GetType().Name}: {e.Message}";
             }
         }
         using var cpu = new SessionOptions { GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };

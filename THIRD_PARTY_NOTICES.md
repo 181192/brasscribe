@@ -106,14 +106,13 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   licence texts (fetched from the npm release by `apps/apple/scripts/fetch-alphatab.sh`), the tab drawn in the system's
   web view, and its two fonts, Atkinson Hyperlegible Next and Fretscribe Tab, with their licence texts. It plays the
   recording, and a tab's own notes on the SoundFont, with the system's AVFoundation. It does not ship Verovio, the Rust core, a band SoundFont or a model.
-- **Windows:** Windows App SDK (Microsoft software licence), with what it brings: the Windows ML runtime (Microsoft
-  software licence), which carries its own builds of ONNX Runtime and DirectML, and the WebView2 SDK (BSD-3-Clause);
-  the .NET runtime (MIT) with the .NET libraries that come as packages (System.Numerics.Tensors, which NAudio uses;
-  MIT), ONNX Runtime with DirectML (MIT), NAudio (MIT), CommunityToolkit.Mvvm (MIT). Every Windows app carries Windows
-  ML's `onnxruntime.dll`; Fretscribe and Bandroom for Windows also its `DirectML.dll`. The Windows App SDK's, Windows
-  ML's and the .NET runtime's own notice files ship beside the app's licence file, as they come in their packages. Play for Windows also ships `vcruntime140.dll`, a
-  redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
-  needs.
+- **Windows:** the Windows App SDK's parts the apps use (Microsoft software licence; not its Windows ML, AI, Search or
+  Widgets parts), with the WebView2 SDK they bring (BSD-3-Clause); the .NET runtime (MIT) with the .NET libraries that
+  come as packages (System.Numerics.Tensors, which NAudio uses; MIT), ONNX Runtime with DirectML (MIT), NAudio (MIT),
+  CommunityToolkit.Mvvm (MIT). The Windows App SDK's, WebView2's, DirectML's (Play for Windows) and the .NET
+  runtime's own notice files ship beside the app's licence file, as they come in their packages. Play for Windows also ships `vcruntime140.dll`,
+  `vcruntime140_1.dll`, `msvcp140.dll` and `msvcp140_1.dll`, redistributable files of the Microsoft Visual C++ runtime
+  (Visual Studio licence terms), which ONNX Runtime needs.
 - **ONNX Runtime's telemetry is switched off.** Microsoft's builds of ONNX Runtime, which Brasscribe uses as they
   are, report the runtime's use to Microsoft unless told not to (its `Privacy.md`: "information about you and your use
   of the software"). Brasscribe tells them not to, in Play for Android, in Play for Windows and in the engine's
@@ -137,9 +136,9 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
     makes the call in their programs' process before they start; and the runtime writes no more. The runtime has no
     lasting switch: when Windows' diagnostic data service turns the runtime's ETW provider on while it is loaded, the
     runtime turns its events back on (in Play for Windows, until its next session switches them off again). No newer
-    ONNX Runtime for Windows removes the start-up event: the `onnxruntime.dll` the Windows apps carry is the build
-    Windows ML brings with the Windows App SDK, and it, like Microsoft's other Windows builds up to 1.32.0 (NuGet and
-    PyPI), writes to ETW and does not read `ORT_DISABLE_TELEMETRY`.
+    ONNX Runtime for Windows removes the start-up event: the DirectML build Play for Windows ships ends at 1.24.4, and
+    Microsoft's Windows builds up to 1.32.0 (NuGet and PyPI) keep writing to ETW and do not read
+    `ORT_DISABLE_TELEMETRY`.
 
   A recording, or the notes written from it, is never part of what the runtime reports. Microsoft's privacy statement:
   https://go.microsoft.com/fwlink/?LinkID=824704.

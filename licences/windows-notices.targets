@@ -2,31 +2,36 @@
   <!--
     The notice files Microsoft publishes with what a Windows app carries, copied as they come into Licences\ next
     to the app's own third-party.txt (which names them): the Windows App SDK's licence and third-party notices from
-    its package, those of the Windows ML runtime it brings (whose package comes with it, so its folder is found
-    from the files it gives the app), and the .NET runtime's from the runtime pack a self-contained build carries.
-    Imported by each Windows app; the app's project references Microsoft.WindowsAppSDK with GeneratePathProperty.
+    its Base part (every part carries the same two), DirectML's licence and third-party notices from its package in an
+    app that carries it (Play for Windows; its props set Microsoft_AI_DirectML_Include_Dir), the third-party notices of
+    the WebView2 SDK, which WinUI brings (its folder found from the files it gives the app), and the .NET runtime's
+    from the runtime pack a self-contained build carries. Imported by each Windows app; the app's project references Microsoft.WindowsAppSDK.Base with
+    GeneratePathProperty.
   -->
   <Target Name="_ScribeNoticeFiles" DependsOnTargets="ResolveFrameworkReferences;ResolvePackageAssets">
     <ItemGroup>
       <_ScribeNetRuntimePack Include="@(ResolvedRuntimePack)" Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
-    <ItemGroup>
-      <_ScribeWindowsMl Include="@(RuntimeCopyLocalItems)" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning'" />
-    </ItemGroup>
     <PropertyGroup>
       <_ScribeNetRuntimeDir>@(_ScribeNetRuntimePack->'%(PackageDirectory)')</_ScribeNetRuntimeDir>
-      <_ScribeWindowsMlVersion>%(_ScribeWindowsMl.NuGetPackageVersion)</_ScribeWindowsMlVersion>
-      <_ScribeWindowsMlDir Condition="'$(_ScribeWindowsMlVersion)' != ''">$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))microsoft.windows.ai.machinelearning\$(_ScribeWindowsMlVersion)</_ScribeWindowsMlDir>
     </PropertyGroup>
     <ItemGroup>
-      <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\license.txt" Name="WindowsAppSDK-license.txt" />
-      <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\NOTICE.txt" Name="WindowsAppSDK-NOTICE.txt" />
-      <_ScribeNotice Include="$(_ScribeWindowsMlDir)\license.txt" Name="WindowsML-license.txt" Condition="'$(_ScribeWindowsMlDir)' != ''" />
-      <_ScribeNotice Include="$(_ScribeWindowsMlDir)\ThirdPartyNotices.txt" Name="WindowsML-ThirdPartyNotices.txt" Condition="'$(_ScribeWindowsMlDir)' != ''" />
+      <_ScribeWebView2 Include="@(RuntimeCopyLocalItems);@(NativeCopyLocalItems)" Condition="'%(NuGetPackageId)' == 'Microsoft.Web.WebView2'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_ScribeWebView2Version>%(_ScribeWebView2.NuGetPackageVersion)</_ScribeWebView2Version>
+      <_ScribeWebView2Dir Condition="'$(_ScribeWebView2Version)' != ''">$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))microsoft.web.webview2\$(_ScribeWebView2Version)</_ScribeWebView2Dir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK_Base)\license.txt" Name="WindowsAppSDK-license.txt" />
+      <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK_Base)\NOTICE.txt" Name="WindowsAppSDK-NOTICE.txt" />
+      <_ScribeNotice Include="$(Microsoft_AI_DirectML_Include_Dir)\..\LICENSE.txt" Name="DirectML-license.txt" Condition="'$(Microsoft_AI_DirectML_Include_Dir)' != ''" />
+      <_ScribeNotice Include="$(Microsoft_AI_DirectML_Include_Dir)\..\ThirdPartyNotices.txt" Name="DirectML-ThirdPartyNotices.txt" Condition="'$(Microsoft_AI_DirectML_Include_Dir)' != ''" />
+      <_ScribeNotice Include="$(_ScribeWebView2Dir)\NOTICE.txt" Name="WebView2-NOTICE.txt" Condition="'$(_ScribeWebView2Dir)' != ''" />
       <_ScribeNotice Include="$(_ScribeNetRuntimeDir)\LICENSE.TXT" Name="dotnet-runtime-LICENSE.txt" Condition="'$(_ScribeNetRuntimeDir)' != ''" />
       <_ScribeNotice Include="$(_ScribeNetRuntimeDir)\THIRD-PARTY-NOTICES.TXT" Name="dotnet-runtime-THIRD-PARTY-NOTICES.txt" Condition="'$(_ScribeNetRuntimeDir)' != ''" />
     </ItemGroup>
-    <Error Condition="'$(PkgMicrosoft_WindowsAppSDK)' == ''" Text="The Windows App SDK's package folder is not known: its PackageReference needs GeneratePathProperty=&quot;true&quot;, so that its notices can be shipped." />
+    <Error Condition="'$(PkgMicrosoft_WindowsAppSDK_Base)' == ''" Text="The Windows App SDK's package folder is not known: its Microsoft.WindowsAppSDK.Base PackageReference needs GeneratePathProperty=&quot;true&quot;, so that its notices can be shipped." />
     <Error Condition="!Exists('%(_ScribeNotice.FullPath)')" Text="%(_ScribeNotice.FullPath) is missing: the package no longer carries this notice file. Find where it is now and update licences/windows-notices.targets." />
   </Target>
   <Target Name="ScribeNoticesNextToTheApp" AfterTargets="Build" DependsOnTargets="_ScribeNoticeFiles">

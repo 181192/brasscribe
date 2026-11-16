@@ -26,7 +26,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" GeneratePathProperty="true" />
+    <!-- The Windows App SDK's parts the app uses (Directory.Packages.props says why not Microsoft.WindowsAppSDK). -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- DirectML build of ONNX Runtime; never together with the CPU package (both ship onnxruntime.dll). -->
@@ -105,8 +111,21 @@
     <PackageReference Include="MSTest.TestAdapter" />
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
     <Compile Include="$(CatalogueDir)**\*.cs" Link="Catalogue\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Content Include="$(CatalogueDir)Fixtures\*.onnx" Link="Catalogue\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="..\..\..\tools\ScreenCheck.Core\ScreenCheck.Core.csproj" />
   </ItemGroup>
+  <!-- What the ONNX Runtime and DirectML packages bring for developers, not for the app: DirectML's debug layer
+       (DirectML.Debug.dll and its .pdb), DirectML.pdb, and onnxruntime.lib (for linking C++ against the runtime). -->
+  <PropertyGroup>
+    <Microsoft_AI_DirectML_SkipDebugLayerCopy>true</Microsoft_AI_DirectML_SkipDebugLayerCopy>
+  </PropertyGroup>
+  <Target Name="ScribeLeaveOutDeveloperFiles" AfterTargets="ResolvePackageAssets" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <Content Remove="@(Content)" Condition="'%(Filename)%(Extension)' == 'DirectML.pdb'" />
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(Extension)' == '.lib'" />
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(Extension)' == '.lib'" />
+    </ItemGroup>
+  </Target>
   <!-- The notice files Microsoft publishes with the Windows App SDK and the .NET runtime go next to third-party.txt. -->
   <Import Project="$(DesignDir)..\..\..\licences\windows-notices.targets" />
 </Project>

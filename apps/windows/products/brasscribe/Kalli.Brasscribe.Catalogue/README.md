@@ -120,3 +120,12 @@ Its accepted findings are in `apps/bandroom/windows/tools/Screenshots/known-find
 `tools/check-macos.sh` type-checks the catalogue build (`tools/CodeBehindCheck -p:ScribeCatalogue=true`), builds
 `tools/ScreenCheck` and runs `tools/ScreenCheck.Tests`: the checks on pictures, the rule for when a screenshot is
 taken, the comparison and the verdict, each shown failing on a picture made for it.
+
+## Not a screen: ONNX Runtime in Play's own build
+
+`OnnxRuntimeInPlay.cs` runs a model (`Fixtures/twice-plus-one.onnx`: y = 2 x + 1, written by
+`make_twice_plus_one.py` beside it) in this build of the app, with the files it ships, and checks that its
+`onnxruntime.dll` is the build of the `Microsoft.ML.OnnxRuntime` library it pins, built with DirectML. On a PC with a
+graphics adapter the model must run on DirectML; GitHub's Windows runners have no display adapter, so there that test
+is inconclusive and says why. CI runs that class on its own after the catalogue (`windows.yml`, "Play runs a model on
+DirectML"); it also runs, unnoticed, in each catalogue run.

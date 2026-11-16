@@ -13,7 +13,6 @@ Contents
 - University of Iowa Musical Instrument Samples (band sounds) (Free for any use)
 - MuseScore MS Basic SoundFont (band sounds) (MIT)
 - Instrument Serif font (OFL-1.1)
-- Windows ML runtime (with the Windows App SDK) (Microsoft software licence terms)
 - WebView2 SDK (with the Windows App SDK) (BSD-3-Clause)
 - Windows App SDK (Microsoft software licence terms)
 - .NET runtime (MIT)
@@ -194,20 +193,11 @@ Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrume
 
 ========================================
 
-Windows ML runtime (with the Windows App SDK)
-https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning
-Licence: Microsoft software licence terms
-
-Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsML-license.txt and WindowsML-ThirdPartyNotices.txt beside this one, as they come in the package.
-The Windows App SDK brings it. It carries its own builds of ONNX Runtime and DirectML: the app's onnxruntime.dll is Windows ML's, and so is its DirectML.dll but in Play for Windows. Play for Windows takes only ONNX Runtime's managed library and onnxruntime_providers_shared.dll from the ONNX Runtime package above.
-
-========================================
-
 WebView2 SDK (with the Windows App SDK)
 https://www.nuget.org/packages/Microsoft.Web.WebView2
 Licence: BSD-3-Clause
 
-Copyright (C) Microsoft Corporation. All rights reserved.
+Copyright (C) Microsoft Corporation. All rights reserved. Microsoft's third-party notices for it are the file WebView2-NOTICE.txt beside this one, as it comes in the package.
 
 ========================================
 
