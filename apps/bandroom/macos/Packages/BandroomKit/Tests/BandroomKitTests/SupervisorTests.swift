@@ -332,7 +332,9 @@ import Testing
         let loopback = UInt32(0x7f00_0001).bigEndian
         for address in [loopback, INADDR_ANY] {
             let (fd, port) = try listen(on: address, reuse: reuse)
-            #expect(!PortPicker.isFree(port), "listening on \(address == INADDR_ANY ? "all addresses" : "127.0.0.1")")
+            // (The listener's answer is waited for longer than the app's 200 ms: on a loaded runner it can come later, and
+            // the port would then be taken for free. A port nobody listens on is refused at once either way.)
+            #expect(!PortPicker.isFree(port, answerWithin: 5_000), "listening on \(address == INADDR_ANY ? "all addresses" : "127.0.0.1")")
             close(fd)
         }
     }

@@ -225,15 +225,17 @@ public enum PortPicker {
     public static let range = 8765...8775
 
     /// The first port in 8765–8775 nobody listens on (§5.2). A busy port is skipped silently.
-    public static func firstFree(in range: ClosedRange<Int> = range, isFree: (Int) -> Bool = PortPicker.isFree) -> Int? {
+    public static func firstFree(in range: ClosedRange<Int> = range, isFree: (Int) -> Bool = { PortPicker.isFree($0) }) -> Int? {
         range.first(where: isFree)
     }
 
     /// Free when the engine's own bind would work and nothing answers on 127.0.0.1, where Bandroom, Studio and
     /// Play on this Mac reach the engine. The bind alone isn't enough: with SO_REUSEADDR a wildcard bind succeeds
     /// on macOS while another program listens on 127.0.0.1 at the same port, which would then get that traffic.
-    public static func isFree(_ port: Int) -> Bool {
-        canBind(port) && !answersOnLoopback(port)
+    /// `answerWithin` (ms) is how long an answer on 127.0.0.1 is waited for: a port nobody listens on is refused at once,
+    /// so only a listener that is slow to answer (a busy machine) takes it.
+    public static func isFree(_ port: Int, answerWithin: Int32 = 200) -> Bool {
+        canBind(port) && !answersOnLoopback(port, timeout: answerWithin)
     }
 
     /// As the engine's own listener binds, so a port in TIME_WAIT after a restart counts as free.

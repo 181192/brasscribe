@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Testing
 @testable import TabKit
@@ -252,18 +253,37 @@ struct EngineTabSoundPlayerTests {
         try await p.load()
         p.play()
         guard p.playing else { p.release(); return }
-        // Headphones plugged in, another output chosen on a Mac: the engine stops, and the song goes on.
+        // Headphones plugged in, another output chosen on a Mac: the engine stops, and the song goes on. (The device's own
+        // sound server can stop the engine once more as it settles on the output, as a simulator's does: the player
+        // starts it again each time, so what is waited for is the song going on, not a time.)
         p.deviceStoppedTheEngine()
         p.outputChanged()
-        #expect(p.playing && p.asked)
-        try await Task.sleep(for: .milliseconds(120))
-        #expect(p.playing && told.said == ["playing"])
-        // Headphones pulled out: it pauses where it is, and a new output then does not start it.
+        #expect(p.asked)
+        #expect(await Self.until { p.playing }, "the song goes on on the new output")
+        #expect(told.said == ["playing"])
+        // Headphones pulled out (on a phone, the notice the system sends): it pauses where it is, and a new output then
+        // does not start it.
+        #if os(iOS)
+        NotificationCenter.default.post(name: AVAudioSession.routeChangeNotification, object: nil,
+                                        userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue])
+        #else
         p.soundTakenAway()
-        #expect(!p.asked && told.said == ["playing", "paused"])
+        #endif
+        #expect(await Self.until { !p.asked }, "it pauses")
+        #expect(told.said == ["playing", "paused"])
         p.outputChanged()
-        #expect(!p.asked)
+        #expect(!p.asked && told.said == ["playing", "paused"])
         p.release()
+    }
+
+    /// Whether `done` comes true within two seconds, looked at while the main actor goes on (the device's notices and the
+    /// player's own look at its engine come on it).
+    static func until(_ done: () -> Bool) async -> Bool {
+        for _ in 0..<40 {
+            if done() { return true }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return done()
     }
 
     @Test func theMetronomeIsMixedInAndTheNotesCanBeLeftOut() async throws {

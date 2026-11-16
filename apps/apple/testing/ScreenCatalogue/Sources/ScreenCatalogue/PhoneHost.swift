@@ -59,11 +59,16 @@ public final class PhoneHost {
         window.makeKeyAndVisible()
     }
 
+    /// A turn UIKit turned down: the wait after it finds the phone as it is.
+    private nonisolated static let notTurned: @Sendable (any Error) -> Void = { _ in }
+
     /// The phone turned to `landscape` (on its side) or upright, as the screen's own geometry: the safe areas are the
     /// phone's. Waits until the scene has turned.
     public static func turn(landscape: Bool) async {
         guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else { return }
-        scene.requestGeometryUpdate(.iOS(interfaceOrientations: landscape ? .landscapeRight : .portrait)) { _ in }
+        // (The error handler is not the main actor's: UIKit calls it on its own queue when it turns the update down, as a
+        // busy simulator can, and a closure made here would check that it is on the main thread and stop the tests.)
+        scene.requestGeometryUpdate(.iOS(interfaceOrientations: landscape ? .landscapeRight : .portrait), errorHandler: Self.notTurned)
         for _ in 0..<50 where scene.effectiveGeometry.interfaceOrientation.isLandscape != landscape {
             try? await Task.sleep(for: .milliseconds(100))
         }
