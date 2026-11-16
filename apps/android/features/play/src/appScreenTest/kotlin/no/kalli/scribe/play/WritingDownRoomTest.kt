@@ -22,20 +22,17 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class WritingDownRoomTest : ScreenTest() {
     private val tab get() = testedProduct.name == "Fretscribe"
-    private var pace = 0.0
-
     @After
     fun clean() {
+        container.fixtureHeld = false
         rule.runOnUiThread { vm.cancelTranscription(); vm.home() }
         container.fixtureSource = null
-        if (pace > 0) container.fixtureStageSeconds = pace
     }
 
     private fun writingDown() {
-        // A computer that takes its time: the screen stays as it is while it is looked at.
+        // The computer holds the work in its first step: the screen stays as it is while it is looked at.
         computer(if (tab) "bass-line" else "old-hundredth")
-        if (pace == 0.0) pace = container.fixtureStageSeconds
-        container.fixtureStageSeconds = 60.0
+        container.fixtureHeld = true
         val file = recording("Room test.wav")
         rule.runOnUiThread {
             vm.home()
@@ -45,7 +42,10 @@ class WritingDownRoomTest : ScreenTest() {
             vm.where.value = Where.COMPANION
             vm.startTranscription()
         }
-        waitUntil(10_000) { vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.running }
+        // (Past sending the recording, which no hold stops: the step looked for is then the one the screen keeps.)
+        waitUntil(10_000) {
+            vm.screen.value.last() == Screen.TRANSCRIBE && vm.transcribe.value.running && vm.transcribe.value.step !in setOf(Step.QUEUED, Step.UPLOAD)
+        }
         settle()
     }
 

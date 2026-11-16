@@ -12,6 +12,7 @@ import no.kalli.scribe.play.SeatPickerMode
 import android.net.Uri
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -104,6 +105,14 @@ class FretscribeScreensTest : ScreenCatalogue() {
             hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.TestTag, "fs-what-instrument"))).performScrollTo().performClick()
         rule.onNodeWithTag("fs-what-continue").performClick()
         waitForTag("fs-show-tab")
+        // What was heard is read from the computer on another thread, and its changes are offered once the computer has
+        // said what it can write: the screen is looked at with both in, or its buttons come during the checks.
+        waitUntil(20_000) {
+            ComputerProfiles.answer?.asking == false && rule.onAllNodes(SemanticsMatcher("a row of what was heard") {
+                it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("fs-check-") == true
+            }).fetchSemanticsNodes().isNotEmpty()
+        }
+        rest()
     }
 
     private fun theTab() {
