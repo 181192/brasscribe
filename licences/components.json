@@ -480,7 +480,7 @@
       "licence": "MIT",
       "texts": ["MIT"],
       "notice": ["Copyright (c) Microsoft Corporation"],
-      "note": "Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries. In Fretscribe for Windows only its managed library is present.",
+      "note": "Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries.",
       "apps": ["brasscribe-android", "brasscribe-windows", "fretscribe-windows"],
       "covers": {"maven": ["com.microsoft.onnxruntime:*"], "nuget": ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.Managed"]},
       "upstream": [
@@ -496,7 +496,30 @@
       "texts": [],
       "notice": ["Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package; its terms are in the package at the address above."],
       "apps": ["brasscribe-windows"],
-      "covers": {"nuget": ["Microsoft.ML.OnnxRuntime.DirectML"]}
+      "covers": {"nuget": ["Microsoft.ML.OnnxRuntime.DirectML", "Microsoft.AI.DirectML"]}
+    },
+    {
+      "id": "windows-ml",
+      "name": "Windows ML runtime (with the Windows App SDK)",
+      "url": "https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning",
+      "licence": "Microsoft software licence terms",
+      "texts": [],
+      "notice": [
+        "Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsML-license.txt and WindowsML-ThirdPartyNotices.txt beside this one, as they come in the package.",
+        "The Windows App SDK brings it. It carries its own builds of ONNX Runtime and DirectML: the app's onnxruntime.dll is Windows ML's, and so is its DirectML.dll but in Play for Windows. Play for Windows takes only ONNX Runtime's managed library and onnxruntime_providers_shared.dll from the ONNX Runtime package above."
+      ],
+      "apps": ["@windows-play", "bandroom-windows"],
+      "covers": {"nuget": ["Microsoft.Windows.AI.MachineLearning"]}
+    },
+    {
+      "id": "webview2",
+      "name": "WebView2 SDK (with the Windows App SDK)",
+      "url": "https://www.nuget.org/packages/Microsoft.Web.WebView2",
+      "licence": "BSD-3-Clause",
+      "texts": ["BSD-3-Clause"],
+      "notice": ["Copyright (C) Microsoft Corporation. All rights reserved."],
+      "apps": ["@windows-play", "bandroom-windows"],
+      "covers": {"nuget": ["Microsoft.Web.WebView2"]}
     },
     {
       "id": "androidx",
@@ -607,7 +630,7 @@
       "texts": [],
       "notice": ["Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsAppSDK-license.txt and WindowsAppSDK-NOTICE.txt beside this one, as they come in the package."],
       "apps": ["@windows-play", "bandroom-windows"],
-      "covers": {"nuget": ["Microsoft.WindowsAppSDK"]}
+      "covers": {"nuget": ["Microsoft.WindowsAppSDK", "Microsoft.WindowsAppSDK.*"]}
     },
     {
       "id": "dotnet-runtime",
@@ -701,7 +724,7 @@
       "com.microsoft.onnxruntime:onnxruntime", "net.alphatab:alphaSkia-macos", "net.alphatab:alphaSkia-linux", "net.alphatab:alphaSkia-windows"
     ],
     "nuget": [
-      "AlphaSkia.Native.MacOs", "AlphaSkia.Native.Linux", "Microsoft.Windows.SDK.BuildTools", "Microsoft.NET.Test.Sdk", "xunit",
+      "AlphaSkia.Native.MacOs", "AlphaSkia.Native.Linux", "Microsoft.Windows.SDK.BuildTools", "Microsoft.Windows.SDK.BuildTools.MSIX", "Microsoft.NET.Test.Sdk", "xunit",
       "Xunit.SkippableFact", "Microsoft.Extensions.TimeProvider.Testing", "xunit.runner.visualstudio", "Axe.Windows",
       "MSTest.TestFramework", "MSTest.TestAdapter", "Microsoft.Testing.Extensions.TrxReport", "FlaUI.UIA3", "System.Drawing.Common"
     ],

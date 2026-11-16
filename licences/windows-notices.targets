@@ -2,19 +2,27 @@
   <!--
     The notice files Microsoft publishes with what a Windows app carries, copied as they come into Licences\ next
     to the app's own third-party.txt (which names them): the Windows App SDK's licence and third-party notices from
-    its package, and the .NET runtime's from the runtime pack a self-contained build carries. Imported by each
-    Windows app; the app's project references Microsoft.WindowsAppSDK with GeneratePathProperty.
+    its package, those of the Windows ML runtime it brings (whose package comes with it, so its folder is found
+    from the files it gives the app), and the .NET runtime's from the runtime pack a self-contained build carries.
+    Imported by each Windows app; the app's project references Microsoft.WindowsAppSDK with GeneratePathProperty.
   -->
-  <Target Name="_ScribeNoticeFiles" DependsOnTargets="ResolveFrameworkReferences">
+  <Target Name="_ScribeNoticeFiles" DependsOnTargets="ResolveFrameworkReferences;ResolvePackageAssets">
     <ItemGroup>
       <_ScribeNetRuntimePack Include="@(ResolvedRuntimePack)" Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
+    <ItemGroup>
+      <_ScribeWindowsMl Include="@(RuntimeCopyLocalItems)" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning'" />
+    </ItemGroup>
     <PropertyGroup>
       <_ScribeNetRuntimeDir>@(_ScribeNetRuntimePack->'%(PackageDirectory)')</_ScribeNetRuntimeDir>
+      <_ScribeWindowsMlVersion>%(_ScribeWindowsMl.NuGetPackageVersion)</_ScribeWindowsMlVersion>
+      <_ScribeWindowsMlDir Condition="'$(_ScribeWindowsMlVersion)' != ''">$(NuGetPackageRoot)microsoft.windows.ai.machinelearning\$(_ScribeWindowsMlVersion)</_ScribeWindowsMlDir>
     </PropertyGroup>
     <ItemGroup>
       <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\license.txt" Name="WindowsAppSDK-license.txt" />
       <_ScribeNotice Include="$(PkgMicrosoft_WindowsAppSDK)\NOTICE.txt" Name="WindowsAppSDK-NOTICE.txt" />
+      <_ScribeNotice Include="$(_ScribeWindowsMlDir)\license.txt" Name="WindowsML-license.txt" Condition="'$(_ScribeWindowsMlDir)' != ''" />
+      <_ScribeNotice Include="$(_ScribeWindowsMlDir)\ThirdPartyNotices.txt" Name="WindowsML-ThirdPartyNotices.txt" Condition="'$(_ScribeWindowsMlDir)' != ''" />
       <_ScribeNotice Include="$(_ScribeNetRuntimeDir)\LICENSE.TXT" Name="dotnet-runtime-LICENSE.txt" Condition="'$(_ScribeNetRuntimeDir)' != ''" />
       <_ScribeNotice Include="$(_ScribeNetRuntimeDir)\THIRD-PARTY-NOTICES.TXT" Name="dotnet-runtime-THIRD-PARTY-NOTICES.txt" Condition="'$(_ScribeNetRuntimeDir)' != ''" />
     </ItemGroup>
