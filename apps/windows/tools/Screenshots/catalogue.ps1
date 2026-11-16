@@ -4,7 +4,10 @@
 # theme, the text size and animation effects (off for every run) are this user's Windows settings for the length of
 # their run.
 #
-#   catalogue.ps1 -Exe EXE -Out DIR [-Product brasscribe|fretscribe]
+#   catalogue.ps1 -Exe EXE -Out DIR [-Product brasscribe|fretscribe] [-Runs en,nb,contrast,text200,scan]
+#
+# -Runs takes a part of the catalogue (default all of it), so CI can take it on two runners at once: the scan compares
+# Pink chosen in Settings with the en run's Pink shots, so it goes with en. The verdict covers the screens taken.
 #
 # DIR gets the screenshots (shots\, with not-taken\ and scans\ in it) and findings.md. Exit codes: 0 every check
 # passed, 2 the catalogue's checks found something, 3 the screenshots could not be taken (a screen that was not the
@@ -19,9 +22,13 @@ param(
     # The app's own build: Axe.Windows and the walk with Tab run on it, one start per screen.
     [Parameter(Mandatory)] [string] $Exe,
     [ValidateSet("brasscribe", "fretscribe")] [string] $Product = "brasscribe",
-    [string] $Configuration = "Release"
+    [string] $Configuration = "Release",
+    [string] $Runs = "en,nb,contrast,text200,scan"
 )
 $ErrorActionPreference = "Stop"
+$script:runs = $Runs -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+$unknown = $script:runs | Where-Object { $_ -notin @("en", "nb", "contrast", "text200", "scan") }
+if ($unknown) { throw "catalogue: no run $($unknown -join ', ') (en, nb, contrast, text200, scan)" }
 $windows = Resolve-Path (Join-Path $PSScriptRoot "../..")
 $repo = Resolve-Path (Join-Path $windows "../..")
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
@@ -99,20 +106,30 @@ function Invoke-Catalogue($exe, $shots, $score) {
     # a theme change is on screen at once instead of fading or sliding in. The app reads it when it starts.
     System-State @("--animations", "off", "--keep", $script:animationsKeep)
     try {
-        $ok = Invoke-Run $exe $shots "en" $(if ($app.Pink) { "light,dark,pink-light,pink-dark" } else { "light,dark" }) $score
-        $ok = (Invoke-Run $exe $shots "nb" "light,dark" $score) -and $ok
-        System-State @("--contrast", "on")
-        try { $ok = (Invoke-Run $exe $shots "contrast" $(if ($app.Pink) { "system,pink-dark" } else { "system,dark" }) $score) -and $ok }
-        finally { System-State @("--contrast", "off") }
-        System-State @("--text-scale", "200", "--keep", $script:textScaleKeep)
-        try { $ok = (Invoke-Run $exe $shots "text200" "light" $score) -and $ok }
-        finally { System-State @("--text-scale", "restore", "--keep", $script:textScaleKeep) }
-        # Pink chosen at start against Pink chosen in Settings, for the app that has it (its shots are compared).
-        $scan = @("play", "--exe", $script:appExe, "--score", $score, "--out", $shots)
-        if ($app.Pink) { $scan += @("--shots", $shots) }
-        if ($app.Scenes) { $scan += @("--scenes", $app.Scenes) }
-        & $script:screenCheck @scan | Out-Host
-        $ok = ($LASTEXITCODE -eq 0) -and $ok
+        $ok = $true
+        if ("en" -in $script:runs) {
+            $ok = (Invoke-Run $exe $shots "en" $(if ($app.Pink) { "light,dark,pink-light,pink-dark" } else { "light,dark" }) $score) -and $ok
+        }
+        if ("nb" -in $script:runs) { $ok = (Invoke-Run $exe $shots "nb" "light,dark" $score) -and $ok }
+        if ("contrast" -in $script:runs) {
+            System-State @("--contrast", "on")
+            try { $ok = (Invoke-Run $exe $shots "contrast" $(if ($app.Pink) { "system,pink-dark" } else { "system,dark" }) $score) -and $ok }
+            finally { System-State @("--contrast", "off") }
+        }
+        if ("text200" -in $script:runs) {
+            System-State @("--text-scale", "200", "--keep", $script:textScaleKeep)
+            try { $ok = (Invoke-Run $exe $shots "text200" "light" $score) -and $ok }
+            finally { System-State @("--text-scale", "restore", "--keep", $script:textScaleKeep) }
+        }
+        if ("scan" -in $script:runs) {
+            # Pink chosen at start against Pink chosen in Settings, for the app that has it (its shots are compared:
+            # with the en run's, which is why the scan goes with en).
+            $scan = @("play", "--exe", $script:appExe, "--score", $score, "--out", $shots)
+            if ($app.Pink -and "en" -in $script:runs) { $scan += @("--shots", $shots) }
+            if ($app.Scenes) { $scan += @("--scenes", $app.Scenes) }
+            & $script:screenCheck @scan | Out-Host
+            $ok = ($LASTEXITCODE -eq 0) -and $ok
+        }
     }
     finally { System-State @("--animations", "restore", "--keep", $script:animationsKeep) }
     return $ok

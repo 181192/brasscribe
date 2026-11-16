@@ -159,7 +159,7 @@ Every screen catalogue (both Android apps, Play and Bandroom for Mac, Play and B
 once on a pull request, on the pull request's own build, with every check it has: accessible names, target sizes,
 contrast, cut-off text, the keyboard's reach and order, Axe, a screen that is not the one asked for or does not
 keep still. A failed check fails the job. The pictures are an artefact of the run (`android-screenshots-<app>`,
-`play-mac-screenshots`, `bandroom-mac-screenshots`, `windows-screenshots`, `bandroom-windows-screenshots`), to look
+`play-mac-screenshots`, `bandroom-mac-screenshots`, `windows-screenshots-<n>`, `bandroom-windows-screenshots`), to look
 at; Studio takes none on a pull request (below). No check compares them with anything, so there is nothing to approve when a
 screen is meant to change.
 

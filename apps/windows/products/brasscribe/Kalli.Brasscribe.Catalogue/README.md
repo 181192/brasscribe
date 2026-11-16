@@ -93,7 +93,8 @@ tools/Screenshots/catalogue.ps1 -Exe <BrasscribePlay.exe> -Out out -FfiDll <scri
 screenshots could not be taken (a screen that was not taken counts: one that was not the screen asked for, or did not
 keep still).
 
-The screenshots are the `windows-screenshots` and `bandroom-windows-screenshots` artefacts of a pull request's run, to
+The screenshots are the `windows-screenshots-1`, `windows-screenshots-2` (the catalogue is taken on two runners at
+once, `catalogue.ps1 -Runs`) and `bandroom-windows-screenshots` artefacts of a pull request's run, to
 look at; no check waits for them, and none is kept in git. After a merge, CI compares the pictures on `main` with those
 of the `main` before it and lists changed screens in an issue
 ([docs/shared/dev/verify.md](../../../../docs/shared/dev/verify.md#screenshots)).

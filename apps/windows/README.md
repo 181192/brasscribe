@@ -150,7 +150,8 @@ its C header, of `apps/fixtures/` the two scores the tests open), and on every p
 `ci.yml`, which a push of only Markdown, the site or screenshots does not. A release tag does not run these
 checks: `release.yml` calls `windows.yml` for the release builds. It is part of
 `CI result`. The screen catalogue takes every screen in Light, Dark, Pink, bokmål, a contrast theme and 200 % text
-with its checks; its screenshots are the artefact `windows-screenshots`, to look at:
+with its checks, on two runners at once on a pull request; its screenshots are the artefacts `windows-screenshots-1`
+and `-2` (one for each runner), to look at:
 [products/brasscribe/Kalli.Brasscribe.Catalogue/README.md](products/brasscribe/Kalli.Brasscribe.Catalogue/README.md).
 
 ## Test tiers
