@@ -25,13 +25,29 @@ public sealed class OnnxRuntimeInPlay
         Assert.AreEqual(managed, OrtEnv.Instance().GetVersionString(), "the app's onnxruntime.dll is not the build of Microsoft.ML.OnnxRuntime it pins");
     }
 
+    /// <summary>What DirectML says when a session cannot have it (OnnxSessions falls back to the CPU without a word).</summary>
+    private static string WhyNotDirectMl()
+    {
+        try
+        {
+            using var options = new SessionOptions { ExecutionMode = ExecutionMode.ORT_SEQUENTIAL, EnableMemoryPattern = false };
+            options.AppendExecutionProvider_DML(0);
+            using var session = new InferenceSession(Model, options);
+            return "a second try worked";
+        }
+        catch (Exception e)
+        {
+            return $"{e.GetType().Name}: {e.Message}";
+        }
+    }
+
     [TestMethod]
     public void A_model_runs_on_DirectML()
     {
         var (session, target) = OnnxSessions.Create(Model, preferGpu: true);
         using (session)
         {
-            Assert.AreEqual(ExecutionTarget.DirectMl, target, "the session fell back to the CPU");
+            Assert.AreEqual(ExecutionTarget.DirectMl, target, $"the session fell back to the CPU: {WhyNotDirectMl()}");
             var x = new DenseTensor<float>(new float[] { 0, 1, 2.5f, -3 }, new[] { 1, 4 });
             using var results = session.Run([NamedOnnxValue.CreateFromTensor("x", x)]);
             CollectionAssert.AreEqual(new float[] { 1, 3, 6, -5 }, results.First().AsEnumerable<float>().ToArray());
