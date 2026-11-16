@@ -51,7 +51,9 @@ public sealed class WasapiSynthOutput : IAudioOutput
             _notifications.DeviceAdded += (_, _) => DeviceArrived();
             _notifications.DefaultDeviceChanged += (_, e) =>
             {
-                DefaultChanged(e.Flow == DataFlow.Render && e.Role == Role.Multimedia, e.DeviceId);
+                // Only the default output for media: a new default microphone or calls device leaves the band alone.
+                if (e.Flow != DataFlow.Render || e.Role != Role.Multimedia) return;
+                DefaultChanged(e.DeviceId);
                 DeviceArrived();
             };
         });
@@ -115,7 +117,9 @@ public sealed class WasapiSynthOutput : IAudioOutput
         if (_out is not null || _source is not { } source || _devices is null) return;
         _routing.Opening();
         var device = _devices.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        // Shared mode, event-driven, 80 ms: as the band's stream has always been opened.
+        // Shared mode, event-driven, 80 ms: as the band's stream has always been opened. In shared mode Windows converts the
+        // synth's float stereo at its own rate to whatever the device mixes in (AutoConvertPcm, high-quality rate
+        // conversion), now as before: NAudio 2's own resampler, which NAudio 3 dropped, served exclusive mode only.
         var output = new WasapiPlayerBuilder().WithDevice(device).WithSharedMode().WithEventSync().WithLatency(80).Build();
         try
         {
@@ -157,8 +161,8 @@ public sealed class WasapiSynthOutput : IAudioOutput
     private bool Playing => _source is { IsPlaying: true };
 
     /// <summary>Windows' default device changed: an open stream moves to the new default output.</summary>
-    private void DefaultChanged(bool mediaOutput, string? deviceId) =>
-        Post(() => Do(_routing.DefaultChanged(mediaOutput, deviceId, Playing)));
+    private void DefaultChanged(string? deviceId) =>
+        Post(() => Do(_routing.DefaultChanged(mediaOutput: true, deviceId, Playing)));
 
     /// <summary>A device came (back): a stream that could not open tries again.</summary>
     private void DeviceArrived() => Post(() => Do(_routing.DeviceArrived(Playing)));

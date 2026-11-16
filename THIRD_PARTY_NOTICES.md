@@ -106,8 +106,9 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   licence texts (fetched from the npm release by `apps/apple/scripts/fetch-alphatab.sh`), the tab drawn in the system's
   web view, and its two fonts, Atkinson Hyperlegible Next and Fretscribe Tab, with their licence texts. It plays the
   recording, and a tab's own notes on the SoundFont, with the system's AVFoundation. It does not ship Verovio, the Rust core, a band SoundFont or a model.
-- **Windows:** Windows App SDK (Microsoft software licence), the .NET runtime (MIT), ONNX Runtime with DirectML (MIT),
-  NAudio (MIT), CommunityToolkit.Mvvm (MIT). The Windows App SDK's and the .NET runtime's own notice files ship beside
+- **Windows:** Windows App SDK (Microsoft software licence), the .NET runtime (MIT) with the .NET libraries that come
+  as packages (System.Numerics.Tensors, which NAudio uses; MIT), ONNX Runtime with DirectML (MIT), NAudio (MIT),
+  CommunityToolkit.Mvvm (MIT). The Windows App SDK's and the .NET runtime's own notice files ship beside
   the app's licence file, as they come in their packages. Play for Windows also ships `vcruntime140.dll`, a
   redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
   needs.
