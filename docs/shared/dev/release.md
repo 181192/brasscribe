@@ -15,8 +15,8 @@ regenerates `CHANGELOG.md` with git-cliff (`cliff.toml`). Pick the version from 
 (`vX.Y.Z-beta.N`) are tagged by hand on `main`; the script makes only `X.Y.Z`. If a run stops
 halfway, `git switch main`, delete the local `release/vX.Y.Z` branch, and start again.
 
-The pushed tag starts `.github/workflows/release.yml`: the checks, a build per platform, then a
-GitHub release with the files, `SHA256SUMS` and notes generated from the commits since the previous
+The pushed tag starts `.github/workflows/release.yml`: the checks and a build per platform side by side, then, when all
+have passed, a GitHub release with the files, `SHA256SUMS` and notes generated from the commits since the previous
 release (new features and fixes sorted and labelled by scope, the rest folded away, first-time
 contributors named). Pull requests are squash-merged, so each pull request's title is one entry in
 the notes: write them for the people who use the apps. If a tag push does not start the workflow, start it on the tag:
