@@ -86,8 +86,9 @@ env:
 jobs:
   # Play's checks on Apple platforms, in two jobs side by side (each about half of what one job took): `play`, the
   # Swift packages and the macOS app's unit tests; `play-iphone-catalogue`, the iPhone simulator app's build with its
-  # tests and the iPhone screen catalogue, its simulator started while it builds (a fresh simulator's first start on
-  # a hosted runner takes two to three minutes, and beside the Mac app's tests it made them take twice as long). The
+  # tests and the iPhone screen catalogue. Each simulator starts only when the tests that need it are next: a fresh
+  # simulator's first start on a hosted runner takes two to three minutes, and anything beside it (the Mac app's tests,
+  # the Rust toolchain's download, the core's and the app's builds) took twice as long or more. The
   # tab feature's iPhone tests run in job fretscribe, which runs for every change to features/tab. Two jobs, not more:
   # a run's macOS jobs share the account's five macOS runners, and a sixth waits for one.
   play:
@@ -203,15 +204,13 @@ jobs:
           echo "DEVELOPER_DIR=$dev" >> "$GITHUB_ENV"
           xcodebuild -version
 
-      # The catalogue's phone, the smallest iPhone of the newest iOS, starts while everything below is built.
-      # Only asks it to start (boot-simulator.sh waits for it later, with its own limit); a hang here fails fast.
-      - name: Start the iPhone simulator
+      # The catalogue's phone, the smallest iPhone of the newest iOS. Started by the catalogue (iphone-catalogue.sh, through
+      # boot-simulator.sh, with its time limit), not here: a simulator starting beside the builds below slowed them down
+      # by more than its start takes.
+      - name: Which iPhone
         id: sim
         timeout-minutes: 5
-        run: |
-          dest=$(scripts/smallest-iphone.sh)
-          echo "dest=$dest" >> "$GITHUB_OUTPUT"
-          xcrun simctl boot "${dest##*id=}"
+        run: echo "dest=$(scripts/smallest-iphone.sh)" >> "$GITHUB_OUTPUT"
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
@@ -263,7 +262,7 @@ jobs:
       # The iPhone screen catalogue (PhoneScreensTests, README "Screen catalogue (iPhone)"): every screen on the smallest
       # phone of the newest iOS, upright at the default text size and at XXL in light and dark, and on its side, in
       # English and bokmål, with the catalogue's checks; the pictures are kept as an artefact. The iPhone SE's half runs
-      # at night (job play-iphone). scripts/iphone-catalogue.sh waits for the simulator started above.
+      # at night (job play-iphone). scripts/iphone-catalogue.sh starts the simulator and waits for it.
       # Bokmål only when the change reaches what can change those screens (ci.yml, filter apple_play_nb); else it
       # runs at night (job play-iphone).
       - name: iPhone screen catalogue
@@ -545,16 +544,12 @@ jobs:
       - name: Screen catalogue
         run: scripts/screenshots.sh record fretscribe
 
-      # The tab feature's simulator, the smallest iPhone, starts while the iPhone app is built: after the Mac's tests
-      # and catalogue, which a simulator starting beside them slows down.
-      # Only asks it to start (boot-simulator.sh waits for it below, with its own limit); a hang here fails fast.
-      - name: Start the iPhone simulator
+      # The tab feature's simulator, the smallest iPhone, started by its test step below and not beside the builds,
+      # which a simulator starting beside them slows down.
+      - name: Which iPhone
         id: sim
         timeout-minutes: 5
-        run: |
-          dest=$(scripts/smallest-iphone.sh)
-          echo "dest=$dest" >> "$GITHUB_OUTPUT"
-          xcrun simctl boot "${dest##*id=}"
+        run: echo "dest=$(scripts/smallest-iphone.sh)" >> "$GITHUB_OUTPUT"
 
       # The Mac build does not compile what is only for iOS: a test that no longer builds there would otherwise first
       # show in a release.
@@ -567,7 +562,8 @@ jobs:
       # and WebKit on iOS draws and loads differently from the Mac's. Here and not in Play's jobs: this job runs for
       # every change to features/tab, and TabKit reads nothing outside it. The simulator is waited for first: xcodebuild
       # begins the tests as soon as it can install them, while the simulator's own services (media, WebKit) are still
-      # starting, and a test that waits for one of them then fails.
+      # starting, and a test that waits for one of them then fails. boot-simulator.sh starts it,
+      # erases and starts it again if it hangs, and waits.
       - name: Test the tab feature on the iPhone simulator
         timeout-minutes: 25
         working-directory: apps/apple/features/tab
