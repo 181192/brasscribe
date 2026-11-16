@@ -110,9 +110,9 @@ computer, from where their makers publish them. Brasscribe does not re-host or r
   Widgets parts), with the WebView2 SDK they bring (BSD-3-Clause); the .NET runtime (MIT) with the .NET libraries that
   come as packages (System.Numerics.Tensors, which NAudio uses; MIT), ONNX Runtime with DirectML (MIT), NAudio (MIT),
   CommunityToolkit.Mvvm (MIT). The Windows App SDK's and the .NET runtime's own notice files ship beside the app's
-  licence file, as they come in their packages. Play for Windows also ships `vcruntime140.dll`, a
-  redistributable file of the Microsoft Visual C++ runtime (Visual Studio licence terms), which ONNX Runtime
-  needs.
+  licence file, as they come in their packages. Play for Windows also ships `vcruntime140.dll`,
+  `vcruntime140_1.dll`, `msvcp140.dll` and `msvcp140_1.dll`, redistributable files of the Microsoft Visual C++ runtime
+  (Visual Studio licence terms), which ONNX Runtime needs.
 - **ONNX Runtime's telemetry is switched off.** Microsoft's builds of ONNX Runtime, which Brasscribe uses as they
   are, report the runtime's use to Microsoft unless told not to (its `Privacy.md`: "information about you and your use
   of the software"). Brasscribe tells them not to, in Play for Android, in Play for Windows and in the engine's
