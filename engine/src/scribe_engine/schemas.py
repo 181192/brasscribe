@@ -256,6 +256,9 @@ class JobCreate(BaseModel):
                                                     "instrument plays (a guitar: also an octave higher when heard "
                                                     "below it); 0, -12, +12: the player's choice, in semitones from "
                                                     "what was heard; default: auto")
+    beat: BeatCorrection | None = Field(None, description="a beat correction to write the score on (as rerunJob's), "
+                                        "for a job made again from a recording already corrected, e.g. with another "
+                                        "lineup: refused like rerunJob's with 422 {code, detail}. Not for pages")
 
 
 class PartSources(BaseModel):

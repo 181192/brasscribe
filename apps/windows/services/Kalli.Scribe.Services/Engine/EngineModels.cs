@@ -43,7 +43,9 @@ public sealed record JobCreate(
     string? Octave = null,
     string? Layout = null,
     string? Recording = null,
-    string? Chords = null);
+    string? Chords = null,
+    // A beat correction to write the score on, as the engine sent it on a corrected job (Job.Beat); null: none.
+    JsonElement? Beat = null);
 
 /// <summary>
 /// Arrangement choices a job can carry: lineup full|minimal|quartet, difficulty faithful|standard|easier, a target key or a

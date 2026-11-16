@@ -1821,6 +1821,17 @@
             ],
             "title": "Audio Id"
           },
+          "beat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BeatCorrection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a beat correction to write the score on (as rerunJob's), for a job made again from a recording already corrected, e.g. with another lineup: refused like rerunJob's with 422 {code, detail}. Not for pages"
+          },
           "capo": {
             "anyOf": [
               {

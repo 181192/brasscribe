@@ -150,6 +150,8 @@ data class JobCreate(
     val octave: Octave? = null,
     val layout: TabLayout? = null,
     val chords: TabChords? = null,
+    /** A beat correction to write the score on, as the engine sent it on a corrected job ([Job.beat]); null: none. */
+    val beat: JsonObject? = null,
 ) {
     /** This job with the tab options of [options]. */
     fun withTab(options: TabOptions): JobCreate = copy(instrument = options.instrument, tuning = options.tuning, capo = options.capo,

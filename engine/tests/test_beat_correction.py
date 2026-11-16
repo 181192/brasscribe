@@ -328,6 +328,34 @@ def test_a_corrected_job_runs_no_model_again_and_is_written_on_the_new_beats(tab
 
 
 @needs_core
+def test_a_job_made_again_with_other_options_can_keep_the_correction(tab_client):
+    """An app that writes the score again with other options (a new createJob, not a rerun) sends the correction
+    along: the new job is written on the corrected beats and still runs no model."""
+    c = tab_client
+    first = _tab_job(c)
+    fixed = _rerun(c, first, {"beat": {"level": "double", "beats_per_bar": 3}})
+    models = list(c.ran)
+    r = c.post("/v1/jobs", json={"audio_id": c.audio_id, "profile": "tab", "instrument": "guitar-6", "recording": "instrument",
+                                 "layout": "tab-and-notation", "beat": fixed["beat"]})
+    assert r.status_code == 202, r.text
+    again = _wait(c, r.json()["id"])
+    assert again["status"] == "succeeded", again["error"]
+    assert again["beat"] == fixed["beat"] and "beats.corrected" in _status(again) and c.ran == models
+    assert _tab(c, again)["meter"]["beats"] == 3 and _tab(c, again)["tempo_bpm"] == _tab(c, fixed)["tempo_bpm"]
+    # Refused as a rerun's is, before anything starts.
+    before = len(c.get("/v1/jobs").json())
+    for beat, says in (({"level": "double", "beats_per_bar": 13}, "beats_per_bar is 2 to 12"),
+                       ({"beats_per_bar": 3}, "give level too"), ({"first_downbeat_s": 999}, "after the end")):
+        r = c.post("/v1/jobs", json={"audio_id": c.audio_id, "profile": "tab", "instrument": "guitar-6", "beat": beat})
+        assert (r.status_code, r.json()["code"]) == (422, "beat_invalid") and says in r.json()["detail"], (beat, r.text)
+    assert len(c.get("/v1/jobs").json()) == before
+    # An empty correction is none.
+    r = c.post("/v1/jobs", json={"audio_id": c.audio_id, "profile": "tab", "instrument": "guitar-6", "recording": "instrument",
+                                 "beat": {}})
+    assert _wait(c, r.json()["id"])["beat"] is None
+
+
+@needs_core
 def test_a_rerun_keeps_the_correction_until_it_is_taken_away(tab_client):
     c = tab_client
     first = _tab_job(c)

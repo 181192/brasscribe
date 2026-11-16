@@ -356,6 +356,8 @@ def test_a_picture_becomes_a_score_with_parts_and_a_talking_score(client):
     before = len(client.get("/v1/jobs").json())
     r = client.post(f"/v1/jobs/{job['id']}/rerun", json={"beat": {"level": "double"}})
     assert (r.status_code, r.json()["code"]) == (422, "beat_invalid")
+    r = client.post("/v1/jobs", json={"audio_id": job["audio_id"], "profile": "sheet", "beat": {"level": "double"}})
+    assert (r.status_code, r.json()["code"]) == (422, "beat_invalid") and "pages" in r.json()["detail"]
     assert len(client.get("/v1/jobs").json()) == before
 
 
