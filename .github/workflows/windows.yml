@@ -55,10 +55,17 @@ env:
 
 jobs:
   build:
-    name: ${{ inputs.release && 'release build' || 'test, build and scan' }}
+    name: ${{ inputs.release && 'release build' || matrix.shard.id == 'all' && 'test, build and scan' || format('test, build and scan ({0})', matrix.shard.runs) }}
     if: ${{ !inputs.skip_play }}
     runs-on: windows-latest
     timeout-minutes: 60
+    # On a pull request the screen catalogue is taken on two runners at once (catalogue.ps1 -Runs): en, 200 % text and
+    # the scan on one, bokmål and the contrast theme on the other; that takes the job from about 13 minutes to about 9.
+    # Elsewhere (main, a hand-started run, a release) in one job, which keeps the record screens.yml compares whole.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON((inputs.release || github.event_name != 'pull_request') && '[{"id":"all","runs":""}]' || '[{"id":"1","runs":"en,text200,scan"},{"id":"2","runs":"nb,contrast"}]') }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -99,8 +106,9 @@ jobs:
 
       # SCRIBE_FFI_PATH makes the native-core tests run (talking-score vectors through the core,
       # the default bridge). Tests that need data/ or models/ (golden score, SwiftF0 ONNX, SoundFonts) skip in CI.
+      # Once, not on each runner of a pull request's catalogue.
       - name: Core tests
-        if: ${{ !inputs.release }}
+        if: ${{ !inputs.release && matrix.shard.id != '2' }}
         run: >
           dotnet test tests/Kalli.Scribe.Tests -c $env:CONFIGURATION
           --logger "trx;LogFileName=core.trx" --results-directory "$env:RUNNER_TEMP/test-results"
@@ -151,9 +159,12 @@ jobs:
       - name: Screen catalogue
         id: catalogue
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
+        env:
+          RUNS: ${{ matrix.shard.runs }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:SCRIBE_FFI_PATH
+          $part = @{}; if ($env:RUNS) { $part.Runs = $env:RUNS }
+          ./tools/Screenshots/catalogue.ps1 -Exe "${{ steps.exe.outputs.path }}" -Out $out -FfiDll $env:SCRIBE_FFI_PATH @part
           $status = $LASTEXITCODE
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
           exit $status
@@ -195,7 +206,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: ${{ !inputs.release && !cancelled() }}
         with:
-          name: ${{ github.event_name == 'pull_request' && 'windows-screenshots' || format('screens-play-windows-{0}', github.sha) }}
+          name: ${{ github.event_name == 'pull_request' && format('windows-screenshots-{0}', matrix.shard.id) || format('screens-play-windows-{0}', github.sha) }}
           path: ${{ runner.temp }}/catalogue
           if-no-files-found: ignore
           retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
@@ -204,7 +215,7 @@ jobs:
         if: ${{ !inputs.release && !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: windows-results
+          name: windows-results-${{ matrix.shard.id }}
           path: |
             ${{ runner.temp }}/test-results
           retention-days: 14
@@ -277,10 +288,17 @@ jobs:
   # loads no Rust core and carries no models or band sounds. With `release`: a self-contained x64 build uploaded as
   # dist-fretscribe-windows-x64.
   fretscribe:
-    name: ${{ inputs.release && 'fretscribe release build' || 'fretscribe (build and scan)' }}
+    name: ${{ inputs.release && 'fretscribe release build' || matrix.shard.id == 'all' && 'fretscribe (build and scan)' || format('fretscribe (build and scan, {0})', matrix.shard.runs) }}
     if: ${{ !inputs.skip_fretscribe }}
     runs-on: windows-latest
     timeout-minutes: 45
+    # On a pull request the screen catalogue is taken on two runners at once (catalogue.ps1 -Runs): en, 200 % text and
+    # the scan on one, bokmål and the contrast theme on the other; that takes the job from about 11 minutes to about 8.
+    # Elsewhere (main, a hand-started run, a release) in one job, which keeps the record screens.yml compares whole.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON((inputs.release || github.event_name != 'pull_request') && '[{"id":"all","runs":""}]' || '[{"id":"1","runs":"en,text200,scan"},{"id":"2","runs":"nb,contrast"}]') }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -339,9 +357,12 @@ jobs:
       - name: Screen catalogue
         id: catalogue
         if: ${{ !inputs.release && !cancelled() && steps.exe.outputs.path != '' }}
+        env:
+          RUNS: ${{ matrix.shard.runs }}
         run: |
           $out = "$env:RUNNER_TEMP/catalogue"
-          ./tools/Screenshots/catalogue.ps1 -Product fretscribe -Exe "${{ steps.exe.outputs.path }}" -Out $out
+          $part = @{}; if ($env:RUNS) { $part.Runs = $env:RUNS }
+          ./tools/Screenshots/catalogue.ps1 -Product fretscribe -Exe "${{ steps.exe.outputs.path }}" -Out $out @part
           $status = $LASTEXITCODE
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
           exit $status
@@ -367,7 +388,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: ${{ !inputs.release && !cancelled() }}
         with:
-          name: ${{ github.event_name == 'pull_request' && 'fretscribe-windows-screenshots' || format('screens-fretscribe-windows-{0}', github.sha) }}
+          name: ${{ github.event_name == 'pull_request' && format('fretscribe-windows-screenshots-{0}', matrix.shard.id) || format('screens-fretscribe-windows-{0}', github.sha) }}
           path: ${{ runner.temp }}/catalogue
           if-no-files-found: ignore
           retention-days: ${{ github.event_name == 'pull_request' && 14 || 90 }}
