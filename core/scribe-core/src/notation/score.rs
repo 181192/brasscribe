@@ -74,6 +74,8 @@ pub struct FreeSpan {
 pub struct ScoreSpec {
     pub parts: Vec<PartSpec>,
     pub beats_per_bar: i64,
+    /// The time signature's lower number: 4, or 8 for 6/8, 9/8 and 12/8 (ticks stay quarter notes).
+    pub beat_unit: i64,
     pub bpm: f64,
     pub title: String,
     /// Who the score names as its arranger (`<creator type="composer">`), which is the target's to say;
@@ -178,11 +180,30 @@ impl Elem {
     }
 }
 
+impl ScoreSpec {
+    /// A bar, in ticks (quarter notes of TPB ticks).
+    pub fn bar_ticks(&self) -> i64 {
+        self.beats_per_bar * TPB * 4 / self.beat_unit
+    }
+
+    /// A bar, in quarter notes.
+    fn bar_ql(&self) -> Rat {
+        Rat::new(self.beats_per_bar * 4, self.beat_unit)
+    }
+
+    /// 6/8, 9/8, 12/8: the beat is a dotted quarter.
+    fn compound(&self) -> bool {
+        self.beat_unit == 8 && self.beats_per_bar % 3 == 0
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 enum Dir {
     /// Text; (placement above, boxed).
     Words(String, bool, bool),
     Metro(i64),
+    /// A metronome mark on the dotted quarter (6/8, 9/8, 12/8): its number counts dotted quarters.
+    DottedMetro(i64),
     Rehearsal(String),
     Dynamic(String),
 }
@@ -192,7 +213,7 @@ impl Dir {
     fn class_order(&self) -> i32 {
         match self {
             Dir::Words(..) | Dir::Rehearsal(_) => -30,
-            Dir::Metro(_) => 1,
+            Dir::Metro(_) | Dir::DottedMetro(_) => 1,
             Dir::Dynamic(_) => 10,
         }
     }
@@ -484,7 +505,7 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
     }
 
     // Every part spans the same whole bars.
-    let bar = spec.beats_per_bar * TPB;
+    let bar = spec.bar_ticks();
     let last = spec.parts.iter().flat_map(|p| p.notes.iter().map(|q| q.end)).max().unwrap_or(0) - spec.pickup_ticks;
     let total = -((-last.max(bar)).div_euclid(bar)) * bar;
     let opens_free = spec.free_spans.iter().any(|sp| sp.start - spec.pickup_ticks == 0);
@@ -512,7 +533,8 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
             }
         }
         if pi == 0 && !opens_free {
-            push(&mut dirs, 0, Dir::Metro(py_round_bpm(spec.bpm)));
+            // In 6/8, 9/8 and 12/8 the beat is a dotted quarter: the mark counts it, not the quarters.
+            push(&mut dirs, 0, if spec.compound() { Dir::DottedMetro(py_round_bpm(spec.bpm / 1.5)) } else { Dir::Metro(py_round_bpm(spec.bpm)) });
         }
         for sp in &spec.free_spans {
             let (a, b) = (sp.start - spec.pickup_ticks, sp.end - spec.pickup_ticks);
@@ -668,7 +690,7 @@ fn build_parts(spec: &ScoreSpec, ids: &mut Ids) -> (Vec<Part>, i64) {
         dirs.sort_by_key(|d| (d.0, d.1, d.2));
 
         // measures (bar lines every `bar`, at least one bar, up to the last element)
-        let bar_ql = Rat::int(spec.beats_per_bar);
+        let bar_ql = spec.bar_ql();
         let o_max = flat_els
             .iter()
             .map(|e| e.end())
@@ -1511,6 +1533,23 @@ fn dir_xml(d: &Dir, offset: Option<i64>) -> X {
             off(&mut x, false);
             x
         }
+        Dir::DottedMetro(n) => {
+            let mut x = X::new("direction").child(
+                X::new("direction-type").child(
+                    X::new("metronome")
+                        .attr("parentheses", "no")
+                        .child(X::text("beat-unit", "quarter"))
+                        .child(X::new("beat-unit-dot"))
+                        .child(X::text("per-minute", n.to_string())),
+                ),
+            );
+            off(&mut x, true);
+            // The sound's tempo counts quarters, computed as the reference's music21 does (convertTempoByReferent:
+            // 169.49999999999997 for 113 dotted quarters) and written in the same shortest form (75 for 50).
+            let quarters = 60.0 / ((60.0 / *n as f64) / 1.5);
+            x.push(X::new("sound").attr("tempo", format!("{quarters}")));
+            x
+        }
         Dir::Metro(n) => {
             let mut x = X::new("direction").child(
                 X::new("direction-type").child(
@@ -1576,8 +1615,8 @@ fn transpose_xml(diatonic: i32, chromatic: i32) -> X {
 
 /// `line_base`: review brackets in the parts before this one (the reference numbers them 1..6 across the
 /// whole score, in part order).
-fn part_xml(part: &Part, idx: usize, bpb: i64, line_base: usize) -> X {
-    let bar = Rat::int(bpb);
+fn part_xml(part: &Part, idx: usize, bpb: i64, unit: i64, line_base: usize) -> X {
+    let bar = Rat::new(bpb * 4, unit);
     let mut px = X::new("part").attr("id", format!("P{}", idx + 1));
     for (mi, m) in part.measures.iter().enumerate() {
         let mut mx = X::new("measure").attr("implicit", "no").attr("number", (mi + 1).to_string());
@@ -1591,7 +1630,7 @@ fn part_xml(part: &Part, idx: usize, bpb: i64, line_base: usize) -> X {
             if let Some(f) = m.key {
                 at.push(X::new("key").child(X::text("fifths", f.to_string())));
             }
-            at.push(X::new("time").child(X::text("beats", bpb.to_string())).child(X::text("beat-type", "4")));
+            at.push(X::new("time").child(X::text("beats", bpb.to_string())).child(X::text("beat-type", unit.to_string())));
             at.push(match part.clef {
                 ClefKind::Treble => X::new("clef").child(X::text("sign", "G")).child(X::text("line", "2")),
                 ClefKind::Bass => X::new("clef").child(X::text("sign", "F")).child(X::text("line", "4")),
@@ -1787,8 +1826,8 @@ pub fn write_score_with_parts(spec: &ScoreSpec, footers: &[(String, String)]) ->
 pub fn build_score_xml(spec: &ScoreSpec) -> X {
     let mut ids = Ids(0);
     let (mut parts, _total) = build_parts(spec, &mut ids);
-    let bar = Rat::int(spec.beats_per_bar);
-    let seq = BeamSequence::for_quarters(spec.beats_per_bar);
+    let bar = spec.bar_ql();
+    let seq = BeamSequence::for_meter(spec.beats_per_bar, spec.beat_unit);
 
     // notation at concert pitch
     for part in parts.iter_mut() {
@@ -1807,7 +1846,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     }
     // dashed bar lines inside free-time passages
     if !spec.free_spans.is_empty() {
-        let bar_ticks = spec.beats_per_bar * TPB;
+        let bar_ticks = spec.bar_ticks();
         for part in parts.iter_mut() {
             for (k, m) in part.measures.iter_mut().enumerate() {
                 let end = (k as i64 + 1) * bar_ticks + spec.pickup_ticks;
@@ -1880,7 +1919,7 @@ pub fn build_score_xml(spec: &ScoreSpec) -> X {
     root.push(pl);
     let mut line_base = 0;
     for (i, p) in parts.iter().enumerate() {
-        root.push(part_xml(p, i, spec.beats_per_bar, line_base));
+        root.push(part_xml(p, i, spec.beats_per_bar, spec.beat_unit, line_base));
         line_base += p.lines.len();
     }
     if !spec.sounds.is_empty() {

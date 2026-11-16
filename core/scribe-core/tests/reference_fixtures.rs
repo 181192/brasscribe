@@ -102,11 +102,15 @@ fn spelling_and_key_match_reference() {
 
 #[test]
 fn level_matches_reference() {
-    use scribe_core::quantize::{choose_level_three, in_three, level_factor};
-    let (mut threes, mut twos) = (0, 0);
+    use scribe_core::quantize::{choose_level_three, compound, in_three, level_factor, quarter_grid, writes_compound};
+    let (mut threes, mut twos, mut compounds) = (0, 0, 0);
     for (i, c) in load("level").iter().enumerate() {
         let (beats, on) = (f64s(&c["beats"]), f64s(&c["onsets"]));
         assert_eq!(in_three(&beats, &on), c["in_three"].as_bool().unwrap(), "in three, case {i}");
+        assert_eq!(compound(&beats, &on), c["compound"].as_bool().unwrap(), "compound, case {i}");
+        compounds += c["compound"].as_bool().unwrap() as usize;
+        assert_eq!(writes_compound(&beats, &on, 2), c["writes_compound"].as_bool().unwrap(), "written compound, case {i}");
+        assert_eq!(quarter_grid(&beats, c["first_down"].as_i64().unwrap()), f64s(&c["quarter_grid"]), "quarter grid, case {i}");
         assert_eq!(choose_level(&beats, &on), f64s(&c["level"]), "level case {i}");
         let level = choose_level_three(&beats, &on, true);
         assert_eq!(level, f64s(&c["level_three"]), "level in three, case {i}");
@@ -117,6 +121,7 @@ fn level_matches_reference() {
         }
     }
     assert!(threes >= 10 && twos >= 10, "the cases cover both splits: {threes} in three, {twos} in two");
+    assert!(compounds >= 5, "the cases cover compound beats: {compounds}");
 }
 
 #[test]

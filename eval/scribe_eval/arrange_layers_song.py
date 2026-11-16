@@ -39,7 +39,7 @@ from scribe_music.parts import STYLE as PART_STYLE
 from scribe_music.parts import split_parts
 from scribe_music.structure import bar_features, letters, section_starts
 from scribe_music.separation import check_stem
-from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize
+from scribe_music.quantize import TICKS_PER_BEAT, BeatMap, choose_level, quantize, quarter_grid, writes_compound
 from scribe_music.dynamics import layer_dynamics
 from scribe_music.score_model import Dynamic, ReviewItem, Section, Articulation, Composition, KeySig, Meter, Note, Voice, VoiceRole
 from scribe_music.spelling import key_of
@@ -192,7 +192,9 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         first_down = cb.phase(int(beats_per_bar))
     else:
         first_down = int(np.argmax(down))
-    times = raw_times if "level" in given else choose_level(raw_times, onsets)
+    # A beat of three eighths (6/8, 9/8, 12/8) is written as it is, on a quarter-note grid below.
+    compound_beat = writes_compound(raw_times, onsets, int(beats_per_bar))
+    times = raw_times if "level" in given or compound_beat else choose_level(raw_times, onsets)
     doubled = len(times) != len(raw_times)
     if doubled:
         beats_per_bar *= 2
@@ -224,6 +226,13 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     earliest = float(BeatMap(times).to_beats(np.array([onsets.min()]))[0])
     while first_down > earliest + 1e-6:
         first_down -= beats_per_bar
+    meter = Meter(0, int(beats_per_bar))
+    if compound_beat and not coarse:
+        # 6/8 (9/8, 12/8) on a quarter-note grid from that downbeat: the eighths are written as eighths, not as
+        # triplets under a quarter. A bar is then 1.5 quarters a beat. (With free time the grid stays as planned.)
+        times, first_down, meter = quarter_grid(times, first_down), 0, Meter(0, 3 * int(beats_per_bar), 8)
+        beats_per_bar = 1.5 * beats_per_bar
+    bar_len = round(beats_per_bar * TICKS_PER_BEAT)  # ticks are quarter notes
     pickup = first_down * TICKS_PER_BEAT
     half = TICKS_PER_BEAT // 2
 
@@ -312,7 +321,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
         Voice("strings", VoiceRole.HARMONY, lines, "orchestra", "strings"),
         Voice("hits", VoiceRole.HARMONY, hits, "orchestra hits", "hits"),
         Voice("drums", VoiceRole.RHYTHM, drums, "drum kit", "drums"),
-    ], [Meter(0, int(beats_per_bar))], [KeySig(0, 0)], list(map(float, times)), first_down,
+    ], [meter], [KeySig(0, 0)], list(map(float, times)), first_down,
         free_regions=plan.regions(first_down) if plan else [], tempo_estimated=tempo_estimated)
     for v in comp.voices:
         clip_to_regions(v.notes, comp.free_regions)
@@ -323,10 +332,10 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     if not args.single_key:
         # Key changes where the music modulates (a change must pay for itself over several bars).
         penalty = KEY_CHANGE_PENALTY[args.difficulty]
-        comp.keys = key_plan(solo + lines, int(beats_per_bar) * TICKS_PER_BEAT, bass=bass,
+        comp.keys = key_plan(solo + lines, bar_len, bass=bass,
                              **({"penalty": penalty} if penalty else {})).keys
     # Dynamics per layer from its own loudness, per bar.
-    bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
+    bar_ticks = bar_len
     bm = BeatMap(np.array(comp.beat_times))
     n_bars = comp.end_tick // bar_ticks + 1
     edges = bm.to_seconds(np.arange(n_bars + 1) * beats_per_bar + first_down)
@@ -361,7 +370,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     if args.kit != "band":
         comp.arrangement["kit"] = args.kit
     # Review groups: neighbouring uncertain notes in one bar are one review item for the apps.
-    bar_ticks = int(beats_per_bar) * TICKS_PER_BEAT
+    bar_ticks = bar_len
     comp.review = [ReviewItem(v.id, g.start, g.end, g.notes, g.very) for v in comp.voices if v.layer != "drums"
                    for g in review_groups([(n.start, n.end, n.confidence) for n in v.notes], bar_ticks,
                                           1 - model.mark_risk, 1 - model.very_risk)]
@@ -373,7 +382,7 @@ def build(args: argparse.Namespace, trace: dict | None = None) -> tuple[Composit
     print(f"solo {len(solo)}, bass {len(bass)}, orchestra lines {len(lines)} / hits {len(hits)}, drums {len(drums)}")
     print("band notes per part:", counts)
     print("dynamics:", {layer: [m for d in comp.dynamics if d.layer == layer for m in [d.mark]] for layer in ("solo", "strings", "bass", "drums")})
-    print(f"key fifths {fifths}; keys {[(k.tick // (int(beats_per_bar) * TICKS_PER_BEAT) + 1, k.fifths, k.mode) for k in comp.keys]}; "
+    print(f"key fifths {fifths}; keys {[(k.tick // bar_len + 1, k.fifths, k.mode) for k in comp.keys]}; "
           f"warnings {len(arr.warnings)}")
     for r in comp.free_regions:
         print(f"free time {r.start_s:.2f}-{r.end_s:.2f} s -> ticks {r.start}-{r.end} at {r.tempo_bpm:.1f} BPM ({r.notation.value})")

@@ -126,6 +126,62 @@ pub fn in_three(beat_times: &[f64], onsets: &[f64]) -> bool {
         && first.min(second) as f64 >= THREE_BOTH * thirds as f64
 }
 
+// A compound beat: COMPOUND_SHARE of the onsets off the beat on its thirds, COMPOUND_ONSETS of them or more,
+// and neither third under COMPOUND_BOTH of them (see the reference, scribe_music.quantize.compound).
+const COMPOUND_SHARE: f64 = 0.92;
+const COMPOUND_ONSETS: usize = 12;
+const COMPOUND_BOTH: f64 = 0.25;
+
+/// The onsets divide the beats in three, as a compound beat's eighths do.
+pub fn compound(beat_times: &[f64], onsets: &[f64]) -> bool {
+    let (first, second, twos) = offbeat_counts(beat_times, onsets);
+    let thirds = first + second;
+    thirds + twos >= COMPOUND_ONSETS
+        && thirds as f64 / (thirds + twos) as f64 >= COMPOUND_SHARE
+        && first.min(second) as f64 >= COMPOUND_BOTH * thirds as f64
+}
+
+/// The arrangers' share of onsets on a third for a beat of three eighths (see the reference's EIGHTHS_SHARE).
+const EIGHTHS_SHARE: f64 = 0.87;
+
+/// Onsets on the first third of a beat, on the second third, and on its half or quarters: each within
+/// OFFBEAT_NEAR, a third before anything else.
+pub fn eighths_counts(beat_times: &[f64], onsets: &[f64]) -> (usize, usize, usize) {
+    let bm = BeatMap::new(beat_times).expect("two beats");
+    let (mut first, mut second, mut twos) = (0, 0, 0);
+    for x in rounded_onsets(onsets) {
+        let at = bm.to_beats(x).rem_euclid(1.0);
+        if (at - 1.0 / 3.0).abs() <= OFFBEAT_NEAR {
+            first += 1;
+        } else if (at - 2.0 / 3.0).abs() <= OFFBEAT_NEAR {
+            second += 1;
+        } else if [OFFBEAT_SLOTS[0], OFFBEAT_SLOTS[2], OFFBEAT_SLOTS[4]].iter().any(|s| (at - s).abs() <= OFFBEAT_NEAR) {
+            twos += 1;
+        }
+    }
+    (first, second, twos)
+}
+
+/// The tracked beat is written as a dotted quarter (6/8, 9/8, 12/8): the onsets divide it in three as eighths do
+/// (eighths_counts, EIGHTHS_SHARE), two or more beats to the bar.
+pub fn writes_compound(beat_times: &[f64], onsets: &[f64], beats_per_bar: i64) -> bool {
+    if beat_times.len() < 2 || beats_per_bar < 2 {
+        return false;
+    }
+    let (first, second, twos) = eighths_counts(beat_times, onsets);
+    let thirds = first + second;
+    thirds + twos >= COMPOUND_ONSETS
+        && thirds as f64 / (thirds + twos) as f64 >= EIGHTHS_SHARE
+        && first.min(second) as f64 >= COMPOUND_BOTH * thirds as f64
+}
+
+/// The tempo map of compound beats on quarter notes, from the bar that starts on beat `first_down`.
+pub fn quarter_grid(beat_times: &[f64], first_down: i64) -> Vec<f64> {
+    let bm = BeatMap::new(beat_times).expect("two beats");
+    let last = (1.5 * (beat_times.len() as i64 - 1 - first_down) as f64 + 1e-9).floor() as i64;
+    (0..=last).map(|q| bm.to_seconds(first_down as f64 + q as f64 / 1.5)).collect()
+}
+
 /// Every beat interval divided in `k` equal parts (2 or 3).
 pub fn split(beat_times: &[f64], k: usize) -> Vec<f64> {
     let mut out = beat_times.to_vec();

@@ -178,10 +178,18 @@ def all_cases(work: Path, only: str | None = None, skipped: dict[str, list[str]]
     they fail (`missing_files`)."""
     mikkel = {"layers": DATA / "mikkel/repro/layers", "beats": DATA / "mikkel/repro/mix.beats", "title": MIKKEL_TITLE,
               **({"contour": c} if (c := mikkel_contour()) else {})}
-    # Checked-in scores (compound time: no arranged input is), first since they need no data/: only their
-    # talking score is compared.
+    # Checked-in scores, first since they need no data/: only their talking score is compared.
     cases = [Case(f"talking/{score.parent.name}", "talking", {"dir": score.parent})
              for score in sorted((REPO / "core" / "conformance" / "fixtures").glob("*/brass-band.musicxml"))]
+    # Invented quartets in 6/8 and 12/8 (checked in: the score's own notes as both transcriptions, beats on the
+    # dotted quarter), so the compound-time writing is compared without data/.
+    for d in sorted((REPO / "core" / "conformance" / "fixtures").glob("invented-song-*")):
+        cases.append(Case(f"fixtures/{d.name}", "song", {"beats": d / "beats.txt", "melody": d / "mus.mid", "support": d / "bp.mid",
+                                                         "bass": d / "mus.mid", "harmony": [d / "mus.mid", d / "bp.mid"],
+                                                         "title": d.name}))
+        if (d / "layers").is_dir():  # the line as a solo take
+            cases.append(Case(f"fixtures/{d.name}/layers", "layers", {"layers": d / "layers", "beats": d / "beats.txt",
+                                                                       "title": d.name}))
     cases.append(Case("mikkel/layers", "layers", mikkel, golden=MIKKEL_GOLDEN))
     # Arrangement options (lineup, difficulty, key) against the Python reference.
     for stage, options in MIKKEL_VARIANTS:

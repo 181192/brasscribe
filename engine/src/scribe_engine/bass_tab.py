@@ -376,36 +376,6 @@ def note_confidence(note: dict, second: list[dict] | None) -> float:
     return sure if _heard(second, note, note["pitch"]) else UNCONFIRMED
 
 
-# A bar of two tracked beats whose onsets divide the beat in three is a real two (6/8 counted in two). Each
-# onset off the beat counts for the subdivision it is nearest to (a quarter, a third, a half, two thirds, three
-# quarters) when it lies within scribe_music.quantize.OFFBEAT_NEAR of it; counted for every subdivision in reach instead, a third heard
-# 10 ms early was also a quarter, and straight 6/8 at 100 BPM was lost in four takes of five. Of the onsets
-# counted, COMPOUND_SHARE or more are on a third, and there are at least COMPOUND_ONSETS of them. The share
-# rests on three numbers: the highest of GuitarSet's two-beat-bar takes, all in 4/4 (0.802 on players 00 to 02,
-# 0.819 on 03 to 05); one Slakh bass line tracked in two and played in triplets throughout, written in four
-# (0.903); and three eighths to the beat, rendered (0.98). It costs recall on fast, loose 6/8: at 132 BPM with
-# 15 ms of jitter on every onset, 0.99 of the draws are called compound with a share of 0.8 and 0.30 with 0.92.
-# Swing and shuffles divide the beat in three too, but play its second third only (long-short): of the onsets
-# on a third, COMPOUND_BOTH or more lie on each of the two. GuitarSet's jazz takes put at most 0.10 of them on
-# the first third as the tab profile reads their notes, and at most 0.16 as the bass line reads them; a rendered
-# 12/8 shuffle puts 0.02 there, three eighths to the beat 0.5, and a jig's long-short-then-three-eighths a third.
-# A 6/8 tune played mostly long-short is read as a shuffle (two simple beats, written two bars to the bar of
-# four): the two cannot be told apart by where the onsets fall.
-COMPOUND_SHARE = 0.92
-COMPOUND_ONSETS = 12
-COMPOUND_BOTH = 0.25
-
-
-def compound(beat_times: np.ndarray, onsets: np.ndarray) -> bool:
-    """The onsets divide the beats of `beat_times` in three (COMPOUND_*)."""
-    from scribe_music.quantize import offbeat_counts
-
-    first, second, twos = offbeat_counts(beat_times, onsets)
-    thirds = first + second
-    return (thirds + twos >= COMPOUND_ONSETS and thirds / (thirds + twos) >= COMPOUND_SHARE
-            and min(first, second) >= COMPOUND_BOTH * thirds)
-
-
 def bar_beats(tracked: int, beat_times: np.ndarray | None = None, onsets: np.ndarray | None = None) -> int:
     """Beats in a bar, given the commonest distance between the tracked downbeats (after the level is chosen).
 
@@ -415,6 +385,8 @@ def bar_beats(tracked: int, beat_times: np.ndarray | None = None, onsets: np.nda
     bar of four, and a bar of eight as two. A bar of two whose beats the onsets divide in three (compound)
     stays two: that is 6/8 counted in two. Any other real 2/4 is written two bars to the bar; three,
     five, six and seven stay as tracked."""
+    from scribe_music.quantize import compound
+
     if tracked == 2 and beat_times is not None and onsets is not None and compound(beat_times, onsets):
         return 2
     return 4 if tracked in (1, 2, 8) else tracked
