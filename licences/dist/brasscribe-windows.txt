@@ -16,7 +16,6 @@ Contents
 - Instrument Serif font (OFL-1.1)
 - ONNX Runtime (MIT)
 - DirectML (with ONNX Runtime) (Microsoft software licence terms)
-- Windows ML runtime (with the Windows App SDK) (Microsoft software licence terms)
 - WebView2 SDK (with the Windows App SDK) (BSD-3-Clause)
 - Windows App SDK (Microsoft software licence terms)
 - .NET runtime (MIT)
@@ -212,7 +211,7 @@ Licence: MIT
 
 Copyright (c) Microsoft Corporation
 
-Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries.
+Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries. In Fretscribe for Windows only its managed library is present.
 
 ========================================
 
@@ -221,15 +220,6 @@ https://www.nuget.org/packages/Microsoft.AI.DirectML
 Licence: Microsoft software licence terms
 
 Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package; its terms are in the package at the address above.
-
-========================================
-
-Windows ML runtime (with the Windows App SDK)
-https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning
-Licence: Microsoft software licence terms
-
-Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsML-license.txt and WindowsML-ThirdPartyNotices.txt beside this one, as they come in the package.
-The Windows App SDK brings it. It carries its own builds of ONNX Runtime and DirectML: the app's onnxruntime.dll is Windows ML's, and so is its DirectML.dll but in Play for Windows. Play for Windows takes only ONNX Runtime's managed library and onnxruntime_providers_shared.dll from the ONNX Runtime package above.
 
 ========================================
 

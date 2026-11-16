@@ -158,6 +158,16 @@ jobs:
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
           exit $status
 
+      # Play's own build, as the screen catalogue built it, runs a model on DirectML with the ONNX Runtime it pins
+      # (Kalli.Brasscribe.Catalogue/OnnxRuntimeInPlay.cs): that class alone, so a failure fails this step.
+      - name: Play runs a model on DirectML
+        if: ${{ !inputs.release && !cancelled() && steps.catalogue.outcome != 'skipped' }}
+        run: |
+          $exe = Get-ChildItem -Recurse -Filter BrasscribePlay.exe products/brasscribe/Kalli.Brasscribe/bin/catalogue | Select-Object -First 1
+          if (-not $exe) { throw "the screen catalogue's build left no BrasscribePlay.exe" }
+          & $exe.FullName --filter "FullyQualifiedName~OnnxRuntimeInPlay" --results-directory "$env:RUNNER_TEMP/onnx-results" --report-trx | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "the test platform ended with $LASTEXITCODE (8: no test ran)" }
+
       # What made the app exit, if it did (App writes unhandled exceptions to crash.log).
       - name: Crash log
         if: ${{ !inputs.release && failure() }}
@@ -215,10 +225,14 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribePlay"
           dotnet publish products/brasscribe/Kalli.Brasscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained "-p:ScribeFfiDll=$env:SCRIBE_FFI_PATH" -o $out
           if (-not (Test-Path "$out/BrasscribePlay.exe")) { throw "BrasscribePlay.exe was not published" }
-          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "WindowsML-license.txt", "WindowsML-ThirdPartyNotices.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
             if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
           }
           if (-not (Test-Path "$out/SoundFonts/brasscribe-band.sf2")) { throw "the app has no band SoundFont" }
+          # No Windows ML (its own onnxruntime.dll took the place of the one pinned), no files only developers use.
+          foreach ($f in @("Microsoft.Windows.AI.MachineLearning.dll", "onnxruntime.lib", "DirectML.pdb", "DirectML.Debug.dll", "DirectML.Debug.pdb")) {
+            if (Test-Path (Join-Path $out $f)) { throw "$f is in the download" }
+          }
           # ONNX Runtime's onnxruntime_providers_shared.dll imports vcruntime140.dll, so it ships app-locally
           # (a redistributable file of Visual Studio), next to the exe where the loader looks first.
           $vs = & "${env:ProgramFiles(x86)}/Microsoft Visual Studio/Installer/vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -358,11 +372,12 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/Fretscribe"
           dotnet publish products/fretscribe/Kalli.Fretscribe -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -o $out
           if (-not (Test-Path "$out/Fretscribe.exe")) { throw "Fretscribe.exe was not published" }
-          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "WindowsML-license.txt", "WindowsML-ThirdPartyNotices.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
             if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
           }
-          # No core and no band sounds. (onnxruntime.dll comes with the Windows App SDK itself, for Windows ML.)
-          foreach ($f in @("scribe_ffi.dll", "SoundFonts", "Models")) {
+          # No core, no band sounds, and no ONNX Runtime but its managed library (Windows ML, which brought one, is
+          # not taken: Directory.Packages.props).
+          foreach ($f in @("scribe_ffi.dll", "SoundFonts", "Models", "onnxruntime.dll", "DirectML.dll", "Microsoft.Windows.AI.MachineLearning.dll")) {
             if (Test-Path (Join-Path $out $f)) { throw "$f is in the download, and Fretscribe uses none of it" }
           }
           # alphaTab's native Skia imports vcruntime140.dll, so it ships app-locally, as Brasscribe Play's does.
@@ -445,8 +460,12 @@ jobs:
           $out = "$env:RUNNER_TEMP/publish/BrasscribeBandroom"
           dotnet publish src/Brasscribe.Bandroom -c $env:CONFIGURATION -p:Platform=x64 -r win-x64 --self-contained -p:BandroomBundleWorkspace=true -o $out
           if (-not (Test-Path "$out/BrasscribeBandroom.exe")) { throw "BrasscribeBandroom.exe was not published" }
-          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "WindowsML-license.txt", "WindowsML-ThirdPartyNotices.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
+          foreach ($f in @("third-party.txt", "WindowsAppSDK-license.txt", "WindowsAppSDK-NOTICE.txt", "dotnet-runtime-LICENSE.txt", "dotnet-runtime-THIRD-PARTY-NOTICES.txt")) {
             if (-not (Test-Path "$out/Licences/$f")) { throw "Licences/$f is not in the download" }
+          }
+          # No Windows ML: the Windows App SDK's parts Bandroom uses, not its Windows ML (Directory.Packages.props).
+          foreach ($f in @("onnxruntime.dll", "DirectML.dll", "Microsoft.Windows.AI.MachineLearning.dll")) {
+            if (Test-Path (Join-Path $out $f)) { throw "$f is in the download" }
           }
           foreach ($f in @("workspace/pixi.lock", "workspace/engine/pyproject.toml", "workspace/engine/src/scribe_engine/cli.py", "workspace/music/src/scribe_music/__init__.py", "workspace/eval/scribe_eval/suites.py", "workspace/ml/adapters/run_adapter.py", "band/brasscribe-band.sf2", "core/scribe-core.exe")) {
             if (-not (Test-Path (Join-Path $out $f))) { throw "$f is not next to the exe" }

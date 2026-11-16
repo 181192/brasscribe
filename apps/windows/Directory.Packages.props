@@ -15,7 +15,15 @@
     <PackageVersion Include="Microsoft.ML.OnnxRuntime.Managed" Version="$(OnnxRuntimeVersion)" />
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="$(OnnxRuntimeVersion)" />
     <PackageVersion Include="Microsoft.ML.OnnxRuntime.DirectML" Version="$(OnnxRuntimeVersion)" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
+    <!-- The Windows App SDK's parts the apps use, not its Microsoft.WindowsAppSDK package, which also brings the
+         Windows ML runtime (with its own ONNX Runtime, in place of the one the apps pin), Windows AI, Search and
+         Widgets, none of which the apps use. One version for all parts. -->
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Base" Version="2.6.5" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.DWrite" Version="2.6.5" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Foundation" Version="2.6.5" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.6.5" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.Runtime" Version="2.6.5" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />

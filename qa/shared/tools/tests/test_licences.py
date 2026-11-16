@@ -82,23 +82,36 @@ def assets(tmp_path, app, *packages):
 
 def test_a_package_that_comes_along_with_another_is_checked_for_the_app_that_takes_it(monkeypatch, tmp_path):
     monkeypatch.setattr(licences, "NUGET_RESTORED", {
-        # Windows ML and WebView2 come with the Windows App SDK; System.Text.Brand.New with nothing listed
+        # WebView2 comes with the Windows App SDK; System.Text.Brand.New with nothing listed
         "brasscribe-windows": assets(tmp_path, "play", "Microsoft.WindowsAppSDK", "Microsoft.WindowsAppSDK.WinUI",
-                                     "Microsoft.Windows.AI.MachineLearning", "Microsoft.Web.WebView2",
+                                     "Microsoft.Web.WebView2",
                                      "Microsoft.Windows.SDK.BuildTools.MSIX", "System.Text.Brand.New"),
         # DirectML's own package is listed for Play for Windows only
         "fretscribe-windows": assets(tmp_path, "fretscribe", "Microsoft.WindowsAppSDK", "Microsoft.AI.DirectML"),
         "bandroom-windows": tmp_path / "not-restored" / "project.assets.json",
     })
-    found = "\n".join(licences.problems(["brasscribe-windows", "fretscribe-windows"]))
+    # (The components these small restores do not take are reported too: the test below.)
+    found = "\n".join(p for p in licences.problems(["brasscribe-windows", "fretscribe-windows"]) if "(taken by" in p)
     assert "System.Text.Brand.New (taken by brasscribe-windows" in found
     assert "Microsoft.AI.DirectML (taken by fretscribe-windows" in found and "add fretscribe-windows to the apps of directml" in found
-    for covered in ("Microsoft.WindowsAppSDK.WinUI", "Microsoft.Windows.AI.MachineLearning", "Microsoft.Web.WebView2",
+    for covered in ("Microsoft.WindowsAppSDK.WinUI", "Microsoft.Web.WebView2",
                     "Microsoft.Windows.SDK.BuildTools.MSIX", "Kalli.Scribe.Services"):
         assert covered not in found
     # Without --restored the restores are not read; an app named whose restore is not there is said, not skipped.
     assert "System.Text.Brand.New" not in "\n".join(licences.problems())
     assert "restore bandroom-windows first" in "\n".join(licences.problems(["bandroom-windows"]))
+
+
+def test_a_component_an_app_no_longer_takes_is_reported_for_that_app(monkeypatch, tmp_path):
+    # NAudio comes only from NuGet: Play without it carries a licence for nothing. alphaTab also comes from npm (in
+    # Studio, for Bandroom), so an app without its NuGet package can still carry it.
+    monkeypatch.setattr(licences, "NUGET_RESTORED", {
+        "brasscribe-windows": assets(tmp_path, "play", "Microsoft.WindowsAppSDK.WinUI", "AlphaTab"),
+        "bandroom-windows": assets(tmp_path, "bandroom", "Microsoft.WindowsAppSDK.WinUI"),
+    })
+    found = "\n".join(licences.problems(["brasscribe-windows", "bandroom-windows"]))
+    assert "naudio is listed for brasscribe-windows, which takes none of its packages" in found
+    assert "alphatab is listed" not in found
 
 
 def test_check_takes_restored_apps_and_nothing_else(monkeypatch):

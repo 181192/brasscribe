@@ -451,7 +451,7 @@ Licence: MIT
 
 Copyright (c) Microsoft Corporation
 
-Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries.
+Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries. In Fretscribe for Windows only its managed library is present.
 
 ========================================
 

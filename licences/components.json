@@ -480,7 +480,7 @@
       "licence": "MIT",
       "texts": ["MIT"],
       "notice": ["Copyright (c) Microsoft Corporation"],
-      "note": "Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries.",
+      "note": "Microsoft's build, as published. It contains further third-party software: Microsoft's own notices for it follow at the end of this file, for the version the app carries. In Fretscribe for Windows only its managed library is present.",
       "apps": ["brasscribe-android", "brasscribe-windows", "fretscribe-windows"],
       "covers": {"maven": ["com.microsoft.onnxruntime:*"], "nuget": ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.Managed"]},
       "upstream": [
@@ -497,19 +497,6 @@
       "notice": ["Copyright (c) Microsoft Corporation. A redistributable part of Microsoft's package; its terms are in the package at the address above."],
       "apps": ["brasscribe-windows"],
       "covers": {"nuget": ["Microsoft.ML.OnnxRuntime.DirectML", "Microsoft.AI.DirectML"]}
-    },
-    {
-      "id": "windows-ml",
-      "name": "Windows ML runtime (with the Windows App SDK)",
-      "url": "https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning",
-      "licence": "Microsoft software licence terms",
-      "texts": [],
-      "notice": [
-        "Copyright (c) Microsoft Corporation. Microsoft's terms and its third-party notices for it are the files WindowsML-license.txt and WindowsML-ThirdPartyNotices.txt beside this one, as they come in the package.",
-        "The Windows App SDK brings it. It carries its own builds of ONNX Runtime and DirectML: the app's onnxruntime.dll is Windows ML's, and so is its DirectML.dll but in Play for Windows. Play for Windows takes only ONNX Runtime's managed library and onnxruntime_providers_shared.dll from the ONNX Runtime package above."
-      ],
-      "apps": ["@windows-play", "bandroom-windows"],
-      "covers": {"nuget": ["Microsoft.Windows.AI.MachineLearning"]}
     },
     {
       "id": "webview2",

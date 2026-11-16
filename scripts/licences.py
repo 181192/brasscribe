@@ -181,7 +181,9 @@ def restored_packages(app: str) -> list[str]:
 
 
 def restored_problems(apps: list[str], m: dict) -> list[str]:
-    """A package one of these apps takes that no component of that app covers, nor not_shipped."""
+    """A package one of these apps takes that no component of that app covers, nor not_shipped; and a component of
+    the app that comes only from NuGet packages none of which the app takes any more (its licence would be in the app's
+    file for something the app does not carry)."""
     found = []
     for app in apps:
         if app not in NUGET_RESTORED:
@@ -201,6 +203,13 @@ def restored_problems(apps: list[str], m: dict) -> list[str]:
                              + (f"add {app} to the apps of {', '.join(elsewhere)}" if elsewhere else
                                 "add it to the component it belongs to (covers.nuget) with its licence, "
                                 "or to not_shipped.nuget when the app does not ship it"))
+        taken = restored_packages(app)
+        for c in m["components"]:
+            covers = c.get("covers", {})
+            if app in c["apps"] and set(covers) == {"nuget"} and not any(
+                    fnmatch.fnmatchcase(name, p) for name in taken for p in covers["nuget"]):
+                found.append(f"{c['id']} is listed for {app}, which takes none of its packages ({', '.join(covers['nuget'])}): "
+                             f"take {app} out of its apps, or remove it")
     return found
 
 
