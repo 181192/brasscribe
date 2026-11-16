@@ -1,9 +1,6 @@
 package no.kalli.scribe.play
 
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import no.kalli.scribe.connection.Check
@@ -167,15 +164,11 @@ class InterfaceVersionTest : ScreenTest() {
         assertEquals(ConnectionState.NeedsUpdate("Brasscribe on Studio", InterfaceMatch.UPDATE_APP), vm.connection.state.value)
         assertEquals(emptySet<String>(), askedBesidesItsVersion(newer))
         // The app is the one behind: the row has the way to its latest version, straight to the app's own file
-        // for this phone in the latest release (the browser downloads it and the phone offers to install it).
+        // for this phone in the latest release (the browser downloads it and the phone offers to install it; on the
+        // JVM, AppUpdateLinkTest checks what the button opens).
         rule.runOnUiThread { vm.home() }
         waitUntil { shows(R.string.conn_update_app) }
         assertTrue(shown(), shows(R.string.conn_get_app_update))
-        rule.onNodeWithText(text(R.string.conn_get_app_update)).performScrollTo().performClick()
-        rule.waitForIdle()
-        val started = org.robolectric.Shadows.shadowOf(rule.activity).nextStartedActivity
-        assertEquals(android.content.Intent.ACTION_VIEW, started?.action)
-        assertEquals(no.kalli.scribe.play.ui.appDownload(container.product), started?.data?.toString())
         val file = container.product.releaseFile
         val latest = "https://github.com/181192/brasscribe/releases/download/${container.product.releaseProduct}-latest"
         assertEquals("$latest/$file-arm64-v8a.apk",
