@@ -372,8 +372,8 @@ and writes the screenshots and each screen's tree into `build/catalogue/iphone/`
 run under names of their own and deleted after (`scripts/iphone-catalogue.sh`), so it never uses a simulator another run
 is using; `CATALOGUE_DEST=<destination>` runs one given simulator instead, and `CATALOGUE_LANGUAGES=en` one language. CI
 runs the smallest phone on every pull request (`apple.yml`, job `play-iphone-catalogue`, artefact
-`play-iphone-screenshots`), in bokmål only when the pull request reaches the app's words or views, the score's views or
-the catalogue (`ci.yml`, filter `apple_play_nb`); every night it runs the SE, and the smallest phone in bokmål (job
+`play-iphone-screenshots`), in bokmål only when the pull request reaches the app's words or views, the score's views, the
+brand's fonts and logo, the fixtures or the catalogue (`ci.yml`, filter `apple_play_nb`); every night it runs the SE, and the smallest phone in bokmål (job
 `play-iphone`, artefacts `play-iphone-se-screenshots` and `play-iphone-nb-screenshots`): a fresh simulator's first start on a hosted runner takes minutes and can hang,
 so a job starts one, with a time limit (`scripts/boot-simulator.sh`). A new screen gets an entry here as well as in
 the Mac's catalogue. A known finding goes in `known`, with why.

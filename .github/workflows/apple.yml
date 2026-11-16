@@ -111,7 +111,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
 
-      # The core's Mac slice, cached apart from play-iphone-catalogue's simulator slice; both saved from main only.
+      # The core's Mac slice, cached apart from play-iphone-catalogue's iPhone slices; both saved from main only.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
@@ -237,12 +237,12 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
-          targets: aarch64-apple-ios-sim
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
-          shared-key: apple-play-ios-sim
+          shared-key: apple-play-ios
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - run: brew install xcodegen
@@ -259,9 +259,10 @@ jobs:
         if: steps.verovio.outputs.cache-hit != 'true'
         run: make verovio
 
-      - name: Build ScribeFFI.xcframework (iPhone simulator)
+      # The device slice too, which only the release builds link: a change to the core that breaks it shows here.
+      - name: Build ScribeFFI.xcframework (iPhone simulator and device)
         env:
-          CORE_SLICES: ios-sim
+          CORE_SLICES: ios-sim ios
         run: scripts/build-core.sh
 
       # The app is built as it is with them in a release (models and the band SoundFonts bundled).
@@ -338,11 +339,11 @@ jobs:
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim
 
-      # The simulator slice, as job play-iphone-catalogue saves it from main.
+      # The iPhone slices, as job play-iphone-catalogue saves them from main.
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: core
-          shared-key: apple-play-ios-sim
+          shared-key: apple-play-ios
           save-if: false
 
       - run: brew install xcodegen
