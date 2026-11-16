@@ -59,6 +59,12 @@ Command line: `--background` (the sign-in start: no window), `--demo` / `--show 
   in `envs\.bandroom-update`, stamp last) and reinstalls environments only when `pixi.lock` changed. `.pixi`,
   models, runs and paired devices stay. If the engine environment won't install, the old copy goes back, its
   engine starts, and a Needs-attention problem offers Try again.
+- **A stage and an install never run on one environment at once.** The engine starts once its own environment is
+  in, while the adapters' still download. Bandroom opens `bandroom\setup\locks\<name>.lock` with no sharing while
+  it installs an environment (and the reader), after the stages using it have finished; the engine holds the same
+  file while a stage uses it (`SCRIBE_ENV_LOCKS`, `engine/src/scribe_engine/envlock.py`), so a stage that needs an
+  environment still being installed waits for it (the phone says the computer is still setting up), and one that
+  is not installed at all is installed by the engine alone, with its marker beside the others.
 - **The engine and Bandroom must match.** The engine's health answer carries its interface version, and Bandroom
   is built for one (`Wire.InterfaceVersion`, the engine's `engine/src/scribe_engine/wire.py`). When the engine that
   runs has another, Bandroom asks it for its health (the check that it still answers) and, once when it first

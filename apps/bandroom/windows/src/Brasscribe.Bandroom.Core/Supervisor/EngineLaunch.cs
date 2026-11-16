@@ -19,6 +19,12 @@ public sealed record BandroomPaths(string DataDir)
     public string State => Path.Combine(DataDir, "bandroom");
     public string AdminTokenFile => Path.Combine(State, "admin-token");
     public string SetupMarkers => Path.Combine(State, "setup");
+    /// <summary>
+    /// One lock file per environment (<c>&lt;name&gt;.lock</c>), beside the markers the engine reads too: Bandroom
+    /// holds one with no sharing while it installs that environment, and the engine holds it while a stage uses the
+    /// environment (scribe_engine/envlock.py, SCRIBE_ENV_LOCKS).
+    /// </summary>
+    public string EnvironmentLocks => Path.Combine(SetupMarkers, "locks");
     /// <summary>The Appearance choice: this PC only, never roamed (design/brands/brasscribe/system.md §10).</summary>
     public string AppearanceFile => Path.Combine(State, "appearance");
     /// <summary>The name shown to phones, when one is set in Settings.</summary>
@@ -85,6 +91,8 @@ public sealed record EngineLaunchConfig(
             ["SCRIBE_ADMIN_TOKEN"] = AdminToken,
             // Adapters run in the pixi environments bootstrap installed; torch ones use <name>-cuda on an NVIDIA PC.
             ["SCRIBE_ADAPTER_RUNNER"] = "pixi",
+            // A stage that needs an environment Bandroom is still installing waits for it (EnvironmentLock).
+            ["SCRIBE_ENV_LOCKS"] = Paths.EnvironmentLocks,
             ["PIXI_CACHE_DIR"] = Paths.PixiCache,
             ["PYTHONUTF8"] = "1",
             // run_adapter.py calls "pixi" by name.

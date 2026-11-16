@@ -672,6 +672,18 @@ jobs:
           $left = @($engineProcs | Where-Object { Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue })
           if ($left.Count -gt 0) { $left | Format-Table ProcessId, Name; throw "the engine outlived Bandroom" }
 
+      # The engine's environment lock on Windows (engine/src/scribe_engine/envlock.py): LockFileEx between stages in
+      # processes of their own, Bandroom's FileShare.None against it, and an engine that ends during its own install.
+      # The engine environment the step above installed has Python and pytest; the tests run on the checkout's copy.
+      - name: Environment locks on Windows
+        timeout-minutes: 10
+        working-directory: engine
+        run: |
+          $py = Join-Path $env:LOCALAPPDATA "Brasscribe/envs/.pixi/envs/default/python.exe"
+          $env:PYTHONPATH = "$env:GITHUB_WORKSPACE/engine/src;$env:GITHUB_WORKSPACE/music/src"
+          & $py -m pytest -q -p no:cacheprovider tests/test_adapter_env_lock.py
+          if ($LASTEXITCODE -ne 0) { throw "the environment lock tests failed on Windows" }
+
       # Its size in the log says whether the packages are where the cache looks. Kept from main only, as the Rust
       # cache is: a pull request reads main's.
       - name: The size of pixi's packages
