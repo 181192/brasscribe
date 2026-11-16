@@ -232,7 +232,8 @@ the cache have been cleared, it fails at once, whatever `allow_heavy` says. Only
 corrected (409 `job_not_finished`). A correction that does not fit, puts a bar or a hold after the end of the
 recording (or has a time in a recording whose length the engine cannot read), or changes nothing answers 422
 `{code: "beat_invalid", detail}`, with `detail` naming what to change; a hold that runs past the end is cut at
-the end.
+the end. An app that makes the score again with other options (`createJob` with another lineup, say) sends the
+job's `beat` along, so the correction is kept; it is checked and refused the same way.
 
 Every finished job also carries `beat_hints`: what the engine itself suspects about the beat (a tempo out of
 range, notes too fast or slow for the beat, a slow beat divided in three, long stretches without a new note,

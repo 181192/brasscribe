@@ -550,6 +550,17 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
             params["muscriptor"] = False
         params.update(tab.given(instrument=body.instrument, tuning=body.tuning, capo=body.capo, style=body.style,
                                 recording=body.recording, octave=body.octave, layout=body.layout, chords=body.chords))
+        if body.beat is not None:
+            try:
+                beat = profiles.beat_correction({"beat": body.beat.model_dump(exclude_none=True)})
+                if beat and sheet.is_sheet(body.profile):
+                    raise profiles.OptionError("beat: a job that reads pages has no beat", profiles.BEAT_INVALID_CODE)
+                beat = profiles.within_recording(beat, recording_seconds(path))
+            except profiles.OptionError as e:
+                print(f"beat correction refused ({e.code}): {e}", file=sys.stderr, flush=True)
+                return beat_refusal(e.code, str(e))
+            if beat:
+                params["beat"] = beat
         try:
             profiles.check_input(body.profile, path)
         except pages.WrongInput:
@@ -580,7 +591,7 @@ def create_app(settings: Settings | None = None, *, trust_loopback: bool | None 
         """A correction the request schema refuses is answered like one the engine refuses: 422 {code, detail},
         in the engine's own words where it has them. Every other request keeps FastAPI's answer."""
         errors = exc.errors()
-        if (request.url.path.endswith("/rerun") and errors
+        if ((request.url.path.endswith("/rerun") or request.url.path.rstrip("/").endswith("/v1/jobs")) and errors
                 and all(tuple(e.get("loc", ()))[:2] == ("body", "beat") for e in errors)):
             sent = exc.body.get("beat") if isinstance(exc.body, dict) else None
             try:

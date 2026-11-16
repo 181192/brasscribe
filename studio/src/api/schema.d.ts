@@ -1697,6 +1697,8 @@ export interface components {
             allow_heavy: boolean;
             /** Audio Id */
             audio_id?: string | null;
+            /** @description a beat correction to write the score on (as rerunJob's), for a job made again from a recording already corrected, e.g. with another lineup: refused like rerunJob's with 422 {code, detail}. Not for pages */
+            beat?: components["schemas"]["BeatCorrection"] | null;
             /**
              * Capo
              * @description tab profile: the capo's fret; frets in the tab are counted from it, and the page names it; default: 0, no capo
