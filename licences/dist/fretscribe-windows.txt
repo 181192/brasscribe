@@ -95,6 +95,7 @@ Licence: MIT
 
 Copyright (c) .NET Foundation and Contributors. All rights reserved.
 The app carries the runtime it runs on. The runtime's own third-party notices are the file dotnet-runtime-THIRD-PARTY-NOTICES.txt beside this one, as it comes in the runtime's package.
+The .NET libraries from the same repository that come as packages are under the same licence and copyright: System.Numerics.Tensors (with NAudio) and Microsoft.Win32.SystemEvents.
 
 ========================================
 

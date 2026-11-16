@@ -16,7 +16,7 @@ namespace Kalli.Scribe.Audio.Windows;
 /// </summary>
 public sealed class WasapiCaptureService : ICaptureService, IDisposable
 {
-    private IWaveIn? _waveIn;
+    private WasapiRecorder? _waveIn;
     private ProcessLoopbackCapture? _process;
     private WaveFileWriter? _writer;
     private Stopwatch _clock = new();
@@ -86,20 +86,24 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
             {
                 case CaptureKind.Microphone:
                 {
-                    MMDevice? device = null;
+                    var mic = Recorder();
                     if (request.DeviceId is { } id)
                     {
                         using var enumerator = new MMDeviceEnumerator();
-                        device = enumerator.GetDevice(id);
+                        mic.WithDevice(enumerator.GetDevice(id));
                     }
-                    var mic = device is null ? new WasapiCapture() : new WasapiCapture(device);
-                    Attach(mic);
+                    Attach(mic.Build());
                     break;
                 }
                 case CaptureKind.SystemAudio:
-                    Attach(new WasapiLoopbackCapture());
+                {
+                    // What the default output plays: the multimedia render endpoint, as Windows' own loopback default.
+                    using var enumerator = new MMDeviceEnumerator();
+                    Attach(Recorder().WithLoopbackCapture()
+                        .WithDevice(enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)).Build());
                     StartGapFill(_waveIn!.WaveFormat);
                     break;
+                }
                 case CaptureKind.App:
                 {
                     if (request.ProcessId is not { } pid) throw new ArgumentException("No process chosen", nameof(request));
@@ -107,7 +111,7 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
                     var format = capture.WaveFormat;
                     _process = capture;
                     _writer = new WaveFileWriter(_path, format);
-                    capture.BufferCaptured += (buffer, count, silent) => OnData(buffer, count, silent, format);
+                    capture.BufferCaptured += (buffer, count, silent) => OnData(buffer.AsSpan(0, count), silent, format);
                     capture.Stopped += e =>
                     {
                         _stopped?.TrySetResult();
@@ -132,11 +136,19 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         IsCapturing = true;
     }
 
-    private void Attach(WasapiCapture capture)
+    /// <summary>
+    /// Shared mode in the device's own mix format, read every 50 ms from a 100 ms buffer (polling): the default
+    /// device is the console capture endpoint. A silent packet arrives as zeros.
+    /// </summary>
+    private static WasapiRecorderBuilder Recorder() =>
+        new WasapiRecorderBuilder().WithSharedMode().WithPollingSync().WithBufferLength(100);
+
+    private void Attach(WasapiRecorder capture)
     {
         _waveIn = capture;
         _writer = new WaveFileWriter(_path!, capture.WaveFormat);
-        capture.DataAvailable += (_, e) => OnData(e.Buffer, e.BytesRecorded, false, capture.WaveFormat);
+        var format = capture.WaveFormat;
+        capture.DataAvailable += (buffer, _, _, _) => OnData(buffer, false, format);
         // Also when the device goes away mid-take: then it comes with the reason, and is said at once.
         capture.RecordingStopped += (_, e) =>
         {
@@ -175,10 +187,10 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         _stopped = null;
     }
 
-    private void OnData(byte[] buffer, int count, bool silent, WaveFormat format)
+    private void OnData(ReadOnlySpan<byte> buffer, bool silent, WaveFormat format)
     {
-        lock (_gate) _writer?.Write(buffer, 0, count);
-        Level?.Invoke(this, new CaptureLevel(_clock.Elapsed, Peak(buffer, count, format), silent));
+        lock (_gate) _writer?.Write(buffer);
+        Level?.Invoke(this, new CaptureLevel(_clock.Elapsed, Peak(buffer, format), silent));
     }
 
     private void StartGapFill(WaveFormat format)
@@ -218,20 +230,21 @@ public sealed class WasapiCaptureService : ICaptureService, IDisposable
         Level?.Invoke(this, new CaptureLevel(at, 0, true));
     }
 
-    private static float Peak(byte[] buffer, int count, WaveFormat format)
+    private static float Peak(ReadOnlySpan<byte> buffer, WaveFormat format)
     {
         float peak = 0;
-        if (format.Encoding == WaveFormatEncoding.IeeeFloat || format is WaveFormatExtensible { SubFormat: var sf } && sf == NAudio.Dmo.AudioMediaSubtypes.MEDIASUBTYPE_IEEE_FLOAT)
+        int count = buffer.Length;
+        if (format.Encoding == WaveFormatEncoding.IeeeFloat || format is WaveFormatExtensible { SubFormat: var sf } && sf == AudioMediaSubtypes.MEDIASUBTYPE_IEEE_FLOAT)
         {
-            for (int i = 0; i + 3 < count; i += 4) peak = Math.Max(peak, Math.Abs(BitConverter.ToSingle(buffer, i)));
+            for (int i = 0; i + 3 < count; i += 4) peak = Math.Max(peak, Math.Abs(BitConverter.ToSingle(buffer[i..])));
         }
         else if (format.BitsPerSample == 16)
         {
-            for (int i = 0; i + 1 < count; i += 2) peak = Math.Max(peak, Math.Abs(BitConverter.ToInt16(buffer, i) / 32768f));
+            for (int i = 0; i + 1 < count; i += 2) peak = Math.Max(peak, Math.Abs(BitConverter.ToInt16(buffer[i..]) / 32768f));
         }
         else if (format.BitsPerSample == 32)
         {
-            for (int i = 0; i + 3 < count; i += 4) peak = Math.Max(peak, Math.Abs(BitConverter.ToInt32(buffer, i) / 2147483648f));
+            for (int i = 0; i + 3 < count; i += 4) peak = Math.Max(peak, Math.Abs(BitConverter.ToInt32(buffer[i..]) / 2147483648f));
         }
         return peak;
     }

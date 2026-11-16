@@ -29,7 +29,7 @@ public sealed class MediaFoundationDecoder : IMediaDecoder
                 using var writer = new WaveFileWriter(outputPath, source.WaveFormat);
                 var buffer = new byte[source.WaveFormat.AverageBytesPerSecond];
                 int read;
-                while ((read = source.Read(buffer, 0, buffer.Length)) > 0)
+                while ((read = source.Read(buffer)) > 0)
                 {
                     ct.ThrowIfCancellationRequested();
                     writer.Write(buffer, 0, read);

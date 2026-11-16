@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Kalli.Scribe.Playback;
 using Kalli.Scribe.Services;
 using NAudio.CoreAudioApi;
-using NAudio.CoreAudioApi.Interfaces;
 using NAudio.Wave;
 
 namespace Kalli.Scribe.Audio.Windows;
@@ -14,18 +13,18 @@ namespace Kalli.Scribe.Audio.Windows;
 /// played out, so an idle app holds no audio stream (which keeps Windows from sleeping). When the device
 /// goes away or Windows' default output changes (headphones plugged in, a Bluetooth speaker), playing
 /// moves to the new default device; a stream that could not open (no device at all) is tried again
-/// when a device appears. All opening and closing happens on one thread of its own.
+/// when a device appears (<see cref="OutputRouting"/> decides). All opening and closing happens on one thread of
+/// its own.
 /// </summary>
 public sealed class WasapiSynthOutput : IAudioOutput
 {
     private readonly BlockingCollection<Action> _work = new();
     private readonly Thread _thread;
+    private readonly OutputRouting _routing = new();
     private MMDeviceEnumerator? _devices;
-    private DeviceWatcher? _watcher;
+    private MMDeviceNotificationClient? _notifications;
     private BufferedSynthOutput? _source;
-    private WasapiOut? _out;
-    private string? _deviceId;
-    private bool _failed;
+    private WasapiPlayer? _out;
 
     public WasapiSynthOutput()
     {
@@ -46,8 +45,17 @@ public sealed class WasapiSynthOutput : IAudioOutput
         Post(() =>
         {
             _devices = new MMDeviceEnumerator();
-            _watcher = new DeviceWatcher(this);
-            _devices.RegisterEndpointNotificationCallback(_watcher);
+            // Windows' device notifications arrive on a system thread (no synchronization context) and only post work.
+            _notifications = _devices.CreateNotificationClient(useSynchronizationContext: false);
+            _notifications.DeviceStateChanged += (_, e) => { if (e.NewState == DeviceState.Active) DeviceArrived(); };
+            _notifications.DeviceAdded += (_, _) => DeviceArrived();
+            _notifications.DefaultDeviceChanged += (_, e) =>
+            {
+                // Only the default output for media: a new default microphone or calls device leaves the band alone.
+                if (e.Flow != DataFlow.Render || e.Role != Role.Multimedia) return;
+                DefaultChanged(e.DeviceId);
+                DeviceArrived();
+            };
         });
     }
 
@@ -85,7 +93,7 @@ public sealed class WasapiSynthOutput : IAudioOutput
                 s.PlayRequested -= OnPlayRequested;
                 s.Drained -= OnDrained;
             }
-            if (_devices is not null && _watcher is not null) _devices.UnregisterEndpointNotificationCallback(_watcher);
+            _notifications?.Dispose();
             _devices?.Dispose();
         });
         _work.CompleteAdding();
@@ -107,9 +115,12 @@ public sealed class WasapiSynthOutput : IAudioOutput
     private void Open()
     {
         if (_out is not null || _source is not { } source || _devices is null) return;
-        _failed = true; // until the stream plays: no device, or one that refused, is tried again when a device appears
+        _routing.Opening();
         var device = _devices.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-        var output = new WasapiOut(device, AudioClientShareMode.Shared, useEventSync: true, latency: 80);
+        // Shared mode, event-driven, 80 ms: as the band's stream has always been opened. In shared mode Windows converts the
+        // synth's float stereo at its own rate to whatever the device mixes in (AutoConvertPcm, high-quality rate
+        // conversion), now as before: NAudio 2's own resampler, which NAudio 3 dropped, served exclusive mode only.
+        var output = new WasapiPlayerBuilder().WithDevice(device).WithSharedMode().WithEventSync().WithLatency(80).Build();
         try
         {
             output.Init(new SynthSampleProvider(source));
@@ -122,15 +133,14 @@ public sealed class WasapiSynthOutput : IAudioOutput
             throw;
         }
         _out = output;
-        _deviceId = device.ID;
-        _failed = false;
+        _routing.Opened(device.ID);
     }
 
     private void Close()
     {
         if (_out is not { } output) return;
         _out = null;
-        _deviceId = null;
+        _routing.Closed();
         output.PlaybackStopped -= OnPlaybackStopped;
         output.Stop();
         output.Dispose();
@@ -144,52 +154,29 @@ public sealed class WasapiSynthOutput : IAudioOutput
         Post(() =>
         {
             if (!ReferenceEquals(sender, _out)) return;
-            Close();
-            _failed = true;
-            if (_source is { IsPlaying: true }) Open();
+            Do(_routing.StreamEnded(Playing));
         });
     }
 
-    /// <summary>Windows' default output changed: an open stream moves to it.</summary>
-    private void DefaultChanged(string? deviceId) => Post(() =>
-    {
-        if (_out is null || deviceId == _deviceId) return;
-        Close();
-        if (_source is { IsPlaying: true }) Open();
-    });
+    private bool Playing => _source is { IsPlaying: true };
+
+    /// <summary>Windows' default device changed: an open stream moves to the new default output.</summary>
+    private void DefaultChanged(string? deviceId) =>
+        Post(() => Do(_routing.DefaultChanged(mediaOutput: true, deviceId, Playing)));
 
     /// <summary>A device came (back): a stream that could not open tries again.</summary>
-    private void DeviceArrived() => Post(() =>
+    private void DeviceArrived() => Post(() => Do(_routing.DeviceArrived(Playing)));
+
+    private void Do(OutputAction action)
     {
-        if (_failed && _out is null && _source is { IsPlaying: true }) Open();
-    });
+        if (action is OutputAction.Close or OutputAction.Reopen) Close();
+        if (action is OutputAction.Open or OutputAction.Reopen) Open();
+    }
 
     private sealed class SynthSampleProvider(BufferedSynthOutput source) : ISampleProvider
     {
         public WaveFormat WaveFormat { get; } = WaveFormat.CreateIeeeFloatWaveFormat((int)source.SampleRate, 2);
 
-        public int Read(float[] buffer, int offset, int count) => source.Read(buffer.AsSpan(offset, count));
-    }
-
-    /// <summary>Windows' device notifications; they arrive on a system thread and only post work.</summary>
-    private sealed class DeviceWatcher(WasapiSynthOutput owner) : IMMNotificationClient
-    {
-        public void OnDeviceStateChanged(string deviceId, DeviceState newState)
-        {
-            if (newState == DeviceState.Active) owner.DeviceArrived();
-        }
-
-        public void OnDeviceAdded(string pwstrDeviceId) => owner.DeviceArrived();
-
-        public void OnDeviceRemoved(string deviceId) { }
-
-        public void OnDefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId)
-        {
-            if (flow != DataFlow.Render || role != Role.Multimedia) return;
-            owner.DefaultChanged(defaultDeviceId);
-            owner.DeviceArrived();
-        }
-
-        public void OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key) { }
+        public int Read(Span<float> buffer) => source.Read(buffer);
     }
 }
