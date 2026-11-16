@@ -473,7 +473,7 @@
           }
         },
         "quartet-audio": {
-          "source": "10-benchmark-results.md: Quartet arrangement, from recordings; alto and tenor recall since the melody is left out of the harmony by onset tolerance instead of rounded onsets",
+          "source": "10-benchmark-results.md: Quartet arrangement, from recordings; alto and tenor recall since the melody is left out of the harmony by onset tolerance instead of rounded onsets. mus-retuned is arranged as the brass-band profile does it, with a slow beat in three split in three: one hymn tune in 6/4 that the tracker counts in two (Vulpius, Die helle Sonn), which lifts every measure of that row",
           "metrics": {
             "mus.melody_kept": 0.848,
             "mus.alto_recall_pc": 0.534,
@@ -533,12 +533,12 @@
               "tolerance": 0.1,
               "higher_is_better": false
             },
-            "mus-retuned.melody_kept": 0.841,
-            "mus-retuned.alto_recall_pc": 0.537,
-            "mus-retuned.tenor_recall_pc": 0.439,
-            "mus-retuned.bass_kept": 0.922,
+            "mus-retuned.melody_kept": 0.854,
+            "mus-retuned.alto_recall_pc": 0.565,
+            "mus-retuned.tenor_recall_pc": 0.454,
+            "mus-retuned.bass_kept": 0.934,
             "mus-retuned.parallels_per_100": {
-              "value": 5.08,
+              "value": 4.623,
               "tolerance": 0.1,
               "higher_is_better": false
             },

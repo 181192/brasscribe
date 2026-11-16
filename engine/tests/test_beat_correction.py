@@ -184,9 +184,11 @@ def test_a_second_tracker_is_a_stage_of_its_own_and_the_correction_chooses_betwe
     assert _stages(profile, {"level": "half"}).stage("beats.corrected").inputs["beats"].stage == "beats"
 
 
-def test_no_profile_splits_a_slow_beat_in_three_unasked():
-    """A slow beat in three is a hint (in_three) and a level a player can send (triple), not a default: no
-    profile asks for the split, and the music library's level rule and quantizer do not split by default."""
+def test_only_a_brass_ensembles_take_splits_a_slow_beat_in_three():
+    """A slow beat that the notes divide in three is split in three for a brass ensemble's take only (the band
+    profile with MuScriptor), where it has so far always been a bar counted in one. The music library's level
+    rule and quantizer do not split by default, and elsewhere it stays a hint (in_three) and a level a player
+    can send (triple)."""
     from scribe_music.quantize import TICKS_PER_BEAT, choose_level, in_three, quantize
 
     slow = _beats(17, bpm=60.0)[:, 0]
@@ -196,8 +198,9 @@ def test_no_profile_splits_a_slow_beat_in_three_unasked():
     notes = [{"onset": float(t), "offset": float(t) + 0.2, "pitch": 60} for t in on]
     assert any(q.start % TICKS_PER_BEAT for q in quantize(notes, slow))  # thirds of the tracked beat: not split
     assert not any(q.start % TICKS_PER_BEAT for q in quantize(notes, slow, three=True))  # split: every note on a beat
-    assert "three" not in _stages("brass-band", muscriptor=False).stage("arrange").params
-    for profile in ("brass-band", "solo", "pop-rock", "orchestra-with-soloist"):
+    assert _stages("brass-band").stage("arrange").params.get("three") is True
+    assert "three" not in _stages("brass-band", muscriptor=False).stage("arrange").params  # the draft is the device's
+    for profile in ("solo", "pop-rock", "orchestra-with-soloist"):
         assert "three" not in _stages(profile).stage("arrange").params
 
 
