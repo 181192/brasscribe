@@ -158,8 +158,9 @@ jobs:
           if (Test-Path "$out/findings.md") { Get-Content "$out/findings.md" >> $env:GITHUB_STEP_SUMMARY }
           exit $status
 
-      # Play's own build, as the screen catalogue built it, runs a model on DirectML with the ONNX Runtime it pins
-      # (Kalli.Brasscribe.Catalogue/OnnxRuntimeInPlay.cs): that class alone, so a failure fails this step.
+      # Play's own build, as the screen catalogue built it, runs a model with the ONNX Runtime it pins, built with
+      # DirectML (Kalli.Brasscribe.Catalogue/OnnxRuntimeInPlay.cs): that class alone, so a failure fails this step.
+      # The runner has no display adapter, so DirectML itself stops there and its test is inconclusive (it says why).
       - name: Play runs a model on DirectML
         if: ${{ !inputs.release && !cancelled() && steps.catalogue.outcome != 'skipped' }}
         run: |
