@@ -173,8 +173,10 @@ jobs:
 
       # The tab feature's simulator, the smallest iPhone, starts while the Mac app's tests run (no sound is measured
       # there). scripts/boot-simulator.sh waits for it below and erases and starts it again if it hung.
+      # Only asks it to start (boot-simulator.sh waits for it later, with its own limit); a hang here fails fast.
       - name: Start the iPhone simulator
         id: sim
+        timeout-minutes: 5
         run: |
           dest=$(scripts/smallest-iphone.sh)
           echo "dest=$dest" >> "$GITHUB_OUTPUT"
@@ -228,8 +230,10 @@ jobs:
           xcodebuild -version
 
       # The catalogue's phone, the smallest iPhone of the newest iOS, starts while everything below is built.
+      # Only asks it to start (boot-simulator.sh waits for it later, with its own limit); a hang here fails fast.
       - name: Start the iPhone simulator
         id: sim
+        timeout-minutes: 5
         run: |
           dest=$(scripts/smallest-iphone.sh)
           echo "dest=$dest" >> "$GITHUB_OUTPUT"
