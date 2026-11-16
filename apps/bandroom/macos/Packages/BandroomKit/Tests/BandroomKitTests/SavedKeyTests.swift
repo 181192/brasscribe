@@ -2,6 +2,14 @@ import Foundation
 import Testing
 @testable import BandroomKit
 
+/// Whether something has happened, read from another task.
+final class Answered: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+    var value: Bool { lock.withLock { done } }
+    func set() { lock.withLock { done = true } }
+}
+
 /// A keychain in memory. `hold()` makes reads wait (a Keychain prompt nobody has answered) until `release()`.
 final class FakeKeychain: SecretStore, @unchecked Sendable {
     private let lock = NSLock()
@@ -89,18 +97,20 @@ func waitUntil(_ condition: () -> Bool, seconds: Double = 5) async {
         #expect(changes.isEmpty)
     }
 
-    @Test func aReadThatWaitsForThePromptDoesNotHoldUpTheWait() async {
+    @Test(.timeLimit(.minutes(1))) func aReadThatWaitsForThePromptDoesNotHoldUpTheWait() async {
         let keychain = FakeKeychain(.found("hf_late"))
         keychain.hold()
         defer { keychain.release() }
         let key = SavedKey(store: keychain)
         key.read()
-        // The read cannot end before the keychain is released, below: that the wait has come back at all, with the key
-        // still being read, is what shows it did not wait for the read. (A bound in time only to fail rather than hang
-        // if it did; far over a busy runner's slowness, which a 2 s bound was not.)
-        let start = ContinuousClock.now
+        // The read is answered 20 s from now, from another task. A wait that does not hold up for it comes back after its
+        // own 50 ms, before that answer; one that waits for the read comes back after it, and fails here rather than
+        // hanging. What is compared is the order of the two, not a time a busy runner could overrun.
+        let answered = Answered()
+        let answer = Task.detached { try? await Task.sleep(for: .seconds(20)); answered.set(); keychain.release() }
+        defer { answer.cancel() }
         await key.settled(within: .milliseconds(50))
-        #expect(ContinuousClock.now - start < .seconds(30))
+        #expect(!answered.value, "the wait came back only once the read was answered")
         #expect(key.state == .reading)
         #expect(key.value == nil)
         keychain.release()
