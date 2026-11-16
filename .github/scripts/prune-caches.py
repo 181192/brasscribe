@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Deletes the Actions caches nothing reads any more, so the repository stays under its 10 GB and the caches that
-are read (Verovio, the Rust builds, Gradle) are not evicted. Run by ci.yml after a push to main.
+are read (Verovio, the Rust builds, Gradle) are not evicted. Run by caches.yml after each run of ci on main.
 
 Deleted:
 - on main, every older generation of a cache: the same key but for its hashes (a newer lock file, Cargo.lock,

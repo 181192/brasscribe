@@ -691,24 +691,3 @@ jobs:
           echo "changes: $CHANGES, jobs: $RESULTS"
           [ "$CHANGES" = success ] || exit 1
           for r in $RESULTS; do [ "$r" = success ] || [ "$r" = skipped ] || exit 1; done
-
-  # After a push to main, once every job has saved its caches: the older generations of each cache on main, and the
-  # caches of past release tags, are deleted (.github/scripts/prune-caches.py). The repository has 10 GB of caches;
-  # past it GitHub evicts the least recently used, which were the Mac ones (a Verovio rebuild is 11 to 15 minutes).
-  caches:
-    name: prune old caches
-    needs: [workflows, licences, linux, core, studio, android, android-screens, windows, apple]
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      actions: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-          sparse-checkout: .github/scripts
-      - run: .github/scripts/prune-caches.py
-        env:
-          GH_TOKEN: ${{ github.token }}
