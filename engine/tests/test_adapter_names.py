@@ -4,17 +4,30 @@ and a name it imports from the script beside it must be defined there. A functio
 still called from another is found here, not by a job that fails."""
 import ast
 import builtins
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from scribe_engine import config
 
-SCRIPTS = sorted(
-    p for folder in ("ml/adapters", "convert", "eval/scribe_eval", "apps/android/features/score/pitch/src/test/python")
-    for p in (config.REPO_ROOT / folder).rglob("*.py")
-    if not {".venv", "__pycache__", "node_modules", "site-packages"} & set(p.parts)
-)
+FOLDERS = ("ml/adapters", "convert", "eval/scribe_eval", "apps/android/features/score/pitch/src/test/python")
+
+
+def scripts() -> list[Path]:
+    """The repository's own scripts in FOLDERS: the files git keeps. What git ignores there is not ours (the clone of
+    Music-Source-Separation-Training the mega53 adapter fetches into ml/adapters/mega53/msst, the environments)."""
+    try:
+        listed = subprocess.run(["git", "-C", str(config.REPO_ROOT), "ls-files", "-z", "--", *FOLDERS],
+                                capture_output=True, check=True).stdout.decode()
+        return sorted(config.REPO_ROOT / p for p in listed.split("\0") if p.endswith(".py"))
+    except (OSError, subprocess.CalledProcessError):  # not a git checkout: the folders, without what is never ours
+        return sorted(
+            p for folder in FOLDERS for p in (config.REPO_ROOT / folder).rglob("*.py")
+            if not {".venv", "__pycache__", "node_modules", "site-packages", "msst"} & set(p.parts))
+
+
+SCRIPTS = scripts()
 
 
 def bound(tree: ast.AST) -> set[str]:
